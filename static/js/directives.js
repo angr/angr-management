@@ -129,20 +129,36 @@ dirs.directive('graph', function() {
         },
         controller: function($scope, $element, $timeout) {
             jsPlumb.Defaults.MaxConnections = 10000;
-            $scope.plumb = jsPlumb.getInstance();
+            $scope.plumb = jsPlumb.getInstance({
+                ConnectionOverlays: [
+                    ["Arrow", {location: 1}]
+                ]
+            });
             $scope.plumb.setContainer($element);
+
+            var entryEndpoint = {
+                maxConnections: -1,
+                isTarget: true
+            };
+            var exitEndpoint = {
+                maxConnections: -1,
+                connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:5, alwaysRespectStubs:true } ],
+            };
 
             // VERY HACKY (but it works)
             $timeout(function() {
                 jQuery($element).children().each(function(i, e) {
-                    console.log(e);
-                    $scope.plumb.draggable(jQuery(e));
+                    var $e = jQuery(e);
+                    var id = $e.attr('id');
+                    $scope.plumb.draggable($e, {grid: [20, 20]});
+                    $scope.plumb.addEndpoint(id, entryEndpoint, {anchor: 'TopCenter', uuid: id + '-entry'});
+                    $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: 'BottomCenter', uuid: id + '-exit'});
                 });
 
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
                     console.log(edge);
-                    $scope.plumb.connect({ source: edge.from + '-exit', target: edge.to + '-entry' });
+                    $scope.plumb.connect({ uuids: [edge.from + '-exit', edge.to + '-entry'] });
                 }
             }, 0);
         },
