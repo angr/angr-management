@@ -21,29 +21,30 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, projects) 
                 $scope.activating = false;
             });
     };
-    $scope.getCFG = function() {
-        if ($scope.project.activated) {
-            $http.get('/api/projects/' + $scope.project.name + '/cfg')
-                .success(function(data) {
-                    var prefix = "asdf";
-                    $scope.cfgNodes = {};
-                    $scope.cfgEdges = [];
-                    for (var i in data) {
-                        var edge = data[i];
-                        var fromId = edge.from.type + (edge.from.type === 'IRSB' ? edge.from.addr : edge.from.name);
-                        var toId = edge.to.type + (edge.to.type === 'IRSB' ? edge.to.addr : edge.to.name);
-                        [edge.from, edge.to].forEach(function(edge) {
-                            if (edge.type === 'IRSB') {
-                                edge.text = '0x' +  edge.addr.toString(16);
-                            } else if (edge.type === 'proc') {
-                                edge.text = edge.name;
-                            }
-                        });
-                        $scope.cfgNodes[fromId] = edge.from;
-                        $scope.cfgNodes[toId] = edge.to;
-                        $scope.cfgEdges.push({from: fromId, to: toId});
-                    }
-                });
-        }
+    $scope.genCFG = function() {
+        $http.get('/api/projects/' + $scope.project.name + '/cfg')
+            .success(function(data) {
+                var prefix = "asdf";
+                $scope.cfgNodes = {};
+                for (var i in data.nodes) {
+                    var node = data.nodes[i];
+                    var id = node.type + (node.type === 'IRSB' ? node.addr : node.name);
+                    $scope.cfgNodes[id] = node;
+                }
+                console.log($scope.cfgNodes);
+                $scope.cfgEdges = [];
+                for (var i in data.edges) {
+                    var edge = data.edges[i];
+                    var fromId = edge.from.type + (edge.from.type === 'IRSB' ? edge.from.addr : edge.from.name);
+                    var toId = edge.to.type + (edge.to.type === 'IRSB' ? edge.to.addr : edge.to.name);
+                    $scope.cfgEdges.push({from: fromId, to: toId});
+                }
+            });
+    };
+    $scope.genDDG = function() {
+        $http.get('/api/projects/' + $scope.project.name + '/ddg')
+            .success(function(data) {
+                console.log(data);
+            });
     };
 });

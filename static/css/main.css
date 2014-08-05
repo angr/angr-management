@@ -1,7 +1,6 @@
 .bblock {
-    background-color: #aaa;
-    width: 100px;
-    height: 100px;
+    background-color: #ccc;
+    padding: 10px 25px;
     display: block;
     position: absolute;
 }

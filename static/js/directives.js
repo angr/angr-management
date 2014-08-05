@@ -98,24 +98,15 @@ dirs.directive('bblock', function() {
         templateUrl: '/static/partials/bblock.html',
         restrict: 'AE',
         scope: {
-            text: '=',
-            // myId: '=',
-            // plumb: '=',
+            block: '=',
         },
-        // compile: function(element, attrs) {
-        //     return {
-        //         pre: function($scope, element, attrs) {
-        //             element.addClass('bblock')
-        //             element.attr('id', $scope.myId);
-        //             $scope.plumb.addEndpoint(element, {
-        //                 id: $scope.myId,
-        //             });
-        //             console.log("settings uuid as " + $scope.myId);
-        //             // jQuery(element).draggable();
-        //             $scope.plumb.draggable(jQuery(element));
-        //         }
-        //     };
-        // }
+        controller: function($scope) {
+            if ($scope.block.type === 'IRSB') {
+                $scope.text = '0x' + $scope.block.addr.toString(16);
+            } else if ($scope.block.type === 'proc') {
+                $scope.text = $scope.block.name;
+            }
+        }
     };
 });
 
@@ -152,13 +143,16 @@ dirs.directive('graph', function() {
                     var id = $e.attr('id');
                     $scope.plumb.draggable($e, {grid: [20, 20]});
                     $scope.plumb.addEndpoint(id, entryEndpoint, {anchor: 'TopCenter', uuid: id + '-entry'});
-                    $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: 'BottomCenter', uuid: id + '-exit'});
+                    $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: id + '-exit'});
                 });
 
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
                     console.log(edge);
-                    $scope.plumb.connect({ uuids: [edge.from + '-exit', edge.to + '-entry'] });
+                    $scope.plumb.connect({
+                        uuids: [edge.from + '-exit', edge.to + '-entry'],
+                        detachable: false,
+                    });
                 }
             }, 0);
         },

@@ -5,7 +5,7 @@ class Serializer(object):
     def __init__(self):
         pass
 
-    def serialize(self, o):
+    def serialize(self, o, ref=False):
         if isinstance(o, angr.Surveyor):
             return self._serialize_surveyor(o)
         if isinstance(o, angr.Path):
@@ -13,7 +13,7 @@ class Serializer(object):
         if isinstance(o, simuvex.SimState):
             return self._serialize_state(o)
         if isinstance(o, simuvex.SimRun):
-            return self._serialize_simrun(o)
+            return self._serialize_simrun(o, ref)
         else:
             raise Exception("Can't serialize %s", o)
 
@@ -26,9 +26,12 @@ class Serializer(object):
     def _serialize_surveyor(self, s):
         return { 'id': s, 'active': 'TODO' }
 
-    def _serialize_simrun(self, s):
+    def _serialize_simrun(self, s, ref):
         if isinstance(s, simuvex.SimIRSB):
-            return {'type': 'IRSB', 'addr': s.addr}
+            data = {'type': 'IRSB', 'addr': s.addr}
+            if not ref:
+                data['irsb'] = s._crawl_vex(s.irsb)
+            return data
         if isinstance(s, simuvex.SimProcedure):
             return {'type': 'proc', 'name': s.__class__.__name__}
         else:

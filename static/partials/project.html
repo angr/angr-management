@@ -4,7 +4,8 @@
         ng-class="{active: activating}"
         ng-disabled="project.activated"
         ng-click="activate()">Activat{{ project.activated ? 'ed' : (project.activating ? 'ing' : 'e') }}</button>
-<br>
-<button type="button" class="btn btn-primary"
-        ng-click="getCFG()">Gen CFG</button>
+<button type="button" class="btn btn-primary" ng-disabled="!project.activated"
+        ng-click="genCFG()">Gen CFG</button>
+<button type="button" class="btn btn-primary" ng-disabled="!project.activated"
+        ng-click="genDDG()">Gen DDG</button>
 <div ng-if="cfgNodes != null" graph nodes="cfgNodes" edges="cfgEdges"></div>

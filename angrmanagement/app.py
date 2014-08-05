@@ -59,4 +59,19 @@ def get_cfg(name):
     if name in active_projects:
         cfg = active_projects[name].construct_cfg()
         serializer = Serializer()
-        return [{'from': serializer.serialize(from_), 'to': serializer.serialize(to)} for from_, to in cfg._cfg.edges()]
+        return {
+            'nodes': [serializer.serialize(node) for node in cfg._cfg.nodes()],
+            'edges': [{'from': serializer.serialize(from_, ref=True),
+                       'to': serializer.serialize(to, ref=True)}
+                      for from_, to in cfg._cfg.edges()]
+        }
+
+@app.route('/api/projects/<name>/ddg')
+@jsonize
+def get_ddg(name):
+    name = secure_filename(name)
+    if name in active_projects:
+        proj = active_projects[name]
+        ddg = angr.DDG(proj, proj.construct_cfg(), proj.entry)
+        ddg.construct()
+        return str(ddg._ddg)
