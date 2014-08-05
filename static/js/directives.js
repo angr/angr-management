@@ -43,13 +43,13 @@ dirs.directive('loadfile', function($http) {
             file: '=',
         },
         link: function($scope, element, attrs) {
-            scope.chosenURL = null;
-            scope.uploadURL = function() {
+            $scope.chosenURL = null;
+            $scope.uploadURL = function() {
                 var url;
-                if (scope.chosenURL.indexOf("http://") === 0) {
-                    url = scope.chosenURL.slice(7);
-                } else if (scope.chosenURL.indexOf("https://") === 0) {
-                    url = scope.chosenURL.slice(8);
+                if ($scope.chosenURL.indexOf("http://") === 0) {
+                    url = $scope.chosenURL.slice(7);
+                } else if ($scope.chosenURL.indexOf("https://") === 0) {
+                    url = $scope.chosenURL.slice(8);
                 } else {
                     return;
                 }
@@ -60,7 +60,7 @@ dirs.directive('loadfile', function($http) {
                     responseType: "blob",
                     transformResponse: function(data) { return data; }
                 }).success(function(data) {
-                    scope.file = data;
+                    $scope.file = data;
                 });
             };
 
@@ -80,8 +80,8 @@ dirs.directive('loadfile', function($http) {
 
                 var reader = new FileReader();
                 reader.onload = function(e) {
-                    scope.$apply(function() {
-                        scope.file = new Blob([e.target.result]);
+                    $scope.$apply(function() {
+                        $scope.file = new Blob([e.target.result]);
                     });
                 };
                 reader.readAsArrayBuffer(file);
