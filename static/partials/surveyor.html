@@ -2,43 +2,43 @@
 
 <h4>Properties</h4>
 <dl class="dl-horizontal">
-	<dt>Maximum concurrency:</dt> <dd>{{surveyor.max_concurrency}}</dd>
-	<dt>Save deadends:</dt> <dd>{{surveyor.save_deadends}}</dd>
-	<dt>Empty path lists:</dt>
-	<dd>
-		<span ng-repeat="(name,paths) in surveyor.path_lists">
-			<span ng-if="paths.length == 0"> {{name}}
-		</span>
-	</dd>
+  <dt>Maximum concurrency:</dt> <dd>{{surveyor.max_concurrency}}</dd>
+  <dt>Save deadends:</dt> <dd>{{surveyor.save_deadends}}</dd>
+  <dt>Empty path lists:</dt>
+  <dd>
+    <span ng-repeat="(name,paths) in surveyor.path_lists">
+      <span ng-if="paths.length == 0"> {{name}}
+    </span>
+  </dd>
 </dl>
 
 <h4>Paths</h4>
 <table class="table">
-	<tr ng-repeat="(name,paths) in surveyor.path_lists">
-		<th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
-		<td ng-if="paths.length > 0">
-			<div path ng-repeat="p in paths">
-				{{p}}
-				<button ng-if="name != 'active'" class="btn" ng-click="reactivate(p)">Reactivate</button>
-				<button ng-if="name == 'active'" class="btn" ng-click="suspend(p)">Suspend</button>
-			</div>
-		</td>
-	</tr>
+  <tr ng-repeat="(name,paths) in surveyor.path_lists">
+    <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
+    <td ng-if="paths.length > 0">
+      <div path ng-repeat="p in paths">
+        {{p}}
+        <button ng-if="name != 'active'" class="btn" ng-click="reactivate(p)">Reactivate</button>
+        <button ng-if="name == 'active'" class="btn" ng-click="suspend(p)">Suspend</button>
+      </div>
+    </td>
+  </tr>
 </table>
 
 <form class="form-horizontal simple-form" novalidate>
-	<label>Step all active paths</label>
+  <label>Step all active paths</label>
 
-	<div class="control-group">
-		<label class="control-label" for="steps">Number of steps:</label>
-		<div class="controls">
-			<input id="steps" ng-model="steps" />
-		</div>
-	</div>
+  <div class="control-group">
+    <label class="control-label" for="steps">Number of steps:</label>
+    <div class="controls">
+      <input id="steps" ng-model="steps" />
+    </div>
+  </div>
 
-	<div class="control-group">
-		<div class="controls">
-			<button type="submit" class="btn" ng-click="step(steps)">Step!</button>
-		</div>
-	</div>
+  <div class="control-group">
+    <div class="controls">
+      <button type="submit" class="btn" ng-click="step(steps)">Step!</button>
+    </div>
+  </div>
 </div>
