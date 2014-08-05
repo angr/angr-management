@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename
 import angr
 from simuvex import SimIRSB, SimProcedure
 
+from .serializer import Serializer
+
 def jsonize(func):
     @functools.wraps(func)
     def jsonned(*args, **kwargs):
@@ -50,19 +52,11 @@ def activate_project(name):
                                              use_sim_procedures=True,
                                              arch=str(metadata['arch']))
 
-def serialize_simrun(run):
-    if isinstance(run, SimIRSB):
-        return {'type': 'IRSB', 'addr': run.addr}
-    elif isinstance(run, SimProcedure):
-        return {'type': 'proc', 'name': run.__class__.__name__}
-    else:
-        raise Exception("unrecognized SimRun")
-
 @app.route('/api/projects/<name>/cfg')
 @jsonize
 def get_cfg(name):
     name = secure_filename(name)
     if name in active_projects:
         cfg = active_projects[name].construct_cfg()
-
-        return [{'from': serialize_simrun(from_), 'to': serialize_simrun(to)} for from_, to in cfg._cfg.edges()]
+        serializer = Serializer()
+        return [{'from': serializer.serialize(from_), 'to': serializer.serialize(to)} for from_, to in cfg._cfg.edges()]
