@@ -11,6 +11,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, projects) 
     $scope.activating = false;
     $scope.cfgNodes = null;
     $scope.cfgEdges = null;
+    $scope.viewState = '';
     $scope.activate = function() {
         $scope.activating = true;
         $http.post('/api/projects/' + $scope.project.name + '/activate')
@@ -39,6 +40,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, projects) 
                     var toId = edge.to.type + (edge.to.type === 'IRSB' ? edge.to.addr : edge.to.name);
                     $scope.cfgEdges.push({from: fromId, to: toId});
                 }
+                $scope.viewState = 'cfg';
             });
     };
     $scope.genDDG = function() {

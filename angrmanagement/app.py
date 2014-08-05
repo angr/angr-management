@@ -66,12 +66,12 @@ def activate_project(name):
 def get_cfg(name):
     name = secure_filename(name)
     if name in active_projects:
-        cfg = active_projects[name].construct_cfg()
-        serializer = Serializer()
+        proj = active_projects[name]
+        cfg = proj.construct_cfg()
         return {
-            'nodes': [serializer.serialize(node) for node in cfg._cfg.nodes()],
-            'edges': [{'from': serializer.serialize(from_, ref=True),
-                       'to': serializer.serialize(to, ref=True)}
+            'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
+            'edges': [{'from': the_serializer.serialize(from_, ref=True),
+                       'to': the_serializer.serialize(to, ref=True)}
                       for from_, to in cfg._cfg.edges()]
         }
 
@@ -149,12 +149,3 @@ def surveyor_suspend_path(project_name, surveyor_id, path_id): #pylint:disable=W
             s.active.remove(p)
             s.suspended.append(p)
             return the_serializer.serialize(active_surveyors[surveyor_id])
-
-def serialize_simrun(run):
-    if isinstance(run, SimIRSB):
-        return {'type': 'IRSB', 'addr': run.addr}
-    elif isinstance(run, SimProcedure):
-        return {'type': 'proc', 'name': run.__class__.__name__}
-    else:
-        raise Exception("unrecognized SimRun")
-

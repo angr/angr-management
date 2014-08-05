@@ -5,9 +5,13 @@
         ng-disabled="project.activated"
         ng-click="activate()">Activat{{ project.activated ? 'ed' : (project.activating ? 'ing' : 'e') }}</button>
 <button type="button" class="btn btn-primary" ng-disabled="!project.activated"
-        ng-click="genCFG()">Gen CFG</button>
+        ng-click="genCFG()">Show CFG</button>
+<button type="button" class="btn btn-primary" ng-disabled="!project.activated"
+        ng-click="viewState = 'surveyors'">Show Surveyors</button>
+<!--
 <button type="button" class="btn btn-primary" ng-disabled="!project.activated"
         ng-click="genDDG()">Gen DDG</button>
-<div ng-if="cfgNodes != null" graph nodes="cfgNodes" edges="cfgEdges"></div>
+-->
 <br>
-<surveyors ng-if="project.activated" project="project">
+<div ng-if="viewState == 'cfg'" graph nodes="cfgNodes" edges="cfgEdges"></div>
+<surveyors ng-if="viewState == 'surveyors'" project="project">
