@@ -9,3 +9,5 @@
 <button type="button" class="btn btn-primary" ng-disabled="!project.activated"
         ng-click="genDDG()">Gen DDG</button>
 <div ng-if="cfgNodes != null" graph nodes="cfgNodes" edges="cfgEdges"></div>
+<br>
+<surveyors ng-if="project.activated" project="project">
