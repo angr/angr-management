@@ -1,0 +1,27 @@
+{
+  "name": "jsPlumb",
+  "version": "1.6.2",
+  "ignore": [
+    "demo",
+    "dist/apidocs",
+    "dist/demo",
+    "dist/doc",
+    "dist/lib",
+    "dist/tests",
+    "dist/index.html",
+    "doc",
+    "img",
+    "lib",
+    "jekyll",
+    "node_modules",
+    "src",
+    "tests",
+    "Gruntfile.js",
+    "README.md",
+    "changelog.txt",
+    "index.html",
+    "build-support.js",
+    "package.json",
+    "todo.txt"
+  ]
+}

@@ -42,7 +42,7 @@ dirs.directive('loadfile', function($http) {
         scope: {
             file: '=',
         },
-        link: function(scope, element, attrs) {
+        link: function($scope, element, attrs) {
             scope.chosenURL = null;
             scope.uploadURL = function() {
                 var url;
@@ -89,5 +89,62 @@ dirs.directive('loadfile', function($http) {
                 return false;
             });
         }
+    };
+});
+
+dirs.directive('bblock', function() {
+    return {
+        priority: 100,
+        templateUrl: '/static/partials/bblock.html',
+        restrict: 'AE',
+        scope: {
+            text: '=',
+            // myId: '=',
+            // plumb: '=',
+        },
+        // compile: function(element, attrs) {
+        //     return {
+        //         pre: function($scope, element, attrs) {
+        //             element.addClass('bblock')
+        //             element.attr('id', $scope.myId);
+        //             $scope.plumb.addEndpoint(element, {
+        //                 id: $scope.myId,
+        //             });
+        //             console.log("settings uuid as " + $scope.myId);
+        //             // jQuery(element).draggable();
+        //             $scope.plumb.draggable(jQuery(element));
+        //         }
+        //     };
+        // }
+    };
+});
+
+dirs.directive('graph', function() {
+    return {
+        templateUrl: '/static/partials/graph.html',
+        restrict: 'AE',
+        scope: {
+            nodes: '=',
+            edges: '=',
+        },
+        controller: function($scope, $element, $timeout) {
+            jsPlumb.Defaults.MaxConnections = 10000;
+            $scope.plumb = jsPlumb.getInstance();
+            $scope.plumb.setContainer($element);
+
+            // VERY HACKY (but it works)
+            $timeout(function() {
+                jQuery($element).children().each(function(i, e) {
+                    console.log(e);
+                    $scope.plumb.draggable(jQuery(e));
+                });
+
+                for (var i in $scope.edges) {
+                    var edge = $scope.edges[i];
+                    console.log(edge);
+                    $scope.plumb.connect({ source: edge.from + '-exit', target: edge.to + '-entry' });
+                }
+            }, 0);
+        },
     };
 });

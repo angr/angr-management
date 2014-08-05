@@ -1,0 +1,13 @@
+.bblock {
+    background-color: #aaa;
+    width: 100px;
+    height: 100px;
+    display: block;
+    position: absolute;
+}
+
+.exit {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+}
