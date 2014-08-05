@@ -1,0 +1,9 @@
+<h2>Project {{ project.name }}</h2>
+<h4><em>You are l33t.</em></h4>
+<button type="button" class="btn btn-success"
+        ng-class="{active: activating}"
+        ng-disabled="project.activated"
+        ng-click="activate()">Activat{{ project.activated ? 'ed' : (project.activating ? 'ing' : 'e') }}</button>
+<br>
+<button type="button" class="btn btn-primary"
+        ng-click="getCFG()">Gen CFG</button>

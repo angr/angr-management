@@ -18,7 +18,7 @@ dirs.directive('newproject', function() {
                     },
                     data: (function() {
                         var formData = new FormData();
-                        formData.append('metadata', JSON.stringify({name: $scope.project.name}));
+                        formData.append('metadata', JSON.stringify($scope.project));
                         formData.append('file', $scope.project.file);
                         console.log($scope.file);
                         return formData;

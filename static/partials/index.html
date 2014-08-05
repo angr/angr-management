@@ -1,7 +1,7 @@
 <h1>Welcome to Angr Management!</h1>
 <h2><em>Current projects:</em></h2>
 <ul>
-  <li ng-repeat="proj in projects">{{ proj }}</li>
+  <li ng-repeat="(name, proj) in projects"><a href="/#/project/{{ name }}">{{ name }} -- {{ proj.activated }}</a></li>
 </ul>
 <br>
 <newproject></newproject>

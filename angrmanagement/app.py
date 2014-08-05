@@ -4,6 +4,8 @@ import os
 
 import flask
 from werkzeug.utils import secure_filename
+import angr
+from simuvex import SimIRSB, SimProcedure
 
 def jsonize(func):
     @functools.wraps(func)
@@ -12,6 +14,7 @@ def jsonize(func):
     return jsonned
 
 app = flask.Flask(__name__, static_folder='../static')
+active_projects = {}
 
 ROOT = os.environ.get('ANGR_MANAGEMENT_ROOT', '.')
 PROJDIR = ROOT + '/projects/'
@@ -20,12 +23,12 @@ PROJDIR = ROOT + '/projects/'
 def index():
     return app.send_static_file("index.html")
 
-@app.route('/api/projects')
+@app.route('/api/projects/')
 @jsonize
 def list_projects():
-    return os.listdir(PROJDIR)
+    return {name: {'name': name, 'activated': name in active_projects} for name in os.listdir(PROJDIR)}
 
-@app.route('/api/projects', methods=('POST',))
+@app.route('/api/projects/', methods=('POST',))
 @jsonize
 def new_project():
     file = flask.request.files['file']
@@ -34,3 +37,32 @@ def new_project():
     os.mkdir(PROJDIR + name)
     file.save(PROJDIR + name + '/binary')
     open(PROJDIR + name + '/metadata', 'wb').write(json.dumps(metadata))
+
+@app.route('/api/projects/<name>/activate', methods=('POST',))
+@jsonize
+def activate_project(name):
+    name = secure_filename(name)
+    if name not in active_projects and os.path.exists(PROJDIR + name):
+        metadata = json.load(open(PROJDIR + name + '/metadata', 'rb'))
+        print metadata
+        active_projects[name] = angr.Project(PROJDIR + name + '/binary', load_libs=False,
+                                             default_analysis_mode='symbolic',
+                                             use_sim_procedures=True,
+                                             arch=str(metadata['arch']))
+
+def serialize_simrun(run):
+    if isinstance(run, SimIRSB):
+        return {'type': 'IRSB', 'addr': run.addr}
+    elif isinstance(run, SimProcedure):
+        return {'type': 'proc', 'name': run.__class__.__name__}
+    else:
+        raise Exception("unrecognized SimRun")
+
+@app.route('/api/projects/<name>/cfg')
+@jsonize
+def get_cfg(name):
+    name = secure_filename(name)
+    if name in active_projects:
+        cfg = active_projects[name].construct_cfg()
+
+        return [{'from': serialize_simrun(from_), 'to': serialize_simrun(to)} for from_, to in cfg._cfg.edges()]
