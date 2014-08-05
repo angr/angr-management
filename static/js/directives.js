@@ -11,7 +11,7 @@ dirs.directive('newproject', function() {
             $scope.project.file = null;
             $scope.create = function() {
                 var config = {
-                    url: '/api/projects',
+                    url: '/api/projects/',
                     method: 'POST',
                     headers: {
                         'Content-Type': undefined

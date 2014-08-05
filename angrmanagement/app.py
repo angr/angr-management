@@ -8,15 +8,12 @@ from werkzeug.utils import secure_filename
 import angr
 from simuvex import SimIRSB, SimProcedure
 
-<<<<<<< HEAD
-=======
 try:
     import standard_logging #pylint:disable=W0611
     import angr_debug #pylint:disable=W0611
 except ImportError:
     pass
 
->>>>>>> 1d8017256540d907f320512b31e915366c05f6a7
 from .serializer import Serializer
 
 def jsonize(func):
