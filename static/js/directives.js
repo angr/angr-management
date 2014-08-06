@@ -140,6 +140,7 @@ dirs.directive('graph', function() {
             $timeout(function() {
                 var g = new dagre.Digraph();
                 var GRID_SIZE = 20;
+                var HEADER = 160;
                 jQuery($element).children().each(function(i, e) {
                     var $e = jQuery(e);
                     var id = $e.attr('id');
@@ -161,8 +162,8 @@ dirs.directive('graph', function() {
                 var layout = dagre.layout().nodeSep(400).edgeSep(400).rankSep(100).run(g);
                 layout.eachNode(function(id, data) {
                     var $e = jQuery('#' + id);
-                    var roundedCenterX = GRID_SIZE * Math.round(data.x/GRID_SIZE);
-                    var roundedCenterY = GRID_SIZE * Math.round(data.y/GRID_SIZE);
+                    var roundedCenterX = HEADER + GRID_SIZE * Math.round(data.x/GRID_SIZE);
+                    var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
                     $e.css('left', roundedCenterX - data.width/2);
                     $e.css('top', roundedCenterY - data.height/2);
                 });
