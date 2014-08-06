@@ -17,8 +17,8 @@
   <tr ng-repeat="(name,paths) in surveyor.path_lists">
     <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
     <td ng-if="paths.length > 0">
-      <div path ng-repeat="p in paths">
-        {{p}}
+      <div class="path_box" ng-repeat="p in paths">
+              <path data="p"></path>
         <button ng-if="name != 'active'" class="btn" ng-click="reactivate(p)">Reactivate</button>
         <button ng-if="name == 'active'" class="btn" ng-click="suspend(p)">Suspend</button>
       </div>

@@ -1,0 +1,24 @@
+<h5>
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !show_path, 'glyphicon-minus': show_path}" ng-click="show_path=!show_path"></button>
+  Path {{path.id}} at 0x{{path.last_addr.toString(16)}}
+</h5>
+
+<span ng-if="show_path">
+    <hr>
+
+  <p>Backtrace:
+  <br>
+  <ul class="list-group">
+    <li class="list-group-item" ng-repeat="b in path.backtrace">
+      {{b}}
+    </li>
+  </ul>
+  </p>
+
+  <p>Event Log:
+  <br>
+  <ul class="list-group">
+    <li class="list-group-item" event ng-repeat="e in path.event_log" data="e">
+  </ul>
+  </p>
+</span>
