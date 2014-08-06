@@ -1,10 +1,42 @@
 <!-- {{ stringifyStmt(stmt) }} -->
-<div ng-if="stmt.tag != 'Ist_NoOp'" ng-switch on="stmt.tag">
+<div ng-if="stmt.tag != 'Ist_NoOp' && stmt.tag != 'Ist_AbiHint' && stmt.tag != 'Ist_MBE'" ng-switch on="stmt.tag">
   <div ng-switch-when="Ist_IMark">
     ----IMark(addr=0x{{ stmt.addr.toString(16) }}, len={{ stmt.len }}, delta={{ stmt.delta }})---
   </div>
   <div ng-switch-when="Ist_WrTmp">
     t{{ stmt.tmp }} = <irexpr expr="stmt.data"></irexpr>
+  </div>
+  <div ng-switch-when="Ist_Put">
+    PUT({{stmt.offset}}) = <irexpr expr="stmt.data"></irexpr>
+  </div>
+  <div ng-switch-when="Ist_PutI">
+    PUTI({{stmt.description}})[<irexpr expr="stmt.index"></irexpr>,{{stmt.bias}}] = <irexpr expr="stmt.data"></irexpr>
+  </div>
+  <div ng-switch-when="Ist_Store">
+      ST{{stmt.endness.substr(5).toLowerCase()}}(<irexpr expr="stmt.addr"></irexpr>) = <irexpr expr="stmt.data"></irexpr>
+  </div>
+  <div ng-switch-when="Ist_LoadG">
+    t{{ stmt.dst }} = if (<irexpr expr="stmt.guard"></irexpr>) {{stmt.cvt.substr(6)}}(LD{{stmt.end.substr(5).toLowerCase()}}(<irexpr expr="stmt.addr"></irexpr>)) else <irexpr expr="stmt.alt"></irexpr>
+  </div>
+  <div ng-switch-when="Ist_StoreG">
+    if (<irexpr expr="stmt.guard"></irexpr>) ST{{stmt.end.substr(5).toLowerCase()}}(<irexpr expr="stmt.addr"></irexpr>) = <irexpr expr="stmt.data"></irexpr>
+  </div>
+  <div ng-switch-when="Ist_CAS">
+    <span ng-if="stmt.oldHi != 0xFFFFFFFF">t{{stmt.oldHi}},</span>t{{stmt.oldLo}} = CAS{{stmt.end.substr(5).toLowerCase()}}(<irexpr expr="stmt.addr"></irexpr> :: <span ng-if="stmt.oldHi != 0xFFFFFFFF"><irexpr expr="stmt.expdHi">,</span></irexpr><irexpr expr="stmt.expdLo"></irexpr> -> <span ng-if="stmt.oldHi != 0xFFFFFFFF"><irexpr expr="stmt.dataHi">,</span></irexpr><irexpr expr="stmt.dataLo"></irexpr>)
+  </div>
+  <div ng-switch-when="Ist_LLSC">
+    <span ng-if="stmt.storedata == null">
+      t{{stmt.result}} = LD{{stmt.endness.substr(5).toLowerCase()}}-Linked(<irexpr expr="stmt.addr"></irexpr>)
+    </span>
+    <span ng-if="stmt.storedata !== null">
+      t{{stmt.result}} = ST{{stmt.endness.substr(5).toLowerCase()}}-Cond(<irexpr expr="stmt.addr"></irexpr>, <irexpr expr="stmt.storedata"></irexpr>)
+    </span>
+  </div>
+  <div ng-switch-when="Ist_Dirty">
+    	  t{{stmt.tmp}} = DIRTY <irexpr expr="stmt.guard"></irexpr> (TODO:effects) ::: {{stmt.cee.name}}(TODO:args)
+  </div>
+  <div ng-switch-when="Ist_Exit">
+    if (<irexpr data="stmt.guard"></irexpr>) goto {{stmt.jumpkind.substr(4)}} 0x{{stmt.dst}}
   </div>
   <div ng-switch-default>
     {{ stmt }}
