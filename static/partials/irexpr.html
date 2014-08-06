@@ -1,6 +1,6 @@
 <span ng-switch on="expr.tag">
   <span ng-switch-when="Iex_Get">
-    GET:{{ expr.ty }}({{ expr.offset }})
+    GET:{{ expr.type.slice(4) }}({{ expr.offset }})
   </span>
   <span ng-switch-when="Iex_RdTmp">
     t{{ expr.tmp }}
@@ -18,7 +18,7 @@
     {{ expr.op }}(<irexpr expr="expr.arg1"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Load">
-    LD{{ expr.end == 'Iend_LE' ? 'le' : 'be' }}:{{ expr.ty }}(<irexpr expr="expr.addr"></irexpr>)
+    LD{{ expr.end == 'Iend_LE' ? 'le' : 'be' }}:{{ expr.type.slice(4) }}(<irexpr expr="expr.addr"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Const">
     {{ expr.con.value }}:{{ expr.con.type.slice(4) }}
