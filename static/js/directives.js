@@ -138,22 +138,35 @@ dirs.directive('graph', function() {
 
             // VERY HACKY (but it works)
             $timeout(function() {
+                var g = new dagre.Digraph();
+                var GRID_SIZE = 20;
                 jQuery($element).children().each(function(i, e) {
                     var $e = jQuery(e);
                     var id = $e.attr('id');
-                    $scope.plumb.draggable($e, {grid: [20, 20]});
+                    $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
                     $scope.plumb.addEndpoint(id, entryEndpoint, {anchor: 'TopCenter', uuid: id + '-entry'});
                     $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: id + '-exit'});
+                    g.addNode(id, {width: $e.width(), height: $e.height()});
                 });
 
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
-                    console.log(edge);
+                    g.addEdge(null, edge.from, edge.to);
                     $scope.plumb.connect({
                         uuids: [edge.from + '-exit', edge.to + '-entry'],
                         detachable: false,
                     });
                 }
+
+                var layout = dagre.layout().nodeSep(400).edgeSep(400).rankSep(100).run(g);
+                layout.eachNode(function(id, data) {
+                    var $e = jQuery('#' + id);
+                    var roundedCenterX = GRID_SIZE * Math.round(data.x/GRID_SIZE);
+                    var roundedCenterY = GRID_SIZE * Math.round(data.y/GRID_SIZE);
+                    $e.css('left', roundedCenterX - data.width/2);
+                    $e.css('top', roundedCenterY - data.height/2);
+                });
+                $scope.plumb.repaintEverything();
             }, 0);
         },
     };
