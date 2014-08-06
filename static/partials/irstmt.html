@@ -1,5 +1,5 @@
 <!-- {{ stringifyStmt(stmt) }} -->
-<div ng-if="stmt.tag != 'Ist_NoOp' && stmt.tag != 'Ist_AbiHint' && stmt.tag != 'Ist_MBE'" ng-switch on="stmt.tag">
+<div class="vex_irstmt" ng-if="stmt.tag != 'Ist_NoOp' && stmt.tag != 'Ist_AbiHint' && stmt.tag != 'Ist_MBE'" ng-switch on="stmt.tag">
   <div ng-switch-when="Ist_IMark">
     ----IMark(addr=0x{{ stmt.addr.toString(16) }}, len={{ stmt.len }}, delta={{ stmt.delta }})---
   </div>
