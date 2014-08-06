@@ -1,0 +1,6 @@
+<span ng-if="isNaN(address)">
+  {{address}}
+</span>
+<span ng-if="!isNaN(address)">
+  0x{{address.toString(16)}}
+</span>

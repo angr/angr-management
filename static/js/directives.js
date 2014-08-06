@@ -258,3 +258,49 @@ dirs.directive('surveyor', function($http) {
         }
     }
 });
+
+dirs.directive('path', function($http) {
+    return {
+        templateUrl: '/static/partials/path.html',
+        restrict: 'AE',
+        scope: { path: '=data' },
+        controller: function($scope, $http)
+        {
+        	$scope.show_path = true;
+        }
+    }
+});
+
+dirs.directive('event', function($http) {
+    return {
+        templateUrl: '/static/partials/path_event.html',
+        restrict: 'AE',
+        scope: { event: '=data' },
+        controller: function($scope, $http)
+	{
+	}
+    }
+});
+
+dirs.directive('address', function($http) {
+    return {
+        templateUrl: '/static/partials/address.html',
+        restrict: 'AE',
+        scope: { address: '=a' },
+        controller: function($scope, $http)
+	{
+		$scope.isNaN = isNaN;
+	}
+    }
+});
+
+dirs.directive('ref', function($http) {
+    return {
+        templateUrl: '/static/partials/ref.html',
+        restrict: 'AE',
+        scope: { ref: '=data' },
+        controller: function($scope, $http)
+	{
+	}
+    }
+});

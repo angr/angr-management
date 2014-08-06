@@ -4,3 +4,17 @@
     display: block;
     position: absolute;
 }
+
+.path_box {
+    border: 1px solid;
+    display: inline-block;
+    padding: 0.3em;
+}
+
+.header-right {
+    text-align: right;
+}
+
+.table-no-border>tbody>tr>th, .table-no-border>tbody>tr>td {
+  border-top: none;
+}

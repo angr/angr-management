@@ -10,6 +10,10 @@ class Serializer(object):
     def serialize(self, o, ref=False):
         if type(o) in (long, int, str, unicode, float, bool):
             return o
+        if type(o) in (list, tuple, set):
+            return type(o)([ self.serialize(e) for e in o ])
+        if type(o) is dict:
+            return { self.serialize(k):self.serialize(v) for k,v in o.iteritems() }
         if isinstance(o, angr.Surveyor):
             return self._serialize_surveyor(o)
         if isinstance(o, angr.Path):
@@ -37,7 +41,7 @@ class Serializer(object):
 
     def _serialize_path_event(self, e):
         r = { }
-        r['type'] = e.__class__.__name__
+        r['event_type'] = e.__class__.__name__
         r.update(self._serialize_public(e))
         return r
 
@@ -50,6 +54,7 @@ class Serializer(object):
             'addr_backtrace': p.addr_backtrace,
             'callstack': p.callstack,
             'blockcounter_stack': p.blockcounter_stack,
+            'last_addr': p.last_run.addr if p.last_run is not None else "NOT STARTED",
             'event_log': [ self.serialize(e) for e in p.event_log ],
         }
 
