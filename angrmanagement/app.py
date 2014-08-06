@@ -37,6 +37,9 @@ def index():
 @app.route('/api/projects/')
 @jsonize
 def list_projects():
+    # Makes sure the PROJDIR exists
+    if not os.path.exists(PROJDIR):
+        os.makedirs(PROJDIR)
     return {name: {'name': name, 'activated': name in active_projects} for name in os.listdir(PROJDIR)}
 
 @app.route('/api/projects/', methods=('POST',))
