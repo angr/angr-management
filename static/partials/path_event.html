@@ -1,24 +1,34 @@
-<span ng-if="event.event_type == 'PathEventExitTaken'">
-  <p class="lead">Exit!</p>
-  <b>Type:</b> {{event.jumpkind.substr(4)}}<br>
-  <b>From:</b> <span address a="event.source"></span><br>
-  <b>To:</b> <span address a="event.target"></span><br>
-  <b>Condition:</b> <span address a="event.guard"></span><br>
-</span>
-<span ng-if="event.event_type == 'PathEventSimRun'">
-  <p class="lead">{{event.type}}<span ng-if="event.type != 'SimIRSB'"> - {{event.procedure}}</span>!</p>
-  <b>Address:</b> <span address a="event.addr"></span>
+<p class="lead">
+  <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_event, 'glyphicon-minus': show_event}" ng-click="show_event=!show_event"></button>
+  <span ng-if="event.event_type == 'PathEventExitTaken'">Exit to <span address a="event.target"></span></span>
+  <span ng-if="event.event_type == 'PathEventSimRun'">
+    {{event.type}} -
+      <span ng-if="event.type != 'SimIRSB'">{{event.procedure}}</span>
+      <span ng-if="event.type == 'SimIRSB'"><span address a="event.addr"><span></span>
+  </span>
+</p>
 
-  <p class="lead">{{event.exits.length}} exit(s):</p>
-  <ul class="list-group">
-    <li ng-repeat="e in event.exits" class="list-group-item">
-      <b>Type:</b> {{e.jumpkind.substr(4)}}<br>
-      <b>From:</b> <span address a="e.source"></span><br>
-      <b>To:</b> <span address a="e.target"></span><br>
-      <b>Condition:</b> <span address a="e.guard"></span><br>
-    </li>
-  </ul>
-
-  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !show_path, 'glyphicon-minus': show_refs}" ng-click="show_refs=!show_refs"></button><p class="lead">Refs:</p>
-  <ref ng-if="show_refs" ng-repeat="r in event.refs" data="r" />
+<span ng-if="show_event">
+  <span ng-if="event.event_type == 'PathEventExitTaken'">
+    <b>Type:</b> {{event.jumpkind.substr(4)}}<br>
+    <b>From:</b> <span address a="event.source"></span><br>
+    <b>To:</b> <span address a="event.target"></span><br>
+    <b>Condition:</b> <span address a="event.guard"></span><br>
+  </span>
+  <span ng-if="event.event_type == 'PathEventSimRun'">
+    <p class="lead">{{event.exits.length}} exit(s):</p>
+    <ul class="list-group">
+      <li ng-repeat="e in event.exits" class="list-group-item">
+        <b>Type:</b> {{e.jumpkind.substr(4)}}<br>
+        <b>From:</b> <span address a="e.source"></span><br>
+        <b>To:</b> <span address a="e.target"></span><br>
+        <b>Condition:</b> <span address a="e.guard"></span><br>
+      </li>
+    </ul>
+  
+    <p class="lead">
+      <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_path, 'glyphicon-minus': show_refs}" ng-click="show_refs=!show_refs"></button> Refs:
+    </p>
+    <ref ng-if="show_refs" ng-repeat="r in event.refs" data="r" />
+  </span>
 </span>

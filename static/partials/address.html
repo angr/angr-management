@@ -1,5 +1,5 @@
 <span ng-if="isNaN(address)">
-  {{address}}
+  {{address.substr(15)}}
 </span>
 <span ng-if="!isNaN(address)">
   0x{{address.toString(16)}}

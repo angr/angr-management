@@ -4,21 +4,23 @@
 </h5>
 
 <span ng-if="show_path">
-    <hr>
+  <hr>
 
-  <p>Backtrace:
-  <br>
-  <ul class="list-group">
-    <li class="list-group-item" ng-repeat="b in path.backtrace">
+  <p class="lead">
+    <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_backtrace, 'glyphicon-minus': show_backtrace}" ng-click="show_backtrace=!show_backtrace"></button>
+    Backtrace (last <input ng-model="backtrace_limit" style="width: 3em;"> of {{path.backtrace.length}} entries)
+  </p>
+  <ul ng-if="show_backtrace" class="list-group">
+    <li class="list-group-item" ng-repeat="b in path.backtrace | skip:(path.backtrace.length - backtrace_limit) track by $index">
       {{b}}
     </li>
   </ul>
-  </p>
 
-  <p>Event Log:
-  <br>
-  <ul class="list-group">
-    <li class="list-group-item" event ng-repeat="e in path.event_log" data="e">
-  </ul>
+  <p class="lead">
+    <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_events, 'glyphicon-minus': show_events}" ng-click="show_events=!show_events"></button>
+    Event Log (last <input ng-model="event_limit" style="width: 3em;"> of {{path.backtrace.length}} entries)
   </p>
+  <ul ng-if="show_events" class="list-group">
+    <li class="list-group-item" event ng-repeat="e in path.event_log | skip:(path.event_log.length - event_limit)" data="e">
+  </ul>
 </span>
