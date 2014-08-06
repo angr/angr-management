@@ -21,7 +21,7 @@
     LD{{ expr.end == 'Iend_LE' ? 'le' : 'be' }}:{{ expr.type.slice(4) }}(<irexpr expr="expr.addr"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Const">
-    {{ expr.con.value }}:{{ expr.con.type.slice(4) }}
+    0x{{ expr.con.value.toString(16) }}:{{ expr.con.type.slice(4) }}
   </span>
   <span ng-switch-when="Iex_CCall">
     {{ expr.callee.name }}(<span ng-repeat="arg in expr.args"><irexpr expr="arg"></irexpr>, </span>):{{ expr.retty }}
