@@ -100,11 +100,14 @@ dirs.directive('bblock', function() {
         scope: {
             block: '=',
         },
-        controller: function($scope) {
+        controller: function($scope, $element) {
             if ($scope.block.type === 'IRSB') {
                 $scope.text = '0x' + $scope.block.addr.toString(16);
             } else if ($scope.block.type === 'proc') {
                 $scope.text = $scope.block.name;
+            }
+            if ($scope.block.color) {
+                $element.parent().css('background-color', $scope.block.color);
             }
         }
     };

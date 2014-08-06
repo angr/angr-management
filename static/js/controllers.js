@@ -26,13 +26,26 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, projects) 
         $http.get('/api/projects/' + $scope.project.name + '/cfg')
             .success(function(data) {
                 var prefix = "asdf";
+                var blockToColor = {};
+                var colors = randomColor({count: Object.keys(data.functions).length,
+                                          luminosity: 'light'});
+                var i = 0;
+                for (var addr in data.functions) {
+                    var blocks = data.functions[addr];
+                    for (var j in blocks) {
+                        blockToColor[blocks[j]] = colors[i];
+                    }
+                    i += 1;
+                }
                 $scope.cfgNodes = {};
                 for (var i in data.nodes) {
                     var node = data.nodes[i];
                     var id = node.type + (node.type === 'IRSB' ? node.addr : node.name);
+                    if (node.addr) {
+                        node.color = blockToColor[node.addr];
+                    }
                     $scope.cfgNodes[id] = node;
                 }
-                console.log($scope.cfgNodes);
                 $scope.cfgEdges = [];
                 for (var i in data.edges) {
                     var edge = data.edges[i];

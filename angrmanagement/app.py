@@ -75,7 +75,8 @@ def get_cfg(name):
             'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
             'edges': [{'from': the_serializer.serialize(from_, ref=True),
                        'to': the_serializer.serialize(to, ref=True)}
-                      for from_, to in cfg._cfg.edges()]
+                      for from_, to in cfg._cfg.edges()],
+            'functions': {addr: f.basic_blocks for addr, f in cfg.get_function_manager().functions.items()},
         }
 
 @app.route('/api/projects/<name>/ddg')
@@ -87,6 +88,20 @@ def get_ddg(name):
         ddg = angr.DDG(proj, proj.construct_cfg(), proj.entry)
         ddg.construct()
         return str(ddg._ddg)
+
+def disasm(binary, block):
+    return '\n'.join(binary.ida.idc.GetDisasm(s.addr)
+                     for s in block.statements() if s.__class__.__name__ == 'IMark')
+
+@app.route('/api/projects/<name>/dis/<int:block_addr>')
+#@jsonize
+def get_dis(name, block_addr):
+    name = secure_filename(name)
+    if name in active_projects:
+        proj = active_projects[name]
+        block = proj.block(block_addr)
+        # import ipdb; ipdb.set_trace()
+        return disasm(proj.main_binary, block)
 
 #
 # Surveyor functionality
