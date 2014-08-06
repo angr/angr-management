@@ -32,3 +32,7 @@ graph {
     position: relative;
     z-index: 0;
 }
+
+.vex_irstmt {
+	white-space:nowrap;
+}
