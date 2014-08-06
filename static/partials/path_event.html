@@ -19,6 +19,6 @@
     </li>
   </ul>
 
-  <p class="lead">Refs:</p>
-  <ref ng-repeat="r in event.refs" data="r" />
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !show_path, 'glyphicon-minus': show_refs}" ng-click="show_refs=!show_refs"></button><p class="lead">Refs:</p>
+  <ref ng-if="show_refs" ng-repeat="r in event.refs" data="r" />
 </span>

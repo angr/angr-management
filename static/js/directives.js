@@ -278,6 +278,7 @@ dirs.directive('event', function($http) {
         scope: { event: '=data' },
         controller: function($scope, $http)
 	{
+            $scope.show_refs = true;
 	}
     }
 });
