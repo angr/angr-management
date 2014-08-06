@@ -36,7 +36,7 @@
     	  t{{stmt.tmp}} = DIRTY <irexpr expr="stmt.guard"></irexpr> (TODO:effects) ::: {{stmt.cee.name}}(TODO:args)
   </div>
   <div ng-switch-when="Ist_Exit">
-    if (<irexpr data="stmt.guard"></irexpr>) goto {{stmt.jumpkind.substr(4)}} 0x{{stmt.dst}}
+    if (<irexpr data="stmt.guard"></irexpr>) goto {{stmt.jumpkind.substr(4)}} 0x{{stmt.dst.toString(16)}}
   </div>
   <div ng-switch-default>
     {{ stmt }}
