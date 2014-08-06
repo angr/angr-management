@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', []);
+var dirs = angular.module('angr.directives', ['angr.filters']);
 dirs.directive('newproject', function() {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -283,7 +283,11 @@ dirs.directive('path', function($http) {
         scope: { path: '=data' },
         controller: function($scope, $http)
         {
-        	$scope.show_path = true;
+            $scope.show_path = true;
+            $scope.show_events = false;
+            $scope.show_backtrace = false;
+            $scope.event_limit = 10;
+            $scope.backtrace_limit = 10;
         }
     }
 });
@@ -295,7 +299,8 @@ dirs.directive('event', function($http) {
         scope: { event: '=data' },
         controller: function($scope, $http)
 	{
-            $scope.show_refs = true;
+            $scope.show_refs = false;
+            $scope.show_event = false;
 	}
     }
 });
