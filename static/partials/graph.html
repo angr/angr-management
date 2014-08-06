@@ -1,3 +1,4 @@
-<div class="bblock" id="{{ id }}" ng-repeat="(id, node) in nodes">
-  <bblock block="node"></bblock>
+<div ng-mouseenter="node.hovering = true" ng-mouseleave="node.hovering = false"
+     class="bblock" id="{{ id }}" ng-class="{top: node.hovering}" ng-repeat="(id, node) in nodes">
+  <bblock block="node" show-details="node.hovering"></bblock>
 </div>

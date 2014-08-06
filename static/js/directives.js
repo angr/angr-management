@@ -99,6 +99,7 @@ dirs.directive('bblock', function() {
         restrict: 'AE',
         scope: {
             block: '=',
+            showDetails: '=',
         },
         controller: function($scope, $element) {
             if ($scope.block.type === 'IRSB') {
@@ -326,4 +327,38 @@ dirs.directive('ref', function($http) {
 	{
 	}
     }
+});
+
+dirs.directive('irsb', function() {
+    return {
+        templateUrl: '/static/partials/irsb.html',
+        restrict: 'E',
+        scope: {
+            irsb: '=data',
+        },
+        controller: function($scope) {
+
+        },
+    };
+});
+
+dirs.directive('irstmt', function() {
+    return {
+        templateUrl: '/static/partials/irstmt.html',
+        restrict: 'E',
+        scope: {
+            stmt: '=',
+        },
+    };
+});
+
+dirs.directive('irexpr', function(RecursionHelper) {
+    return {
+        templateUrl: '/static/partials/irexpr.html',
+        restrict: 'E',
+        scope: {
+            expr: '=',
+        },
+        compile: RecursionHelper.compile,
+    };
 });

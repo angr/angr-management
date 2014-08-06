@@ -1,0 +1,12 @@
+<!-- {{ stringifyStmt(stmt) }} -->
+<div ng-if="stmt.tag != 'Ist_NoOp'" ng-switch on="stmt.tag">
+  <div ng-switch-when="Ist_IMark">
+    ----IMark(addr=0x{{ stmt.addr.toString(16) }}, len={{ stmt.len }}, delta={{ stmt.delta }})---
+  </div>
+  <div ng-switch-when="Ist_WrTmp">
+    t{{ stmt.tmp }} = <irexpr expr="stmt.data"></irexpr>
+  </div>
+  <div ng-switch-default>
+    {{ stmt }}
+  </div>
+</div>

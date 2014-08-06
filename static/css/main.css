@@ -5,6 +5,14 @@
     position: absolute;
 }
 
+.bblock bblock {
+    margin: 0 auto;
+}
+
+.top {
+    z-index: 1000;
+}
+
 .path_box {
     display: inline-block;
     margin-left: 0.1em;
@@ -18,4 +26,9 @@
 
 .table-no-border>tbody>tr>th, .table-no-border>tbody>tr>td {
   border-top: none;
+}
+
+graph {
+    position: relative;
+    z-index: 0;
 }

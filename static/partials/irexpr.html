@@ -1,0 +1,11 @@
+<span ng-switch on="expr.tag">
+  <span ng-switch-when="Iex_Const">
+    {{ expr.con.value }}:{{ expr.con.type }}
+  </span>
+  <span ng-switch-when="Iex_Unop">
+    {{ expr.op }}(<irexpr expr="expr.arg1"></irexpr>)
+  </span>
+  <span ng-switch-default>
+    {{ expr }}
+  </span>
+</span>
