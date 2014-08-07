@@ -1,5 +1,6 @@
 import angr
 import simuvex
+import claripy
 
 import types
 
@@ -8,6 +9,8 @@ class Serializer(object):
         pass
 
     def serialize(self, o, ref=False):
+        if o is None:
+            return None
         if type(o) in (long, int, str, unicode, float, bool):
             return o
         if type(o) in (list, tuple, set):
@@ -24,6 +27,12 @@ class Serializer(object):
             return self._serialize_simrun(o, ref)
         if isinstance(o, angr.PathEvent):
             return self._serialize_path_event(o)
+        if isinstance(o, claripy.E):
+            return self._serialize_expression(o)
+        if isinstance(o, claripy.A):
+            return self._serialize_ast(o)
+        if isinstance(o, claripy.BVV):
+            return self._serialize_bvv(o)
         else:
             return "NOT SERIALIZED: %s" % o
 
@@ -78,3 +87,27 @@ class Serializer(object):
             return {'type': 'proc', 'name': s.__class__.__name__}
         else:
             raise Exception("Can't serialize SimRun {}".format(s))
+
+    def _serialize_ast(self, a):
+        return {
+            'expr_type': 'ast',
+            'op': a._op,
+            'ast_type': ( 'binop' if a._op.startswith('__') and len(a._args) == 2 else
+                          'unop' if a._op.startswith('__') and len(a._args) == 1 else
+                          a._op ),
+            'args': self.serialize(a._args)
+        }
+
+    def _serialize_expression(self, e):
+        return {
+            'id': id(e),
+            'expr_type': 'e',
+            'ast': self.serialize(e.abstract())
+        }
+
+    def _serialize_bvv(self, b):
+        return {
+            'expr_type': 'bvv',
+            'value': b.value,
+            'bits': b.bits
+        }

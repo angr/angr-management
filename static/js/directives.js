@@ -184,53 +184,53 @@ dirs.directive('surveyors', function($http) {
         scope: { project: '=' },
         controller: function($scope, $http)
         {
-        	$scope.surveyor_type = "Explorer";
-        	$scope.surveyor_options = { };
+            $scope.surveyor_type = "Explorer";
+            $scope.surveyor_options = { };
 
-        	$scope.surveyor_options['find'] = "( )";
-        	$scope.surveyor_options['avoid'] = "( )";
-        	$scope.surveyor_options['restrict'] = "( )";
-        	$scope.surveyor_options['min_depth'] = "1";
-        	$scope.surveyor_options['max_repeats'] = "10";
-        	$scope.surveyor_options['num_find'] = "1";
-        	$scope.surveyor_options['num_avoid'] = "1000000";
-        	$scope.surveyor_options['num_deviate'] = "1000000";
-        	$scope.surveyor_options['num_loop'] = "1000000";
+            $scope.surveyor_options['find'] = "( )";
+            $scope.surveyor_options['avoid'] = "( )";
+            $scope.surveyor_options['restrict'] = "( )";
+            $scope.surveyor_options['min_depth'] = "1";
+            $scope.surveyor_options['max_repeats'] = "10";
+            $scope.surveyor_options['num_find'] = "1";
+            $scope.surveyor_options['num_avoid'] = "1000000";
+            $scope.surveyor_options['num_deviate'] = "1000000";
+            $scope.surveyor_options['num_loop'] = "1000000";
 
-        	$scope.options = {
-        		Explorer: {
-        			find: 'Addresses to find (Python expression)',
-        			avoid: 'Addresses to avoid (Python expression)',
-        			restrict: 'Addresses to restrict the analysis to (Python expression)',
-        			min_depth: 'The minimum number of blocks in a path before it can be culled',
-        			max_repeats: 'The maximum repeats for a single block before a path is marked as "looping"',
-        			num_find: 'Maximum number of paths to find before suspending the analysis',
-        			num_avoid: 'Maximum number of paths to avoid before suspending the analysis',
-        			num_deviate: 'Maximum number of paths to stop from deviating before suspending the analysis',
-        			num_loop: 'Maximum number of paths to stop from looping before suspending the analysis',
-        		}
-        	}
+            $scope.options = {
+                Explorer: {
+                    find: 'Addresses to find (Python expression)',
+                    avoid: 'Addresses to avoid (Python expression)',
+                    restrict: 'Addresses to restrict the analysis to (Python expression)',
+                    min_depth: 'The minimum number of blocks in a path before it can be culled',
+                    max_repeats: 'The maximum repeats for a single block before a path is marked as "looping"',
+                    num_find: 'Maximum number of paths to find before suspending the analysis',
+                    num_avoid: 'Maximum number of paths to avoid before suspending the analysis',
+                    num_deviate: 'Maximum number of paths to stop from deviating before suspending the analysis',
+                    num_loop: 'Maximum number of paths to stop from looping before suspending the analysis',
+                }
+            }
 
-        	$scope.new_surveyor = function(type, options) {
-        		var kwargs = { };
-        		if (type == "Explorer")
-			{
-				kwargs['find'] = "PYTHON:"+options['find'];
-				kwargs['avoid'] = "PYTHON:"+options['avoid'];
-				kwargs['restrict'] = "PYTHON:"+options['restrict'];
-				if (options['min_depth'] != undefined) kwargs['min_depth'] = parseInt(options['min_depth']);
-				if (options['max_depth'] != undefined) kwargs['max_depth'] = parseInt(options['max_depth']);
-				if (options['max_repeats'] != undefined) kwargs['max_repeats'] = parseInt(options['max_repeats']);
-				if (options['num_find'] != undefined) kwargs['num_find'] = parseInt(options['num_find']);
-				if (options['num_avoid'] != undefined) kwargs['num_avoid'] = parseInt(options['num_avoid']);
-				if (options['num_deviate'] != undefined) kwargs['num_deviate'] = parseInt(options['num_deviate']);
-				if (options['num_loop'] != undefined) kwargs['num_loop'] = parseInt(options['num_loop']);
-			}
+            $scope.new_surveyor = function(type, options) {
+                var kwargs = { };
+                if (type == "Explorer")
+            {
+                kwargs['find'] = "PYTHON:"+options['find'];
+                kwargs['avoid'] = "PYTHON:"+options['avoid'];
+                kwargs['restrict'] = "PYTHON:"+options['restrict'];
+                if (options['min_depth'] != undefined) kwargs['min_depth'] = parseInt(options['min_depth']);
+                if (options['max_depth'] != undefined) kwargs['max_depth'] = parseInt(options['max_depth']);
+                if (options['max_repeats'] != undefined) kwargs['max_repeats'] = parseInt(options['max_repeats']);
+                if (options['num_find'] != undefined) kwargs['num_find'] = parseInt(options['num_find']);
+                if (options['num_avoid'] != undefined) kwargs['num_avoid'] = parseInt(options['num_avoid']);
+                if (options['num_deviate'] != undefined) kwargs['num_deviate'] = parseInt(options['num_deviate']);
+                if (options['num_loop'] != undefined) kwargs['num_loop'] = parseInt(options['num_loop']);
+            }
 
-        		$http.post("/api/projects/" + $scope.project.name + "/surveyors/new/"+type, {kwargs:kwargs}).success(function(data, status) {
-				$scope.surveyors.push(data);
-			});
-        	}
+                $http.post("/api/projects/" + $scope.project.name + "/surveyors/new/"+type, {kwargs:kwargs}).success(function(data, status) {
+                $scope.surveyors.push(data);
+            });
+            }
 
                 $scope.surveyors = [ ];
                 $http.get("/api/projects/" + $scope.project.name + "/surveyors").success(function(data, status) { $scope.surveyors = data; });
@@ -248,31 +248,31 @@ dirs.directive('surveyor', function($http) {
         scope: { sid: '=', project: "=", surveyor: '=data' },
         controller: function($scope, $http)
         {
-        	if ($scope.surveyor == undefined)
-		{
-			$http.get("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+            if ($scope.surveyor == undefined)
+        {
+            $http.get("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid).success(function(data, status) {
+                $scope.surveyor = data;
+            });
+        }
 
-		$scope.steps = 1;
-		$scope.step = function(steps) {
-			$http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+        $scope.steps = 1;
+        $scope.step = function(steps) {
+            $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
+                $scope.surveyor = data;
+            });
+        }
 
-		$scope.reactivate = function(path) {
-			$http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+        $scope.reactivate = function(path) {
+            $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
+                $scope.surveyor = data;
+            });
+        }
 
-		$scope.suspend = function(path) {
-			$http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+        $scope.suspend = function(path) {
+            $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
+                $scope.surveyor = data;
+            });
+        }
         }
     }
 });
@@ -299,10 +299,10 @@ dirs.directive('event', function($http) {
         restrict: 'AE',
         scope: { event: '=data' },
         controller: function($scope, $http)
-	{
+        {
             $scope.show_refs = false;
             $scope.show_event = false;
-	}
+        }
     }
 });
 
@@ -312,9 +312,9 @@ dirs.directive('address', function($http) {
         restrict: 'AE',
         scope: { address: '=a' },
         controller: function($scope, $http)
-	{
-		$scope.isNaN = isNaN;
-	}
+        {
+            $scope.isNaN = isNaN;
+        }
     }
 });
 
@@ -324,8 +324,8 @@ dirs.directive('ref', function($http) {
         restrict: 'AE',
         scope: { ref: '=data' },
         controller: function($scope, $http)
-	{
-	}
+        {
+        }
     }
 });
 
@@ -360,5 +360,44 @@ dirs.directive('irexpr', function(RecursionHelper) {
             expr: '=',
         },
         compile: RecursionHelper.compile,
+    };
+});
+
+dirs.directive('cexpr', function(RecursionHelper) {
+    return {
+        templateUrl: '/static/partials/cexpr.html',
+        restrict: 'E',
+        scope: {
+            expr: '=',
+            parens: '=',
+        },
+        compile: RecursionHelper.compile,
+        controller: function($scope, $http) {
+            $scope.get_type = function(o) {
+                if ($scope.expr == null || $scope.expr == undefined) return 'null';
+                else if (typeof $scope.expr == "boolean") return 'boolean';
+                else if (!isNaN($scope.expr)) return 'integer';
+            }
+        }
+    };
+});
+
+dirs.directive('cast', function(RecursionHelper) {
+    return {
+        templateUrl: '/static/partials/cast.html',
+        restrict: 'E',
+        scope: {
+            ast: '=',
+            parens: '=',
+        },
+        compile: RecursionHelper.compile,
+        controller: function($scope, $http) {
+            $scope.ops = {
+                __add__: "+", __sub__: "-", __div__: "/", __truediv__: "/", __mul__: "*", __mod__: "%",
+                __eq__: "==", __ne__: "!=", __ge__: ">=", __gt__: ">", __le__: "<=", __lt__: "<",
+                __neg__: "-", __or__: "|", __and__: "&", __xor__: "^", __invert__: "~",
+                __lshift__: "<<", __rshift__: ">>"
+            }
+        }
     };
 });
