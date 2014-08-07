@@ -376,7 +376,7 @@ dirs.directive('irexpr', function(RecursionHelper) {
     };
 });
 
-dirs.directive('cexpr', function(RecursionHelper) {
+dirs.directive('cexpr', function(RecursionHelper, $http) {
     return {
         templateUrl: '/static/partials/cexpr.html',
         restrict: 'E',
@@ -386,6 +386,19 @@ dirs.directive('cexpr', function(RecursionHelper) {
         },
         compile: RecursionHelper.compile,
         controller: function($scope, $http) {
+            $scope.show_solve = false;
+            $scope.num_solutions = 1;
+
+            $scope.solutions = function(n) {
+                //$http.get("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/paths/" + expr.path_id + "/solve" ).success(function(data, status) {
+            }
+
+            $scope.max_solution = function(n) {
+            }
+
+            $scope.min_solution = function(n) {
+            }
+
             $scope.get_type = function(o) {
                 if ($scope.expr == null || $scope.expr == undefined) return 'null';
                 else if (typeof $scope.expr == "boolean") return 'boolean';
