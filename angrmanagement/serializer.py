@@ -3,6 +3,7 @@ import simuvex
 import claripy
 
 import types
+from rpyc.utils.classic import obtain
 
 class Serializer(object):
     def __init__(self):
@@ -13,9 +14,9 @@ class Serializer(object):
             return None
         if type(o) in (long, int, str, unicode, float, bool):
             return o
-        if type(o) in (list, tuple, set):
-            return type(o)([ self.serialize(e) for e in o ])
-        if type(o) is dict:
+        if type(o) in (list, tuple, set) or type(o).__module__ == '__builtin__' and type(o).__name__ in ('list', 'tuple', 'set'):
+            return [ self.serialize(e) for e in o ]
+        if type(o) is dict or type(o).__module__ == '__builtin__' and type(o).__name__ == "dict":
             return { self.serialize(k):self.serialize(v) for k,v in o.iteritems() }
         if isinstance(o, angr.Surveyor):
             return self._serialize_surveyor(o)
@@ -81,7 +82,8 @@ class Serializer(object):
         if isinstance(s, simuvex.SimIRSB):
             data = {'type': 'IRSB', 'addr': s.addr}
             if not ref:
-                data['irsb'] = s._crawl_vex(s.irsb)
+                print "serializing 0x{:x}".format(s.addr)
+                data['irsb'] = obtain(s._crawl_vex(s.irsb))
             return data
         if isinstance(s, simuvex.SimProcedure):
             return {'type': 'proc', 'name': s.__class__.__name__}
