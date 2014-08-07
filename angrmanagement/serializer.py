@@ -1,7 +1,8 @@
 import angr
 import simuvex
-
 import types
+
+from rpyc.utils.classic import obtain
 
 class Serializer(object):
     def __init__(self):
@@ -72,7 +73,8 @@ class Serializer(object):
         if isinstance(s, simuvex.SimIRSB):
             data = {'type': 'IRSB', 'addr': s.addr}
             if not ref:
-                data['irsb'] = s._crawl_vex(s.irsb)
+                print "serializing 0x{:x}".format(s.addr)
+                data['irsb'] = obtain(s._crawl_vex(s.irsb))
             return data
         if isinstance(s, simuvex.SimProcedure):
             return {'type': 'proc', 'name': s.__class__.__name__}

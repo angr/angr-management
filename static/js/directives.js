@@ -140,29 +140,21 @@ dirs.directive('graph', function() {
                 connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:5, alwaysRespectStubs:true } ],
             };
 
-            // VERY HACKY (but it works)
-            $timeout(function() {
+            var GRID_SIZE = 20;
+            var HEADER = 160;
+
+            $scope.layout = function() {
+                console.log('laying out');
                 var g = new dagre.Digraph();
-                var GRID_SIZE = 20;
-                var HEADER = 160;
-                jQuery($element).children().each(function(i, e) {
+                jQuery($element).children('div').each(function(i, e) {
                     var $e = jQuery(e);
                     var id = $e.attr('id');
-                    $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
-                    $scope.plumb.addEndpoint(id, entryEndpoint, {anchor: 'TopCenter', uuid: id + '-entry'});
-                    $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: id + '-exit'});
                     g.addNode(id, {width: $e.width(), height: $e.height()});
                 });
-
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
                     g.addEdge(null, edge.from, edge.to);
-                    $scope.plumb.connect({
-                        uuids: [edge.from + '-exit', edge.to + '-entry'],
-                        detachable: false,
-                    });
                 }
-
                 var layout = dagre.layout().nodeSep(400).edgeSep(400).rankSep(100).run(g);
                 layout.eachNode(function(id, data) {
                     var $e = jQuery('#' + id);
@@ -172,6 +164,27 @@ dirs.directive('graph', function() {
                     $e.css('top', roundedCenterY - data.height/2);
                 });
                 $scope.plumb.repaintEverything();
+            };
+
+            // VERY HACKY (but it works)
+            $timeout(function() {
+                jQuery($element).children('div').each(function(i, e) {
+                    var $e = jQuery(e);
+                    var id = $e.attr('id');
+                    $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
+                    $scope.plumb.addEndpoint(id, entryEndpoint, {anchor: 'TopCenter', uuid: id + '-entry'});
+                    $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: id + '-exit'});
+                });
+
+                for (var i in $scope.edges) {
+                    var edge = $scope.edges[i];
+                    $scope.plumb.connect({
+                        uuids: [edge.from + '-exit', edge.to + '-entry'],
+                        detachable: false,
+                    });
+                }
+
+                $scope.layout();
             }, 0);
         },
     };

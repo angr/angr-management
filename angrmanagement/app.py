@@ -2,11 +2,17 @@ import functools
 import json
 import ast
 import os
+import random
+import subprocess
+import time
+import uuid
 
 import flask
 from werkzeug.utils import secure_filename
 import angr
 from simuvex import SimIRSB, SimProcedure
+import rpyc
+from rpyc.utils.classic import obtain
 
 try:
     import standard_logging #pylint:disable=W0611
@@ -16,15 +22,31 @@ except ImportError:
 
 from .serializer import Serializer
 
+def spawn_child():
+    port = random.randint(30000, 39999)
+    cmd = ['python', '-c', '''from rpyc.core import SlaveService
+from rpyc.utils.server import OneShotServer
+OneShotServer(SlaveService, hostname='localhost', port={}).start()
+'''.format(port)]
+    subprocess.Popen(cmd)
+    time.sleep(2.0)
+    return rpyc.classic.connect('localhost', port)
+
 def jsonize(func):
     @functools.wraps(func)
     def jsonned(*args, **kwargs):
-        return json.dumps(func(*args, **kwargs))
+        result = func(*args, **kwargs)
+        try:
+            return json.dumps(result)
+        except:
+            import ipdb; ipdb.set_trace()
     return jsonned
 
 app = flask.Flask(__name__, static_folder='../static')
 the_serializer = Serializer()
 active_projects = {}
+active_conns = {}
+active_tokens = {}
 active_surveyors = {}
 
 ROOT = os.environ.get('ANGR_MANAGEMENT_ROOT', '.')
@@ -33,6 +55,26 @@ PROJDIR = ROOT + '/projects/'
 @app.route('/')
 def index():
     return app.send_static_file("index.html")
+
+@app.route('/api/tokens/<token>')
+@jsonize
+def redeem(token):
+    if token not in active_tokens:
+        flask.abort(400)
+    ty, async_thing, result = active_tokens[token]
+    if result.ready:
+        del active_tokens[token]
+        if ty == 'CFG':
+            cfg = result.value
+            return {'ready': True, 'value': {
+                'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
+                'edges': [{'from': the_serializer.serialize(from_, ref=True),
+                           'to': the_serializer.serialize(to, ref=True)}
+                          for from_, to in cfg._cfg.edges()],
+                'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
+            }}
+    else:
+        return {'ready': False}
 
 @app.route('/api/projects/')
 @jsonize
@@ -59,10 +101,15 @@ def activate_project(name):
     if name not in active_projects and os.path.exists(PROJDIR + name):
         metadata = json.load(open(PROJDIR + name + '/metadata', 'rb'))
         print metadata
-        active_projects[name] = angr.Project(PROJDIR + name + '/binary', load_libs=False,
-                                             default_analysis_mode='symbolic',
-                                             use_sim_procedures=True,
-                                             arch=str(metadata['arch']))
+        remote = spawn_child()
+        active_conns[name] = remote
+        print remote
+        proj = remote.modules.angr.Project(PROJDIR + name + '/binary', load_libs=False,
+                                           default_analysis_mode='symbolic',
+                                           use_sim_procedures=True,
+                                           arch=str(metadata['arch']))
+        print type(proj)
+        active_projects[name] = proj
 
 @app.route('/api/projects/<name>/cfg')
 @jsonize
@@ -70,13 +117,16 @@ def get_cfg(name):
     name = secure_filename(name)
     if name in active_projects:
         proj = active_projects[name]
-        cfg = proj.construct_cfg()
+        token = str(uuid.uuid4())
+        async_construct = rpyc.async(proj.construct_cfg)
+        active_tokens[token] = ('CFG', async_construct, async_construct())
+        return {'token': token}
         return {
             'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
             'edges': [{'from': the_serializer.serialize(from_, ref=True),
                        'to': the_serializer.serialize(to, ref=True)}
                       for from_, to in cfg._cfg.edges()],
-            'functions': {addr: f.basic_blocks for addr, f in cfg.get_function_manager().functions.items()},
+            'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
         }
 
 @app.route('/api/projects/<name>/ddg')
