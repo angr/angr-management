@@ -4,7 +4,13 @@
   <span ng-if="event.event_type == 'PathEventSimRun'">
     {{event.type}} -
       <span ng-if="event.type != 'SimIRSB'">{{event.procedure}}</span>
-      <span ng-if="event.type == 'SimIRSB'"><span address a="event.addr"><span></span>
+      <span ng-if="event.type == 'SimIRSB'"><span address a="event.addr"></span></span>
+  </span>
+  <span ng-if="event.event_type == 'PathEventMessage'">
+      Message - {{event.category}}
+  </span>
+  <span ng-if="event.event_type == 'PathEventError'">
+      Error
   </span>
 </p>
 
@@ -30,5 +36,15 @@
       <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_path, 'glyphicon-minus': show_refs}" ng-click="show_refs=!show_refs"></button> Refs:
     </p>
     <ref ng-if="show_refs" ng-repeat="r in event.refs" data="r" />
+  </span>
+  <span ng-if="event.event_type == 'PathEventMessage'">
+    <p><b>Category:</b> {{event.category}}</p>
+    <p><b>Message:</b> {{event.message}}</p>
+  </span>
+  <span ng-if="event.event_type == 'PathEventError'">
+    <p><b>Message:</b> {{event.message}}</p>
+    <p ng-if='event.exception != null'>
+      <b>Exception:</b> {{event.exception}}
+    </p>
   </span>
 </span>

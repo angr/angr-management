@@ -248,31 +248,32 @@ dirs.directive('surveyor', function($http) {
         scope: { sid: '=', project: "=", surveyor: '=data' },
         controller: function($scope, $http)
         {
-        	if ($scope.surveyor == undefined)
-		{
-			$http.get("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+            $scope.show_surveyor = false;
+            if ($scope.surveyor == undefined)
+            {
+                $http.get("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid).success(function(data, status) {
+                    $scope.surveyor = data;
+                });
+            }
 
-		$scope.steps = 1;
-		$scope.step = function(steps) {
-			$http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+            $scope.steps = 1;
+            $scope.step = function(steps) {
+                $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
+                    $scope.surveyor = data;
+                });
+            }
 
-		$scope.reactivate = function(path) {
-			$http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+            $scope.reactivate = function(path) {
+                $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
+                    $scope.surveyor = data;
+                });
+            }
 
-		$scope.suspend = function(path) {
-			$http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
-				$scope.surveyor = data;
-			});
-		}
+            $scope.suspend = function(path) {
+                $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
+                    $scope.surveyor = data;
+                });
+            }
         }
     }
 });
