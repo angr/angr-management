@@ -1,0 +1,39 @@
+<span ng-switch on="expr.expr_type">
+  <span ng-switch-when="bvv">
+    <i>0x{{('000000000000000000000000000000000000000000000000000'+expr.value.toString(16)).slice(-(expr.bits/4))}}</i>
+  </span>
+  <span ng-switch-when="ast">
+    <cast ast="expr" parens="parens"></cast>
+  </span>
+  <span ng-switch-when="e">
+    <code>
+      <cexpr expr="expr.ast" parens="parens"></cexpr>
+    </code>
+    <span ng-if="expr.symbolic">
+      <button type="button" class="btn btn-default btn-xs" ng-click="show_solve=!show_solve">SOLVE</button>
+      <div ng-if="show_solve">
+        <button type="button" class="btn btn-default btn-xs" ng-click="solutions(num_solutions)">
+          Get <input ng-model="num_solutions"> solutions!
+        </button>
+        <button type="button" class="btn btn-default btn-xs" ng-click="max_solutions()"> Get maximum!  </button>
+        <button type="button" class="btn btn-default btn-xs" ng-click="min_solutions()"> Get minimum!  </button>
+      </div>
+    </span>
+  </span>
+  <span ng-switch-default>
+    <span ng-switch on="get_type(expr)">
+      <span ng-switch-when="integer">
+        0x{{expr.toString(16)}}
+      </span>
+      <span ng-switch-when="boolean">
+        {{expr}}
+      </span>
+      <span ng-switch-when="null">
+        None
+      </span>
+      <span ng-switch-default>
+              {{get_type(expr)}} - {{expr}}
+      </span>
+    </span>
+  </span>
+</span>

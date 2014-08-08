@@ -1,4 +1,4 @@
-<span ng-switch on="expr.tag">
+<span ng-mouseenter="hover = true" ng-mouseleave="hover = false" ng-switch on="expr.tag">
   <span ng-switch-when="Iex_Get">
     GET:{{ expr.type.slice(4) }}({{ expr.offset }})
   </span>

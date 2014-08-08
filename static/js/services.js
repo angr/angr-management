@@ -9,6 +9,15 @@ srvcs.factory('Projects', function($http) {
     };
 });
 
+srvcs.factory('Status', function() {
+    var status = 'All good.';
+
+    return {
+        status: function() { return status; },
+        setStatus: function(s) { status = s; },
+    };
+});
+
 // From http://stackoverflow.com/questions/14430655/recursion-in-angular-directives
 srvcs.factory('RecursionHelper', ['$compile', function($compile){
     return {
