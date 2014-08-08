@@ -36,10 +36,7 @@ def jsonize(func):
     @functools.wraps(func)
     def jsonned(*args, **kwargs):
         result = func(*args, **kwargs)
-        try:
-            return json.dumps(result)
-        except:
-            import ipdb; ipdb.set_trace()
+        return json.dumps(result)
     return jsonned
 
 def with_projects(func):
@@ -172,7 +169,8 @@ def surveyor_types():
 
 @app.route('/api/projects/<project_name>/surveyors/new/<surveyor_type>', methods=('POST',))
 @jsonize
-def new_surveyor(project_name, surveyor_type):
+@with_projects
+def new_surveyor(project_name, surveyor_type, projects=None):
     # TODO: take a SimExit as a starting point
 
     kwargs = dict(flask.request.json.get('kwargs', {}))
@@ -180,15 +178,16 @@ def new_surveyor(project_name, surveyor_type):
         if type(v) in (str,unicode) and v.startswith("PYTHON:"):
             kwargs[k] = ast.literal_eval(v[7:])
 
-    p = active_projects[project_name]
-    s = angr.surveyors.all_surveyors[surveyor_type](p, **kwargs)
+    p = projects[project_name]
+    s = p.survey(surveyor_type, **kwargs)
     active_surveyors[str(id(s))] = s
     return the_serializer.serialize(s)
 
 @app.route('/api/projects/<project_name>/surveyors')
 @jsonize
-def list_surveyors(project_name):
-    p = active_projects[project_name]
+@with_projects
+def list_surveyors(project_name, projects=None):
+    p = projects[project_name]
     return [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]
 
 @app.route('/api/projects/<project_name>/surveyors/<surveyor_id>')

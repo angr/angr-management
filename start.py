@@ -4,7 +4,7 @@ import sys
 from angrmanagement import app
 import rpyc
 
-c = rpyc.connect("localhost", sys.argv[1])
+c = rpyc.connect("localhost", int(sys.argv[1]))
 print c
 print c.root
 

@@ -13,7 +13,7 @@ class Serializer(object):
         r = self._serialize_switch(o, ref=ref, extra=extra)
         if extra is not None and type(r) is dict:
             r.update(extra)
-        return r
+        return obtain(r)
 
     def _serialize_switch(self, o, ref=False, extra=None):
         if o is None:
@@ -95,7 +95,7 @@ class Serializer(object):
             data = {'type': 'IRSB', 'addr': s.addr}
             if not ref:
                 print "serializing 0x{:x}".format(s.addr)
-                data['irsb'] = obtain(s._crawl_vex(s.irsb))
+                data['irsb'] = s._crawl_vex(s.irsb)
             return data
         if isinstance(s, simuvex.SimProcedure):
             return {'type': 'proc', 'name': s.__class__.__name__}
