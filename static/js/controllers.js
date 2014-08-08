@@ -8,6 +8,7 @@ ctrls.controller('IndexCtrl', function($scope, $http, projects) {
 
 ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, projects) {
     $scope.project = projects[$routeParams['name']];
+    $scope.project.activated = true;
     $scope.activating = false;
     $scope.cfgNodes = null;
     $scope.cfgEdges = null;

@@ -42,6 +42,12 @@ def jsonize(func):
             import ipdb; ipdb.set_trace()
     return jsonned
 
+def with_projects(func):
+    @functools.wraps(func)
+    def projectsed(*args, **kwargs):
+        return func(*args, projects=app.config['PROJECTS'], **kwargs)
+    return projectsed
+
 app = flask.Flask(__name__, static_folder='../static')
 the_serializer = Serializer()
 active_projects = {}
@@ -82,7 +88,7 @@ def list_projects():
     # Makes sure the PROJDIR exists
     if not os.path.exists(PROJDIR):
         os.makedirs(PROJDIR)
-    return {name: {'name': name, 'activated': name in active_projects} for name in os.listdir(PROJDIR)}
+    return {name: {'name': name, 'activated': name in active_projects} for name in app.config['PROJECTS']}
 
 @app.route('/api/projects/', methods=('POST',))
 @jsonize
@@ -94,29 +100,30 @@ def new_project():
     file.save(PROJDIR + name + '/binary')
     open(PROJDIR + name + '/metadata', 'wb').write(json.dumps(metadata))
 
-@app.route('/api/projects/<name>/activate', methods=('POST',))
-@jsonize
-def activate_project(name):
-    name = secure_filename(name)
-    if name not in active_projects and os.path.exists(PROJDIR + name):
-        metadata = json.load(open(PROJDIR + name + '/metadata', 'rb'))
-        print metadata
-        remote = spawn_child()
-        active_conns[name] = remote
-        print remote
-        proj = remote.modules.angr.Project(PROJDIR + name + '/binary', load_libs=False,
-                                           default_analysis_mode='symbolic',
-                                           use_sim_procedures=True,
-                                           arch=str(metadata['arch']))
-        print type(proj)
-        active_projects[name] = proj
+# @app.route('/api/projects/<name>/activate', methods=('POST',))
+# @jsonize
+# def activate_project(name):
+#     name = secure_filename(name)
+#     if name not in active_projects and os.path.exists(PROJDIR + name):
+#         metadata = json.load(open(PROJDIR + name + '/metadata', 'rb'))
+#         print metadata
+#         remote = spawn_child()
+#         active_conns[name] = remote
+#         print remote
+#         proj = remote.modules.angr.Project(PROJDIR + name + '/binary', load_libs=False,
+#                                            default_analysis_mode='symbolic',
+#                                            use_sim_procedures=True,
+#                                            arch=str(metadata['arch']))
+#         print type(proj)
+#         active_projects[name] = proj
 
 @app.route('/api/projects/<name>/cfg')
+@with_projects
 @jsonize
-def get_cfg(name):
+def get_cfg(name, projects=None):
     name = secure_filename(name)
-    if name in active_projects:
-        proj = active_projects[name]
+    if name in projects:
+        proj = projects[name]
         token = str(uuid.uuid4())
         async_construct = rpyc.async(proj.construct_cfg)
         active_tokens[token] = ('CFG', async_construct, async_construct())
@@ -130,11 +137,12 @@ def get_cfg(name):
         }
 
 @app.route('/api/projects/<name>/ddg')
+@with_projects
 @jsonize
-def get_ddg(name):
+def get_ddg(name, projects=None):
     name = secure_filename(name)
-    if name in active_projects:
-        proj = active_projects[name]
+    if name in projects:
+        proj = projects[name]
         ddg = angr.DDG(proj, proj.construct_cfg(), proj.entry)
         ddg.construct()
         return str(ddg._ddg)
