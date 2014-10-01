@@ -7,6 +7,7 @@ import rpyc
 c = rpyc.connect("localhost", int(sys.argv[1]))
 print c
 print c.root
+print c.root.projects
 
 app.app.config['PROJECTS'] = c.root.projects
 app.app.run(port=4321, debug=True)

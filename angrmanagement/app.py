@@ -47,10 +47,9 @@ def with_projects(func):
 
 app = flask.Flask(__name__, static_folder='../static')
 the_serializer = Serializer()
-active_projects = {}
-active_conns = {}
 active_tokens = {}
 active_surveyors = {}
+active_conns = {}
 
 ROOT = os.environ.get('ANGR_MANAGEMENT_ROOT', '.')
 PROJDIR = ROOT + '/projects/'
@@ -80,39 +79,44 @@ def redeem(token):
         return {'ready': False}
 
 @app.route('/api/projects/')
+@with_projects
 @jsonize
-def list_projects():
+def list_projects(projects=None):
     # Makes sure the PROJDIR exists
     if not os.path.exists(PROJDIR):
         os.makedirs(PROJDIR)
-    return {name: {'name': name, 'activated': name in active_projects} for name in app.config['PROJECTS']}
+    return [{'name': name, 'activated': proj is not None} for name, proj in projects.iteritems()]
 
 @app.route('/api/projects/', methods=('POST',))
+@with_projects
 @jsonize
-def new_project():
+def new_project(projects=None):
     file = flask.request.files['file'] #pylint:disable=W0622
     metadata = json.loads(flask.request.form['metadata'])
     name = secure_filename(metadata['name'])
+    if name in projects or os.path.exists(PROJDIR + name):
+        return {'success': False, 'message': "Name already in use"}
+
     os.mkdir(PROJDIR + name)
     file.save(PROJDIR + name + '/binary')
     open(PROJDIR + name + '/metadata', 'wb').write(json.dumps(metadata))
+    projects[name] = None
+    return {'success': True}
 
-# @app.route('/api/projects/<name>/activate', methods=('POST',))
-# @jsonize
-# def activate_project(name):
-#     name = secure_filename(name)
-#     if name not in active_projects and os.path.exists(PROJDIR + name):
-#         metadata = json.load(open(PROJDIR + name + '/metadata', 'rb'))
-#         print metadata
-#         remote = spawn_child()
-#         active_conns[name] = remote
-#         print remote
-#         proj = remote.modules.angr.Project(PROJDIR + name + '/binary', load_libs=False,
-#                                            default_analysis_mode='symbolic',
-#                                            use_sim_procedures=True,
-#                                            arch=str(metadata['arch']))
-#         print type(proj)
-#         active_projects[name] = proj
+
+@app.route('/api/projects/<name>/activate', methods=('POST',))
+@with_projects
+@jsonize
+def activate_project(name, projects=None):
+    name = secure_filename(name)
+    if name in projects and projects[name] is None:
+        metadata = json.load(open(PROJDIR + name + '/metadata', 'rb'))
+        remote = spawn_child()
+        active_conns[name] = remote
+        proj = remote.modules.angr.Project(PROJDIR + name + '/binary')
+        projects[name] = proj
+        return True
+    return False
 
 @app.route('/api/projects/<name>/cfg')
 @with_projects
@@ -148,15 +152,16 @@ def disasm(binary, block):
     return '\n'.join(binary.ida.idc.GetDisasm(s.addr)
                      for s in block.statements() if s.__class__.__name__ == 'IMark')
 
-@app.route('/api/projects/<name>/dis/<int:block_addr>')
-#@jsonize
-def get_dis(name, block_addr):
-    name = secure_filename(name)
-    if name in active_projects:
-        proj = active_projects[name]
-        block = proj.block(block_addr)
-        # import ipdb; ipdb.set_trace()
-        return disasm(proj.main_binary, block)
+# @app.route('/api/projects/<name>/dis/<int:block_addr>')
+# @with_projects
+# #@jsonize
+# def get_dis(name, block_addr, projects=None):
+#     name = secure_filename(name)
+#     if name in projects:
+#         proj = active_projects[name]
+#         block = proj.block(block_addr)
+#         # import ipdb; ipdb.set_trace()
+#         return disasm(proj.main_binary, block)
 
 #
 # Surveyor functionality
