@@ -3,8 +3,6 @@
   <form name="new-project">
     Name:
     <input type="text" name="name" ng-model="project.name"><br>
-    Arch:
-    <input type="text" name="arch" ng-model="project.arch"><br>
     <loadfile file="project.file"></loadfile>
     <button ng-click="create()" ng-disabled="project.file == null">Create Project</button>
   </form>
