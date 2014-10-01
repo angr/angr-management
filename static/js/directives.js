@@ -428,3 +428,26 @@ dirs.directive('cast', function(RecursionHelper) {
         }
     };
 });
+
+dirs.directive('irtmp', function() {
+    return {
+        templateUrl: '/static/partials/irtmp.html',
+        restrict: 'E',
+        scope: {
+            tmp: '=',
+        },
+    };
+});
+
+dirs.directive('irreg', function() {
+    return {
+        templateUrl: '/static/partials/irreg.html',
+        restrict: 'E',
+        scope: {
+            offset: '=',
+            size: '=',
+            operation: '='
+        },
+    };
+});
+

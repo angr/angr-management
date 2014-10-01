@@ -1,9 +1,9 @@
 <span ng-mouseenter="hover = true" ng-mouseleave="hover = false" ng-switch on="expr.tag">
   <span ng-switch-when="Iex_Get">
-    GET:{{ expr.type.slice(4) }}({{ expr.offset }})
+    <irreg operation="'GET'" size="expr.type.slice(4)" offset="expr.offset"></irreg>
   </span>
   <span ng-switch-when="Iex_RdTmp">
-    t{{ expr.tmp }}
+    <irtmp tmp="expr.tmp"></irtmp>
   </span>
   <span ng-switch-when="Iex_Qop">
     {{ expr.op }}(<irexpr expr="expr.arg1"></irexpr>, <irexpr expr="expr.arg2"></irexpr>, <irexpr expr="expr.arg3"></irexpr>, <irexpr expr="expr.arg4"></irexpr>)

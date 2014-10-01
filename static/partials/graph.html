@@ -1,4 +1,4 @@
-<div ng-mouseenter="node.hovering = true" ng-mouseleave="node.hovering = false"
+<div ng-mousedown="o_mx = $event.pageX; o_my = $event.pageY" ng-mouseup="node.hovering = (o_mx == $event.pageX && o_my == $event.pageY) ? !node.hovering : node.hovering;" 
      class="bblock" id="{{ id }}" ng-class="{top: node.hovering}" ng-repeat="(id, node) in nodes">
   <bblock block="node" show-details="node.hovering"></bblock>
 </div>
