@@ -61,6 +61,9 @@ class Serializer(object):
         r.update(self._serialize_public(e, extra=extra))
         return r
 
+    def _serialize_call_frame(self, cf):
+        return {'faddr': cf.faddr, 'taddr': cf.taddr, 'sptr': cf.sptr}
+
     def _serialize_path(self, p, extra=None):
         if extra is None: extra = { 'path_id': id(p) }
         else: extra['path_id'] = id(p)
@@ -71,7 +74,7 @@ class Serializer(object):
             'extra_length': p.extra_length,
             'backtrace': p.backtrace,
             'addr_backtrace': p.addr_backtrace,
-            'callstack': p.callstack,
+            'callstack': [self._serialize_call_frame(cf) for cf in p.callstack],
             'blockcounter_stack': p.blockcounter_stack,
             'last_addr': p.last_run.addr if p.last_run is not None else "NOT STARTED",
             'event_log': [ self.serialize(e, extra=extra) for e in p.event_log ],
@@ -116,7 +119,7 @@ class Serializer(object):
         return {
             'id': id(e),
             'expr_type': 'e',
-            'ast': self.serialize(e.abstract(), extra=extra),
+            'ast': self.serialize(e._model, extra=extra),
             'symbolic': e.symbolic,
             'variables': self.serialize(e.variables, extra=extra)
         }
