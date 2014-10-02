@@ -145,18 +145,24 @@ dirs.directive('graph', function() {
 
             $scope.layout = function() {
                 console.log('laying out');
-                var g = new dagre.Digraph();
+                var g = new graphlib.Graph()
+                    .setGraph({})
+                    .setDefaultEdgeLabel(function() { return {}; });
+                g.graph().nodesep = 200;
+                g.graph().edgesep = 200;
+                g.graph().ranksep = 100;
                 jQuery($element).children('div').each(function(i, e) {
                     var $e = jQuery(e);
                     var id = $e.attr('id');
-                    g.addNode(id, {width: $e.width(), height: $e.height()});
+                    g.setNode(id, {width: $e.width(), height: $e.height()});
                 });
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
-                    g.addEdge(null, edge.from, edge.to);
+                    g.setEdge(edge.from, edge.to);
                 }
-                var layout = dagre.layout().nodeSep(400).edgeSep(400).rankSep(100).run(g);
-                layout.eachNode(function(id, data) {
+                dagre.layout(g);
+                g.nodes().forEach(function(id) {
+                    var data = g.node(id);
                     var $e = jQuery('#' + id);
                     var roundedCenterX = HEADER + GRID_SIZE * Math.round(data.x/GRID_SIZE);
                     var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
@@ -450,4 +456,3 @@ dirs.directive('irreg', function() {
         },
     };
 });
-
