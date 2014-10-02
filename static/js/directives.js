@@ -146,11 +146,8 @@ dirs.directive('graph', function() {
             $scope.layout = function() {
                 console.log('laying out');
                 var g = new graphlib.Graph()
-                    .setGraph({})
+                    .setGraph({ nodesep: 200, edgesep: 200, ranksep: 100 })
                     .setDefaultEdgeLabel(function() { return {}; });
-                g.graph().nodesep = 200;
-                g.graph().edgesep = 200;
-                g.graph().ranksep = 100;
                 jQuery($element).children('div').each(function(i, e) {
                     var $e = jQuery(e);
                     var id = $e.attr('id');
