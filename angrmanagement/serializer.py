@@ -62,7 +62,11 @@ class Serializer(object):
         return r
 
     def _serialize_call_frame(self, cf):
-        return {'faddr': cf.faddr, 'taddr': cf.taddr, 'sptr': cf.sptr}
+        return {
+            'faddr': self.serialize(cf.faddr),
+            'taddr': self.serialize(cf.taddr),
+            'sptr': self.serialize(cf.sptr),
+        }
 
     def _serialize_path(self, p, extra=None):
         if extra is None: extra = { 'path_id': id(p) }
