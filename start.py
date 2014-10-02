@@ -10,4 +10,4 @@ print c.root
 print c.root.projects
 
 app.app.config['PROJECTS'] = c.root.projects
-app.app.run(port=4321, debug=True)
+app.app.run(host='0.0.0.0', port=4321, debug=True)
