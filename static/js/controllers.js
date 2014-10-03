@@ -1,22 +1,33 @@
 'use strict';
 
-var ctrls = angular.module('angr.controllers', []);
+var ctrls = angular.module('angr.controllers', ['dialogs.main']);
 
 ctrls.controller('IndexCtrl', function($scope, $http, projects) {
     $scope.projects = projects;
 });
 
-ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, projects) {
+ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, projects, dialogs) {
     for (var i = 0; i < projects.length; i++) {
         if (projects[i].name === $routeParams['name']) {
             $scope.project = projects[i];
             break
         }
     }
+    $scope.tabs = [];
+    $scope.activeTab = null;
+    $scope.addTab = function () {
+        var dlg = dialogs.create('/static/partials/add_tab.html', 'AddTabCtrl', {}, {
+            size: 'lg'
+        });
+        dlg.result.then(function (data) {
+            $scope.tabs.push(data);
+            $scope.activeTab = $scope.tabs.length - 1;
+        });
+    };
+    $scope.activateTab = function (tabIndex) {
+        $scope.activeTab = tabIndex;
+    };
     $scope.activating = false;
-    $scope.cfgNodes = null;
-    $scope.cfgEdges = null;
-    $scope.viewState = '';
     $scope.activate = function() {
         $scope.activating = true;
         $http.post('/api/projects/' + $scope.project.name + '/activate')
@@ -78,5 +89,27 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             .success(function(data) {
                 console.log(data);
             });
+    };
+});
+
+ctrls.controller('AddTabCtrl', function ($scope, $modalInstance) {
+    $scope.data = {
+        type: null
+    };
+    $scope.cancel = function () {
+        $modalInstance.dismiss("Canceled");
+    };
+    $scope.add = function () {
+        switch ($scope.data.type) {
+            case 'CFG':
+                $scope.data.title = 'CFG Tab';
+                break;
+            case 'SURVEYOR':
+                $scope.data.title = 'Surveyor Tab';
+                break;
+            default:
+                return;
+        }
+        $modalInstance.close($scope.data);
     };
 });

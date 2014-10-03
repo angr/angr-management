@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html ng-app="modalTest">
+	<head>
+		<title>Angular-Dialogs-Service Demo v5.2.0 (without Angular-Translate option)</title>
+		<script src="//code.angularjs.org/1.2.25/angular.min.js"></script>
+		<script src="//code.angularjs.org/1.2.25/angular-sanitize.min.js"></script>
+		<script src="js/ui-bootstrap-tpls-0.11.0.min.js"></script>
+		<script src="js/dialogs.min.js"></script>
+		<script src="js/dialogTest2.js"></script>
+	
+		<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/dialogs.css">
+		
+		<style>
+			body { padding: 20px; }
+			.my-class .modal-body {
+				background-color: #eee;
+			}
+			.my-class .modal-footer {
+				margin-top: 0;
+			}
+		</style>
+	</head>
+	<body ng-controller="dialogServiceTest">
+		<div class="row">
+			<div class="col-md-12">
+				<h1>Dialog Service Demo (v5.2.0) <span class="text-muted"><small>Sans Angular-Translate</small></span></h1>
+				<p class="text-info">(Using: Bootstrap 3.2.0, AngularJS 1.2.25, Angular UI Bootstrap 0.11.0)</p>
+				<p>This Demo of Angular-Dialog-Service <strong>features an automatic substitution for Angular-Translate</strong>.  It will detect whether or not Angular-Translate is loaded; if not it will use the included translate substitute (translate.sub) module.  The translate substitution is small and modeled after Angular-Translate so that if in the future you wish to use Angular-Translate all you need to do is load the module (pascalprecht.translate) before this dialogs module.</p>
+				<p>The result, <a href="https://github.com/angular-translate">Angular-Translate (https://github.com/angular-translate)</a> <strong>is now optional</strong>, its no longer an absolute dependency.  If your application does not need a translation module then there is no need to include Angular-Translate anymore.  You can however still set default modal button, header and message text via <em>$translateProvider</em> in your module's <em>config</em> function.</p><br>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<button class="btn btn-danger" ng-click="launch('error')">Error Dialog</button>
+				<button class="btn btn-primary" ng-click="launch('wait')">Wait Dialog</button>
+				<button class="btn btn-primary" ng-click="launch('customwait')">"Custom" Wait Dialog</button>
+				<button class="btn btn-default" ng-click="launch('notify')">Notify Dialog</button>
+				<button class="btn btn-success" ng-click="launch('confirm')">Confirm Dialog</button>
+        		<button class="btn btn-warning" ng-click="launch('custom')">Custom Dialog</button>
+        		<button class="btn btn-warning" ng-click="launch('custom2')">Custom Dialog 2</button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<br>
+				<p><strong>Confirmation</strong>: {{confirmed}}</p>
+				<p><strong>Name Enter (From Custom)</strong>: {{name}}</p>
+				<p><strong>Custom 2 Value</strong>: {{custom.val}}</p>
+			</div>
+		</div>
+	</body>
+</html>

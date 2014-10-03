@@ -1,3 +1,8 @@
+projects
+
 # Python cruft
 *.pyc
 *.pyo
+
+# vim temp files
+*.swp

@@ -5,6 +5,7 @@ angular.module('angr', [
     'angr.controllers',
     'angr.directives',
     'angr.services',
+    'ui.bootstrap'
 ]).
 config(function($routeProvider, $locationProvider) {
     $routeProvider

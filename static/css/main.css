@@ -37,3 +37,14 @@ graph {
 .vex_irstmt {
 	white-space:nowrap;
 }
+
+.top-bar {
+    width: 100%;
+    border-bottom: 2px solid grey;
+    padding-bottom: 5px;
+}
+
+.top-bar-title {
+    margin-right: 20px;
+    font-size: 2em;
+}

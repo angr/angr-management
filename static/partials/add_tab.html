@@ -1,0 +1,27 @@
+<div style="padding:30px;">
+
+<h2>New Tab</h2>
+
+<label>Type:
+    <select ng-model="data.type">
+        <option value="CFG">CFG</option>
+        <option value="SURVEYOR">Surveyor</option>
+    </select>
+</label>
+
+<div ng-switch on="data.type" style="margin: 20px;">
+    <div ng-switch-when="CFG">
+        WHAT KIND OF CFG DO YOU WANT SIR
+    </div>
+    <div ng-switch-when="SURVEYOR">
+        WELL A SURVEYOR HOW WONDERFUL
+    </div>
+    <div ng-switch-default></div>
+</div>
+
+<center>
+    <button class="btn" ng-click="cancel()">Cancel</button>
+    <button class="btn btn-success" ng-click="add()">Add Tab</button>
+</center>
+
+</div>
