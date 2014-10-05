@@ -193,6 +193,70 @@ dirs.directive('graph', function() {
     };
 });
 
+dirs.directive('cfg', function() {
+    return {
+        templateUrl: '/static/partials/cfg.html',
+        restrict: 'E',
+        scope: {
+            project: '=',
+            data: '='
+        },
+        controller: function($scope, $http, $interval) {
+            console.log(angular.extend({}, $scope));
+            var handleCFG = function(data) {
+                console.log(angular.extend({}, $scope));
+                $scope.data.loaded = true;
+                console.log("handling cfg");
+
+                var blockToColor = {};
+                var colors = randomColor({count: Object.keys(data.functions).length,
+                                          luminosity: 'light'});
+                var i = 0;
+                for (var addr in data.functions) {
+                    var blocks = data.functions[addr];
+                    for (var j in blocks) {
+                        blockToColor[blocks[j]] = colors[i];
+                    }
+                    i += 1;
+                }
+                $scope.data.cfgNodes = {};
+                for (var i in data.nodes) {
+                    var node = data.nodes[i];
+                    var id = node.type + (node.type === 'IRSB' ? node.addr : node.name);
+                    if (node.addr) {
+                        node.color = blockToColor[node.addr];
+                    }
+                    $scope.data.cfgNodes[id] = node;
+                }
+                $scope.data.cfgEdges = [];
+                for (var i in data.edges) {
+                    var edge = data.edges[i];
+                    var fromId = edge.from.type + (edge.from.type === 'IRSB' ? edge.from.addr : edge.from.name);
+                    var toId = edge.to.type + (edge.to.type === 'IRSB' ? edge.to.addr : edge.to.name);
+                    $scope.data.cfgEdges.push({from: fromId, to: toId});
+                }
+            };
+
+            if (!$scope.data.loaded) {
+                $scope.data.loaded = false;
+                $http.get('/api/projects/' + $scope.project.name + '/cfg')
+                    .success(function(data) {
+                        var periodic = $interval(function() {
+                            $http.get('/api/tokens/' + data.token).success(function(res) {
+                                if (res.ready) {
+                                    $interval.cancel(periodic);
+                                    handleCFG(res.value);
+                                }
+                            }).error(function() {
+                                $interval.cancel(periodic);
+                            });
+                        }, 1000);
+                    });
+            }
+        }
+    };
+});
+
 dirs.directive('surveyors', function($http) {
     return {
         templateUrl: '/static/partials/surveyors.html',
