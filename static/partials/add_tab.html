@@ -13,15 +13,29 @@
     <div ng-switch-when="CFG">
         WHAT KIND OF CFG DO YOU WANT SIR
     </div>
+
     <div ng-switch-when="SURVEYOR">
-        WELL A SURVEYOR HOW WONDERFUL
+        <form class="form-horizontal simple-form" novalidate>
+          <div class="control-group">
+            <label class="control-label" for="surveyorType">Surveyor Type:</label>
+            <div class="controls">
+              <select id="surveyorType" ng-model="surveyorType" ng-options="t for t in surveyorTypes"></select>
+            </div>
+          </div>
+
+          <div class="control-group" ng-repeat="(o,d) in surveyorFieldDescriptions[surveyorType]">
+            <label class="control-label" for="option_{{o}}">{{d}}</label>
+            <div class="controls"> <input id="option_{{o}}" ng-model="surveyorFields[o]"> </div>
+          </div>
+        </form>
     </div>
+
     <div ng-switch-default></div>
 </div>
 
 <center>
     <button class="btn" ng-click="cancel()">Cancel</button>
-    <button class="btn btn-success" ng-click="add()">Add Tab</button>
+    <button class="btn btn-success" ng-disabled="thinking" ng-class="{'loading-icon': thinking}" ng-click="add()">Add Tab</button>
 </center>
 
 </div>

@@ -262,61 +262,12 @@ dirs.directive('surveyors', function($http) {
         templateUrl: '/static/partials/surveyors.html',
         restrict: 'AE',
         scope: { project: '=' },
-        controller: function($scope, $http)
-        {
-            $scope.surveyor_type = "Explorer";
-            $scope.surveyor_options = { };
+        controller: function($scope, $http) {
 
-            $scope.surveyor_options['find'] = "( )";
-            $scope.surveyor_options['avoid'] = "( )";
-            $scope.surveyor_options['restrict'] = "( )";
-            $scope.surveyor_options['min_depth'] = "1";
-            $scope.surveyor_options['max_repeats'] = "10";
-            $scope.surveyor_options['num_find'] = "1";
-            $scope.surveyor_options['num_avoid'] = "1000000";
-            $scope.surveyor_options['num_deviate'] = "1000000";
-            $scope.surveyor_options['num_loop'] = "1000000";
-
-            $scope.options = {
-                Explorer: {
-                    find: 'Addresses to find (Python expression)',
-                    avoid: 'Addresses to avoid (Python expression)',
-                    restrict: 'Addresses to restrict the analysis to (Python expression)',
-                    min_depth: 'The minimum number of blocks in a path before it can be culled',
-                    max_repeats: 'The maximum repeats for a single block before a path is marked as "looping"',
-                    num_find: 'Maximum number of paths to find before suspending the analysis',
-                    num_avoid: 'Maximum number of paths to avoid before suspending the analysis',
-                    num_deviate: 'Maximum number of paths to stop from deviating before suspending the analysis',
-                    num_loop: 'Maximum number of paths to stop from looping before suspending the analysis',
-                }
-            }
-
-            $scope.new_surveyor = function(type, options) {
-                var kwargs = { };
-                if (type == "Explorer")
-            {
-                kwargs['find'] = "PYTHON:"+options['find'];
-                kwargs['avoid'] = "PYTHON:"+options['avoid'];
-                kwargs['restrict'] = "PYTHON:"+options['restrict'];
-                if (options['min_depth'] != undefined) kwargs['min_depth'] = parseInt(options['min_depth']);
-                if (options['max_depth'] != undefined) kwargs['max_depth'] = parseInt(options['max_depth']);
-                if (options['max_repeats'] != undefined) kwargs['max_repeats'] = parseInt(options['max_repeats']);
-                if (options['num_find'] != undefined) kwargs['num_find'] = parseInt(options['num_find']);
-                if (options['num_avoid'] != undefined) kwargs['num_avoid'] = parseInt(options['num_avoid']);
-                if (options['num_deviate'] != undefined) kwargs['num_deviate'] = parseInt(options['num_deviate']);
-                if (options['num_loop'] != undefined) kwargs['num_loop'] = parseInt(options['num_loop']);
-            }
-
-                $http.post("/api/projects/" + $scope.project.name + "/surveyors/new/"+type, {kwargs:kwargs}).success(function(data, status) {
-                $scope.surveyors.push(data);
+            $scope.surveyors = [ ];
+            $http.get("/api/projects/" + $scope.project.name + "/surveyors").success(function(data, status) {
+                $scope.surveyors = data;
             });
-            }
-
-                $scope.surveyors = [ ];
-                $http.get("/api/projects/" + $scope.project.name + "/surveyors").success(function(data, status) { $scope.surveyors = data; });
-
-                $scope.surveyor_types = [ ];
-                $http.get("/api/surveyor_types").success(function(data, status) { $scope.surveyor_types = data; });
         }
     }
 });

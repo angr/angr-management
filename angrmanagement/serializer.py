@@ -112,11 +112,11 @@ class Serializer(object):
     def _serialize_ast(self, a, extra=None):
         return {
             'expr_type': 'ast',
-            'op': a._op,
-            'ast_type': ( 'binop' if a._op.startswith('__') and len(a._args) == 2 else
-                          'unop' if a._op.startswith('__') and len(a._args) == 1 else
-                          a._op ),
-            'args': self.serialize(a._args, extra=extra)
+            'op': a.op,
+            'ast_type': ( 'binop' if a.op.startswith('__') and len(a.args) == 2 else
+                          'unop' if a.op.startswith('__') and len(a.args) == 1 else
+                          a.op ),
+            'args': self.serialize(a.args, extra=extra)
         }
 
     def _serialize_expression(self, e, extra=None):
