@@ -23,7 +23,7 @@
 <div ng-if="activeTab != null" ng-switch on="tabs[activeTab].type">
     <div ng-switch-when="CFG">
         AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        <graph nodes="tabs[activeTab].data.nodes" edges="tabs[activeTab].data.edges"></graph>
+        <cfg project="project" data="tabs[activeTab]"></cfg>
     </div>
 
     <div ng-switch-when="SURVEYOR">
@@ -32,4 +32,3 @@
         <graph nodes="tabs[activeTab].data.cfgNodes" edges="tabs[activeTab].data.cfgEdges"></graph>
     </div>
 </div>
-
