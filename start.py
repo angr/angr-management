@@ -4,10 +4,10 @@ import sys
 from angrmanagement import app
 import rpyc
 
-c = rpyc.connect("localhost", int(sys.argv[1]))
-print c
-print c.root
-print c.root.projects
+if len(sys.argv) > 1:
+    c = rpyc.connect("localhost", int(sys.argv[1]))
+    app.app.config['PROJECTS'] = c.root.projects
+else:
+    app.app.config['PROJECTS'] = {}
 
-app.app.config['PROJECTS'] = c.root.projects
 app.app.run(host='0.0.0.0', port=4321, debug=True)
