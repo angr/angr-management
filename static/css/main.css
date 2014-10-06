@@ -48,3 +48,13 @@ graph {
     margin-right: 20px;
     font-size: 2em;
 }
+
+.loading-icon:after {
+    content: '';
+    background-image: url('/static/img/loading.gif');
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 5px;
+}
