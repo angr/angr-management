@@ -8,16 +8,9 @@ projects = {}
 for name in os.listdir('projects'):
     try:
         json.load(open('projects/' + name + '/metadata'))
-        projects[name] = None
+        projects[name] = []
     except:
         pass
-
-if len(sys.argv) > 1:
-    c = rpyc.connect("localhost", int(sys.argv[1]))
-    for name, proj in c.root.projects.iteritems():
-        if name in projects:
-            print '** Warning: Project name %s found in both projects dir and connected AngrServer. Using connected project.'
-        projects[name] = proj
 
 app.app.config['PROJECTS'] = projects
 

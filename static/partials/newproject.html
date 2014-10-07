@@ -1,9 +1,10 @@
-<div>
-  <h3>New project?</h3>
-  <form name="new-project">
-    Name:
-    <input type="text" name="name" ng-model="project.name"><br>
+<div style="margin-left: 50px;">
+    <label>
+        Name:
+        <input type="text" name="name" ng-model="project.name">
+    </label>
     <loadfile file="project.file"></loadfile>
-    <button ng-click="create()" ng-disabled="project.file == null">Create Project</button>
-  </form>
+    <p>
+        <button ng-click="create()" class="btn btn-primary" ng-disabled="project.file == null && project.name != ''">Create Project</button>
+    </p>
 </div>

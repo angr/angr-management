@@ -1,30 +1,6 @@
 <span ng-if="surveyors.length > 0">
   <h2>Current Surveyors</h2>
   <span ng-repeat="s in surveyors">
-    <div class="panel panel-default" surveyor sid="s.id" data="s" project="project">WTF</div>
+    <div class="panel panel-default" surveyor sid="s.id" data="s" instance="instance">WTF</div>
   </span>
 </span>
-
-<!--
-<h2>New Surveyor</h2>
-
-<form class="form-horizontal simple-form" novalidate>
-  <div class="control-group">
-    <label class="control-label" for="surveyor_type">Surveyor Type:</label>
-    <div class="controls">
-      <select id="surveyor_type" ng-model="surveyor_type" ng-options="t for t in surveyor_types"></select>
-    </div>
-  </div>
-
-  <div class="control-group" ng-repeat="(o,d) in options[surveyor_type]">
-    <label class="control-label" for="option_{{o}}">{{d}}</label>
-    <div class="controls"> <input id="option_{{o}}" ng-model="surveyor_options[o]"> </div>
-  </div>
-
-  <div class="control-group">
-    <div class="controls">
-      <button type="submit" class="btn" ng-click="new_surveyor(surveyor_type, surveyor_options)">Add</button>
-    </div>
-  </div>
-</form>
--->

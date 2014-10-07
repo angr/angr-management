@@ -58,3 +58,15 @@ graph {
     vertical-align: middle;
     margin-left: 5px;
 }
+
+.fileinput {
+    display: block;
+    width: 300px;
+    padding: 20px;
+    border-radius: 10px;
+    border: 3px dashed grey;
+}
+
+.fileinput.dragover {
+    border-color: green;
+}

@@ -6,13 +6,18 @@ ctrls.controller('IndexCtrl', function($scope, $http, projects) {
     $scope.projects = projects;
 });
 
-ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, $modal, projects) {
-    for (var i = 0; i < projects.length; i++) {
-        if (projects[i].name === $routeParams['name']) {
-            $scope.project = projects[i];
-            break
+ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, $modal) {
+    $scope.inst_id = $routeParams['inst_id'];
+    $scope.instance = {};
+    $http.get('/api/instances/' + $scope.inst_id).success(function (data) {
+        if (data.success) {
+            $scope.instance = data;
+        } else {
+            alert(data.message);
         }
-    }
+    }).error(function () {
+        alert('Some sort of really bad error pinging instance...');
+    });
     $scope.tabs = [];
     $scope.activeTab = null;
     $scope.addTab = function () {
@@ -29,17 +34,6 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
     };
     $scope.activateTab = function (tabIndex) {
         $scope.activeTab = tabIndex;
-    };
-    $scope.activating = false;
-    $scope.activate = function() {
-        $scope.activating = true;
-        $http.post('/api/projects/' + $scope.project.name + '/activate')
-            .success(function() {
-                $scope.project.activated = true;
-                $scope.activating = false;
-            }).error(function() {
-                $scope.activating = false;
-            });
     };
     var handleCFG = function(data) {
         var prefix = "asdf";
@@ -73,22 +67,26 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
         $scope.viewState = 'cfg';
     };
     $scope.genCFG = function() {
-        $http.get('/api/projects/' + $scope.project.name + '/cfg')
+        $http.get('/api/instances/' + $scope.inst_id + '/cfg')
             .success(function(data) {
-                var periodic = $interval(function() {
-                    $http.get('/api/tokens/' + data.token).success(function(res) {
-                        if (res.ready) {
+                if ('token' in data) {
+                    var periodic = $interval(function() {
+                        $http.get('/api/tokens/' + data.token).success(function(res) {
+                            if (res.ready) {
+                                $interval.cancel(periodic);
+                                handleCFG(res.value);
+                            }
+                        }).error(function() {
                             $interval.cancel(periodic);
-                            handleCFG(res.value);
-                        }
-                    }).error(function() {
-                        $interval.cancel(periodic);
-                    });
-                }, 1000);
+                        });
+                    }, 1000);
+                } else {
+                    handleCFG(data);
+                }
             });
     };
     $scope.genDDG = function() {
-        $http.get('/api/projects/' + $scope.project.name + '/ddg')
+        $http.get('/api/instances/' + $scope.inst_id + '/ddg')
             .success(function(data) {
                 console.log(data);
             });
@@ -129,7 +127,7 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
                 }
 
                 $scope.thinking = true;
-                $http.post("/api/projects/" + $scope.project.name + "/surveyors/new/"+ $scope.surveyorType, {kwargs:kwargs}).success(function(data, status) {
+                $http.post("/api/instances/" + $scope.inst_id + "/surveyors/new/"+ $scope.surveyorType, {kwargs:kwargs}).success(function(data, status) {
                     $scope.thinking = false;
                     $scope.data.surveyorData = data;
                     $modalInstance.close($scope.data);
@@ -167,5 +165,35 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
             num_deviate: 'Maximum number of paths to stop from deviating before suspending the analysis',
             num_loop: 'Maximum number of paths to stop from looping before suspending the analysis',
         }
+    };
+});
+
+ctrls.controller('UseProjectDialog', function ($scope, $modalInstance, $http, $location) {
+    $scope.thinking = false;
+    $scope.newInstanceName = '';
+
+    $scope.newInstance = function () {
+        $scope.thinking = true;
+        $http.post("/api/instances/new/" + $scope.project.name, {name: $scope.newInstanceName}).success(function (data) {
+            $scope.thinking = false;
+            if (data.success) {
+                $modalInstance.close();
+                $location.path('/instance/' + data.id);
+            } else {
+                alert(data.message);
+            }
+        }).error(function (data) {
+            $scope.thinking = false;
+            alert('Couldn\'t create instance :(')
+        });
+    };
+
+    $scope.useInstance = function (inst) {
+        $modalInstance.close();
+        $location.path('/instance/' + inst);
+    };
+
+    $scope.cancel = function () {
+        $modalInstance.close();
     };
 });

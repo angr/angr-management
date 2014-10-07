@@ -1,0 +1,17 @@
+<div style="padding: 20px;">
+    <p><a href="/download/{{project.name}}">Download binary</a></p>
+
+    <div ng-if="project.instances.length > 0">
+        <h3>Use a running instance:</h3>
+        <ul>
+            <li ng-repeat="instance in project.instances" ng-if="instance.id != 'length'">
+                <a ng-click="useInstance(instance.id)">{{instance.name}}</a>
+            </li>
+        </ul>
+    </div>
+
+    <input ng-model="newInstanceName" placeholder="New Instance Name">
+    <button class="btn btn-primary" ng-click="newInstance()" ng-disabled="thinking || newInstanceName == ''" ng-class="{'loading-icon': thinking}">New Instance</button>
+
+    <button class="btn btn-default" ng-click="cancel()">Cancel</button>
+</div>

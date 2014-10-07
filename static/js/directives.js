@@ -5,13 +5,16 @@ dirs.directive('newproject', function() {
     return {
         templateUrl: '/static/partials/newproject.html',
         restrict: 'AE',
+        scope: {
+            projects: '='
+        },
         controller: function($scope, $http) {
             $scope.project = {};
-            $scope.project.name = "my_cool_binary";
+            $scope.project.name = "";
             $scope.project.file = null;
             $scope.create = function() {
                 var config = {
-                    url: '/api/projects/',
+                    url: '/api/projects/new',
                     method: 'POST',
                     headers: {
                         'Content-Type': undefined
@@ -25,8 +28,16 @@ dirs.directive('newproject', function() {
                     })(),
                     transformRequest: function(formData) { return formData; }
                 };
-                $http(config).success(function() {
-                    alert('project created!');
+                $http(config).success(function(data) {
+                    if (data.success) {
+                        alert('project created!');
+                        $scope.projects.push({
+                            name: data.name,
+                            instances: []
+                        });
+                    } else {
+                        alert(data.message);
+                    }
                 }).error(function() {
                     alert('could not create project :(');
                 });
@@ -34,6 +45,57 @@ dirs.directive('newproject', function() {
         }
     };
 });
+
+dirs.directive('useproject', function () {
+    return {
+        template: '<a ng-click="clicky()">{{project.name}}</a>',
+        restrict: 'AE',
+        scope: {
+            project: '='
+        },
+        controller: function ($scope, $modal) {
+            $scope.clicky = function () {
+                $modal.open({
+                    templateUrl: '/static/partials/useproject.html',
+                    scope: $scope,
+                    controller: 'UseProjectDialog'
+                });
+            };
+        }
+    }
+});
+
+dirs.directive('connectproject', function ($http) {
+    return {
+        templateUrl: '/static/partials/connectproject.html',
+        restrict: 'AE',
+        controller: function ($scope) {
+            $scope.hostname = 'localhost';
+            $scope.port = '1234';
+            $scope.thinking = false;
+            $scope.connect = function () {
+                if (Math.floor($scope.port - 0).toString() == $scope.port) {
+                    $scope.thinking = true;
+                    $http.post('/api/instances/connect', {hostname: $scope.hostname, port: $scope.port - 0}).success(function (data) {
+                        $scope.thinking = false;
+                        if (data.success) {
+                            $location.path('/instance/' + data.id);
+                        } else {
+                            alert(data.message);
+                        }
+                    }).error(function () {
+                        $scope.thinking = false;
+                        alert("Couldn't connect for some reason...");
+                    });
+                } else {
+                    alert('Enter a valid port please!');
+                }
+            };
+        }
+    };
+});
+
+
 
 dirs.directive('loadfile', function($http) {
     return {
@@ -198,7 +260,7 @@ dirs.directive('cfg', function() {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'E',
         scope: {
-            project: '=',
+            instance: '=',
             data: '='
         },
         controller: function($scope, $http, $interval) {
@@ -239,7 +301,7 @@ dirs.directive('cfg', function() {
 
             if (!$scope.data.loaded) {
                 $scope.data.loaded = false;
-                $http.get('/api/projects/' + $scope.project.name + '/cfg')
+                $http.get('/api/instances/' + $scope.instance + '/cfg')
                     .success(function(data) {
                         var periodic = $interval(function() {
                             $http.get('/api/tokens/' + data.token).success(function(res) {
@@ -261,11 +323,11 @@ dirs.directive('surveyors', function($http) {
     return {
         templateUrl: '/static/partials/surveyors.html',
         restrict: 'AE',
-        scope: { project: '=' },
+        scope: { instance: '=' },
         controller: function($scope, $http) {
 
             $scope.surveyors = [ ];
-            $http.get("/api/projects/" + $scope.project.name + "/surveyors").success(function(data, status) {
+            $http.get("/api/instances/" + $scope.instance + "/surveyors").success(function(data, status) {
                 $scope.surveyors = data;
             });
         }
@@ -276,32 +338,32 @@ dirs.directive('surveyor', function($http) {
     return {
         templateUrl: '/static/partials/surveyor.html',
         restrict: 'AE',
-        scope: { sid: '=', project: "=", surveyor: '=data' },
+        scope: { sid: '=', instance: "=", surveyor: '=data' },
         controller: function($scope, $http)
         {
             $scope.show_surveyor = false;
             if ($scope.surveyor == undefined)
             {
-                $http.get("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid).success(function(data, status) {
+                $http.get("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid).success(function(data, status) {
                     $scope.surveyor = data;
                 });
             }
 
             $scope.steps = 1;
             $scope.step = function(steps) {
-                $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
+                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
                     $scope.surveyor = data;
                 });
             }
 
             $scope.reactivate = function(path) {
-                $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
+                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
                     $scope.surveyor = data;
                 });
             }
 
             $scope.suspend = function(path) {
-                $http.post("/api/projects/" + $scope.project.name + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
+                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
                     $scope.surveyor = data;
                 });
             }
