@@ -53,6 +53,16 @@ def with_instances(func):
         return func(*args, instances=active_instances, **kwargs)
     return instancesed
 
+def with_instance(func):
+    @functools.wraps(func)
+    def instanced(*args, **kwargs):
+        inst_id = kwargs.pop('inst_id')
+        if inst_id in active_instances:
+            return func(*args, instance=active_instances[inst_id], **kwargs)
+        else:
+            return {'success': False, 'message': 'No such instance'}
+    return instanced
+
 app = flask.Flask(__name__, static_folder='../static')
 the_serializer = Serializer()
 active_tokens = {}
@@ -117,7 +127,7 @@ def new_project(projects=None):
 @jsonize
 def list_instances(instances=None):
     return {inst_id: {'name': inst['name'], 'project': inst['project']} for inst_id, inst in instances.iteritems()}
-        
+
 
 @app.route('/api/instances/new/<project>', methods=('POST',))
 @with_projects
@@ -145,37 +155,33 @@ def new_instance(project, projects=None, instances=None):
     return {'success': False, 'message': 'Project does not exist..?'}
 
 @app.route('/api/instances/<int:inst_id>')
-@with_instances
 @jsonize
-def instance_info(inst_id, instances=None):
-    if inst_id in instances:
-        instance = instances[inst_id].copy()
-        instance.pop('angr')
-        instance.pop('remote')
-        instance['success'] = True
-        return instance
-    return {'success': False, 'message': 'No such instance'}
+@with_instance
+def instance_info(instance=None):
+    instance = instance.copy()
+    instance.pop('angr')
+    instance.pop('remote')
+    instance['success'] = True
+    return instance
 
 @app.route('/api/instances/<int:inst_id>/cfg')
-@with_instances
 @jsonize
-def get_cfg(inst_id, instances=None):
-    if inst_id in instances:
-        instance = instances[inst_id]
-        proj = instance['angr']
-        token = str(uuid.uuid4())
-        if proj._cfg is None:
-            async_construct = rpyc.async(proj.construct_cfg)
-            active_tokens[token] = ('CFG', async_construct, async_construct())
-            return {'token': token}
-        cfg = proj._cfg
-        return {
-            'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
-            'edges': [{'from': the_serializer.serialize(from_, ref=True),
-                       'to': the_serializer.serialize(to, ref=True)}
-                      for from_, to in cfg._cfg.edges()],
-            'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
-        }
+@with_instance
+def get_cfg(instance=None):
+    proj = instance['angr']
+    token = str(uuid.uuid4())
+    if proj._cfg is None:
+        async_construct = rpyc.async(proj.construct_cfg)
+        active_tokens[token] = ('CFG', async_construct, async_construct())
+        return {'token': token}
+    cfg = proj._cfg
+    return {
+        'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
+        'edges': [{'from': the_serializer.serialize(from_, ref=True),
+                   'to': the_serializer.serialize(to, ref=True)}
+                  for from_, to in cfg._cfg.edges()],
+        'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
+    }
 
 @app.route('/api/instances/<int:inst_id>/ddg')
 @with_instances
@@ -214,8 +220,8 @@ def surveyor_types():
 
 @app.route('/api/instances/<int:inst_id>/surveyors/new/<surveyor_type>', methods=('POST',))
 @jsonize
-@with_instances
-def new_surveyor(inst_id, surveyor_type, instances=None):
+@with_instance
+def new_surveyor(surveyor_type, instance=None):
     # TODO: take a SimExit as a starting point
 
     kwargs = dict(flask.request.json.get('kwargs', {}))
@@ -223,16 +229,16 @@ def new_surveyor(inst_id, surveyor_type, instances=None):
         if type(v) in (str,unicode) and v.startswith("PYTHON:"):
             kwargs[k] = ast.literal_eval(v[7:])
 
-    p = instances[inst_id]['angr']
+    p = instance['angr']
     s = p.survey(surveyor_type, **kwargs)
     active_surveyors[str(id(s))] = s
     return the_serializer.serialize(s)
 
 @app.route('/api/instances/<int:inst_id>/surveyors')
 @jsonize
-@with_instances
-def list_surveyors(inst_id, instances=None):
-    p = instances[inst_id]['angr']
+@with_instance
+def list_surveyors(instance):
+    p = instance['angr']
     return [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>')
