@@ -1,0 +1,16 @@
+<div ng-if="!data.loaded" class="loading-icon">
+  Loading...
+</div>
+
+<div ng-if="data.loaded">
+  <select ng-model="data.selectedFunc"
+          ng-options="f.addr as (f.name + ' (0x' + f.addr.toString(16) + ')') for f in data.functions">
+    <option value="">-- choose function --</option>
+  </select>
+
+  <div ng-if="data.selectedFunc != null">
+    <input ng-model="f.name" ng-change="nameTainted = true">
+    <button class="btn" ng-disabled="!nameTainted" ng-click="rename(f)">Rename</button><br>
+    addr: 0x{{ f.addr.toString(16) }}<br>
+  </div>
+</div>

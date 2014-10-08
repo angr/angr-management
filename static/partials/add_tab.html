@@ -4,6 +4,7 @@
 
 <label>Type:
     <select ng-model="data.type">
+        <option value="FUNCTIONS">Functions</option>
         <option value="CFG">CFG</option>
         <option value="SURVEYOR">Surveyor</option>
     </select>
@@ -12,6 +13,10 @@
 <div ng-switch on="data.type" style="margin: 20px;">
     <div ng-switch-when="CFG">
         WHAT KIND OF CFG DO YOU WANT SIR
+    </div>
+
+    <div ng-switch-when="FUNCTIONS">
+        WHAT KIND OF FUNCTIONS DO YOU WANT SIR
     </div>
 
     <div ng-switch-when="SURVEYOR">

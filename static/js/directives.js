@@ -319,6 +319,39 @@ dirs.directive('cfg', function() {
     };
 });
 
+dirs.directive('functions', function() {
+    return {
+        templateUrl: '/static/partials/functions.html',
+        restrict: 'E',
+        scope: { instance: '=', data: '=' },
+        controller: function($scope, $http) {
+            if (!$scope.data.loaded) {
+                $scope.data.loaded = false;
+                $http.get('/api/instances/' + $scope.instance + '/functions')
+                    .success(function(data) {
+                        $scope.data.selectedFunc = null;
+                        $scope.data.loaded = true;
+                        $scope.data.functions = data;
+                    });
+            }
+            $scope.nameTainted = false;
+            $scope.rename = function(f) {
+                $http.post('/api/instances/' + $scope.instance + '/functions/' + f.addr + '/rename', f.name)
+                    .success(function(data) {
+                        // not working...?
+                        $scope.nameTainted = false;
+                    });
+            };
+            $scope.$watch('data.selectedFunc', function(sf) {
+                if (!sf || !$scope.data.functions) { return; }
+                $scope.f = $scope.data.functions.filter(function(f) {
+                    return f.addr == sf;
+                })[0];
+            });
+        }
+    }
+});
+
 dirs.directive('surveyors', function($http) {
     return {
         templateUrl: '/static/partials/surveyors.html',

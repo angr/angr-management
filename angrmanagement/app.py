@@ -183,6 +183,35 @@ def get_cfg(instance=None):
         'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
     }
 
+@app.route('/api/instances/<int:inst_id>/functions')
+@jsonize
+@with_instance
+def get_functions(instance=None):
+    proj = instance['angr']
+    if proj._cfg is None:
+        return {'status': False, 'message': 'CFG not generated yet'}
+    return [
+        {
+            'addr': the_serializer.serialize(f._addr),
+            'blocks': the_serializer.serialize(f.basic_blocks),
+            'name': the_serializer.serialize(f._name),
+            'argument_registers': the_serializer.serialize(f._argument_registers),
+            'argument_stack_variables': the_serializer.serialize(f._argument_stack_variables),
+        }
+        for f in proj._cfg.get_function_manager().functions.values()
+    ]
+
+@app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/rename', methods=('POST',))
+@jsonize
+@with_instance
+def rename_function(func_addr, instance=None):
+    proj = instance['angr']
+    if proj._cfg is None:
+        return {'status': False, 'message': 'CFG not generated yet'}
+    f = proj._cfg.get_function_manager().functions[func_addr]
+    f._name = flask.request.data
+    return {'status': True}
+
 @app.route('/api/instances/<int:inst_id>/ddg')
 @with_instances
 @jsonize

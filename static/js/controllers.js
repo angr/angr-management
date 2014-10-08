@@ -22,9 +22,9 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
     $scope.activeTab = null;
     $scope.addTab = function () {
         var dlg = $modal.open({
-            templateUrl: '/static/partials/add_tab.html', 
-            controller: 'AddTabCtrl', 
-            scope: $scope, 
+            templateUrl: '/static/partials/add_tab.html',
+            controller: 'AddTabCtrl',
+            scope: $scope,
             size: 'lg'
         });
         dlg.result.then(function (data) {
@@ -105,6 +105,10 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
     $scope.thinking = false;
     $scope.add = function () {
         switch ($scope.data.type) {
+        case 'FUNCTIONS':
+            $scope.data.title = 'Functions';
+            $modalInstance.close($scope.data);
+            break;
             case 'CFG':
                 $scope.data.title = 'CFG Tab';
                 $modalInstance.close($scope.data);
