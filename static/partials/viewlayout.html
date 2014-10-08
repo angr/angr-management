@@ -1,0 +1,19 @@
+<viewlayout ng-if="view.split" ng-style="styleHalfA" view="view.halfA"></viewlayout>
+<viewlayout ng-if="view.split" ng-style="styleHalfB" view="view.halfB"></viewlayout>
+
+<div ng-if="!view.split" ng-style="styleFull" ng-switch on="view.type">
+    <div ng-switch-when="CFG">
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        <cfg instance="instance.id" data="view"></cfg>
+    </div>
+
+    <div ng-switch-when="FUNCTIONS">
+        CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+        <functions instance="instance.id" data="view"></functions>
+    </div>
+
+    <div ng-switch-when="SURVEYOR">
+        BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+        <surveyors instance="instance.id"></surveyors>
+    </div>
+</div>

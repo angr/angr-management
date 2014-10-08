@@ -154,6 +154,21 @@ dirs.directive('loadfile', function($http) {
     };
 });
 
+dirs.directive('viewlayout', function (RecursionHelper) {
+    return {
+        templateUrl: '/static/partials/viewlayout.html',
+        restrict: 'AE',
+        scope: {
+            view: '='
+        },
+        controller: function ($scope, $element) {
+            console.log('THING THING');
+            console.log($scope.view);
+        },
+        compile: RecursionHelper.compile
+    };
+});
+
 dirs.directive('bblock', function() {
     return {
         priority: 100,

@@ -16,20 +16,4 @@
     </li>
 </ul>
 
-<div ng-if="activeTab != null" ng-switch on="tabs[activeTab].type">
-    <div ng-switch-when="CFG">
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        <cfg instance="instance.id" data="tabs[activeTab]"></cfg>
-    </div>
-
-    <div ng-switch-when="FUNCTIONS">
-        CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-        <functions instance="instance.id" data="tabs[activeTab]"></functions>
-    </div>
-
-    <div ng-switch-when="SURVEYOR">
-        BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-        <surveyors instance="instance.id"></surveyors>
-        <graph nodes="tabs[activeTab].data.cfgNodes" edges="tabs[activeTab].data.cfgEdges"></graph>
-    </div>
-</div>
+<viewlayout ng-if="activeTab != null" view="tabs[activeTab]" ng-style="tabSpaceStyle"></viewlayout>
