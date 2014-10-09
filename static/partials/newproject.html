@@ -3,8 +3,8 @@
         Name:
         <input type="text" name="name" ng-model="project.name">
     </label>
-    <loadfile file="project.file"></loadfile>
-    <p>
-        <button ng-click="create()" class="btn btn-primary" ng-disabled="project.file == null && project.name != ''">Create Project</button>
+    <div class="fileinput" loadfile file="project.file"></div>
+    <p style="margin-left: 20px; margin-top: 10px;">
+        <button ng-click="create()" class="btn btn-primary" ng-disabled="project.file == null || project.name == ''">Create Project</button>
     </p>
 </div>

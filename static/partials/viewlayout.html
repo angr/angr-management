@@ -1,5 +1,5 @@
-<viewlayout ng-if="view.split" ng-style="styleHalfA" view="view.halfA"></viewlayout>
-<viewlayout ng-if="view.split" ng-style="styleHalfB" view="view.halfB"></viewlayout>
+<viewlayout ng-if="view.split" ng-style="styleHalfA" view="view.halfA" instance="instance"></viewlayout>
+<viewlayout ng-if="view.split" ng-style="styleHalfB" view="view.halfB" instance="instance"></viewlayout>
 
 <div ng-if="!view.split" ng-style="styleFull" ng-switch on="view.type">
     <div ng-switch-when="CFG">

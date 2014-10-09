@@ -35,6 +35,8 @@ dirs.directive('newproject', function() {
                             name: data.name,
                             instances: []
                         });
+                        $scope.project.file = null;
+                        $scope.project.name = "";
                     } else {
                         alert(data.message);
                     }
@@ -65,7 +67,7 @@ dirs.directive('useproject', function () {
     }
 });
 
-dirs.directive('connectproject', function ($http) {
+dirs.directive('connectproject', function ($http, $location) {
     return {
         templateUrl: '/static/partials/connectproject.html',
         restrict: 'AE',
@@ -100,22 +102,22 @@ dirs.directive('connectproject', function ($http) {
 dirs.directive('loadfile', function($http) {
     return {
         templateUrl: '/static/partials/loadfile.html',
-        restrict: 'AE',
+        restrict: 'A',
         scope: {
             file: '=',
         },
         link: function($scope, element, attrs) {
-            $scope.chosenURL = null;
+            $scope.url = {chosenURL: ''};
             $scope.uploadURL = function() {
-                var url;
-                if ($scope.chosenURL.indexOf("http://") === 0) {
-                    url = $scope.chosenURL.slice(7);
-                } else if ($scope.chosenURL.indexOf("https://") === 0) {
-                    url = $scope.chosenURL.slice(8);
+                var url = $scope.url.chosenURL;
+                if (url.indexOf("http://") === 0) {
+                    url = url.slice(7);
+                } else if (url.indexOf("https://") === 0) {
+                    url = url.slice(8);
                 } else {
                     return;
                 }
-                console.log("http://www.corsproxy.com/" + url);
+                //console.log("http://www.corsproxy.com/" + url);
                 $http({
                     method: 'GET',
                     url: "http://www.corsproxy.com/" + url,
@@ -132,10 +134,30 @@ dirs.directive('loadfile', function($http) {
                 return false;
             };
 
+            var highlightDrop = function(e) {
+                element.addClass('dragover');
+                return blankHandler(e);
+            };
+
+            var cautiousUnhighlight = function (e) {
+                var rect = e.target.getBoundingClientRect();
+                if (e.target != element[0]) return blankHandler(e);
+                if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) return blankHandler(e);
+                return unhighlightDrop(e);
+            };
+
+            var unhighlightDrop = function(e) {
+                element.removeClass('dragover');
+                return blankHandler(e);
+            };
+
             element.bind('dragover', blankHandler);
-            element.bind('dragenter', blankHandler);
+            element.bind('dragenter', highlightDrop);
+            element.bind('dragleave', cautiousUnhighlight);
+            element.bind('dragend', unhighlightDrop);
 
             element.bind('drop', function(event) {
+                element.removeClass('dragover');
                 event.preventDefault();
                 var file = event.dataTransfer.files[0];
                 console.log(file);
@@ -159,7 +181,8 @@ dirs.directive('viewlayout', function (RecursionHelper) {
         templateUrl: '/static/partials/viewlayout.html',
         restrict: 'AE',
         scope: {
-            view: '='
+            view: '=',
+            instance: '='
         },
         controller: function ($scope, $element) {
             console.log('THING THING');

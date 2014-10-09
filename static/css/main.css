@@ -65,8 +65,29 @@ graph {
     padding: 20px;
     border-radius: 10px;
     border: 3px dashed grey;
+    height: 150px;
 }
 
 .fileinput.dragover {
     border-color: green;
+    background-color: #bbb;
+    color: #eee;
+}
+
+.fileinputdragging {
+    display: none;
+}
+
+.dragover .fileinputdragging {
+    display: block;
+}
+
+.dragover .fileinputcontrols {
+    display: none;
+}
+
+.fileinputmessage {
+    text-align: center;
+    font-size: 2em;
+    padding-top: 32px;
 }

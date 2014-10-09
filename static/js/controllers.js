@@ -181,6 +181,7 @@ ctrls.controller('UseProjectDialog', function ($scope, $modalInstance, $http, $l
         $http.post("/api/instances/new/" + $scope.project.name, {name: $scope.newInstanceName}).success(function (data) {
             $scope.thinking = false;
             if (data.success) {
+                $scope.project.instances.push({id: data.id, name: $scope.newInstanceName});
                 $modalInstance.close();
                 $location.path('/instance/' + data.id);
             } else {

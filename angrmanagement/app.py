@@ -13,6 +13,7 @@ import angr
 from simuvex import SimIRSB, SimProcedure
 import rpyc
 from rpyc.utils.classic import obtain
+from socket import error as socket_error
 
 try:
     import standard_logging #pylint:disable=W0611
@@ -138,21 +139,52 @@ def new_instance(project, projects=None, instances=None):
         metadata = json.load(open(PROJDIR + project + '/metadata', 'rb'))
         remote = spawn_child()
         active_conns.append(remote)
-        print 'LOOK:', os.path.exists(PROJDIR + project + '/binary')
         proj = remote.modules.angr.Project(PROJDIR + project + '/binary')
-        proj_id = id(proj)
-        inst_name = flask.request.json.get('name', '<unnamed>')
-        instance = {
-            'id': proj_id,
-            'name': inst_name,
-            'angr': proj,
-            'project': project,
-            'remote': remote
-        }
-        instances[proj_id] = instance
+        proj_id = create_instance(proj, inst_name, remote, project, instances)
         projects[project].append({'name': inst_name, 'id': proj_id})
         return {'success': True, 'id': proj_id}
     return {'success': False, 'message': 'Project does not exist..?'}
+
+def create_instance(proj, inst_name, remote, project, instances):
+    proj_id = id(proj)
+    inst_name = flask.request.json.get('name', '<unnamed>')
+    instance = {
+        'id': proj_id,
+        'name': inst_name,
+        'angr': proj,
+        'project': project,
+        'remote': remote
+    }
+    instances[proj_id] = instance
+    return proj_id
+
+@app.route('/api/instances/connect', methods=('POST',))
+@with_instances
+@jsonize
+def connect_instance(instances=None):
+    hostname = flask.request.json.get('hostname', None)
+    port = flask.request.json.get('port', None)
+    if hostname is None or port is None:
+        flask.abort(400)
+
+    try:
+        conn = rpyc.connect(hostname, port)
+        conn.ping('you there?')
+        pkeys = conn.root.projects.keys()
+    except socket_error:
+        return {'success': False, 'message': 'Connection refused.'}
+    except rpyc.AsyncResultTimeout:
+        return {'success': False, 'message': 'Remote unresponsive.'}
+    except Exception as e:
+        print e
+        return {'success': False, 'message': "Couldn't connect for weird unaccounted-for reason"}
+    active_conns.append(conn)
+    
+    if len(pkeys) != 1:
+        return {'success': False, 'message': "There are either zero or more than one projects on this server?"}
+    proj = conn.root.projects[pkeys[0]]
+    proj_id = create_instance(proj, '<one-shot instance>', conn, pkeys[0], instances)
+    return {'success': True, 'id': proj_id}
 
 @app.route('/api/instances/<int:inst_id>')
 @jsonize

@@ -1,5 +1,5 @@
 <div class="top-bar">
-    <span class="top-bar-title">Angr Management</span>
+    <a class="top-bar-title" href="/">Angr Management</a>
     Project: <em>{{instance.project}}</em> Instance: <em>{{instance.name}}</em>
 </div>
 
@@ -16,4 +16,4 @@
     </li>
 </ul>
 
-<viewlayout ng-if="activeTab != null" view="tabs[activeTab]" ng-style="tabSpaceStyle"></viewlayout>
+<viewlayout ng-if="activeTab != null" view="tabs[activeTab]" instance="instance" ng-style="tabSpaceStyle"></viewlayout>
