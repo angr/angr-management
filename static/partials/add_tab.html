@@ -7,6 +7,7 @@
         <option value="FUNCTIONS">Functions</option>
         <option value="CFG">CFG</option>
         <option value="SURVEYOR">Surveyor</option>
+        <option value="SPLITTEST">Splitting test</option>
     </select>
 </label>
 
@@ -33,6 +34,10 @@
             <div class="controls"> <input id="option_{{o}}" ng-model="surveyorFields[o]"> </div>
           </div>
         </form>
+    </div>
+
+    <div ng-switch-when="SPLITTEST">
+        OKAY
     </div>
 
     <div ng-switch-default></div>

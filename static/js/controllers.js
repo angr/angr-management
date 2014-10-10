@@ -18,6 +18,13 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
     }).error(function () {
         alert('Some sort of really bad error pinging instance...');
     });
+    $scope.tabSpaceStyle = {
+        position: 'absolute',
+        left: '0px',
+        right: '0px',
+        top: '85px',
+        bottom: '0px'
+    };
     $scope.tabs = [];
     $scope.activeTab = null;
     $scope.addTab = function () {
@@ -136,6 +143,10 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
                     $scope.data.surveyorData = data;
                     $modalInstance.close($scope.data);
                 });
+                break;
+            case 'SPLITTEST':
+                $scope.data.title = 'Split Test';
+                $modalInstance.close($scope.data);
                 break;
             default:
                 return;

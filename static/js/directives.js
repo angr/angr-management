@@ -185,8 +185,27 @@ dirs.directive('viewlayout', function (RecursionHelper) {
             instance: '='
         },
         controller: function ($scope, $element) {
-            console.log('THING THING');
-            console.log($scope.view);
+            /*
+            var makeStyleFull = function () {return {
+                position: 'absolute',
+                left: '0px',
+                right: '0px',
+                top: '0px',
+                bottom: '0px'
+            }};
+            $scope.styleFull = makeStyleFull();
+            if ($scope.view.split) {
+                $scope.styleHalfA = makeStyleFull();
+                $scope.styleHalfA = makeStyleFull();
+                if ($scope.view.split.horizontal) {
+                    $scope.styleHalfA.right = ($scope.view.split.size * 100) + '%';
+                    $scope.styleHalfB.left = ($scope.view.split.size * 100) + '%';
+                } else {
+                    $scope.styleHalfA.bottom = ($scope.view.split.size * 100) + '%';
+                    $scope.styleHalfB.top = ($scope.view.split.size * 100) + '%';
+                }
+            }
+            */
         },
         compile: RecursionHelper.compile
     };
@@ -296,7 +315,7 @@ dirs.directive('graph', function() {
 dirs.directive('cfg', function() {
     return {
         templateUrl: '/static/partials/cfg.html',
-        restrict: 'E',
+        restrict: 'AE',
         scope: {
             instance: '=',
             data: '='
@@ -341,16 +360,20 @@ dirs.directive('cfg', function() {
                 $scope.data.loaded = false;
                 $http.get('/api/instances/' + $scope.instance + '/cfg')
                     .success(function(data) {
-                        var periodic = $interval(function() {
-                            $http.get('/api/tokens/' + data.token).success(function(res) {
-                                if (res.ready) {
+                        if ('token' in data) {
+                            var periodic = $interval(function() {
+                                $http.get('/api/tokens/' + data.token).success(function(res) {
+                                    if (res.ready) {
+                                        $interval.cancel(periodic);
+                                        handleCFG(res.value);
+                                    }
+                                }).error(function() {
                                     $interval.cancel(periodic);
-                                    handleCFG(res.value);
-                                }
-                            }).error(function() {
-                                $interval.cancel(periodic);
-                            });
-                        }, 1000);
+                                });
+                            }, 1000);
+                        } else {
+                            handleCFG(data);
+                        }
                     });
             }
         }
@@ -360,7 +383,7 @@ dirs.directive('cfg', function() {
 dirs.directive('functions', function() {
     return {
         templateUrl: '/static/partials/functions.html',
-        restrict: 'E',
+        restrict: 'AE',
         scope: { instance: '=', data: '=' },
         controller: function($scope, $http) {
             if (!$scope.data.loaded) {
@@ -600,4 +623,36 @@ dirs.directive('irreg', function() {
             operation: '='
         },
     };
+});
+
+dirs.directive('splittest', function () {
+    return {
+        templateUrl: '/static/partials/splittest.html',
+        restrict: 'AE',
+        scope: {
+            view: '='
+        },
+        controller: function ($scope, $element) {
+            $scope.randColor = function () {
+                $scope.color = randomColor({luminosity: 'bright'});
+            };
+            $scope.randColor();
+
+            var split = function(horizontal) {
+                var orig = {type: 'SPLITTEST'};  // A copy of this directive's view attributes
+                $scope.view.split = {horizontal: horizontal, size: 0.5}
+                $scope.view.halfA = orig;
+                $scope.view.halfB = {type: 'SPLITTEST'};
+                $scope.view = orig;
+            };
+
+            $scope.splitHorz = function () {
+                split(true);
+            };
+
+            $scope.splitVert = function () {
+                split(false);
+            };
+        }
+    }
 });
