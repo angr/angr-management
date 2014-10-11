@@ -26,7 +26,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
         bottom: '0px'
     };
     $scope.tabs = [];
-    $scope.activeTab = null;
+    $scope.activeTab = -1;
     $scope.addTab = function () {
         var dlg = $modal.open({
             templateUrl: '/static/partials/add_tab.html',
@@ -41,6 +41,12 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
     };
     $scope.activateTab = function (tabIndex) {
         $scope.activeTab = tabIndex;
+    };
+    $scope.closeTab = function(tabIndex) {
+        $scope.tabs.splice(tabIndex, 1);
+        if ($scope.activeTab >= $scope.tabs.length) {
+            $scope.activeTab = $scope.tabs.length - 1;
+        }
     };
     var handleCFG = function(data) {
         var prefix = "asdf";

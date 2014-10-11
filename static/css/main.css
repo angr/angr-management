@@ -108,3 +108,29 @@ graph {
     width: 100%;
     height: 100%;
 }
+
+.closex {
+    background: none;
+    border: none;
+    border-radius: 50%;
+    background-color: #eee;
+    font-size: 10px;
+    width: 15px;
+    height: 15px;
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    line-height: 0px;
+    padding: 0px;
+    outline: none;
+}
+
+.closex:hover {
+    background-color: #ddd;
+    color: red;
+}
+
+.closex:active {
+    background-color: white;
+    font-weight: bold;
+}

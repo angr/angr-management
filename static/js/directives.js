@@ -611,9 +611,8 @@ dirs.directive('splittest', function () {
         },
         controller: function ($scope, $element) {
             $scope.randColor = function () {
-                $scope.color = randomColor({luminosity: 'bright'});
+                $scope.view.data.color = randomColor({luminosity: 'bright'});
             };
-            $scope.randColor();
 
             var split = function(horizontal) {
                 $scope.view = $scope.view.split(new View({}, 'SPLITTEST'), horizontal, 0.5, true);
