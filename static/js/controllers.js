@@ -101,55 +101,57 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
 });
 
 ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
-    console.log($scope);
-    console.log($modalInstance);
-    $scope.data = {
-        type: null
-    };
+    $scope.type = null;
+    $scope.thinking = false;
+
     $scope.cancel = function () {
         $modalInstance.dismiss("Canceled");
     };
-    $scope.thinking = false;
+
     $scope.add = function () {
-        switch ($scope.data.type) {
+        switch ($scope.type) {
         case 'FUNCTIONS':
             $scope.data.title = 'Functions';
-            $modalInstance.close($scope.data);
-            break;
-            case 'CFG':
-                $scope.data.title = 'CFG Tab';
-                $modalInstance.close($scope.data);
-                break;
-            case 'SURVEYOR':
-                $scope.data.title = 'Surveyor Tab';
-                var kwargs = { };
-                if ($scope.surveyorType == "Explorer") {
-                    var flds = $scope.surveyorFields;  // brevity
-                    kwargs['find'] = "PYTHON:"+flds['find'];
-                    kwargs['avoid'] = "PYTHON:"+flds['avoid'];
-                    kwargs['restrict'] = "PYTHON:"+flds['restrict'];
-                    if (flds['min_depth'] != undefined) kwargs['min_depth'] =     parseInt(flds['min_depth']);
-                    if (flds['max_depth'] != undefined) kwargs['max_depth'] =     parseInt(flds['max_depth']);
-                    if (flds['max_repeats'] != undefined) kwargs['max_repeats'] = parseInt(flds['max_repeats']);
-                    if (flds['num_find'] != undefined) kwargs['num_find'] =       parseInt(flds['num_find']);
-                    if (flds['num_avoid'] != undefined) kwargs['num_avoid'] =     parseInt(flds['num_avoid']);
-                    if (flds['num_deviate'] != undefined) kwargs['num_deviate'] = parseInt(flds['num_deviate']);
-                    if (flds['num_loop'] != undefined) kwargs['num_loop'] =       parseInt(flds['num_loop']);
-                }
+            var view = new View({}, 'FUNCTIONS');
+            view.title = 'Functions';
+            $modalInstance.close(view);
+            return;
+        case 'CFG':
+            var view = new View({}, 'CFG');
+            view.title = 'CFG Tab';
+            $modalInstance.close(view);
+            return; 
+        case 'SURVEYOR':
+            var kwargs = { };
+            if ($scope.surveyorType == "Explorer") {
+                var flds = $scope.surveyorFields;  // brevity
+                kwargs['find'] = "PYTHON:"+flds['find'];
+                kwargs['avoid'] = "PYTHON:"+flds['avoid'];
+                kwargs['restrict'] = "PYTHON:"+flds['restrict'];
+                if (flds['min_depth'] != undefined) kwargs['min_depth'] =     parseInt(flds['min_depth']);
+                if (flds['max_depth'] != undefined) kwargs['max_depth'] =     parseInt(flds['max_depth']);
+                if (flds['max_repeats'] != undefined) kwargs['max_repeats'] = parseInt(flds['max_repeats']);
+                if (flds['num_find'] != undefined) kwargs['num_find'] =       parseInt(flds['num_find']);
+                if (flds['num_avoid'] != undefined) kwargs['num_avoid'] =     parseInt(flds['num_avoid']);
+                if (flds['num_deviate'] != undefined) kwargs['num_deviate'] = parseInt(flds['num_deviate']);
+                if (flds['num_loop'] != undefined) kwargs['num_loop'] =       parseInt(flds['num_loop']);
+            }
 
-                $scope.thinking = true;
-                $http.post("/api/instances/" + $scope.inst_id + "/surveyors/new/"+ $scope.surveyorType, {kwargs:kwargs}).success(function(data, status) {
-                    $scope.thinking = false;
-                    $scope.data.surveyorData = data;
-                    $modalInstance.close($scope.data);
-                });
-                break;
-            case 'SPLITTEST':
-                $scope.data.title = 'Split Test';
-                $modalInstance.close($scope.data);
-                break;
-            default:
-                return;
+            $scope.thinking = true;
+            $http.post("/api/instances/" + $scope.inst_id + "/surveyors/new/"+ $scope.surveyorType, {kwargs:kwargs}).success(function(data, status) {
+                $scope.thinking = false;
+                var view = new View(data, 'SURVEYOR')
+                view.title = 'Surveyor Tab';
+                $modalInstance.close(view);
+            });
+            break;
+        case 'SPLITTEST':
+            var view = new View({}, 'SPLITTEST');
+            view.title = 'Split Test';
+            $modalInstance.close(view);
+            return;
+        default:
+            return;
         }
     };
 

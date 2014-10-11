@@ -140,6 +140,7 @@ def new_instance(project, projects=None, instances=None):
         remote = spawn_child()
         active_conns.append(remote)
         proj = remote.modules.angr.Project(PROJDIR + project + '/binary')
+        inst_name = flask.request.json.get('name', '<unnamed>')
         proj_id = create_instance(proj, inst_name, remote, project, instances)
         projects[project].append({'name': inst_name, 'id': proj_id})
         return {'success': True, 'id': proj_id}
@@ -147,7 +148,6 @@ def new_instance(project, projects=None, instances=None):
 
 def create_instance(proj, inst_name, remote, project, instances):
     proj_id = id(proj)
-    inst_name = flask.request.json.get('name', '<unnamed>')
     instance = {
         'id': proj_id,
         'name': inst_name,

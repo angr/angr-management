@@ -183,30 +183,7 @@ dirs.directive('viewlayout', function (RecursionHelper) {
         scope: {
             view: '=',
             instance: '='
-        },
-        controller: function ($scope, $element) {
-            /*
-            var makeStyleFull = function () {return {
-                position: 'absolute',
-                left: '0px',
-                right: '0px',
-                top: '0px',
-                bottom: '0px'
-            }};
-            $scope.styleFull = makeStyleFull();
-            if ($scope.view.split) {
-                $scope.styleHalfA = makeStyleFull();
-                $scope.styleHalfA = makeStyleFull();
-                if ($scope.view.split.horizontal) {
-                    $scope.styleHalfA.right = ($scope.view.split.size * 100) + '%';
-                    $scope.styleHalfB.left = ($scope.view.split.size * 100) + '%';
-                } else {
-                    $scope.styleHalfA.bottom = ($scope.view.split.size * 100) + '%';
-                    $scope.styleHalfB.top = ($scope.view.split.size * 100) + '%';
-                }
-            }
-            */
-        },
+        },  // no controller because #swag
         compile: RecursionHelper.compile
     };
 });
@@ -639,11 +616,7 @@ dirs.directive('splittest', function () {
             $scope.randColor();
 
             var split = function(horizontal) {
-                var orig = {type: 'SPLITTEST'};  // A copy of this directive's view attributes
-                $scope.view.split = {horizontal: horizontal, size: 0.5}
-                $scope.view.halfA = orig;
-                $scope.view.halfB = {type: 'SPLITTEST'};
-                $scope.view = orig;
+                $scope.view = $scope.view.split(new View({}, 'SPLITTEST'), horizontal, 0.5, true);
             };
 
             $scope.splitHorz = function () {
