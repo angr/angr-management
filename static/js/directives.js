@@ -295,63 +295,66 @@ dirs.directive('cfg', function() {
         restrict: 'AE',
         scope: {
             instance: '=',
-            data: '='
+            view: '='
         },
         controller: function($scope, $http, $interval) {
-            console.log(angular.extend({}, $scope));
+            //console.log(angular.extend({}, $scope));
             var handleCFG = function(data) {
-                console.log(angular.extend({}, $scope));
-                $scope.data.loaded = true;
-                console.log("handling cfg");
+                $scope.view.data.rawCFGData = data;
+                //console.log(angular.extend({}, $scope));
+                $scope.view.data.loaded = true;
+                //console.log("handling cfg");
 
                 var blockToColor = {};
-                var colors = randomColor({count: Object.keys(data.functions).length,
-                                          luminosity: 'light'});
+                $scope.view.data.colors = randomColor({
+                        count: Object.keys(data.functions).length,
+                        luminosity: 'light'});
                 var i = 0;
                 for (var addr in data.functions) {
                     var blocks = data.functions[addr];
                     for (var j in blocks) {
-                        blockToColor[blocks[j]] = colors[i];
+                        blockToColor[blocks[j]] = $scope.view.data.colors[i];
                     }
                     i += 1;
                 }
-                $scope.data.cfgNodes = {};
+                $scope.view.data.cfgNodes = {};
                 for (var i in data.nodes) {
                     var node = data.nodes[i];
                     var id = node.type + (node.type === 'IRSB' ? node.addr : node.name);
                     if (node.addr) {
                         node.color = blockToColor[node.addr];
                     }
-                    $scope.data.cfgNodes[id] = node;
+                    $scope.view.data.cfgNodes[id] = node;
                 }
-                $scope.data.cfgEdges = [];
+                $scope.view.data.cfgEdges = [];
                 for (var i in data.edges) {
                     var edge = data.edges[i];
                     var fromId = edge.from.type + (edge.from.type === 'IRSB' ? edge.from.addr : edge.from.name);
                     var toId = edge.to.type + (edge.to.type === 'IRSB' ? edge.to.addr : edge.to.name);
-                    $scope.data.cfgEdges.push({from: fromId, to: toId});
+                    $scope.view.data.cfgEdges.push({from: fromId, to: toId});
                 }
             };
 
-            if (!$scope.data.loaded) {
-                $scope.data.loaded = false;
-                $http.get('/api/instances/' + $scope.instance + '/cfg')
-                    .success(function(data) {
-                        if ('token' in data) {
-                            var periodic = $interval(function() {
-                                $http.get('/api/tokens/' + data.token).success(function(res) {
-                                    if (res.ready) {
-                                        $interval.cancel(periodic);
-                                        handleCFG(res.value);
-                                    }
-                                }).error(function() {
-                                    $interval.cancel(periodic);
-                                });
-                            }, 1000);
-                        } else {
-                            handleCFG(data);
+            if (!$scope.view.data.loaded) {
+                $scope.view.data.loaded = false;
+                $http.get('/api/instances/' + $scope.instance + '/cfg').success(function(data) {
+                    if ('token' in data) {
+                        function fireTokenQuery() {
+                            $http.get('/api/tokens/' + data.token).success(function(res) {
+                                if (res.ready) {
+                                    handleCFG(res.value);
+                                } else {
+                                    fireTokenQuery();
+                                }
+                            }).error(function() {
+                                // TODO: Bad
+                            });
                         }
-                    });
+                        fireTokenQuery();
+                    } else {
+                        handleCFG(data);
+                    }
+                });
             }
         }
     };

@@ -40,6 +40,8 @@ class Serializer(object):
             return self._serialize_ast(o, extra=extra)
         if isinstance(o, claripy.BVV):
             return self._serialize_bvv(o, extra=extra)
+        if isinstance(o, angr.CFG):
+            return self._serialize_cfg(o, extra=extra)
         else:
             return "NOT SERIALIZED: %s" % o
 
@@ -133,4 +135,17 @@ class Serializer(object):
             'expr_type': 'bvv',
             'value': b.value,
             'bits': b.bits
+        }
+
+    def _serialize_cfg(self, cfg, extra=None):
+        return {
+            'nodes': [self.serialize(node) for node in cfg._cfg.nodes()],
+            'edges': [{
+                    'from': self.serialize(from_, ref=True),
+                    'to': self.serialize(to, ref=True)}
+                for from_, to in cfg._cfg.edges()
+                if any(
+                    any(exit.can_target(to.addr) for exit in irsb.exits(reachable=True))
+                    for irsb in cfg.get_all_irsbs(from_.addr))],
+            'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()}
         }

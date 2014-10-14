@@ -88,13 +88,7 @@ def redeem(token):
         del active_tokens[token]
         if ty == 'CFG':
             cfg = result.value
-            return {'ready': True, 'value': {
-                'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
-                'edges': [{'from': the_serializer.serialize(from_, ref=True),
-                           'to': the_serializer.serialize(to, ref=True)}
-                          for from_, to in cfg._cfg.edges()],
-                'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
-            }}
+            return {'ready': True, 'value': the_serializer.serialize(cfg)}
     else:
         return {'ready': False}
 
@@ -207,13 +201,7 @@ def get_cfg(instance=None):
         active_tokens[token] = ('CFG', async_construct, async_construct())
         return {'token': token}
     cfg = proj._cfg
-    return {
-        'nodes': [the_serializer.serialize(node) for node in cfg._cfg.nodes()],
-        'edges': [{'from': the_serializer.serialize(from_, ref=True),
-                   'to': the_serializer.serialize(to, ref=True)}
-                  for from_, to in cfg._cfg.edges()],
-        'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()},
-    }
+    return the_serializer.serialize(cfg)
 
 @app.route('/api/instances/<int:inst_id>/functions')
 @jsonize

@@ -4,6 +4,9 @@ import sys, os, json
 from angrmanagement import app
 import rpyc
 
+if not os.path.exists('projects'):
+    os.mkdir('projects')
+
 projects = {}
 for name in os.listdir('projects'):
     try:
