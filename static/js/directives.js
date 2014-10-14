@@ -341,7 +341,7 @@ dirs.directive('cfg', function() {
                 $scope.view.data.loaded = false;
                 $http.get('/api/instances/' + $scope.instance + '/cfg').success(function(data) {
                     if ('token' in data) {
-                        function fireTokenQuery() {
+                        var fireTokenQuery = function() {
                             $http.get('/api/tokens/' + data.token).success(function(res) {
                                 if (res.ready) {
                                     handleCFG(res.value);
@@ -351,7 +351,7 @@ dirs.directive('cfg', function() {
                             }).error(function() {
                                 // TODO: Bad
                             });
-                        }
+                        };
                         fireTokenQuery();
                     } else {
                         handleCFG(data);
