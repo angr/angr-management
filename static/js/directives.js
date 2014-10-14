@@ -228,11 +228,11 @@ dirs.directive('graph', function() {
             $scope.plumb.setContainer($element);
 
             var entryEndpoint = {
-                maxConnections: -1,
+                maxConnections: 10000000,
                 isTarget: true
             };
             var exitEndpoint = {
-                maxConnections: -1,
+                maxConnections: 10000000,
                 connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:5, alwaysRespectStubs:true } ],
             };
 
@@ -268,11 +268,11 @@ dirs.directive('graph', function() {
             // VERY HACKY (but it works)
             $timeout(function() {
                 jQuery($element).children('div').each(function(i, e) {
+                    console.log(e);
                     var $e = jQuery(e);
-                    var id = $e.attr('id');
                     $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
-                    $scope.plumb.addEndpoint(id, entryEndpoint, {anchor: 'TopCenter', uuid: id + '-entry'});
-                    $scope.plumb.addEndpoint(id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: id + '-exit'});
+                    $scope.plumb.addEndpoint(e.id, entryEndpoint, {anchor: 'TopCenter', uuid: e.id + '-entry'});
+                    $scope.plumb.addEndpoint(e.id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: e.id + '-exit'});
                 });
 
                 for (var i in $scope.edges) {
@@ -306,12 +306,20 @@ dirs.directive('cfg', function() {
                 //console.log("handling cfg");
 
                 var blockToColor = {};
+<<<<<<< Updated upstream
                 $scope.view.data.colors = randomColor({
                         count: Object.keys(data.functions).length,
                         luminosity: 'light'});
+=======
+                var blockToFunc = {};
+                var colors = randomColor({count: Object.keys(data.functions).length,
+                                          luminosity: 'light'});
+>>>>>>> Stashed changes
                 var i = 0;
+                $scope.functions = {};
                 for (var addr in data.functions) {
                     var blocks = data.functions[addr];
+                    $scope.functions[addr] = { blocks: blocks };
                     for (var j in blocks) {
                         blockToColor[blocks[j]] = $scope.view.data.colors[i];
                     }
@@ -364,7 +372,11 @@ dirs.directive('functions', function() {
     return {
         templateUrl: '/static/partials/functions.html',
         restrict: 'AE',
-        scope: { instance: '=', data: '=' },
+        scope: {
+            instance: '=',
+            data: '=',
+            comm: '=',
+        },
         controller: function($scope, $http) {
             if (!$scope.data.loaded) {
                 $scope.data.loaded = false;
@@ -375,15 +387,14 @@ dirs.directive('functions', function() {
                         $scope.data.functions = data;
                     });
             }
-            $scope.nameTainted = false;
             $scope.rename = function(f) {
                 $http.post('/api/instances/' + $scope.instance + '/functions/' + f.addr + '/rename', f.name)
-                    .success(function(data) {
-                        // not working...?
-                        $scope.nameTainted = false;
+                    .success(function() {
+                        $scope.f.nameTainted = false;
                     });
             };
             $scope.$watch('data.selectedFunc', function(sf) {
+                $scope.comm.selectedFunc = sf;
                 if (!sf || !$scope.data.functions) { return; }
                 $scope.f = $scope.data.functions.filter(function(f) {
                     return f.addr == sf;

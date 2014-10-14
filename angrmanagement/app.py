@@ -133,6 +133,8 @@ def new_instance(project, projects=None, instances=None):
         metadata = json.load(open(PROJDIR + project + '/metadata', 'rb'))
         remote = spawn_child()
         active_conns.append(remote)
+        inst_name = flask.request.json.get('name', '<unnamed>')
+        print PROJDIR + project + '/binary'
         proj = remote.modules.angr.Project(PROJDIR + project + '/binary')
         inst_name = flask.request.json.get('name', '<unnamed>')
         proj_id = create_instance(proj, inst_name, remote, project, instances)
@@ -173,7 +175,7 @@ def connect_instance(instances=None):
         print e
         return {'success': False, 'message': "Couldn't connect for weird unaccounted-for reason"}
     active_conns.append(conn)
-    
+
     if len(pkeys) != 1:
         return {'success': False, 'message': "There are either zero or more than one projects on this server?"}
     proj = conn.root.projects[pkeys[0]]
@@ -231,6 +233,14 @@ def rename_function(func_addr, instance=None):
     f = proj._cfg.get_function_manager().functions[func_addr]
     f._name = flask.request.data
     return {'status': True}
+
+@app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/vfg')
+@jsonize
+@with_instance
+def get_function_vfg(func_addr, instance=None):
+    vfg = angr.VFG(instance['angr'])
+    vfg.construct(func_addr)
+    return str(vfg)
 
 @app.route('/api/instances/<int:inst_id>/ddg')
 @with_instances

@@ -9,8 +9,8 @@
   </select>
 
   <div ng-if="data.selectedFunc != null">
-    <input ng-model="f.name" ng-change="nameTainted = true">
-    <button class="btn" ng-disabled="!nameTainted" ng-click="rename(f)">Rename</button><br>
+    <input ng-model="f.name" ng-change="f.nameTainted = true">
+    <button class="btn btn-primary" ng-disabled="!f.nameTainted" ng-click="rename(f)">Rename</button><br>
     addr: 0x{{ f.addr.toString(16) }}<br>
   </div>
 </div>
