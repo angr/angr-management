@@ -117,7 +117,6 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
     $scope.add = function () {
         switch ($scope.type) {
         case 'FUNCTIONS':
-            $scope.data.title = 'Functions';
             var view = new View({}, 'FUNCTIONS');
             view.title = 'Functions';
             $modalInstance.close(view);
@@ -126,7 +125,7 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
             var view = new View({}, 'CFG');
             view.title = 'CFG Tab';
             $modalInstance.close(view);
-            return; 
+            return;
         case 'SURVEYOR':
             var kwargs = { };
             if ($scope.surveyorType == "Explorer") {

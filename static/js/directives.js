@@ -368,17 +368,17 @@ dirs.directive('functions', function() {
         restrict: 'AE',
         scope: {
             instance: '=',
-            data: '=',
+            view: '=',
             comm: '=',
         },
         controller: function($scope, $http) {
-            if (!$scope.data.loaded) {
-                $scope.data.loaded = false;
+            if (!$scope.view.data.loaded) {
+                $scope.view.data.loaded = false;
                 $http.get('/api/instances/' + $scope.instance + '/functions')
                     .success(function(data) {
-                        $scope.data.selectedFunc = null;
-                        $scope.data.loaded = true;
-                        $scope.data.functions = data;
+                        $scope.view.data.selectedFunc = null;
+                        $scope.view.data.loaded = true;
+                        $scope.view.data.functions = data;
                     });
             }
             $scope.rename = function(f) {
@@ -387,10 +387,9 @@ dirs.directive('functions', function() {
                         $scope.f.nameTainted = false;
                     });
             };
-            $scope.$watch('data.selectedFunc', function(sf) {
-                $scope.comm.selectedFunc = sf;
-                if (!sf || !$scope.data.functions) { return; }
-                $scope.f = $scope.data.functions.filter(function(f) {
+            $scope.$watch('view.data.selectedFunc', function(sf) {
+                if (!sf || !$scope.view.data.functions) { return; }
+                $scope.f = $scope.view.data.functions.filter(function(f) {
                     return f.addr == sf;
                 })[0];
             });
