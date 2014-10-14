@@ -138,12 +138,13 @@ class Serializer(object):
         }
 
     def _serialize_cfg(self, cfg, extra=None):
+        graph = cfg._graph
         return {
-            'nodes': [self.serialize(node) for node in cfg._cfg.nodes()],
+            'nodes': [self.serialize(node) for node in graph.nodes()],
             'edges': [{
                     'from': self.serialize(from_, ref=True),
                     'to': self.serialize(to, ref=True)}
-                for from_, to in cfg._cfg.edges()
+                for from_, to in graph.edges()
                 if any(
                     any(exit.can_target(to.addr) for exit in irsb.exits(reachable=True))
                     for irsb in cfg.get_all_irsbs(from_.addr))],
