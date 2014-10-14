@@ -306,15 +306,9 @@ dirs.directive('cfg', function() {
                 //console.log("handling cfg");
 
                 var blockToColor = {};
-<<<<<<< Updated upstream
                 $scope.view.data.colors = randomColor({
                         count: Object.keys(data.functions).length,
                         luminosity: 'light'});
-=======
-                var blockToFunc = {};
-                var colors = randomColor({count: Object.keys(data.functions).length,
-                                          luminosity: 'light'});
->>>>>>> Stashed changes
                 var i = 0;
                 $scope.functions = {};
                 for (var addr in data.functions) {
