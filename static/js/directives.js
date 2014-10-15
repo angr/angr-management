@@ -389,6 +389,7 @@ dirs.directive('functions', function() {
             };
             $scope.$watch('view.data.selectedFunc', function(sf) {
                 if (!sf || !$scope.view.data.functions) { return; }
+                $scope.view.comm.selectedFunc = sf;
                 $scope.f = $scope.view.data.functions.filter(function(f) {
                     return f.addr == sf;
                 })[0];
