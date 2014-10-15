@@ -3,7 +3,8 @@
 
 <div ng-if="!view.splitData" class="styleFull" ng-switch on="view.type">
     <div ng-switch-when="CFG" cfg instance="instance.id" view="view"></div>
-    <div ng-switch-when="FUNCTIONS" functions instance="instance.id" view="view"></div>
+    <div ng-switch-when="FUNCTIONS" functions instance="instance.id"
+         view="view" class="functions"></div>
     <div ng-switch-when="SURVEYOR" surveyors instance="instance.id" view="view"></div>
     <div ng-switch-when="SPLITTEST" splittest instance="instance.id" view="view"></div>
 </div>
