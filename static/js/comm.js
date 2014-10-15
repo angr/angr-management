@@ -11,6 +11,7 @@ comm.factory('newCommunicator', function($rootScope) {
             exits: {},
             blocks: {}
         };
+        comm.selectedFunc = null;
         return comm;
     };
 });
