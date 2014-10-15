@@ -1,7 +1,7 @@
-<viewlayout ng-if="view.splitData" class="styleFull" style="{{ view.splitData.horizontal ? 'bottom' : 'right'}}: {{ view.splitData.size * 100 }}%;" view="view.halfA" instance="instance"></viewlayout>
-<viewlayout ng-if="view.splitData" class="styleFull" style="{{ view.splitData.horizontal ? 'top' : 'left'}}: {{ view.splitData.size * 100 }}%;" view="view.halfB" instance="instance"></viewlayout>
+<viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'bottom' : 'right'}}: {{ view.splitData.size * 100 }}%;" view="view.halfA" instance="instance"></viewlayout>
+<viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'top' : 'left'}}: {{ view.splitData.size * 100 }}%;" view="view.halfB" instance="instance"></viewlayout>
 
-<div ng-if="!view.splitData" class="styleFull" ng-switch on="view.type">
+<div ng-if="!view.splitData" ng-switch on="view.type">
     <div ng-switch-when="CFG" cfg instance="instance.id" view="view"></div>
     <div ng-switch-when="FUNCTIONS" functions instance="instance.id" view="view"></div>
     <div ng-switch-when="SURVEYOR" surveyors instance="instance.id" view="view"></div>
