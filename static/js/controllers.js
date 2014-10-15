@@ -1,6 +1,6 @@
 'use strict';
 
-var ctrls = angular.module('angr.controllers', ['dialogs.main']);
+var ctrls = angular.module('angr.controllers', ['dialogs.main', 'angr.view']);
 
 ctrls.controller('IndexCtrl', function($scope, $http, projects) {
     $scope.projects = projects;
@@ -106,7 +106,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
     };
 });
 
-ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance) {
+ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View) {
     $scope.type = null;
     $scope.thinking = false;
 

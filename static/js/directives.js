@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view']);
 dirs.directive('newproject', function() {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -609,7 +609,7 @@ dirs.directive('irreg', function() {
     };
 });
 
-dirs.directive('splittest', function () {
+dirs.directive('splittest', function (View) {
     return {
         templateUrl: '/static/partials/splittest.html',
         restrict: 'AE',
