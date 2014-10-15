@@ -196,6 +196,7 @@ dirs.directive('bblock', function() {
         scope: {
             block: '=',
             showDetails: '=',
+            view: '='
         },
         controller: function($scope, $element) {
             if ($scope.block.type === 'IRSB') {
@@ -217,6 +218,7 @@ dirs.directive('graph', function() {
         scope: {
             nodes: '=',
             edges: '=',
+            view: '=',
         },
         controller: function($scope, $element, $timeout) {
             jsPlumb.Defaults.MaxConnections = 10000;
@@ -268,7 +270,7 @@ dirs.directive('graph', function() {
             // VERY HACKY (but it works)
             $timeout(function() {
                 jQuery($element).children('div').each(function(i, e) {
-                    console.log(e);
+                    //console.log(e);
                     var $e = jQuery(e);
                     $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
                     $scope.plumb.addEndpoint(e.id, entryEndpoint, {anchor: 'TopCenter', uuid: e.id + '-entry'});
@@ -508,6 +510,7 @@ dirs.directive('irsb', function() {
         restrict: 'E',
         scope: {
             irsb: '=data',
+            view: '='
         },
         controller: function($scope) {
 
@@ -521,6 +524,7 @@ dirs.directive('irstmt', function() {
         restrict: 'E',
         scope: {
             stmt: '=',
+            view: '='
         },
     };
 });
@@ -531,6 +535,7 @@ dirs.directive('irexpr', function(RecursionHelper) {
         restrict: 'E',
         scope: {
             expr: '=',
+            view: '='
         },
         compile: RecursionHelper.compile,
     };
@@ -543,6 +548,7 @@ dirs.directive('cexpr', function(RecursionHelper, $http) {
         scope: {
             expr: '=',
             parens: '=',
+            view: '='
         },
         compile: RecursionHelper.compile,
         controller: function($scope, $http) {
@@ -575,6 +581,7 @@ dirs.directive('cast', function(RecursionHelper) {
         scope: {
             ast: '=',
             parens: '=',
+            view: '='
         },
         compile: RecursionHelper.compile,
         controller: function($scope, $http) {
@@ -594,7 +601,14 @@ dirs.directive('irtmp', function() {
         restrict: 'E',
         scope: {
             tmp: '=',
+            view: '='
         },
+        controller: function ($scope) {
+            //console.log($scope.view);
+            $scope.mouse = function (over) {
+                $scope.view.comm.cfgHighlight.tmps[$scope.tmp] = over;
+            };
+        }
     };
 });
 
@@ -605,8 +619,14 @@ dirs.directive('irreg', function() {
         scope: {
             offset: '=',
             size: '=',
-            operation: '='
+            operation: '=',
+            view: '='
         },
+        controller: function ($scope) {
+            $scope.mouse = function (over) {
+                $scope.view.comm.cfgHighlight.registers[$scope.offset] = over;
+            };
+        }
     };
 });
 

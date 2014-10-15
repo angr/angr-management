@@ -1,1 +1,1 @@
-{{ operation }}<span ng-if="size">:{{ size }}</span>({{ offset }})
+<span ng-class="{highlight: view.comm.cfgHighlight.registers[offset]}" ng-mouseenter="mouse(true)" ng-mouseleave="mouse(false)">{{ operation }}<span ng-if="size">:{{ size }}</span>({{ offset }})</span>

@@ -21,6 +21,6 @@
     Event Log (last <input ng-model="event_limit" style="width: 3em;"> of {{path.backtrace.length}} entries)
   </p>
   <ul ng-if="show_events" class="list-group">
-    <li class="list-group-item" event ng-repeat="e in path.event_log | skip:(path.event_log.length - event_limit)" data="e">
+    <li class="list-group-item" event ng-repeat="e in path.event_log | skip:(path.event_log.length - event_limit)" data="e" view="view">
   </ul>
 </span>

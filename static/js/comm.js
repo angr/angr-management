@@ -9,7 +9,8 @@ comm.factory('newCommunicator', function($rootScope) {
             addresses: {},
             highlights: {},
             exits: {},
-            blocks: {}
+            blocks: {},
+            tmps: {}
         };
         comm.selectedFunc = null;
         return comm;

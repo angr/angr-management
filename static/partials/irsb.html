@@ -1,4 +1,4 @@
 <!-- {{ irsb }} -->
-<irstmt ng-repeat="stmt in irsb.statements" stmt="stmt"></irstmt>
+<irstmt ng-repeat="stmt in irsb.statements" stmt="stmt" view="view"></irstmt>
 <br>
-Exit ({{irsb.jumpkind}}): <irexpr expr="irsb.next"></irexpr>
+Exit ({{irsb.jumpkind}}): <irexpr expr="irsb.next" view="view"></irexpr>

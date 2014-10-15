@@ -138,3 +138,8 @@ graph {
 .functions {
     padding: 20px;
 }
+
+.highlight {
+    background-color: yellow;
+    color: black;
+}
