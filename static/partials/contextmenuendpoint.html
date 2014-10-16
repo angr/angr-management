@@ -1,0 +1,9 @@
+<ul class="contextMenu" 
+    ng-style="{top: position.y + 'px', left: position.x + 'px', display: active ? 'block' : 'none'}">
+    <li context-menu-item class="contextMenuItem"
+        ng-repeat="item in items" 
+        ng-class="{disabledMenuItem: item.disabled}"
+        ng-click="click(item, $event)"
+        ng-mouseenter="mouseenter(item)"
+        item="item"></li>
+</ul>

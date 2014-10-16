@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu']);
 dirs.directive('newproject', function() {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -188,7 +188,7 @@ dirs.directive('viewlayout', function (RecursionHelper) {
     };
 });
 
-dirs.directive('bblock', function() {
+dirs.directive('bblock', function(ContextMenu) {
     return {
         priority: 100,
         templateUrl: '/static/partials/bblock.html',
@@ -207,11 +207,27 @@ dirs.directive('bblock', function() {
             if ($scope.block.color) {
                 $element.parent().css('background-color', $scope.block.color);
             }
+        },
+        link: function ($scope, element, attrs) {
+            ContextMenu.registerEntries(element, function () {
+                return [
+                    {
+                        text: 'Basic block actions',
+                        subitems: [
+                            {
+                                text: 'Find paths to here'
+                            }, {
+                                text: 'Reanalyze'
+                            }
+                        ]
+                    }
+                ];
+            });
         }
     };
 });
 
-dirs.directive('graph', function() {
+dirs.directive('graph', function(ContextMenu) {
     return {
         templateUrl: '/static/partials/graph.html',
         restrict: 'AE',
@@ -287,11 +303,11 @@ dirs.directive('graph', function() {
 
                 $scope.layout();
             }, 0);
-        },
+        }
     };
 });
 
-dirs.directive('cfg', function() {
+dirs.directive('cfg', function(ContextMenu) {
     return {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'AE',
@@ -360,6 +376,32 @@ dirs.directive('cfg', function() {
                     }
                 });
             }
+        },
+        link: function ($scope, element, attrs) {
+            ContextMenu.registerEntries(element, function () {
+                return [
+                    {
+                        text: 'CFG Actions',
+                        subitems: [
+                            {
+                                text: 'CFG Scope',
+                                subitems: [
+                                    {
+                                        text: 'Interprocedure',
+                                        checked: true
+                                    }, {
+                                        text: 'Function'
+                                    }, {
+                                        text: 'Proximity'
+                                    }
+                                ]
+                            }, {
+                                text: 'Crash and blame fish'
+                            }
+                        ]
+                    }
+                ]
+            });
         }
     };
 });
@@ -595,7 +637,7 @@ dirs.directive('cast', function(RecursionHelper) {
     };
 });
 
-dirs.directive('irtmp', function() {
+dirs.directive('irtmp', function(ContextMenu) {
     return {
         templateUrl: '/static/partials/irtmp.html',
         restrict: 'E',
@@ -608,11 +650,31 @@ dirs.directive('irtmp', function() {
             $scope.mouse = function (over) {
                 $scope.view.comm.cfgHighlight.tmps[$scope.tmp] = over;
             };
+        },
+        link: function ($scope, element, attrs) {
+            ContextMenu.registerEntries(element, function () {
+                return [
+                    {
+                        text: 'Temp actions',
+                        subitems: [
+                            {
+                                text: 'Rename temp'
+                            }, {
+                                text: 'wait no that\'s stupid',
+                                disabled: true
+                            }, {
+                                text: 'why would you do that',
+                                disabled: true
+                            }
+                        ]
+                    }
+                ];
+            });
         }
     };
 });
 
-dirs.directive('irreg', function() {
+dirs.directive('irreg', function(ContextMenu) {
     return {
         templateUrl: '/static/partials/irreg.html',
         restrict: 'E',
@@ -626,6 +688,47 @@ dirs.directive('irreg', function() {
             $scope.mouse = function (over) {
                 $scope.view.comm.cfgHighlight.registers[$scope.offset] = over;
             };
+        },
+        link: function ($scope, element, attrs) {
+            $scope.stupidcount = 0;
+            ContextMenu.registerEntries(element, function () {
+                $scope.stupidcount++;
+                var stupidtext = $scope.stupidcount.toString();
+                if ($scope.stupidcount % 100 < 20 && $scope.stupidcount % 100 > 10) {
+                    stupidtext += 'th';
+                } else {
+                    if ($scope.stupidcount % 10 == 1) {
+                        stupidtext += 'st';
+                    } else if ($scope.stupidcount % 10 == 2) {
+                        stupidtext += 'nd';
+                    } else if ($scope.stupidcount % 10 == 3) {
+                        stupidtext += 'rd';
+                    } else {
+                        stupidtext += 'th';
+                    }
+                }
+                return [
+                    {
+                        text: 'Register actions',
+                        subitems: [
+                            {
+                                text: 'Rename register'
+                            }, {
+                                text: 'Trace data sources'
+                            }, {
+                                text: 'Appreciate offset ' + $scope.offset,
+                                subitems: [
+                                    {
+                                        text: 'Appreciate the fact that this is the ' + stupidtext + ' time you\'ve opened this dialog on this element and also that this is a really long message'
+                                    }, {
+                                        text: 'or not'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ];
+            });
         }
     };
 });

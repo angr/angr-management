@@ -1,0 +1,59 @@
+.contextMenu {
+    width: 200px;
+    position: fixed;
+    -webkit-padding-start: 0px;
+
+    -webkit-user-select: none;  
+    -moz-user-select: none;    
+    -ms-user-select: none;      
+    user-select: none;
+}
+
+.contextMenuItem {
+    min-height: 30px;
+    list-style: none;
+    display: block;
+    background-color: #f8f8e8;
+    cursor: pointer;
+}
+
+.contextMenuText.hasSubmenus:after {
+    content: '\25B6';
+    position: absolute;
+    right: 10px;
+}
+
+.contextMenuText.checked:before {
+    content: '\2713';
+    position: absolute;
+    left: 10px;
+}
+
+.contextMenuSpacer {
+    border-bottom: 1px solid #ccc;
+}
+
+.contextMenuItem:hover {
+    background-color: #eee;
+}
+
+.disabledMenuItem, .disabledMenuItem:hover {
+    background-color: #ddd;
+    color: #888;
+    cursor: default;
+}
+
+.contextMenuSubmenu {
+    width: 200px;
+    position: absolute;
+    left: 200px;
+    -webkit-padding-start: 0px;
+}
+
+.contextMenuText {
+    width: 100%;
+    height: 100%;
+    padding-top: 5px;
+    text-align: center;
+    display: inline-block;
+}

@@ -17,7 +17,7 @@ view.factory('View', function(newCommunicator) {
      *                  split otherwise.
      * @attr title      A string. If this is the root View, it will be displayed as
      *                  the tab's name.
-     * @attr com        A basic dict containing all the established communication
+     * @attr comm       A basic dict containing all the established communication
      *                  channels
      */
 

@@ -1,0 +1,10 @@
+<ul ng-if="item.subitems && item._showsubs && !item.disabled" class="contextMenuSubmenu">
+    <li context-menu-item class="contextMenuItem"
+        ng-repeat="subitem in item.subitems"
+        ng-class="{disabledMenuItem: subitem.disabled}"
+        ng-click="click(subitem, $event)"
+        ng-mouseenter="mouseenter(subitem)"
+        item="subitem"></li>
+</ul>
+<span class="contextMenuText"
+      ng-class="{contextMenuSpacer: item.spacer, hasSubmenus: item.subitems, checked: item.checked}">{{item.text}}</span>

@@ -6,6 +6,7 @@ ctrls.controller('IndexCtrl', function($scope, $http, projects) {
     $scope.projects = projects;
 });
 
+
 ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, $modal) {
     $scope.inst_id = $routeParams['inst_id'];
     $scope.instance = {};
