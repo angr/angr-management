@@ -79,6 +79,9 @@ view.factory('View', function(newCommunicator) {
         other.parent = this;
         orig.parent = this;
         other.root = this.root;
+        other.comm = this.root.comm;
+        orig.comm = this.root.comm;
+        this.comm = this.root.comm;
         if (which) {
             this.halfA = orig;
             this.halfB = other;

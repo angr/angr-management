@@ -42,6 +42,10 @@ class Serializer(object):
             return self._serialize_bvv(o, extra=extra)
         if isinstance(o, angr.CFG):
             return self._serialize_cfg(o, extra=extra)
+        if isinstance(o, angr.FunctionManager):
+            return self._serialize_functionmanager(o, extra=extra)
+        if isinstance(o, angr.Function):
+            return self._serialize_function(o, extra=extra)
         else:
             return "NOT SERIALIZED: %s" % o
 
@@ -148,5 +152,21 @@ class Serializer(object):
                 if any(
                     any(exit.can_target(to.addr) for exit in irsb.exits(reachable=True))
                     for irsb in cfg.get_all_irsbs(from_.addr))],
-            'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.get_function_manager().functions.items()}
+            'functions': {addr: obtain(f.basic_blocks) for addr, f in cfg.function_manager.functions.items()}
+        }
+
+    def _serialize_functionmanager(self, m, extra=None):
+        return { 
+            'functions': {a: self.serialize(f) for a, f in m.functions.iteritems()},
+            'edges': [{'from': a, 'to': b} for a, b in m.interfunction_graph.edges()]
+        }
+
+    def _serialize_function(self, f, extra=None):
+        return {
+            'address': self.serialize(f._addr),
+            'blocks': self.serialize(f.basic_blocks),
+            'name': self.serialize(f.name),
+            'argument_registers': self.serialize(f._argument_registers),
+            'argument_stack_variables': self.serialize(f._argument_stack_variables),
+            'callsites': { key: { 'target': val[0], 'return': val[1] } for key, val in f._call_sites.iteritems() }
         }

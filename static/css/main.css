@@ -2,14 +2,14 @@
     width: 100%;
 }
 
-.bblock {
+.graph-node {
     background-color: #ccc;
     padding: 10px 25px;
     display: block;
     position: absolute;
 }
 
-.bblock bblock {
+.graph-node bblock {
     margin: 0 auto;
     font-family: monospace;
 }

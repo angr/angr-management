@@ -1,0 +1,31 @@
+{{view.comm.funcMan.loaded}}
+<div ng-if="view.comm.funcMan.selected" ng-init="showArgs = false; showSites = false;" style="padding: 10px;">
+    <h4>{{view.comm.funcMan.selected | funcnameextra}}</h4>
+
+    <p>
+        <input type="text" ng-model="scopeBreak.newName">
+        <button class="btn btn-default" ng-click="rename()">Rename function</button>
+    </p>
+
+    <p>
+        <span ng-click="showArgs = !showArgs">Arguments: {{showArgs ? '&#x25bc;' : '&#x25b6;'}}</span>
+        <ul ng-if="showArgs">
+            <li ng-repeat="reg in view.comm.funcMan.selected.argument_registers">Register {{reg}}</li>
+            <li ng-repeat="off in view.comm.funcMan.selected.argument_stack_variables">Stack offset {{off}}</li>
+        </ul>
+    </p>
+
+    <p>
+        <span ng-click="showSites = !showSites">Calls Out: {{showSites ? '&#x25bc;' : '&#x25b6;'}}</span>
+        <table class="table" ng-if="showSites">
+            <tr>
+                <td>Site</td>
+                <td>Target/Return</td>
+            </tr>
+            <tr ng-repeat="(callSite, data) in view.comm.funcMan.selected.callsites">
+                <td>{{callSite | hex}}</td>
+                <td>{{data.target | hex}}<br>{{data.return | hex}}</td>
+            </tr>
+        </table>
+    </p>
+</div>

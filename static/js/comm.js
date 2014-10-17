@@ -12,7 +12,12 @@ comm.factory('newCommunicator', function($rootScope) {
             blocks: {},
             tmps: {}
         };
-        comm.selectedFunc = null;
+        comm.funcMan = {
+            functions: {},
+            edges: [],
+            selected: null,
+            loaded: false
+        };
         return comm;
     };
 });

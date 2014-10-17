@@ -89,6 +89,9 @@ def redeem(token):
         if ty == 'CFG':
             cfg = result.value
             return {'ready': True, 'value': the_serializer.serialize(cfg)}
+        elif ty == 'Function Manager':
+            cfg = result.value
+            return {'ready': True, 'value': the_serializer.serialize(cfg.function_manager)}
     else:
         return {'ready': False}
 
@@ -197,8 +200,8 @@ def instance_info(instance=None):
 @with_instance
 def get_cfg(instance=None):
     proj = instance['angr']
-    token = str(uuid.uuid4())
     if proj._cfg is None:
+        token = str(uuid.uuid4())
         async_construct = rpyc.async(proj.construct_cfg)
         active_tokens[token] = ('CFG', async_construct, async_construct())
         return {'token': token}
@@ -211,17 +214,11 @@ def get_cfg(instance=None):
 def get_functions(instance=None):
     proj = instance['angr']
     if proj._cfg is None:
-        return {'status': False, 'message': 'CFG not generated yet'}
-    return [
-        {
-            'addr': the_serializer.serialize(f._addr),
-            'blocks': the_serializer.serialize(f.basic_blocks),
-            'name': the_serializer.serialize(f._name),
-            'argument_registers': the_serializer.serialize(f._argument_registers),
-            'argument_stack_variables': the_serializer.serialize(f._argument_stack_variables),
-        }
-        for f in proj._cfg.get_function_manager().functions.values()
-    ]
+        token = str(uuid.uuid4())
+        async_construct = rpyc.async(proj.construct_cfg)
+        active_tokens[token] = ('Function Manager', async_construct, async_construct())
+        return {'token': token}
+    return the_serializer.serialize(proj._cfg.function_manager)
 
 @app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/rename', methods=('POST',))
 @jsonize
@@ -230,8 +227,8 @@ def rename_function(func_addr, instance=None):
     proj = instance['angr']
     if proj._cfg is None:
         return {'status': False, 'message': 'CFG not generated yet'}
-    f = proj._cfg.get_function_manager().functions[func_addr]
-    f._name = flask.request.data
+    f = proj._cfg.function_manager.functions[func_addr]
+    f.name = flask.request.data     # oh my god
     return {'status': True}
 
 @app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/vfg')

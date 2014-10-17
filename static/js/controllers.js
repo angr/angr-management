@@ -118,9 +118,13 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View) {
     $scope.add = function () {
         switch ($scope.type) {
         case 'FUNCTIONS':
-            var view = new View({}, 'FUNCTIONS');
-            view.title = 'Functions';
-            $modalInstance.close(view);
+            var graph = new View({}, 'PROXIMITY_GRAPH');
+            var manager = new View({}, 'FUNCTION_MANAGER');
+            var picker = new View({}, 'FUNCTION_PICKER');
+            picker.split(manager, true, 0.5, true);
+            picker.split(graph, false, 0.2, true);
+            picker.title = 'Functions';
+            $modalInstance.close(picker);
             return;
         case 'CFG':
             var view = new View({}, 'CFG');

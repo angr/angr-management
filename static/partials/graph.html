@@ -1,6 +1,17 @@
-<div ng-mousedown="o_mx = $event.pageX; o_my = $event.pageY"
-     ng-mouseup="node.hovering = (o_mx == $event.pageX && o_my == $event.pageY) ? !node.hovering : node.hovering;"
-     class="bblock" id="{{ id }}" ng-class="{top: node.hovering}"
-     ng-repeat="(id, node) in nodes">
-  <bblock block="node" show-details="node.hovering" view="view"></bblock>
+<div ng-switch on="nodeType">
+    <div ng-switch-when="simRun">
+    <div id="graphRoot">
+    <div ng-mousedown="o_mx = $event.pageX; o_my = $event.pageY"
+         ng-mouseup="node.hovering = (o_mx == $event.pageX && o_my == $event.pageY) ? !node.hovering : node.hovering;"
+         class="graph-node" id="{{ id }}" ng-class="{top: node.hovering}"
+         ng-repeat="(id, node) in nodes">
+      <bblock block="node" show-details="node.hovering" view="view"></bblock>
+    </div></div></div>
+
+    <div ng-switch-when="function">
+    <div id="graphRoot">
+    <div class="graph-node" id="{{ id }}"
+         ng-repeat="(id, node) in nodes">
+      {{ node | funcname }}
+    </div></div></div>
 </div>
