@@ -241,7 +241,6 @@ dirs.directive('graph', function(ContextMenu) {
                     ["Arrow", {location: 1}]
                 ]
             });
-            $scope.plumb.setContainer($($element).find('#graphRoot'));
 
             var entryEndpoint = {
                 maxConnections: 10000000,
@@ -262,11 +261,12 @@ dirs.directive('graph', function(ContextMenu) {
                 jQuery($($element).find('#graphRoot')).children('div').each(function(i, e) {
                     var $e = jQuery(e);
                     var id = $e.attr('id');
+                    if (typeof id === 'undefined') return;
                     g.setNode(id, {width: $e.width(), height: $e.height()});
                 });
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
-                    g.setEdge(edge.from, edge.to);
+                    g.setEdge(edge.from.toString(), edge.to.toString());
                 }
                 dagre.layout(g);
                 g.nodes().forEach(function(id) {
@@ -280,9 +280,13 @@ dirs.directive('graph', function(ContextMenu) {
                 $scope.plumb.repaintEverything();
             };
 
-            // VERY HACKY (but it works)
+            // Tell JS to queue (timeout at zero seconds) this init routine
+            // It needs to run later, after angular has finished processing shit
+            // and has parsed the ng-ifs and ng-repeats
             $timeout(function() {
-                jQuery($element).find('#graphRoot').children('div').each(function(i, e) {
+                var graphRoot = jQuery($element).find('#graphRoot');
+                $scope.plumb.setContainer(graphRoot);
+                graphRoot.children('div').each(function(i, e) {
                     var $e = jQuery(e);
                     $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
                     $scope.plumb.addEndpoint(e.id, entryEndpoint, {anchor: 'TopCenter', uuid: e.id + '-entry'});
