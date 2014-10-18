@@ -2,44 +2,12 @@
     width: 100%;
 }
 
-.graph-node {
-    background-color: #ccc;
-    padding: 10px 25px;
-    display: block;
-    position: absolute;
-}
-
-.graph-node bblock {
-    margin: 0 auto;
-    font-family: monospace;
-}
-
-.top {
-    z-index: 1000;
-}
-
-.path_box {
-    display: inline-block;
-    margin-left: 0.1em;
-    margin-right: 0.1em;
-    margin-bottom: 0.1em;
-}
-
 .header-right {
     text-align: right;
 }
 
 .table-no-border>tbody>tr>th, .table-no-border>tbody>tr>td {
   border-top: none;
-}
-
-graph {
-    position: relative;
-    z-index: 0;
-}
-
-.vex_irstmt {
-	white-space:nowrap;
 }
 
 .top-bar {
@@ -139,10 +107,6 @@ viewlayout > div > div {
 .closex:active {
     background-color: white;
     font-weight: bold;
-}
-
-.functions {
-    padding: 20px;
 }
 
 .highlight {

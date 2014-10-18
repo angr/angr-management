@@ -1,0 +1,55 @@
+.graph-node {
+    background-color: #ccc;
+    display: block;
+    position: absolute;
+}
+
+.graph-node bblock {
+    padding: 10px 25px;
+    margin: 0 auto;
+    font-family: monospace;
+}
+
+.top {
+    z-index: 1000;
+}
+
+.path_box {
+    display: inline-block;
+    margin-left: 0.1em;
+    margin-right: 0.1em;
+    margin-bottom: 0.1em;
+}
+
+#graphRoot {
+    position: relative;
+    z-index: 0;
+}
+
+.vex_irstmt {
+	white-space:nowrap;
+}
+
+.functions {
+    padding: 20px;
+}
+
+.funcnode {
+    width: 100%;
+    height: 100%;
+    padding: 10px 25px;
+    display: block;
+}
+
+.funcnode:hover {
+    background-color: #eee;
+}
+
+.funcnode.funcnodeSelected {
+    font-weight: bold;
+}
+
+tr.selectedFunctionEntry {
+    font-weight: bold;
+    background-color: #ddf;
+}

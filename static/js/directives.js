@@ -234,7 +234,7 @@ dirs.directive('graph', function(ContextMenu) {
             view: '=',
             nodeType: '='
         },
-        controller: function($scope, $element, $timeout) {
+        controller: function($scope, $element, Schedule) {
             jsPlumb.Defaults.MaxConnections = 10000;
             $scope.plumb = jsPlumb.getInstance({
                 ConnectionOverlays: [
@@ -283,7 +283,7 @@ dirs.directive('graph', function(ContextMenu) {
             // Tell JS to queue (timeout at zero seconds) this init routine
             // It needs to run later, after angular has finished processing shit
             // and has parsed the ng-ifs and ng-repeats
-            $timeout(function() {
+            Schedule(function() {
                 var graphRoot = jQuery($element).find('#graphRoot');
                 $scope.plumb.setContainer(graphRoot);
                 graphRoot.children('div').each(function(i, e) {
@@ -301,8 +301,12 @@ dirs.directive('graph', function(ContextMenu) {
                     });
                 }
 
-                $scope.layout();
-            }, 0);
+                Schedule($scope.layout);
+            });
+
+            $scope.$watch('nodes', function (nv, ov) {
+                Schedule($scope.layout);
+            }, true);
         }
     };
 });
@@ -468,7 +472,37 @@ dirs.directive('proxgraph', function ($timeout) {
             view: '=',
             instance: '='
         },
+        controller: function ($scope, $element) {
+            $scope.$watch('view.comm.funcMan.selected', function (nv) {
+                if (nv == null) return;
+                var elm = jQuery($element).find('#graphRoot').find('#' + nv.address.toString());
+
+                var left = parseInt(elm[0].style.left);
+                var width = elm[0].clientWidth;
+                var clientWidth = $element[0].clientWidth;
+                $element[0].scrollLeft = left + (width/2) - (clientWidth/2);
+
+                var top = parseInt(elm[0].style.top);
+                var height = elm[0].clientHeight;
+                var clientHeight = $element[0].clientHeight;
+                $element[0].scrollTop = top + (height/2) - (clientHeight/2);
+            });
+        }
+    };
+});
+
+dirs.directive('funcnode', function () {
+    return {
+        templateUrl: '/static/partials/funcnode.html',
+        restrict: 'AE',
+        scope: {
+            view: '=',
+            node: '='
+        },
         controller: function ($scope) {
+            $scope.click = function () {
+                $scope.view.comm.funcMan.selected = $scope.node;
+            };
         }
     };
 });
@@ -808,6 +842,12 @@ dirs.factory('AngrToken', function ($http) {
         fireTokenQuery();
     };
     return {redeem: redeemToken};
+});
+
+dirs.factory('Schedule', function ($timeout) {
+    return function (callback) {
+        $timeout(callback, 0);
+    }
 });
 
 dirs.filter('funcname', function () {

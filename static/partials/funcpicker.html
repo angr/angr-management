@@ -5,7 +5,9 @@
         <th style="width: 60%;">Name</th>
         <th>Address</th>
     </tr>
-    <tr ng-repeat="(funcaddr, function) in view.comm.funcMan.functions" ng-click="click(function)">
+    <tr ng-repeat="(funcaddr, function) in view.comm.funcMan.functions" 
+        ng-click="click(function)"
+        ng-class="{selectedFunctionEntry: function == view.comm.funcMan.selected}">
         <td>{{function | funcname}}</td>
         <td>0x{{function.address.toString(16)}}</td>
     </tr>
