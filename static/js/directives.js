@@ -469,12 +469,6 @@ dirs.directive('proxgraph', function ($timeout) {
             instance: '='
         },
         controller: function ($scope) {
-            var x = 2;
-            var f = function () {
-                console.log('fuck.');
-                console.log($scope);
-            };
-            $timeout(f, 3000);
         }
     };
 });
