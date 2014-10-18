@@ -2,7 +2,7 @@
     <h4>{{view.comm.funcMan.selected | funcnameextra}}</h4>
 
     <p>
-        <input type="text" ng-model="scopeBreak.newName">
+        <input type="text" ng-model="scopeBreak.newName" on-enter="rename()">
         <button class="btn btn-default" ng-click="rename()">Rename function</button>
     </p>
 

@@ -49,7 +49,10 @@
     font-weight: bold;
 }
 
-tr.selectedFunctionEntry {
+tr.selectedFunctionEntry > td {
     font-weight: bold;
-    background-color: #ddf;
+    background-color: #ddf !important;
+}
+tr.selectedFunctionEntry:hover > td {
+    background-color: #eeeeef !important;
 }

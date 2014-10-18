@@ -877,3 +877,18 @@ dirs.filter('hex', function () {
         return parseInt(str.toString()).toString(16);
     };
 });
+
+
+dirs.directive('onEnter', function() {
+    return function(scope, element, attrs) {
+        element.bind("keydown keypress", function(event) {
+            if(event.which === 13) {
+                scope.$apply(function(){
+                    scope.$eval(attrs.onEnter, {'event': event});
+                });
+
+                event.preventDefault();
+            }
+        });
+    };
+});
