@@ -1,5 +1,5 @@
-var view = angular.module('angr.view', ['angr.comm']);
-view.factory('View', function(newCommunicator) {
+var view = angular.module('angr.view', ['angr.comm', 'angr.tools']);
+view.factory('View', function(newCommunicator, globalCommunicator) {
 
     /* View class
      *
@@ -19,6 +19,8 @@ view.factory('View', function(newCommunicator) {
      *                  the tab's name.
      * @attr comm       A basic dict containing all the established communication
      *                  channels
+     * @attr gcomm      A dict containing established communication channels that should
+     *                  run across tabs.
      */
 
     /* View Constructor
@@ -31,6 +33,7 @@ view.factory('View', function(newCommunicator) {
      */
 
     function View(data, type) {
+        this.gcomm = globalCommunicator;
         if (data.constructor === View) {
             this.root = data.root;
             this.parent = data.parent;

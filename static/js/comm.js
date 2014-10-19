@@ -12,12 +12,33 @@ comm.factory('newCommunicator', function($rootScope) {
             blocks: {},
             tmps: {}
         };
-        comm.funcMan = {
-            functions: {},
-            edges: [],
-            selected: null,
-            loaded: false
+        comm.funcPicker = {
+            selected: null
         };
         return comm;
     };
+});
+
+comm.factory('globalCommunicator', function ($rootScope) {
+    if (!$rootScope.gcomm) {
+        var gcomm = $rootScope.$new(true);
+
+        gcomm.useInstance = function (instance) {
+            gcomm.funcMan = {
+                functions: {},
+                edges: [],
+                loaded: false
+            };
+            gcomm.irsbs = {};
+            gcomm.simProcedures = {};
+            gcomm.simProcedureSpots = {};
+            gcomm.disasm = {};
+            gcomm.cfgReady = false;
+            gcomm.instance = instance;
+        }
+
+        $rootScope.gcomm = gcomm;
+    }
+
+    return $rootScope.gcomm;   
 });

@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools']);
 dirs.directive('newproject', function() {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -8,39 +8,21 @@ dirs.directive('newproject', function() {
         scope: {
             projects: '='
         },
-        controller: function($scope, $http) {
+        controller: function($scope) {
             $scope.project = {};
             $scope.project.name = "";
             $scope.project.file = null;
-            $scope.create = function() {
-                var config = {
-                    url: '/api/projects/new',
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': undefined
-                    },
-                    data: (function() {
-                        var formData = new FormData();
-                        formData.append('metadata', JSON.stringify($scope.project));
-                        formData.append('file', $scope.project.file);
-                        return formData;
-                    })(),
-                    transformRequest: function(formData) { return formData; }
-                };
-                $http(config).success(function(data) {
-                    if (data.success) {
-                        alert('project created!');
-                        $scope.projects.push({
-                            name: data.name,
-                            instances: []
-                        });
-                        $scope.project.file = null;
-                        $scope.project.name = "";
-                    } else {
-                        alert(data.message);
-                    }
-                }).error(function() {
-                    alert('could not create project :(');
+
+            $scope.create = function () {
+                if (!$scope.project.name || !$scope.project.file) return;
+                AngrData.newProject($scope.project, function (data) {
+                    alert('project created!');
+                    $scope.projects.push({
+                        name: data.name,
+                        instances: []
+                    });
+                    $scope.project.file = null;
+                    $scope.project.name = "";
                 });
             };
         }
@@ -66,7 +48,7 @@ dirs.directive('useproject', function () {
     }
 });
 
-dirs.directive('connectproject', function ($http, $location) {
+dirs.directive('connectproject', function ($location, AngrData) {
     return {
         templateUrl: '/static/partials/connectproject.html',
         restrict: 'AE',
@@ -77,16 +59,12 @@ dirs.directive('connectproject', function ($http, $location) {
             $scope.connect = function () {
                 if (Math.floor($scope.port - 0).toString() == $scope.port) {
                     $scope.thinking = true;
-                    $http.post('/api/instances/connect', {hostname: $scope.hostname, port: $scope.port - 0}).success(function (data) {
+                    AngrData.connectProject($scope.hostname, $scope.port, function (data) {
                         $scope.thinking = false;
-                        if (data.success) {
-                            $location.path('/instance/' + data.id);
-                        } else {
-                            alert(data.message);
-                        }
-                    }).error(function () {
+                        $location.path('/instance/' + data.id);
+                    }, function (data) {
                         $scope.thinking = false;
-                        alert("Couldn't connect for some reason...");
+                        alert(data.message);
                     });
                 } else {
                     alert('Enter a valid port please!');
@@ -192,18 +170,28 @@ dirs.directive('bblock', function(ContextMenu) {
         restrict: 'AE',
         scope: {
             block: '=',
-            showDetails: '=',
             view: '='
         },
         controller: function($scope, $element) {
-            if ($scope.block.type === 'IRSB') {
-                $scope.text = '0x' + $scope.block.addr.toString(16);
-            } else if ($scope.block.type === 'proc') {
-                $scope.text = $scope.block.name;
-            }
-            if ($scope.block.color) {
-                $element.parent().css('background-color', $scope.block.color);
-            }
+            var updateBlock = function (block, ob) { 
+                if (block === ob) return;
+                $scope.irsb = null;
+                $scope.simproc = null;
+                $scope.error = false;
+                if (block in $scope.view.gcomm.simProcedureSpots) {
+                    $scope.simproc = $scope.view.gcomm.simProcedures[$scope.view.gcomm.simProcedureSpots[block]];
+                } else if (block in $scope.view.gcomm.irsbs) {
+                    $scope.irsb = $scope.view.gcomm.irsbs[block];
+                } else {
+                    $scope.error = 'WTF??';
+                }
+            };
+
+            $scope.$watch('block', updateBlock);
+            $scope.$watch('view.gcomm.simProcedureSpots', updateBlock);
+            $scope.$watch('view.gcomm.irsbs');
+
+            updateBlock($scope.block, null);
         },
         link: function ($scope, element, attrs) {
             ContextMenu.registerEntries(element, function () {
@@ -311,61 +299,21 @@ dirs.directive('graph', function(ContextMenu) {
     };
 });
 
-dirs.directive('cfg', function(ContextMenu, AngrToken) {
+dirs.directive('cfg', function(ContextMenu, AngrData) {
     return {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'AE',
         scope: {
-            instance: '=',
             view: '='
         },
-        controller: function($scope, $http, $interval) {
-            var handleCFG = function(data) {
-                $scope.view.data.rawCFGData = data;
-                $scope.view.data.loaded = true;
-
-                var blockToColor = {};
-                $scope.view.data.colors = randomColor({
-                        count: Object.keys(data.functions).length,
-                        luminosity: 'light'});
-                var i = 0;
-                $scope.functions = {};
-                for (var addr in data.functions) {
-                    var blocks = data.functions[addr];
-                    $scope.functions[addr] = { blocks: blocks };
-                    for (var j in blocks) {
-                        blockToColor[blocks[j]] = $scope.view.data.colors[i];
-                    }
-                    i += 1;
-                }
-                $scope.view.data.cfgNodes = {};
-                for (var i in data.nodes) {
-                    var node = data.nodes[i];
-                    var id = node.type + (node.type === 'IRSB' ? node.addr : node.name);
-                    if (node.addr) {
-                        node.color = blockToColor[node.addr];
-                    }
-                    $scope.view.data.cfgNodes[id] = node;
-                }
-                $scope.view.data.cfgEdges = [];
-                for (var i in data.edges) {
-                    var edge = data.edges[i];
-                    var fromId = edge.from.type + (edge.from.type === 'IRSB' ? edge.from.addr : edge.from.name);
-                    var toId = edge.to.type + (edge.to.type === 'IRSB' ? edge.to.addr : edge.to.name);
-                    $scope.view.data.cfgEdges.push({from: fromId, to: toId});
-                }
-            };
-
-            if (!$scope.view.data.loaded) {
-                $scope.view.data.loaded = false;
-                $http.get('/api/instances/' + $scope.instance + '/cfg').success(function(data) {
-                    if ('token' in data) {
-                        AngrToken.redeem(data.token, handleCFG);
-                    } else {
-                        handleCFG(data);
-                    }
+        controller: function($scope, $http) {
+            $scope.$watch('view.comm.funcPicker.selected', function (func) {
+                if (!func) return;
+                func.irsbsLoaded = false;
+                AngrData.loadIRSBs(func, function () {
+                    func.irsbsLoaded = true;
                 });
-            }
+            });
         },
         link: function ($scope, element, attrs) {
             ContextMenu.registerEntries(element, function () {
@@ -396,66 +344,46 @@ dirs.directive('cfg', function(ContextMenu, AngrToken) {
     };
 });
 
-dirs.directive('funcpicker', function(AngrToken) {
+dirs.directive('funcpicker', function(AngrData) {
     return {
         templateUrl: '/static/partials/funcpicker.html',
         restrict: 'AE',
         scope: {
-            instance: '=',
             view: '='
         },
-        controller: function($scope, $http) {
-            $scope.console = console;
-            if (!$scope.view.data.loaded) {
-                $scope.view.data.loaded = false;
-                $http.get('/api/instances/' + $scope.instance + '/functions')
-                    .success(function(data) {
-                        if ('token' in data) {
-                            AngrToken.redeem(data.token, handleFuncMan);
-                        } else {
-                            handleFuncMan(data);
-                        }
-                    });
-            }
-
+        controller: function($scope) {
             $scope.click = function (func) {
-                $scope.view.comm.funcMan.selected = func;
-            };
-
-            var handleFuncMan = function (data) {
-                $scope.view.comm.funcMan.selected = null;
-                // Hate.
-                for (var key in data.functions) {
-                    if (!data.functions.hasOwnProperty(key)) continue;
-                    $scope.view.comm.funcMan.functions[parseInt(key)] = data.functions[key];
-                }
-                $scope.view.comm.funcMan.edges = data.edges;
-                $scope.view.comm.funcMan.loaded = true;
-                $scope.view.data.loaded = true;
+                $scope.view.comm.funcPicker.selected = func;
             };
         }
     };
 });
 
-dirs.directive('funcman', function () {
+dirs.directive('funcman', function (AngrData) {
     return {
         templateUrl: '/static/partials/funcman.html',
         restrict: 'AE',
         scope: {
-            instance: '=',
             view: '='
         },
-        controller: function ($scope, $http) {
+        controller: function ($scope) {
             $scope.scopeBreak = {
                 newName: ''
             };
-            $scope.hasData = false;
+            $scope.thinking = false;
             $scope.rename = function() {
-                var f = $scope.view.comm.funcMan.selected;
+                var f = $scope.view.comm.funcPicker.selected;
+                if (f.name == $scope.scopeBreak.newName) return; // Don't submit a no-op request!
                 f.name = $scope.scopeBreak.newName;
-                $http.post('/api/instances/' + $scope.instance + '/functions/' + f.address + '/rename', f.name);
+                $scope.thinking = true;
+                AngrData.renameFunction(f, function () {
+                    $scope.thinking = false;
+                }, function (data) {
+                    alert(data.message);
+                    $scope.thinking = false;
+                });
             };
-            $scope.$watch('view.comm.funcMan.selected', function(sf) {
+            $scope.$watch('view.comm.funcPicker.selected', function(sf) {
                 if (!sf) return;
                 $scope.scopeBreak.newName = sf.name;
             });
@@ -469,11 +397,10 @@ dirs.directive('proxgraph', function ($timeout) {
         templateUrl: '/static/partials/proxgraph.html',
         restrict: 'AE',
         scope: {
-            view: '=',
-            instance: '='
+            view: '='
         },
         controller: function ($scope, $element) {
-            $scope.$watch('view.comm.funcMan.selected', function (nv) {
+            $scope.$watch('view.comm.funcPicker.selected', function (nv) {
                 if (nv == null) return;
                 var elm = jQuery($element).find('#graphRoot').find('#' + nv.address.toString());
 
@@ -501,7 +428,7 @@ dirs.directive('funcnode', function () {
         },
         controller: function ($scope) {
             $scope.click = function () {
-                $scope.view.comm.funcMan.selected = $scope.node;
+                $scope.view.comm.funcPicker.selected = $scope.node;
             };
         }
     };
@@ -620,9 +547,27 @@ dirs.directive('irsb', function() {
             view: '='
         },
         controller: function($scope) {
+            $scope.renderData = {idx: 0};
 
+            $scope.next = function (rd) {
+                return rd.idx++;
+            };
         },
     };
+});
+
+dirs.directive('asmstmt', function () {
+    return {
+        templateUrl: '/static/partials/asmstmt.html',
+        restrict: 'AE',
+        scope: {
+            view: '=',
+            addr: '='
+        },
+        controller: function () {
+
+        }
+    }
 });
 
 dirs.directive('irstmt', function() {
@@ -826,57 +771,6 @@ dirs.directive('splittest', function (View) {
 
 // John can make his own file if he wants to bitch about it
 
-dirs.factory('AngrToken', function ($http) {
-    var redeemToken = function (token, callback) {
-        var fireTokenQuery = function() {
-            $http.get('/api/tokens/' + token).success(function(res) {
-                if (res.ready) {
-                    callback(res.value);
-                } else {
-                    fireTokenQuery();
-                }
-            }).error(function() {
-                // TODO: Bad
-            });
-        };
-        fireTokenQuery();
-    };
-    return {redeem: redeemToken};
-});
-
-dirs.factory('Schedule', function ($timeout) {
-    return function (callback) {
-        $timeout(callback, 0);
-    }
-});
-
-dirs.filter('funcname', function () {
-    return function (func) {
-        if (func.name === null) {
-            return 'sub_' + parseInt(func.address.toString()).toString(16);
-        } else {
-            return func.name;    // ugh.
-        }
-    };
-});
-
-dirs.filter('funcnameextra', function () {
-    return function (func) {
-        var x;
-        if (func.name === null) {
-            x = 'sub_' + func.address.toString(16);
-        } else {
-            x = func.name;
-        } 
-        return x + ' (0x' + func.address.toString(16) + ')';
-    };
-});
-
-dirs.filter('hex', function () {
-    return function (str) {     // Accounts for decimal strings, ew
-        return parseInt(str.toString()).toString(16);
-    };
-});
 
 
 dirs.directive('onEnter', function() {

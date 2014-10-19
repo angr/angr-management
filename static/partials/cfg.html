@@ -1,3 +1,5 @@
-<graph ng-if="view.data.loaded" nodes="view.data.cfgNodes" edges="view.data.cfgEdges" node-type="'simRun'" view="view"></graph>
-
-<div ng-if="!view.data.loaded">Loading...</div>
+<graph ng-if="view.comm.funcPicker.selected && view.comm.funcPicker.selected.irsbsLoaded" 
+       nodes="view.comm.funcPicker.selected.blocks" 
+       edges="view.comm.funcPicker.selected.blockedges"
+       node-type="'simRun'"
+       view="view"></graph>

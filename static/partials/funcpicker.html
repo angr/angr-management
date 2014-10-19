@@ -1,13 +1,13 @@
-<div ng-if="!view.data.loaded">Loading...</div>
+<div ng-if="!view.gcomm.funcMan.loaded">Loading...</div>
 
-<table ng-if="view.data.loaded" class="table table-striped table-hover" style="width: 100%;">
+<table ng-if="view.gcomm.funcMan.loaded" class="table table-striped table-hover" style="width: 100%;">
     <tr>
         <th style="width: 60%;">Name</th>
         <th>Address</th>
     </tr>
-    <tr ng-repeat="(funcaddr, function) in view.comm.funcMan.functions" 
+    <tr ng-repeat="(funcaddr, function) in view.gcomm.funcMan.functions" 
         ng-click="click(function)"
-        ng-class="{selectedFunctionEntry: function == view.comm.funcMan.selected}">
+        ng-class="{selectedFunctionEntry: function == view.comm.funcPicker.selected}">
         <td>{{function | funcname}}</td>
         <td>0x{{function.address.toString(16)}}</td>
     </tr>

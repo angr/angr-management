@@ -1,4 +1,9 @@
 <!-- {{ irsb }} -->
-<irstmt ng-repeat="stmt in irsb.statements" stmt="stmt" view="view"></irstmt>
+
+<div ng-repeat="stmt in irsb.statements" ng-if="stmt.tag != 'Ist_NoOp'">
+    <span class="stmtLeftMargin blue" ng-if="stmt.tag == 'Ist_IMark'" ng-init="renderData.idx = 0">{{stmt.addr}}</span>
+    <span class="stmtLeftMargin red" ng-if="stmt.tag != 'Ist_IMark'" ng-init="myidx = next(renderData)">[{{myidx}}]</span>
+    <irstmt stmt="stmt" view="view"></irstmt>
+</div>
 <br>
 Exit ({{irsb.jumpkind}}): <irexpr expr="irsb.next" view="view"></irexpr>

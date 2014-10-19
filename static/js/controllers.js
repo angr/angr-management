@@ -7,12 +7,13 @@ ctrls.controller('IndexCtrl', function($scope, $http, projects) {
 });
 
 
-ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, $modal) {
+ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, $modal, AngrData) {
     $scope.inst_id = $routeParams['inst_id'];
     $scope.instance = {};
     $http.get('/api/instances/' + $scope.inst_id).success(function (data) {
         if (data.success) {
             $scope.instance = data;
+            AngrData.gcomm.useInstance(data.id);
         } else {
             alert(data.message);
         }
@@ -107,7 +108,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
     };
 });
 
-ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View) {
+ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View, AngrData) {
     $scope.type = null;
     $scope.thinking = false;
 
@@ -124,12 +125,29 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View) {
             picker.split(manager, true, 0.5, true);
             picker.split(graph, false, 0.2, true);
             picker.title = 'Functions';
-            $modalInstance.close(picker);
+            $scope.thinking = true;
+
+            AngrData.loadFunctionManager(function () {
+                $scope.thinking = false;
+                $modalInstance.close(picker);
+            }, function (data) {
+                alert(data.message);
+                $scope.thinking = false;
+            });
             return;
         case 'CFG':
-            var view = new View({}, 'CFG');
-            view.title = 'CFG Tab';
-            $modalInstance.close(view);
+            var cfg = new View({}, 'CFG');
+            var picker = new View({}, 'FUNCTION_PICKER');
+            picker.split(cfg, false, 0.2, true);
+            picker.title = 'CFG Tab';
+            
+            AngrData.loadFunctionManager(function () {
+                $scope.thinking = false;
+                $modalInstance.close(picker);
+            }, function (data) {
+                alert(data.message);
+                $scope.thinking = false;
+            });
             return;
         case 'SURVEYOR':
             var kwargs = { };

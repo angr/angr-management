@@ -30,6 +30,19 @@
 	white-space:nowrap;
 }
 
+.stmtLeftMargin {
+    width: 75px;
+    text-align: right;
+    display: inline-block;
+}
+
+.blue { color: blue; }
+.red {color: red; }
+
+irstmt {
+    display: inline-block;
+}
+
 .functions {
     padding: 20px;
 }

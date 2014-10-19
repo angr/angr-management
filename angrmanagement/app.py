@@ -9,7 +9,7 @@ import uuid
 
 import flask
 from werkzeug.utils import secure_filename
-import angr
+import angr, simuvex
 from simuvex import SimIRSB, SimProcedure
 import rpyc
 from rpyc.utils.classic import obtain
@@ -89,6 +89,8 @@ def redeem(token):
         if ty == 'CFG':
             cfg = result.value
             return {'ready': True, 'value': the_serializer.serialize(cfg)}
+        elif ty == 'CFG Indicator':
+            return {'ready': True, 'value': {'success': True}}
         elif ty == 'Function Manager':
             cfg = result.value
             return {'ready': True, 'value': the_serializer.serialize(cfg.function_manager)}
@@ -195,7 +197,7 @@ def instance_info(instance=None):
     instance['success'] = True
     return instance
 
-@app.route('/api/instances/<int:inst_id>/cfg')
+@app.route('/api/instances/<int:inst_id>/constructCFG')
 @jsonize
 @with_instance
 def get_cfg(instance=None):
@@ -203,22 +205,58 @@ def get_cfg(instance=None):
     if proj._cfg is None:
         token = str(uuid.uuid4())
         async_construct = rpyc.async(proj.construct_cfg)
-        active_tokens[token] = ('CFG', async_construct, async_construct())
+        active_tokens[token] = ('CFG Indicator', async_construct, async_construct())
         return {'token': token}
-    cfg = proj._cfg
-    return the_serializer.serialize(cfg)
+    return {'success': True}
 
-@app.route('/api/instances/<int:inst_id>/functions')
+@app.route('/api/instances/<int:inst_id>/functionManager')
 @jsonize
 @with_instance
 def get_functions(instance=None):
     proj = instance['angr']
     if proj._cfg is None:
-        token = str(uuid.uuid4())
-        async_construct = rpyc.async(proj.construct_cfg)
-        active_tokens[token] = ('Function Manager', async_construct, async_construct())
-        return {'token': token}
-    return the_serializer.serialize(proj._cfg.function_manager)
+        flask.abort(400)
+    return {'success': True, 'data': the_serializer.serialize(proj._cfg.function_manager)}
+
+@app.route('/api/instances/<int:inst_id>/irsbs', methods=('POST',))
+@jsonize
+@with_instance
+def get_irsbs(instance=None):
+    proj = instance['angr']
+    out = {'irsbs': {}, 'disasm': {}}
+    if not type(flask.request.json) is list:
+        flask.abort(400)
+    
+    for address in flask.request.json:
+        if not address.isdigit(): flask.abort(400)
+        address = int(address)
+        if address in proj.sim_procedures:
+            if 'simProcedures' not in out:
+                out['simProcedureSpots'], out['simProcedures'] = get_simproc_data(proj)
+            continue
+        try:
+            out['irsbs'][address] = the_serializer.serialize(proj.block(address))
+            dblock = proj.capper.block(address)
+            for insn in dblock.insns:
+                out['disasm'][insn.address] = the_serializer.serialize(insn)
+        except:
+            return {'success': False, 'message': 'Error translating block at 0x%x' % address}
+
+    return {'success': True, 'data': out}
+
+def make_simproc_name(proc):
+    return str(proc)        # :(
+
+def get_simproc_data(proj):
+    locs = {addr: make_simproc_name(proc[0]) for addr, proc in proj.sim_procedures.iteritems()}
+    procs = {}
+    for lib in simuvex.SimProcedures.values():
+        for proc in lib.values():
+            procs[make_simproc_name(proc)] = {
+                'prettyName': proc.__name__
+            }
+
+    return locs, procs
 
 @app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/rename', methods=('POST',))
 @jsonize
@@ -226,10 +264,10 @@ def get_functions(instance=None):
 def rename_function(func_addr, instance=None):
     proj = instance['angr']
     if proj._cfg is None:
-        return {'status': False, 'message': 'CFG not generated yet'}
+        return {'success': False, 'message': 'CFG not generated yet'}
     f = proj._cfg.function_manager.functions[func_addr]
     f.name = flask.request.data     # oh my god
-    return {'status': True}
+    return {'success': True}
 
 @app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/vfg')
 @jsonize

@@ -32,10 +32,10 @@ class Serializer(object):
             return self._serialize_state(o, extra=extra)
         if isinstance(o, simuvex.SimRun):
             return self._serialize_simrun(o, ref, extra=extra)
+        if isinstance(o, angr.vexer.SerializableIRSB):
+            return o.json
         if isinstance(o, angr.PathEvent):
             return self._serialize_path_event(o, extra=extra)
-        if isinstance(o, claripy.E):
-            return self._serialize_expression(o, extra=extra)
         if isinstance(o, claripy.A):
             return self._serialize_ast(o, extra=extra)
         if isinstance(o, claripy.BVV):
@@ -46,6 +46,8 @@ class Serializer(object):
             return self._serialize_functionmanager(o, extra=extra)
         if isinstance(o, angr.Function):
             return self._serialize_function(o, extra=extra)
+        if isinstance(o, angr.capper.CapstoneInsn):
+            return self._serialize_cs_instruction(o, extra=extra)
         else:
             return "NOT SERIALIZED: %s" % o
 
@@ -108,7 +110,7 @@ class Serializer(object):
             data = {'type': 'IRSB', 'addr': s.addr}
             if not ref:
                 print "serializing 0x{:x}".format(s.addr)
-                data['irsb'] = s._crawl_vex(s.irsb)
+                data['irsb'] = self.serialize(s.irsb)
             return data
         if isinstance(s, simuvex.SimProcedure):
             return {'type': 'proc', 'name': s.__class__.__name__}
@@ -117,21 +119,15 @@ class Serializer(object):
 
     def _serialize_ast(self, a, extra=None):
         return {
+            'id': id(a),
             'expr_type': 'ast',
             'op': a.op,
             'ast_type': ( 'binop' if a.op.startswith('__') and len(a.args) == 2 else
                           'unop' if a.op.startswith('__') and len(a.args) == 1 else
                           a.op ),
-            'args': self.serialize(a.args, extra=extra)
-        }
-
-    def _serialize_expression(self, e, extra=None):
-        return {
-            'id': id(e),
-            'expr_type': 'e',
-            'ast': self.serialize(e._model, extra=extra),
-            'symbolic': e.symbolic,
-            'variables': self.serialize(e.variables, extra=extra)
+            'args': self.serialize(a.args, extra=extra),
+            'symbolic': a.symbolic,
+            'variables': self.serialize(a.variables, extra=extra)
         }
 
     def _serialize_bvv(self, b, extra=None): #pylint:disable=W0613
@@ -164,9 +160,17 @@ class Serializer(object):
     def _serialize_function(self, f, extra=None):
         return {
             'address': self.serialize(f._addr),
-            'blocks': self.serialize(f.basic_blocks),
+            'blocks': self.serialize(map(str, f.basic_blocks)), # HATE JAVASCRIPT
+            'blockedges': self.serialize([{'from': str(from_), 'to': str(to), 'type': dat['type']} for from_, to, dat in f.transition_graph.edges_iter(data=True)]),
             'name': self.serialize(f.name),
             'argument_registers': self.serialize(f._argument_registers),
             'argument_stack_variables': self.serialize(f._argument_stack_variables),
             'callsites': { key: { 'target': val[0], 'return': val[1] } for key, val in f._call_sites.iteritems() }
+        }
+
+    def _serialize_cs_instruction(self, i, extra=None):
+        return {
+            'address': i.address,
+            'mnemonic': i.mnemonic,
+            'op_str': i.op_str
         }

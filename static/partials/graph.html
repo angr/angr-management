@@ -1,11 +1,9 @@
 <div ng-switch on="nodeType">
     <div ng-switch-when="simRun">
     <div id="graphRoot" style="position: relative; z-index: 0;">
-    <div ng-mousedown="o_mx = $event.pageX; o_my = $event.pageY"
-         ng-mouseup="node.hovering = (o_mx == $event.pageX && o_my == $event.pageY) ? !node.hovering : node.hovering;"
-         class="graph-node" id="{{ id }}" ng-class="{top: node.hovering}"
-         ng-repeat="(id, node) in nodes">
-      <bblock block="node" show-details="node.hovering" view="view"></bblock>
+    <div class="graph-node" id="{{ node }}"
+         ng-repeat="node in nodes">
+      <bblock block="node" view="view"></bblock>
     </div></div></div>
 
     <div ng-switch-when="function">
