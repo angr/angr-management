@@ -4,7 +4,7 @@
     border-bottom:0px;
 }
 .nav-tabs {
-    border-bottom: 0px;
+    border-bottom: 2px solid #eee;
     border-top: 1px solid #ddd;
 }
 .nav-tabs > li {

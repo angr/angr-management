@@ -1,13 +1,29 @@
 .graph-node {
-    background-color: #ccc;
     display: block;
+    background-color: #eee;
     position: absolute;
+    min-width: 400px;
+    border: 2px solid grey;
+    /*
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 20px 70px;
+    border-bottom-right-radius: 20px 70px;
+    */
 }
 
 .graph-node bblock {
-    padding: 10px 25px;
     margin: 0 auto;
     font-family: monospace;
+}
+
+.bbHead {
+    margin: 0px;
+    background-color: grey;
+    color: white;
+    font-size: 1.2em;
+    padding: 7px;
+    text-align: right;
 }
 
 .top {
@@ -38,6 +54,14 @@
 
 .blue { color: blue; }
 .red {color: red; }
+
+.plusMinus {
+    margin-left: 2px;
+    border: 1px solid black;
+    padding: 0px 1px;
+    border-radius: 2px;
+    cursor: pointer;
+}
 
 irstmt {
     display: inline-block;

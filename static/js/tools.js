@@ -29,12 +29,21 @@ tools.filter('funcnameextra', function () {
     };
 });
 
+tools.filter('hexpad', function (AngrData) {
+    return function (str) {     // Accounts for decimal strings, ew
+        var x = parseInt(str.toString()).toString(16);
+        while (x.length < AngrData.gcomm.arch.bits/8) {
+            x = '0' + x;
+        }
+        return x;
+    };
+});
+
 tools.filter('hex', function () {
     return function (str) {     // Accounts for decimal strings, ew
         return parseInt(str.toString()).toString(16);
     };
 });
-
 
 // Okay here's the big one
 
@@ -76,11 +85,15 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
                 error(data);
             }
         }).error(function(data, status) {
-            if (!("message" in data)) {
-                data.message = 'Error ' + status + ': ' + data.toString();
-            }
-            if (!("success" in data)) {
-                data.success = false;
+            if (data.slice) {
+                data = {success: false, message: data};
+            } else {
+                if (!("message" in data)) {
+                    data.message = 'Error ' + status + ': ' + data.toString();
+                }
+                if (!("success" in data)) {
+                    data.success = false;
+                }
             }
             error(data);
         });

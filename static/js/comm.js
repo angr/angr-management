@@ -15,6 +15,13 @@ comm.factory('newCommunicator', function($rootScope) {
         comm.funcPicker = {
             selected: null
         };
+        comm.graph = {
+            layout: function () {}
+        };
+        comm.hack = {
+            delaybb: [],
+            expandedStmts: {}
+        };
         return comm;
     };
 });
@@ -29,6 +36,7 @@ comm.factory('globalCommunicator', function ($rootScope) {
                 edges: [],
                 loaded: false
             };
+            gcomm.arch = {};
             gcomm.irsbs = {};
             gcomm.simProcedures = {};
             gcomm.simProcedureSpots = {};

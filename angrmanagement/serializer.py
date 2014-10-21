@@ -48,7 +48,12 @@ class Serializer(object):
             return self._serialize_function(o, extra=extra)
         if isinstance(o, angr.capper.CapstoneInsn):
             return self._serialize_cs_instruction(o, extra=extra)
+        if isinstance(o, simuvex.SimArch):
+            return self._serialize_arch(o, extra=extra)
+        if isinstance(o, simuvex.SimAMD64):
+            return self._serialize_arch(o, extra=extra)
         else:
+            print o.__class__
             return "NOT SERIALIZED: %s" % o
 
     def _serialize_state(self, s, extra=None): #pylint:disable=W0613
@@ -173,4 +178,11 @@ class Serializer(object):
             'address': i.address,
             'mnemonic': i.mnemonic,
             'op_str': i.op_str
+        }
+
+    def _serialize_arch(self, a, extra=None):
+        return {
+            'bits': a.bits,
+            'registers': a.registers,
+            'register_names': a.register_names
         }

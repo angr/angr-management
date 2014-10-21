@@ -14,6 +14,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
         if (data.success) {
             $scope.instance = data;
             AngrData.gcomm.useInstance(data.id);
+            AngrData.gcomm.arch = data.arch;
         } else {
             alert(data.message);
         }
@@ -140,6 +141,7 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View, An
             var picker = new View({}, 'FUNCTION_PICKER');
             picker.split(cfg, false, 0.2, true);
             picker.title = 'CFG Tab';
+            $scope.thinking = true;
             
             AngrData.loadFunctionManager(function () {
                 $scope.thinking = false;

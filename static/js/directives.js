@@ -163,7 +163,7 @@ dirs.directive('viewlayout', function (RecursionHelper) {
     };
 });
 
-dirs.directive('bblock', function(ContextMenu) {
+dirs.directive('bblock', function(ContextMenu, Schedule) {
     return {
         priority: 100,
         templateUrl: '/static/partials/bblock.html',
@@ -178,10 +178,13 @@ dirs.directive('bblock', function(ContextMenu) {
                 $scope.irsb = null;
                 $scope.simproc = null;
                 $scope.error = false;
+                $scope.text = '';
                 if (block in $scope.view.gcomm.simProcedureSpots) {
                     $scope.simproc = $scope.view.gcomm.simProcedures[$scope.view.gcomm.simProcedureSpots[block]];
+                    $scope.text = $scope.simproc.prettyName;
                 } else if (block in $scope.view.gcomm.irsbs) {
                     $scope.irsb = $scope.view.gcomm.irsbs[block];
+                    $scope.text = 'block_' + parseInt($scope.block.toString()).toString(16);
                 } else {
                     $scope.error = 'WTF??';
                 }
@@ -192,15 +195,39 @@ dirs.directive('bblock', function(ContextMenu) {
             $scope.$watch('view.gcomm.irsbs');
 
             updateBlock($scope.block, null);
+
+
         },
         link: function ($scope, element, attrs) {
+            $scope.view.comm.hack.delaybb.push(function () {
+                var el = element[0];
+                el.parentElement.style.width = Math.ceil(el.parentElement.getBoundingClientRect().width) + 'px';
+            });
             ContextMenu.registerEntries(element, function () {
                 return [
                     {
                         text: 'Basic block actions',
                         subitems: [
                             {
-                                text: 'Find paths to here'
+                                text: 'Expand all instructions',
+                                action: function () {
+                                    var boollist = $scope.view.comm.hack.expandedStmts[$scope.block];
+                                    var keys = Object.keys(boollist);
+                                    for (var i = 0; i < keys.length; i++) {
+                                        boollist[keys[i]] = true;
+                                    }
+                                    $scope.view.comm.graph.layout();
+                                }
+                            }, {
+                                text: 'Collapse all instructions',
+                                action: function () {
+                                    var boollist = $scope.view.comm.hack.expandedStmts[$scope.block];
+                                    var keys = Object.keys(boollist);
+                                    for (var i = 0; i < keys.length; i++) {
+                                        boollist[keys[i]] = false;
+                                    }
+                                    $scope.view.comm.graph.layout();
+                                }
                             }, {
                                 text: 'Reanalyze'
                             }
@@ -236,49 +263,63 @@ dirs.directive('graph', function(ContextMenu) {
             };
             var exitEndpoint = {
                 maxConnections: 10000000,
-                connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:5, alwaysRespectStubs:true } ],
+                connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:15} ],
+                connectorStyle: {
+                    lineWidth: 4,
+                    strokeStyle: 'blue'
+                }
             };
 
             var GRID_SIZE = 20;
             var HEADER = 160;
 
             $scope.layout = function() {
-                var g = new graphlib.Graph()
-                    .setGraph({ nodesep: 200, edgesep: 200, ranksep: 100 })
-                    .setDefaultEdgeLabel(function() { return {}; });
-                jQuery($($element).find('#graphRoot')).children('div').each(function(i, e) {
-                    var $e = jQuery(e);
-                    var id = $e.attr('id');
-                    if (typeof id === 'undefined') return;
-                    g.setNode(id, {width: $e.width(), height: $e.height()});
+                Schedule(function () {
+                    var g = new graphlib.Graph()
+                        .setGraph({ nodesep: 200, edgesep: 200, ranksep: 100 })
+                        .setDefaultEdgeLabel(function() { return {}; });
+                    jQuery($($element).find('#graphRoot')).children('div').each(function(i, e) {
+                        var $e = jQuery(e);
+                        var id = $e.attr('id');
+                        if (typeof id === 'undefined') return;
+                        g.setNode(id, {width: $e.width(), height: $e.height()});
+                    });
+                    for (var i in $scope.edges) {
+                        var edge = $scope.edges[i];
+                        g.setEdge(edge.from.toString(), edge.to.toString());
+                    }
+                    dagre.layout(g);
+                    g.nodes().forEach(function(id) {
+                        var data = g.node(id);
+                        var $e = jQuery('#' + id);
+                        var roundedCenterX = HEADER + GRID_SIZE * Math.round(data.x/GRID_SIZE);
+                        var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
+                        $e.css('left', roundedCenterX - data.width/2);
+                        $e.css('top', roundedCenterY - data.height/2);
+                    });
+                    $scope.plumb.repaintEverything();
                 });
-                for (var i in $scope.edges) {
-                    var edge = $scope.edges[i];
-                    g.setEdge(edge.from.toString(), edge.to.toString());
-                }
-                dagre.layout(g);
-                g.nodes().forEach(function(id) {
-                    var data = g.node(id);
-                    var $e = jQuery('#' + id);
-                    var roundedCenterX = HEADER + GRID_SIZE * Math.round(data.x/GRID_SIZE);
-                    var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
-                    $e.css('left', roundedCenterX - data.width/2);
-                    $e.css('top', roundedCenterY - data.height/2);
-                });
-                $scope.plumb.repaintEverything();
             };
+
+            $scope.view.comm.graph.layout = $scope.layout;
 
             // Tell JS to queue (timeout at zero seconds) this init routine
             // It needs to run later, after angular has finished processing shit
             // and has parsed the ng-ifs and ng-repeats
             Schedule(function() {
+                if ($scope.view.comm.hack.delaybb.length > 0) {
+                    for (var i = 0; i < $scope.view.comm.hack.delaybb.length; i++) {
+                        $scope.view.comm.hack.delaybb[i]();
+                    }
+                    $scope.view.comm.hack.delaybb = [];
+                }
                 var graphRoot = jQuery($element).find('#graphRoot');
                 $scope.plumb.setContainer(graphRoot);
                 graphRoot.children('div').each(function(i, e) {
                     var $e = jQuery(e);
                     $scope.plumb.draggable($e, {grid: [GRID_SIZE, GRID_SIZE]});
                     $scope.plumb.addEndpoint(e.id, entryEndpoint, {anchor: 'TopCenter', uuid: e.id + '-entry'});
-                    $scope.plumb.addEndpoint(e.id, exitEndpoint, {anchor: ['Continuous', {faces: ['bottom']}], uuid: e.id + '-exit'});
+                    $scope.plumb.addEndpoint(e.id, exitEndpoint, {anchor: 'BottomCenter', uuid: e.id + '-exit'});
                 });
 
                 for (var i in $scope.edges) {
@@ -289,12 +330,31 @@ dirs.directive('graph', function(ContextMenu) {
                     });
                 }
 
-                Schedule($scope.layout);
+                $scope.layout();
             });
 
             $scope.$watch('nodes', function (nv, ov) {
-                Schedule($scope.layout);
+                $scope.layout();
             }, true);
+
+            $scope.zoom = function (inout) {
+                var czoom = parseInt($element[0].parentElement.style.zoom);
+                if (czoom !== czoom) { // NaN, lol hax
+                    czoom = 100;
+                }
+                if (inout) {
+                    czoom *= 1.1;
+                } else {
+                    czoom /= 1.1;
+                }
+
+                if (czoom > 250) {
+                    czoom = 250;
+                } else if (czoom < 25) {
+                    czoom = 25;
+                }
+                $element[0].parentElement.style.zoom = czoom.toString() + '%';
+            };
         }
     };
 });
@@ -538,7 +598,7 @@ dirs.directive('ref', function($http) {
     }
 });
 
-dirs.directive('irsb', function() {
+dirs.directive('irsb', function(Schedule) {
     return {
         templateUrl: '/static/partials/irsb.html',
         restrict: 'E',
@@ -547,10 +607,30 @@ dirs.directive('irsb', function() {
             view: '='
         },
         controller: function($scope) {
-            $scope.renderData = {idx: 0};
+            $scope.renderData = {idx: -1, insn: 0, show: {}};
+            $scope.view.comm.hack.expandedStmts[$scope.irsb.addr] = $scope.renderData.show;
 
-            $scope.next = function (rd) {
-                return rd.idx++;
+            $scope.nextStmt = function (data) {
+                data.idx++;
+                return $scope.getCtx(data);
+            };
+
+            $scope.nextInsn = function (data) {
+                data.insn++;
+                data.show[data.insn] = false;
+                return $scope.getCtx(data);
+            };
+
+            $scope.getCtx = function (data) {
+                return {
+                    stmtnum: data.idx,
+                    insnnum: data.insn
+                };
+            };
+
+            $scope.toggle = function (data, ld) {
+                data.show[ld.insnnum] = !data.show[ld.insnnum];
+                $scope.view.comm.graph.layout();
             };
         },
     };
@@ -564,7 +644,7 @@ dirs.directive('asmstmt', function () {
             view: '=',
             addr: '='
         },
-        controller: function () {
+        controller: function ($scope) {
 
         }
     }
@@ -769,8 +849,6 @@ dirs.directive('splittest', function (View) {
     }
 });
 
-// John can make his own file if he wants to bitch about it
-
 
 
 dirs.directive('onEnter', function() {
@@ -782,6 +860,28 @@ dirs.directive('onEnter', function() {
                 });
 
                 event.preventDefault();
+            }
+        });
+    };
+});
+
+dirs.directive('realClick', function() {
+    return function(scope, element, attrs) {
+        var sx = 0;
+        var sy = 0;
+        var funcExpr = attrs.realClick;
+        element.bind("mousedown", function(e) {
+            sx = e.pageX;
+            sy = e.pageY;
+        });
+
+        element.bind("mouseup", function (e) {
+            var dx = Math.abs(sx - e.pageX);
+            var dy = Math.abs(sy - e.pageY);
+            if (dy < 5 && dx < 5) {
+                scope.$apply(function () {
+                    scope.$eval(funcExpr, {'event': e});
+                });
             }
         });
     };

@@ -192,9 +192,10 @@ def connect_instance(instances=None):
 @with_instance
 def instance_info(instance=None):
     instance = instance.copy()
-    instance.pop('angr')
+    proj = instance.pop('angr')
     instance.pop('remote')
     instance['success'] = True
+    instance['arch'] = the_serializer.serialize(proj.arch)
     return instance
 
 @app.route('/api/instances/<int:inst_id>/constructCFG')
