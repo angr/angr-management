@@ -50,8 +50,6 @@ class Serializer(object):
             return self._serialize_cs_instruction(o, extra=extra)
         if isinstance(o, simuvex.SimArch):
             return self._serialize_arch(o, extra=extra)
-        if isinstance(o, simuvex.SimAMD64):
-            return self._serialize_arch(o, extra=extra)
         else:
             print o.__class__
             return "NOT SERIALIZED: %s" % o

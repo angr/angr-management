@@ -306,7 +306,7 @@ dirs.directive('graph', function(ContextMenu) {
             // Tell JS to queue (timeout at zero seconds) this init routine
             // It needs to run later, after angular has finished processing shit
             // and has parsed the ng-ifs and ng-repeats
-            Schedule(function() {
+            var plumbing = function() {
                 if ($scope.view.comm.hack.delaybb.length > 0) {
                     for (var i = 0; i < $scope.view.comm.hack.delaybb.length; i++) {
                         $scope.view.comm.hack.delaybb[i]();
@@ -331,10 +331,13 @@ dirs.directive('graph', function(ContextMenu) {
                 }
 
                 $scope.layout();
-            });
+            };
 
             $scope.$watch('nodes', function (nv, ov) {
-                $scope.layout();
+                Schedule(function () {
+                    $scope.plumb.reset();
+                    plumbing();
+                });
             }, true);
 
             $scope.zoom = function (inout) {
