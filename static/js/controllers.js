@@ -138,7 +138,9 @@ ctrls.controller('AddTabCtrl', function ($scope, $http, $modalInstance, View, An
             return;
         case 'CFG':
             var cfg = new View({}, 'CFG');
+            var manager = new View({}, 'FUNCTION_MANAGER');
             var picker = new View({}, 'FUNCTION_PICKER');
+            picker.split(manager, true, 0.6, true);
             picker.split(cfg, false, 0.2, true);
             picker.title = 'CFG Tab';
             $scope.thinking = true;

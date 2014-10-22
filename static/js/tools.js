@@ -32,7 +32,7 @@ tools.filter('funcnameextra', function () {
 tools.filter('hexpad', function (AngrData) {
     return function (str) {     // Accounts for decimal strings, ew
         var x = parseInt(str.toString()).toString(16);
-        while (x.length < AngrData.gcomm.arch.bits/8) {
+        while (x.length < AngrData.gcomm.arch.bits/4) {
             x = '0' + x;
         }
         return x;
