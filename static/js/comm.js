@@ -12,6 +12,15 @@ comm.factory('newCommunicator', function($rootScope) {
             blocks: {},
             tmps: {}
         };
+        comm.cfgHighlight2 = {
+            registers: {},
+            statements: {},
+            addresses: {},
+            highlights: {},
+            exits: {},
+            blocks: {},
+            tmps: {}
+        };
         comm.funcPicker = {
             selected: null
         };
@@ -20,7 +29,8 @@ comm.factory('newCommunicator', function($rootScope) {
         };
         comm.hack = {
             delaybb: [],
-            expandedStmts: {}
+            expandedStmts: {},
+            viewingPath: null
         };
         return comm;
     };
@@ -34,13 +44,25 @@ comm.factory('globalCommunicator', function ($rootScope) {
             gcomm.funcMan = {
                 functions: {},
                 edges: [],
-                loaded: false
+                loaded: false,
+                findFuncForBlock: function (addr) {
+                    for (var key in gcomm.funcMan.functions) {
+                        var func = gcomm.funcMan.functions[key];
+                        for (var i = 0; i < func.blocks.length; i++) {
+                            if (func.blocks[i] == addr) {
+                                return func;
+                            }
+                        }
+                    }
+                    return null;
+                }
             };
             gcomm.arch = {};
             gcomm.irsbs = {};
             gcomm.simProcedures = {};
             gcomm.simProcedureSpots = {};
             gcomm.disasm = {};
+            gcomm.surveyors = [];
             gcomm.cfgReady = false;
             gcomm.instance = instance;
         }

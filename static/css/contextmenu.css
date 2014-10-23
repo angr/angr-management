@@ -9,14 +9,6 @@
     user-select: none;
 }
 
-.contextMenuItem {
-    min-height: 30px;
-    list-style: none;
-    display: block;
-    background-color: #f8f8e8;
-    cursor: pointer;
-}
-
 .contextMenuText.hasSubmenus:after {
     content: '\25B6';
     position: absolute;
@@ -33,21 +25,14 @@
     border-bottom: 1px solid #ccc;
 }
 
-.contextMenuItem:hover {
-    background-color: #eee;
-}
-
-.disabledMenuItem, .disabledMenuItem:hover {
-    background-color: #ddd;
-    color: #888;
-    cursor: default;
-}
-
 .contextMenuSubmenu {
     width: 200px;
     position: absolute;
     left: 200px;
     -webkit-padding-start: 0px;
+    display: block;
+    top: 0px;
+    float: none;
 }
 
 .contextMenuText {

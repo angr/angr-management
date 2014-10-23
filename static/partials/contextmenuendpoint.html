@@ -1,6 +1,6 @@
-<ul class="contextMenu" 
+<ul class="contextMenu dropdown-menu" role="menu"
     ng-style="{top: position.y + 'px', left: position.x + 'px', display: active ? 'block' : 'none'}">
-    <li context-menu-item class="contextMenuItem"
+    <li context-menu-item class="contextMenuItem" role="presentation"
         ng-repeat="item in items" 
         ng-class="{disabledMenuItem: item.disabled}"
         ng-click="click(item, $event)"

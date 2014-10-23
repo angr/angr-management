@@ -1,7 +1,7 @@
 'use strict';
 
 var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools']);
-dirs.directive('newproject', function() {
+dirs.directive('newproject', function(AngrData) {
     return {
         templateUrl: '/static/partials/newproject.html',
         restrict: 'AE',
@@ -286,7 +286,9 @@ dirs.directive('graph', function(ContextMenu) {
                     });
                     for (var i in $scope.edges) {
                         var edge = $scope.edges[i];
-                        g.setEdge(edge.from.toString(), edge.to.toString());
+                        if ($scope.nodes[edge.from] && $scope.nodes[edge.to]) {
+                            g.setEdge(edge.from.toString(), edge.to.toString());
+                        }
                     }
                     dagre.layout(g);
                     g.nodes().forEach(function(id) {
@@ -324,10 +326,12 @@ dirs.directive('graph', function(ContextMenu) {
 
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
-                    $scope.plumb.connect({
-                        uuids: [edge.from + '-exit', edge.to + '-entry'],
-                        detachable: false,
-                    });
+                    if ($scope.nodes[$scope.edges[i].to] && $scope.nodes[$scope.edges[i].from]) {
+                        $scope.plumb.connect({
+                            uuids: [edge.from + '-exit', edge.to + '-entry'],
+                            detachable: false,
+                        });
+                    }
                 }
 
                 $scope.layout();
@@ -495,110 +499,6 @@ dirs.directive('funcnode', function () {
             };
         }
     };
-});
-
-dirs.directive('surveyors', function($http) {
-    return {
-        templateUrl: '/static/partials/surveyors.html',
-        restrict: 'AE',
-        scope: { instance: '=' },
-        controller: function($scope, $http) {
-
-            $scope.surveyors = [ ];
-            $http.get("/api/instances/" + $scope.instance + "/surveyors").success(function(data, status) {
-                $scope.surveyors = data;
-            });
-        }
-    }
-});
-
-dirs.directive('surveyor', function($http) {
-    return {
-        templateUrl: '/static/partials/surveyor.html',
-        restrict: 'AE',
-        scope: { sid: '=', instance: "=", surveyor: '=data' },
-        controller: function($scope, $http)
-        {
-            $scope.show_surveyor = false;
-            if ($scope.surveyor == undefined)
-            {
-                $http.get("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
-            }
-
-            $scope.steps = 1;
-            $scope.step = function(steps) {
-                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
-            }
-
-            $scope.reactivate = function(path) {
-                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
-            }
-
-            $scope.suspend = function(path) {
-                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
-            }
-        }
-    }
-});
-
-dirs.directive('path', function($http) {
-    return {
-        templateUrl: '/static/partials/path.html',
-        restrict: 'AE',
-        scope: { path: '=data' },
-        controller: function($scope, $http)
-        {
-            $scope.show_path = true;
-            $scope.show_events = false;
-            $scope.show_backtrace = false;
-            $scope.event_limit = 10;
-            $scope.backtrace_limit = 10;
-        }
-    }
-});
-
-dirs.directive('event', function($http) {
-    return {
-        templateUrl: '/static/partials/path_event.html',
-        restrict: 'AE',
-        scope: { event: '=data' },
-        controller: function($scope, $http)
-        {
-            $scope.show_refs = false;
-            $scope.show_event = false;
-        }
-    }
-});
-
-dirs.directive('address', function($http) {
-    return {
-        templateUrl: '/static/partials/address.html',
-        restrict: 'AE',
-        scope: { address: '=a' },
-        controller: function($scope, $http)
-        {
-            $scope.isNaN = isNaN;
-        }
-    }
-});
-
-dirs.directive('ref', function($http) {
-    return {
-        templateUrl: '/static/partials/ref.html',
-        restrict: 'AE',
-        scope: { ref: '=data' },
-        controller: function($scope, $http)
-        {
-        }
-    }
 });
 
 dirs.directive('irsb', function(Schedule) {
@@ -854,38 +754,3 @@ dirs.directive('splittest', function (View) {
 
 
 
-dirs.directive('onEnter', function() {
-    return function(scope, element, attrs) {
-        element.bind("keydown keypress", function(event) {
-            if(event.which === 13) {
-                scope.$apply(function(){
-                    scope.$eval(attrs.onEnter, {'event': event});
-                });
-
-                event.preventDefault();
-            }
-        });
-    };
-});
-
-dirs.directive('realClick', function() {
-    return function(scope, element, attrs) {
-        var sx = 0;
-        var sy = 0;
-        var funcExpr = attrs.realClick;
-        element.bind("mousedown", function(e) {
-            sx = e.pageX;
-            sy = e.pageY;
-        });
-
-        element.bind("mouseup", function (e) {
-            var dx = Math.abs(sx - e.pageX);
-            var dy = Math.abs(sy - e.pageY);
-            if (dy < 5 && dx < 5) {
-                scope.$apply(function () {
-                    scope.$eval(funcExpr, {'event': e});
-                });
-            }
-        });
-    };
-});

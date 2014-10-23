@@ -1,6 +1,2 @@
-<span ng-if="surveyors.length > 0">
-  <h2>Current Surveyors</h2>
-  <span ng-repeat="s in surveyors">
-    <div class="panel panel-default" surveyor sid="s.id" data="s" instance="instance">WTF</div>
-  </span>
-</span>
+<div ng-repeat="s in view.gcomm.surveyors" class="panel panel-default" surveyor sid="s.id" data="s" view="view" vp="viewingPath">WTF</div>
+<button class="btn btn-primary" ng-click="newSurveyor()"><span class="glyphicon glyphicon-plus"></span>Add Surveyor</button>

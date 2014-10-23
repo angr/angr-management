@@ -95,5 +95,23 @@ view.factory('View', function(newCommunicator, globalCommunicator) {
         return orig;
     };
 
+    View.prototype.close = function () {
+        var p = this.parent;
+        var oc = this.parent.halfA;
+        if (oc === this) {
+            oc = this.parent.halfB;
+        }
+        oc.parent = p.parent;
+        var r = p.parent;
+        if (r) {
+            var opc = r.halfA;
+            if (r.halfA === p) {
+                r.halfA = oc;
+            } else {
+                r.halfB = oc;
+            }
+        }
+    };
+
     return View;
 });

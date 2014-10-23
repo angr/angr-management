@@ -2,10 +2,10 @@
 <viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'top' : 'left'}}: {{ view.splitData.size * 100 }}%;" view="view.halfB" instance="instance"></viewlayout>
 
 <div ng-if="!view.splitData" ng-switch on="view.type">
-    <div ng-switch-when="CFG" cfg instance="instance.id" view="view"></div>
-    <div ng-switch-when="SURVEYOR" surveyors instance="instance.id" view="view"></div>
-    <div ng-switch-when="SPLITTEST" splittest instance="instance.id" view="view"></div>
-    <div ng-switch-when="FUNCTION_PICKER" funcpicker instance="instance.id" view="view"></div>
-    <div ng-switch-when="FUNCTION_MANAGER" funcman instance="instance.id" view="view"></div>
-    <div ng-switch-when="PROXIMITY_GRAPH" proxgraph instance="instance.id" view="view"></div>
+    <div ng-switch-when="CFG" cfg view="view"></div>
+    <div ng-switch-when="SURVEYOR" surveyors view="view"></div>
+    <div ng-switch-when="SPLITTEST" splittesti view="view"></div>
+    <div ng-switch-when="FUNCTION_PICKER" funcpicker view="view"></div>
+    <div ng-switch-when="FUNCTION_MANAGER" funcman view="view"></div>
+    <div ng-switch-when="PROXIMITY_GRAPH" proxgraph view="view"></div>
 </div>

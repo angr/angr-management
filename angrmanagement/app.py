@@ -10,14 +10,12 @@ import uuid
 import flask
 from werkzeug.utils import secure_filename
 import angr, simuvex
-from simuvex import SimIRSB, SimProcedure
 import rpyc
-from rpyc.utils.classic import obtain
 from socket import error as socket_error
 
 try:
-    import standard_logging #pylint:disable=W0611
-    import angr_debug #pylint:disable=W0611
+    import standard_logging #pylint:disable=W0611,import-error
+    import angr_debug #pylint:disable=W0611,import-error
 except ImportError:
     pass
 
@@ -83,7 +81,7 @@ def index():
 def redeem(token):
     if token not in active_tokens:
         flask.abort(400)
-    ty, async_thing, result = active_tokens[token]
+    ty, _, result = active_tokens[token]
     if result.ready:
         del active_tokens[token]
         if ty == 'CFG':
@@ -135,12 +133,12 @@ def list_instances(instances=None):
 @jsonize
 def new_instance(project, projects=None, instances=None):
     if project in projects:
-        metadata = json.load(open(PROJDIR + project + '/metadata', 'rb'))
+        #metadata = json.load(open(PROJDIR + project + '/metadata', 'rb'))
         remote = spawn_child()
         active_conns.append(remote)
         inst_name = flask.request.json.get('name', '<unnamed>')
         print PROJDIR + project + '/binary'
-        proj = remote.modules.angr.Project(PROJDIR + project + '/binary')
+        proj = remote.modules.angr.Project(PROJDIR + project + '/binary') # pylint: disable=no-member
         inst_name = flask.request.json.get('name', '<unnamed>')
         proj_id = create_instance(proj, inst_name, remote, project, instances)
         projects[project].append({'name': inst_name, 'id': proj_id})
@@ -176,7 +174,7 @@ def connect_instance(instances=None):
         return {'success': False, 'message': 'Connection refused.'}
     except rpyc.AsyncResultTimeout:
         return {'success': False, 'message': 'Remote unresponsive.'}
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-except
         print e
         return {'success': False, 'message': "Couldn't connect for weird unaccounted-for reason"}
     active_conns.append(conn)
@@ -227,7 +225,7 @@ def get_irsbs(instance=None):
     out = {'irsbs': {}, 'disasm': {}}
     if not type(flask.request.json) is list:
         flask.abort(400)
-    
+
     for address in flask.request.json:
         if not address.isdigit(): flask.abort(400)
         address = int(address)
@@ -240,7 +238,7 @@ def get_irsbs(instance=None):
             dblock = proj.capper.block(address)
             for insn in dblock.insns:
                 out['disasm'][insn.address] = the_serializer.serialize(insn)
-        except:
+        except: # pylint: disable=bare-except
             return {'success': False, 'message': 'Error translating block at 0x%x' % address}
 
     return {'success': True, 'data': out}
@@ -274,7 +272,7 @@ def rename_function(func_addr, instance=None):
 @jsonize
 @with_instance
 def get_function_vfg(func_addr, instance=None):
-    vfg = angr.VFG(instance['angr'])
+    vfg = angr.VFG(instance['angr'], instance['angr']._cfg)
     vfg.construct(func_addr)
     return str(vfg)
 
@@ -313,28 +311,28 @@ def disasm(binary, block):
 def surveyor_types():
     return angr.surveyors.all_surveyors.keys()
 
-@app.route('/api/instances/<int:inst_id>/surveyors/new/<surveyor_type>', methods=('POST',))
+@app.route('/api/instances/<int:inst_id>/surveyors/new', methods=('POST',))
 @jsonize
 @with_instance
-def new_surveyor(surveyor_type, instance=None):
+def new_surveyor(instance=None):
     # TODO: take a SimExit as a starting point
-
     kwargs = dict(flask.request.json.get('kwargs', {}))
     for k,v in kwargs.items():
         if type(v) in (str,unicode) and v.startswith("PYTHON:"):
             kwargs[k] = ast.literal_eval(v[7:])
 
     p = instance['angr']
+    surveyor_type = kwargs.pop('type')
     s = p.survey(surveyor_type, **kwargs)
     active_surveyors[str(id(s))] = s
-    return the_serializer.serialize(s)
+    return {'success': True, 'data': the_serializer.serialize(s)}
 
 @app.route('/api/instances/<int:inst_id>/surveyors')
 @jsonize
 @with_instance
 def list_surveyors(instance):
     p = instance['angr']
-    return [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]
+    return {'success': True, 'data': [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>')
 @jsonize

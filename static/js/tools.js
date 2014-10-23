@@ -1,5 +1,40 @@
 var tools = angular.module('angr.tools', []);
 
+tools.directive('onEnter', function() {
+    return function(scope, element, attrs) {
+        element.bind("keydown keypress", function(event) {
+            if(event.which === 13) {
+                scope.$apply(function(){
+                    scope.$eval(attrs.onEnter, {'event': event});
+                });
+
+                event.preventDefault();
+            }
+        });
+    };
+});
+
+tools.directive('realClick', function() {
+    return function(scope, element, attrs) {
+        var sx = 0;
+        var sy = 0;
+        var funcExpr = attrs.realClick;
+        element.bind("mousedown", function(e) {
+            sx = e.pageX;
+            sy = e.pageY;
+        });
+
+        element.bind("mouseup", function (e) {
+            var dx = Math.abs(sx - e.pageX);
+            var dy = Math.abs(sy - e.pageY);
+            if (dy < 5 && dx < 5) {
+                scope.$apply(function () {
+                    scope.$eval(funcExpr, {'event': e});
+                });
+            }
+        });
+    };
+});
 
 tools.factory('Schedule', function ($timeout) {
     return function (callback) {
@@ -32,7 +67,7 @@ tools.filter('funcnameextra', function () {
 tools.filter('hexpad', function (AngrData) {
     return function (str) {     // Accounts for decimal strings, ew
         var x = parseInt(str.toString()).toString(16);
-        while (x.length < AngrData.gcomm.arch.bits/4) {
+        while (x.length < 8) { // TODO: less hax
             x = '0' + x;
         }
         return x;
@@ -207,6 +242,27 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
                 }
             }
             callback();
+        }, error);
+    };
+
+    public.loadSurveyors = function (callback, error) {
+        if (public.gcomm.surveyors.length > 0) {
+            callback();
+        }
+
+        var config = GET('/api/instances/' + public.gcomm.instance + '/surveyors');
+        genericRequest(config, function (data) {
+            public.gcomm.surveyors = data.data;
+            callback();
+        }, error);
+    };
+
+    public.newSurveyor = function (surveyor, callback, error) {
+        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/new', {kwargs: surveyor});
+
+        genericRequest(config, function (data) {
+            public.gcomm.surveyors.push(data.data);
+            callback(data);
         }, error);
     };
 
