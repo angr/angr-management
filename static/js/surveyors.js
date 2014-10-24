@@ -90,7 +90,7 @@ survey.directive('surveyors', function($http, $modal) {
     }
 });
 
-survey.directive('surveyor', function($http, View) {
+survey.directive('surveyor', function($http, View, AngrData) {
     return {
         templateUrl: '/static/partials/surveyor.html',
         restrict: 'AE',
@@ -148,12 +148,14 @@ survey.directive('surveyor', function($http, View) {
             };
 
             $scope.showCFG = function (path) {
-                if (!$scope.view.comm.hack.viewingPath) {
-                    var rv = $scope.view.root;
-                    rv.split(new View({}, 'CFG'), false, 0.5, true);
-                }
-                $scope.view.comm.hack.viewingPath = path;
-                $scope.view.comm.cfgHighlight.blocks[path.last_addr] = true;
+                AngrData.loadFunctionManager(function () {
+                    if (!$scope.view.comm.hack.viewingPath) {
+                        var rv = $scope.view.root;
+                        rv.split(new View({}, 'CFG'), false, 0.5, true);
+                    }
+                    $scope.view.comm.hack.viewingPath = path;
+                    $scope.view.comm.cfgHighlight.blocks[path.last_addr] = true;
+                });
             };
         }
     }
