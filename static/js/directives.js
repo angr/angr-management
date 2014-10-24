@@ -286,7 +286,7 @@ dirs.directive('graph', function(ContextMenu) {
                     });
                     for (var i in $scope.edges) {
                         var edge = $scope.edges[i];
-                        if ($scope.nodes[edge.from] && $scope.nodes[edge.to]) {
+                        if ($scope.nodes.indexOf(edge.from) != -1 && $scope.nodes.indexOf(edge.to) != -1) {
                             g.setEdge(edge.from.toString(), edge.to.toString());
                         }
                     }
@@ -326,7 +326,7 @@ dirs.directive('graph', function(ContextMenu) {
 
                 for (var i in $scope.edges) {
                     var edge = $scope.edges[i];
-                    if ($scope.nodes[$scope.edges[i].to] && $scope.nodes[$scope.edges[i].from]) {
+                    if ($scope.nodes.indexOf(edge.to) != -1 && $scope.nodes.indexOf(edge.from) != -1) {
                         $scope.plumb.connect({
                             uuids: [edge.from + '-exit', edge.to + '-entry'],
                             detachable: false,
