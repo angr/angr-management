@@ -153,6 +153,7 @@ survey.directive('surveyor', function($http, View) {
                     rv.split(new View({}, 'CFG'), false, 0.5, true);
                 }
                 $scope.view.comm.hack.viewingPath = path;
+                $scope.view.comm.cfgHighlight.blocks[path.last_addr] = true;
             };
         }
     }

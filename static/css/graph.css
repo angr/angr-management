@@ -26,6 +26,14 @@
     text-align: right;
 }
 
+.blockHighlight {
+    border-color: yellow;
+}
+.blockHighlight .bbHead {
+    background-color: yellow;
+    color: black;
+}
+
 .top {
     z-index: 1000;
 }
