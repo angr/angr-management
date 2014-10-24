@@ -113,3 +113,39 @@ viewlayout > div > div {
     background-color: yellow;
     color: black;
 }
+
+.pickersearch {
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+}
+
+.pickersearch span {
+    opacity: 0.5;
+    background-color: white;
+    border: 1px solid grey;
+    border-radius: 12px;
+    font-size: 15px;
+    display: inline-block;
+    padding: 3px 0px;
+    margin: 0px;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+}
+
+.pickersearch input {
+    opacity: 0;
+    width: 0px;
+    transition: all ease-out 0.2s;
+}
+
+.pickersearch:hover span, .pickersearch.filled span {
+    opacity: 1;
+}
+
+.pickersearch:hover input, .pickersearch.filled input {
+    opacity: 1;
+    width: 150px;
+    display: inline-block;
+}

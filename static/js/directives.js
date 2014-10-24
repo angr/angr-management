@@ -418,7 +418,23 @@ dirs.directive('funcpicker', function(AngrData) {
         scope: {
             view: '='
         },
-        controller: function($scope) {
+        controller: function($scope, $filter) {
+            $scope.filterby = '';
+            $scope.getFuncList = function () {      // UGHHHHHH.
+                var out = [];
+                for (var key in $scope.view.gcomm.funcMan.functions) {
+                    out.push($scope.view.gcomm.funcMan.functions[key]);
+                }
+                return out;
+            };
+            $scope.filterfunc = function (value) {
+                var name = $filter('funcnameextra')(value);
+                if (name.indexOf($scope.filterby) != -1) {
+                    return true;
+                }
+                return false;
+            }
+
             $scope.click = function (func) {
                 $scope.view.comm.funcPicker.selected = func;
             };

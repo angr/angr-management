@@ -45,7 +45,8 @@ tools.factory('Schedule', function ($timeout) {
 tools.filter('funcname', function () {
     return function (func) {
         if (func.name === null) {
-            return 'sub_' + parseInt(func.address.toString()).toString(16);
+            var x = 'sub_' + parseInt(func.address.toString()).toString(16);
+            func.name = x;
         } else {
             return func.name;    // ugh.
         }

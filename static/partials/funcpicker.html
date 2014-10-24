@@ -5,10 +5,15 @@
         <th style="width: 60%;">Name</th>
         <th>Address</th>
     </tr>
-    <tr ng-repeat="(funcaddr, function) in view.gcomm.funcMan.functions" 
+    <tr ng-repeat="function in getFuncList() | filter:filterfunc" 
         ng-click="click(function)"
         ng-class="{selectedFunctionEntry: function == view.comm.funcPicker.selected}">
         <td>{{function | funcname}}</td>
-        <td>0x{{function.address.toString(16)}}</td>
+        <td>0x{{function.address | hex}}</td>
     </tr>
 </table>
+
+<div class="pickersearch" ng-class="{filled: filterby != ''}">
+    <span class="glyphicon glyphicon-search"></span>
+    <input ng-model="filterby" placeholder="Filter...">
+</div>
