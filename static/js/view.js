@@ -97,19 +97,37 @@ view.factory('View', function(newCommunicator, globalCommunicator) {
 
     View.prototype.close = function () {
         var p = this.parent;
-        var oc = this.parent.halfA;
-        if (oc === this) {
-            oc = this.parent.halfB;
-        }
-        oc.parent = p.parent;
-        var r = p.parent;
-        if (r) {
-            var opc = r.halfA;
-            if (r.halfA === p) {
-                r.halfA = oc;
-            } else {
-                r.halfB = oc;
+        if (p) {
+            var oc = this.parent.halfA;
+            if (oc === this) {
+                oc = this.parent.halfB;
             }
+            oc.parent = p.parent;
+            var r = p.parent;
+            if (r) {
+                var opc = r.halfA;
+                if (r.halfA === p) {
+                    r.halfA = oc;
+                } else {
+                    r.halfB = oc;
+                }
+            } else {
+                p.data = oc.data;
+                p.halfA = oc.halfA;
+                p.halfB = oc.halfB;
+                p.splitData = oc.splitData;
+                p.comm = oc.comm;
+                p.type = oc.type;
+                if (oc.halfA) {
+                    oc.halfA.parent = p;
+                }
+                if (oc.halfB) {
+                    oc.halfB.parent = p;
+                }
+            }
+        } else {
+            // Closing root of tab!
+            console.log('no. why are you doing this.');
         }
     };
 

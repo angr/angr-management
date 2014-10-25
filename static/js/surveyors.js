@@ -96,55 +96,21 @@ survey.directive('surveyor', function($http, View, AngrData) {
         restrict: 'AE',
         scope: {
             sid: '=',
-            view: "=",
-            surveyor: '=data'
+            view: "="
         },
         controller: function($scope, $http) {
-            $scope.console = console
-            $scope.show_surveyor = false;
-            if ($scope.surveyor == undefined)
-            {
-                $http.get("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
-            }
-
-            $scope.steps = 1;
+            $scope.view.data.show = false;
+            $scope.view.data.steps = 1;
             $scope.step = function(steps) {
-                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/step", {steps: steps}).success(function(data, status) {
-                    var old_pid = $scope.view.comm.hack.viewingPath;
-                    if (old_pid) old_pid = old_pid.id;
-                    $scope.surveyor = data;
-                    if (old_pid) {
-                        var found = false;
-                        for (var path_name in data.path_lists) {
-                            for (var i = 0; i < data.path_lists[path_name].length; i++) {
-                                if (old_pid == data.path_lists[path_name][i].id) {
-                                    $scope.view.comm.hack.viewingPath = data.path_lists[path_name][i];
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (found) break;
-                        }
-                        if (!found) {
-                            $scope.view.comm.hack.viewingPath = null;
-                            $scope.view.root.halfB.close();
-                        }
-                    }
-                });
+                AngrData.surveyorStep($scope.sid, $scope.view.data.steps, function () {});
             };
 
             $scope.reactivate = function(path) {
-                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/resume/" + path.id).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
+                AngrData.surveyorResume($scope.sid, function () {});
             };
 
             $scope.suspend = function(path) {
-                $http.post("/api/instances/" + $scope.instance + "/surveyors/" + $scope.sid + "/suspend/" + path.id).success(function(data, status) {
-                    $scope.surveyor = data;
-                });
+                AngrData.surveyorSuspend($scope.sid, function () {});
             };
 
             $scope.showCFG = function (path) {

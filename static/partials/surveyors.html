@@ -1,2 +1,2 @@
-<div ng-repeat="s in view.gcomm.surveyors" class="panel panel-default" surveyor sid="s.id" data="s" view="view" vp="viewingPath">WTF</div>
+<div ng-repeat="(sid, s) in view.gcomm.surveyors" class="panel panel-default" surveyor sid="s.id" view="view">WTF</div>
 <button class="btn btn-primary" ng-click="newSurveyor()"><span class="glyphicon glyphicon-plus"></span>Add Surveyor</button>

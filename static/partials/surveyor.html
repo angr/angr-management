@@ -1,16 +1,16 @@
 <div class="panel-heading">
-  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !show_surveyor, 'glyphicon-minus': show_surveyor}" ng-click="show_surveyor=!show_surveyor"></button>
-  {{surveyor.type}} with {{surveyor.step}} steps and {{surveyor.paths.length}} paths
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !view.data.show, 'glyphicon-minus': view.data.show}" ng-click="view.data.show=!view.data.show"></button>
+  {{view.gcomm.surveyors[sid].type}} with {{view.gcomm.surveyors[sid].step}} steps and {{view.gcomm.surveyors[sid].paths.length}} paths
 </div>
 
-<span ng-if="show_surveyor">
+<span ng-if="view.data.show">
   <div class="panel-body">
     <dl class="dl-horizontal">
-      <dt>Maximum concurrency:</dt> <dd>{{surveyor.max_concurrency}}</dd>
-      <dt>Save deadends:</dt> <dd>{{surveyor.save_deadends}}</dd>
+      <dt>Maximum concurrency:</dt> <dd>{{view.gcomm.surveyors[sid].max_concurrency}}</dd>
+      <dt>Save deadends:</dt> <dd>{{view.gcomm.surveyors[sid].save_deadends}}</dd>
       <dt>Empty path lists:</dt>
       <dd>
-        <span ng-repeat="(name,paths) in surveyor.path_lists">
+        <span ng-repeat="(name,paths) in view.gcomm.surveyors[sid].path_lists">
           <span ng-if="paths.length == 0"> {{name}}
         </span>
       </dd>
@@ -18,7 +18,7 @@
     
     <h4>Paths</h4>
     <table class="table">
-      <tr ng-repeat="(name,paths) in surveyor.path_lists">
+      <tr ng-repeat="(name,paths) in view.gcomm.surveyors[sid].path_lists">
         <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
         <td ng-if="paths.length > 0">
           <div class="well path_box" ng-repeat="p in paths">
@@ -37,11 +37,11 @@
   <form class="form-inline" novalidate>
     <div class="form-group">
       <label>Step</label>
-      <input style="width: 3em;" id="steps" ng-model="steps" />
+      <input style="width: 3em;" id="steps" ng-model="view.data.steps" />
     </div>
   
     <div class="form-group">
-      <button type="submit" class="btn" ng-click="step(steps)">Step!</button>
+      <button type="submit" class="btn" ng-click="step(view.data.steps)">Step!</button>
     </div>
   </div>
 </div>

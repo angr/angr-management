@@ -247,7 +247,7 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
     };
 
     public.loadSurveyors = function (callback, error) {
-        if (public.gcomm.surveyors.length > 0) {
+        if (public.gcomm.surveyors !== null) {
             callback();
         }
 
@@ -262,8 +262,32 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/new', {kwargs: surveyor});
 
         genericRequest(config, function (data) {
-            public.gcomm.surveyors.push(data.data);
+            public.gcomm.surveyors[data.data.id] = data.data;
             callback(data);
+        }, error);
+    };
+
+    public.surveyorStep = function (surveyor, steps, callback, error) {
+        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/step', {steps: steps});
+
+        genericRequest(config, function (data) {
+            public.gcomm.surveyors[surveyor] = data.data;
+        }, error);
+    };
+
+    public.surveyorResume = function (surveyor, callback, error) {
+        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/resume', {});
+
+        genericRequest(config, function (data) {
+            public.gcomm.surveyors[surveyor] = data.data;
+        }, error);
+    };
+
+    public.surveyorSuspend = function (surveyor, callback, error) {
+        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/suspend', {});
+
+        genericRequest(config, function (data) {
+            public.gcomm.surveyors[surveyor] = data.data;
         }, error);
     };
 

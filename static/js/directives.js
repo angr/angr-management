@@ -768,6 +768,10 @@ dirs.directive('splittest', function (View) {
             $scope.splitVert = function () {
                 split(false);
             };
+
+            $scope.close = function () {
+                $scope.view.close();
+            };
         }
     }
 });

@@ -332,12 +332,12 @@ def new_surveyor(instance=None):
 @with_instance
 def list_surveyors(instance):
     p = instance['angr']
-    return {'success': True, 'data': [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]}
+    return {'success': True, 'data': { str(id(s)): the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p }}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>')
 @jsonize
 def get_surveyor(inst_id, surveyor_id): #pylint:disable=W0613
-    return the_serializer.serialize(active_surveyors[surveyor_id])
+    return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/step', methods=('POST',))
 @jsonize
@@ -345,7 +345,7 @@ def step_surveyors(inst_id, surveyor_id): #pylint:disable=W0613
     steps = ( flask.request.json if flask.request.json is not None else flask.request.form ).get('steps', 1)
     s = active_surveyors[surveyor_id]
     s.run(n=int(steps))
-    return the_serializer.serialize(s)
+    return {'success': True, 'data': the_serializer.serialize(s)}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/resume/<path_id>', methods=('POST',))
 @jsonize
@@ -357,7 +357,8 @@ def surveyor_resume_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
             if str(id(p)) == path_id:
                 path_list.remove(p)
                 s.active.append(p)
-                return the_serializer.serialize(active_surveyors[surveyor_id])
+                return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
+    return {'success': False, 'message': "Path id not found"}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/suspend/<path_id>', methods=('POST',))
 @jsonize
@@ -367,7 +368,8 @@ def surveyor_suspend_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
         if str(id(p)) == path_id:
             s.active.remove(p)
             s.suspended.append(p)
-            return the_serializer.serialize(active_surveyors[surveyor_id])
+            return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
+    return {'success': False, 'message': 'Path id not found'}
 
 @app.route('/download/<project>')
 def download_project_binary(project):
