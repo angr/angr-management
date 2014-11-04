@@ -63,9 +63,10 @@ comm.factory('globalCommunicator', function ($rootScope) {
             gcomm.simProcedureSpots = {};
             gcomm.disasm = {};
             gcomm.surveyors = null;
+            gcomm.paths = {};
             gcomm.cfgReady = false;
             gcomm.instance = instance;
-        }
+        };
 
         $rootScope.gcomm = gcomm;
     }

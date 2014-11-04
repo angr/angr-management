@@ -39,7 +39,7 @@ tools.directive('realClick', function() {
 tools.factory('Schedule', function ($timeout) {
     return function (callback) {
         $timeout(callback, 0);
-    }
+    };
 });
 
 tools.filter('funcname', function () {
@@ -83,7 +83,7 @@ tools.filter('hex', function () {
 
 // Okay here's the big one
 
-tools.factory('AngrData', function ($http, globalCommunicator) {
+tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
     var public = {};
     public.gcomm = globalCommunicator;
 
@@ -141,7 +141,7 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
                 if (res.ready) {
                     callback(res.value);
                 } else {
-                    fireTokenQuery();
+                    $timeout(fireTokenQuery, 1000);
                 }
             }).error(function() {
                 alert('Oh jeez something went wrong');
@@ -226,7 +226,7 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
 
     public.loadIRSBs = function (func, callback, error) {
         var need = public.neededIRSBs(func);
-        if (need.length == 0) {
+        if (need.length === 0) {
             callback();
             return;
         }
@@ -246,14 +246,34 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
         }, error);
     };
 
+    var addSurveyor = function (surveyor) {
+        var paths = surveyor.path_data;
+        delete surveyor.path_data;
+        public.gcomm.surveyors[surveyor.id] = surveyor;
+        for (var i = 0; i < paths.length; i++) {
+            paths[i].split = false;
+            addPath(paths[i]);
+        }
+        for (var split in surveyor.split_paths) {
+            addPath({split: true, children: suveryor.split_paths[split]});
+        }
+    };
+
+    var addPath = function (path) {
+        public.gcomm.paths[path.id] = path;
+    };
+
     public.loadSurveyors = function (callback, error) {
         if (public.gcomm.surveyors !== null) {
             callback();
         }
+        public.gcomm.surveyors = {};
 
         var config = GET('/api/instances/' + public.gcomm.instance + '/surveyors');
         genericRequest(config, function (data) {
-            public.gcomm.surveyors = data.data;
+            for (var i = 0; i < data.data.length; i++) {
+                addSurveyor(data.data[i]);
+            }
             callback();
         }, error);
     };
@@ -262,7 +282,7 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/new', {kwargs: surveyor});
 
         genericRequest(config, function (data) {
-            public.gcomm.surveyors[data.data.id] = data.data;
+            addSurveyor(data.data);
             callback(data);
         }, error);
     };
@@ -271,23 +291,26 @@ tools.factory('AngrData', function ($http, globalCommunicator) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/step', {steps: steps});
 
         genericRequest(config, function (data) {
-            public.gcomm.surveyors[surveyor] = data.data;
+            addSurveyor(data.data);
+            callback();
         }, error);
     };
 
-    public.surveyorResume = function (surveyor, callback, error) {
-        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/resume', {});
+    public.pathResume = function (sid, pid, callback, error) {
+        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + sid + '/resume/' + pid, {});
 
         genericRequest(config, function (data) {
-            public.gcomm.surveyors[surveyor] = data.data;
+            addSurveyor(data.data);
+            callback();
         }, error);
     };
 
-    public.surveyorSuspend = function (surveyor, callback, error) {
-        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/suspend', {});
+    public.pathSuspend = function (sid, pid, callback, error) {
+        var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + sid + '/suspend/' + pid, {});
 
         genericRequest(config, function (data) {
-            public.gcomm.surveyors[surveyor] = data.data;
+            addSurveyor(data.data);
+            callback();
         }, error);
     };
 

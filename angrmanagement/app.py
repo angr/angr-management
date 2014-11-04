@@ -332,7 +332,7 @@ def new_surveyor(instance=None):
 @with_instance
 def list_surveyors(instance):
     p = instance['angr']
-    return {'success': True, 'data': { str(id(s)): the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p }}
+    return {'success': True, 'data': [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>')
 @jsonize

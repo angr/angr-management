@@ -21,11 +21,11 @@
       <tr ng-repeat="(name,paths) in view.gcomm.surveyors[sid].path_lists">
         <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
         <td ng-if="paths.length > 0">
-          <div class="well path_box" ng-repeat="p in paths">
-                  <path data="p" view="view"></path>
-            <button ng-if="name != 'active'" class="btn" ng-click="reactivate(p)">Reactivate</button>
-            <button ng-if="name == 'active'" class="btn" ng-click="suspend(p)">Suspend</button>
-            <button class="btn" ng-click="showCFG(p)">Show in CFG</button>
+          <div class="well path_box" ng-repeat="pid in paths">
+                  <path pid="pid" view="view"></path>
+            <button ng-if="name != 'active'" class="btn" ng-click="reactivate(pid)">Reactivate</button>
+            <button ng-if="name == 'active'" class="btn" ng-click="suspend(pid)">Suspend</button>
+            <button class="btn" ng-click="showCFG(pid)">Show in CFG</button>
           </div>
         </td>
       </tr>

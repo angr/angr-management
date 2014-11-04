@@ -31,7 +31,7 @@ survey.controller('AddSurveyorCtrl', function ($scope, $http, $modalInstance, Vi
             alert(data.message);
             $scope.thinking = false;
         });
-    }
+    };
 
 
     $scope.surveyorType = "Explorer";
@@ -78,7 +78,7 @@ survey.directive('surveyors', function($http, $modal) {
                 });
             };
 
-            $scope.$watch('view.comm.hack.viewingPath', function (nv, ov) {
+            $scope.$watch('view.gcomm.paths[view.comm.hack.viewingPath]', function (nv, ov) {
                 if (!nv) {
                     $scope.view.comm.funcPicker.selected = null;
                 } else {
@@ -87,7 +87,7 @@ survey.directive('surveyors', function($http, $modal) {
             });
 
         }
-    }
+    };
 });
 
 survey.directive('surveyor', function($http, View, AngrData) {
@@ -105,41 +105,43 @@ survey.directive('surveyor', function($http, View, AngrData) {
                 AngrData.surveyorStep($scope.sid, $scope.view.data.steps, function () {});
             };
 
-            $scope.reactivate = function(path) {
-                AngrData.surveyorResume($scope.sid, function () {});
+            $scope.reactivate = function(pid) {
+                AngrData.pathResume($scope.sid, pid, function () {});
             };
 
-            $scope.suspend = function(path) {
-                AngrData.surveyorSuspend($scope.sid, function () {});
+            $scope.suspend = function(pid) {
+                AngrData.surveyorSuspend($scope.sid, pid, function () {});
             };
 
-            $scope.showCFG = function (path) {
+            $scope.showCFG = function (pid) {
                 AngrData.loadFunctionManager(function () {
                     if (!$scope.view.comm.hack.viewingPath) {
                         var rv = $scope.view.root;
                         rv.split(new View({}, 'CFG'), false, 0.5, true);
                     }
-                    $scope.view.comm.hack.viewingPath = path;
-                    $scope.view.comm.cfgHighlight.blocks[path.last_addr] = true;
+                    $scope.view.comm.hack.viewingPath = pid;
                 });
             };
         }
-    }
+    };
 });
 
 survey.directive('path', function($http) {
     return {
         templateUrl: '/static/partials/path.html',
         restrict: 'AE',
-        scope: { path: '=data' },
+        scope: { pid: '=', view: '=' },
         controller: function($scope, $http) {
-            $scope.show_path = true;
+            $scope.show_path = false;
             $scope.show_events = false;
             $scope.show_backtrace = false;
             $scope.event_limit = 10;
             $scope.backtrace_limit = 10;
+            $scope.$watch('view.gcomm.paths[pid]', function (nv) {
+                $scope.path = $scope.view.gcomm.paths[$scope.pid];
+            });
         }
-    }
+    };
 });
 
 survey.directive('event', function($http) {
@@ -151,7 +153,7 @@ survey.directive('event', function($http) {
             $scope.show_refs = false;
             $scope.show_event = false;
         }
-    }
+    };
 });
 
 survey.directive('address', function($http) {
@@ -162,7 +164,7 @@ survey.directive('address', function($http) {
         controller: function($scope, $http) {
             $scope.isNaN = isNaN;
         }
-    }
+    };
 });
 
 survey.directive('ref', function($http) {
@@ -172,6 +174,6 @@ survey.directive('ref', function($http) {
         scope: { ref: '=data' },
         controller: function($scope, $http) {
         }
-    }
+    };
 });
 
