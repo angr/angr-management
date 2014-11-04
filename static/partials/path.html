@@ -1,9 +1,9 @@
 <h5>
-  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !show_path, 'glyphicon-minus': show_path}" ng-click="show_path=!show_path"></button>
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !view.data.showPath[pid], 'glyphicon-minus': view.data.showPath[pid]}" ng-click="view.data.showPath[pid]=!view.data.showPath[pid]"></button>
   Path {{path.id}} at 0x{{path.last_addr.toString(16)}}
 </h5>
 
-<span ng-if="show_path">
+<span ng-if="view.data.showPath[pid]">
   <hr>
 
   <p class="lead">

@@ -250,10 +250,6 @@ dirs.directive('graph', function(ContextMenu) {
             nodeType: '='
         },
         controller: function($scope, $element, Schedule) {
-            $scope.truNodes = $scope.nodes;
-            if (!Array.prototype.isPrototypeOf($scope.truNodes)) {
-                $scope.truNodes = Object.keys($scope.truNodes);
-            }
             jsPlumb.Defaults.MaxConnections = 10000;
             $scope.plumb = jsPlumb.getInstance({
                 ConnectionOverlays: [
@@ -342,6 +338,10 @@ dirs.directive('graph', function(ContextMenu) {
             };
 
             $scope.$watch('nodes', function (nv, ov) {
+                $scope.truNodes = $scope.nodes;
+                if (!Array.prototype.isPrototypeOf($scope.truNodes)) {
+                    $scope.truNodes = Object.keys($scope.truNodes);
+                }
                 Schedule(function () {
                     $scope.plumb.reset();
                     plumbing();

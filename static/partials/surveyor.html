@@ -1,9 +1,9 @@
 <div class="panel-heading">
-  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !view.data.show, 'glyphicon-minus': view.data.show}" ng-click="view.data.show=!view.data.show"></button>
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !view.data.showSur[sid], 'glyphicon-minus': view.data.showSur[sid]}" ng-click="view.data.showSur[sid]=!view.data.showSur[sid]"></button>
   {{view.gcomm.surveyors[sid].type}} with {{view.gcomm.surveyors[sid].step}} steps and {{view.gcomm.surveyors[sid].paths.length}} paths
 </div>
 
-<span ng-if="view.data.show">
+<span ng-if="view.data.showSur[sid]">
   <div class="panel-body">
     <dl class="dl-horizontal">
       <dt>Maximum concurrency:</dt> <dd>{{view.gcomm.surveyors[sid].max_concurrency}}</dd>

@@ -69,6 +69,12 @@ survey.directive('surveyors', function($http, $modal) {
         restrict: 'AE',
         scope: { view: '=' },
         controller: function($scope, $http) {
+            if (typeof $scope.view.data.showSur === 'undefined') {
+                $scope.view.data.showSur = {};
+            }
+            if (typeof $scope.view.data.showPath === 'undefined') {
+                $scope.view.data.showPath = {};
+            }
             $scope.newSurveyor = function () {
                 $modal.open({
                     templateUrl: '/static/partials/newsurveyor.html',
@@ -99,7 +105,6 @@ survey.directive('surveyor', function($http, View, AngrData) {
             view: "="
         },
         controller: function($scope, $http) {
-            $scope.view.data.show = false;
             $scope.view.data.steps = 1;
             $scope.step = function(steps) {
                 AngrData.surveyorStep($scope.sid, $scope.view.data.steps, function () {});
