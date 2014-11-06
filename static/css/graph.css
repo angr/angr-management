@@ -34,6 +34,14 @@
     color: black;
 }
 
+.blockHighlight2 {
+    border-color: gold;
+}
+.blockHighlight2 .bbHead {
+    background-color: gold;
+    color: black;
+}
+
 .top {
     z-index: 1000;
 }

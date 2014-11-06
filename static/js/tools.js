@@ -255,7 +255,7 @@ tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
             addPath(paths[i]);
         }
         for (var split in surveyor.split_paths) {
-            addPath({split: true, children: suveryor.split_paths[split]});
+            addPath({split: true, children: surveyor.split_paths[split], id: split});
         }
     };
 

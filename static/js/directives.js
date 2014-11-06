@@ -45,7 +45,7 @@ dirs.directive('useproject', function () {
                 });
             };
         }
-    }
+    };
 });
 
 dirs.directive('connectproject', function ($location, AngrData) {
@@ -409,7 +409,7 @@ dirs.directive('cfg', function(ContextMenu, AngrData) {
                             }
                         ]
                     }
-                ]
+                ];
             });
         }
     };

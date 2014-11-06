@@ -354,7 +354,7 @@ def surveyor_resume_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
     for list_name in s.path_lists:
         path_list = getattr(s, list_name)
         for p in path_list:
-            if str(id(p)) == path_id:
+            if p.path_id == path_id:
                 path_list.remove(p)
                 s.active.append(p)
                 return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
@@ -365,7 +365,7 @@ def surveyor_resume_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
 def surveyor_suspend_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
     s = active_surveyors[surveyor_id]
     for p in s.active:
-        if str(id(p)) == path_id:
+        if p.path_id == path_id:
             s.active.remove(p)
             s.suspended.append(p)
             return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}

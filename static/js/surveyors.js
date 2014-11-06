@@ -85,10 +85,21 @@ survey.directive('surveyors', function($http, $modal) {
             };
 
             $scope.$watch('view.gcomm.paths[view.comm.hack.viewingPath]', function (nv, ov) {
+                if (ov && ov.last_addr) {
+                    delete $scope.view.comm.cfgHighlight.blocks[ov.last_addr];
+                }
+                if (ov && ov.split) {
+                    $scope.view.comm.cfgHighlight2.blocks = {};    // :(
+                }
                 if (!nv) {
                     $scope.view.comm.funcPicker.selected = null;
+                } else if (nv.split) {
+                    for (var i = 0; i < nv.children.length; i++) {
+                        $scope.view.comm.cfgHighlight2.blocks[$scope.view.gcomm.paths[nv.children[i]].last_addr] = true;
+                    }
                 } else {
                     $scope.view.comm.funcPicker.selected = $scope.view.gcomm.funcMan.findFuncForBlock(nv.last_addr);
+                    $scope.view.comm.cfgHighlight.blocks[nv.last_addr] = true;
                 }
             });
 
@@ -115,7 +126,7 @@ survey.directive('surveyor', function($http, View, AngrData) {
             };
 
             $scope.suspend = function(pid) {
-                AngrData.surveyorSuspend($scope.sid, pid, function () {});
+                AngrData.pathSuspend($scope.sid, pid, function () {});
             };
 
             $scope.showCFG = function (pid) {
