@@ -1,6 +1,6 @@
 <div style="padding: 20px;">
     <div>
-        <input ng-model="newInstanceName" placeholder="New Instance Name" on-enter="newInstance()" ng-disabled="thinking">
+        <input autofocus ng-model="newInstanceName" placeholder="New Instance Name" on-enter="newInstance()" ng-disabled="thinking">
         <button class="btn btn-primary" ng-click="newInstance()" ng-disabled="thinking || newInstanceName == ''" ng-class="{'loading-icon': thinking}">New Instance</button>
 
         <button class="btn btn-default" ng-click="cancel()">Cancel</button>
