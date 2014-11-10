@@ -24,7 +24,7 @@ survey.controller('AddSurveyorCtrl', function ($scope, $http, $modalInstance, Vi
         kwargs['type'] = $scope.surveyorType;
 
         $scope.thinking = true;
-        AngrData.newSurveyor(kwargs, function () {
+        AngrData.newSurveyor(kwargs).then(function () {
             $scope.thinking = false;
             $modalInstance.close();
         }, function (data) {
@@ -80,7 +80,7 @@ survey.directive('surveyors', function($http, $modal) {
                     templateUrl: '/static/partials/newsurveyor.html',
                     controller: 'AddSurveyorCtrl'
                 }).result.then(function (data) {
-                    
+
                 });
             };
 
@@ -118,19 +118,19 @@ survey.directive('surveyor', function($http, View, AngrData) {
         controller: function($scope, $http) {
             $scope.view.data.steps = 1;
             $scope.step = function(steps) {
-                AngrData.surveyorStep($scope.sid, $scope.view.data.steps, function () {});
+                AngrData.surveyorStep($scope.sid, $scope.view.data.steps);
             };
 
             $scope.reactivate = function(pid) {
-                AngrData.pathResume($scope.sid, pid, function () {});
+                AngrData.pathResume($scope.sid, pid);
             };
 
             $scope.suspend = function(pid) {
-                AngrData.pathSuspend($scope.sid, pid, function () {});
+                AngrData.pathSuspend($scope.sid, pid);
             };
 
             $scope.showCFG = function (pid) {
-                AngrData.loadFunctionManager(function () {
+                AngrData.loadFunctionManager().then(function () {
                     if (!$scope.view.comm.hack.viewingPath) {
                         var rv = $scope.view.root;
                         rv.split(new View({}, 'CFG'), false, 0.5, true);
@@ -192,4 +192,3 @@ survey.directive('ref', function($http) {
         }
     };
 });
-

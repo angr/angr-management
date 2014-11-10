@@ -60,7 +60,7 @@ tools.filter('funcnameextra', function () {
             x = 'sub_' + parseInt(func.address.toString()).toString(16);
         } else {
             x = func.name;
-        } 
+        }
         return x + ' (0x' + parseInt(func.address.toString()).toString(16) + ')';
     };
 });
@@ -83,19 +83,9 @@ tools.filter('hex', function () {
 
 // Okay here's the big one
 
-tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
+tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
     var public = {};
     public.gcomm = globalCommunicator;
-
-    var defaultAlert = function (f) {
-        if (typeof f === 'function') {
-            return f;
-        } else {
-            return function (data) {
-                alert(data.message);
-            };
-        }
-    };
 
     var GET = function (url) {
         return {
@@ -112,46 +102,50 @@ tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
         };
     };
 
-    var genericRequest = function (config, callback, error) {
-        error = defaultAlert(error);
-        $http(config).success(function(data) {
-            if (data.success) {
-                callback(data);
+    var genEmptyPromise = function() { // haha
+        var deferred = $q.defer();
+        deferred.resolve();
+        return deferred.promise;
+    };
+
+    var genericRequest = function (config) {
+        return $http(config).then(function(res) {
+            if (res.data.success) {
+                return res.data;
             } else {
-                error(data);
+                return $q.reject(res.data);
             }
-        }).error(function(data, status) {
-            if (data.slice) {
-                data = {success: false, message: data};
+        }, function(res) {
+            if (res.data.slice) {
+                res.data = {success: false, message: data};
             } else {
-                if (!("message" in data)) {
-                    data.message = 'Error ' + status + ': ' + data.toString();
+                if (!("message" in res.data)) {
+                    res.data.message = 'Error ' + res.status + ': ' + res.data.toString();
                 }
-                if (!("success" in data)) {
-                    data.success = false;
+                if (!("success" in res.data)) {
+                    res.data.success = false;
                 }
             }
-            error(data);
+            return $q.reject(res.data);
         });
     };
 
-    public.redeemToken = function (token, callback) {
+    public.redeemToken = function (token) {
         var fireTokenQuery = function() {
-            $http.get('/api/tokens/' + token).success(function(res) {
-                if (res.ready) {
-                    callback(res.value);
+            return $http.get('/api/tokens/' + token).then(function(res) {
+                if (res.data.ready) {
+                    return res.data.value;
                 } else {
-                    $timeout(fireTokenQuery, 1000);
+                    return $timeout(fireTokenQuery, 1000);
                 }
-            }).error(function() {
+            }, function() {
                 alert('Oh jeez something went wrong');
             });
         };
-        fireTokenQuery();
+        return fireTokenQuery();
     };
 
-    public.newProject = function (project, callback, error) {
-        error = defaultAlert(error);
+    public.newProject = function (project) {
         var config = {
             url: '/api/projects/new',
             method: 'POST',
@@ -167,51 +161,52 @@ tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
             transformRequest: function(formData) { return formData; }
         };
 
-        genericRequest(config, callback, error);
+        return genericRequest(config);
     };
 
-    public.connectProject = function (hostname, port, callback, error) {
+    public.connectProject = function (hostname, port) {
         var config = POST('/api/instances/connect', {hostname: hostname, port: port - 0});
-        genericRequest(config, callback, error);
+        return genericRequest(config);
     };
 
-    public.constructBasicCFG = function (callback, error) {
+    public.constructBasicCFG = function () {
         if (public.gcomm.cfgReady) {
-            callback();
+            return genEmptyPromise();
         } else {
-            $http.get('/api/instances/' + public.gcomm.instance + '/constructCFG').success(function (data) {
-                if ('token' in data) {
-                    public.redeemToken(data.token, function (data) {
+            return $http.get('/api/instances/' + public.gcomm.instance + '/constructCFG').then(function (res) {
+                if ('token' in res.data) {
+                    public.redeemToken(data.token).then(function (res) {
+                        console.log('token redeemed!');
                         public.gcomm.cfgReady = true;
-                        callback(data);   
-                    }, error);
+                        return res.data;
+                    });
                 } else {
+                    console.log('no token!');
                     public.gcomm.cfgReady = true;
-                    callback(data);
+                    return res.data;
                 }
-            }).error(error);
+            });
         }
     };
 
-    public.loadFunctionManager = function (callback, error) {
+    public.loadFunctionManager = function () {
         if (public.gcomm.funcMan.loaded) {
-            callback();
+            return genEmptyPromise();
         } else {
-            public.constructBasicCFG(function () {
+            return public.constructBasicCFG().then(function () {
                 var config = GET('/api/instances/' + public.gcomm.instance + '/functionManager');
-                genericRequest(config, function (data) {
+                return genericRequest(config).then(function (data) {
                     public.gcomm.funcMan.functions = data.data.functions;
                     public.gcomm.funcMan.edges = data.data.edges;
                     public.gcomm.funcMan.loaded = true;
-                    callback();
-                }, error);
-            }, error);
+                });
+            });
         }
     };
 
-    public.renameFunction = function (func, callback, error) {
+    public.renameFunction = function (func) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/functions/' + func.address + '/rename', func.name);
-        genericRequest(config, callback, error);
+        return genericRequest(config);
     };
 
     public.neededIRSBs = function (func) {
@@ -224,15 +219,14 @@ tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
         return need;
     };
 
-    public.loadIRSBs = function (func, callback, error) {
+    public.loadIRSBs = function (func) {
         var need = public.neededIRSBs(func);
         if (need.length === 0) {
-            callback();
-            return;
+            return genEmptyPromise();
         }
 
         var config = POST('/api/instances/' + public.gcomm.instance + '/irsbs', need);
-        genericRequest(config, function (data) {
+        return genericRequest(config).then(function (data) {
             var fields = ['irsbs', 'simProcedureSpots', 'simProcedures', 'disasm'];
             for (var fieldkey = 0; fieldkey < fields.length; fieldkey++) {
                 var field = fields[fieldkey];
@@ -242,8 +236,7 @@ tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
                     }
                 }
             }
-            callback();
-        }, error);
+        });
     };
 
     var addSurveyor = function (surveyor) {
@@ -263,56 +256,58 @@ tools.factory('AngrData', function ($http, $timeout, globalCommunicator) {
         public.gcomm.paths[path.id] = path;
     };
 
-    public.loadSurveyors = function (callback, error) {
+    public.loadSurveyors = function () {
         if (public.gcomm.surveyors !== null) {
-            callback();
+            return genEmptyPromise();
         }
         public.gcomm.surveyors = {};
 
         var config = GET('/api/instances/' + public.gcomm.instance + '/surveyors');
-        genericRequest(config, function (data) {
+        return genericRequest(config).then(function (data) {
             for (var i = 0; i < data.data.length; i++) {
                 addSurveyor(data.data[i]);
             }
-            callback();
-        }, error);
+        });
     };
 
-    public.newSurveyor = function (surveyor, callback, error) {
+    public.newSurveyor = function (surveyor) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/new', {kwargs: surveyor});
 
-        genericRequest(config, function (data) {
+        return genericRequest(config).then(function (data) {
             addSurveyor(data.data);
-            callback(data);
-        }, error);
+            return data;
+        });
     };
 
-    public.surveyorStep = function (surveyor, steps, callback, error) {
+    public.surveyorStep = function (surveyor, steps) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + surveyor + '/step', {steps: steps});
 
-        genericRequest(config, function (data) {
+        return genericRequest(config).then(function (data) {
             addSurveyor(data.data);
-            callback();
-        }, error);
+        });
     };
 
-    public.pathResume = function (sid, pid, callback, error) {
+    public.pathResume = function (sid, pid) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + sid + '/resume/' + pid, {});
 
-        genericRequest(config, function (data) {
+        return genericRequest(config).then(function (data) {
             addSurveyor(data.data);
-            callback();
-        }, error);
+        });
     };
 
-    public.pathSuspend = function (sid, pid, callback, error) {
+    public.pathSuspend = function (sid, pid) {
         var config = POST('/api/instances/' + public.gcomm.instance + '/surveyors/' + sid + '/suspend/' + pid, {});
 
-        genericRequest(config, function (data) {
+        return genericRequest(config).then(function (data) {
             addSurveyor(data.data);
-            callback();
-        }, error);
+        });
     };
 
     return public;
+});
+
+tools.factory('defaultError', function() {
+    return function(data) {
+        alert(data.message);
+    };
 });

@@ -1,7 +1,7 @@
 'use strict';
 
 var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools']);
-dirs.directive('newproject', function(AngrData) {
+dirs.directive('newproject', function(AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/newproject.html',
         restrict: 'AE',
@@ -15,7 +15,7 @@ dirs.directive('newproject', function(AngrData) {
 
             $scope.create = function () {
                 if (!$scope.project.name || !$scope.project.file) return;
-                AngrData.newProject($scope.project, function (data) {
+                AngrData.newProject($scope.project).then(function (data) {
                     alert('project created!');
                     $scope.projects.push({
                         name: data.name,
@@ -23,7 +23,7 @@ dirs.directive('newproject', function(AngrData) {
                     });
                     $scope.project.file = null;
                     $scope.project.name = "";
-                });
+                }, defaultError);
             };
         }
     };
@@ -59,7 +59,7 @@ dirs.directive('connectproject', function ($location, AngrData) {
             $scope.connect = function () {
                 if (Math.floor($scope.port - 0).toString() == $scope.port) {
                     $scope.thinking = true;
-                    AngrData.connectProject($scope.hostname, $scope.port, function (data) {
+                    AngrData.connectProject($scope.hostname, $scope.port).then(function (data) {
                         $scope.thinking = false;
                         $location.path('/instance/' + data.id);
                     }, function (data) {
@@ -173,7 +173,7 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
             view: '='
         },
         controller: function($scope, $element) {
-            var updateBlock = function (block, ob) { 
+            var updateBlock = function (block, ob) {
                 if (block === ob) return;
                 $scope.irsb = null;
                 $scope.simproc = null;
@@ -370,7 +370,7 @@ dirs.directive('graph', function(ContextMenu) {
     };
 });
 
-dirs.directive('cfg', function(ContextMenu, AngrData) {
+dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'AE',
@@ -381,9 +381,9 @@ dirs.directive('cfg', function(ContextMenu, AngrData) {
             $scope.$watch('view.comm.funcPicker.selected', function (func) {
                 if (!func) return;
                 func.irsbsLoaded = false;
-                AngrData.loadIRSBs(func, function () {
+                AngrData.loadIRSBs(func).then(function () {
                     func.irsbsLoaded = true;
-                });
+                }, defaultError);
             });
         },
         link: function ($scope, element, attrs) {
@@ -415,7 +415,7 @@ dirs.directive('cfg', function(ContextMenu, AngrData) {
     };
 });
 
-dirs.directive('funcpicker', function(AngrData) {
+dirs.directive('funcpicker', function() {
     return {
         templateUrl: '/static/partials/funcpicker.html',
         restrict: 'AE',
@@ -463,7 +463,7 @@ dirs.directive('funcman', function (AngrData) {
                 if (f.name == $scope.scopeBreak.newName) return; // Don't submit a no-op request!
                 f.name = $scope.scopeBreak.newName;
                 $scope.thinking = true;
-                AngrData.renameFunction(f, function () {
+                AngrData.renameFunction(f).then(function () {
                     $scope.thinking = false;
                 }, function (data) {
                     alert(data.message);
@@ -474,7 +474,7 @@ dirs.directive('funcman', function (AngrData) {
                 if (!sf) return;
                 $scope.scopeBreak.newName = sf.name;
             });
-            
+
         }
     };
 });
@@ -775,6 +775,3 @@ dirs.directive('splittest', function (View) {
         }
     }
 });
-
-
-

@@ -18,7 +18,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
         } else {
             alert(data.message);
         }
-    }).error(function () {
+    }, function () {
         alert('Some sort of really bad error pinging instance...');
     });
     $scope.tabSpaceStyle = {
@@ -72,7 +72,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             $scope.thinking = true;
             $scope.popupStyle.display = 'none';
 
-            AngrData.loadFunctionManager(function () {
+            AngrData.loadFunctionManager().then(function () {
                 $scope.thinking = false;
                 $scope.addTab(picker);
             }, function (data) {
@@ -89,8 +89,8 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             picker.title = 'CFG Tab';
             $scope.thinking = true;
             $scope.popupStyle.display = 'none';
-            
-            AngrData.loadFunctionManager(function () {
+
+            AngrData.loadFunctionManager().then(function () {
                 $scope.thinking = false;
                 $scope.addTab(picker);
             }, function (data) {
@@ -103,7 +103,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             var view = new View({}, 'SURVEYOR');
             view.title = 'Surveyors';
 
-            AngrData.loadSurveyors(function () {
+            AngrData.loadSurveyors().then(function () {
                 $scope.addTab(view);
             }, function (data) {
                 alert(data.message);
