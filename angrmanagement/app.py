@@ -276,36 +276,6 @@ def get_function_vfg(func_addr, instance=None):
     vfg.construct(func_addr)
     return str(vfg)
 
-@app.route('/api/instances/<int:inst_id>/ddg')
-@with_instances
-@jsonize
-def get_ddg(inst_id, instances=None):
-    if inst_id in instances:
-        instance = instances[inst_id]
-        proj = instance['angr']
-        ddg = angr.DDG(proj, proj.construct_cfg() if proj._cfg is None else proj._cfg, proj.entry)
-        ddg.construct()
-        return str(ddg._ddg)
-
-def disasm(binary, block):
-    return '\n'.join(binary.ida.idc.GetDisasm(s.addr)
-                     for s in block.statements() if s.__class__.__name__ == 'IMark')
-
-# @app.route('/api/projects/<name>/dis/<int:block_addr>')
-# @with_projects
-# #@jsonize
-# def get_dis(name, block_addr, projects=None):
-#     name = secure_filename(name)
-#     if name in projects:
-#         proj = active_projects[name]
-#         block = proj.block(block_addr)
-#         # import ipdb; ipdb.set_trace()
-#         return disasm(proj.main_binary, block)
-
-#
-# Surveyor functionality
-#
-
 @app.route('/api/surveyor_types')
 @jsonize
 def surveyor_types():
