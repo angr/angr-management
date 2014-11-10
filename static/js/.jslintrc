@@ -1,0 +1,10 @@
+{
+    "node": true,
+    "todo": true,
+    "predef": {
+        "angular": true,
+        "jQuery": true,
+        "alert": true,
+        "window": true
+    }
+}
