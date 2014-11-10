@@ -175,13 +175,11 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
         } else {
             return $http.get('/api/instances/' + public.gcomm.instance + '/constructCFG').then(function (res) {
                 if ('token' in res.data) {
-                    public.redeemToken(res.data.token).then(function (res) {
-                        console.log('token redeemed!');
+                    return public.redeemToken(res.data.token).then(function (res) {
                         public.gcomm.cfgReady = true;
                         return res.data;
                     });
                 } else {
-                    console.log('no token!');
                     public.gcomm.cfgReady = true;
                     return res.data;
                 }
