@@ -175,7 +175,7 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
         } else {
             return $http.get('/api/instances/' + public.gcomm.instance + '/constructCFG').then(function (res) {
                 if ('token' in res.data) {
-                    public.redeemToken(data.token).then(function (res) {
+                    public.redeemToken(res.data.token).then(function (res) {
                         console.log('token redeemed!');
                         public.gcomm.cfgReady = true;
                         return res.data;
