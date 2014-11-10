@@ -1,3 +1,5 @@
+#pylint:disable=C0111,C0103
+
 import functools
 import json
 import ast
@@ -62,8 +64,11 @@ def with_instance(func):
             return {'success': False, 'message': 'No such instance'}
     return instanced
 
-app = flask.Flask(__name__, static_folder='../static')
 the_serializer = Serializer()
+def serialize(*args, **kwargs):
+    return the_serializer.serialize(*args, **kwargs)
+
+app = flask.Flask(__name__, static_folder='../static')
 active_tokens = {}
 active_surveyors = {}
 active_conns = []
@@ -81,10 +86,10 @@ def index():
 def redeem(token):
     if token not in active_tokens:
         flask.abort(400)
-    inst, ty, _, result = active_tokens[token]
+    inst, token_type, _, result = active_tokens[token]
     if result.ready:
         del active_tokens[token]
-        if ty == 'CFG Indicator':
+        if token_type == 'CFG Indicator':
             cfg = result.value.cfg
             inst['cfg'] = cfg
             return {'ready': True, 'value': {'success': True}}
@@ -98,7 +103,11 @@ def list_projects(projects=None):
     # Makes sure the PROJDIR exists
     if not os.path.exists(PROJDIR):
         os.makedirs(PROJDIR)
-    return [{'name': name, 'instances': instances} for name, instances in projects.iteritems()]
+    return [
+        {'name': name, 'instances': instances}
+        for name, instances in
+        projects.iteritems()
+    ]
 
 @app.route('/api/projects/new', methods=('POST',))
 @with_projects
@@ -120,7 +129,11 @@ def new_project(projects=None):
 @with_instances
 @jsonize
 def list_instances(instances=None):
-    return {inst_id: {'name': inst['name'], 'project': inst['project']} for inst_id, inst in instances.iteritems()}
+    return {
+        inst_id: {'name': inst['name'], 'project': inst['project']}
+        for inst_id, inst
+        in instances.iteritems()
+    }
 
 
 @app.route('/api/instances/new/<project>', methods=('POST',))
@@ -170,15 +183,23 @@ def connect_instance(instances=None):
         return {'success': False, 'message': 'Connection refused.'}
     except rpyc.AsyncResultTimeout:
         return {'success': False, 'message': 'Remote unresponsive.'}
-    except Exception as e: # pylint: disable=broad-except
-        print e
-        return {'success': False, 'message': "Couldn't connect for weird unaccounted-for reason"}
+    except Exception as exc: # pylint: disable=broad-except
+        print exc
+        return {
+            'success': False,
+            'message': "Couldn't connect for weird unaccounted-for reason"
+        }
     active_conns.append(conn)
 
     if len(pkeys) != 1:
-        return {'success': False, 'message': "There are either zero or more than one projects on this server?"}
+        return {
+            'success': False,
+            'message': "There are either zero or more than one projects" \
+                     + " on this server?"
+        }
     proj = conn.root.projects[pkeys[0]]
-    proj_id = create_instance(proj, '<one-shot instance>', conn, pkeys[0], instances)
+    proj_id = create_instance(proj, '<one-shot instance>',
+                              conn, pkeys[0], instances)
     return {'success': True, 'id': proj_id}
 
 @app.route('/api/instances/<int:inst_id>')
@@ -191,7 +212,7 @@ def instance_info(instance=None):
     if 'cfg' in instance:
         instance.pop('cfg')
     instance['success'] = True
-    instance['arch'] = the_serializer.serialize(proj.arch)
+    instance['arch'] = serialize(proj.arch)
     return instance
 
 @app.route('/api/instances/<int:inst_id>/constructCFG')
@@ -199,12 +220,13 @@ def instance_info(instance=None):
 @with_instance
 def get_cfg(instance=None):
     proj = instance['angr']
-    if proj._cfg is None:
+    if 'cfg' not in instance:
         token = str(uuid.uuid4())
         async_analyze = rpyc.async(proj.analyze)
         # that middle async_construct may look useless
         # but it maintains a strong ref to async_construct, which we need
-        active_tokens[token] = (instance, 'CFG Indicator', async_analyze, async_analyze('CFG'))
+        active_tokens[token] = (instance, 'CFG Indicator',
+                                async_analyze, async_analyze('CFG'))
         return {'token': token}
     return {'success': True}
 
@@ -212,10 +234,12 @@ def get_cfg(instance=None):
 @jsonize
 @with_instance
 def get_functions(instance=None):
-    proj = instance['angr']
     if 'cfg' not in instance:
         flask.abort(400)
-    return {'success': True, 'data': the_serializer.serialize(instance['cfg'].function_manager)}
+    return {
+        'success': True,
+        'data': serialize(instance['cfg'].function_manager)
+    }
 
 @app.route('/api/instances/<int:inst_id>/irsbs', methods=('POST',))
 @jsonize
@@ -227,19 +251,24 @@ def get_irsbs(instance=None):
         flask.abort(400)
 
     for address in flask.request.json:
-        if not address.isdigit(): flask.abort(400)
+        if not address.isdigit():
+            flask.abort(400)
         address = int(address)
         if address in proj.sim_procedures:
             if 'simProcedures' not in out:
-                out['simProcedureSpots'], out['simProcedures'] = get_simproc_data(proj)
+                out['simProcedureSpots'], \
+                    out['simProcedures'] = get_simproc_data(proj)
             continue
         try:
-            out['irsbs'][address] = the_serializer.serialize(proj.block(address))
+            out['irsbs'][address] = serialize(proj.block(address))
             dblock = proj.capper.block(address)
             for insn in dblock.insns:
-                out['disasm'][insn.address] = the_serializer.serialize(insn)
+                out['disasm'][insn.address] = serialize(insn)
         except: # pylint: disable=bare-except
-            return {'success': False, 'message': 'Error translating block at 0x%x' % address}
+            return {
+                'success': False,
+                'message': 'Error translating block at 0x%x' % address
+            }
 
     return {'success': True, 'data': out}
 
@@ -247,7 +276,11 @@ def make_simproc_name(proc):
     return str(proc)        # :(
 
 def get_simproc_data(proj):
-    locs = {addr: make_simproc_name(proc[0]) for addr, proc in proj.sim_procedures.iteritems()}
+    locs = {
+        addr: make_simproc_name(proc[0])
+        for addr, proc
+        in proj.sim_procedures.iteritems()
+    }
     procs = {}
     for lib in simuvex.SimProcedures.values():
         for proc in lib.values():
@@ -257,15 +290,15 @@ def get_simproc_data(proj):
 
     return locs, procs
 
-@app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/rename', methods=('POST',))
+@app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/rename',
+           methods=('POST',))
 @jsonize
 @with_instance
 def rename_function(func_addr, instance=None):
-    proj = instance['angr']
     if 'cfg' not in instance:
         return {'success': False, 'message': 'CFG not generated yet'}
-    f = instance['cfg'].function_manager.functions[func_addr]
-    f.name = flask.request.data     # oh my god
+    func = instance['cfg'].function_manager.functions[func_addr]
+    func.name = flask.request.data     # oh my god
     return {'success': True}
 
 @app.route('/api/instances/<int:inst_id>/functions/<int:func_addr>/vfg')
@@ -287,58 +320,78 @@ def surveyor_types():
 def new_surveyor(instance=None):
     # TODO: take a SimExit as a starting point
     kwargs = dict(flask.request.json.get('kwargs', {}))
-    for k,v in kwargs.items():
-        if type(v) in (str,unicode) and v.startswith("PYTHON:"):
-            kwargs[k] = ast.literal_eval(v[7:])
+    for key, val in kwargs.iteritems():
+        if isinstance(val, (str, unicode)) and val.startswith("PYTHON:"):
+            kwargs[key] = ast.literal_eval(val[7:])
 
-    p = instance['angr']
+    proj = instance['angr']
     surveyor_type = kwargs.pop('type')
-    s = p.survey(surveyor_type, **kwargs)
-    active_surveyors[str(id(s))] = s
-    return {'success': True, 'data': the_serializer.serialize(s)}
+    surveyor = proj.survey(surveyor_type, **kwargs) #pylint:disable=W0142
+    active_surveyors[str(id(surveyor))] = surveyor
+    return {'success': True, 'data': serialize(surveyor)}
 
 @app.route('/api/instances/<int:inst_id>/surveyors')
 @jsonize
 @with_instance
 def list_surveyors(instance):
-    p = instance['angr']
-    return {'success': True, 'data': [ the_serializer.serialize(s) for s in active_surveyors.itervalues() if s._project is p ]}
+    proj = instance['angr']
+    return {
+        'success': True,
+        'data': [
+            serialize(s)
+            for s
+            in active_surveyors.itervalues()
+            if s._project is proj #pylint:disable=W0212
+        ]
+    }
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>')
 @jsonize
 def get_surveyor(inst_id, surveyor_id): #pylint:disable=W0613
-    return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
+    return {'success': True, 'data': serialize(active_surveyors[surveyor_id])}
 
-@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/step', methods=('POST',))
+@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/step',
+           methods=('POST',))
 @jsonize
 def step_surveyors(inst_id, surveyor_id): #pylint:disable=W0613
-    steps = ( flask.request.json if flask.request.json is not None else flask.request.form ).get('steps', 1)
-    s = active_surveyors[surveyor_id]
-    s.run(n=int(steps))
-    return {'success': True, 'data': the_serializer.serialize(s)}
+    req_data = flask.request.json \
+               if flask.request.json is not None \
+               else flask.request.form
+    steps = req_data.get('steps', 1)
+    surveyor = active_surveyors[surveyor_id]
+    surveyor.run(n=int(steps))
+    return {'success': True, 'data': serialize(surveyor)}
 
-@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/resume/<path_id>', methods=('POST',))
+@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/resume/<path_id>',
+           methods=('POST',))
 @jsonize
 def surveyor_resume_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
-    s = active_surveyors[surveyor_id]
-    for list_name in s.path_lists:
-        path_list = getattr(s, list_name)
-        for p in path_list:
-            if p.path_id == path_id:
-                path_list.remove(p)
-                s.active.append(p)
-                return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
+    surveyor = active_surveyors[surveyor_id]
+    for list_name in surveyor.path_lists:
+        path_list = getattr(surveyor, list_name)
+        for path in path_list:
+            if path.path_id == path_id:
+                path_list.remove(path)
+                surveyor.active.append(path)
+                return {
+                    'success': True,
+                    'data': serialize(active_surveyors[surveyor_id])
+                }
     return {'success': False, 'message': "Path id not found"}
 
-@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/suspend/<path_id>', methods=('POST',))
+@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/suspend/<path_id>',
+           methods=('POST',))
 @jsonize
 def surveyor_suspend_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
-    s = active_surveyors[surveyor_id]
-    for p in s.active:
-        if p.path_id == path_id:
-            s.active.remove(p)
-            s.suspended.append(p)
-            return {'success': True, 'data': the_serializer.serialize(active_surveyors[surveyor_id])}
+    surveyor = active_surveyors[surveyor_id]
+    for path in surveyor.active:
+        if path.path_id == path_id:
+            surveyor.active.remove(path)
+            surveyor.suspended.append(path)
+            return {
+                'success': True,
+                'data': serialize(active_surveyors[surveyor_id])
+            }
     return {'success': False, 'message': 'Path id not found'}
 
 @app.route('/download/<project>')
