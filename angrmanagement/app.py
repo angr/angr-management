@@ -81,17 +81,13 @@ def index():
 def redeem(token):
     if token not in active_tokens:
         flask.abort(400)
-    ty, _, result = active_tokens[token]
+    inst, ty, _, result = active_tokens[token]
     if result.ready:
         del active_tokens[token]
-        if ty == 'CFG':
-            cfg = result.value
-            return {'ready': True, 'value': the_serializer.serialize(cfg)}
-        elif ty == 'CFG Indicator':
+        if ty == 'CFG Indicator':
+            cfg = result.value.cfg
+            inst['cfg'] = cfg
             return {'ready': True, 'value': {'success': True}}
-        elif ty == 'Function Manager':
-            cfg = result.value
-            return {'ready': True, 'value': the_serializer.serialize(cfg.function_manager)}
     else:
         return {'ready': False}
 
@@ -192,6 +188,8 @@ def instance_info(instance=None):
     instance = instance.copy()
     proj = instance.pop('angr')
     instance.pop('remote')
+    if 'cfg' in instance:
+        instance.pop('cfg')
     instance['success'] = True
     instance['arch'] = the_serializer.serialize(proj.arch)
     return instance
@@ -203,8 +201,10 @@ def get_cfg(instance=None):
     proj = instance['angr']
     if proj._cfg is None:
         token = str(uuid.uuid4())
-        async_construct = rpyc.async(proj.construct_cfg)
-        active_tokens[token] = ('CFG Indicator', async_construct, async_construct())
+        async_analyze = rpyc.async(proj.analyze)
+        # that middle async_construct may look useless
+        # but it maintains a strong ref to async_construct, which we need
+        active_tokens[token] = (instance, 'CFG Indicator', async_analyze, async_analyze('CFG'))
         return {'token': token}
     return {'success': True}
 
@@ -213,9 +213,9 @@ def get_cfg(instance=None):
 @with_instance
 def get_functions(instance=None):
     proj = instance['angr']
-    if proj._cfg is None:
+    if 'cfg' not in instance:
         flask.abort(400)
-    return {'success': True, 'data': the_serializer.serialize(proj._cfg.function_manager)}
+    return {'success': True, 'data': the_serializer.serialize(instance['cfg'].function_manager)}
 
 @app.route('/api/instances/<int:inst_id>/irsbs', methods=('POST',))
 @jsonize
@@ -262,9 +262,9 @@ def get_simproc_data(proj):
 @with_instance
 def rename_function(func_addr, instance=None):
     proj = instance['angr']
-    if proj._cfg is None:
+    if 'cfg' not in instance:
         return {'success': False, 'message': 'CFG not generated yet'}
-    f = proj._cfg.function_manager.functions[func_addr]
+    f = instance['cfg'].function_manager.functions[func_addr]
     f.name = flask.request.data     # oh my god
     return {'success': True}
 
@@ -272,7 +272,7 @@ def rename_function(func_addr, instance=None):
 @jsonize
 @with_instance
 def get_function_vfg(func_addr, instance=None):
-    vfg = angr.VFG(instance['angr'], instance['angr']._cfg)
+    vfg = angr.VFG(instance['angr'], instance['cfg'])
     vfg.construct(func_addr)
     return str(vfg)
 
