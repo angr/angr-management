@@ -232,7 +232,7 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
                 if (data.data.hasOwnProperty(field)) {
                     for (i in data.data[field]) {
                         if (data.data[field].hasOwnProperty(i)) {
-                            data.gcomm[field][i] = data.data[field][i];
+                            angrdata.gcomm[field][i] = data.data[field][i];
                         }
                     }
                 }

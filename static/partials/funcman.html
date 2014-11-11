@@ -22,8 +22,9 @@
                 <td>Target/Return</td>
             </tr>
             <tr ng-repeat="(callSite, data) in view.comm.funcPicker.selected.callsites">
-                <td>{{callSite | hex}}</td>
-                <td>{{data.target | hex}}<br>{{data.return | hex}}</td>
+                <td><span address-name="callSite" view="view"></span></td>
+                <td><span address-name="data.target" allow-func-names="true" view="view"></span><br>
+                    <span address-name="data.return" view="view"></span></td>
             </tr>
         </table>
     </p>

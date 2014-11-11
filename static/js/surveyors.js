@@ -84,7 +84,7 @@ survey.directive('surveyors', function($http, $modal) {
                 });
             };
 
-            $scope.$watch('view.gcomm.paths[view.comm.hack.viewingPath]', function (nv, ov) {
+            $scope.$watch('view.gcomm.paths[view.comm.surveyors.viewingPath]', function (nv, ov) {
                 if (ov && ov.last_addr) {
                     delete $scope.view.comm.cfgHighlight.blocks[ov.last_addr];
                 }
@@ -131,11 +131,11 @@ survey.directive('surveyor', function($http, View, AngrData) {
 
             $scope.showCFG = function (pid) {
                 AngrData.loadFunctionManager().then(function () {
-                    if (!$scope.view.comm.hack.viewingPath) {
+                    if (!$scope.view.comm.surveyors.viewingPath) {
                         var rv = $scope.view.root;
                         rv.split(new View({}, 'CFG'), false, 0.5, true);
                     }
-                    $scope.view.comm.hack.viewingPath = pid;
+                    $scope.view.comm.surveyors.viewingPath = pid;
                 });
             };
         }

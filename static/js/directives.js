@@ -199,7 +199,7 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
 
         },
         link: function ($scope, element, attrs) {
-            $scope.view.comm.hack.delaybb.push(function () {
+            $scope.view.comm.graph.delayedFuncs.push(function () {
                 var el = element[0];
                 el.parentElement.style.width = Math.ceil(el.parentElement.getBoundingClientRect().width) + 'px';
             });
@@ -211,7 +211,7 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                             {
                                 text: 'Expand all instructions',
                                 action: function () {
-                                    var boollist = $scope.view.comm.hack.expandedStmts[$scope.block];
+                                    var boollist = $scope.view.comm.cfg.expandedStmts[$scope.block];
                                     var keys = Object.keys(boollist);
                                     for (var i = 0; i < keys.length; i++) {
                                         boollist[keys[i]] = true;
@@ -221,7 +221,7 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                             }, {
                                 text: 'Collapse all instructions',
                                 action: function () {
-                                    var boollist = $scope.view.comm.hack.expandedStmts[$scope.block];
+                                    var boollist = $scope.view.comm.cfg.expandedStmts[$scope.block];
                                     var keys = Object.keys(boollist);
                                     for (var i = 0; i < keys.length; i++) {
                                         boollist[keys[i]] = false;
@@ -309,12 +309,11 @@ dirs.directive('graph', function(ContextMenu) {
             // It needs to run later, after angular has finished processing shit
             // and has parsed the ng-ifs and ng-repeats
             var plumbing = function() {
-                if ($scope.view.comm.hack.delaybb.length > 0) {
-                    for (var i = 0; i < $scope.view.comm.hack.delaybb.length; i++) {
-                        $scope.view.comm.hack.delaybb[i]();
-                    }
-                    $scope.view.comm.hack.delaybb = [];
+                var i;
+                for (i = 0; i < $scope.view.comm.graph.delayedFuncs.length; i++) {
+                    $scope.view.comm.graph.delayedFuncs[i]();
                 }
+                $scope.view.comm.graph.delayedFuncs = [];
                 var graphRoot = jQuery($element).find('#graphRoot');
                 $scope.plumb.setContainer(graphRoot);
                 graphRoot.children('div').each(function(i, e) {
@@ -324,7 +323,7 @@ dirs.directive('graph', function(ContextMenu) {
                     $scope.plumb.addEndpoint(e.id, exitEndpoint, {anchor: 'BottomCenter', uuid: e.id + '-exit'});
                 });
 
-                for (var i in $scope.edges) {
+                for (i in $scope.edges) {
                     var edge = $scope.edges[i];
                     if ($scope.truNodes.indexOf(edge.to.toString()) != -1 && $scope.truNodes.indexOf(edge.from.toString()) != -1) {
                         $scope.plumb.connect({
@@ -366,6 +365,24 @@ dirs.directive('graph', function(ContextMenu) {
                 }
                 $element[0].parentElement.style.zoom = czoom.toString() + '%';
             };
+
+            $scope.$watch('view.comm.graph.centerNode', function (nv) {
+                if (!nv) return;
+                var elm = jQuery($element).find('#graphRoot').find('#' + nv)[0];
+                if (!elm) return;
+                var cont = jQuery($element).parent()[0];
+                if (!cont) return;
+
+                var left = parseInt(elm.style.left);
+                var width = elm.clientWidth;
+                var clientWidth = cont.clientWidth;
+                cont.scrollLeft = left + (width/2) - (clientWidth/2);
+
+                var top = parseInt(elm.style.top);
+                var height = elm.clientHeight;
+                var clientHeight = cont.clientHeight;
+                cont.scrollTop = top + (height/2) - (clientHeight/2);
+            });
         }
     };
 });
@@ -384,6 +401,10 @@ dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
                 AngrData.loadIRSBs(func).then(function () {
                     func.irsbsLoaded = true;
                 }, defaultError);
+            });
+            $scope.$watch('view.comm.cfg.jumpToBlock', function (nv) {
+                if (!nv) return;
+                $scope.view.comm.graph.centerNode = nv.toString();
             });
         },
         link: function ($scope, element, attrs) {
@@ -411,6 +432,48 @@ dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
                     }
                 ];
             });
+        }
+    };
+});
+
+dirs.directive('addressName', function () {
+    return {
+        templateUrl: '/static/partials/addressname.html',
+        scope: {
+            'address': '=addressName',
+            'disableHighlight': '=',
+            'allowFuncNames': '=',
+            'disableClick': '=',
+            'view': '='
+        },
+        restrict: 'A',
+        link: function ($scope, element, attrs) {
+            if (!$scope.disableHighlight) {
+                element.on('mouseenter', function (e) {
+                    $scope.$apply(function() {
+                        element.addClass('highlight');
+                        $scope.view.comm.cfgHighlight2.blocks[$scope.address] = true;
+                    });
+                });
+                element.on('mouseleave', function (e) {
+                    $scope.$apply(function() {
+                        element.removeClass('highlight');
+                        $scope.view.comm.cfgHighlight2.blocks[$scope.address] = false;
+                    });
+                });
+            }
+            if (!$scope.disableClick) {
+                element.on('click', function (e) {
+                    $scope.$apply(function() {
+                        if ($scope.allowFuncNames && $scope.view.gcomm.funcMan.functions.hasOwnProperty($scope.address)) {
+                            $scope.view.comm.funcPicker.selected = $scope.view.gcomm.funcMan.functions[$scope.address];
+                            $scope.view.comm.cfgHighlight2.blocks[$scope.address] = false;
+                        } else {
+                            $scope.view.comm.cfg.jumpToBlock = $scope.address;
+                        }
+                    });
+                });
+            }
         }
     };
 });
@@ -488,18 +551,8 @@ dirs.directive('proxgraph', function ($timeout) {
         },
         controller: function ($scope, $element) {
             $scope.$watch('view.comm.funcPicker.selected', function (nv) {
-                if (nv == null) return;
-                var elm = jQuery($element).find('#graphRoot').find('#' + nv.address.toString());
-
-                var left = parseInt(elm[0].style.left);
-                var width = elm[0].clientWidth;
-                var clientWidth = $element[0].clientWidth;
-                $element[0].scrollLeft = left + (width/2) - (clientWidth/2);
-
-                var top = parseInt(elm[0].style.top);
-                var height = elm[0].clientHeight;
-                var clientHeight = $element[0].clientHeight;
-                $element[0].scrollTop = top + (height/2) - (clientHeight/2);
+                if (!nv) return;
+                $scope.view.comm.graph.centerNode = nv.address.toString();
             });
         }
     };
@@ -531,7 +584,7 @@ dirs.directive('irsb', function(Schedule) {
         },
         controller: function($scope) {
             $scope.renderData = {idx: -1, insn: 0, show: {}};
-            $scope.view.comm.hack.expandedStmts[$scope.irsb.addr] = $scope.renderData.show;
+            $scope.view.comm.cfg.expandedStmts[$scope.irsb.addr] = $scope.renderData.show;
 
             $scope.nextStmt = function (data) {
                 data.idx++;

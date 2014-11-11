@@ -24,13 +24,17 @@ comm.factory('newCommunicator', function($rootScope) {
         comm.funcPicker = {
             selected: null
         };
-        comm.graph = {
-            layout: function () {}
-        };
-        comm.hack = {
-            delaybb: [],
+        comm.cfg = {
             expandedStmts: {},
+            jumpToBlock: null
+        };
+        comm.surveyors = {
             viewingPath: null
+        };
+        comm.graph = {
+            delayedFuncs: [],
+            layout: function () {},
+            centerNode: null
         };
         return comm;
     };
@@ -66,6 +70,7 @@ comm.factory('globalCommunicator', function ($rootScope) {
             gcomm.paths = {};
             gcomm.cfgReady = false;
             gcomm.instance = instance;
+            gcomm.labels = {};
         };
 
         $rootScope.gcomm = gcomm;
