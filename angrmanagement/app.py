@@ -90,7 +90,7 @@ def redeem(token):
     if result.ready:
         del active_tokens[token]
         if token_type == 'CFG Indicator':
-            cfg = result.value.cfg
+            cfg = result.value
             inst['cfg'] = cfg
             return {'ready': True, 'value': {'success': True}}
     else:
@@ -147,7 +147,7 @@ def new_instance(project, projects=None, instances=None):
         active_conns.append(remote)
         inst_name = flask.request.json.get('name', '<unnamed>')
         print PROJDIR + project + '/binary'
-        proj = remote.modules.angr.Project(PROJDIR + project + '/binary') # pylint: disable=no-member
+        proj = remote.modules.angr.Project(str(PROJDIR + project + '/binary')) # pylint: disable=no-member
         inst_name = flask.request.json.get('name', '<unnamed>')
         proj_id = create_instance(proj, inst_name, remote, project, instances)
         projects[project].append({'name': inst_name, 'id': proj_id})
