@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap', 'ngTooltip']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap']);
 dirs.directive('newproject', function(AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/newproject.html',
