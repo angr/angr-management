@@ -641,7 +641,8 @@ dirs.directive('irstmt', function() {
         restrict: 'E',
         scope: {
             stmt: '=',
-            view: '='
+            view: '=',
+            stmtid: '=',
         },
     };
 });
@@ -652,7 +653,8 @@ dirs.directive('irexpr', function(RecursionHelper) {
         restrict: 'E',
         scope: {
             expr: '=',
-            view: '='
+            view: '=',
+            stmtid: '=',
         },
         compile: RecursionHelper.compile,
     };
@@ -756,7 +758,8 @@ dirs.directive('irreg', function($tooltip, AngrData) {
             offset: '=',
             size: '=',
             operation: '=',
-            view: '='
+            view: '=',
+            stmtid: '=',
         },
         link: function (scope, elem) {
             scope.hover = false;
@@ -769,7 +772,8 @@ dirs.directive('irreg', function($tooltip, AngrData) {
                 if (scope.showVal) {
                     AngrData.findExprVal(scope.view.comm.surveyors.viewingSurveyor,
                                          scope.view.comm.surveyors.viewingPath,
-                                         {expr_type: 'reg', reg: scope.offset})
+                                         {expr_type: 'reg', reg: scope.offset,
+                                         before: scope.stmtid})
                         .then(function(exprVal) {
                             console.log(exprVal);
                             scope.exprVal = exprVal.data;

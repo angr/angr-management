@@ -1,33 +1,33 @@
 <span ng-mouseenter="hover = true" ng-mouseleave="hover = false" ng-switch on="expr.tag">
   <span ng-switch-when="Iex_Get">
-    <irreg operation="'GET'" size="expr.type.slice(4)" offset="expr.offset" view="view"></irreg>
+    <irreg operation="'GET'" size="expr.type.slice(4)" offset="expr.offset" view="view" stmtid="stmtid"></irreg>
   </span>
   <span ng-switch-when="Iex_RdTmp">
-    <irtmp tmp="expr.tmp" view="view"></irtmp>
+    <irtmp tmp="expr.tmp" view="view" stmtid="stmtid"></irtmp>
   </span>
   <span ng-switch-when="Iex_Qop">
-    {{ expr.op }}(<irexpr expr="expr.arg1" view="view"></irexpr>, <irexpr expr="expr.arg2" view="view"></irexpr>, <irexpr expr="expr.arg3" view="view"></irexpr>, <irexpr expr="expr.arg4" view="view"></irexpr>)
+    {{ expr.op }}(<irexpr expr="expr.arg1" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.arg2" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.arg3" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.arg4" view="view" stmtid="stmtid"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Triop">
-    {{ expr.op }}(<irexpr expr="expr.arg1" view="view"></irexpr>, <irexpr expr="expr.arg2" view="view"></irexpr>, <irexpr expr="expr.arg3" view="view"></irexpr>)
+    {{ expr.op }}(<irexpr expr="expr.arg1" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.arg2" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.arg3" view="view" stmtid="stmtid"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Binop">
-    {{ expr.op }}(<irexpr expr="expr.arg1" view="view"></irexpr>, <irexpr expr="expr.arg2" view="view"></irexpr>)
+    {{ expr.op }}(<irexpr expr="expr.arg1" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.arg2" view="view" stmtid="stmtid"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Unop">
-    {{ expr.op }}(<irexpr expr="expr.arg1" view="view"></irexpr>)
+    {{ expr.op }}(<irexpr expr="expr.arg1" view="view" stmtid="stmtid"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Load">
-    LD{{ expr.end == 'Iend_LE' ? 'le' : 'be' }}:{{ expr.type.slice(4) }}(<irexpr expr="expr.addr" view="view"></irexpr>)
+    LD{{ expr.end == 'Iend_LE' ? 'le' : 'be' }}:{{ expr.type.slice(4) }}(<irexpr expr="expr.addr" view="view" stmtid="stmtid"></irexpr>)
   </span>
   <span ng-switch-when="Iex_Const">
     0x{{ expr.con.value.toString(16) }}:{{ expr.con.type.slice(4) }}
   </span>
   <span ng-switch-when="Iex_CCall">
-    {{ expr.callee.name }}(<span ng-repeat="arg in expr.args"><irexpr expr="arg" view="view"></irexpr>, </span>):{{ expr.retty }}
+    {{ expr.callee.name }}(<span ng-repeat="arg in expr.args"><irexpr expr="arg" view="view" stmtid="stmtid"></irexpr>, </span>):{{ expr.retty }}
   </span>
   <span ng-switch-when="Iex_ITE">
-    ITE(<irexpr expr="expr.cond" view="view"></irexpr>, <irexpr expr="expr.iftrue" view="view"></irexpr>, <irexpr expr="expr.iffalse" view="view"></irexpr>)
+    ITE(<irexpr expr="expr.cond" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.iftrue" view="view" stmtid="stmtid"></irexpr>, <irexpr expr="expr.iffalse" view="view" stmtid="stmtid"></irexpr>)
   </span>
   <span ng-switch-default>
     {{ expr }}

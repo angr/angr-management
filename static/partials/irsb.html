@@ -10,7 +10,7 @@
     <div ng-if="stmt.tag != 'Ist_IMark'" ng-init="localRender = getCtx(renderData)">
         <div ng-if="renderData.show[localRender.insnnum] && stmt.tag != 'Ist_NoOp'">
             <span class="stmtLeftMargin red">[{{localRender.stmtnum}}]</span>
-            <irstmt stmt="stmt" view="view"></irstmt>
+            <irstmt stmtid="localRender.stmtnum" stmt="stmt" view="view"></irstmt>
         </div>
     </div>
 </div>
