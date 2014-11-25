@@ -136,6 +136,7 @@ survey.directive('surveyor', function($http, View, AngrData) {
                         rv.split(new View({}, 'CFG'), false, 0.5, true);
                     }
                     $scope.view.comm.surveyors.viewingPath = pid;
+                    $scope.view.comm.surveyors.viewingSurveyor = $scope.sid;
                 });
             };
         }

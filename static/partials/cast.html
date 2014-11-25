@@ -18,16 +18,16 @@
         <i>0x{{('000000000000000000000000000000000000000000000000000'+ast.args[0].toString(16)).slice(-(ast.args[1]/4))}}</i>
       </span>
       <span ng-switch-when="Extract">
-        <cexpr expr="ast.args[0]" view="view"></cexpr>[{{ast.args[1]}}:{{ast.args[2]}}]
+        <cexpr expr="ast.args[2]" parens="parens" view="view"></cexpr>[{{ast.args[0]}}:{{ast.args[1]}}]
       </span>
       <span ng-switch-when="ZeroExtend">
-        <cexpr expr="ast.args[0]" view="view"></cexpr>.zero_extend({{ast.args[1]}})
+        <cexpr expr="ast.args[0]" parens="parens" view="view"></cexpr>.zero_extend({{ast.args[1]}})
       </span>
       <span ng-switch-when="SignExtend">
-        <cexpr expr="ast.args[0]" view="view"></cexpr>.sign_extend({{ast.args[1]}})
+        <cexpr expr="ast.args[0]" parens="parens" view="view"></cexpr>.sign_extend({{ast.args[1]}})
       </span>
       <span ng-switch-default>
-        {{ast.op}}(<span ng-repeat="a in ast.args track by $index"><cexpr expr="a" view="view"></cexpr><span ng-show="!$last">, </span></span>)
+        {{ast.op}}(<span ng-repeat="a in ast.args"><cexpr expr="a" parens="parens" view="view"></cexpr><span ng-show="!$last">, </span></span>)
       </span>
     </span>
   </span>

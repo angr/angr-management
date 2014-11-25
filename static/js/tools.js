@@ -247,6 +247,7 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
         for (i = 0; i < paths.length; i += 1) {
             paths[i].split = false;
             addPath(paths[i]);
+            console.log(paths[i]);
         }
         for (split in surveyor.split_paths) {
             if (surveyor.split_paths.hasOwnProperty(split)) {
@@ -281,6 +282,12 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
             addSurveyor(data.data);
             return data;
         });
+    };
+
+    angrdata.findExprVal = function (sid, pid, data) {
+        var config = POST('/api/instances/' + angrdata.gcomm.instance + '/surveyors/' + sid + '/paths/' + pid + '/expr_val', data);
+
+        return genericRequest(config);
     };
 
     angrdata.surveyorStep = function (surveyor, steps) {

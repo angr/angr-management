@@ -22,9 +22,7 @@
   </span>
   <span ng-switch-default>
     <span ng-switch on="get_type(expr)">
-      <span ng-switch-when="integer">
-        0x{{expr.toString(16)}}
-      </span>
+      <span ng-switch-when="integer">0x{{expr.toString(16)}}</span>
       <span ng-switch-when="boolean">
         {{expr}}
       </span>

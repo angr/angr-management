@@ -29,6 +29,7 @@ comm.factory('newCommunicator', function($rootScope) {
             jumpToBlock: null
         };
         comm.surveyors = {
+            viewingSurveyor: null,
             viewingPath: null
         };
         comm.graph = {
@@ -76,5 +77,5 @@ comm.factory('globalCommunicator', function ($rootScope) {
         $rootScope.gcomm = gcomm;
     }
 
-    return $rootScope.gcomm;   
+    return $rootScope.gcomm;
 });

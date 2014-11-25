@@ -379,6 +379,55 @@ def surveyor_resume_path(inst_id, surveyor_id, path_id): #pylint:disable=W0613
                 }
     return {'success': False, 'message': "Path id not found"}
 
+@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/paths/<path_id>/expr_val',
+           methods=('POST',))
+@jsonize
+def surveyor_expr_val(inst_id, surveyor_id, path_id): #pylint:disable=W0613
+    surveyor = active_surveyors[surveyor_id]
+    for list_name in surveyor.path_lists:
+        path_list = getattr(surveyor, list_name)
+        for maybe_path in path_list:
+            if maybe_path.path_id == path_id:
+                path = maybe_path
+                break
+        else:
+            continue
+        break
+    else:
+        return {'success': False, 'message': "Path id not found"}
+
+    req_data = flask.request.json \
+               if flask.request.json is not None \
+               else flask.request.form
+
+    initial_state = path.last_initial_state
+    state = path.exits()[0].state
+    before_stmt = req_data.get('before', None)
+
+    expr_type = req_data['expr_type']
+    if expr_type == 'reg':
+        reg = req_data['reg']
+        for act in state.log.old_events:
+            if act.stmt_idx >= before_stmt or act.type != 'reg' \
+               or act.action != 'write':
+                continue
+
+            if act.objects['offset'].ast == reg:
+                expr = act.objects['data'].ast
+                break
+        else:
+            expr = initial_state.reg_expr(reg)
+
+        return {
+            'success': True,
+            'data': serialize(expr)
+        }
+
+    return {
+        'success': False,
+        'message': 'Unknown expr type',
+    }
+
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/suspend/<path_id>',
            methods=('POST',))
 @jsonize

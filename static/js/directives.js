@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap', 'ngTooltip']);
 dirs.directive('newproject', function(AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -14,7 +14,9 @@ dirs.directive('newproject', function(AngrData, defaultError) {
             $scope.project.file = null;
 
             $scope.create = function () {
-                if (!$scope.project.name || !$scope.project.file) return;
+                if (!$scope.project.name || !$scope.project.file) {
+                    return;
+                }
                 AngrData.newProject($scope.project).then(function (data) {
                     alert('project created!');
                     $scope.projects.push({
@@ -117,8 +119,12 @@ dirs.directive('loadfile', function($http) {
 
             var cautiousUnhighlight = function (e) {
                 var rect = e.target.getBoundingClientRect();
-                if (e.target != element[0]) return blankHandler(e);
-                if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) return blankHandler(e);
+                if (e.target != element[0]) {
+                    return blankHandler(e);
+                }
+                if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
+                    return blankHandler(e);
+                }
                 return unhighlightDrop(e);
             };
 
@@ -174,7 +180,9 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
         },
         controller: function($scope, $element) {
             var updateBlock = function (block, ob) {
-                if (block === ob) return;
+                if (block === ob) {
+                    return;
+                }
                 $scope.irsb = null;
                 $scope.simproc = null;
                 $scope.error = false;
@@ -213,7 +221,8 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                                 action: function () {
                                     var boollist = $scope.view.comm.cfg.expandedStmts[$scope.block];
                                     var keys = Object.keys(boollist);
-                                    for (var i = 0; i < keys.length; i++) {
+                                    var i;
+                                    for (i = 0; i < keys.length; i += 1) {
                                         boollist[keys[i]] = true;
                                     }
                                     $scope.view.comm.graph.layout();
@@ -739,7 +748,7 @@ dirs.directive('irtmp', function(ContextMenu) {
     };
 });
 
-dirs.directive('irreg', function(ContextMenu) {
+dirs.directive('irreg', function($tooltip, AngrData) {
     return {
         templateUrl: '/static/partials/irreg.html',
         restrict: 'E',
@@ -749,51 +758,28 @@ dirs.directive('irreg', function(ContextMenu) {
             operation: '=',
             view: '='
         },
-        controller: function ($scope) {
-            $scope.mouse = function (over) {
-                $scope.view.comm.cfgHighlight.registers[$scope.offset] = over;
-            };
-        },
-        link: function ($scope, element, attrs) {
-            $scope.stupidcount = 0;
-            ContextMenu.registerEntries(element, function () {
-                $scope.stupidcount++;
-                var stupidtext = $scope.stupidcount.toString();
-                if ($scope.stupidcount % 100 < 20 && $scope.stupidcount % 100 > 10) {
-                    stupidtext += 'th';
-                } else {
-                    if ($scope.stupidcount % 10 == 1) {
-                        stupidtext += 'st';
-                    } else if ($scope.stupidcount % 10 == 2) {
-                        stupidtext += 'nd';
-                    } else if ($scope.stupidcount % 10 == 3) {
-                        stupidtext += 'rd';
-                    } else {
-                        stupidtext += 'th';
-                    }
+        link: function (scope, elem) {
+            scope.hover = false;
+            scope.exprVal = {expr_type: ''};
+            scope.showVal = false;
+
+            scope.toggleVal = function () {
+                scope.showVal = !scope.showVal;
+
+                if (scope.showVal) {
+                    AngrData.findExprVal(scope.view.comm.surveyors.viewingSurveyor,
+                                         scope.view.comm.surveyors.viewingPath,
+                                         {expr_type: 'reg', reg: scope.offset})
+                        .then(function(exprVal) {
+                            console.log(exprVal);
+                            scope.exprVal = exprVal.data;
+                        });
                 }
-                return [
-                    {
-                        text: 'Register actions',
-                        subitems: [
-                            {
-                                text: 'Rename register'
-                            }, {
-                                text: 'Trace data sources'
-                            }, {
-                                text: 'Appreciate offset ' + $scope.offset,
-                                subitems: [
-                                    {
-                                        text: 'Appreciate the fact that this is the ' + stupidtext + ' time you\'ve opened this dialog on this element and also that this is a really long message'
-                                    }, {
-                                        text: 'or not'
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ];
-            });
+            };
+
+            scope.mouse = function (over) {
+                scope.view.comm.cfgHighlight.registers[scope.offset] = over;
+            };
         }
     };
 });
