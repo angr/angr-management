@@ -420,7 +420,7 @@ def surveyor_expr_val(inst_id, surveyor_id, path_id): #pylint:disable=W0613
 
         return {
             'success': True,
-            'data': serialize(expr)
+            'data': serialize(state.simplify(expr))
         }
 
     return {
