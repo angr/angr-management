@@ -248,6 +248,28 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
     };
 });
 
+var betterLayout = function(graph) {
+    graph.nodes().forEach(function(id) {
+        var node = graph.node(id);
+        node.width /= 72.0;
+        node.height /= 72.0;
+    });
+    graph.graph().edgesep /= 72.0;
+    graph.graph().nodesep /= 72.0;
+    graph.graph().ranksep /= 72.0;
+    var dotRepr = graphlibDot.write(graph);
+    var laidOut = Viz(dotRepr, 'dot');
+    var laidOutGraph = graphlibDot.read(laidOut);
+    var width = parseInt(laidOutGraph.graph().bb.split(',')[2], 10);
+    var height = parseInt(laidOutGraph.graph().bb.split(',')[3], 10);
+    laidOutGraph.nodes().forEach(function(id) {
+        var node = laidOutGraph.node(id);
+        node.x = parseInt(node.pos.split(',')[0], 10);
+        node.y = height - parseInt(node.pos.split(',')[1], 10);
+    });
+    return laidOutGraph;
+};
+
 dirs.directive('graph', function(ContextMenu) {
     return {
         templateUrl: '/static/partials/graph.html',
@@ -299,7 +321,8 @@ dirs.directive('graph', function(ContextMenu) {
                             g.setEdge(edge.from.toString(), edge.to.toString());
                         }
                     }
-                    dagre.layout(g);
+                    //dagre.layout(g);
+                    g = betterLayout(g);
                     g.nodes().forEach(function(id) {
                         var data = g.node(id);
                         var $e = jQuery('#' + id);

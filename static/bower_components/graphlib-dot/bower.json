@@ -1,0 +1,27 @@
+{
+  "name": "graphlib-dot",
+  "version": "0.6.1",
+  "main": [
+    "dist/graphlib-dot.core.js",
+    "dist/graphlib-dot.core.min.js"
+  ],
+  "ignore": [
+    ".*",
+    "README.md",
+    "CHANGELOG.md",
+    "Makefile",
+    "browser.js",
+    "dist/graphlib-dot.js",
+    "dist/graphlib-dot.min.js",
+    "index.js",
+    "karma*",
+    "lib/**",
+    "package.json",
+    "src/**",
+    "test/**"
+  ],
+  "dependencies": {
+    "graphlib": "^1.0.1",
+    "lodash": "^2.4.1"
+  }
+}
