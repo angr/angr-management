@@ -118,7 +118,26 @@ survey.directive('surveyor', function($http, View, AngrData) {
         controller: function($scope, $http) {
             $scope.view.data.steps = 1;
             $scope.step = function(steps) {
-                AngrData.surveyorStep($scope.sid, $scope.view.data.steps);
+                return AngrData.surveyorStep($scope.sid, $scope.view.data.steps);
+            };
+
+            $scope.run = function() {
+                $scope.step().then(function() {
+                    var surveyor = $scope.view.gcomm.surveyors[$scope.sid];
+                    if (surveyor.path_lists['active'].length === 0) {
+                        return;
+                    }
+                    var currentBreakpoint = $scope.view.comm.surveyors.currentBreakpoint;
+                    for (var i = 0; i < surveyor.path_lists['active'].length; i++) {
+                        var pathId = surveyor.path_lists['active'][i];
+                        var path = $scope.view.gcomm.paths[pathId];
+                        if (path.last_addr === currentBreakpoint) {
+                            $scope.view.comm.surveyors.viewingPath = path.id;
+                            return;
+                        }
+                    }
+                    $scope.run();
+                });
             };
 
             $scope.reactivate = function(pid) {

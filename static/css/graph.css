@@ -26,11 +26,20 @@
     text-align: right;
 }
 
+.bbSurveying {
+    margin: 0px;
+    color: black;
+    font-size: 1.2em;
+    padding-top: 5px;
+    text-align: right;
+    font-family: sans-serif;
+}
+
 .blockHighlight {
-    border-color: yellow;
+    border-color: #f0ad4e;
 }
 .blockHighlight .bbHead {
-    background-color: yellow;
+    background-color: #f0ad4e;
     color: black;
 }
 

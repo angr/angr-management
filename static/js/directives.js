@@ -198,6 +198,19 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                 }
             };
 
+            $scope.$watch('view.comm.surveyors.viewingSurveyor', function (s) {
+                $scope.surveyorConnected = s !== null;
+            });
+
+            $scope.$watch('view.comm.surveyors.currentBreakpoint', function (bp) {
+                $scope.isBreakingHere = bp === parseInt($scope.block.toString());
+            });
+
+            $scope.breakHere = function () {
+                var addr = parseInt($scope.block.toString());
+                $scope.view.comm.surveyors.currentBreakpoint = addr;
+            };
+
             $scope.$watch('block', updateBlock);
             $scope.$watch('view.gcomm.simProcedureSpots', updateBlock);
             $scope.$watch('view.gcomm.irsbs');

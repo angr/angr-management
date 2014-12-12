@@ -30,7 +30,8 @@ comm.factory('newCommunicator', function($rootScope) {
         };
         comm.surveyors = {
             viewingSurveyor: null,
-            viewingPath: null
+            viewingPath: null,
+            currentBreakpoint: null,
         };
         comm.graph = {
             delayedFuncs: [],
