@@ -323,6 +323,7 @@ dirs.directive('graph', function(ContextMenu) {
                     }
                     //dagre.layout(g);
                     g = betterLayout(g);
+                    var entryId;
                     g.nodes().forEach(function(id) {
                         var data = g.node(id);
                         var $e = jQuery('#' + id);
@@ -330,7 +331,12 @@ dirs.directive('graph', function(ContextMenu) {
                         var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
                         $e.css('left', roundedCenterX - data.width/2);
                         $e.css('top', roundedCenterY - data.height/2);
+
+                        if (g.predecessors(id).length == 0) {
+                            entryId = id;
+                        }
                     });
+                    document.getElementById(entryId).scrollIntoView();
                     $scope.plumb.repaintEverything();
                 });
             };
