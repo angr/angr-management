@@ -278,9 +278,10 @@ dirs.directive('graph', function(ContextMenu) {
             nodes: '=',
             edges: '=',
             view: '=',
-            nodeType: '='
+            nodeType: '=',
+            graphId: '@',
         },
-        controller: function($scope, $element, Schedule) {
+        controller: function($scope, $element, Schedule, LayoutCache) {
             jsPlumb.Defaults.MaxConnections = 10000;
             $scope.plumb = jsPlumb.getInstance({
                 ConnectionOverlays: [
@@ -305,6 +306,29 @@ dirs.directive('graph', function(ContextMenu) {
             var HEADER = 160;
 
             $scope.layout = function() {
+                var actuallyLayout = function(g) {
+                    var entryId;
+                    g.nodes().forEach(function(id) {
+                        var data = g.node(id);
+                        var $e = jQuery('#' + id);
+                        var roundedCenterX = HEADER + GRID_SIZE * Math.round(data.x/GRID_SIZE);
+                        var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
+                        $e.css('left', roundedCenterX - data.width/2);
+                        $e.css('top', roundedCenterY - data.height/2);
+
+                        if (g.predecessors(id).length == 0) {
+                            entryId = id;
+                        }
+                    });
+                    document.getElementById(entryId).scrollIntoView();
+                    $scope.plumb.repaintEverything();
+                };
+
+                if (LayoutCache.cache.hasOwnProperty($scope.graphId)) {
+                    actuallyLayout(LayoutCache.cache[$scope.graphId]);
+                    return;
+                }
+
                 Schedule(function () {
                     var g = new graphlib.Graph()
                         .setGraph({ nodesep: 200, edgesep: 200, ranksep: 100 })
@@ -322,22 +346,9 @@ dirs.directive('graph', function(ContextMenu) {
                         }
                     }
                     //dagre.layout(g);
-                    g = betterLayout(g);
-                    var entryId;
-                    g.nodes().forEach(function(id) {
-                        var data = g.node(id);
-                        var $e = jQuery('#' + id);
-                        var roundedCenterX = HEADER + GRID_SIZE * Math.round(data.x/GRID_SIZE);
-                        var roundedCenterY = HEADER + GRID_SIZE * Math.round(data.y/GRID_SIZE);
-                        $e.css('left', roundedCenterX - data.width/2);
-                        $e.css('top', roundedCenterY - data.height/2);
-
-                        if (g.predecessors(id).length == 0) {
-                            entryId = id;
-                        }
-                    });
-                    document.getElementById(entryId).scrollIntoView();
-                    $scope.plumb.repaintEverything();
+                    var laidOut = betterLayout(g);
+                    actuallyLayout(laidOut);
+                    LayoutCache.cache[$scope.graphId] = laidOut;
                 });
             };
 

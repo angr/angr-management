@@ -1,5 +1,6 @@
-<graph ng-if="view.comm.funcPicker.selected && view.comm.funcPicker.selected.irsbsLoaded" 
-       nodes="view.comm.funcPicker.selected.blocks" 
+<graph ng-if="view.comm.funcPicker.selected && view.comm.funcPicker.selected.irsbsLoaded"
+       nodes="view.comm.funcPicker.selected.blocks"
        edges="view.comm.funcPicker.selected.blockedges"
        node-type="'simRun'"
+       graph-id="cfg-{{view.comm.funcPicker.selected}}"
        view="view"></graph>

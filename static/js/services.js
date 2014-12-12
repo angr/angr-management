@@ -18,6 +18,12 @@ srvcs.factory('Status', function() {
     };
 });
 
+srvcs.factory('LayoutCache', function() {
+    return {
+        cache: {},
+    };
+});
+
 // From http://stackoverflow.com/questions/14430655/recursion-in-angular-directives
 srvcs.factory('RecursionHelper', ['$compile', function($compile){
     return {
