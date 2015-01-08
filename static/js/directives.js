@@ -644,7 +644,7 @@ dirs.directive('irsb', function(Schedule) {
             irsb: '=data',
             view: '='
         },
-        controller: function($scope) {
+        controller: function($scope, Schedule) {
             $scope.renderData = {idx: -1, insn: 0, show: {}};
             $scope.view.comm.cfg.expandedStmts[$scope.irsb.addr] = $scope.renderData.show;
 
@@ -668,7 +668,7 @@ dirs.directive('irsb', function(Schedule) {
 
             $scope.toggle = function (data, ld) {
                 data.show[ld.insnnum] = !data.show[ld.insnnum];
-                $scope.view.comm.graph.layout();
+                Schedule($scope.view.comm.graph.layout);
             };
         },
     };
