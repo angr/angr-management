@@ -400,14 +400,14 @@ def surveyor_expr_val(inst_id, surveyor_id, path_id): #pylint:disable=W0613
                if flask.request.json is not None \
                else flask.request.form
 
-    initial_state = path.last_initial_state
-    state = path.exits()[0].state
+    state = path.state
     before_stmt = req_data.get('before', None)
 
     expr_type = req_data['expr_type']
     if expr_type == 'reg':
         reg = req_data['reg']
-        for act in state.log.old_events:
+        for act in state.log.events:
+            print act.stmt_idx, act.type, act.action
             if act.stmt_idx >= before_stmt or act.type != 'reg' \
                or act.action != 'write':
                 continue
@@ -416,7 +416,8 @@ def surveyor_expr_val(inst_id, surveyor_id, path_id): #pylint:disable=W0613
                 expr = act.objects['data'].ast
                 break
         else:
-            expr = initial_state.reg_expr(reg)
+            # THIS IS WRONG
+            expr = state.reg_expr(reg)
 
         return {
             'success': True,
