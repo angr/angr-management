@@ -73,6 +73,12 @@ comm.factory('globalCommunicator', function ($rootScope) {
             gcomm.cfgReady = false;
             gcomm.instance = instance;
             gcomm.labels = {};
+            gcomm.contextMenu = {
+                active: false,
+                x: 0,
+                y: 0,
+                actions: null
+            };
         };
 
         $rootScope.gcomm = gcomm;

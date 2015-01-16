@@ -21,6 +21,6 @@
 </ul>
 
 <div ng-repeat="tab in tabs">
-  <viewlayout ng-show="activeTab == $index" view="tab" instance="instance" ng-style="tabSpaceStyle"></viewlayout>
+  <viewlayout ng-show="activeTab == $index" view="tab" uictx="uictx" instance="instance" ng-style="tabSpaceStyle"></viewlayout>
 </div>
 <context-menu-endpoint></context-menu-endpoint>

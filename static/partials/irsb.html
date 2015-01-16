@@ -2,10 +2,8 @@
 
 <div ng-repeat="stmt in irsb.statements" ng-init="nextStmt(renderData)" ng-if="true">
     <div ng-if="stmt.tag == 'Ist_IMark'" ng-init="localRender = nextInsn(renderData)">
-        <div real-click="toggle(renderData, localRender)">
-            <span class="stmtLeftMargin blue">{{stmt.addr | hexpad}}</span>
-            <asmstmt addr="stmt.addr" view="view"></asmstmt>
-        </div>
+        <span class="stmtLeftMargin blue">{{stmt.addr | hexpad}}</span>
+        <asmstmt addr="stmt.addr" view="view" uictx="uictx" toggle="toggle(renderData, localRender)"></asmstmt>
     </div>
     <div ng-if="stmt.tag != 'Ist_IMark'" ng-init="localRender = getCtx(renderData)">
         <div ng-if="renderData.show[localRender.insnnum] && stmt.tag != 'Ist_NoOp'">

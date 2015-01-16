@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.context', 'angr.tools', 'ui.bootstrap']);
 dirs.directive('newproject', function(AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -163,20 +163,22 @@ dirs.directive('viewlayout', function (RecursionHelper) {
         restrict: 'AE',
         scope: {
             view: '=',
-            instance: '='
+            instance: '=',
+            uictx: '='
         },  // no controller because #swag
         compile: RecursionHelper.compile
     };
 });
 
-dirs.directive('bblock', function(ContextMenu, Schedule) {
+dirs.directive('bblock', function(Context, Schedule) {
     return {
         priority: 100,
         templateUrl: '/static/partials/bblock.html',
         restrict: 'AE',
         scope: {
             block: '=',
-            view: '='
+            view: '=',
+            uictx: '='
         },
         controller: function($scope, $element) {
             var updateBlock = function (block, ob) {
@@ -218,13 +220,41 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
             updateBlock($scope.block, null);
 
 
+            var interactionActions = new Context.Actions({children: [{
+                name: 'Option 1',
+                action: function () {alert('EVERYTHING IS AWESOME');},
+                keyboardShortcut: '+e'
+            }, {
+                name: 'Option 2',
+                action: function () {alert('EVERYTHING IS COOL WHEN YOU\'RE PART OF A TEAM');},
+                keyboardShortcut: 'S+E'
+            }, {
+                name: 'Option List',
+                children: [{
+                    name: 'Option 1a',
+                    action: function () {alert('option 1a pressed');}
+                },{
+                    name: 'Option 1b',
+                    action: function () {alert('option 1b pressed');}
+                }]
+            }]});
+            var interactionController = function () {
+                var pos = $($element).parent().position();
+                return {
+                    coordinates: new Context.Point(pos.left, pos.top),
+                    actions: interactionActions,
+                    doubleClick: function () {alert('DO A DOUBLE CLICK\n\nPRESS Z OR R TWICE');}
+                };
+            };
+            $scope.myuictx = new Context.Interactable($scope.uictx, $($element), interactionController, 'BASIC_BLOCK');
         },
         link: function ($scope, element, attrs) {
             $scope.view.comm.graph.delayedFuncs.push(function () {
                 var el = element[0];
                 el.parentElement.style.width = Math.ceil(el.parentElement.getBoundingClientRect().width) + 'px';
             });
-            ContextMenu.registerEntries(element, function () {
+            /*
+            Context.registerEntries(element, function () {
                 return [
                     {
                         text: 'Basic block actions',
@@ -257,6 +287,7 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                     }
                 ];
             });
+            */
         }
     };
 });
@@ -283,7 +314,7 @@ var betterLayout = function(graph) {
     return laidOutGraph;
 };
 
-dirs.directive('graph', function(ContextMenu) {
+dirs.directive('graph', function(Context) {
     return {
         templateUrl: '/static/partials/graph.html',
         restrict: 'AE',
@@ -293,6 +324,7 @@ dirs.directive('graph', function(ContextMenu) {
             view: '=',
             nodeType: '=',
             graphId: '@',
+            uictx: '='
         },
         controller: function($scope, $element, Schedule, LayoutCache) {
             jsPlumb.Defaults.MaxConnections = 10000;
@@ -449,12 +481,13 @@ dirs.directive('graph', function(ContextMenu) {
     };
 });
 
-dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
+dirs.directive('cfg', function(Context, AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'AE',
         scope: {
-            view: '='
+            view: '=',
+            uictx: '='
         },
         controller: function($scope, $http) {
             $scope.$watch('view.comm.funcPicker.selected', function (func) {
@@ -467,32 +500,6 @@ dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
             $scope.$watch('view.comm.cfg.jumpToBlock', function (nv) {
                 if (!nv) return;
                 $scope.view.comm.graph.centerNode = nv.toString();
-            });
-        },
-        link: function ($scope, element, attrs) {
-            ContextMenu.registerEntries(element, function () {
-                return [
-                    {
-                        text: 'CFG Actions',
-                        subitems: [
-                            {
-                                text: 'CFG Scope',
-                                subitems: [
-                                    {
-                                        text: 'Interprocedure',
-                                        checked: true
-                                    }, {
-                                        text: 'Function'
-                                    }, {
-                                        text: 'Proximity'
-                                    }
-                                ]
-                            }, {
-                                text: 'Crash and blame fish'
-                            }
-                        ]
-                    }
-                ];
             });
         }
     };
@@ -562,7 +569,7 @@ dirs.directive('funcpicker', function() {
                     return true;
                 }
                 return false;
-            }
+            };
 
             $scope.click = function (func) {
                 $scope.view.comm.funcPicker.selected = func;
@@ -642,7 +649,8 @@ dirs.directive('irsb', function(Schedule) {
         restrict: 'E',
         scope: {
             irsb: '=data',
-            view: '='
+            view: '=',
+            uictx: '='
         },
         controller: function($scope, Schedule) {
             $scope.renderData = {idx: -1, insn: 0, show: {}};
@@ -674,18 +682,33 @@ dirs.directive('irsb', function(Schedule) {
     };
 });
 
-dirs.directive('asmstmt', function () {
+dirs.directive('asmstmt', function (Context) {
     return {
         templateUrl: '/static/partials/asmstmt.html',
         restrict: 'AE',
         scope: {
             view: '=',
-            addr: '='
+            addr: '=',
+            uictx: '=',
+            toggle: '&'
         },
-        controller: function ($scope) {
-
+        controller: function ($scope, $element) {
+            var interactionActions = new Context.Actions({children: [{
+                name: 'Proof that we are in the asmstmt context',
+                isEnabled: false
+            }]});
+            var interactionController = function () {
+                var pos = $($element).parent().parent().position();
+                return {
+                    coordinates: new Context.Point(pos.left, pos.top),
+                    actions: interactionActions,
+                    doubleClick: function () {$scope.toggle();}
+                };
+            };
+            $scope.myuictx = new Context.Interactable($scope.uictx, $($element).parent(), interactionController, 'ASM_STMT');
+            
         }
-    }
+    };
 });
 
 dirs.directive('irstmt', function() {
@@ -767,7 +790,7 @@ dirs.directive('cast', function(RecursionHelper) {
     };
 });
 
-dirs.directive('irtmp', function(ContextMenu) {
+dirs.directive('irtmp', function(Context) {
     return {
         templateUrl: '/static/partials/irtmp.html',
         restrict: 'E',
@@ -779,26 +802,6 @@ dirs.directive('irtmp', function(ContextMenu) {
             $scope.mouse = function (over) {
                 $scope.view.comm.cfgHighlight.tmps[$scope.tmp] = over;
             };
-        },
-        link: function ($scope, element, attrs) {
-            ContextMenu.registerEntries(element, function () {
-                return [
-                    {
-                        text: 'Temp actions',
-                        subitems: [
-                            {
-                                text: 'Rename temp'
-                            }, {
-                                text: 'wait no that\'s stupid',
-                                disabled: true
-                            }, {
-                                text: 'why would you do that',
-                                disabled: true
-                            }
-                        ]
-                    }
-                ];
-            });
         }
     };
 });

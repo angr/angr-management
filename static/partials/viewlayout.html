@@ -1,11 +1,11 @@
-<viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'bottom' : 'right'}}: {{ (1-view.splitData.size) * 100 }}%;" view="view.halfA" instance="instance"></viewlayout>
-<viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'top' : 'left'}}: {{ view.splitData.size * 100 }}%;" view="view.halfB" instance="instance"></viewlayout>
+<viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'bottom' : 'right'}}: {{ (1-view.splitData.size) * 100 }}%;" view="view.halfA" instance="instance" uictx="uictx"></viewlayout>
+<viewlayout ng-if="view.splitData" style="{{ view.splitData.horizontal ? 'top' : 'left'}}: {{ view.splitData.size * 100 }}%;" view="view.halfB" instance="instance" uictx="uictx"></viewlayout>
 
 <div ng-if="!view.splitData" ng-switch on="view.type">
-    <div ng-switch-when="CFG" cfg view="view"></div>
-    <div ng-switch-when="SURVEYOR" surveyors view="view"></div>
-    <div ng-switch-when="SPLITTEST" splittest view="view"></div>
-    <div ng-switch-when="FUNCTION_PICKER" funcpicker view="view"></div>
-    <div ng-switch-when="FUNCTION_MANAGER" funcman view="view"></div>
-    <div ng-switch-when="PROXIMITY_GRAPH" proxgraph view="view"></div>
+    <div ng-switch-when="CFG" cfg view="view" uictx="uictx"></div>
+    <div ng-switch-when="SURVEYOR" surveyors view="view" uictx="uictx"></div>
+    <div ng-switch-when="SPLITTEST" splittest view="view" uictx="uictx"></div>
+    <div ng-switch-when="FUNCTION_PICKER" funcpicker view="view" uictx="uictx"></div>
+    <div ng-switch-when="FUNCTION_MANAGER" funcman view="view" uictx="uictx"></div>
+    <div ng-switch-when="PROXIMITY_GRAPH" proxgraph view="view" uictx="uictx"></div>
 </div>

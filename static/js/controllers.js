@@ -7,7 +7,7 @@ ctrls.controller('IndexCtrl', function($scope, $http, projects) {
 });
 
 
-ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval, $modal, AngrData, View) {
+ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams, $interval, $modal, AngrData, View, Context) {
     $scope.inst_id = $routeParams['inst_id'];
     $scope.instance = {};
     $http.get('/api/instances/' + $scope.inst_id).success(function (data) {
@@ -19,7 +19,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             alert(data.message);
         }
     }, function () {
-        alert('Some sort of really bad error pinging instance...');
+        alert('Something bad happened while pinging the instance...');
     });
     $scope.tabSpaceStyle = {
         position: 'absolute',
@@ -117,6 +117,16 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             $scope.addTab(view);
         }
     };
+
+    var globalActions = new Context.Actions();
+    var interactionController = function () {
+        return {
+            coordinates: new Context.Point(0,0),
+            actions: globalActions,
+            doubleClick: function () {}
+        };
+    };
+    $scope.uictx = new Context.Interactable(null, $($document), interactionController, 'PROJECT_ROOT');
 
 });
 
