@@ -86,13 +86,13 @@ class Serializer(object):
         return {
             'id': p.path_id,
             'length': p.length,
-            'extra_length': p.extra_length,
+            'extra_length': 0,
             'backtrace': p.backtrace,
             'addr_backtrace': p.addr_backtrace,
             'callstack': [self._serialize_call_frame(cf) for cf in p.callstack],
             'blockcounter_stack': p.blockcounter_stack,
             'last_addr': p.last_run.addr if p.last_run is not None else "NOT STARTED",
-            'event_log': [ self.serialize(e, extra=extra) for e in p.event_log ],
+            'event_log': [ self.serialize(e, extra=extra) for e in p.events ],
         }
 
     def _serialize_surveyor(self, s, extra=None):
