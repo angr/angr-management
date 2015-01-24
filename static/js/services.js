@@ -24,6 +24,19 @@ srvcs.factory('LayoutCache', function() {
     };
 });
 
+srvcs.factory('prevState', function () {
+    if (localStorage.hasOwnProperty("savedState")) {
+        return JSON.parse(localStorage.savedState);
+    }
+    return null;
+});
+
+srvcs.factory('saveState', function () {
+    return function (state) {
+        localStorage.savedState = JSON.stringify(state);
+    };
+});
+
 // From http://stackoverflow.com/questions/14430655/recursion-in-angular-directives
 srvcs.factory('RecursionHelper', ['$compile', function($compile){
     return {

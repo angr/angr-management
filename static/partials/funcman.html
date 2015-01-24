@@ -1,5 +1,5 @@
-<div ng-if="view.comm.funcPicker.selected" ng-init="showArgs = false; showSites = false;" style="padding: 10px;">
-    <h4>{{view.comm.funcPicker.selected | funcnameextra}}</h4>
+<div ng-if="comm.funcPicker.selected" ng-init="showArgs = false; showSites = false;" style="padding: 10px;">
+    <h4>{{comm.funcPicker.selected | funcnameextra}}</h4>
 
     <p>
         <input type="text" ng-model="scopeBreak.newName" on-enter="rename()">
@@ -9,8 +9,8 @@
     <p>
         <span ng-click="showArgs = !showArgs">Arguments: {{showArgs ? '&#x25bc;' : '&#x25b6;'}}</span>
         <ul ng-if="showArgs">
-            <li ng-repeat="reg in view.comm.funcPicker.selected.argument_registers">Register {{reg}}</li>
-            <li ng-repeat="off in view.comm.funcPicker.selected.argument_stack_variables">Stack offset {{off}}</li>
+            <li ng-repeat="reg in comm.funcPicker.selected.argument_registers">Register {{reg}}</li>
+            <li ng-repeat="off in comm.funcPicker.selected.argument_stack_variables">Stack offset {{off}}</li>
         </ul>
     </p>
 
@@ -21,10 +21,10 @@
                 <td>Site</td>
                 <td>Target/Return</td>
             </tr>
-            <tr ng-repeat="(callSite, data) in view.comm.funcPicker.selected.callsites">
-                <td><span address-name="callSite" view="view"></span></td>
-                <td><span address-name="data.target" allow-func-names="true" view="view"></span><br>
-                    <span address-name="data.return" view="view"></span></td>
+            <tr ng-repeat="(callSite, data) in comm.funcPicker.selected.callsites">
+                <td><span address-name="callSite"></span></td>
+                <td><span address-name="data.target" allow-func-names="true"></span><br>
+                    <span address-name="data.return"></span></td>
             </tr>
         </table>
     </p>

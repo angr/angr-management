@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.view', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.tiles', 'angr.workspaces', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap']);
 dirs.directive('newproject', function(AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -157,6 +157,7 @@ dirs.directive('loadfile', function($http) {
     };
 });
 
+/* yay!
 dirs.directive('viewlayout', function (RecursionHelper) {
     return {
         templateUrl: '/static/partials/viewlayout.html',
@@ -168,18 +169,20 @@ dirs.directive('viewlayout', function (RecursionHelper) {
         compile: RecursionHelper.compile
     };
 });
+*/
 
-dirs.directive('bblock', function(ContextMenu, Schedule) {
+dirs.directive('bblock', function bblock(ContextMenu, Schedule, gcomm) {
     return {
         priority: 100,
         templateUrl: '/static/partials/bblock.html',
         restrict: 'AE',
+	require: '^workspace',
         scope: {
             block: '=',
-            view: '='
         },
-        controller: function($scope, $element) {
-            var updateBlock = function (block, ob) {
+        link: {pre: function ($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
+	    var updateBlock = function (block, ob) {
                 if (block === ob) {
                     return;
                 }
@@ -187,40 +190,38 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                 $scope.simproc = null;
                 $scope.error = false;
                 $scope.text = '';
-                if (block in $scope.view.gcomm.simProcedureSpots) {
-                    $scope.simproc = $scope.view.gcomm.simProcedures[$scope.view.gcomm.simProcedureSpots[block]];
+                if (block in gcomm.simProcedureSpots) {
+                    $scope.simproc = gcomm.simProcedures[gcomm.simProcedureSpots[block]];
                     $scope.text = $scope.simproc.prettyName;
-                } else if (block in $scope.view.gcomm.irsbs) {
-                    $scope.irsb = $scope.view.gcomm.irsbs[block];
+                } else if (block in gcomm.irsbs) {
+                    $scope.irsb = gcomm.irsbs[block];
                     $scope.text = 'block_' + parseInt($scope.block.toString()).toString(16);
                 } else {
                     $scope.error = 'WTF??';
                 }
             };
 
-            $scope.$watch('view.comm.surveyors.viewingSurveyor', function (s) {
+            wk.comm.$watch('surveyors.viewingSurveyor', function (s) {
                 $scope.surveyorConnected = s !== null;
             });
 
-            $scope.$watch('view.comm.surveyors.currentBreakpoint', function (bp) {
+            wk.comm.$watch('surveyors.currentBreakpoint', function (bp) {
                 $scope.isBreakingHere = bp === parseInt($scope.block.toString());
             });
 
             $scope.breakHere = function () {
                 var addr = parseInt($scope.block.toString());
-                $scope.view.comm.surveyors.currentBreakpoint = addr;
+                wk.comm.surveyors.currentBreakpoint = addr;
             };
 
             $scope.$watch('block', updateBlock);
-            $scope.$watch('view.gcomm.simProcedureSpots', updateBlock);
-            $scope.$watch('view.gcomm.irsbs');
+            gcomm.$watch('simProcedureSpots', updateBlock);
+            gcomm.$watch('irsbs');
 
             updateBlock($scope.block, null);
 
 
-        },
-        link: function ($scope, element, attrs) {
-            $scope.view.comm.graph.delayedFuncs.push(function () {
+            wk.comm.graph.delayedFuncs.push(function () {
                 var el = element[0];
                 el.parentElement.style.width = Math.ceil(el.parentElement.getBoundingClientRect().width) + 'px';
             });
@@ -232,23 +233,23 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                             {
                                 text: 'Expand all instructions',
                                 action: function () {
-                                    var boollist = $scope.view.comm.cfg.expandedStmts[$scope.block];
+                                    var boollist = wk.comm.cfg.expandedStmts[$scope.block];
                                     var keys = Object.keys(boollist);
                                     var i;
                                     for (i = 0; i < keys.length; i += 1) {
                                         boollist[keys[i]] = true;
                                     }
-                                    $scope.view.comm.graph.layout();
+                                    wk.comm.graph.layout();
                                 }
                             }, {
                                 text: 'Collapse all instructions',
                                 action: function () {
-                                    var boollist = $scope.view.comm.cfg.expandedStmts[$scope.block];
+                                    var boollist = wk.comm.cfg.expandedStmts[$scope.block];
                                     var keys = Object.keys(boollist);
                                     for (var i = 0; i < keys.length; i++) {
                                         boollist[keys[i]] = false;
                                     }
-                                    $scope.view.comm.graph.layout();
+                                    wk.comm.graph.layout();
                                 }
                             }, {
                                 text: 'Reanalyze'
@@ -257,7 +258,7 @@ dirs.directive('bblock', function(ContextMenu, Schedule) {
                     }
                 ];
             });
-        }
+        }}
     };
 });
 
@@ -287,10 +288,10 @@ dirs.directive('graph', function(ContextMenu) {
     return {
         templateUrl: '/static/partials/graph.html',
         restrict: 'AE',
+	require: '^workspace',
         scope: {
             nodes: '=',
             edges: '=',
-            view: '=',
             nodeType: '=',
             graphId: '@',
         },
@@ -301,19 +302,6 @@ dirs.directive('graph', function(ContextMenu) {
                     ["Arrow", {location: 1}]
                 ]
             });
-
-            var entryEndpoint = {
-                maxConnections: 10000000,
-                isTarget: true
-            };
-            var exitEndpoint = {
-                maxConnections: 10000000,
-                connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:15} ],
-                connectorStyle: {
-                    lineWidth: 4,
-                    strokeStyle: 'blue'
-                }
-            };
 
             var GRID_SIZE = 20;
             var HEADER = 160;
@@ -365,18 +353,65 @@ dirs.directive('graph', function(ContextMenu) {
                 });
             };
 
-            $scope.view.comm.graph.layout = $scope.layout;
+            $scope.$watch('nodes', function (nv, ov) {
+                $scope.truNodes = $scope.nodes;
+                if (!Array.prototype.isPrototypeOf($scope.truNodes)) {
+                    $scope.truNodes = Object.keys($scope.truNodes);
+                }
+                Schedule(function () {
+                    $scope.plumb.reset();
+                    $scope.plumbing();
+                });
+            }, true);
+
+            $scope.zoom = function (inout) {
+                var czoom = parseInt($element[0].parentElement.style.zoom);
+                if (isNaN(czoom)) {
+                    czoom = 100;
+                }
+                if (inout) {
+                    czoom *= 1.1;
+                } else {
+                    czoom /= 1.1;
+                }
+
+                if (czoom > 250) {
+                    czoom = 250;
+                } else if (czoom < 25) {
+                    czoom = 25;
+                }
+                $element[0].parentElement.style.zoom = czoom.toString() + '%';
+            };
+	},
+	link: function($scope, element, attrs, wk) {
+            wk.comm.graph.layout = $scope.layout;
+
+            var GRID_SIZE = 20;
+            var HEADER = 160;
+
+            var entryEndpoint = {
+                maxConnections: 10000000,
+                isTarget: true
+            };
+            var exitEndpoint = {
+                maxConnections: 10000000,
+                connector:[ "Flowchart", { stub:[40, 60], gap:10, cornerRadius:15} ],
+                connectorStyle: {
+                    lineWidth: 4,
+                    strokeStyle: 'blue'
+                }
+            };
 
             // Tell JS to queue (timeout at zero seconds) this init routine
             // It needs to run later, after angular has finished processing shit
             // and has parsed the ng-ifs and ng-repeats
-            var plumbing = function() {
+            $scope.plumbing = function() {
                 var i;
-                for (i = 0; i < $scope.view.comm.graph.delayedFuncs.length; i++) {
-                    $scope.view.comm.graph.delayedFuncs[i]();
+                for (i = 0; i < wk.comm.graph.delayedFuncs.length; i++) {
+                    wk.comm.graph.delayedFuncs[i]();
                 }
-                $scope.view.comm.graph.delayedFuncs = [];
-                var graphRoot = jQuery($element).find('#graphRoot');
+                wk.comm.graph.delayedFuncs = [];
+                var graphRoot = jQuery(element).find('#graphRoot');
                 $scope.plumb.setContainer(graphRoot);
                 graphRoot.children('div').each(function(i, e) {
                     var $e = jQuery(e);
@@ -398,37 +433,8 @@ dirs.directive('graph', function(ContextMenu) {
                 $scope.layout();
             };
 
-            $scope.$watch('nodes', function (nv, ov) {
-                $scope.truNodes = $scope.nodes;
-                if (!Array.prototype.isPrototypeOf($scope.truNodes)) {
-                    $scope.truNodes = Object.keys($scope.truNodes);
-                }
-                Schedule(function () {
-                    $scope.plumb.reset();
-                    plumbing();
-                });
-            }, true);
-
-            $scope.zoom = function (inout) {
-                var czoom = parseInt($element[0].parentElement.style.zoom);
-                if (czoom !== czoom) { // NaN, lol hax
-                    czoom = 100;
-                }
-                if (inout) {
-                    czoom *= 1.1;
-                } else {
-                    czoom /= 1.1;
-                }
-
-                if (czoom > 250) {
-                    czoom = 250;
-                } else if (czoom < 25) {
-                    czoom = 25;
-                }
-                $element[0].parentElement.style.zoom = czoom.toString() + '%';
-            };
-
-            $scope.$watch('view.comm.graph.centerNode', function (nv) {
+	    
+            wk.comm.$watch('graph.centerNode', function (nv) {
                 if (!nv) return;
                 var elm = jQuery($element).find('#graphRoot').find('#' + nv)[0];
                 if (!elm) return;
@@ -454,22 +460,23 @@ dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'AE',
         scope: {
-            view: '='
+            data: '='
         },
-        controller: function($scope, $http) {
-            $scope.$watch('view.comm.funcPicker.selected', function (func) {
+	require: '^workspace',
+        link: {pre: function ($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
+	    wk.comm.foo = "asdf";
+	    wk.comm.$watch('funcPicker.selected', function (func) {
                 if (!func) return;
                 func.irsbsLoaded = false;
                 AngrData.loadIRSBs(func).then(function () {
                     func.irsbsLoaded = true;
                 }, defaultError);
             });
-            $scope.$watch('view.comm.cfg.jumpToBlock', function (nv) {
+            wk.comm.$watch('cfg.jumpToBlock', function (nv) {
                 if (!nv) return;
-                $scope.view.comm.graph.centerNode = nv.toString();
+                wk.comm.graph.centerNode = nv.toString();
             });
-        },
-        link: function ($scope, element, attrs) {
             ContextMenu.registerEntries(element, function () {
                 return [
                     {
@@ -494,65 +501,69 @@ dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
                     }
                 ];
             });
-        }
+        }}
     };
 });
 
-dirs.directive('addressName', function () {
+dirs.directive('addressName', function (gcomm) {
     return {
         templateUrl: '/static/partials/addressname.html',
+	require: '^workspace',
         scope: {
             'address': '=addressName',
             'disableHighlight': '=',
             'allowFuncNames': '=',
-            'disableClick': '=',
-            'view': '='
+            'disableClick': '='
         },
         restrict: 'A',
-        link: function ($scope, element, attrs) {
+        link: {pre: function ($scope, element, attrs, wk) {
+	    $scope.gcomm = gcomm;
             if (!$scope.disableHighlight) {
                 element.on('mouseenter', function (e) {
                     $scope.$apply(function() {
                         element.addClass('highlight');
-                        $scope.view.comm.cfgHighlight2.blocks[$scope.address] = true;
+                        wk.comm.cfgHighlight2.blocks[$scope.address] = true;
                     });
                 });
                 element.on('mouseleave', function (e) {
                     $scope.$apply(function() {
                         element.removeClass('highlight');
-                        $scope.view.comm.cfgHighlight2.blocks[$scope.address] = false;
+                        wk.comm.cfgHighlight2.blocks[$scope.address] = false;
                     });
                 });
             }
             if (!$scope.disableClick) {
                 element.on('click', function (e) {
                     $scope.$apply(function() {
-                        if ($scope.allowFuncNames && $scope.view.gcomm.funcMan.functions.hasOwnProperty($scope.address)) {
-                            $scope.view.comm.funcPicker.selected = $scope.view.gcomm.funcMan.functions[$scope.address];
-                            $scope.view.comm.cfgHighlight2.blocks[$scope.address] = false;
+                        if ($scope.allowFuncNames && gcomm.funcMan.functions.hasOwnProperty($scope.address)) {
+                            wk.comm.funcPicker.selected = gcomm.funcMan.functions[$scope.address];
+                            wk.comm.cfgHighlight2.blocks[$scope.address] = false;
                         } else {
-                            $scope.view.comm.cfg.jumpToBlock = $scope.address;
+                            wk.comm.cfg.jumpToBlock = $scope.address;
                         }
                     });
                 });
             }
-        }
+        }}
     };
 });
 
-dirs.directive('funcpicker', function() {
+dirs.directive('funcpicker', function($filter, gcomm) {
     return {
         templateUrl: '/static/partials/funcpicker.html',
         restrict: 'AE',
+	require: '^workspace',
         scope: {
-            view: '='
+	    data: '=',
         },
-        controller: function($scope, $filter) {
+        link: {pre: function($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
+	    $scope.gcomm = gcomm;
             $scope.filterby = '';
             $scope.getFuncList = function () {      // UGHHHHHH.
                 var out = [];
-                for (var key in $scope.view.gcomm.funcMan.functions) {
-                    out.push($scope.view.gcomm.funcMan.functions[key]);
+                for (var key in gcomm.funcMan.functions) {
+                    out.push(gcomm.funcMan.functions[key]);
                 }
                 return out;
             };
@@ -565,9 +576,9 @@ dirs.directive('funcpicker', function() {
             }
 
             $scope.click = function (func) {
-                $scope.view.comm.funcPicker.selected = func;
+                wk.comm.funcPicker.selected = func;
             };
-        }
+        }}
     };
 });
 
@@ -575,16 +586,18 @@ dirs.directive('funcman', function (AngrData) {
     return {
         templateUrl: '/static/partials/funcman.html',
         restrict: 'AE',
+	require: '^workspace',
         scope: {
-            view: '='
+            data: '='
         },
-        controller: function ($scope) {
+        link: {pre: function ($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
             $scope.scopeBreak = {
                 newName: ''
             };
             $scope.thinking = false;
             $scope.rename = function() {
-                var f = $scope.view.comm.funcPicker.selected;
+                var f = wk.comm.funcPicker.selected;
                 if (f.name == $scope.scopeBreak.newName) return; // Don't submit a no-op request!
                 f.name = $scope.scopeBreak.newName;
                 $scope.thinking = true;
@@ -595,12 +608,12 @@ dirs.directive('funcman', function (AngrData) {
                     $scope.thinking = false;
                 });
             };
-            $scope.$watch('view.comm.funcPicker.selected', function(sf) {
+            wk.comm.$watch('funcPicker.selected', function(sf) {
                 if (!sf) return;
                 $scope.scopeBreak.newName = sf.name;
             });
 
-        }
+        }}
     };
 });
 
@@ -608,31 +621,34 @@ dirs.directive('proxgraph', function ($timeout) {
     return {
         templateUrl: '/static/partials/proxgraph.html',
         restrict: 'AE',
+	require: '^workspace',
         scope: {
-            view: '='
+            data: '='
         },
-        controller: function ($scope, $element) {
-            $scope.$watch('view.comm.funcPicker.selected', function (nv) {
+        link: {pre: function ($scope, element, attrs, wk) {
+	    //$scope.comm = wkc
+            wk.comm.$watch('funcPicker.selected', function (nv) {
                 if (!nv) return;
-                $scope.view.comm.graph.centerNode = nv.address.toString();
+                wk.comm.graph.centerNode = nv.address.toString();
             });
-        }
+        }}
     };
 });
 
-dirs.directive('funcnode', function () {
+dirs.directive('funcnode', function funcnode() {
     return {
         templateUrl: '/static/partials/funcnode.html',
         restrict: 'AE',
         scope: {
-            view: '=',
             node: '='
         },
-        controller: function ($scope) {
+	require: '^workspace',
+        link: {pre: function ($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
             $scope.click = function () {
-                $scope.view.comm.funcPicker.selected = $scope.node;
+                wk.comm.funcPicker.selected = $scope.node;
             };
-        }
+        }}
     };
 });
 
@@ -641,12 +657,12 @@ dirs.directive('irsb', function(Schedule) {
         templateUrl: '/static/partials/irsb.html',
         restrict: 'E',
         scope: {
-            irsb: '=data',
-            view: '='
+            irsb: '=data'
         },
-        controller: function($scope, Schedule) {
+	require: '^workspace',
+        link: {pre: function($scope, element, attrs, wk) {
             $scope.renderData = {idx: -1, insn: 0, show: {}};
-            $scope.view.comm.cfg.expandedStmts[$scope.irsb.addr] = $scope.renderData.show;
+            wk.comm.cfg.expandedStmts[$scope.irsb.addr] = $scope.renderData.show;
 
             $scope.nextStmt = function (data) {
                 data.idx++;
@@ -668,22 +684,21 @@ dirs.directive('irsb', function(Schedule) {
 
             $scope.toggle = function (data, ld) {
                 data.show[ld.insnnum] = !data.show[ld.insnnum];
-                Schedule($scope.view.comm.graph.layout);
+                Schedule(wk.comm.graph.layout);
             };
-        },
+        }},
     };
 });
 
-dirs.directive('asmstmt', function () {
+dirs.directive('asmstmt', function (gcomm) {
     return {
         templateUrl: '/static/partials/asmstmt.html',
         restrict: 'AE',
         scope: {
-            view: '=',
             addr: '='
         },
         controller: function ($scope) {
-
+	    $scope.gcomm = gcomm;
         }
     }
 });
@@ -694,7 +709,6 @@ dirs.directive('irstmt', function() {
         restrict: 'E',
         scope: {
             stmt: '=',
-            view: '=',
             stmtid: '=',
         },
     };
@@ -706,7 +720,6 @@ dirs.directive('irexpr', function(RecursionHelper) {
         restrict: 'E',
         scope: {
             expr: '=',
-            view: '=',
             stmtid: '=',
         },
         compile: RecursionHelper.compile,
@@ -720,7 +733,6 @@ dirs.directive('cexpr', function(RecursionHelper, $http) {
         scope: {
             expr: '=',
             parens: '=',
-            view: '='
         },
         compile: RecursionHelper.compile,
         controller: function($scope, $http) {
@@ -753,7 +765,6 @@ dirs.directive('cast', function(RecursionHelper) {
         scope: {
             ast: '=',
             parens: '=',
-            view: '='
         },
         compile: RecursionHelper.compile,
         controller: function($scope, $http) {
@@ -767,20 +778,19 @@ dirs.directive('cast', function(RecursionHelper) {
     };
 });
 
-dirs.directive('irtmp', function(ContextMenu) {
+dirs.directive('irtmp', function irtmp(ContextMenu) {
     return {
         templateUrl: '/static/partials/irtmp.html',
         restrict: 'E',
         scope: {
             tmp: '=',
-            view: '='
         },
-        controller: function ($scope) {
+	require: '^workspace',
+        link: function ($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
             $scope.mouse = function (over) {
-                $scope.view.comm.cfgHighlight.tmps[$scope.tmp] = over;
+                wk.comm.cfgHighlight.tmps[$scope.tmp] = over;
             };
-        },
-        link: function ($scope, element, attrs) {
             ContextMenu.registerEntries(element, function () {
                 return [
                     {
@@ -803,7 +813,7 @@ dirs.directive('irtmp', function(ContextMenu) {
     };
 });
 
-dirs.directive('irreg', function($tooltip, AngrData) {
+dirs.directive('irreg', function($tooltip, AngrData, gcomm) {
     return {
         templateUrl: '/static/partials/irreg.html',
         restrict: 'E',
@@ -811,10 +821,12 @@ dirs.directive('irreg', function($tooltip, AngrData) {
             offset: '=',
             size: '=',
             operation: '=',
-            view: '=',
             stmtid: '=',
         },
-        link: function (scope, elem) {
+	require: '^workspace',
+        link: function (scope, elem, attrs, wk) {
+	    scope.comm = wk.comm;
+	    scope.gcomm = gcomm;
             scope.hover = false;
             scope.exprVal = {expr_type: ''};
             scope.showVal = false;
@@ -823,8 +835,8 @@ dirs.directive('irreg', function($tooltip, AngrData) {
                 scope.showVal = !scope.showVal;
 
                 if (scope.showVal) {
-                    AngrData.findExprVal(scope.view.comm.surveyors.viewingSurveyor,
-                                         scope.view.comm.surveyors.viewingPath,
+                    AngrData.findExprVal(wk.comm.surveyors.viewingSurveyor,
+                                         wk.comm.surveyors.viewingPath,
                                          {expr_type: 'reg', reg: scope.offset,
                                          before: scope.stmtid})
                         .then(function(exprVal) {
@@ -835,18 +847,18 @@ dirs.directive('irreg', function($tooltip, AngrData) {
             };
 
             scope.mouse = function (over) {
-                scope.view.comm.cfgHighlight.registers[scope.offset] = over;
+                wk.comm.cfgHighlight.registers[scope.offset] = over;
             };
         }
     };
 });
 
+/*
 dirs.directive('splittest', function (View) {
     return {
         templateUrl: '/static/partials/splittest.html',
         restrict: 'AE',
         scope: {
-            view: '='
         },
         controller: function ($scope, $element) {
             $scope.randColor = function () {
@@ -871,3 +883,4 @@ dirs.directive('splittest', function (View) {
         }
     }
 });
+*/

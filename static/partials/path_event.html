@@ -1,5 +1,7 @@
 <p class="lead">
   <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_event, 'glyphicon-minus': show_event}" ng-click="show_event=!show_event"></button>
+  event_type is
+  {{ event.event_type }}
   <span ng-if="event.event_type == 'PathEventExitTaken'">Exit to <cexpr expr="event.target"></cexpr></span>
   <span ng-if="event.event_type == 'PathEventSimRun'">
     {{event.type}} -

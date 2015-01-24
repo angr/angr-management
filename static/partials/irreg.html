@@ -1,4 +1,4 @@
-<span ng-class="{highlight: view.comm.cfgHighlight.registers[offset]}"
+<span ng-class="{highlight: comm.cfgHighlight.registers[offset]}"
       ng-click="toggleVal()"
       ng-mouseenter="mouse(true)"
-      ng-mouseleave="mouse(false)">{{ operation }}<span ng-if="size">:{{ size }}</span>({{ view.gcomm.arch.register_names[offset] }})<span ng-if="showVal"> (<cexpr expr="exprVal" parens="true" view="view"></cexpr>)</span></span>
+      ng-mouseleave="mouse(false)">{{ operation }}<span ng-if="size">:{{ size }}</span>({{ gcomm.arch.register_names[offset] }})<span ng-if="showVal"> (<cexpr expr="exprVal" parens="true"></cexpr>)</span></span>

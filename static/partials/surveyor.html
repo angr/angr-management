@@ -1,16 +1,16 @@
 <div class="panel-heading">
-  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !view.data.showSur[sid], 'glyphicon-minus': view.data.showSur[sid]}" ng-click="view.data.showSur[sid]=!view.data.showSur[sid]"></button>
-  {{view.gcomm.surveyors[sid].type}} with {{view.gcomm.surveyors[sid].step}} steps and {{view.gcomm.surveyors[sid].paths.length}} paths
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !data.showSur[sid], 'glyphicon-minus': data.showSur[sid]}" ng-click="data.showSur[sid]=!data.showSur[sid]"></button>
+  {{gcomm.surveyors[sid].type}} with {{gcomm.surveyors[sid].step}} steps and {{gcomm.surveyors[sid].paths.length}} paths
 </div>
 
-<span ng-if="view.data.showSur[sid]">
+<span ng-if="data.showSur[sid]">
   <div class="panel-body">
     <dl class="dl-horizontal">
-      <dt>Maximum concurrency:</dt> <dd>{{view.gcomm.surveyors[sid].max_concurrency}}</dd>
-      <dt>Save deadends:</dt> <dd>{{view.gcomm.surveyors[sid].save_deadends}}</dd>
+      <dt>Maximum concurrency:</dt> <dd>{{gcomm.surveyors[sid].max_concurrency}}</dd>
+      <dt>Save deadends:</dt> <dd>{{gcomm.surveyors[sid].save_deadends}}</dd>
       <dt>Empty path lists:</dt>
       <dd>
-        <span ng-repeat="(name,paths) in view.gcomm.surveyors[sid].path_lists">
+        <span ng-repeat="(name,paths) in gcomm.surveyors[sid].path_lists">
           <span ng-if="paths.length == 0"> {{name}}
         </span>
       </dd>
@@ -18,11 +18,11 @@
 
     <h4>Paths</h4>
     <table class="table">
-      <tr ng-repeat="(name,paths) in view.gcomm.surveyors[sid].path_lists">
+      <tr ng-repeat="(name,paths) in gcomm.surveyors[sid].path_lists">
         <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
         <td ng-if="paths.length > 0">
           <div class="well path_box" ng-repeat="pid in paths">
-                  <path pid="pid" view="view"></path>
+                  <path pid="pid"></path>
             <button ng-if="name != 'active'" class="btn" ng-click="reactivate(pid)">Reactivate</button>
             <button ng-if="name == 'active'" class="btn" ng-click="suspend(pid)">Suspend</button>
             <button class="btn" ng-click="showCFG(pid)">Show in CFG</button>
@@ -37,11 +37,11 @@
   <form class="form-inline" novalidate>
     <div class="form-group">
       <label>Step</label>
-      <input style="width: 3em;" id="steps" ng-model="view.data.steps" />
+      <input style="width: 3em;" id="steps" ng-model="data.steps" />
     </div>
 
     <div class="form-group">
-      <button type="submit" class="btn" ng-click="step(view.data.steps)">Step!</button>
+      <button type="submit" class="btn" ng-click="step(data.steps)">Step!</button>
     </div>
 
     <div class="form-group">

@@ -1,17 +1,16 @@
 <!-- {{ irsb }} -->
-
 <div ng-repeat="stmt in irsb.statements" ng-init="nextStmt(renderData)" ng-if="true">
     <div ng-if="stmt.tag == 'Ist_IMark'" ng-init="localRender = nextInsn(renderData)">
         <div real-click="toggle(renderData, localRender)">
             <span class="stmtLeftMargin blue">{{stmt.addr | hexpad}}</span>
-            <asmstmt addr="stmt.addr" view="view"></asmstmt>
+            <asmstmt addr="stmt.addr"></asmstmt>
         </div>
     </div>
     <div ng-if="stmt.tag != 'Ist_IMark'" ng-init="localRender = getCtx(renderData)">
         <div ng-if="renderData.show[localRender.insnnum] && stmt.tag != 'Ist_NoOp'">
             <span class="stmtLeftMargin red">[{{localRender.stmtnum}}]</span>
-            <irstmt stmtid="localRender.stmtnum" stmt="stmt" view="view"></irstmt>
+            <irstmt stmtid="localRender.stmtnum" stmt="stmt"></irstmt>
         </div>
     </div>
 </div>
-<span class="stmtLeftMargin">Exit</span> ({{irsb.jumpkind.substr(4)}}): <irexpr expr="irsb.next" view="view"></irexpr>
+<span class="stmtLeftMargin">Exit</span> ({{irsb.jumpkind.substr(4)}}): <irexpr expr="irsb.next"></irexpr>

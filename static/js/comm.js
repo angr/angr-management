@@ -80,3 +80,7 @@ comm.factory('globalCommunicator', function ($rootScope) {
 
     return $rootScope.gcomm;
 });
+
+comm.factory('gcomm', function(globalCommunicator) {
+    return globalCommunicator;
+});

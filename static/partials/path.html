@@ -1,9 +1,9 @@
 <h5>
-  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !view.data.showPath[pid], 'glyphicon-minus': view.data.showPath[pid]}" ng-click="view.data.showPath[pid]=!view.data.showPath[pid]"></button>
+  <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !showPath[pid], 'glyphicon-minus': showPath[pid]}" ng-click="showPath[pid]=!showPath[pid]"></button>
   Path {{path.id}} at 0x{{path.last_addr.toString(16)}}
 </h5>
 
-<span ng-if="view.data.showPath[pid]">
+<span ng-if="showPath[pid]">
   <hr>
 
   <p class="lead">
@@ -18,9 +18,9 @@
 
   <p class="lead">
     <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_events, 'glyphicon-minus': show_events}" ng-click="show_events=!show_events"></button>
-    Event Log (last <input ng-model="event_limit" style="width: 3em;"> of {{path.backtrace.length}} entries)
+    Event Log (last <input ng-model="event_limit" style="width: 3em;"> of {{path.event_log.length}} entries)
   </p>
   <ul ng-if="show_events" class="list-group">
-    <li class="list-group-item" event ng-repeat="e in path.event_log | skip:(path.event_log.length - event_limit)" data="e" view="view">
+    <li class="list-group-item" event ng-repeat="e in path.event_log | skip:(path.event_log.length - event_limit)" data="e">
   </ul>
 </span>

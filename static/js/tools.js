@@ -1,6 +1,6 @@
 'use strict';
 
-var tools = angular.module('angr.tools', []);
+var tools = angular.module('angr.tools', ['angr.comm']);
 
 tools.directive('onEnter', function () {
     return function (scope, element, attrs) {

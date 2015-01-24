@@ -1,6 +1,6 @@
 var survey = angular.module('angr.surveyors', ['angr.tools']);
 
-survey.controller('AddSurveyorCtrl', function ($scope, $http, $modalInstance, View, AngrData) {
+survey.controller('AddSurveyorCtrl', function ($scope, $http, $modalInstance, AngrData) {
     $scope.thinking = false;
 
     $scope.cancel = function () {
@@ -63,18 +63,23 @@ survey.controller('AddSurveyorCtrl', function ($scope, $http, $modalInstance, Vi
     };
 });
 
-survey.directive('surveyors', function($http, $modal) {
+survey.directive('surveyors', function surveyors($http, $modal, gcomm) {
     return {
         templateUrl: '/static/partials/surveyors.html',
         restrict: 'AE',
-        scope: { view: '=' },
+        scope: { data: '=' },
+	require: '^workspace',
         controller: function($scope, $http) {
-            if (typeof $scope.view.data.showSur === 'undefined') {
-                $scope.view.data.showSur = {};
+	    this.data = $scope.data;
+            if (typeof $scope.data.showSur === 'undefined') {
+                $scope.data.showSur = {};
             }
-            if (typeof $scope.view.data.showPath === 'undefined') {
-                $scope.view.data.showPath = {};
+            if (typeof $scope.data.showPath === 'undefined') {
+                $scope.data.showPath = {};
             }
+	},
+	link: {pre: function($scope, element, attrs, wk) {
+	    $scope.gcomm = gcomm;
             $scope.newSurveyor = function () {
                 $modal.open({
                     templateUrl: '/static/partials/newsurveyor.html',
@@ -84,55 +89,57 @@ survey.directive('surveyors', function($http, $modal) {
                 });
             };
 
-            $scope.$watch('view.gcomm.paths[view.comm.surveyors.viewingPath]', function (nv, ov) {
+	    $scope.comm = wk.comm;
+	    $scope.gcomm = gcomm;
+            $scope.$watch('gcomm.paths[comm.surveyors.viewingPath]', function (nv, ov) {
                 if (ov && ov.last_addr) {
-                    delete $scope.view.comm.cfgHighlight.blocks[ov.last_addr];
+                    delete wk.comm.cfgHighlight.blocks[ov.last_addr];
                 }
                 if (ov && ov.split) {
-                    $scope.view.comm.cfgHighlight2.blocks = {};    // :(
+                    wk.comm.cfgHighlight2.blocks = {};    // :(
                 }
                 if (!nv) {
-                    $scope.view.comm.funcPicker.selected = null;
+                    wk.comm.funcPicker.selected = null;
                 } else if (nv.split) {
                     for (var i = 0; i < nv.children.length; i++) {
-                        $scope.view.comm.cfgHighlight2.blocks[$scope.view.gcomm.paths[nv.children[i]].last_addr] = true;
+                        wk.comm.cfgHighlight2.blocks[gcomm.paths[nv.children[i]].last_addr] = true;
                     }
                 } else {
-                    $scope.view.comm.funcPicker.selected = $scope.view.gcomm.funcMan.findFuncForBlock(nv.last_addr);
-                    $scope.view.comm.cfgHighlight.blocks[nv.last_addr] = true;
+                    wk.comm.funcPicker.selected = gcomm.funcMan.findFuncForBlock(nv.last_addr);
+                    wk.comm.cfgHighlight.blocks[nv.last_addr] = true;
                 }
             });
-
-        }
+        }}
     };
 });
 
-survey.directive('surveyor', function($http, View, AngrData) {
+survey.directive('surveyor', function($http, AngrData, gcomm) {
     return {
         templateUrl: '/static/partials/surveyor.html',
         restrict: 'AE',
         scope: {
-            sid: '=',
-            view: "="
+            sid: '='
         },
-        controller: function($scope, $http) {
-            $scope.view.data.steps = 1;
+	require: '^workspace',
+        link: {pre: function($scope, element, attrs, wk) {
+            $scope.steps = 1;
+	    $scope.gcomm = gcomm;
             $scope.step = function(steps) {
-                return AngrData.surveyorStep($scope.sid, $scope.view.data.steps);
+                return AngrData.surveyorStep($scope.sid, $scope.steps);
             };
 
             $scope.run = function() {
                 $scope.step().then(function() {
-                    var surveyor = $scope.view.gcomm.surveyors[$scope.sid];
+                    var surveyor = gcomm.surveyors[$scope.sid];
                     if (surveyor.path_lists['active'].length === 0) {
                         return;
                     }
-                    var currentBreakpoint = $scope.view.comm.surveyors.currentBreakpoint;
+                    var currentBreakpoint = wk.comm.surveyors.currentBreakpoint;
                     for (var i = 0; i < surveyor.path_lists['active'].length; i++) {
                         var pathId = surveyor.path_lists['active'][i];
-                        var path = $scope.view.gcomm.paths[pathId];
+                        var path = gcomm.paths[pathId];
                         if (path.last_addr === currentBreakpoint) {
-                            $scope.view.comm.surveyors.viewingPath = path.id;
+                            wk.comm.surveyors.viewingPath = path.id;
                             return;
                         }
                     }
@@ -150,33 +157,35 @@ survey.directive('surveyor', function($http, View, AngrData) {
 
             $scope.showCFG = function (pid) {
                 AngrData.loadFunctionManager().then(function () {
-                    if (!$scope.view.comm.surveyors.viewingPath) {
-                        var rv = $scope.view.root;
-                        rv.split(new View({}, 'CFG'), false, 0.5, true);
+                    if (!wk.comm.surveyors.viewingPath) {
+			wk.addTile({type: 'cfg'});
                     }
-                    $scope.view.comm.surveyors.viewingPath = pid;
-                    $scope.view.comm.surveyors.viewingSurveyor = $scope.sid;
+                    wk.comm.surveyors.viewingPath = pid;
+                    wk.comm.surveyors.viewingSurveyor = $scope.sid;
                 });
             };
-        }
+        }}
     };
 });
 
-survey.directive('path', function($http) {
+survey.directive('path', function path($http, gcomm) {
     return {
         templateUrl: '/static/partials/path.html',
         restrict: 'AE',
-        scope: { pid: '=', view: '=' },
-        controller: function($scope, $http) {
+        scope: { pid: '=' },
+	require: '^surveyors',
+        link: {pre: function($scope, element, attrs, sv) {
+	    $scope.showPath = sv.data.showPath;
             $scope.show_path = false;
             $scope.show_events = false;
             $scope.show_backtrace = false;
             $scope.event_limit = 10;
             $scope.backtrace_limit = 10;
-            $scope.$watch('view.gcomm.paths[pid]', function (nv) {
-                $scope.path = $scope.view.gcomm.paths[$scope.pid];
+	    $scope.gcomm = gcomm;
+            $scope.$watch('gcomm.paths[pid]', function (nv) {
+                $scope.path = gcomm.paths[$scope.pid];
             });
-        }
+        }}
     };
 });
 

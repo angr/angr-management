@@ -1,4 +1,4 @@
-var contextMenuData = []; // John can kill me for this later
+var contextMenuData = []; // John can kill me for this later -- indeed
 var activeScope = null;
 
 var contextMenu = angular.module('angr.contextMenu', []);
