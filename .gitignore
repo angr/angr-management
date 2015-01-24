@@ -6,3 +6,6 @@ projects
 
 # vim temp files
 *.swp
+
+# emacs temp files
+*~
