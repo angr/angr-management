@@ -468,9 +468,9 @@ dirs.directive('graph', function(Context) {
 	    
             wk.comm.$watch('graph.centerNode', function (nv) {
                 if (!nv) return;
-                var elm = jQuery($element).find('#graphRoot').find('#' + nv)[0];
+                var elm = jQuery(element).find('#graphRoot').find('#' + nv)[0];
                 if (!elm) return;
-                var cont = jQuery($element).parent()[0];
+                var cont = jQuery(element).parent()[0];
                 if (!cont) return;
 
                 var left = parseInt(elm.style.left);
@@ -626,7 +626,7 @@ dirs.directive('funcman', function (AngrData) {
     };
 });
 
-dirs.directive('proxgraph', function ($timeout) {
+dirs.directive('proxgraph', function (gcomm) {
     return {
         templateUrl: '/static/partials/proxgraph.html',
         restrict: 'AE',
@@ -635,7 +635,7 @@ dirs.directive('proxgraph', function ($timeout) {
             data: '='
         },
         link: {pre: function ($scope, element, attrs, wk) {
-	    //$scope.comm = wkc
+	    $scope.gcomm = gcomm;
             wk.comm.$watch('funcPicker.selected', function (nv) {
                 if (!nv) return;
                 wk.comm.graph.centerNode = nv.address.toString();
