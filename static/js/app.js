@@ -6,6 +6,7 @@ angular.module('angr', [
     'angr.directives',
     'angr.services',
     'angr.tiles',
+    'angr.context',
     'angr.workspaces',
     'ui.bootstrap'
 ]).

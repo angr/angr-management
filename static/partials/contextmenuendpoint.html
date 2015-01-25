@@ -1,9 +1,9 @@
 <ul class="contextMenu dropdown-menu" role="menu"
-    ng-style="{top: position.y + 'px', left: position.x + 'px', display: active ? 'block' : 'none'}">
+    ng-style="{top: gcomm.contextMenu.y + 'px', left: gcomm.contextMenu.x + 'px', display: gcomm.contextMenu.active ? 'block' : 'none'}">
     <li context-menu-item class="contextMenuItem" role="presentation"
-        ng-repeat="item in items" 
-        ng-class="{disabledMenuItem: item.disabled}"
-        ng-click="click(item, $event)"
-        ng-mouseenter="mouseenter(item)"
-        item="item"></li>
+        ng-repeat="action in gcomm.contextMenu.actions.children" 
+        ng-class="{disabledMenuItem: !action.isEnabled()}"
+        ng-click="click(action, $event)"
+        ng-mouseenter="mouseenter(action)"
+        action="action"></li>
 </ul>

@@ -1,2 +1,10 @@
-<span ng-if="gcomm.labels.hasOwnProperty(address) || (allowFuncNames && gcomm.funcMan.functions.hasOwnProperty(address))">{{gcomm.labels.hasOwnProperty(address) ? gcomm.labels[address] : gcomm.funcMan.functions[address].name}}</span>
-<span ng-if="!(gcomm.labels.hasOwnProperty(address) || (allowFuncNames && gcomm.funcMan.functions.hasOwnProperty(address)))">0x{{address | hex}}</span>
+<span ng-if="
+        gcomm.labels.hasOwnProperty(address) || 
+        (allowFuncNames && gcomm.funcMan.functions.hasOwnProperty(address))">{{
+    gcomm.labels.hasOwnProperty(address) ? gcomm.labels[address] : gcomm.funcMan.functions[address].name
+}}</span>
+<span ng-if=
+        "!(gcomm.labels.hasOwnProperty(address) || 
+        (allowFuncNames && gcomm.funcMan.functions.hasOwnProperty(address)))">0x{{
+    address | hex
+}}</span>

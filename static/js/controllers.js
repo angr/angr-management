@@ -1,18 +1,12 @@
 'use strict';
 
-var ctrls = angular.module('angr.controllers', ['dialogs.main', 'angr.tiles', 'angr.workspaces', 'angr.surveyors']);
+var ctrls = angular.module('angr.controllers', ['dialogs.main', 'angr.tiles', 'angr.workspaces', 'angr.surveyors', 'angr.context']);
 
 ctrls.controller('IndexCtrl', function($scope, $http, projects) {
     $scope.projects = projects;
 });
 
-var printRootScope;
-
-ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
-                                         $modal, AngrData, $rootScope) {
-    printRootScope = function () {
-        console.log($rootScope);
-    };
+ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams, $interval, $modal, AngrData, Context) {
     $scope.inst_id = $routeParams['inst_id'];
     this.instance = {};
     var this_ = this;
@@ -25,7 +19,7 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
             alert(data.message);
         }
     }, function () {
-        alert('Some sort of really bad error pinging instance...');
+        alert('Something bad happened while pinging the instance...');
     });
     $scope.tabSpaceStyle = {
 	display: 'block',
@@ -141,6 +135,16 @@ ctrls.controller('ProjectCtrl', function($scope, $http, $routeParams, $interval,
         //     $scope.addTab(view);
         // }
     };
+
+    var globalActions = new Context.Actions();
+    var interactionController = function () {
+        return {
+            coordinates: new Context.Point(0,0),
+            actions: globalActions,
+            doubleClick: function () {}
+        };
+    };
+    $scope.uictx = new Context.Interactable(null, $($document), interactionController, 'PROJECT_ROOT');
 
 });
 

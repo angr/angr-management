@@ -1,6 +1,6 @@
 'use strict';
 
-var dirs = angular.module('angr.directives', ['angr.filters', 'angr.tiles', 'angr.workspaces', 'angr.contextMenu', 'angr.tools', 'ui.bootstrap']);
+var dirs = angular.module('angr.directives', ['angr.filters', 'angr.context', 'angr.tools', 'ui.bootstrap']);
 dirs.directive('newproject', function(AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/newproject.html',
@@ -164,14 +164,15 @@ dirs.directive('viewlayout', function (RecursionHelper) {
         restrict: 'AE',
         scope: {
             view: '=',
-            instance: '='
+            instance: '=',
+            uictx: '='
         },  // no controller because #swag
         compile: RecursionHelper.compile
     };
 });
 */
 
-dirs.directive('bblock', function bblock(ContextMenu, Schedule, gcomm) {
+dirs.directive('bblock', function bblock(Context, Schedule, gcomm) {
     return {
         priority: 100,
         templateUrl: '/static/partials/bblock.html',
@@ -179,6 +180,7 @@ dirs.directive('bblock', function bblock(ContextMenu, Schedule, gcomm) {
 	require: '^workspace',
         scope: {
             block: '=',
+            uictx: '='
         },
         link: {pre: function ($scope, element, attrs, wk) {
 	    $scope.comm = wk.comm;
@@ -220,12 +222,40 @@ dirs.directive('bblock', function bblock(ContextMenu, Schedule, gcomm) {
 
             updateBlock($scope.block, null);
 
+            var interactionActions = new Context.Actions({children: [{
+                name: 'Option 1',
+                action: function () {alert('EVERYTHING IS AWESOME');},
+                keyboardShortcut: '+e'
+            }, {
+                name: 'Option 2',
+                action: function () {alert('EVERYTHING IS COOL WHEN YOU\'RE PART OF A TEAM');},
+                keyboardShortcut: 'S+E'
+            }, {
+                name: 'Option List',
+                children: [{
+                    name: 'Option 1a',
+                    action: function () {alert('option 1a pressed');}
+                },{
+                    name: 'Option 1b',
+                    action: function () {alert('option 1b pressed');}
+                }]
+            }]});
+            var interactionController = function () {
+                var pos = $(element).parent().position();
+                return {
+                    coordinates: new Context.Point(pos.left, pos.top),
+                    actions: interactionActions,
+                    doubleClick: function () {alert('DO A DOUBLE CLICK\n\nPRESS Z OR R TWICE');}
+                };
+            };
+            $scope.myuictx = new Context.Interactable($scope.uictx, $(element), interactionController, 'BASIC_BLOCK');
 
             wk.comm.graph.delayedFuncs.push(function () {
                 var el = element[0];
                 el.parentElement.style.width = Math.ceil(el.parentElement.getBoundingClientRect().width) + 'px';
             });
-            ContextMenu.registerEntries(element, function () {
+            /*
+            Context.registerEntries(element, function () {
                 return [
                     {
                         text: 'Basic block actions',
@@ -258,6 +288,7 @@ dirs.directive('bblock', function bblock(ContextMenu, Schedule, gcomm) {
                     }
                 ];
             });
+	    */
         }}
     };
 });
@@ -284,7 +315,7 @@ var betterLayout = function(graph) {
     return laidOutGraph;
 };
 
-dirs.directive('graph', function(ContextMenu) {
+dirs.directive('graph', function(Context) {
     return {
         templateUrl: '/static/partials/graph.html',
         restrict: 'AE',
@@ -294,6 +325,7 @@ dirs.directive('graph', function(ContextMenu) {
             edges: '=',
             nodeType: '=',
             graphId: '@',
+            uictx: '='
         },
         controller: function($scope, $element, Schedule, LayoutCache) {
             jsPlumb.Defaults.MaxConnections = 10000;
@@ -455,12 +487,13 @@ dirs.directive('graph', function(ContextMenu) {
     };
 });
 
-dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
+dirs.directive('cfg', function(Context, AngrData, defaultError) {
     return {
         templateUrl: '/static/partials/cfg.html',
         restrict: 'AE',
         scope: {
-            data: '='
+            data: '=',
+            uictx: '='
         },
 	require: '^workspace',
         link: {pre: function ($scope, element, attrs, wk) {
@@ -476,30 +509,6 @@ dirs.directive('cfg', function(ContextMenu, AngrData, defaultError) {
             wk.comm.$watch('cfg.jumpToBlock', function (nv) {
                 if (!nv) return;
                 wk.comm.graph.centerNode = nv.toString();
-            });
-            ContextMenu.registerEntries(element, function () {
-                return [
-                    {
-                        text: 'CFG Actions',
-                        subitems: [
-                            {
-                                text: 'CFG Scope',
-                                subitems: [
-                                    {
-                                        text: 'Interprocedure',
-                                        checked: true
-                                    }, {
-                                        text: 'Function'
-                                    }, {
-                                        text: 'Proximity'
-                                    }
-                                ]
-                            }, {
-                                text: 'Crash and blame fish'
-                            }
-                        ]
-                    }
-                ];
             });
         }}
     };
@@ -573,7 +582,7 @@ dirs.directive('funcpicker', function($filter, gcomm) {
                     return true;
                 }
                 return false;
-            }
+            };
 
             $scope.click = function (func) {
                 wk.comm.funcPicker.selected = func;
@@ -652,12 +661,14 @@ dirs.directive('funcnode', function funcnode() {
     };
 });
 
-dirs.directive('irsb', function(Schedule) {
+dirs.directive('irsb', function irsb(Schedule) {
     return {
         templateUrl: '/static/partials/irsb.html',
         restrict: 'E',
         scope: {
-            irsb: '=data'
+            irsb: '=data',
+            data: '=',
+            uictx: '='
         },
 	require: '^workspace',
         link: {pre: function($scope, element, attrs, wk) {
@@ -690,17 +701,32 @@ dirs.directive('irsb', function(Schedule) {
     };
 });
 
-dirs.directive('asmstmt', function (gcomm) {
+dirs.directive('asmstmt', function (Context, gcomm) {
     return {
         templateUrl: '/static/partials/asmstmt.html',
         restrict: 'AE',
         scope: {
-            addr: '='
+            addr: '=',
+            uictx: '=',
+            toggle: '&'
         },
-        controller: function ($scope) {
+        controller: function ($scope, $element) {
 	    $scope.gcomm = gcomm;
+            var interactionActions = new Context.Actions({children: [{
+                name: 'Proof that we are in the asmstmt context',
+                isEnabled: false
+            }]});
+            var interactionController = function () {
+                var pos = $($element).parent().parent().position();
+                return {
+                    coordinates: new Context.Point(pos.left, pos.top),
+                    actions: interactionActions,
+                    doubleClick: function () {$scope.toggle();}
+                };
+            };
+            $scope.myuictx = new Context.Interactable($scope.uictx, $($element).parent(), interactionController, 'ASM_STMT');
         }
-    }
+    };
 });
 
 dirs.directive('irstmt', function() {
@@ -773,12 +799,12 @@ dirs.directive('cast', function(RecursionHelper) {
                 __eq__: "==", __ne__: "!=", __ge__: ">=", __gt__: ">", __le__: "<=", __lt__: "<",
                 __neg__: "-", __or__: "|", __and__: "&", __xor__: "^", __invert__: "~",
                 __lshift__: "<<", __rshift__: ">>"
-            }
+            };
         }
     };
 });
 
-dirs.directive('irtmp', function irtmp(ContextMenu) {
+dirs.directive('irtmp', function irtmp(Context) {
     return {
         templateUrl: '/static/partials/irtmp.html',
         restrict: 'E',
@@ -791,24 +817,6 @@ dirs.directive('irtmp', function irtmp(ContextMenu) {
             $scope.mouse = function (over) {
                 wk.comm.cfgHighlight.tmps[$scope.tmp] = over;
             };
-            ContextMenu.registerEntries(element, function () {
-                return [
-                    {
-                        text: 'Temp actions',
-                        subitems: [
-                            {
-                                text: 'Rename temp'
-                            }, {
-                                text: 'wait no that\'s stupid',
-                                disabled: true
-                            }, {
-                                text: 'why would you do that',
-                                disabled: true
-                            }
-                        ]
-                    }
-                ];
-            });
         }
     };
 });
@@ -840,7 +848,6 @@ dirs.directive('irreg', function($tooltip, AngrData, gcomm) {
                                          {expr_type: 'reg', reg: scope.offset,
                                          before: scope.stmtid})
                         .then(function(exprVal) {
-                            console.log(exprVal);
                             scope.exprVal = exprVal.data;
                         });
                 }

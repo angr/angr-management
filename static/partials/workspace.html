@@ -2,6 +2,8 @@
    ng-repeat="tile in tiles"
    tile-data="tile.data"
    style="display: block; position: absolute; overflow: scroll"
+   parent-uictx="uictx"
    ng-style="{'width': tile.width + 'px', 'height': tile.height + 'px', 'left': tile.x + 'px', top: tile.y + 'px'}"
+   tile-id="{{tile.id}}"
    type="{{ tile.type }}">
 </tile>
