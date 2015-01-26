@@ -1,6 +1,7 @@
 <div class="panel-heading">
   <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !data.showSur[sid], 'glyphicon-minus': data.showSur[sid]}" ng-click="data.showSur[sid]=!data.showSur[sid]"></button>
-  {{surveyor.type}} with {{surveyor.step}} steps and {{surveyor.paths.length}} paths
+  {{surveyor.type}} with {{surveyor.step}} step{{ surveyor.step == 1 ? '' : 's' }}
+  and {{surveyor.all_paths.length}} path{{ surveyor.all_paths.length == 1 ? '' : 's' }}
 </div>
 
 <span ng-if="data.showSur[sid]">

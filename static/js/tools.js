@@ -253,6 +253,11 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
                 addPath({split: true, children: surveyor.split_paths[split], id: split});
             }
         }
+	surveyor.all_paths = [];
+	Object.keys(surveyor.path_lists).forEach(function(pl) {
+	    var paths = surveyor.path_lists[pl];
+	    paths.forEach(function(p) { surveyor.all_paths.push(p); });
+	});
     };
 
     addPath = function (path) {
