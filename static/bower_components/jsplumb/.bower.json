@@ -1,6 +1,6 @@
 {
   "name": "jsPlumb",
-  "version": "1.6.2",
+  "version": "1.7.2",
   "ignore": [
     "demo",
     "dist/apidocs",
@@ -25,14 +25,14 @@
     "todo.txt"
   ],
   "homepage": "https://github.com/sporritt/jsPlumb",
-  "_release": "1.6.2",
+  "_release": "1.7.2",
   "_resolution": {
     "type": "version",
-    "tag": "1.6.2",
-    "commit": "f24582ec7cb7b1c9a0b70e652f5e7049bd901cd3"
+    "tag": "1.7.2",
+    "commit": "4113cc79d9fac6e47c31891f54c12bf1aace6852"
   },
   "_source": "git://github.com/sporritt/jsPlumb.git",
-  "_target": "~1.6.2",
+  "_target": "~1.7.2",
   "_originalSource": "jsplumb",
   "_direct": true
 }
