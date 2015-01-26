@@ -476,6 +476,8 @@ dirs.directive('graph', function(Context, gcomm, Schedule) {
 
 			if (pathTransitions.has(edge.from + "->" + edge.to)) {
 			    connection.setPaintStyle({ strokeStyle: "#7CFC00" });
+			} else {
+			    connection.setPaintStyle({ strokeStyle: "#0000FF" });
 			}
                     }
                 }
@@ -498,6 +500,8 @@ dirs.directive('graph', function(Context, gcomm, Schedule) {
 		$scope.plumb.getConnections().forEach(function(c) {
 		    if (pathTransitions.has(c.sourceId + "->" + c.targetId)) {
 			c.setPaintStyle({ strokeStyle: "#7CFC00" });
+		    } else {
+			c.setPaintStyle({ strokeStyle: "#0000FF" });
 		    }
 		});
 	    });
