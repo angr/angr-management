@@ -90,7 +90,7 @@ ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams,
 
             AngrData.loadFunctionManager().then(function () {
                 $scope.thinking = false;
-                $scope.addTab(tiles);
+                $scope.addTab({title: 'Functions', tiles: tiles});
             }, function (data) {
                 alert(data.message);
                 $scope.thinking = false;
@@ -109,7 +109,7 @@ ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams,
 
             AngrData.loadFunctionManager().then(function () {
                 $scope.thinking = false;
-                $scope.addTab(tiles);
+                $scope.addTab({title: 'CFG', tiles: tiles});
             }, function (data) {
                 alert(data.message);
                 $scope.thinking = false;
@@ -122,7 +122,7 @@ ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams,
 	    var tiles = [{type: 'surveyors'}];
 
             AngrData.loadSurveyors().then(function () {
-                $scope.addTab(tiles);
+                $scope.addTab({title: 'Surveyors', tiles: tiles});
             }, function (data) {
                 alert(data.message);
                 $scope.thinking = false;

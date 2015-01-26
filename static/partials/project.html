@@ -22,7 +22,7 @@
 
 <div style="height: calc(100% - 90px)" ng-repeat="tab in tabs" ng-show="activeTab == $index">
   <workspace
-     tiles="tab"
+     tiles="tab.tiles"
      uictx="uictx"
      ng-style="tabSpaceStyle">
   </workspace>
