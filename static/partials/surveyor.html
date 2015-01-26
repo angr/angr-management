@@ -1,16 +1,16 @@
 <div class="panel-heading">
   <button type="button" class="glyphicon btn btn-primary btn-xs" ng-class="{'glyphicon-plus': !data.showSur[sid], 'glyphicon-minus': data.showSur[sid]}" ng-click="data.showSur[sid]=!data.showSur[sid]"></button>
-  {{gcomm.surveyors[sid].type}} with {{gcomm.surveyors[sid].step}} steps and {{gcomm.surveyors[sid].paths.length}} paths
+  {{surveyor.type}} with {{surveyor.step}} steps and {{surveyor.paths.length}} paths
 </div>
 
 <span ng-if="data.showSur[sid]">
   <div class="panel-body">
     <dl class="dl-horizontal">
-      <dt>Maximum concurrency:</dt> <dd>{{gcomm.surveyors[sid].max_concurrency}}</dd>
-      <dt>Save deadends:</dt> <dd>{{gcomm.surveyors[sid].save_deadends}}</dd>
+      <dt>Maximum concurrency:</dt> <dd>{{surveyor.max_concurrency}}</dd>
+      <dt>Save deadends:</dt> <dd>{{surveyor.save_deadends}}</dd>
       <dt>Empty path lists:</dt>
       <dd>
-        <span ng-repeat="(name,paths) in gcomm.surveyors[sid].path_lists">
+        <span ng-repeat="(name,paths) in surveyor.path_lists">
           <span ng-if="paths.length == 0"> {{name}}
         </span>
       </dd>
@@ -18,7 +18,7 @@
 
     <h4>Paths</h4>
     <table class="table">
-      <tr ng-repeat="(name,paths) in gcomm.surveyors[sid].path_lists">
+      <tr ng-repeat="(name,paths) in surveyor.path_lists">
         <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
         <td ng-if="paths.length > 0">
           <div class="well path_box" ng-repeat="pid in paths">

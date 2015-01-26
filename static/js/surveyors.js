@@ -124,6 +124,9 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
         link: {pre: function($scope, element, attrs, wk) {
             $scope.steps = 1;
 	    $scope.gcomm = gcomm;
+	    $scope.$watch('gcomm.surveyors[sid]', function(surveyor) {
+		$scope.surveyor = surveyor;
+	    });
             $scope.step = function(steps) {
                 return AngrData.surveyorStep($scope.sid, $scope.steps);
             };
