@@ -13,7 +13,7 @@
       <button type="button" class="btn btn-default btn-xs" ng-click="show_solve=!show_solve">SOLVE</button>
       <div ng-if="show_solve">
         <button type="button" class="btn btn-default btn-xs" ng-click="solutions(num_solutions)">
-          Get <input ng-model="num_solutions"> solutions!
+          Get <input hard-focusable ng-model="num_solutions"> solutions!
         </button>
         <button type="button" class="btn btn-default btn-xs" ng-click="max_solutions()"> Get maximum!  </button>
         <button type="button" class="btn btn-default btn-xs" ng-click="min_solutions()"> Get minimum!  </button>

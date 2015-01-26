@@ -9,7 +9,7 @@
 
     <div class="control-group" ng-repeat="(o,d) in surveyorFieldDescriptions[surveyorType]">
       <label class="control-label" for="option_{{o}}">{{d}}</label>
-      <div class="controls"> <input id="option_{{o}}" ng-model="surveyorFields[o]"> </div>
+      <div class="controls"> <input hard-focusable id="option_{{o}}" ng-model="surveyorFields[o]"> </div>
     </div>
   </form>
 

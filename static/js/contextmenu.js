@@ -465,3 +465,18 @@ context.directive('contextMenuItem', function (RecursionHelper, Context) {
         compile: RecursionHelper.compile
     };
 });
+
+context.directive('hardFocusable', function () {
+    return {
+        link: function ($scope, element, attrs) {
+            var idgaf = function (e) {
+                e.stopPropagation();
+            };
+            var el = jQuery(element);
+            el.click(idgaf);
+            el.keydown(idgaf);
+            el.dblclick(idgaf);
+            el.keypress(idgaf);
+        }
+    };  
+});
