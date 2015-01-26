@@ -37,6 +37,14 @@ var layout = function (width, height, tiles) {
     return out;
 };
 
+var initTile = function(t) {
+    t.primary = t.primary || false;
+    t.id = t.id || Math.floor(Math.random() * 0x100000).toString();
+    t.data = t.data || {};
+    t.width = t.width || 0;
+    t.height = t.height || 0;
+};
+
 workspacesMod.directive('workspace', function workspace(Schedule, $window) {
     return {
         restrict: 'E',
@@ -49,6 +57,7 @@ workspacesMod.directive('workspace', function workspace(Schedule, $window) {
             $scope.size = [0, 0];
 	    this.comm = newCommunicator();
 	    this.addTile = function (t) {
+		initTile(t);
 		$scope.tiles.push(t);
 		$scope.layout();
 	    };
@@ -65,13 +74,7 @@ workspacesMod.directive('workspace', function workspace(Schedule, $window) {
         },
 	controllerAs: 'wk',
         link: function (scope, element) {
-	    scope.tiles.forEach(function(t) {
-		t.primary = t.primary || false;
-		t.id = t.id || Math.floor(Math.random() * 0x100000).toString();
-		t.data = t.data || {};
-		t.width = t.width || 0;
-		t.height = t.height || 0;
-	    });
+	    scope.tiles.forEach(initTile);
 	    if (scope.tiles.every(function(t) { return !t.primary; })
 	       && scope.tiles.length > 0) {
 		scope.tiles[0].primary = true;

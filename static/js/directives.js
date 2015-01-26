@@ -315,7 +315,7 @@ var betterLayout = function(graph) {
     return laidOutGraph;
 };
 
-dirs.directive('graph', function(Context) {
+dirs.directive('graph', function(Context, gcomm, Schedule) {
     return {
         templateUrl: '/static/partials/graph.html',
         restrict: 'AE',
@@ -327,7 +327,7 @@ dirs.directive('graph', function(Context) {
             graphId: '@',
             uictx: '='
         },
-        controller: function($scope, $element, Schedule, LayoutCache) {
+        controller: function($scope, $element, LayoutCache) {
             jsPlumb.Defaults.MaxConnections = 10000;
             $scope.plumb = jsPlumb.getInstance({
                 ConnectionOverlays: [
@@ -416,6 +416,8 @@ dirs.directive('graph', function(Context) {
             };
 	},
 	link: function($scope, element, attrs, wk) {
+	    $scope.comm = wk.comm;
+	    $scope.gcomm = gcomm;
             wk.comm.graph.layout = $scope.layout;
 
             var GRID_SIZE = 20;
@@ -452,20 +454,54 @@ dirs.directive('graph', function(Context) {
                     $scope.plumb.addEndpoint(e.id, exitEndpoint, {anchor: 'BottomCenter', uuid: e.id + '-exit'});
                 });
 
+		var pathTransitions = new Set();
+		if (wk.comm.surveyors.viewingPath) {
+		    var path = gcomm.paths[wk.comm.surveyors.viewingPath];
+                    var backtrace = path.addr_backtrace;
+		    for (var c = 0; c < backtrace.length - 1; c++) {
+			pathTransitions.add(backtrace[c] + "->" + backtrace[c+1]);
+		    }
+		    pathTransitions.add(backtrace[backtrace.length-1] + "->" + path.last_addr);
+		}
+
                 for (i in $scope.edges) {
                     var edge = $scope.edges[i];
+		    //console.log(edge.from + "->" + edge.to);
                     if ($scope.truNodes.indexOf(edge.to.toString()) != -1 && $scope.truNodes.indexOf(edge.from.toString()) != -1) {
-                        $scope.plumb.connect({
+			// note: setting paintStyle here doesn't seem to work...
+                        var connection = $scope.plumb.connect({
                             uuids: [edge.from + '-exit', edge.to + '-entry'],
-                            detachable: false,
+                            detachable: false
                         });
+
+			if (pathTransitions.has(edge.from + "->" + edge.to)) {
+			    connection.setPaintStyle({ strokeStyle: "#7CFC00" });
+			}
                     }
                 }
 
-                $scope.layout();
+                Schedule($scope.layout);
             };
 
-	    
+	    $scope.$watch('gcomm.paths[comm.surveyors.viewingPath].addr_backtrace', function(bt) {
+		var pathTransitions = new Set();
+		if (wk.comm.surveyors.viewingPath) {
+		    var path = gcomm.paths[wk.comm.surveyors.viewingPath];
+		    if (!path) { return; }
+                    var backtrace = path.addr_backtrace;
+		    if (!backtrace) { return; }
+		    for (var c = 0; c < backtrace.length - 1; c++) {
+			pathTransitions.add(backtrace[c] + "->" + backtrace[c+1]);
+		    }
+		    pathTransitions.add(backtrace[backtrace.length-1] + "->" + path.last_addr);
+		}
+		$scope.plumb.getConnections().forEach(function(c) {
+		    if (pathTransitions.has(c.sourceId + "->" + c.targetId)) {
+			c.setPaintStyle({ strokeStyle: "#7CFC00" });
+		    }
+		});
+	    });
+
             wk.comm.$watch('graph.centerNode', function (nv) {
                 if (!nv) return;
                 var elm = jQuery(element).find('#graphRoot').find('#' + nv)[0];
