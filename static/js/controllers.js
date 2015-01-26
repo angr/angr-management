@@ -8,11 +8,10 @@ ctrls.controller('IndexCtrl', function($scope, $http, projects) {
 
 ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams, $interval, $modal, AngrData, Context) {
     $scope.inst_id = $routeParams['inst_id'];
-    this.instance = {};
-    var this_ = this;
+    $scope.instance = {};
     $http.get('/api/instances/' + $scope.inst_id).success(function (data) {
         if (data.success) {
-            this_.instance = data;
+            $scope.instance = data;
             AngrData.gcomm.useInstance(data.id);
             AngrData.gcomm.arch = data.arch;
         } else {
