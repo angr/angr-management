@@ -191,7 +191,7 @@ context.factory('Context', function ($document, $rootScope, globalCommunicator) 
 
     Interactable.prototype.handleDoubleClick = function (e) {
         var a = this.controller().doubleClick;
-        if (a === null) return false;
+        if (!a) return false;
         a(e);
         return true;
     };
