@@ -35,9 +35,9 @@ class Serializer(object):
             return self._serialize_simrun(o, ref, extra=extra)
         if isinstance(o, angr.vexer.SerializableIRSB):
             return o.json
-        if isinstance(o, angr.PathEvent):
-            return self._serialize_path_event(o, extra=extra)
-        if isinstance(o, claripy.A):
+        # if isinstance(o, angr.PathEvent):
+        #     return self._serialize_path_event(o, extra=extra)
+        if isinstance(o, claripy.Base):
             return self._serialize_ast(o, extra=extra)
         if isinstance(o, claripy.BVV):
             return self._serialize_bvv(o, extra=extra)
@@ -91,7 +91,7 @@ class Serializer(object):
             'addr_backtrace': p.addr_backtrace,
             'callstack': [self._serialize_call_frame(cf) for cf in p.callstack],
             'blockcounter_stack': p.blockcounter_stack,
-            'last_addr': p.last_run.addr if p.last_run is not None else "NOT STARTED",
+            'last_addr': p.next_run.addr if p.next_run is not None else "NOT STARTED",
             'event_log': [ self.serialize(e, extra=extra) for e in p.events ],
         }
 
