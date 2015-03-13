@@ -6,6 +6,11 @@ import types
 import itertools
 from rpyc.utils.classic import obtain
 
+if hasattr(claripy, 'Base'):
+    AST = claripy.Base
+else:
+    AST = claripy.A
+
 class Serializer(object):
     def __init__(self):
         pass
@@ -37,7 +42,7 @@ class Serializer(object):
             return o.json
         # if isinstance(o, angr.PathEvent):
         #     return self._serialize_path_event(o, extra=extra)
-        if isinstance(o, claripy.Base):
+        if isinstance(o, AST):
             return self._serialize_ast(o, extra=extra)
         if isinstance(o, claripy.BVV):
             return self._serialize_bvv(o, extra=extra)
