@@ -83,9 +83,75 @@ tools.filter('hex', function () {
     };
 });
 
+tools.factory('A', function() {
+    function A(op, args, length, variables, symbolic, backend, hash) {
+        this.op = op;
+        this.args = args;
+        this.length = length;
+        this.variables = variables;
+        this.symbolic = symbolic;
+        this.backend = backend;
+        this.hash = hash;
+    }
+
+    return A;
+});
+
+tools.factory('BVV', function() {
+    function BVV(value, length) {
+        this.value = value;
+        this.length = length;
+    }
+
+    return BVV;
+});
+
+tools.factory('anaLoad', function(A, BVV) {
+    return function deserialize(value, objects, cache) {
+        if (typeof cache === 'undefined') {
+            cache = {};
+        }
+
+        if (value === null) {
+            return null;
+        } else if (typeof value === 'object' && 'ana_uuid' in value) {
+            if (value.ana_uuid in cache) {
+                return cache[value.ana_uuid];
+            } else {
+                cache[value.ana_uuid] = {}
+                var obj = deserialize(objects[value.ana_uuid], objects, cache);
+                angular.extend(cache[value.ana_uuid], obj);
+                return obj;
+            }
+        } else if (typeof value === 'object') {
+            if (value instanceof Array) {
+                return value.map(function(o) { return deserialize(o, objects, cache); });
+            } else if (!('class' in value) || typeof value.object === 'object') {
+                var des = {_class: value['class']};
+                var thing = 'class' in value ? value.object : value;
+                for (var key in thing) {
+                    des[key] = deserialize(thing[key], objects, cache);
+                }
+                return des;
+            } else if (value['class'] === 'A' || value['class'] === 'I') {
+                var deserializedArgs = value.object[1].map(function(o) { return deserialize(o, objects, cache); });
+                return new A(value.object[0], deserializedArgs, value.object[2], value.object[3], value.object[4], value.object[5], value.object[6]);
+            } else if (value['class'] === 'BVV') {
+                return new BVV(value.object[0], value.object[1]);
+            } else {
+                throw new Error("unrecognized deserialization thing");
+            }
+        } else if (['boolean', 'string', 'number'].indexOf(typeof value) >= 0) {
+            return value;
+        } else {
+            throw new Error("unrecognized type");
+        }
+    };
+});
+
 // Okay here's the big one
 
-tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
+tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator, anaLoad) {
     var angrdata = {}, GET, POST, genEmptyPromise, genericRequest, addSurveyor, addPath;
     angrdata.gcomm = globalCommunicator;
 
@@ -253,11 +319,11 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
                 addPath({split: true, children: surveyor.split_paths[split], id: split});
             }
         }
-	surveyor.all_paths = [];
-	Object.keys(surveyor.path_lists).forEach(function(pl) {
-	    var paths = surveyor.path_lists[pl];
-	    paths.forEach(function(p) { surveyor.all_paths.push(p); });
-	});
+        surveyor.all_paths = [];
+        Object.keys(surveyor.path_lists).forEach(function(pl) {
+            var paths = surveyor.path_lists[pl];
+            paths.forEach(function(p) { surveyor.all_paths.push(p); });
+        });
     };
 
     addPath = function (path) {
@@ -315,6 +381,14 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator) {
 
         return genericRequest(config).then(function (data) {
             addSurveyor(data.data);
+        });
+    };
+
+    angrdata.pathGetState = function(sid, pid) {
+        var config = GET('/api/instances/' + angrdata.gcomm.instance + '/surveyors/' + sid + '/paths/' + pid + '/state');
+
+        return genericRequest(config).then(function(data) {
+            return anaLoad(data.data.value, data.data.objects);
         });
     };
 

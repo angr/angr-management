@@ -158,6 +158,12 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
                 AngrData.pathSuspend($scope.sid, pid);
             };
 
+	    $scope.fetchState = function(pid) {
+		AngrData.pathGetState($scope.sid, pid).then(function(data) {
+		    console.log(data);
+		});
+	    };
+
             $scope.showCFG = function (pid) {
                 AngrData.loadFunctionManager().then(function () {
                     if (!wk.comm.surveyors.viewingPath) {

@@ -1,6 +1,7 @@
 import angr
 import simuvex
 import claripy
+import cooldict
 
 import types
 import itertools
@@ -15,27 +16,37 @@ class Serializer(object):
     def __init__(self):
         pass
 
-    def serialize(self, o, ref=False, extra=None):
-        r = self._serialize_switch(o, ref=ref, extra=extra)
+    def serialize(self, o, ref=False, extra=None, known_set=None):
+        if known_set is None:
+            known_set = set()
+        r = self._serialize_switch(o, ref=ref, extra=extra, known_set=known_set)
         if extra is not None and type(r) is dict:
             r.update(extra)
         return obtain(r)
 
-    def _serialize_switch(self, o, ref=False, extra=None):
+    def _serialize_switch(self, o, ref=False, extra=None, known_set=None):
         if o is None:
             return None
         if type(o) in (long, int, str, unicode, float, bool):
             return o
         if type(o) in (list, tuple, set) or type(o).__module__ == '__builtin__' and type(o).__name__ in ('list', 'tuple', 'set'):
             return [ self.serialize(e, extra=extra) for e in o ]
-        if type(o) is dict or type(o).__module__ == '__builtin__' and type(o).__name__ == "dict":
+        if isinstance(o, (dict, cooldict.BranchingDict)) or type(o).__module__ == '__builtin__' and type(o).__name__ == "dict" :
             return { self.serialize(k, extra=extra):self.serialize(v, extra=extra) for k,v in o.iteritems() }
         if isinstance(o, angr.Surveyor):
             return self._serialize_surveyor(o, extra=extra)
         if isinstance(o, angr.Path):
             return self._serialize_path(o, extra=extra)
         if isinstance(o, simuvex.SimState):
-            return self._serialize_state(o, extra=extra)
+            return self._serialize_state(o, extra=extra, known_set=known_set)
+        if isinstance(o, simuvex.SimSymbolicMemory):
+            return self._serialize_symmem(o, extra=extra)
+        if isinstance(o, simuvex.SimStateSystem):
+            return self._serialize_posix(o, extra=extra)
+        if isinstance(o, simuvex.storage.SimPagedMemory):
+            return self._serialize_paged_memory(o, extra=extra)
+        if isinstance(o, simuvex.storage.SimMemoryObject):
+            return self._serialize_mo(o, extra=extra)
         if isinstance(o, simuvex.SimRun):
             return self._serialize_simrun(o, ref, extra=extra)
         if isinstance(o, angr.vexer.SerializableIRSB):
@@ -43,7 +54,7 @@ class Serializer(object):
         # if isinstance(o, angr.PathEvent):
         #     return self._serialize_path_event(o, extra=extra)
         if isinstance(o, AST):
-            return self._serialize_ast(o, extra=extra)
+            return self._serialize_ast(o, extra=extra, known_set=known_set)
         if isinstance(o, claripy.BVV):
             return self._serialize_bvv(o, extra=extra)
         if isinstance(o, angr.CFG):
@@ -59,8 +70,35 @@ class Serializer(object):
         else:
             return "NOT SERIALIZED: %s" % o
 
-    def _serialize_state(self, s, extra=None): #pylint:disable=W0613,no-self-use
-        return str(s)
+    def _serialize_state(self, s, extra=None, known_set=None): #pylint:disable=W0613,no-self-use
+        return s.to_literal(known_set=known_set)
+        # return {
+        #     'memory': self.serialize(s.memory, extra=extra),
+        #     'registers': self.serialize(s.registers, extra=extra),
+        #     'posix': self.serialize(s.posix, extra=extra),
+        # }
+
+    def _serialize_symmem(self, s, extra=None):
+        return {
+            'mem': self.serialize(s.mem, extra=extra),
+        }
+
+    def _serialize_posix(self, s, extra=None):
+        return 'lol'
+
+    def _serialize_paged_memory(self, s, extra=None):
+        return {
+            'backer': {i: ord(v) for (i, v) in self.serialize(s._backer).iteritems()},
+            'pages': self.serialize(s._pages),
+            'page_size': self.serialize(s._page_size),
+        }
+
+    def _serialize_mo(self, s, extra=None):
+        return {
+            'base': self.serialize(s.base),
+            'length': self.serialize(s.length),
+            'object': self.serialize(s.object),
+        }
 
     def _serialize_public(self, o, extra=None):
         r = { }
@@ -126,18 +164,8 @@ class Serializer(object):
         else:
             raise Exception("Can't serialize SimRun {}".format(s))
 
-    def _serialize_ast(self, a, extra=None):
-        return {
-            'id': id(a),
-            'expr_type': 'ast',
-            'op': a.op,
-            'ast_type': ( 'binop' if a.op.startswith('__') and len(a.args) == 2 else
-                          'unop' if a.op.startswith('__') and len(a.args) == 1 else
-                          a.op ),
-            'args': self.serialize(a.args, extra=extra),
-            'symbolic': a.symbolic,
-            'variables': self.serialize(a.variables, extra=extra)
-        }
+    def _serialize_ast(self, a, extra=None, known_set=None):
+        return a.to_literal(known_set)
 
     def _serialize_bvv(self, b, extra=None): #pylint:disable=W0613,no-self-use
         return {

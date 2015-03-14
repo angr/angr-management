@@ -39,7 +39,7 @@ def jsonize(func):
     @functools.wraps(func)
     def jsonned(*args, **kwargs):
         result = func(*args, **kwargs)
-        return json.dumps(result)
+        return json.dumps(result, ensure_ascii=False)
     return jsonned
 
 def with_projects(func):
@@ -428,6 +428,18 @@ def surveyor_expr_val(inst_id, surveyor_id, path_id): #pylint:disable=W0613
         'success': False,
         'message': 'Unknown expr type',
     }
+
+@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/paths/<path_id>/state')
+@jsonize
+def surveyor_get_state_of_path(inst_id, surveyor_id, path_id):
+    surveyor = active_surveyors[surveyor_id]
+    for path in surveyor.active:
+        if path.path_id == path_id:
+            return {
+                'success': True,
+                'data': serialize(path.state),
+            }
+    return {'success': False, 'message': 'Path id not found'}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/suspend/<path_id>',
            methods=('POST',))
