@@ -1,0 +1,9 @@
+<div class="memory_controls">
+  WARNING: THESE MAKE THINGS FREEZE
+  <br>
+  Address: <input hard-focusable ng-model="start_value" ng-change="sync_start">
+  <br>
+  Size: <input hard-focusable ng-model="limit">
+  <hr>
+</div>
+<memory-grid memory="state.plugins.memory" limit="limit" start="start"></memory-grid>

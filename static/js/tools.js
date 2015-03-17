@@ -127,7 +127,7 @@ tools.factory('anaLoad', function(A, BVV) {
             if (value instanceof Array) {
                 return value.map(function(o) { return deserialize(o, objects, cache); });
             } else if (!('class' in value) || typeof value.object === 'object') {
-                var des = {_class: value['class']};
+                var des = { };
                 var thing = 'class' in value ? value.object : value;
                 for (var key in thing) {
                     des[key] = deserialize(thing[key], objects, cache);

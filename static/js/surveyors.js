@@ -68,18 +68,18 @@ survey.directive('surveyors', function surveyors($http, $modal, gcomm) {
         templateUrl: '/static/partials/surveyors.html',
         restrict: 'AE',
         scope: { data: '=' },
-	require: '^workspace',
+    require: '^workspace',
         controller: function($scope, $http) {
-	    this.data = $scope.data;
+        this.data = $scope.data;
             if (typeof $scope.data.showSur === 'undefined') {
                 $scope.data.showSur = {};
             }
             if (typeof $scope.data.showPath === 'undefined') {
                 $scope.data.showPath = {};
             }
-	},
-	link: {pre: function($scope, element, attrs, wk) {
-	    $scope.gcomm = gcomm;
+    },
+    link: {pre: function($scope, element, attrs, wk) {
+        $scope.gcomm = gcomm;
             $scope.newSurveyor = function () {
                 $modal.open({
                     templateUrl: '/static/partials/newsurveyor.html',
@@ -89,8 +89,8 @@ survey.directive('surveyors', function surveyors($http, $modal, gcomm) {
                 });
             };
 
-	    $scope.comm = wk.comm;
-	    $scope.gcomm = gcomm;
+        $scope.comm = wk.comm;
+        $scope.gcomm = gcomm;
             $scope.$watch('gcomm.paths[comm.surveyors.viewingPath]', function (nv, ov) {
                 if (ov && ov.last_addr) {
                     delete wk.comm.cfgHighlight.blocks[ov.last_addr];
@@ -120,13 +120,13 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
         scope: {
             sid: '='
         },
-	require: '^workspace',
+    require: '^workspace',
         link: {pre: function($scope, element, attrs, wk) {
             $scope.steps = 1;
-	    $scope.gcomm = gcomm;
-	    $scope.$watch('gcomm.surveyors[sid]', function(surveyor) {
-		$scope.surveyor = surveyor;
-	    });
+        $scope.gcomm = gcomm;
+        $scope.$watch('gcomm.surveyors[sid]', function(surveyor) {
+        $scope.surveyor = surveyor;
+        });
             $scope.step = function(steps) {
                 return AngrData.surveyorStep($scope.sid, $scope.steps);
             };
@@ -158,16 +158,16 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
                 AngrData.pathSuspend($scope.sid, pid);
             };
 
-	    $scope.fetchState = function(pid) {
-		AngrData.pathGetState($scope.sid, pid).then(function(data) {
-		    console.log(data);
-		});
-	    };
+        $scope.fetchState = function(pid) {
+        AngrData.pathGetState($scope.sid, pid).then(function(data) {
+            console.log(data);
+        });
+        };
 
             $scope.showCFG = function (pid) {
                 AngrData.loadFunctionManager().then(function () {
                     if (!wk.comm.surveyors.viewingPath) {
-			wk.addTile({type: 'cfg'});
+            wk.addTile({type: 'cfg'});
                     }
                     wk.comm.surveyors.viewingPath = pid;
                     wk.comm.surveyors.viewingSurveyor = $scope.sid;
@@ -181,16 +181,17 @@ survey.directive('path', function path($http, gcomm) {
     return {
         templateUrl: '/static/partials/path.html',
         restrict: 'AE',
-        scope: { pid: '=' },
-	require: '^surveyors',
+        scope: { pid: '=', sid: '=' },
+    require: '^surveyors',
         link: {pre: function($scope, element, attrs, sv) {
-	    $scope.showPath = sv.data.showPath;
+        $scope.showPath = sv.data.showPath;
             $scope.show_path = false;
             $scope.show_events = false;
             $scope.show_backtrace = false;
+            $scope.show_state = false;
             $scope.event_limit = 10;
             $scope.backtrace_limit = 10;
-	    $scope.gcomm = gcomm;
+            $scope.gcomm = gcomm;
             $scope.$watch('gcomm.paths[pid]', function (nv) {
                 $scope.path = gcomm.paths[$scope.pid];
             });
@@ -198,17 +199,6 @@ survey.directive('path', function path($http, gcomm) {
     };
 });
 
-survey.directive('event', function($http) {
-    return {
-        templateUrl: '/static/partials/path_event.html',
-        restrict: 'AE',
-        scope: { event: '=data' },
-        controller: function($scope, $http) {
-            $scope.show_refs = false;
-            $scope.show_event = false;
-        }
-    };
-});
 
 survey.directive('address', function($http) {
     return {

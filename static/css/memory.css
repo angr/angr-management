@@ -1,0 +1,43 @@
+.state {
+	display: flex;
+	flex-direction: row;
+	width: 1000px;
+}
+
+.registers {
+	display: flex;
+}
+
+.memory_controls
+{
+	display: flex;
+	flex-direction: column;
+}
+
+.memory {
+	display: flex;
+	flex-direction: column;
+
+	border-style: none;
+	border-left: solid black;
+	padding-left: 0.5em;
+	flex: 1;
+}
+
+.memory_grid {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.memory_word {
+	display: flex;
+	flex-direction: row;
+	margin-right: 0.4em;
+}
+
+.memory_byte {
+	flex: 1 1 content;
+	font-family: monospace;
+	margin-right: 0.3em;
+}

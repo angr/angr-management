@@ -1,6 +1,6 @@
 'use strict';
 
-var ctrls = angular.module('angr.controllers', ['dialogs.main', 'angr.tiles', 'angr.workspaces', 'angr.surveyors', 'angr.context']);
+var ctrls = angular.module('angr.controllers', ['dialogs.main', 'angr.tiles', 'angr.workspaces', 'angr.surveyors', 'angr.context', 'angr.states']);
 
 ctrls.controller('IndexCtrl', function($scope, $http, projects) {
     $scope.projects = projects;

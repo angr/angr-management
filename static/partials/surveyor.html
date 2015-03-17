@@ -18,20 +18,18 @@
     </dl>
 
     <h4>Paths</h4>
-    <table class="table">
-      <tr ng-repeat="(name,paths) in surveyor.path_lists">
-        <th ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
-        <td ng-if="paths.length > 0">
+      <dl ng-repeat="(name,paths) in surveyor.path_lists">
+        <dt ng-if="paths.length > 0">{{paths.length}} {{name}} paths</th>
+        <dd ng-if="paths.length > 0">
           <div class="well path_box" ng-repeat="pid in paths">
-                  <path pid="pid"></path>
+            <path pid="pid" sid="sid"></path>
             <button ng-if="name != 'active'" class="btn" ng-click="reactivate(pid)">Reactivate</button>
             <button ng-if="name == 'active'" class="btn" ng-click="suspend(pid)">Suspend</button>
             <button class="btn" ng-click="showCFG(pid)">Show in CFG</button>
 	    <button class="btn" ng-click="fetchState(pid)">Fetch state</button>
           </div>
-        </td>
-      </tr>
-    </table>
+        </dd>
+      </dl>
   </div>
 </span>
 

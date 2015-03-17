@@ -23,4 +23,12 @@
   <ul ng-if="show_events" class="list-group">
     <li class="list-group-item" event ng-repeat="e in path.event_log | skip:(path.event_log.length - event_limit)" data="e">
   </ul>
+
+  <p class="lead">
+    <button type="button" class="glyphicon btn btn-default btn-xs" ng-class="{'glyphicon-plus': !show_state, 'glyphicon-minus': show_state}" ng-click="show_state=!show_state"></button>
+    Program state
+  </p>
+  <ul ng-if="show_state" class="list-group">
+    <state pid="pid" sid="sid">
+  </ul>
 </span>

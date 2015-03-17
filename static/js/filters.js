@@ -10,3 +10,9 @@ filts.filter('skip', function () {
     }
 });
 
+filts.filter('hex', function() {
+    return function (val) {
+        if (val < 16) return "0" + val.toString(16);
+        else return val.toString(16);
+    }
+});
