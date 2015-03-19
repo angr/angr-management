@@ -1,1 +1,1 @@
-{{(concreteValue || 0) | hex}}
+<span ng-class="{'memcell-symbolic': !concreteValue || concreteValue.s}">{{(concreteValue.v || 0) | hex}}</span>

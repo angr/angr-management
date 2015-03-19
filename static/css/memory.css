@@ -41,3 +41,7 @@
 	font-family: monospace;
 	margin-right: 0.3em;
 }
+
+.memcell-symbolic {
+    color: #f00;
+}
