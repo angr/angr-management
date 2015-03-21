@@ -128,7 +128,10 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
         $scope.surveyor = surveyor;
         });
             $scope.step = function(steps) {
-                return AngrData.surveyorStep($scope.sid, $scope.steps);
+                return AngrData.surveyorStep($scope.sid, $scope.steps).then(function(data) {
+                    $scope.$broadcast("step");
+                    return data;
+                });
             };
 
             $scope.run = function() {

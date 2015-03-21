@@ -7,9 +7,16 @@ states.directive('state', function($http) {
         scope: { sid: '=sid', pid: '=pid' },
         controller: function($scope, $http, AngrData) {
             $scope.state = null;
-            AngrData.pathGetState($scope.sid, $scope.pid).then(function(data) {
-                $scope.state = data;
+            $scope.refreshState = function() {
+                AngrData.pathGetState($scope.sid, $scope.pid).then(function(data) {
+                    $scope.state = data;
+                });
+            };
+            $scope.$on("step", function() {
+                $scope.refreshState();
             });
+
+            $scope.refreshState();
         }
     };
 });
