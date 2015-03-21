@@ -54,13 +54,13 @@ context.factory('Context', function ($document, $rootScope, globalCommunicator) 
         element[0].tabIndex = 0;
         
         var thiser = this;
-        element.on('contextmenu', function (e) {
-            if (thiser.handleContextMenu(e)) {
-                $rootScope.$digest();
-                e.stopPropagation();
-                e.preventDefault();
-            }
-        });
+        //element.on('contextmenu', function (e) {
+        //    if (thiser.handleContextMenu(e)) {
+        //        $rootScope.$digest();
+        //        e.stopPropagation();
+        //        e.preventDefault();
+        //    }
+        //});
         element.on('dblclick', function (e) {
             if (thiser.handleDoubleClick(e)) {
                 $rootScope.$digest();

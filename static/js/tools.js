@@ -2,6 +2,23 @@
 
 var tools = angular.module('angr.tools', ['angr.comm']);
 
+tools.directive('numberBase', function(){
+    return {
+        require: 'ngModel',
+        link: function(scope, ele, attrs, ctrl){
+            ctrl.$parsers.unshift(function(viewValue){
+                return parseInt(viewValue, parseInt(attrs.numberBase));
+            });
+
+            ctrl.$formatters.push(function(modelValue){
+                var base = parseInt(attrs.numberBase);
+                var s = parseInt(modelValue, 10).toString(base);
+                return s;
+            });
+        }
+    };
+});
+
 tools.directive('onEnter', function () {
     return function (scope, element, attrs) {
         element.bind("keydown keypress", function (event) {

@@ -1,9 +1,14 @@
 <div class="memory_controls">
-  WARNING: THESE MAKE THINGS FREEZE
-  <br>
-  Address: <input hard-focusable ng-model="start_value" ng-change="sync_start">
-  <br>
-  Size: <input hard-focusable ng-model="limit">
-  <hr>
+  <form class="form-inline" ng-submit="sync_start()">
+    <div class="form-group">
+      <label>Address</label>
+      <input hard-focusable class="form-control" ng-model="start_input" number_base="16">
+    </div>
+    <div class="form-group">
+      <label>Size</label>
+      <input hard-focusable class="form-control" ng-model="limit_input" number_base="10">
+    </div>
+    <button type="submit" class="btn btn-default">Go</button>
+  </form>
 </div>
 <memory-grid memory="state.plugins.memory" limit="limit" start="start"></memory-grid>

@@ -32,10 +32,12 @@ states.directive('stateMemory', function($http) {
         controller: function($scope, $http) {
             $scope.start = 0xffff0000 - 1024;
             $scope.limit = 1024;
-            $scope.start_value = $scope.start.toString(16)
+            $scope.start_input = $scope.start
+            $scope.limit_input = $scope.limit
 
             $scope.sync_start = function() {
-		    $scope.start = Number($scope.start_value);
+		    $scope.start = $scope.start_input;
+            	    $scope.limit = $scope.limit_input;
             };
         }
     };
