@@ -360,6 +360,7 @@ def step_surveyors(inst_id, surveyor_id): #pylint:disable=W0613
     steps = req_data.get('steps', 1)
     surveyor = active_surveyors[surveyor_id]
     surveyor.run(n=int(steps))
+    surveyor.prune()
     return {'success': True, 'data': serialize(surveyor)}
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/resume/<path_id>',
