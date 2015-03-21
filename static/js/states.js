@@ -54,6 +54,15 @@ states.directive('stateFiles', function($http) {
         restrict: 'AE',
         scope: { state: '=' },
         controller: function($scope, $http) {
+            $scope.count = function(s) {
+                var i = 0;
+                for (var prop in s) {
+                    if (s.hasOwnProperty(prop)) {
+                        i += 1;
+                    }
+                }
+                return i;
+            };
         }
     };
 });

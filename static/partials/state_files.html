@@ -1,0 +1,8 @@
+<dl class="dl-horizontal">
+    <dt ng-repeat-start="(fd,file) in state.plugins.posix.files">
+        {{fd}} ({{file.name}})
+    </dt>
+    <dd ng-repeat-end>
+        <memory-grid memory="file.content" limit="count(file.content.concrete)" start="0"></memory-grid>
+    </dd>
+</dl>
