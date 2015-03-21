@@ -139,6 +139,8 @@ class Serializer(object):
         }
 
     def _serialize_surveyor(self, s, extra=None):
+        s.prune()
+
         if extra is None: extra = { 'surveyor_id': id(s) }
         else: extra['surveyor_id'] = id(s)
 

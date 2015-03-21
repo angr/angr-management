@@ -1,11 +1,20 @@
 .state {
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	width: 1000px;
+}
+
+.state-top {
+    display: flex;
+    flex-direction: row;
 }
 
 .registers {
 	display: flex;
+}
+
+.files {
+    display: flex;
 }
 
 .memory_controls

@@ -1,7 +1,9 @@
 <div ng-if="state" class="state">
+  <div class="state-top">
 	<state-registers class="registers" state="state"></state-registers>
 	<state-memory class="memory" state="state"></state-memory>
-	<state-files class="files" state="state"></state-files>
+  </div>
+  <state-files class="files" state="state"></state-files>
 </div>
 <div ng-if="!state">
 	Loading...
