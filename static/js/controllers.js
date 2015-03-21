@@ -116,8 +116,6 @@ ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams,
         },
         'Surveyors': function () {
             $scope.popupStyle.display = 'none';
-            // var view = new View({}, 'SURVEYOR');
-            // view.title = 'Surveyors';
 	    var tiles = [{type: 'surveyors'}];
 
             AngrData.loadSurveyors().then(function () {
@@ -127,12 +125,16 @@ ctrls.controller('ProjectCtrl', function($scope, $document, $http, $routeParams,
                 $scope.thinking = false;
             });
         },
-        // 'Splitting Demo': function () {
-        //     $scope.popupStyle.display = 'none';
-        //     var view = new View({}, 'SPLITTEST');
-        //     view.title = 'Split Test';
-        //     $scope.addTab(view);
-        // }
+        'Explore': function () {
+            $scope.popupStyle.display = 'none';
+
+            AngrData.loadPaths().then(function (data) {
+                var tiles = [{type: 'paths', data: data.data}];
+                $scope.addTab({title: 'Explore', tiles: tiles});
+            }).catch(function(data) {
+                debugger;
+            });
+        },
     };
 
     var globalActions = new Context.Actions();

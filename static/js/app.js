@@ -8,6 +8,7 @@ angular.module('angr', [
     'angr.tiles',
     'angr.context',
     'angr.workspaces',
+    'angr.explore',
     'ui.bootstrap'
 ]).
 config(function($routeProvider, $locationProvider) {

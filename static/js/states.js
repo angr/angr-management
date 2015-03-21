@@ -4,11 +4,11 @@ states.directive('state', function($http) {
     return {
         templateUrl: '/static/partials/state.html',
         restrict: 'E',
-        scope: { sid: '=sid', pid: '=pid' },
+        scope: { pid: '=pid' },
         controller: function($scope, $http, AngrData) {
             $scope.state = null;
             $scope.refreshState = function() {
-                AngrData.pathGetState($scope.sid, $scope.pid).then(function(data) {
+                AngrData.pathGetState($scope.pid).then(function(data) {
                     $scope.state = data;
                 });
             };

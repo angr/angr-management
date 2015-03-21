@@ -3,7 +3,7 @@
   Path {{path.id}} at 0x{{path.last_addr.toString(16)}}
 </h5>
 
-<span ng-if="showPath[pid]">
+<div ng-if="showPath[pid]">
   <hr>
 
   <p class="lead">
@@ -29,6 +29,8 @@
     Program state
   </p>
   <ul ng-if="show_state" class="list-group">
-    <state pid="pid" sid="sid">
+    <state pid="pid">
   </ul>
-</span>
+</div>
+
+<button class="btn" ng-click="showCFG()">Show in CFG</button>

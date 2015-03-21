@@ -362,6 +362,27 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator, ana
         });
     };
 
+    angrdata.loadPaths = function () {
+        var config = GET('/api/instances/' + angrdata.gcomm.instance + '/explore/paths');
+        return genericRequest(config).then(function (data) {
+            for (var prop in data.data) {
+                if (data.data.hasOwnProperty(prop)) {
+                    data.data[prop].forEach(addPath);
+                }
+            }
+            return data;
+        });
+    };
+
+    angrdata.newPath = function (arg) {
+        var config = POST('/api/instances/' + angrdata.gcomm.instance + '/explore/paths', arg);
+        return genericRequest(config).then(function (data) {
+            var path = data.data;
+            addPath(path);
+            return path;
+        });
+    };
+
     angrdata.newSurveyor = function (surveyor) {
         var config = POST('/api/instances/' + angrdata.gcomm.instance + '/surveyors/new', {kwargs: surveyor});
 
@@ -377,11 +398,12 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator, ana
         return genericRequest(config);
     };
 
-    angrdata.surveyorStep = function (surveyor, steps) {
-        var config = POST('/api/instances/' + angrdata.gcomm.instance + '/surveyors/' + surveyor + '/step', {steps: steps});
+    angrdata.stepPath = function (path_id, steps) {
+        var config = POST('/api/instances/' + angrdata.gcomm.instance + '/explore/paths/' + path_id + '/step', {steps: steps});
 
         return genericRequest(config).then(function (data) {
-            addSurveyor(data.data);
+            data.data.forEach(addPath);
+            return data.data;
         });
     };
 
@@ -401,8 +423,8 @@ tools.factory('AngrData', function ($q, $http, $timeout, globalCommunicator, ana
         });
     };
 
-    angrdata.pathGetState = function(sid, pid) {
-        var config = GET('/api/instances/' + angrdata.gcomm.instance + '/surveyors/' + sid + '/paths/' + pid + '/state');
+    angrdata.pathGetState = function(pid) {
+        var config = GET('/api/instances/' + angrdata.gcomm.instance + '/explore/paths/' + pid + '/state');
 
         return genericRequest(config).then(function(data) {
             return anaLoad(data.data.value, data.data.objects);

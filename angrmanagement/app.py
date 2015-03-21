@@ -22,6 +22,7 @@ except ImportError:
     pass
 
 from .serializer import Serializer
+from .explorer import InteractiveExplorer
 
 def spawn_child():
     port = random.randint(30000, 39999)
@@ -149,18 +150,20 @@ def new_instance(project, projects=None, instances=None):
         print PROJDIR + project + '/binary'
         proj = remote.modules.angr.Project(str(PROJDIR + project + '/binary')) # pylint: disable=no-member
         inst_name = flask.request.json.get('name', '<unnamed>')
-        proj_id = create_instance(proj, inst_name, remote, project, instances)
+        explorer = InteractiveExplorer(proj)
+        proj_id = create_instance(proj, explorer, inst_name, remote, project, instances)
         projects[project].append({'name': inst_name, 'id': proj_id})
         return {'success': True, 'id': proj_id}
     return {'success': False, 'message': 'Project does not exist..?'}
 
-def create_instance(proj, inst_name, remote, project, instances):
+def create_instance(proj, explorer, inst_name, remote, project, instances):
     proj_id = id(proj)
     instance = {
         'id': proj_id,
         'name': inst_name,
         'angr': proj,
         'project': project,
+        'explorer': explorer,
         'remote': remote
     }
     instances[proj_id] = instance
@@ -211,6 +214,8 @@ def instance_info(instance=None):
     instance.pop('remote')
     if 'cfg' in instance:
         instance.pop('cfg')
+    if 'explorer' in instance:
+        instance.pop('explorer')
     instance['success'] = True
     instance['arch'] = serialize(proj.arch)
     return instance
@@ -308,6 +313,39 @@ def get_function_vfg(func_addr, instance=None):
     vfg = angr.VFG(instance['angr'], instance['cfg'])
     vfg.construct(func_addr)
     return str(vfg)
+
+@app.route('/api/instances/<int:inst_id>/explore/paths')
+@jsonize
+@with_instance
+def get_explore_paths(instance=None):
+    return {'success': True, 'data': serialize(instance['explorer'].all_paths)}
+
+@app.route('/api/instances/<int:inst_id>/explore/paths', methods=('POST',))
+@jsonize
+@with_instance
+def new_path(instance=None):
+    ex = instance['explorer']
+    p = instance['angr']
+    if flask.request.json['type'] == 'entry_point':
+        path = p.path_generator.entry_point()
+    else:
+        return {'success': False, 'message': 'unrecognized path type'}
+    ex.active.append(path)
+    return {'success': True, 'data': serialize(path)}
+
+@app.route('/api/instances/<int:inst_id>/explore/paths/<path_id>/step', methods=('POST',))
+@jsonize
+@with_instance
+def step_path(path_id, instance=None):
+    ex = instance['explorer']
+    successors = ex.step_path_by_id(path_id)
+    return {'success': True, 'data': serialize(successors)}
+
+@app.route('/api/instances/<int:inst_id>/explore')
+@jsonize
+@with_instance
+def explore(instance=None):
+    pass
 
 @app.route('/api/surveyor_types')
 @jsonize
@@ -430,17 +468,16 @@ def surveyor_expr_val(inst_id, surveyor_id, path_id): #pylint:disable=W0613
         'message': 'Unknown expr type',
     }
 
-@app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/paths/<path_id>/state')
+@app.route('/api/instances/<int:inst_id>/explore/paths/<path_id>/state')
 @jsonize
-def surveyor_get_state_of_path(inst_id, surveyor_id, path_id):
-    surveyor = active_surveyors[surveyor_id]
-    for path in surveyor.active:
-        if path.path_id == path_id:
-            return {
-                'success': True,
-                'data': serialize(path.state),
-            }
-    return {'success': False, 'message': 'Path id not found'}
+@with_instance
+def get_state_of_path(path_id, instance=None):
+    ex = instance['explorer']
+    path = ex.path_by_id(path_id)
+    return {
+        'success': True,
+        'data': serialize(path.state),
+    }
 
 @app.route('/api/instances/<inst_id>/surveyors/<surveyor_id>/suspend/<path_id>',
            methods=('POST',))

@@ -1,0 +1,17 @@
+<h4>Paths</h4>
+
+<a ng-click="newPath($event)">New Path</a>
+
+<ul class="dropdown-menu" ng-style="popupStyle" role="menu">
+  <li role="presentation"><a role="menuitem" ng-click="newPathFromEntry()">from entry</a></li>
+</ul>
+
+<dl ng-repeat="(name,paths) in data">
+  <dt ng-if="paths.length > 0">{{paths.length}} {{name}} paths</dt>
+  <dd ng-if="paths.length > 0">
+    <div class="well path_box" ng-repeat="path in paths">
+      <path pid="path.id"></path>
+      <button ng-if="name == 'active'" class="btn" ng-click="stepPath($index, path.id)">Step</button>
+    </div>
+  </dd>
+</dl>
