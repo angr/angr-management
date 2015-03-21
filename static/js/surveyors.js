@@ -161,16 +161,10 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
                 AngrData.pathSuspend($scope.sid, pid);
             };
 
-        $scope.fetchState = function(pid) {
-        AngrData.pathGetState($scope.sid, pid).then(function(data) {
-            console.log(data);
-        });
-        };
-
             $scope.showCFG = function (pid) {
                 AngrData.loadFunctionManager().then(function () {
                     if (!wk.comm.surveyors.viewingPath) {
-            wk.addTile({type: 'cfg'});
+                        wk.addTile({type: 'cfg'});
                     }
                     wk.comm.surveyors.viewingPath = pid;
                     wk.comm.surveyors.viewingSurveyor = $scope.sid;
@@ -180,14 +174,14 @@ survey.directive('surveyor', function($http, AngrData, gcomm) {
     };
 });
 
-survey.directive('path', function path($http, gcomm) {
+survey.directive('path', function path($http, gcomm, AngrData) {
     return {
         templateUrl: '/static/partials/path.html',
         restrict: 'AE',
-        scope: { pid: '=', sid: '=' },
-    require: '^surveyors',
+        scope: { pid: '=' },
+        // require: '^surveyors',
         link: {pre: function($scope, element, attrs, sv) {
-        $scope.showPath = sv.data.showPath;
+            // $scope.showPath = sv.data.showPath;
             $scope.show_path = false;
             $scope.show_events = false;
             $scope.show_backtrace = false;
@@ -198,6 +192,9 @@ survey.directive('path', function path($http, gcomm) {
             $scope.$watch('gcomm.paths[pid]', function (nv) {
                 $scope.path = gcomm.paths[$scope.pid];
             });
+            $scope.step = function() {
+                AngrData.stepPath($scope.pid, 1);
+            };
         }}
     };
 });
