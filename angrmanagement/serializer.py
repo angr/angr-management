@@ -17,8 +17,6 @@ class Serializer(object):
         pass
 
     def serialize(self, o, ref=False, extra=None, known_set=None):
-        if known_set is None:
-            known_set = set()
         r = self._serialize_switch(o, ref=ref, extra=extra, known_set=known_set)
         if extra is not None and type(r) is dict:
             r.update(extra)

@@ -1,0 +1,34 @@
+<span ng-switch on="ast.ast_type">
+  <span ng-switch-when="binop">
+    <span ng-if="parens">(</span>
+    <cexpr expr="ast.args[0]" parens="true"></cexpr> {{ops[ast.op]}} <cexpr expr="ast.args[1]" parens="true"></cexpr>
+    <span ng-if="parens">)</span>
+  </span>
+  <span ng-switch-when="unop">
+    <span ng-if="parens">(</span>
+    {{ops[ast.op]}}<cexpr expr="ast.args[0]"></cexpr>
+    <span ng-if="parens">)</span>
+  </span>
+  <span ng-switch-default>
+    <span ng-switch on="ast.op">
+      <span ng-switch-when="BitVec">
+        <i>{{ast.args[0]}}</i>
+      </span>
+      <span ng-switch-when="BitVecVal">
+        <i>0x{{('000000000000000000000000000000000000000000000000000'+ast.args[0].toString(16)).slice(-(ast.args[1]/4))}}</i>
+      </span>
+      <span ng-switch-when="Extract">
+        <cexpr expr="ast.args[2]" parens="parens"></cexpr>[{{ast.args[0]}}:{{ast.args[1]}}]
+      </span>
+      <span ng-switch-when="ZeroExtend">
+        <cexpr expr="ast.args[0]" parens="parens"></cexpr>.zero_extend({{ast.args[1]}})
+      </span>
+      <span ng-switch-when="SignExtend">
+        <cexpr expr="ast.args[0]" parens="parens"></cexpr>.sign_extend({{ast.args[1]}})
+      </span>
+      <span ng-switch-default>
+        {{ast.op}}(<span ng-repeat="a in ast.args"><cexpr expr="a" parens="parens"></cexpr><span ng-show="!$last">, </span></span>)
+      </span>
+    </span>
+  </span>
+</span>

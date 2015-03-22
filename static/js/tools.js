@@ -123,11 +123,64 @@ tools.factory('BVV', function() {
     return BVV;
 });
 
-tools.factory('anaLoad', function(A, BVV) {
+tools.factory('BranchingDict', function() {
+    function BranchingDict(cowdict) {
+        var that = this;
+        Object.keys(cowdict).forEach(function (v) {
+            that[v] = cowdict[v];
+        });
+    }
+    return BranchingDict;
+});
+
+tools.factory('BackedDict', function() {
+    function BackedDict(storage, deletes, backers) {
+        var that = this;
+
+        backers.forEach(function (d) {
+            Object.keys(d).forEach(function (v) {
+                that[v] = d[v];
+            });
+        });
+
+        Object.keys(storage).forEach(function (v) {
+            that[v] = storage[v];
+        });
+
+        Object.keys(deletes).forEach(function (v) {
+            delete this[v];
+        });
+    }
+
+    return BackedDict;
+});
+
+tools.factory('SimPagedMemory', function() {
+    function SimPagedMemory(backer, pages, page_size, name_mapping, hash_mapping) {
+        this.backer = backer;
+        this.pages = pages;
+        this.page_size = page_size;
+        this.name_mapping = name_mapping;
+
+        this.getMemoryObject = function(i) {
+            var page_num = Math.trunc(i/this.page_size);
+            var page_idx = i % this.page_size;
+
+            if (!(page_num in pages)) { return undefined; }
+            return pages[page_num][page_idx];
+        };
+    }
+
+    return SimPagedMemory;
+});
+
+tools.factory('anaLoad', function(A, BVV, BranchingDict, BackedDict, SimPagedMemory) {
     return function deserialize(value, objects, cache) {
         if (typeof cache === 'undefined') {
             cache = {};
         }
+
+        //if (value != null && (typeof value === 'object') && ('class' in value)) console.log("Value:", value);
 
         if (value === null) {
             return null;
@@ -143,12 +196,33 @@ tools.factory('anaLoad', function(A, BVV) {
         } else if (typeof value === 'object') {
             if (value instanceof Array) {
                 return value.map(function(o) { return deserialize(o, objects, cache); });
+            } else if (value['class'] === 'FinalizableDict') {
+                var f = deserialize(value.object[0], objects, cache);
+                //console.log("FinalizableDict:",f);
+                return f;
+            } else if (value['class'] === 'BranchingDict') {
+                return new BranchingDict(deserialize(value.object.cowdict, objects, cache));
+            } else if (value['class'] === 'SimPagedMemory') {
+                var backer = deserialize(value.object.backer, objects, cache);
+                var pages = deserialize(value.object.pages, objects, cache);
+                var page_size = deserialize(value.object.page_size, objects, cache);
+                var name_mapping = deserialize(value.object.name_mapping, objects, cache);
+                var hash_mapping = deserialize(value.object.hash_mapping, objects, cache);
+                var spm = new SimPagedMemory(backer, pages, page_size, name_mapping, hash_mapping);
+                //console.log(spm);
+                return spm;
+            } else if (value['class'] === 'BackedDict') {
+                var storage = deserialize(value.object[0], objects, cache);
+                var deletes = deserialize(value.object[1], objects, cache);
+                var backers = deserialize(value.object[2], objects, cache);
+                return new BackedDict(storage, deletes, backers);
             } else if (!('class' in value) || typeof value.object === 'object') {
                 var des = { };
                 var thing = 'class' in value ? value.object : value;
                 for (var key in thing) {
                     des[key] = deserialize(thing[key], objects, cache);
                 }
+                //des.class = value.class
                 return des;
             } else if (value['class'] === 'A' || value['class'] === 'I') {
                 var deserializedArgs = value.object[1].map(function(o) { return deserialize(o, objects, cache); });
@@ -161,6 +235,7 @@ tools.factory('anaLoad', function(A, BVV) {
         } else if (['boolean', 'string', 'number'].indexOf(typeof value) >= 0) {
             return value;
         } else {
+            console.log(value);
             throw new Error("unrecognized type");
         }
     };

@@ -17,6 +17,9 @@ states.directive('state', function($http) {
             });
 
             $scope.refreshState();
+
+            // for ASTs, later
+            this.scope = $scope;
         }
     };
 });
@@ -92,12 +95,85 @@ states.directive('memoryGrid', function($http) {
     };
 });
 
-states.directive('memoryCell', function($http) {
+states.directive('memoryCell', function($http, Context) {
     return {
         templateUrl: '/static/partials/memory_cell.html',
         restrict: 'AE',
-        scope: { concreteValue: '=', addr: '=' },
+        require: [ '^tile', '^state' ],
+        scope: { concreteValue: '=', memoryObject: '=', addr: '=' },
+        link: function($scope, element, attrs, reqs) {
+            //
+            // menu
+            //
+            var interactionActions = new Context.Actions({children: [{
+                name: 'Display AST',
+                action: function() {
+                    $scope.displayAST();
+                },
+                keyboardShortcut: '+d',
+            }]});
+
+            var interactionController = function () {
+                var pos = $(element).parent().parent().position();
+                return {
+                    coordinates: new Context.Point(pos.left, pos.top),
+                    actions: interactionActions,
+                    doubleClick: function () {$scope.toggle();}
+                };
+            };
+
+            $scope.myuictx = new Context.Interactable(reqs[0].scope.uictx, $(element).parent(), interactionController, 'MEMORY_CELL');
+            this.state_scope = reqs[1].scope;
+        },
+        controller: function($scope, $modal) {
+            //
+            // AST display modal
+            //
+            $scope.displayAST = function() {
+                $modal.open({
+                    templateUrl: '/static/partials/ast_modal.html',
+                    controller: 'AstModal',
+                    resolve: {
+                        memoryObject: function() {
+                            return this.state_scope.state.plugins.memory.mem.getMemoryObject($scope.addr);
+                        },
+                        addr: function() { return $scope.addr; },
+                        concreteValue: function() { return $scope.concreteValue; },
+                        state: function() { return this.state_scope.state; },
+                    }
+                });
+            };
+        },
+    };
+});
+
+states.directive('ast', function(RecursionHelper) {
+    return {
+        templateUrl: '/static/partials/ast.html',
+        restrict: 'E',
+        scope: {
+            ast: '=',
+            parens: '=',
+        },
+        compile: RecursionHelper.compile,
+        require: '^state',
         controller: function($scope, $http) {
+            $scope.ops = {
+                __add__: "+", __sub__: "-", __div__: "/", __truediv__: "/", __mul__: "*", __mod__: "%",
+                __eq__: "==", __ne__: "!=", __ge__: ">=", __gt__: ">", __le__: "<=", __lt__: "<",
+                __neg__: "-", __or__: "|", __and__: "&", __xor__: "^", __invert__: "~",
+                __lshift__: "<<", __rshift__: ">>"
+            };
         }
     };
+});
+
+states.controller('AstModal', function ($scope, $http, $modalInstance, AngrData, memoryObject, addr, concreteValue, state) {
+    console.log(state);
+    //$scope.close = function() { $modalInstance.dismiss("Closed"); }
+    $scope.state = state;
+    $scope.memoryObject = memoryObject;
+    $scope.addr = addr;
+    if (concreteValue != undefined) $scope.concrete = concreteValue.v;
+    else $scope.concrete = 0;
 });

@@ -201,8 +201,8 @@ def connect_instance(instances=None):
                      + " on this server?"
         }
     proj = conn.root.projects[pkeys[0]]
-    proj_id = create_instance(proj, '<one-shot instance>',
-                              conn, pkeys[0], instances)
+    explorer = InteractiveExplorer(proj)
+    proj_id = create_instance(proj, explorer, '<one-shot instance>', conn, pkeys[0], instances)
     return {'success': True, 'id': proj_id}
 
 @app.route('/api/instances/<int:inst_id>')
