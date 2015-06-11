@@ -1,7 +1,0 @@
-<div class="memory_grid">
-  <div class="memory_word" ng-repeat="word in get_words()">
-    <div class="memory_byte" ng-repeat="addr in get_bytes(word)">
-      <memory-cell concrete-value="memory.concrete[addr]" addr="addr">
-    </div>
-  </div>
-</div>

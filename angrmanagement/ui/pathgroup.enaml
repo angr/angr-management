@@ -1,0 +1,30 @@
+from enaml.layout.api import hbox, vbox
+from enaml.widgets.api import (
+    Container, DockItem, ObjectCombo, PushButton,
+)
+
+enamldef PathGroupItem(DockItem):
+    attr path_groups
+
+    title = "Path Group"
+
+    Container:
+        constraints = [
+            vbox(hbox(pg_sel, new_pg), step_pg, paths),
+        ]
+
+        ObjectCombo: pg_sel:
+            items << path_groups.groups
+            to_string = repr
+
+        PushButton: new_pg:
+            text = 'New PG'
+            clicked :: path_groups.add_path_group()
+
+        PushButton: step_pg:
+            text = 'Step PG'
+            enabled << pg_sel.selected is not None
+            clicked :: pg_sel.selected.step()
+
+        Container: paths:
+            pass

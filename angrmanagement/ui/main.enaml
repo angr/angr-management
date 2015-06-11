@@ -1,0 +1,70 @@
+from enaml.core.api import Include
+from enaml.layout.api import vbox
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout
+from enaml.widgets.api import (
+    Action, Container, DockArea, Label, Menu, Notebook, Page, PushButton, Window,
+)
+
+from ..data.workspace import WorkspaceData
+from .state import RegistersItem
+from .pathgroup import PathGroupItem
+
+enamldef MyDockArea(DockArea):
+    layout = AreaLayout('foo')
+
+    RegistersItem:
+        name = 'foo'
+        state = None
+
+enamldef Workspace(Page):
+    attr n: int
+    attr data
+
+    title = 'Workspace #{}'.format(n)
+
+    Container:
+        DockArea:
+            layout = HSplitLayout('registers', 'path_group')
+
+            RegistersItem:
+                name = 'registers'
+                state = None
+
+            PathGroupItem:
+                name = 'path_group'
+                path_groups = data.path_groups
+
+
+enamldef Main(Window): main:
+    attr proj
+    attr counter = 1
+
+    title = proj.basename + " - Angr Management"
+
+    func add_workspace():
+        wk = Workspace(n=main.counter, data=WorkspaceData(proj))
+        workspaces.objects.append(wk)
+        main.counter += 1
+
+    initialized :: add_workspace()
+
+    Container:
+        constraints = [
+            vbox(add_wk_btn, nbook),
+        ]
+
+        PushButton: add_wk_btn:
+            text = 'Add Workspace'
+            clicked :: add_workspace()
+
+        Menu:
+            Action:
+                text = 'Add Workspace'
+                triggered :: add_workspace()
+            context_menu = True
+
+        Notebook: nbook:
+            tab_style = 'document'
+
+            Include: workspaces:
+                pass

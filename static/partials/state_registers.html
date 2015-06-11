@@ -1,8 +1,0 @@
-<dl class="dl-horizontal">
-    <dt ng-repeat-start="(register_name,register) in state.arch.registers">
-        {{register_name}}
-    </dt>
-    <dd ng-repeat-end>
-        <memory-grid memory="state.plugins.registers" limit="register[1]" start="register[0]"></memory-grid>
-    </dd>
-</dl>
