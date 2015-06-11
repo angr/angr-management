@@ -1,10 +1,42 @@
+from enaml.core.api import Looper
 from enaml.layout.api import hbox, vbox
 from enaml.widgets.api import (
-    Container, DockItem, ObjectCombo, PushButton,
+    Container, DockItem, ObjectCombo, PushButton, ScrollArea
 )
 
-enamldef PathGroupItem(DockItem):
+from .listcontrol import QtListControl
+
+enamldef PathGroup(Container):
+    attr pg
+    func path_selected(p):
+        pass
+    func refresh():
+        path_sel.items = pg.active
+        path_sel.refresh_items()
+
+    constraints = [
+        # vbox(hbox(scroller)),
+    ]
+
+    QtListControl: path_sel:
+        items << pg.active if pg else []
+        to_string = repr
+
+        on_selected ::
+            path_selected(path_sel.selected_item)
+
+    # ScrollArea: scroller:
+    #     Container:
+    #         Looper: looper:
+    #             iterable << pg.active if pg else []
+    #             PushButton:
+    #                 text = repr(loop_item)
+    #                 clicked :: path_selected(loop_item)
+
+enamldef PathGroupItem(DockItem): pgi:
     attr path_groups
+    func path_selected(p):
+        pass
 
     title = "Path Group"
 
@@ -24,7 +56,11 @@ enamldef PathGroupItem(DockItem):
         PushButton: step_pg:
             text = 'Step PG'
             enabled << pg_sel.selected is not None
-            clicked :: pg_sel.selected.step()
+            clicked ::
+                pg_sel.selected.step()
+                paths.refresh()
+                # pg_sel.refresh_items()
 
-        Container: paths:
-            pass
+        PathGroup: paths:
+            pg << pg_sel.selected
+            path_selected => (p): pgi.path_selected(p)

@@ -8,7 +8,7 @@ class PathGroups(Atom):
     groups = List(PathGroup, [])
 
     def add_path_group(self):
-        self.groups = self.groups + [self.proj.path_group()]
+        self.groups = self.groups + [self.proj.path_group(immutable=False)]
 
 
 class WorkspaceData(object):

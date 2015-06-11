@@ -6,6 +6,10 @@ from enaml.widgets.api import (
 
 enamldef RegistersItem(DockItem): regs:
     attr state
+    # func set_state(st):
+    #     regs.state = st
+    #     if 'looper' in vars():
+    #         looper.refresh_items()
 
     title = "Registers"
 
@@ -13,13 +17,14 @@ enamldef RegistersItem(DockItem): regs:
         ScrollArea: scroller:
             Conditional:
                 condition << bool(state)
-                Form:
-                    Looper: looper:
-                        iterable << state.arch.register_names.items() if state else []
-                        Label: reg_name:
-                            text = loop_item[1] + ':'
-                        Field: reg_value:
-                            text = format(state.se.any_int(state.reg_expr(loop_item[0])), '#016x')
+                Container:
+                    Form:
+                        Looper: looper:
+                            iterable << state.arch.register_names.items() if state else []
+                            Label: reg_name:
+                                text = loop_item[1] + ':'
+                            Field: reg_value:
+                                text << format(state.se.any_int(state.reg_expr(loop_item[0])), '#016x')
             Conditional:
                 condition << not state
                 Container:

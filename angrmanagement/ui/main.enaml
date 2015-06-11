@@ -26,13 +26,15 @@ enamldef Workspace(Page):
         DockArea:
             layout = HSplitLayout('registers', 'path_group')
 
-            RegistersItem:
+            RegistersItem: regs:
                 name = 'registers'
                 state = None
 
             PathGroupItem:
                 name = 'path_group'
                 path_groups = data.path_groups
+                path_selected => (path):
+                    regs.state = path.state if path else None
 
 
 enamldef Main(Window): main:
