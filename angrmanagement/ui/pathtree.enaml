@@ -1,0 +1,89 @@
+from enaml.core.api import Looper
+from enaml.layout.api import vbox
+from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label
+from enaml.layout.geometry import Box
+
+from .graph import Graph
+
+
+enamldef Path(Container): p:
+    attr path
+
+    # padding = Box(0, 0, 0, 0)
+
+    Label:
+        text = "addr = %#x" % path.addr
+    Label:
+        text = "runs = %d" % len(path.backtrace)
+    Label:
+        text = "id = %s" % path.path_id
+
+def all_paths(paths, hierarchy):
+    work = set(paths)
+    seen = set()
+    while len(work) > 0:
+        path = work.pop()
+        # print path.path_id
+        if path.state.se not in hierarchy._successors or len(hierarchy._successors[path.state.se]) == 0:
+            if path.path_id not in seen:
+                yield path
+                seen.add(path.path_id)
+        if path.state.se in hierarchy._parents:
+            parent_se = hierarchy._parents[path.state.se]
+            # assume _path_mapping always has the path
+            parent_path = hierarchy._path_mapping[parent_se]
+            work.add(parent_path)
+            if len(hierarchy._successors[parent_se]) > 1:
+                if parent_path.path_id not in seen:
+                    yield parent_path
+                    seen.add(parent_path.path_id)
+
+def all_edges_gen(paths, hierarchy):
+    # TODO: reduce duplication with above function
+    work = set(paths)
+    # __import__('ipdb').set_trace()
+    while len(work) > 0:
+        working_path = bot_path = work.pop()
+        while working_path.state.se in hierarchy._parents:
+            parent_se = hierarchy._parents[working_path.state.se]
+            # assume _path_mapping always has the path
+            parent_path = hierarchy._path_mapping[parent_se]
+            if len(hierarchy._successors[parent_se]) > 1:
+                yield (parent_path.path_id, bot_path.path_id)
+                work.add(parent_path)
+                break
+            else:
+                working_path = parent_path
+        # if path.state.se in hierarchy._parents:
+        #     parent_se = hierarchy._parents[path.state.se]
+        #     if parent_se in hierarchy._path_mapping:
+        #         parent_path = hierarchy._path_mapping[parent_se]
+        #         work.add(parent_path)
+        #         yield (parent_path.path_id, path.path_id)
+
+def all_edges(*args):
+    return list(all_edges_gen(*args))
+
+import itertools
+c = itertools.count()
+
+enamldef PathTreeItem(DockItem): pti:
+    attr paths
+    attr hierarchy
+
+    title = "Path Tree"
+
+    Container:
+        constraints = [
+            vbox(graph)
+        ]
+
+        Graph: graph:
+            edges << all_edges(paths, hierarchy)
+
+            Looper:
+                iterable << all_paths(paths, hierarchy)
+
+                Path:
+                    name = loop_item.path_id
+                    path = loop_item

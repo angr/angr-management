@@ -1,4 +1,4 @@
-from atom.api import Atom, List, Typed
+from atom.api import Atom, Int, List, Typed
 
 from angr import Project, PathGroup
 
@@ -8,10 +8,14 @@ class PathGroups(Atom):
     groups = List(PathGroup, [])
 
     def add_path_group(self):
-        self.groups = self.groups + [self.proj.path_group(immutable=False)]
+        self.groups = self.groups + [self.proj.factory.path_group(immutable=False, strong_path_mapping=True)]
 
 
-class WorkspaceData(object):
-    def __init__(self, proj):
-        self.proj = proj
-        self.path_groups = PathGroups(proj=proj)
+class WorkspaceData(Atom):
+    n = Int()
+    proj = Typed(Project)
+    path_groups = Typed(PathGroups)
+
+    def __init__(self, **kwargs):
+        super(WorkspaceData, self).__init__(**kwargs)
+        self.path_groups = PathGroups(proj=self.proj)

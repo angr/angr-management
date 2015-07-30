@@ -8,8 +8,7 @@ from .listcontrol import QtListControl
 
 enamldef PathGroup(Container):
     attr pg
-    func path_selected(p):
-        pass
+    attr selected_path = None
     func refresh():
         path_sel.items = pg.active
         path_sel.refresh_items()
@@ -23,7 +22,7 @@ enamldef PathGroup(Container):
         to_string = repr
 
         on_selected ::
-            path_selected(path_sel.selected_item)
+            selected_path = path_sel.selected_item
 
     # ScrollArea: scroller:
     #     Container:
@@ -33,21 +32,33 @@ enamldef PathGroup(Container):
     #                 text = repr(loop_item)
     #                 clicked :: path_selected(loop_item)
 
+def noop_notify(o, attr):
+    change = {
+        'value': getattr(o, attr),
+        'object': o,
+        'type': 'update',
+        'name': attr,
+        'oldvalue': None
+    }
+    o.notify(attr, change)
+    o.get_member(attr).notify(o, change)
+
 enamldef PathGroupItem(DockItem): pgi:
     attr path_groups
-    func path_selected(p):
-        pass
+    attr selected_path = None
+    attr selected_pg = None
 
     title = "Path Group"
 
     Container:
         constraints = [
-            vbox(hbox(pg_sel, new_pg), step_pg, paths),
+            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), paths),
         ]
 
         ObjectCombo: pg_sel:
             items << path_groups.groups
             to_string = repr
+            selected := selected_pg
 
         PushButton: new_pg:
             text = 'New PG'
@@ -59,8 +70,23 @@ enamldef PathGroupItem(DockItem): pgi:
             clicked ::
                 pg_sel.selected.step()
                 paths.refresh()
-                # pg_sel.refresh_items()
+                # __import__('ipdb').set_trace()
+                # pgi.selected_pg = pg_sel.selected
+                noop_notify(pgi, 'selected_pg')
+
+        PushButton: step_pg_until:
+            text = 'Step PG Until Branch'
+            enabled << pg_sel.selected is not None
+            clicked ::
+                orig_len = len(pg_sel.selected.active)
+                while len(pg_sel.selected.active) == orig_len:
+                    pg_sel.selected.step()
+                    # paths.refresh()
+                    # pg_changed(pg_sel.selected)
+                paths.refresh()
+                # pgi.selected_pg = pg_sel.selected
+                noop_notify(pgi, 'selected_pg')
 
         PathGroup: paths:
             pg << pg_sel.selected
-            path_selected => (p): pgi.path_selected(p)
+            selected_path := selected_path

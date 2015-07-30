@@ -1,13 +1,19 @@
+import os
+
 from enaml.core.api import Include
 from enaml.layout.api import vbox
-from enaml.layout.dock_layout import AreaLayout, HSplitLayout
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout
 from enaml.widgets.api import (
-    Action, Container, DockArea, Label, Menu, Notebook, Page, PushButton, Window,
+    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
 )
 
+from angr import Project
+
+from ..data.instance import Instance
 from ..data.workspace import WorkspaceData
 from .state import RegistersItem
 from .pathgroup import PathGroupItem
+from .pathtree import PathTreeItem
 
 enamldef MyDockArea(DockArea):
     layout = AreaLayout('foo')
@@ -17,14 +23,17 @@ enamldef MyDockArea(DockArea):
         state = None
 
 enamldef Workspace(Page):
-    attr n: int
     attr data
 
-    title = 'Workspace #{}'.format(n)
+    title = 'Workspace #{}'.format(data.n)
 
     Container:
         DockArea:
-            layout = HSplitLayout('registers', 'path_group')
+            layout = VSplitLayout('path_tree', HSplitLayout('registers', 'path_group'))
+
+            PathTreeItem: pti:
+                name = 'path_tree'
+                paths = []
 
             RegistersItem: regs:
                 name = 'registers'
@@ -33,22 +42,44 @@ enamldef Workspace(Page):
             PathGroupItem:
                 name = 'path_group'
                 path_groups = data.path_groups
-                path_selected => (path):
+                selected_pg ::
+                    pg = change['value']
+                    pti.hierarchy = pg._hierarchy
+                    pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
+                selected_path ::
+                    path = change['value']
                     regs.state = path.state if path else None
+                    # if path is not None:
+                    #     print "setting path!"
+                    #     pti.paths = pti.paths + [path]
 
+enamldef Main(MainWindow): main:
+    attr inst
 
-enamldef Main(Window): main:
-    attr proj
-    attr counter = 1
+    title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
-    title = proj.basename + " - Angr Management"
-
-    func add_workspace():
-        wk = Workspace(n=main.counter, data=WorkspaceData(proj))
-        workspaces.objects.append(wk)
-        main.counter += 1
-
-    initialized :: add_workspace()
+    MenuBar:
+        Menu:
+            title = '&File'
+            Action:
+                text = 'New\tCtrl+N'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(main)
+                    if path:
+                        main.inst = Instance(proj=Project(path))
+            Action:
+                text = 'Save\tCtrl+S'
+                enabled << bool(inst)
+                triggered ::
+                    path = FileDialogEx.get_save_file_name(main)
+                    if path:
+                        inst.save(path)
+            Action:
+                text = 'Open\tCtrl+O'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(main)
+                    if path:
+                        main.inst = Instance.from_file(path)
 
     Container:
         constraints = [
@@ -57,16 +88,18 @@ enamldef Main(Window): main:
 
         PushButton: add_wk_btn:
             text = 'Add Workspace'
-            clicked :: add_workspace()
+            enabled << bool(inst)
+            clicked :: inst.add_workspace()
 
         Menu:
             Action:
-                text = 'Add Workspace'
-                triggered :: add_workspace()
+                text = 'Add Workspace\tCtrl+A'
+                enabled << bool(inst)
+                triggered :: inst.add_workspace()
             context_menu = True
 
         Notebook: nbook:
             tab_style = 'document'
 
             Include: workspaces:
-                pass
+                objects << [Workspace(data=data) for data in inst.workspaces] if inst else []

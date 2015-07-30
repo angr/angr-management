@@ -24,15 +24,9 @@ enamldef RegistersItem(DockItem): regs:
                             Label: reg_name:
                                 text = loop_item[1] + ':'
                             Field: reg_value:
-                                text << format(state.se.any_int(state.reg_expr(loop_item[0])), '#016x')
+                                text << format(state.se.any_int(state.registers.load(loop_item[0])), '#016x')
             Conditional:
                 condition << not state
                 Container:
                     Label:
                         text = 'no state currently focused'
-
-# enamldef StateItem(DockItem): stateitem:
-#     attr state
-
-#     Registers:
-#         state := stateitem.state
