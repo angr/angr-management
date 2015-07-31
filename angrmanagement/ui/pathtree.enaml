@@ -18,16 +18,9 @@ enamldef Path(Container): p:
     attr path
     attr watch_expr
     attr options = {}
+    event select_me
 
     border = Border(style='box', line_style='plain')
-
-    features = Feature.FocusEvents
-
-    focus_gained => ():
-        print "focus!"
-
-    focus_lost => ():
-        print "focus lost!"
 
     StyleSheet:
         Style:
@@ -41,9 +34,11 @@ enamldef Path(Container): p:
                 field = 'color'
                 value = 'gray'
 
-    Label:
+    PushButton:
         style_class << ' '.join(['bold'] + [option for (option, val) in options.items() if val])
-        text = "Path at %#x" % path.addr
+        text = 'Path at %#x' % path.addr
+
+        clicked :: select_me()
     Label:
         text = "%d Runs" % len(path.backtrace)
     Label:
@@ -145,3 +140,8 @@ enamldef PathTreeItem(DockItem): pti:
                     path = loop_item
                     options << metadata.get(loop_item, {})
                     watch_expr << watching
+
+                    select_me ::
+                        # WTF is up with having to reference it first?
+                        pti.selected_path
+                        pti.selected_path = loop_item
