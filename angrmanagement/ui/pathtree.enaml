@@ -17,6 +17,7 @@ def eval_with_path(path, expr):
 enamldef Path(Container): p:
     attr path
     attr watch_expr
+    attr options = {}
 
     border = Border(style='box', line_style='plain')
 
@@ -28,8 +29,20 @@ enamldef Path(Container): p:
     focus_lost => ():
         print "focus lost!"
 
+    StyleSheet:
+        Style:
+            style_class = 'active'
+            Setter:
+                field = 'color'
+                value = 'green'
+        Style:
+            style_class = 'deadended'
+            Setter:
+                field = 'color'
+                value = 'gray'
+
     Label:
-        style_class = 'bold'
+        style_class << ' '.join(['bold'] + [option for (option, val) in options.items() if val])
         text = "Path at %#x" % path.addr
     Label:
         text = "%d Runs" % len(path.backtrace)
@@ -95,6 +108,7 @@ enamldef PathTreeItem(DockItem): pti:
     attr hierarchy
     attr selected_path = None
     attr watching = ''
+    attr metadata = {}
 
     title = "Path Tree"
 
@@ -129,4 +143,5 @@ enamldef PathTreeItem(DockItem): pti:
                 Path:
                     name = loop_item.path_id
                     path = loop_item
+                    options << metadata.get(loop_item, {})
                     watch_expr << watching
