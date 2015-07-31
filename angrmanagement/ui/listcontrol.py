@@ -11,6 +11,8 @@ from enaml.core.declarative import d_
 from enaml.qt.QtGui import QListWidget, QListWidgetItem, QAbstractItemView
 from enaml.qt.QtCore import *
 
+from .notify import notify_update
+
 
 class QtListControl(RawWidget):
     """ A Qt4 implementation of an Enaml ProxyListStrView.
@@ -83,6 +85,7 @@ class QtListControl(RawWidget):
         else:
             self.selected_item = None
             self.selected_index = -1
+        # notify_update(self, 'selected_item')
         self.on_selected(self.selected_item)
 
     #--------------------------------------------------------------------------

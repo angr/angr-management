@@ -1,15 +1,25 @@
-from enaml.core.api import Looper
+from enaml.core.api import Looper, Conditional
 from enaml.layout.api import vbox
-from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label
+from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label, Field, Form, Feature
 from enaml.layout.geometry import Box
 
 from .graph import Graph
 
+def eval_with_path(path, expr):
+    try:
+        return eval(expr, {'p': path})
+    except Exception as e:
+        return e
 
 enamldef Path(Container): p:
     attr path
+    attr watch_expr
 
     # padding = Box(0, 0, 0, 0)
+    features = Feature.FocusEvents
+
+    # focus_gained =>
+    #     print "focus!"
 
     Label:
         text = "addr = %#x" % path.addr
@@ -17,6 +27,11 @@ enamldef Path(Container): p:
         text = "runs = %d" % len(path.backtrace)
     Label:
         text = "id = %s" % path.path_id
+    Conditional:
+        condition << watch_expr != ''
+
+        Label:
+            text << "%s = %r" % (watch_expr, eval_with_path(p.path, watch_expr))
 
 def all_paths(paths, hierarchy):
     work = set(paths)
@@ -70,13 +85,24 @@ c = itertools.count()
 enamldef PathTreeItem(DockItem): pti:
     attr paths
     attr hierarchy
+    attr selected_path = None
+    attr watching = ''
 
     title = "Path Tree"
 
     Container:
         constraints = [
-            vbox(graph)
+            vbox(watching_form, graph)
         ]
+
+        Form: watching_form:
+            Label:
+                text = "Watching:"
+            Field: watching_field:
+                text = watching
+                text ::
+                    pti.watching = change['value']
+                    graph.request_relayout()
 
         Graph: graph:
             edges << all_edges(paths, hierarchy)
@@ -87,3 +113,4 @@ enamldef PathTreeItem(DockItem): pti:
                 Path:
                     name = loop_item.path_id
                     path = loop_item
+                    watch_expr << watching

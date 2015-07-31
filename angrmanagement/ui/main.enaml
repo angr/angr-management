@@ -1,6 +1,6 @@
 import os
 
-from enaml.core.api import Include
+from enaml.core.api import Looper
 from enaml.layout.api import vbox
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout
 from enaml.widgets.api import (
@@ -22,8 +22,9 @@ enamldef MyDockArea(DockArea):
         name = 'foo'
         state = None
 
-enamldef Workspace(Page):
+enamldef Workspace(Page): wk:
     attr data
+    attr selected_path = None
 
     title = 'Workspace #{}'.format(data.n)
 
@@ -34,10 +35,11 @@ enamldef Workspace(Page):
             PathTreeItem: pti:
                 name = 'path_tree'
                 paths = []
+                selected_path := wk.selected_path
 
             RegistersItem: regs:
                 name = 'registers'
-                state = None
+                state << selected_path.state if selected_path is not None else None
 
             PathGroupItem:
                 name = 'path_group'
@@ -46,12 +48,7 @@ enamldef Workspace(Page):
                     pg = change['value']
                     pti.hierarchy = pg._hierarchy
                     pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
-                selected_path ::
-                    path = change['value']
-                    regs.state = path.state if path else None
-                    # if path is not None:
-                    #     print "setting path!"
-                    #     pti.paths = pti.paths + [path]
+                selected_path := wk.selected_path
 
 enamldef Main(MainWindow): main:
     attr inst
@@ -83,17 +80,12 @@ enamldef Main(MainWindow): main:
 
     Container:
         constraints = [
-            vbox(add_wk_btn, nbook),
+            vbox(nbook),
         ]
-
-        PushButton: add_wk_btn:
-            text = 'Add Workspace'
-            enabled << bool(inst)
-            clicked :: inst.add_workspace()
 
         Menu:
             Action:
-                text = 'Add Workspace\tCtrl+A'
+                text = 'AddWorkspace\tCtrl+A'
                 enabled << bool(inst)
                 triggered :: inst.add_workspace()
             context_menu = True
@@ -101,5 +93,8 @@ enamldef Main(MainWindow): main:
         Notebook: nbook:
             tab_style = 'document'
 
-            Include: workspaces:
-                objects << [Workspace(data=data) for data in inst.workspaces] if inst else []
+            Looper:
+                iterable << inst.workspaces if inst else []
+
+                Workspace:
+                    data = loop_item

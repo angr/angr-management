@@ -1,3 +1,4 @@
+import itertools
 import functools
 
 import pygraphviz
@@ -12,6 +13,33 @@ from enaml.qt.qt_frame import QtFrame
 from enaml.qt.qt_factories import QT_FACTORIES
 from enaml.qt.qt_container import QtContainer
 
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    args = [iter(iterable)] * n
+    return itertools.izip_longest(*args, fillvalue=fillvalue)
+
+
+class ZoomingGraphicsView(QGraphicsView):
+    def wheelEvent(self, event):
+        zoomInFactor = 1.25
+        zoomOutFactor = 1 / zoomInFactor
+
+        # Save the scene pos
+        oldPos = self.mapToScene(event.pos())
+
+        # Zoom
+        if event.delta() > 0:
+            zoomFactor = zoomInFactor
+        else:
+            zoomFactor = zoomOutFactor
+        self.scale(zoomFactor, zoomFactor)
+
+        # Get the new position
+        newPos = self.mapToScene(event.pos())
+
+        # Move scene to old position
+        delta = newPos - oldPos
+        self.translate(delta.x(), delta.y())
 
 class ProxyGraph(ProxyFrame):
     declaration = ForwardTyped(lambda: Graph)
@@ -25,10 +53,10 @@ class QtGraph(QtFrame, ProxyGraph):
 
     def create_widget(self):
         self.scene = QGraphicsScene(self.parent_widget())
-        self.widget = QGraphicsView(self.parent_widget())
+        self.widget = ZoomingGraphicsView(self.parent_widget())
         self.widget.setScene(self.scene)
         self.widget.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
 
     def child_added(self, child):
         super(QtGraph, self).child_added(child)
@@ -82,12 +110,8 @@ class QtGraph(QtFrame, ProxyGraph):
         for from_, to in self.declaration.edges:
             g.add_edge(from_, to)
 
-        # print "BEFORE LAYOUT:"
-        # print g.string()
-
         g.layout(prog='dot')
 
-        print "-"*20
         for child in self.children():
             if not isinstance(child, QtContainer):
                 continue
@@ -95,10 +119,6 @@ class QtGraph(QtFrame, ProxyGraph):
             node = g.get_node(child.declaration.name)
             center_x, center_y = (-float(v)/72.0 for v in node.attr['pos'].split(','))
             width, height = child._layout_manager.best_size()
-            # x = center_x + (width / 2.0)
-            # y = center_x + (height / 2.0)
-            print "center = (%f, %f)" % (center_x, center_y)
-            print "width is %f, height is %f" % (width, height)
             x = center_x - (width / 2.0)
             y = center_y - (height / 2.0)
             scene_proxy.setPos(x, y)
@@ -107,27 +127,22 @@ class QtGraph(QtFrame, ProxyGraph):
             if from_ not in children_names or to not in children_names:
                 continue
             edge = g.get_edge(from_, to)
-            # __import__('ipdb').set_trace()
-            arrow, start_point, c1, c2, end_point = (tuple(-float(v)/72.0 for v in t.strip('e,').split(',')) for t in edge.attr['pos'].split(' '))
-            painter = QPainterPath(QPointF(*start_point))
-            painter.cubicTo(QPointF(*c1), QPointF(*c2), QPointF(*end_point))
-            # __import__('ipdb').set_trace()
-            self._edge_paths.append(self.scene.addPath(painter))
-            # __import__('ipdb').set_trace()
-            print "start_point = %s" % (start_point,)
-            print "c1 = %s" % (c1,)
-            print "c2 = %s" % (c2,)
-            print "end_point = %s" % (end_point,)
-            # self._edge_paths.append(self.scene.addLine(something[0], something[1], end_point[0], end_point[1]))
+            # TODO: look at below code
+            all_points = [tuple(-float(v)/72.0 for v in t.strip('e,').split(',')) for t in edge.attr['pos'].split(' ')]
+            arrow = all_points[0]
+            start_point = all_points[1]
 
-        # print "AFTER LAYOUT:"
-        # print g.string()
+            painter = QPainterPath(QPointF(*start_point))
+            for c1, c2, end in grouper(all_points[2:], 3):
+                painter.cubicTo(QPointF(*c1), QPointF(*c2), QPointF(*end))
+
+            self._edge_paths.append(self.scene.addPath(painter))
 
 QT_FACTORIES['Graph'] = lambda: QtGraph
 
 
 class Graph(Frame):
-    #: The edges (as IDs) of the Graph
+    #: The edges (as names) of the Graph
     edges = d_(List())
 
     proxy = Typed(ProxyGraph)

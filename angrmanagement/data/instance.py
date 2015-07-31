@@ -17,7 +17,7 @@ class Instance(Atom):
             self.add_workspace()
 
     def add_workspace(self):
-        self.workspaces.append(WorkspaceData(n=self.counter, proj=self.proj))
+        self.workspaces = self.workspaces + [WorkspaceData(n=self.counter, proj=self.proj)]
         self.counter += 1
 
     def save(self, loc):

@@ -5,43 +5,32 @@ from enaml.widgets.api import (
 )
 
 from .listcontrol import QtListControl
+from .notify import notify_update
 
-enamldef PathGroup(Container):
+
+enamldef PathGroup(Container): epg:
     attr pg
     attr selected_path = None
     func refresh():
         path_sel.items = pg.active
-        path_sel.refresh_items()
+        # path_sel.refresh_items()
 
     constraints = [
         # vbox(hbox(scroller)),
     ]
 
-    QtListControl: path_sel:
+    # This is currently commented out because the `selected_item` refuses to
+    # update the first few times... really perplexed as to why
+    # QtListControl: path_sel:
+    #     items << pg.active if pg else []
+    #     to_string = repr
+    #     selected_item := epg.selected_path
+
+    ObjectCombo: path_sel:
         items << pg.active if pg else []
         to_string = repr
+        selected := epg.selected_path
 
-        on_selected ::
-            selected_path = path_sel.selected_item
-
-    # ScrollArea: scroller:
-    #     Container:
-    #         Looper: looper:
-    #             iterable << pg.active if pg else []
-    #             PushButton:
-    #                 text = repr(loop_item)
-    #                 clicked :: path_selected(loop_item)
-
-def noop_notify(o, attr):
-    change = {
-        'value': getattr(o, attr),
-        'object': o,
-        'type': 'update',
-        'name': attr,
-        'oldvalue': None
-    }
-    o.notify(attr, change)
-    o.get_member(attr).notify(o, change)
 
 enamldef PathGroupItem(DockItem): pgi:
     attr path_groups
@@ -72,7 +61,7 @@ enamldef PathGroupItem(DockItem): pgi:
                 paths.refresh()
                 # __import__('ipdb').set_trace()
                 # pgi.selected_pg = pg_sel.selected
-                noop_notify(pgi, 'selected_pg')
+                notify_update(pgi, 'selected_pg')
 
         PushButton: step_pg_until:
             text = 'Step PG Until Branch'
@@ -85,8 +74,8 @@ enamldef PathGroupItem(DockItem): pgi:
                     # pg_changed(pg_sel.selected)
                 paths.refresh()
                 # pgi.selected_pg = pg_sel.selected
-                noop_notify(pgi, 'selected_pg')
+                notify_update(pgi, 'selected_pg')
 
         PathGroup: paths:
             pg << pg_sel.selected
-            selected_path := selected_path
+            selected_path := pgi.selected_path
