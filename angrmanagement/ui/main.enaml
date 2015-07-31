@@ -30,7 +30,7 @@ enamldef Workspace(Page): wk:
 
     Container:
         DockArea:
-            layout = VSplitLayout('path_tree', HSplitLayout('registers', 'path_group'))
+            layout = HSplitLayout('path_tree', VSplitLayout('registers', 'path_group'))
 
             PathTreeItem: pti:
                 name = 'path_tree'

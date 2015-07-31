@@ -1,3 +1,5 @@
+import pprint
+
 from enaml.core.api import Looper, Conditional
 from enaml.layout.api import vbox
 from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label, Field, Form, Feature
@@ -31,7 +33,7 @@ enamldef Path(Container): p:
         condition << watch_expr != ''
 
         Label:
-            text << "%s = %r" % (watch_expr, eval_with_path(p.path, watch_expr))
+            text << "Watched: %s" % (pprint.pformat(eval_with_path(p.path, watch_expr)))
 
 def all_paths(paths, hierarchy):
     work = set(paths)

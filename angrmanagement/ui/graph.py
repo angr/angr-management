@@ -8,7 +8,7 @@ from enaml.widgets.api import Container
 from enaml.widgets.frame import Frame, ProxyFrame
 from enaml.core.declarative import d_
 from enaml.qt.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter
-from enaml.qt.QtCore import QPointF, QRectF
+from enaml.qt.QtCore import QPointF, QRectF, Qt
 from enaml.qt.qt_frame import QtFrame
 from enaml.qt.qt_factories import QT_FACTORIES
 from enaml.qt.qt_container import QtContainer
@@ -21,25 +21,28 @@ def grouper(iterable, n, fillvalue=None):
 
 class ZoomingGraphicsView(QGraphicsView):
     def wheelEvent(self, event):
-        zoomInFactor = 1.25
-        zoomOutFactor = 1 / zoomInFactor
+        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+            zoomInFactor = 1.25
+            zoomOutFactor = 1 / zoomInFactor
 
-        # Save the scene pos
-        oldPos = self.mapToScene(event.pos())
+            # Save the scene pos
+            oldPos = self.mapToScene(event.pos())
 
-        # Zoom
-        if event.delta() > 0:
-            zoomFactor = zoomInFactor
+            # Zoom
+            if event.delta() > 0:
+                zoomFactor = zoomInFactor
+            else:
+                zoomFactor = zoomOutFactor
+            self.scale(zoomFactor, zoomFactor)
+
+            # Get the new position
+            newPos = self.mapToScene(event.pos())
+
+            # Move scene to old position
+            delta = newPos - oldPos
+            self.translate(delta.x(), delta.y())
         else:
-            zoomFactor = zoomOutFactor
-        self.scale(zoomFactor, zoomFactor)
-
-        # Get the new position
-        newPos = self.mapToScene(event.pos())
-
-        # Move scene to old position
-        delta = newPos - oldPos
-        self.translate(delta.x(), delta.y())
+            super(ZoomingGraphicsView, self).wheelEvent(event)
 
 class ProxyGraph(ProxyFrame):
     declaration = ForwardTyped(lambda: Graph)
