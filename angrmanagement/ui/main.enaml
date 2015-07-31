@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 import websocket
 
 from enaml.core.api import Looper
@@ -52,6 +53,14 @@ enamldef Workspace(Page): wk:
                 path_groups = data.path_groups
                 selected_pg ::
                     pg = change['value']
+                    metadata = defaultdict(lambda: defaultdict(dict))
+                    for a in pg.active:
+                        metadata[a]['active'] = True
+                    for d in pg.deadended:
+                        metadata[d]['deadended'] = True
+                    for e in pg.errored:
+                        metadata[e]['errored'] = True
+                    pti.metadata = metadata
                     pti.hierarchy = pg._hierarchy
                     pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
                 selected_path := wk.selected_path
