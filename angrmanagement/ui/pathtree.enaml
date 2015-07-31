@@ -2,7 +2,8 @@ import pprint
 
 from enaml.core.api import Looper, Conditional
 from enaml.layout.api import vbox
-from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label, Field, Form, Feature
+from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label, Field, Form, Feature, Border
+from enaml.styling import StyleSheet, Style, Setter
 from enaml.layout.geometry import Box
 
 from .graph import Graph
@@ -17,18 +18,21 @@ enamldef Path(Container): p:
     attr path
     attr watch_expr
 
-    # padding = Box(0, 0, 0, 0)
+    border = Border(style='box', line_style='plain')
+
     features = Feature.FocusEvents
 
     # focus_gained =>
     #     print "focus!"
 
     Label:
-        text = "addr = %#x" % path.addr
+        style_class = 'bold'
+        text = "Path at %#x" % path.addr
+        # font = 'arial 12 bold'
     Label:
-        text = "runs = %d" % len(path.backtrace)
+        text = "%d Runs" % len(path.backtrace)
     Label:
-        text = "id = %s" % path.path_id
+        text = "ID is %s" % path.path_id
     Conditional:
         condition << watch_expr != ''
 
@@ -91,6 +95,14 @@ enamldef PathTreeItem(DockItem): pti:
     attr watching = ''
 
     title = "Path Tree"
+
+    # let's see if this fucking works or not
+    StyleSheet:
+        Style:
+            style_class = 'bold'
+            Setter:
+                field = 'font-weight'
+                value = 'bold'
 
     Container:
         constraints = [
