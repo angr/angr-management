@@ -22,8 +22,11 @@ enamldef Path(Container): p:
 
     features = Feature.FocusEvents
 
-    # focus_gained =>
-    #     print "focus!"
+    focus_gained => ():
+        print "focus!"
+
+    focus_lost => ():
+        print "focus lost!"
 
     Label:
         style_class = 'bold'

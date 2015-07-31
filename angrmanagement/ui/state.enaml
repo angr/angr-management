@@ -13,7 +13,7 @@ enamldef RegistersItem(DockItem): regs:
 
     title = "Registers"
 
-    Container:
+    Container: container:
         ScrollArea: scroller:
             Conditional:
                 condition << bool(state)
