@@ -41,7 +41,7 @@ enamldef PathGroupItem(DockItem): pgi:
 
     Container:
         constraints = [
-            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), paths),
+            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), hbox(paths, step_path)),
         ]
 
         ObjectCombo: pg_sel:
@@ -79,3 +79,13 @@ enamldef PathGroupItem(DockItem): pgi:
         PathGroup: paths:
             pg << pg_sel.selected
             selected_path := pgi.selected_path
+
+        PushButton: step_path:
+            text = 'Step Path'
+            enabled << pgi.selected_path is not None
+            clicked ::
+                pg_sel.selected.step(selector_func=lambda p, sp=pgi.selected_path: p is sp)
+                paths.refresh()
+                # __import__('ipdb').set_trace()
+                # pgi.selected_pg = pg_sel.selected
+                notify_update(pgi, 'selected_pg')
