@@ -58,6 +58,7 @@ enamldef PathGroupItem(DockItem): pgi:
             enabled << pg_sel.selected is not None
             clicked ::
                 pg_sel.selected.step()
+                pg_sel.selected.prune()
                 paths.refresh()
                 # __import__('ipdb').set_trace()
                 # pgi.selected_pg = pg_sel.selected
@@ -70,6 +71,7 @@ enamldef PathGroupItem(DockItem): pgi:
                 orig_len = len(pg_sel.selected.active)
                 while len(pg_sel.selected.active) == orig_len:
                     pg_sel.selected.step()
+                    pg_sel.selected.prune()
                     # paths.refresh()
                     # pg_changed(pg_sel.selected)
                 paths.refresh()
