@@ -20,7 +20,7 @@ enamldef RegistersItem(DockItem): regs:
                 Container:
                     Form:
                         Looper: looper:
-                            iterable << state.arch.register_names.items() if state else []
+                            iterable << sorted(state.arch.register_names.items()) if state else []
                             Label: reg_name:
                                 text = loop_item[1] + ':'
                             Field: reg_value:
