@@ -28,7 +28,6 @@ enamldef Path(Container): p:
     Label:
         style_class = 'bold'
         text = "Path at %#x" % path.addr
-        # font = 'arial 12 bold'
     Label:
         text = "%d Runs" % len(path.backtrace)
     Label:

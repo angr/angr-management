@@ -1,4 +1,5 @@
 import os
+import websocket
 
 from enaml.core.api import Looper
 from enaml.layout.api import vbox
@@ -24,7 +25,12 @@ enamldef MyDockArea(DockArea):
 
 enamldef Workspace(Page): wk:
     attr data
+    attr ida_conn
     attr selected_path = None
+
+    selected_path ::
+        if ida_conn is not None:
+            ida_conn.send('setaddress %d' % selected_path.addr)
 
     title = 'Workspace #{}'.format(data.n)
 
@@ -52,6 +58,7 @@ enamldef Workspace(Page): wk:
 
 enamldef Main(MainWindow): main:
     attr inst
+    attr ida_conn = None
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
@@ -88,6 +95,11 @@ enamldef Main(MainWindow): main:
                 text = 'AddWorkspace\tCtrl+A'
                 enabled << bool(inst)
                 triggered :: inst.add_workspace()
+            Action:
+                text = 'Connect to IDA'
+                enabled << ida_conn is None
+                triggered ::
+                    main.ida_conn = websocket.create_connection("ws://localhost:3003", subprotocols=['qira'])
             context_menu = True
 
         Notebook: nbook:
@@ -98,3 +110,4 @@ enamldef Main(MainWindow): main:
 
                 Workspace:
                     data = loop_item
+                    ida_conn := main.ida_conn
