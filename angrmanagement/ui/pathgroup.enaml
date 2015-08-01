@@ -41,7 +41,7 @@ enamldef PathGroupItem(DockItem): pgi:
 
     Container:
         constraints = [
-            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), hbox(paths, step_path)),
+            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), hbox(paths, step_path)), paths.top == step_path.top - 5
         ]
 
         ObjectCombo: pg_sel:
