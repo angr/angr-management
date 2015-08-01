@@ -4,11 +4,14 @@ import websocket
 
 from enaml.core.api import Looper
 from enaml.layout.api import vbox
-from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout
 from enaml.widgets.api import (
-    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
+    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton, IPythonConsole, DockItem
 )
 
+import angr
+import simuvex
+import claripy
 from angr import Project
 
 from ..data.instance import Instance
@@ -33,12 +36,29 @@ enamldef Workspace(Page): wk:
     selected_path ::
         if ida_conn is not None:
             ida_conn.send('setaddress %d' % selected_path.addr)
+        console.update_ns(curpath=selected_path)
 
     title = 'Workspace #{}'.format(data.n)
 
     Container:
         DockArea:
-            layout = HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('path_group', 'registers'))
+            layout = AreaLayout(item=HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('path_group', 'registers')),
+                                dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+
+            DockItem:
+                name = 'console'
+                title = 'Console'
+
+                Container:
+                    constraints = [vbox(console)]
+
+                    IPythonConsole: console:
+                        name = 'realconsole'
+                        initial_ns = {
+                            'angr': angr,
+                            'simuvex': simuvex,
+                            'claripy': claripy,
+                        }
 
             PathTreeItem: pti:
                 name = 'path_tree'
