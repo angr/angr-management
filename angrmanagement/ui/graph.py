@@ -154,8 +154,17 @@ class QtGraph(QtFrame, ProxyGraph):
 
             self._edge_paths.append(self.scene.addPath(painter))
 
+        self.show_selected()
+
     def minimumSizeHint(self):
         return QSize(0, 0)
+
+    def show_selected(self):
+        # TODO: make more efficient?
+        for child, proxy in self._proxies.items():
+            if isinstance(child, QtContainer) and child.declaration is not None and child.declaration.name == self.declaration.selected:
+                self.widget.ensureVisible(proxy)
+                break
 
 QT_FACTORIES['Graph'] = lambda: QtGraph
 
@@ -163,6 +172,9 @@ QT_FACTORIES['Graph'] = lambda: QtGraph
 class Graph(Frame):
     #: The edges (as names) of the Graph
     edges = d_(List())
+
+    #: The "selected" node that should be visible
+    selected = d_(Typed(str))
 
     proxy = Typed(ProxyGraph)
 
@@ -180,3 +192,8 @@ class Graph(Frame):
     @observe('edges')
     def _update(self, change):
         self.request_relayout()
+
+    @observe('selected')
+    def _selected_update(self, change):
+        if self.proxy is not None:
+            self.proxy.show_selected()

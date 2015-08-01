@@ -141,6 +141,7 @@ enamldef PathTreeItem(DockItem): pti:
 
         Graph: graph:
             edges << all_edges(paths, hierarchy)
+            selected << selected_path.path_id if selected_path is not None else None
 
             Looper:
                 iterable << all_paths(paths, hierarchy)
