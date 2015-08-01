@@ -1,0 +1,32 @@
+from enaml.core.api import Conditional, Looper
+from enaml.layout.api import hbox, vbox
+from enaml.widgets.api import (
+    Container, DockItem, Field, Form, GroupBox, Label, ScrollArea,
+)
+
+enamldef RegistersItem(DockItem): regs:
+    attr state
+    # func set_state(st):
+    #     regs.state = st
+    #     if 'looper' in vars():
+    #         looper.refresh_items()
+
+    title = "Registers"
+
+    Container: container:
+        ScrollArea: scroller:
+            Conditional:
+                condition << bool(state)
+                Container:
+                    Form:
+                        Looper: looper:
+                            iterable << sorted(state.arch.register_names.items()) if state else []
+                            Label: reg_name:
+                                text = loop_item[1] + ':'
+                            Field: reg_value:
+                                text << format(state.se.any_int(state.registers.load(loop_item[0])), '#016x')
+            Conditional:
+                condition << not state
+                Container:
+                    Label:
+                        text = 'no state currently focused'

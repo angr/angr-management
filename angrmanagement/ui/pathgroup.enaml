@@ -1,0 +1,100 @@
+from enaml.core.api import Looper
+from enaml.layout.api import hbox, vbox
+from enaml.widgets.api import (
+    Container, DockItem, ObjectCombo, PushButton, ScrollArea
+)
+
+from .listcontrol import QtListControl
+from .notify import notify_update
+
+
+enamldef PathGroup(Container): epg:
+    attr pg
+    attr selected_path = None
+    func refresh():
+        path_sel.items = pg.active
+        # path_sel.refresh_items()
+
+    constraints = [
+        # vbox(hbox(scroller)),
+    ]
+
+    # This is currently commented out because the `selected_item` refuses to
+    # update the first few times... really perplexed as to why
+    # QtListControl: path_sel:
+    #     items << pg.active if pg else []
+    #     to_string = repr
+    #     selected_item := epg.selected_path
+
+    ObjectCombo: path_sel:
+        items << pg.active if pg else []
+        to_string = repr
+        selected := epg.selected_path
+
+
+enamldef PathGroupItem(DockItem): pgi:
+    attr path_groups
+    attr selected_path = None
+    attr selected_pg = None
+
+    title = "Path Group"
+
+    Container:
+        constraints = [
+            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), hbox(paths, step_path)),
+        ]
+
+        ObjectCombo: pg_sel:
+            items << path_groups.groups
+            to_string = repr
+            selected := selected_pg
+
+        PushButton: new_pg:
+            text = 'New PG'
+            clicked :: path_groups.add_path_group()
+
+        PushButton: step_pg:
+            text = 'Step PG'
+            enabled << pg_sel.selected is not None
+            clicked ::
+                pg_sel.selected.step()
+                pg_sel.selected.prune()
+                paths.refresh()
+                # __import__('ipdb').set_trace()
+                # pgi.selected_pg = pg_sel.selected
+                notify_update(pgi, 'selected_pg')
+
+        PushButton: step_pg_until:
+            text = 'Step PG Until Branch'
+            enabled << pg_sel.selected is not None
+            clicked ::
+                orig_len = len(pg_sel.selected.active)
+                while len(pg_sel.selected.active) == orig_len:
+                    pg_sel.selected.step()
+                    pg_sel.selected.prune()
+                    # paths.refresh()
+                    # pg_changed(pg_sel.selected)
+                paths.refresh()
+                # pgi.selected_pg = pg_sel.selected
+                notify_update(pgi, 'selected_pg')
+
+        PathGroup: paths:
+            pg << pg_sel.selected
+            selected_path := pgi.selected_path
+
+        PushButton: step_path:
+            text = 'Step Path'
+            enabled << pgi.selected_path is not None
+            clicked ::
+                pg = pg_sel.selected
+                pg.step(selector_func=lambda p, sp=pgi.selected_path: p is sp)
+                paths.refresh()
+                new_path = None
+                for a in pg.active:
+                    if pg._hierarchy._parents[a.state.se] is pgi.selected_path.state.se:
+                        new_path = a
+                        break
+                pgi.selected_path = new_path
+                # __import__('ipdb').set_trace()
+                # pgi.selected_pg = pg_sel.selected
+                notify_update(pgi, 'selected_pg')

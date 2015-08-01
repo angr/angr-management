@@ -1,0 +1,130 @@
+import os
+from collections import defaultdict
+import websocket
+
+from enaml.core.api import Looper
+from enaml.layout.api import vbox
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout
+from enaml.widgets.api import (
+    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
+)
+
+from angr import Project
+
+from ..data.instance import Instance
+from ..data.workspace import WorkspaceData
+from .state import RegistersItem
+from .pathgroup import PathGroupItem
+from .pathtree import PathTreeItem
+from .cfg import CFGItem
+
+enamldef MyDockArea(DockArea):
+    layout = AreaLayout('foo')
+
+    RegistersItem:
+        name = 'foo'
+        state = None
+
+enamldef Workspace(Page): wk:
+    attr data
+    attr ida_conn
+    attr selected_path = None
+
+    selected_path ::
+        if ida_conn is not None:
+            ida_conn.send('setaddress %d' % selected_path.addr)
+
+    title = 'Workspace #{}'.format(data.n)
+
+    Container:
+        DockArea:
+            layout = HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('path_group', 'registers'))
+
+            PathTreeItem: pti:
+                name = 'path_tree'
+                paths = []
+                selected_path := wk.selected_path
+
+            RegistersItem: regs:
+                name = 'registers'
+                state << selected_path.state if selected_path is not None else None
+
+            PathGroupItem:
+                name = 'path_group'
+                path_groups = data.path_groups
+                selected_pg ::
+                    pg = change['value']
+                    metadata = defaultdict(lambda: defaultdict(dict))
+                    for a in pg.active:
+                        metadata[a]['active'] = True
+                    for d in pg.deadended:
+                        metadata[d]['deadended'] = True
+                    for e in pg.errored:
+                        metadata[e]['errored'] = True
+                    pti.metadata = metadata
+                    pti.hierarchy = pg._hierarchy
+                    pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
+                selected_path := wk.selected_path
+
+            CFGItem:
+                name = 'cfg'
+                proj = data.proj
+                cfg << data.cfg if data.cfg is not None else None
+
+                generate_cfg :: data.generate_cfg()
+
+enamldef Main(MainWindow): main:
+    attr inst
+    attr ida_conn = None
+
+    title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
+
+    MenuBar:
+        Menu:
+            title = '&File'
+            Action:
+                text = 'New\tCtrl+N'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(main)
+                    if path:
+                        main.inst = Instance(proj=Project(path))
+            Action:
+                text = 'Save\tCtrl+S'
+                enabled << bool(inst)
+                triggered ::
+                    path = FileDialogEx.get_save_file_name(main)
+                    if path:
+                        inst.save(path)
+            Action:
+                text = 'Open\tCtrl+O'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(main)
+                    if path:
+                        main.inst = Instance.from_file(path)
+
+    Container:
+        constraints = [
+            vbox(nbook),
+        ]
+
+        Menu:
+            Action:
+                text = 'AddWorkspace\tCtrl+A'
+                enabled << bool(inst)
+                triggered :: inst.add_workspace()
+            Action:
+                text = 'Connect to IDA'
+                enabled << ida_conn is None
+                triggered ::
+                    main.ida_conn = websocket.create_connection("ws://localhost:3003", subprotocols=['qira'])
+            context_menu = True
+
+        Notebook: nbook:
+            tab_style = 'document'
+
+            Looper:
+                iterable << inst.workspaces if inst else []
+
+                Workspace:
+                    data = loop_item
+                    ida_conn := main.ida_conn
