@@ -1,0 +1,64 @@
+import textwrap
+
+from enaml.core.api import Conditional, Looper
+from enaml.layout.api import vbox
+from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
+
+from angr.errors import AngrError
+
+from .graph import Graph
+from .notify import notify_update
+
+
+enamldef CFGNode(Container):
+    attr proj
+    attr node
+
+    Label:
+        font = '10pt Courier'
+        text = str(get_block(proj, node.addr).capstone) if node.simprocedure_name is None else node.simprocedure_name
+
+def get_block(proj, address):
+    try:
+        block = proj.factory.block(address)
+        return block
+    except AngrError:
+        return None
+
+def foo(g):
+    notify_update(g, 'edges')
+
+enamldef CFGItem(DockItem): cfgi:
+    attr proj
+    attr cfg
+    event generate_cfg
+
+    title = "CFG"
+
+    Conditional:
+        condition << cfg is not None
+
+        Container:
+            constraints = [vbox(graph)]
+
+            Graph: graph:
+                edges << [(str(hash(from_)), str(hash(to))) for (from_, to) in cfg.graph.edges()]
+                name = str(foo(graph))
+
+                Looper:
+                    iterable << cfg.graph.nodes()
+
+                    Conditional:
+                        condition << loop_item.addr != 0
+
+                        CFGNode:
+                            name << str(hash(loop_item))
+                            node << loop_item
+                            proj = cfgi.proj
+
+    Conditional:
+        condition << cfg is None
+
+        PushButton:
+            text = "Generate CFG"
+            clicked :: generate_cfg()

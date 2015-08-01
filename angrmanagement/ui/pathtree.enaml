@@ -18,9 +18,11 @@ enamldef Path(Container): p:
     attr path
     attr watch_expr
     attr options = {}
+    attr selected = False
     event select_me
 
     border = Border(style='box', line_style='plain')
+    style_class << 'selected' if selected else ''
 
     StyleSheet:
         Style:
@@ -33,6 +35,14 @@ enamldef Path(Container): p:
             Setter:
                 field = 'color'
                 value = 'gray'
+        Style:
+            style_class = 'selected'
+            Setter:
+                field = 'border'
+                value = '4px solid #2e2'
+            Setter:
+                field = 'padding'
+                value = '10px'
 
     PushButton:
         style_class << ' '.join(['bold'] + [option for (option, val) in options.items() if val])
@@ -138,6 +148,7 @@ enamldef PathTreeItem(DockItem): pti:
                 Path:
                     name = loop_item.path_id
                     path = loop_item
+                    selected << selected_path is loop_item
                     options << metadata.get(loop_item, {})
                     watch_expr << watching
 

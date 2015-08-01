@@ -1,5 +1,6 @@
 import itertools
 import functools
+import time
 
 import pygraphviz
 
@@ -8,7 +9,7 @@ from enaml.widgets.api import Container
 from enaml.widgets.frame import Frame, ProxyFrame
 from enaml.core.declarative import d_
 from enaml.qt.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter
-from enaml.qt.QtCore import QPointF, QRectF, Qt
+from enaml.qt.QtCore import QPointF, QRectF, Qt, QSize
 from enaml.qt.qt_frame import QtFrame
 from enaml.qt.qt_factories import QT_FACTORIES
 from enaml.qt.qt_container import QtContainer
@@ -20,6 +21,9 @@ def grouper(iterable, n, fillvalue=None):
 
 
 class ZoomingGraphicsView(QGraphicsView):
+    def sizeHint(self):
+        return QSize(300, 300)
+
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
             zoomInFactor = 1.25
@@ -63,10 +67,7 @@ class QtGraph(QtFrame, ProxyGraph):
 
     def child_added(self, child):
         super(QtGraph, self).child_added(child)
-        cw = child.widget
-        if cw is not None:
-            cw.setParent(None)
-            self._proxies[child] = self.scene.addWidget(cw)
+        self._proxy(child)
 
     def child_removed(self, child):
         super(QtGraph, self).child_removed(child)
@@ -75,6 +76,16 @@ class QtGraph(QtFrame, ProxyGraph):
 
     def init_layout(self):
         super(QtGraph, self).init_layout()
+        self.request_relayout()
+
+    def _proxy(self, child):
+        if child not in self._proxies:
+            cw = child.widget
+            if cw is not None:
+                cw.setParent(None)
+                self._proxies[child] = self.scene.addWidget(cw)
+
+        return self._proxies[child]
 
     def request_relayout(self):
         # y = 0.0
@@ -105,7 +116,7 @@ class QtGraph(QtFrame, ProxyGraph):
         for child in self.children():
             if not isinstance(child, QtContainer):
                 continue
-            scene_proxy = self._proxies[child]
+            scene_proxy = self._proxy(child)
             width, height = child._layout_manager.best_size()
             scene_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
             g.add_node(child.declaration.name, width=width, height=height)
@@ -113,7 +124,9 @@ class QtGraph(QtFrame, ProxyGraph):
         for from_, to in self.declaration.edges:
             g.add_edge(from_, to)
 
+        before = time.time()
         g.layout(prog='dot')
+        after = time.time()
 
         for child in self.children():
             if not isinstance(child, QtContainer):
@@ -141,6 +154,9 @@ class QtGraph(QtFrame, ProxyGraph):
 
             self._edge_paths.append(self.scene.addPath(painter))
 
+    def minimumSizeHint(self):
+        return QSize(0, 0)
+
 QT_FACTORIES['Graph'] = lambda: QtGraph
 
 
@@ -150,8 +166,8 @@ class Graph(Frame):
 
     proxy = Typed(ProxyGraph)
 
-    hug_width = 'ignore'
-    hug_height = 'ignore'
+    hug_width = 'weak'
+    hug_height = 'weak'
 
     def child_added(self, child):
         super(Graph, self).child_added(child)
@@ -164,98 +180,3 @@ class Graph(Frame):
     @observe('edges')
     def _update(self, change):
         self.request_relayout()
-
-# class BetterQtRawWidget(QtRawWidget):
-#     def init_layout(self):
-#         if hasattr(self.declaration, 'init_layout'):
-#             self.declaration.init_layout()
-
-# QT_FACTORIES['RawWidget'] = lambda: BetterQtRawWidget
-
-
-# class Graph(RawWidget):
-#     #: The edges (as IDs) of the Graph
-#     edges = d_(List())
-
-#     _view = Typed(QGraphicsView)
-#     _scene = Typed(QGraphicsScene)
-#     _proxies = Dict()
-
-#     hug_width = 'ignore'
-#     hug_height = 'ignore'
-
-#     def create_widget(self, parent):
-#         self._scene = QGraphicsScene(parent)
-#         # t = self._scene.addText("hello world")
-#         # t.setPos(25.0, 25.0)
-#         # t2 = self._scene.addText("foo")
-#         # t2.setPos(0.0, 0.0)
-
-#         # add nodes...
-
-#         self._view = QGraphicsView(parent)
-#         self._view.setScene(self._scene)
-#         self._view.setDragMode(QGraphicsView.ScrollHandDrag)
-
-#         return self._view
-
-#     def init_layout(self):
-#         for child in self.children:
-#             if not hasattr(child, 'proxy'):
-#                 continue
-#             child.proxy.widget.setParent(None)
-#             scene_proxy = self._scene.addWidget(child.proxy.widget)
-#             self._proxies[child] = scene_proxy
-
-#         self.update_layout()
-
-#     def child_added(self, child):
-#         print "child added!"
-
-#         if hasattr(child, 'proxy') and child.proxy is not None and child.proxy.widget is not None:
-#             child.proxy.widget.setParent(None)
-#             scene_proxy = self._scene.addWidget(child.proxy.widget)
-#             self._proxies[child] = scene_proxy
-
-#             self.update_layout()
-#         else:
-#             print "...but not available yet"
-
-#     def update_layout(self):
-#         y = 0.0
-
-#         for child in self.children:
-#             if not hasattr(child, 'proxy'):
-#                 continue
-#             scene_proxy = self._proxies[child]
-#             width, height = child.proxy._layout_manager.best_size()
-#             scene_proxy.setPos(0.0, y)
-#             y += height + 50.0
-
-#         __import__('ipdb').set_trace()
-
-#         return
-
-#         g = pygraphviz.AGraph(directed=True)
-#         g.node_attr['shape'] = 'rect'
-
-#         for child in self.children:
-#             scene_proxy = self._proxies[child]
-#             width, height = child.proxy._layout_manager.best_size()
-#             # scene_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
-#             g.add_node(child.name, width=width, height=height)
-
-#         for from_, to in self.edges:
-#             g.add_edge(from_, to)
-
-#         g.layout()
-
-#         for child in self.children:
-#             scene_proxy = self._proxies[child]
-#             node = g.get_node(child.name)
-#             x, y = (float(v) for v in node.attr['pos'].split(','))
-#             scene_proxy.setPos(x, y)
-
-#         self._view.setScene(self._scene)
-
-#         # __import__('ipdb').set_trace()

@@ -86,8 +86,15 @@ enamldef PathGroupItem(DockItem): pgi:
             text = 'Step Path'
             enabled << pgi.selected_path is not None
             clicked ::
-                pg_sel.selected.step(selector_func=lambda p, sp=pgi.selected_path: p is sp)
+                pg = pg_sel.selected
+                pg.step(selector_func=lambda p, sp=pgi.selected_path: p is sp)
                 paths.refresh()
+                new_path = None
+                for a in pg.active:
+                    if pg._hierarchy._parents[a.state.se] is pgi.selected_path.state.se:
+                        new_path = a
+                        break
+                pgi.selected_path = new_path
                 # __import__('ipdb').set_trace()
                 # pgi.selected_pg = pg_sel.selected
                 notify_update(pgi, 'selected_pg')

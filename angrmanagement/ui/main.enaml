@@ -4,7 +4,7 @@ import websocket
 
 from enaml.core.api import Looper
 from enaml.layout.api import vbox
-from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout
 from enaml.widgets.api import (
     Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
 )
@@ -16,6 +16,7 @@ from ..data.workspace import WorkspaceData
 from .state import RegistersItem
 from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
+from .cfg import CFGItem
 
 enamldef MyDockArea(DockArea):
     layout = AreaLayout('foo')
@@ -37,7 +38,7 @@ enamldef Workspace(Page): wk:
 
     Container:
         DockArea:
-            layout = HSplitLayout('path_tree', VSplitLayout('path_group', 'registers'))
+            layout = HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('path_group', 'registers'))
 
             PathTreeItem: pti:
                 name = 'path_tree'
@@ -64,6 +65,13 @@ enamldef Workspace(Page): wk:
                     pti.hierarchy = pg._hierarchy
                     pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
                 selected_path := wk.selected_path
+
+            CFGItem:
+                name = 'cfg'
+                proj = data.proj
+                cfg << data.cfg if data.cfg is not None else None
+
+                generate_cfg :: data.generate_cfg()
 
 enamldef Main(MainWindow): main:
     attr inst
