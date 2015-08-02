@@ -20,21 +20,18 @@ enamldef RegistersItem(DockItem): regs:
         condition << bool(state)
 
         Container: container:
-            ScrollArea: scroller:
-                Container:
-                    constraints = [ reg_table.left == reg_label.left ]
+            constraints = [ vbox(reg_label, reg_table), reg_table.left == reg_label.left ]
 
-                    Label: reg_label:
-                        text = 'Registers'
+            Label: reg_label:
+                text = 'Registers'
 
-                    Table: reg_table:
-                         data_matrix << [
-                             [ b.encode('hex').lower() for b in state.se.any_str(state.registers.load(state.arch.registers[r][0], size=state.arch.registers[r][1])) ]
-                             for r in sorted(state.arch.registers.keys())
-                         ]
-                         column_names = [ "%x"%i for i in range(max(r[1][1] for r in sorted(state.arch.registers.items(), key=lambda x: x[0]))) ]
-                         row_names = sorted(state.arch.registers.keys())
-                         horizontal_scroll = True
+            Table: reg_table:
+                 data_matrix << [
+                     [ b.encode('hex').lower() for b in state.se.any_str(state.registers.load(state.arch.registers[r][0], size=state.arch.registers[r][1])) ]
+                     for r in sorted(state.arch.registers.keys())
+                 ]
+                 column_names = [ "%x"%i for i in range(max(r[1][1] for r in sorted(state.arch.registers.items(), key=lambda x: x[0]))) ]
+                 row_names = sorted(state.arch.registers.keys())
     Conditional:
         condition << not state
 
@@ -55,18 +52,15 @@ enamldef MemoryItem(DockItem): regs:
         condition << bool(state)
 
         Container: container:
-            ScrollArea: scroller:
-                Container:
-                    constraints = [ mem_label.left == mem_table.left ]
+            constraints = [vbox(mem_label, mem_table), mem_label.left == mem_table.left]
 
-                    Label: mem_label:
-                        text = 'Memory'
+            Label: mem_label:
+                text = 'Memory'
 
-                    Table: mem_table:
-                         data_list << [ b.encode('hex').lower() for b in state.se.any_str(state.memory.load(state.regs.sp, size=256)) ]
-                         column_names = [ "%x"%i for i in range(15) ]
-                         row_names = [ "%x"%(state.se.any_int(state.regs.sp)/16*16+i*16) for i in range(16) ]
-                         vertical_scroll = True
+            Table: mem_table:
+                 data_list << [ b.encode('hex').lower() for b in state.se.any_str(state.memory.load(state.regs.sp, size=256)) ]
+                 column_names = [ "%x"%i for i in range(15) ]
+                 row_names = [ "%x"%(state.se.any_int(state.regs.sp)/16*16+i*16) for i in range(16) ]
     Conditional:
         condition << not state
 

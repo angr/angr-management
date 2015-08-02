@@ -1,6 +1,6 @@
 from enaml.widgets.api import RawWidget
 from enaml.core.declarative import d_
-from atom.api import List, Bool #, set_default
+from atom.api import List, Bool, set_default, observe, Typed
 from enaml.qt.QtGui import QTableWidget, QTableWidgetItem, QFont
 from enaml.qt.QtCore import Qt
 
@@ -9,14 +9,17 @@ class Table(RawWidget):
     data_matrix = d_(List())
     column_names = d_(List())
     row_names = d_(List())
-    horizontal_scroll = d_(Bool(False))
-    vertical_scroll = d_(Bool(False))
+    horizontal_scroll = d_(Bool(True))
+    vertical_scroll = d_(Bool(True))
 
-    #hug_width = set_default('ignore')
-    #hug_height = set_default('ignore')
+    _item_font = Typed(QFont)
+    _table = Typed(QTableWidget)
+
+    hug_width = set_default('ignore')
+    hug_height = set_default('ignore')
 
     def create_widget(self, parent):
-        table = QTableWidget(parent)
+        self._table = table = QTableWidget(parent)
         table.setColumnCount(len(self.column_names))
         table.setRowCount(len(self.row_names))
         table.horizontalHeader().setMinimumSectionSize(1)
@@ -34,7 +37,19 @@ class Table(RawWidget):
         if not self.vertical_scroll:
             table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        item_font = QFont("Monospace")
+        self._item_font = QFont("Monospace")
+        self.update_data()
+
+        table.setHorizontalHeaderLabels(self.column_names)
+        table.setVerticalHeaderLabels(self.row_names)
+
+        table.resizeColumnsToContents()
+        table.resizeRowsToContents()
+
+        return table
+
+    @observe('data_list', 'data_matrix')
+    def update_data(self, _change=None):
         for col in range(len(self.column_names)):
             for row in range(len(self.row_names)):
                 try:
@@ -45,25 +60,5 @@ class Table(RawWidget):
                 except (IndexError, KeyError):
                     continue
 
-                item.setFont(item_font)
-                table.setItem(row, col, item)
-
-        table.setHorizontalHeaderLabels(self.column_names)
-        table.setVerticalHeaderLabels(self.row_names)
-        self.shrink_to_fit(table)
-        return table
-
-    @staticmethod
-    def shrink_to_fit(table):
-        table.resizeColumnsToContents()
-        table.resizeRowsToContents()
-
-        #print [ table.columnWidth(c) for c in range(table.columnCount()) ]
-        #print [ table.rowHeight(r) for r in range(table.rowCount()) ]
-
-        table_width = 3+table.horizontalHeader().width() + sum(table.columnWidth(c) for c in range(table.columnCount()))
-        table_height = table.verticalHeader().width() + sum(table.rowHeight(r) for r in range(table.rowCount()))
-        table.setMaximumHeight(table_height)
-        table.setMinimumHeight(table_height)
-        table.setMaximumWidth(table_width)
-        table.setMinimumWidth(table_width)
+                item.setFont(self._item_font)
+                self._table.setItem(row, col, item)
