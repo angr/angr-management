@@ -20,6 +20,7 @@ from .state import RegistersItem
 from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
 from .cfg import CFGItem
+from .functions import FunctionManagerItem
 
 enamldef MyDockArea(DockArea):
     layout = AreaLayout('foo')
@@ -32,6 +33,7 @@ enamldef Workspace(Page): wk:
     attr data
     attr ida_conn
     attr selected_path = None
+    attr selected_function = None
 
     selected_path ::
         if ida_conn is not None:
@@ -42,8 +44,13 @@ enamldef Workspace(Page): wk:
 
     Container:
         DockArea:
-            layout = AreaLayout(item=HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('path_group', 'registers')),
+            layout = AreaLayout(item=HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('funcs', 'path_group', 'registers')),
                                 dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+
+            FunctionManagerItem:
+                name = 'funcs'
+                cfg << data.cfg
+                selected_function := wk.selected_function
 
             DockItem:
                 name = 'console'
@@ -89,7 +96,8 @@ enamldef Workspace(Page): wk:
             CFGItem:
                 name = 'cfg'
                 proj = data.proj
-                cfg << data.cfg if data.cfg is not None else None
+                cfg << data.cfg
+                func << selected_function
 
                 generate_cfg :: data.generate_cfg()
 

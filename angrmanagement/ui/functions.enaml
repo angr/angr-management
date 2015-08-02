@@ -1,0 +1,17 @@
+from enaml.widgets.api import Container, DockItem
+
+from .listcontrol import QtListControl
+
+enamldef FunctionManagerItem(DockItem): fmi:
+    attr cfg
+    attr selected_function = None
+
+    title = "Function Manager"
+
+    Container:
+        QtListControl: selector:
+            items << cfg.function_manager.functions.values() if cfg else []
+            to_string = repr
+            on_selected ::
+                fmi.selected_function
+                fmi.selected_function = selector.selected_item

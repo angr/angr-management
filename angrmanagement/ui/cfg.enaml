@@ -16,7 +16,7 @@ enamldef CFGNode(Container):
 
     Label:
         font = '10pt Courier'
-        text = str(get_block(proj, node.addr).capstone) if node.simprocedure_name is None else node.simprocedure_name
+        text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node])
 
 def get_block(proj, address):
     try:
@@ -31,28 +31,43 @@ def foo(g):
 enamldef CFGItem(DockItem): cfgi:
     attr proj
     attr cfg
+    attr func
     event generate_cfg
 
     title = "CFG"
 
     Conditional:
-        condition << cfg is not None
+        condition << cfg is not None and func is not None
 
         Container:
             constraints = [vbox(graph)]
 
+            # Graph: graph:
+            #     edges << [(str(hash(from_)), str(hash(to))) for (from_, to) in cfg.graph.edges()]
+            #     name = str(foo(graph))
+
+            #     Looper:
+            #         iterable << cfg.graph.nodes()
+
+            #         Conditional:
+            #             condition << loop_item.addr != 0
+
+            #             CFGNode:
+            #                 name << str(hash(loop_item))
+            #                 node << loop_item
+            #                 proj = cfgi.proj
             Graph: graph:
-                edges << [(str(hash(from_)), str(hash(to))) for (from_, to) in cfg.graph.edges()]
+                edges << [(str(from_), str(to)) for (from_, to) in func.transition_graph.edges()]
                 name = str(foo(graph))
 
                 Looper:
-                    iterable << cfg.graph.nodes()
+                    iterable << func.transition_graph.nodes()
 
                     Conditional:
-                        condition << loop_item.addr != 0
+                        condition << loop_item != 0
 
                         CFGNode:
-                            name << str(hash(loop_item))
+                            name << str(loop_item)
                             node << loop_item
                             proj = cfgi.proj
 
