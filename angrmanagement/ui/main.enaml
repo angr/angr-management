@@ -16,18 +16,11 @@ from angr import Project
 
 from ..data.instance import Instance
 from ..data.workspace import WorkspaceData
-from .state import RegistersItem
+from .state import RegistersItem, MemoryItem
 from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
 from .cfg import CFGItem
 from .functions import FunctionManagerItem
-
-enamldef MyDockArea(DockArea):
-    layout = AreaLayout('foo')
-
-    RegistersItem:
-        name = 'foo'
-        state = None
 
 enamldef Workspace(Page): wk:
     attr data
@@ -44,7 +37,7 @@ enamldef Workspace(Page): wk:
 
     Container:
         DockArea:
-            layout = AreaLayout(item=HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('funcs', 'path_group', 'registers')),
+            layout = AreaLayout(item=HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('funcs', 'path_group', TabLayout('regs', 'mem'))),
                                 dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
 
             FunctionManagerItem:
@@ -72,8 +65,11 @@ enamldef Workspace(Page): wk:
                 paths = []
                 selected_path := wk.selected_path
 
-            RegistersItem: regs:
-                name = 'registers'
+            RegistersItem: ri:
+                name = 'regs'
+                state << selected_path.state if selected_path is not None else None
+            MemoryItem: mi:
+                name = 'mem'
                 state << selected_path.state if selected_path is not None else None
 
             PathGroupItem:

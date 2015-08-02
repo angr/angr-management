@@ -1,2 +1,3 @@
 enaml==0.9.8
 websocket-client
+pygments

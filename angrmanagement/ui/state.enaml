@@ -1,8 +1,11 @@
 from enaml.core.api import Conditional, Looper
 from enaml.layout.api import hbox, vbox
 from enaml.widgets.api import (
-    Container, DockItem, Field, Form, GroupBox, Label, ScrollArea,
+    Container, DockItem, Field, Form, GroupBox, Label, ScrollArea, DockArea
 )
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout,
+
+from .table import Table
 
 enamldef RegistersItem(DockItem): regs:
     attr state
@@ -13,20 +16,85 @@ enamldef RegistersItem(DockItem): regs:
 
     title = "Registers"
 
-    Container: container:
-        ScrollArea: scroller:
-            Conditional:
-                condition << bool(state)
+    Conditional:
+        condition << bool(state)
+
+        Container: container:
+            ScrollArea: scroller:
                 Container:
-                    Form:
-                        Looper: looper:
-                            iterable << sorted(state.arch.register_names.items()) if state else []
-                            Label: reg_name:
-                                text = loop_item[1] + ':'
-                            Field: reg_value:
-                                text << format(state.se.any_int(state.registers.load(loop_item[0])), '#016x')
-            Conditional:
-                condition << not state
+                    constraints = [ reg_table.left == reg_label.left ]
+
+                    Label: reg_label:
+                        text = 'Registers'
+
+                    Table: reg_table:
+                         data_matrix << [
+                             [ b.encode('hex').lower() for b in state.se.any_str(state.registers.load(state.arch.registers[r][0], size=state.arch.registers[r][1])) ]
+                             for r in sorted(state.arch.registers.keys())
+                         ]
+                         column_names = [ "%x"%i for i in range(max(r[1][1] for r in sorted(state.arch.registers.items(), key=lambda x: x[0]))) ]
+                         row_names = sorted(state.arch.registers.keys())
+                         horizontal_scroll = True
+    Conditional:
+        condition << not state
+
+        Container:
+            Label:
+                text = 'no state currently focused'
+
+enamldef MemoryItem(DockItem): regs:
+    attr state
+    # func set_state(st):
+    #     regs.state = st
+    #     if 'looper' in vars():
+    #         looper.refresh_items()
+
+    title = "Memory"
+
+    Conditional:
+        condition << bool(state)
+
+        Container: container:
+            ScrollArea: scroller:
                 Container:
-                    Label:
-                        text = 'no state currently focused'
+                    constraints = [ mem_label.left == mem_table.left ]
+
+                    Label: mem_label:
+                        text = 'Memory'
+
+                    Table: mem_table:
+                         data_list << [ b.encode('hex').lower() for b in state.se.any_str(state.memory.load(state.regs.sp, size=256)) ]
+                         column_names = [ "%x"%i for i in range(15) ]
+                         row_names = [ "%x"%(state.se.any_int(state.regs.sp)/16*16+i*16) for i in range(16) ]
+                         vertical_scroll = True
+    Conditional:
+        condition << not state
+
+        Container:
+            Label:
+                text = 'no state currently focused'
+
+enamldef StateItem(DockItem): sti:
+    attr state
+    title = "State"
+
+    Conditional:
+        condition << bool(state)
+
+        Container:
+            DockArea:
+                layout = AreaLayout(item=HSplitLayout('regs', 'mem'))
+                RegistersItem:
+                    name = "regs"
+                    state << sti.state
+
+                MemoryItem:
+                    name = "mem"
+                    state << sti.state
+
+    Conditional:
+        condition << not state
+
+        Container:
+            Label:
+                text = 'no state currently focused'
