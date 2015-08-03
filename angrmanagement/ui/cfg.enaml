@@ -56,7 +56,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                             proj = wk.proj
 
     Conditional:
-        condition << wk.cfg is None
+        condition << wk.inst.cfg is None
 
         Container:
             constraints = []

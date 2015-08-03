@@ -1,26 +1,18 @@
 from threading import Thread
 
-from atom.api import Atom, Int, List, Typed
+from atom.api import Atom, Int, List, Typed, ForwardTyped
 from enaml.application import schedule
 from enaml.layout.dock_layout import AreaLayout
 
 from angr import CFG, Function, Project, Path, PathGroup
 
 
-class PathGroups(Atom):
-    proj = Typed(Project)
-    groups = List(PathGroup, [])
-
-    def add_path_group(self):
-        self.groups = self.groups + [self.proj.factory.path_group(immutable=False, strong_path_mapping=True)]
-
-
 class WorkspaceData(Atom):
     item_idx = Int()
     name = Typed(str)
+    # who doesn't love back-references?
+    inst = ForwardTyped(lambda: Instance)
     proj = Typed(Project)
-    path_groups = Typed(PathGroups)
-    cfg = Typed(CFG)
     selected_pg = Typed(PathGroup)
     selected_path = Typed(Path)
     selected_function = Typed(Function)
@@ -29,7 +21,16 @@ class WorkspaceData(Atom):
 
     def __init__(self, **kwargs):
         super(WorkspaceData, self).__init__(**kwargs)
-        self.path_groups = PathGroups(proj=self.proj)
+
+        if self.proj is None and self.inst is not None:
+            self.proj = self.inst.proj
+
+        if self.inst is not None and len(self.inst.path_groups.groups) > 0:
+            self.selected_pg = self.inst.path_groups.groups[0]
+
+        if self.selected_pg is not None and len(self.selected_pg.active) > 0:
+            self.selected_path = None
+            self.selected_path = self.selected_pg.active[0]
 
     def generate_cfg(self):
         t = Thread(target=self._generate_cfg)
@@ -45,3 +46,5 @@ class WorkspaceData(Atom):
         i = self.item_idx
         self.item_idx += 1
         return 'item_%d' % i
+
+from .instance import Instance

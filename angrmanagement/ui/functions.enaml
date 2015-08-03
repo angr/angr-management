@@ -10,7 +10,7 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
 
     Container:
         QtListControl: selector:
-            items << wk.cfg.function_manager.functions.values() if wk.cfg else []
+            items << wk.inst.cfg.function_manager.functions.values() if wk.inst.cfg else []
             to_string = repr
             on_selected ::
                 wk.selected_function
