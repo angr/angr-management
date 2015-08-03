@@ -1,6 +1,8 @@
 import pickle
+from threading import Thread
 
 from atom.api import Atom, Int, List, Typed
+from enaml.application import schedule
 
 import ana
 from angr import CFG, PathGroup, Project
@@ -28,6 +30,16 @@ class Instance(Atom):
 
     def add_workspace(self, wk):
         self.workspaces = self.workspaces + [wk]
+
+    def generate_cfg(self):
+        t = Thread(target=self._generate_cfg)
+        t.start()
+
+    def _generate_cfg(self):
+        cfg = self.proj.analyses.CFG()
+        def set_cfg():
+            self.cfg = cfg
+        schedule(set_cfg)
 
     def save(self, loc):
         with open(loc, 'wb') as f:

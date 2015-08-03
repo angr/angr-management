@@ -63,4 +63,4 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
             PushButton:
                 text = "Generate CFG"
-                clicked :: wk.generate_cfg()
+                clicked :: wk.inst.generate_cfg()

@@ -1,7 +1,4 @@
-from threading import Thread
-
 from atom.api import Atom, Int, List, Typed, ForwardTyped
-from enaml.application import schedule
 from enaml.layout.dock_layout import AreaLayout
 
 from angr import CFG, Function, Project, Path, PathGroup
@@ -31,16 +28,6 @@ class WorkspaceData(Atom):
         if self.selected_pg is not None and len(self.selected_pg.active) > 0:
             self.selected_path = None
             self.selected_path = self.selected_pg.active[0]
-
-    def generate_cfg(self):
-        t = Thread(target=self._generate_cfg)
-        t.start()
-
-    def _generate_cfg(self):
-        cfg = self.proj.analyses.CFG()
-        def set_cfg():
-            self.cfg = cfg
-        schedule(set_cfg)
 
     def next_item_name(self):
         i = self.item_idx
