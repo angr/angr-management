@@ -111,14 +111,15 @@ import itertools
 c = itertools.count()
 
 enamldef PathTreeItem(WorkspaceItem): pti:
-    attr wk
     attr paths = []
     attr hierarchy = None
     attr watching = ''
     attr metadata = {}
 
     # is this horrible? yes
-    initialized :: wk.observe('selected_pg', on_pg_sel)
+    initialized ::
+        on_pg_sel({'value': wk.selected_pg})
+        wk.observe('selected_pg', on_pg_sel)
 
     func on_pg_sel(change):
         pg = change['value']

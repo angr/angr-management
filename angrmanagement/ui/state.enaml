@@ -10,7 +10,6 @@ from .wkitem import WorkspaceItem
 
 enamldef RegistersItem(WorkspaceItem): regs:
     attr state << wk.selected_path.state if wk.selected_path is not None else None
-    attr wk
 
     title = "Registers"
 
@@ -39,7 +38,6 @@ enamldef RegistersItem(WorkspaceItem): regs:
 
 enamldef MemoryItem(WorkspaceItem): mem:
     attr state << wk.selected_path.state if wk.selected_path is not None else None
-    attr wk
 
     title = "Memory"
 

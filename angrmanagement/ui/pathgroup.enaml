@@ -34,8 +34,6 @@ enamldef PathGroup(Container): epg:
 
 
 enamldef PathGroupItem(WorkspaceItem):
-    attr wk
-
     title = "Path Group"
 
     Container:

@@ -11,8 +11,10 @@ class PathGroups(Atom):
     proj = Typed(Project)
     groups = List(PathGroup, [])
 
-    def add_path_group(self):
-        self.groups = self.groups + [self.proj.factory.path_group(immutable=False, strong_path_mapping=True)]
+    def add_path_group(self, pg=None):
+        if pg is None:
+            pg = self.proj.factory.path_group(immutable=False, strong_path_mapping=True)
+        self.groups = self.groups + [pg]
 
 class Instance(Atom):
     proj = Typed(Project)

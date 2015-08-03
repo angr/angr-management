@@ -4,8 +4,6 @@ from .listcontrol import QtListControl
 from .wkitem import WorkspaceItem
 
 enamldef FunctionManagerItem(WorkspaceItem): fmi:
-    attr wk
-
     title = "Function Manager"
 
     Container:

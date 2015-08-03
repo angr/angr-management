@@ -2,4 +2,4 @@ from enaml.widgets.api import DockItem
 
 
 enamldef WorkspaceItem(DockItem):
-    pass
+    attr wk

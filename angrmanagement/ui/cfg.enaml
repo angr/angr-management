@@ -30,8 +30,6 @@ def foo(g):
     notify_update(g, 'edges')
 
 enamldef CFGItem(WorkspaceItem): cfgi:
-    attr wk
-
     title = "CFG"
 
     Conditional:
