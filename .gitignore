@@ -9,3 +9,6 @@ projects
 
 # emacs temp files
 *~
+
+# enaml cache
+__enamlcache__/
