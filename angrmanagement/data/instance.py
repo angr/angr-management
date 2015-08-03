@@ -13,11 +13,9 @@ class Instance(Atom):
 
     def __init__(self, **kwargs):
         super(Instance, self).__init__(**kwargs)
-        if len(self.workspaces) == 0:
-            self.add_workspace()
 
-    def add_workspace(self):
-        self.workspaces = self.workspaces + [WorkspaceData(n=self.counter, proj=self.proj)]
+    def add_workspace(self, wk):
+        self.workspaces = self.workspaces + [wk]
         self.counter += 1
 
     def save(self, loc):
@@ -32,3 +30,4 @@ class Instance(Atom):
             saved = pickle.load(f)
             ana.get_dl()._state_store = saved['store']
             return pickle.loads(saved['pickled'])
+

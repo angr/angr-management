@@ -1,12 +1,14 @@
 import pprint
+from collections import defaultdict
 
 from enaml.core.api import Looper, Conditional
 from enaml.layout.api import vbox
-from enaml.widgets.api import Container, DockItem, PushButton, PushButton, Label, Field, Form, Feature, Border
+from enaml.widgets.api import Container, PushButton, PushButton, Label, Field, Form, Feature, Border
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.layout.geometry import Box
 
 from .graph import Graph
+from .wkitem import WorkspaceItem
 
 def eval_with_path(path, expr):
     try:
@@ -108,16 +110,33 @@ def all_edges(*args):
 import itertools
 c = itertools.count()
 
-enamldef PathTreeItem(DockItem): pti:
-    attr paths
-    attr hierarchy
-    attr selected_path = None
+enamldef PathTreeItem(WorkspaceItem): pti:
+    attr wk
+    attr paths = []
+    attr hierarchy = None
     attr watching = ''
     attr metadata = {}
 
+    # is this horrible? yes
+    initialized :: wk.observe('selected_pg', on_pg_sel)
+
+    func on_pg_sel(change):
+        pg = change['value']
+        if pg is None:
+            return
+        metadata = defaultdict(lambda: defaultdict(dict))
+        for a in pg.active:
+            metadata[a]['active'] = True
+        for d in pg.deadended:
+            metadata[d]['deadended'] = True
+        for e in pg.errored:
+            metadata[e]['errored'] = True
+        pti.metadata = metadata
+        pti.hierarchy = pg._hierarchy
+        pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
+
     title = "Path Tree"
 
-    # let's see if this fucking works or not
     StyleSheet:
         Style:
             style_class = 'bold'
@@ -141,7 +160,7 @@ enamldef PathTreeItem(DockItem): pti:
 
         Graph: graph:
             edges << all_edges(paths, hierarchy)
-            selected << selected_path.path_id if selected_path is not None else None
+            selected << wk.selected_path.path_id if wk.selected_path is not None else None
 
             Looper:
                 iterable << all_paths(paths, hierarchy)
@@ -149,11 +168,11 @@ enamldef PathTreeItem(DockItem): pti:
                 Path:
                     name = loop_item.path_id
                     path = loop_item
-                    selected << selected_path is loop_item
+                    selected << wk.selected_path is loop_item
                     options << metadata.get(loop_item, {})
                     watch_expr << watching
 
                     select_me ::
                         # WTF is up with having to reference it first?
-                        pti.selected_path
-                        pti.selected_path = loop_item
+                        wk.selected_path
+                        wk.selected_path = loop_item

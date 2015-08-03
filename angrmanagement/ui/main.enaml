@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 import websocket
 
-from enaml.core.api import Looper
+from enaml.core.api import Looper, Include
 from enaml.layout.api import vbox
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout
 from enaml.widgets.api import (
@@ -21,85 +21,61 @@ from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
 from .cfg import CFGItem
 from .functions import FunctionManagerItem
+from .console import ConsoleItem
+
+def gen_static_wk(inst):
+    layout = AreaLayout(item=HSplitLayout('cfg', 'funcs'), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+
+    data = WorkspaceData(name='Static Analysis', layout=layout, proj=inst.proj)
+    cfg = CFGItem(name='cfg', wk=data)
+    funcs = FunctionManagerItem(name='funcs', wk=data)
+    console = ConsoleItem(name='console', wk=data)
+    data.items = [cfg, funcs, console]
+
+    return data
+
+def gen_symbolic_wk(inst):
+    layout = AreaLayout(item=HSplitLayout('path_tree', VSplitLayout('path_group', TabLayout('regs', 'mem'))), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+
+    data = WorkspaceData(name='Symbolic Analysis', layout=layout, proj=inst.proj)
+    path_tree = PathTreeItem(name='path_tree', wk=data)
+    path_group = PathGroupItem(name='path_group', wk=data)
+    regs = RegistersItem(name='regs', wk=data)
+    mem = MemoryItem(name='mem', wk=data)
+    console = ConsoleItem(name='console', wk=data)
+    data.items = [path_tree, path_group, regs, mem, console]
+
+    return data
 
 enamldef Workspace(Page): wk:
     attr data
     attr ida_conn
-    attr selected_path = None
-    attr selected_function = None
 
-    selected_path ::
+    # is this horrible? yes
+    initialized :: wk.observe('selected_path', on_path_sel)
+
+    func on_path_sel(_):
         if ida_conn is not None:
-            ida_conn.send('setaddress %d' % selected_path.addr)
-        console.update_ns(curpath=selected_path)
+            ida_conn.send('setaddress %d' % data.selected_path.addr)
 
-    title = 'Workspace #{}'.format(data.n)
+    title << data.name
 
     Container:
         DockArea:
-            layout = AreaLayout(item=HSplitLayout(TabLayout('path_tree', 'cfg'), VSplitLayout('funcs', 'path_group', TabLayout('regs', 'mem'))),
-                                dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+            layout := data.layout
 
-            FunctionManagerItem:
-                name = 'funcs'
-                cfg << data.cfg
-                selected_function := wk.selected_function
+            Include:
+                objects << data.items
 
-            DockItem:
-                name = 'console'
-                title = 'Console'
-
-                Container:
-                    constraints = [vbox(console)]
-
-                    IPythonConsole: console:
-                        name = 'realconsole'
-                        initial_ns = {
-                            'angr': angr,
-                            'simuvex': simuvex,
-                            'claripy': claripy,
-                        }
-
-            PathTreeItem: pti:
-                name = 'path_tree'
-                paths = []
-                selected_path := wk.selected_path
-
-            RegistersItem: ri:
-                name = 'regs'
-                state << selected_path.state if selected_path is not None else None
-            MemoryItem: mi:
-                name = 'mem'
-                state << selected_path.state if selected_path is not None else None
-
-            PathGroupItem:
-                name = 'path_group'
-                path_groups = data.path_groups
-                selected_pg ::
-                    pg = change['value']
-                    metadata = defaultdict(lambda: defaultdict(dict))
-                    for a in pg.active:
-                        metadata[a]['active'] = True
-                    for d in pg.deadended:
-                        metadata[d]['deadended'] = True
-                    for e in pg.errored:
-                        metadata[e]['errored'] = True
-                    pti.metadata = metadata
-                    pti.hierarchy = pg._hierarchy
-                    pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
-                selected_path := wk.selected_path
-
-            CFGItem:
-                name = 'cfg'
-                proj = data.proj
-                cfg << data.cfg
-                func << selected_function
-
-                generate_cfg :: data.generate_cfg()
 
 enamldef Main(MainWindow): main:
     attr inst
     attr ida_conn = None
+
+    initialized::
+        if len(inst.workspaces) == 0:
+            inst.add_workspace(gen_symbolic_wk(inst))
+            inst.add_workspace(gen_static_wk(inst))
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
@@ -133,7 +109,7 @@ enamldef Main(MainWindow): main:
 
         Menu:
             Action:
-                text = 'AddWorkspace\tCtrl+A'
+                text = 'Add Workspace\tCtrl+A'
                 enabled << bool(inst)
                 triggered :: inst.add_workspace()
             Action:

@@ -6,9 +6,18 @@ from enaml.widgets.api import (
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout,
 
 from .table import Table
+from .wkitem import WorkspaceItem
 
-enamldef RegistersItem(DockItem): regs:
-    attr state
+enamldef RegistersItem(WorkspaceItem): regs:
+    attr state = None
+    attr wk
+
+    # is this horrible? yes
+    initialized :: wk.observe('selected_path', on_path_sel)
+
+    func on_path_sel(_):
+        regs.state = wk.selected_path.state if wk.selected_path is not None else None
+
     # func set_state(st):
     #     regs.state = st
     #     if 'looper' in vars():
@@ -39,12 +48,15 @@ enamldef RegistersItem(DockItem): regs:
             Label:
                 text = 'no state currently focused'
 
-enamldef MemoryItem(DockItem): regs:
-    attr state
-    # func set_state(st):
-    #     regs.state = st
-    #     if 'looper' in vars():
-    #         looper.refresh_items()
+enamldef MemoryItem(WorkspaceItem): mem:
+    attr state = None
+    attr wk
+
+    # is this horrible? yes
+    initialized :: wk.observe('selected_path', on_path_sel)
+
+    func on_path_sel(_):
+        mem.state = wk.selected_path.state if wk.selected_path is not None else None
 
     title = "Memory"
 
@@ -68,27 +80,27 @@ enamldef MemoryItem(DockItem): regs:
             Label:
                 text = 'no state currently focused'
 
-enamldef StateItem(DockItem): sti:
-    attr state
-    title = "State"
+# enamldef StateItem(DockItem): sti:
+#     attr state
+#     title = "State"
 
-    Conditional:
-        condition << bool(state)
+#     Conditional:
+#         condition << bool(state)
 
-        Container:
-            DockArea:
-                layout = AreaLayout(item=HSplitLayout('regs', 'mem'))
-                RegistersItem:
-                    name = "regs"
-                    state << sti.state
+#         Container:
+#             DockArea:
+#                 layout = AreaLayout(item=HSplitLayout('regs', 'mem'))
+#                 RegistersItem:
+#                     name = "regs"
+#                     state << sti.state
 
-                MemoryItem:
-                    name = "mem"
-                    state << sti.state
+#                 MemoryItem:
+#                     name = "mem"
+#                     state << sti.state
 
-    Conditional:
-        condition << not state
+#     Conditional:
+#         condition << not state
 
-        Container:
-            Label:
-                text = 'no state currently focused'
+#         Container:
+#             Label:
+#                 text = 'no state currently focused'

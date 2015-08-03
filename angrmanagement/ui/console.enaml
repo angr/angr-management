@@ -1,0 +1,29 @@
+from enaml.layout.api import vbox
+from enaml.widgets.api import Container, IPythonConsole
+
+from .wkitem import WorkspaceItem
+
+import angr
+import simuvex
+import claripy
+
+
+enamldef ConsoleItem(WorkspaceItem):
+    attr wk
+
+    initialized :: wk.observe('selected_path', on_path_sel)
+
+    func on_path_sel(change):
+        console.update_ns(curpath=change['value'])
+
+    title = 'Console'
+
+    Container:
+        constraints = [vbox(console)]
+
+        IPythonConsole: console:
+            initial_ns = {
+                'angr': angr,
+                'simuvex': simuvex,
+                'claripy': claripy,
+            }

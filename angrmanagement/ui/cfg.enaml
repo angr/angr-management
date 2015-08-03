@@ -8,6 +8,7 @@ from angr.errors import AngrError
 
 from .graph import Graph
 from .notify import notify_update
+from .wkitem import WorkspaceItem
 
 
 enamldef CFGNode(Container):
@@ -28,40 +29,23 @@ def get_block(proj, address):
 def foo(g):
     notify_update(g, 'edges')
 
-enamldef CFGItem(DockItem): cfgi:
-    attr proj
-    attr cfg
-    attr func
-    event generate_cfg
+enamldef CFGItem(WorkspaceItem): cfgi:
+    attr wk
 
     title = "CFG"
 
     Conditional:
-        condition << cfg is not None and func is not None
+        condition << wk.selected_function is not None
 
         Container:
             constraints = [vbox(graph)]
 
-            # Graph: graph:
-            #     edges << [(str(hash(from_)), str(hash(to))) for (from_, to) in cfg.graph.edges()]
-            #     name = str(foo(graph))
-
-            #     Looper:
-            #         iterable << cfg.graph.nodes()
-
-            #         Conditional:
-            #             condition << loop_item.addr != 0
-
-            #             CFGNode:
-            #                 name << str(hash(loop_item))
-            #                 node << loop_item
-            #                 proj = cfgi.proj
             Graph: graph:
-                edges << [(str(from_), str(to)) for (from_, to) in func.transition_graph.edges()]
+                edges << [(str(from_), str(to)) for (from_, to) in wk.selected_function.transition_graph.edges()]
                 name = str(foo(graph))
 
                 Looper:
-                    iterable << func.transition_graph.nodes()
+                    iterable << wk.selected_function.transition_graph.nodes()
 
                     Conditional:
                         condition << loop_item != 0
@@ -69,11 +53,14 @@ enamldef CFGItem(DockItem): cfgi:
                         CFGNode:
                             name << str(loop_item)
                             node << loop_item
-                            proj = cfgi.proj
+                            proj = wk.proj
 
     Conditional:
-        condition << cfg is None
+        condition << wk.cfg is None
 
-        PushButton:
-            text = "Generate CFG"
-            clicked :: generate_cfg()
+        Container:
+            constraints = []
+
+            PushButton:
+                text = "Generate CFG"
+                clicked :: wk.generate_cfg()

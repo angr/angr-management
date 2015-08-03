@@ -1,9 +1,10 @@
 from threading import Thread
 
-from atom.api import Atom, Int, List, Typed
+from atom.api import Atom, List, Typed
 from enaml.application import schedule
+from enaml.layout.dock_layout import AreaLayout
 
-from angr import Project, PathGroup, CFG
+from angr import CFG, Function, Project, Path, PathGroup
 
 
 class PathGroups(Atom):
@@ -15,10 +16,15 @@ class PathGroups(Atom):
 
 
 class WorkspaceData(Atom):
-    n = Int()
+    name = Typed(str)
     proj = Typed(Project)
     path_groups = Typed(PathGroups)
     cfg = Typed(CFG)
+    selected_pg = Typed(PathGroup)
+    selected_path = Typed(Path)
+    selected_function = Typed(Function)
+    items = List()
+    layout = Typed(AreaLayout)
 
     def __init__(self, **kwargs):
         super(WorkspaceData, self).__init__(**kwargs)
