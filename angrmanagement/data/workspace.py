@@ -1,6 +1,6 @@
 from threading import Thread
 
-from atom.api import Atom, List, Typed
+from atom.api import Atom, Int, List, Typed
 from enaml.application import schedule
 from enaml.layout.dock_layout import AreaLayout
 
@@ -16,6 +16,7 @@ class PathGroups(Atom):
 
 
 class WorkspaceData(Atom):
+    item_idx = Int()
     name = Typed(str)
     proj = Typed(Project)
     path_groups = Typed(PathGroups)
@@ -39,3 +40,8 @@ class WorkspaceData(Atom):
         def set_cfg():
             self.cfg = cfg
         schedule(set_cfg)
+
+    def next_item_name(self):
+        i = self.item_idx
+        self.item_idx += 1
+        return 'item_%d' % i

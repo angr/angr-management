@@ -4,7 +4,7 @@ import websocket
 
 from enaml.core.api import Looper, Include
 from enaml.layout.api import vbox
-from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout, InsertItem
 from enaml.widgets.api import (
     Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton, IPythonConsole, DockItem
 )
@@ -22,6 +22,16 @@ from .pathtree import PathTreeItem
 from .cfg import CFGItem
 from .functions import FunctionManagerItem
 from .console import ConsoleItem
+
+ALL_ITEMS = {
+    'CFG': CFGItem,
+    'Function Manager': FunctionManagerItem,
+    'Console': ConsoleItem,
+    'Path Tree': PathTreeItem,
+    'Path Group': PathGroupItem,
+    'Registers': RegistersItem,
+    'Memory': MemoryItem,
+}
 
 def gen_static_wk(inst):
     layout = AreaLayout(item=HSplitLayout('cfg', 'funcs'), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
@@ -61,7 +71,22 @@ enamldef Workspace(Page): wk:
     title << data.name
 
     Container:
-        DockArea:
+        Menu:
+            context_menu = True
+            Menu:
+                title = 'Add Item...'
+                Looper:
+                    iterable << ALL_ITEMS.items()
+
+                    Action:
+                        text = loop_item[0]
+                        triggered ::
+                            name = data.next_item_name()
+                            item = loop_item[1](area, name=name, wk=data)
+                            op = InsertItem(item=name)
+                            area.update_layout(op)
+
+        DockArea: area:
             layout := data.layout
 
             Include:
@@ -108,10 +133,18 @@ enamldef Main(MainWindow): main:
         ]
 
         Menu:
-            Action:
-                text = 'Add Workspace\tCtrl+A'
+            Menu:
+                title = 'Add Workspace...'
                 enabled << bool(inst)
-                triggered :: inst.add_workspace()
+                Action:
+                    text = 'Symbolic Analysis'
+                    triggered :: inst.add_workspace(gen_symbolic_wk(inst))
+                Action:
+                    text = 'Static Analysis'
+                    triggered :: inst.add_workspace(gen_symbolic_wk(inst))
+                Action:
+                    text = 'Blank'
+                    triggered :: inst.add_workspace(WorkspaceData(name='Blank', proj=inst.proj, layout=AreaLayout()))
             Action:
                 text = 'Connect to IDA'
                 enabled << ida_conn is None
