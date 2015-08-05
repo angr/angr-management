@@ -1,11 +1,14 @@
 import pickle
 from threading import Thread
+from Queue import Queue
 
-from atom.api import Atom, Int, List, Typed
+from atom.api import Atom, Int, List, Typed, Value
 from enaml.application import schedule
 
 import ana
 from angr import CFG, PathGroup, Project
+
+from .jobs import Job
 
 class PathGroups(Atom):
     proj = Typed(Project)
@@ -21,27 +24,40 @@ class Instance(Atom):
     workspaces = List()
     path_groups = Typed(PathGroups)
     cfg = Typed(CFG)
+    jobs = List(Job)
+    _jobs_queue = Value()
 
     def __init__(self, **kwargs):
         super(Instance, self).__init__(**kwargs)
+
+        if self.jobs is None or self._jobs_queue is None:
+            self.jobs = []
+            self._jobs_queue = Queue()
 
         if self.path_groups is None:
             self.path_groups = PathGroups(proj=self.proj)
             # ehhhhhh let's create one by default because i like to be lazy
             self.path_groups.add_path_group()
 
+        self._start_worker()
+
     def add_workspace(self, wk):
         self.workspaces = self.workspaces + [wk]
 
-    def generate_cfg(self):
-        t = Thread(target=self._generate_cfg)
+    def add_job(self, job):
+        self.jobs = self.jobs + [job]
+        self._jobs_queue.put(job)
+
+    def _start_worker(self):
+        t = Thread(target=self._worker, name='Angr Management Worker Thread')
+        t.daemon = True
         t.start()
 
-    def _generate_cfg(self):
-        cfg = self.proj.analyses.CFG()
-        def set_cfg():
-            self.cfg = cfg
-        schedule(set_cfg)
+    def _worker(self):
+        while True:
+            job = self._jobs_queue.get()
+            result = job.run(self)
+            schedule(job.finish, args=(self, result))
 
     def save(self, loc):
         with open(loc, 'wb') as f:

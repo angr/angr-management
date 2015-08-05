@@ -7,6 +7,7 @@ from enaml.widgets.api import (
 from .listcontrol import QtListControl
 from .notify import notify_update
 from .wkitem import WorkspaceItem
+from ..data.jobs import PGStepJob
 
 
 enamldef PathGroup(Container): epg:
@@ -36,6 +37,11 @@ enamldef PathGroup(Container): epg:
 enamldef PathGroupItem(WorkspaceItem):
     title = "Path Group"
 
+    func step_cb(new_pg):
+        if pg_sel.selected is new_pg:
+            paths.refresh()
+            notify_update(wk, 'selected_pg')
+
     Container:
         constraints = [
             vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), hbox(paths, step_path)), paths.top == step_path.top - 5
@@ -54,22 +60,13 @@ enamldef PathGroupItem(WorkspaceItem):
             text = 'Step PG'
             enabled << pg_sel.selected is not None
             clicked ::
-                pg_sel.selected.step()
-                pg_sel.selected.prune()
-                paths.refresh()
-                notify_update(wk, 'selected_pg')
+                wk.inst.add_job(PGStepJob(pg_sel.selected, callback=step_cb))
 
         PushButton: step_pg_until:
             text = 'Step PG Until Branch'
             enabled << pg_sel.selected is not None
             clicked ::
-                orig_len = len(pg_sel.selected.active)
-                while len(pg_sel.selected.active) == orig_len:
-                    pg_sel.selected.step()
-                    pg_sel.selected.prune()
-
-                paths.refresh()
-                notify_update(wk, 'selected_pg')
+                wk.inst.add_job(PGStepJob(pg_sel.selected, callback=step_cb, until_branch=True))
 
         PathGroup: paths:
             pg << pg_sel.selected

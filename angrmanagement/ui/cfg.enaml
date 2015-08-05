@@ -9,6 +9,7 @@ from angr.errors import AngrError
 from .graph import Graph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
+from ..data.jobs import CFGGenerationJob
 
 
 enamldef CFGNode(Container):
@@ -61,4 +62,4 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
             PushButton:
                 text = "Generate CFG"
-                clicked :: wk.inst.generate_cfg()
+                clicked :: wk.inst.add_job(CFGGenerationJob())
