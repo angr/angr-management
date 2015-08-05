@@ -18,7 +18,7 @@ enamldef CFGNode(Container):
 
     Label:
         font = '10pt Courier'
-        text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node])
+        text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
 
 def get_block(proj, address):
     try:
@@ -27,8 +27,8 @@ def get_block(proj, address):
     except AngrError:
         return None
 
-def foo(g):
-    notify_update(g, 'edges')
+def edge_qualifies(data):
+    return data['type'] not in ('call', 'return_from_call')
 
 enamldef CFGItem(WorkspaceItem): cfgi:
     title = "CFG"
@@ -40,11 +40,10 @@ enamldef CFGItem(WorkspaceItem): cfgi:
             constraints = [vbox(graph)]
 
             Graph: graph:
-                edges << [(str(from_), str(to)) for (from_, to) in wk.selected_function.transition_graph.edges()]
-                name = str(foo(graph))
+                edges << [(str(from_), str(to)) for (from_, to, data) in wk.selected_function.transition_graph.edges(data=True) if edge_qualifies(data)]
 
                 Looper:
-                    iterable << wk.selected_function.transition_graph.nodes()
+                    iterable << wk.selected_function.blocks
 
                     Conditional:
                         condition << loop_item != 0
