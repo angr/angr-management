@@ -3,6 +3,7 @@ projects
 # Python cruft
 *.pyc
 *.pyo
+*.egg-info
 
 # vim temp files
 *.swp
