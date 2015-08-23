@@ -97,8 +97,8 @@ enamldef Main(MainWindow): main:
     attr inst
     attr ida_conn = None
 
-    initialized::
-        if len(inst.workspaces) == 0:
+    initialized ::
+        if inst is not None and len(inst.workspaces) == 0:
             inst.add_workspace(gen_symbolic_wk(inst))
             inst.add_workspace(gen_static_wk(inst))
 
@@ -113,6 +113,8 @@ enamldef Main(MainWindow): main:
                     path = FileDialogEx.get_open_file_name(main)
                     if path:
                         main.inst = Instance(proj=Project(path))
+                        main.inst.add_workspace(gen_symbolic_wk(inst))
+                        main.inst.add_workspace(gen_static_wk(inst))
             Action:
                 text = 'Save\tCtrl+S'
                 enabled << bool(inst)
