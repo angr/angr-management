@@ -15,7 +15,7 @@ class CFGGenerationJob(Job):
         inst.cfg = result
 
     def __repr__(self):
-        return 'Generating CFG'
+        return "Generating CFG"
 
 def noop(_new_pg):
     pass
@@ -46,4 +46,24 @@ class PGStepJob(Job):
         self._callback(result)
 
     def __repr__(self):
-        return 'Stepping %r' % self._pg
+        if self.until_branch:
+            return "Stepping %r until branch" % self._pg
+        else:
+            return "Stepping %r" % self._pg
+
+
+class VFGGenerationJob(Job):
+    def __init__(self, addr):
+        super(VFGGenerationJob, self).__init__()
+        self._addr = addr
+
+    def run(self, inst):
+        return inst.proj.analyses.VFG(cfg=inst.cfg, function_start=self._addr)
+
+    def finish(self, inst, result):
+        super(VFGGenerationJob, self).finish(inst, result)
+        __import__('ipdb').set_trace()
+        inst.vfgs[self._addr] = result
+
+    def __repr__(self):
+        return "Generating VFG for function at %#x" % self._addr

@@ -1,15 +1,51 @@
-from enaml.widgets.api import Container
+from enaml.core.api import Conditional
+from enaml.widgets.api import Container, Label, PushButton
+from enaml.layout.api import vbox
 
 from .listcontrol import QtListControl
 from .wkitem import WorkspaceItem
+from ..data.jobs import VFGGenerationJob
 
 enamldef FunctionManagerItem(WorkspaceItem): fmi:
     title = "Function Manager"
 
     Container:
+        constraints = [vbox(selector, fattributes)]
+
         QtListControl: selector:
+            hug_height = 'weak'
+            hug_width = 'ignore'
+
             items << sorted(wk.inst.cfg.function_manager.functions.values(), key=lambda f: f._addr) if wk.inst.cfg else []
             to_string = repr
             on_selected ::
                 wk.selected_function
                 wk.selected_function = selector.selected_item
+
+        Container: fattributes:
+
+            Conditional:
+                condition << wk.selected_function is not None
+
+                Container:
+                    constraints = [vbox(name, argregs, argstack, prep_regs, prep_stack, run_vsa)]
+
+                    Label: name:
+                        text << wk.selected_function.name
+
+                    Label: argregs:
+                        text << str(wk.selected_function._argument_registers)
+
+                    Label: argstack:
+                        text << str(wk.selected_function._argument_stack_variables)
+
+                    Label: prep_regs:
+                        text << str(wk.selected_function.prepared_registers)
+
+                    Label: prep_stack:
+                        text << str(wk.selected_function.prepared_stack_variables)
+
+                    PushButton: run_vsa:
+                        text = "Run VSA"
+                        clicked ::
+                            wk.inst.add_job(VFGGenerationJob(wk.selected_function._addr))

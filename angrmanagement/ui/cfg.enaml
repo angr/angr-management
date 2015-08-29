@@ -69,6 +69,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
         Container:
             constraints = []
+            hug_width = 'strong'
 
             PushButton:
                 text = "Generate CFG"
