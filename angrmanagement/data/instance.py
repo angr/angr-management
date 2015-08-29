@@ -9,6 +9,7 @@ import ana
 from angr import CFG, PathGroup, Project
 
 from .jobs import Job
+from .registry import Registry
 
 class PathGroups(Atom):
     proj = Typed(Project)
@@ -26,6 +27,7 @@ class Instance(Atom):
     cfg = Typed(CFG)
     jobs = List(Job)
     vfgs = Dict()
+    registry = Typed(Registry, factory=Registry)
 
     _jobs_queue = Value()
 

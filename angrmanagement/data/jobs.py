@@ -1,3 +1,5 @@
+from .registry import CodeAddressEntry, FunctionEntry, Registry
+
 class Job(object):
     def run(self, inst):
         raise NotImplementedError()
@@ -12,6 +14,16 @@ class CFGGenerationJob(Job):
 
     def finish(self, inst, result):
         super(CFGGenerationJob, self).finish(inst, result)
+
+        offsets = inst.registry.offsets.copy()
+        for node in result.nodes():
+            offsets[node.addr] = CodeAddressEntry(address=node.addr)
+        for func in result.function_manager.functions.values():
+            offsets[func._addr] = FunctionEntry(function=func)
+
+        # This is sort of a hack to get it to propagate the update.
+        # Perhaps this model is better in an immutable language...
+        inst.registry = Registry(offsets=offsets)
         inst.cfg = result
 
     def __repr__(self):

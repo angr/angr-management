@@ -3,3 +3,17 @@ from enaml.widgets.api import DockItem
 
 enamldef WorkspaceItem(DockItem):
     attr wk
+
+def get_wk(obj):
+    """Finds the workspace that a given object is part of"""
+
+    while obj is not None:
+        if isinstance(obj, WorkspaceItem):
+            return obj.wk
+        else:
+            obj = obj.parent
+
+    raise ValueError("WorkspaceItem not in hierarchy")
+
+def get_inst(obj):
+    return get_wk(obj).inst

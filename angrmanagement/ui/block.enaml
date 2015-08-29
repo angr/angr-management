@@ -6,34 +6,76 @@ from enaml.layout.api import hbox
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label
 
-def gen_op_text(arch, insn, op):
+from .wkitem import get_inst
+
+def gen_op_text(arch, registry, insn, op):
     if arch.cs_arch is capstone.CS_ARCH_X86:
         if op.type == x86.X86_OP_REG:
             return insn.reg_name(op.value.reg)
         elif op.type == x86.X86_OP_IMM:
-            if op.value.imm < 10:
+            if op.value.imm in registry.offsets:
+                return str(registry.offsets[op.value.imm])
+            elif op.value.imm < 10:
                 return '%d' % op.value.imm
             else:
                 return '%xh' % op.value.imm
         elif op.type == x86.X86_OP_FP:
             return '%f' % op.value.fp
+        elif op.type == x86.X86_OP_MEM:
+            sizes = {
+                1: 'byte',
+                2: 'word',
+                4: 'dword',
+                8: 'qword',
+            }
+            size = sizes.get(op.size, None)
+            if size is not None:
+                s = size + ' ptr ['
+            else:
+                s = '%d-byte ptr [' % op.size
+
+            if op.mem.segment != 0:
+                s += insn.reg_name(op.mem.segment) + ':'
+            if op.mem.base != 0:
+                s += insn.reg_name(op.mem.base)
+            if op.mem.index != 0:
+                if s[-1] not in (':', '['):
+                    s += ' + '
+                s += insn.reg_name(op.mem.index)
+            if op.mem.scale != 1:
+                s += '*%d' % op.mem.scale
+            if op.mem.disp != 0:
+                if s[-1] not in (':', '['):
+                    s += ' + '
+                if op.mem.disp in registry.offsets:
+                    s += str(registry.offsets[op.mem.disp])
+                else:
+                    s += '%xh' % op.mem.disp
+
+            return s + ']'
         else:
             return '<something>'
     else:
         raise NotImplementedError("only x86 implemented")
 
-def op_val(state, insn, op):
+def op_val(state, insn, stmt_idx, op):
     if state is None:
         return ''
 
     if state.arch.cs_arch is capstone.CS_ARCH_X86:
         if op.type == x86.X86_OP_REG:
+            reg_name = str(insn.reg_name(op.value.reg))
             try:
-                return state.registers.load(str(insn.reg_name(op.value.reg)))
-            except Exception as e:
-                print e
-                print "got exception when trying to load %s" % insn.reg_name(op.value.reg)
+                reg_offset, size = state.arch.registers[reg_name]
+            except KeyError:
                 return ''
+
+            return state.registers.load(reg_offset, size)
+            # value = None
+            # for a in state.log.actions:
+            #     if a.stmt_idx > stmt_idx:
+            #         break
+            #     elif a.type == 'reg' and a.offset 
         elif op.type == x86.X86_OP_IMM:
             return op.value.imm
         elif op.type == x86.X86_OP_FP:
@@ -44,33 +86,35 @@ def op_val(state, insn, op):
         return ''
 
 
-enamldef Operand(Container):
+enamldef Operand(Container): op_ui:
     attr insn
     attr op
     attr arch
     attr thumb
     attr last
+    attr stmt_idx
     attr state = None
 
     padding = 0
 
-    tool_tip << str(op_val(state, insn, op))
+    tool_tip << str(op_val(state, insn, stmt_idx, op))
 
     Label:
         style_class = 'code'
-        text << gen_op_text(arch, insn, op) + (', ' if not last else '')
+        text << gen_op_text(arch, get_inst(op_ui).registry, insn, op) + (', ' if not last else '')
 
 
 enamldef Instruction(Container): insn_ui:
     attr insn
     attr arch
     attr thumb
+    attr stmt_idx
     attr state = None
 
     padding = 0
 
     constraints = [
-        hbox(address, mnemonic, operands)
+        hbox(address, mnemonic, *sum(operands_loop.items, []))
     ]
 
     Label: address:
@@ -81,20 +125,17 @@ enamldef Instruction(Container): insn_ui:
         style_class = 'code'
         text << insn.mnemonic
 
-    Container: operands:
-        padding = 0
-        constraints << [hbox(*sum(operands_loop.items, []))]
+    Looper: operands_loop:
+        iterable << insn.operands
 
-        Looper: operands_loop:
-            iterable << insn.operands
-
-            Operand:
-                op = loop_item
-                arch = insn_ui.arch
-                insn = insn_ui.insn
-                thumb = insn_ui.thumb
-                last = loop_index == len(insn.operands) - 1
-                state << insn_ui.state
+        Operand:
+            op = loop_item
+            arch = insn_ui.arch
+            insn = insn_ui.insn
+            thumb = insn_ui.thumb
+            stmt_idx = insn_ui.stmt_idx
+            last = loop_index == len(insn.operands) - 1
+            state << insn_ui.state
 
 
 enamldef Block(Container): block_ui:
@@ -128,4 +169,6 @@ enamldef Block(Container): block_ui:
             insn = loop_item
             arch = block.capstone.arch
             thumb = block.capstone.thumb
+            stmt_idx = None
+            # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
             state << block_ui.state
