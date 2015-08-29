@@ -1,0 +1,108 @@
+import capstone
+from capstone import x86
+
+from enaml.core.api import Looper
+from enaml.layout.api import hbox
+from enaml.styling import StyleSheet, Style, Setter
+from enaml.widgets.api import Container, Label
+
+def gen_op_text(arch, insn, op):
+    if arch.cs_arch is capstone.CS_ARCH_X86:
+        if op.type == x86.X86_OP_REG:
+            return insn.reg_name(op.value.reg)
+        elif op.type == x86.X86_OP_IMM:
+            if op.value.imm < 10:
+                return '%d' % op.value.imm
+            else:
+                return '%xh' % op.value.imm
+        elif op.type == x86.X86_OP_FP:
+            return '%f' % op.value.fp
+        else:
+            return '<something>'
+    else:
+        raise NotImplementedError("only x86 implemented")
+
+
+enamldef Operand(Container):
+    attr insn
+    attr op
+    attr arch
+    attr thumb
+    attr last
+    attr state = None
+
+    padding = 0
+
+    Label:
+        style_class = 'code'
+        text << gen_op_text(arch, insn, op) + (', ' if not last else '')
+
+
+enamldef Instruction(Container): insn_ui:
+    attr insn
+    attr arch
+    attr thumb
+    attr state = None
+
+    padding = 0
+
+    constraints = [
+        hbox(address, mnemonic, operands)
+    ]
+
+    Label: address:
+        style_class = 'code'
+        text << '%#x: ' % insn.address
+
+    Label: mnemonic:
+        style_class = 'code'
+        text << insn.mnemonic
+
+    Container: operands:
+        padding = 0
+        constraints << [hbox(*sum(operands_loop.items, []))]
+
+        Looper: operands_loop:
+            iterable << insn.operands
+
+            Operand:
+                op = loop_item
+                arch = insn_ui.arch
+                insn = insn_ui.insn
+                thumb = insn_ui.thumb
+                last = loop_index == len(insn.operands) - 1
+                state << insn_ui.state
+
+
+enamldef Block(Container): block_ui:
+    attr block
+    attr state = None
+
+    style_class = 'code'
+    padding = 0
+
+    StyleSheet:
+        Style:
+            style_class = 'foo'
+            Setter:
+                field = 'border'
+                value = '2px solid #2e2'
+        Style:
+            style_class = 'bar'
+            Setter:
+                field = 'border'
+                value = '2px solid #e22'
+        Style:
+            style_class = 'code'
+            Setter:
+                field = 'font'
+                value = '11pt monospace'
+
+    Looper:
+        iterable << block.capstone.insns
+
+        Instruction:
+            insn = loop_item
+            arch = block.capstone.arch
+            thumb = block.capstone.thumb
+            state << block_ui.state

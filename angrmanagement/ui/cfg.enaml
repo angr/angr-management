@@ -6,19 +6,30 @@ from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineF
 
 from angr.errors import AngrError
 
+from .block import Block
 from .graph import Graph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
 
 
+# enamldef CFGNode(Container):
+#     attr proj
+#     attr node
+
+#     Label:
+#         font = '10pt Courier'
+#         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
+
 enamldef CFGNode(Container):
     attr proj
     attr node
 
-    Label:
-        font = '10pt Courier'
-        text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
+    Conditional:
+        condition << not proj.is_hooked(node)
+
+        Block:
+            block << proj.factory.block(node)
 
 def get_block(proj, address):
     try:

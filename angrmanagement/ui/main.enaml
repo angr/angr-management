@@ -155,7 +155,7 @@ enamldef Main(MainWindow): main:
                     main.ida_conn = websocket.create_connection("ws://localhost:3003", subprotocols=['qira'])
 
         Label: jobs:
-            text << '%d jobs' % len(inst.jobs) if inst else 'no inst'
+            text << '%d job%s' % (len(inst.jobs), 's' if len(inst.jobs) != 0 else '') if inst else 'no inst'
 
         Notebook: nbook:
             tab_style = 'document'

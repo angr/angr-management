@@ -11,7 +11,7 @@ if __name__ == '__main__':
         from ui.main import Main
 
     if len(sys.argv) >= 2:
-        proj = angr.Project(sys.argv[1])
+        proj = angr.Project(sys.argv[1], load_options={'auto_load_libs': False})
         inst = Instance(proj=proj)
     else:
         inst = None
