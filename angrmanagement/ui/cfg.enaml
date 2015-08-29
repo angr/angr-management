@@ -63,6 +63,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
             constraints = [vbox(graph)]
 
             Graph: graph:
+                selected << str(wk.selected_function._addr)
                 edges << [(str(from_), str(to)) for (from_, to, data) in wk.selected_function.transition_graph.edges(data=True) if edge_qualifies(data)]
 
                 Looper:

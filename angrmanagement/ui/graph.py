@@ -154,6 +154,9 @@ class QtGraph(QtFrame, ProxyGraph):
 
             self._edge_paths.append(self.scene.addPath(painter))
 
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
+        self.widget.viewport().update()
+
         self.show_selected()
 
     def minimumSizeHint(self):
