@@ -58,11 +58,10 @@ class VFGGenerationJob(Job):
         self._addr = addr
 
     def run(self, inst):
-        return inst.proj.analyses.VFG(cfg=inst.cfg, function_start=self._addr)
+        return inst.proj.analyses.VFG(function_start=self._addr)
 
     def finish(self, inst, result):
         super(VFGGenerationJob, self).finish(inst, result)
-        __import__('ipdb').set_trace()
         inst.vfgs[self._addr] = result
 
     def __repr__(self):

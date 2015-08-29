@@ -22,6 +22,27 @@ def gen_op_text(arch, insn, op):
     else:
         raise NotImplementedError("only x86 implemented")
 
+def op_val(state, insn, op):
+    if state is None:
+        return ''
+
+    if state.arch.cs_arch is capstone.CS_ARCH_X86:
+        if op.type == x86.X86_OP_REG:
+            try:
+                return state.registers.load(str(insn.reg_name(op.value.reg)))
+            except Exception as e:
+                print e
+                print "got exception when trying to load %s" % insn.reg_name(op.value.reg)
+                return ''
+        elif op.type == x86.X86_OP_IMM:
+            return op.value.imm
+        elif op.type == x86.X86_OP_FP:
+            return op.value.fp
+        else:
+            return ''
+    else:
+        return ''
+
 
 enamldef Operand(Container):
     attr insn
@@ -32,6 +53,8 @@ enamldef Operand(Container):
     attr state = None
 
     padding = 0
+
+    tool_tip << str(op_val(state, insn, op))
 
     Label:
         style_class = 'code'

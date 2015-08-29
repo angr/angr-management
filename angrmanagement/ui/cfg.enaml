@@ -21,15 +21,17 @@ from ..data.jobs import CFGGenerationJob
 #         font = '10pt Courier'
 #         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
 
-enamldef CFGNode(Container):
+enamldef CFGNode(Container): cfgnode:
     attr proj
     attr node
+    attr state = None
 
     Conditional:
         condition << not proj.is_hooked(node)
 
         Block:
             block << proj.factory.block(node)
+            state << cfgnode.state
 
 def get_block(proj, address):
     try:
@@ -40,6 +42,16 @@ def get_block(proj, address):
 
 def edge_qualifies(data):
     return data['type'] not in ('call', 'return_from_call')
+
+def find_vfg_state(wk, func_addr, block_addr):
+    vfg = wk.inst.vfgs.get(func_addr, None)
+    if vfg is None:
+        return None
+
+    try:
+        return next(node.state for node in vfg._graph.nodes() if node.addr == block_addr)
+    except StopIteration:
+        return None
 
 enamldef CFGItem(WorkspaceItem): cfgi:
     title = "CFG"
@@ -63,6 +75,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                             name << str(loop_item)
                             node << loop_item
                             proj = wk.proj
+                            state << find_vfg_state(wk, wk.selected_function._addr, loop_item)
 
     Conditional:
         condition << wk.inst.cfg is None
