@@ -2,7 +2,7 @@ import pickle
 from threading import Thread
 from Queue import Queue
 
-from atom.api import Atom, Int, List, Typed, Value
+from atom.api import Atom, Int, List, Typed, Value, Dict
 from enaml.application import schedule
 
 import ana
@@ -25,6 +25,8 @@ class Instance(Atom):
     path_groups = Typed(PathGroups)
     cfg = Typed(CFG)
     jobs = List(Job)
+    vfgs = Dict()
+
     _jobs_queue = Value()
 
     def __init__(self, **kwargs):
