@@ -1,0 +1,64 @@
+import textwrap
+
+from enaml.core.api import Conditional, Looper
+from enaml.layout.api import vbox
+from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
+
+from angr.errors import AngrError
+
+from .graph import Graph
+from .notify import notify_update
+from .wkitem import WorkspaceItem
+from ..data.jobs import CFGGenerationJob
+
+
+enamldef CFGNode(Container):
+    attr proj
+    attr node
+
+    Label:
+        font = '10pt Courier'
+        text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
+
+def get_block(proj, address):
+    try:
+        block = proj.factory.block(address)
+        return block
+    except AngrError:
+        return None
+
+def edge_qualifies(data):
+    return data['type'] not in ('call', 'return_from_call')
+
+enamldef CFGItem(WorkspaceItem): cfgi:
+    title = "CFG"
+
+    Conditional:
+        condition << wk.selected_function is not None
+
+        Container:
+            constraints = [vbox(graph)]
+
+            Graph: graph:
+                edges << [(str(from_), str(to)) for (from_, to, data) in wk.selected_function.transition_graph.edges(data=True) if edge_qualifies(data)]
+
+                Looper:
+                    iterable << wk.selected_function.blocks
+
+                    Conditional:
+                        condition << loop_item != 0
+
+                        CFGNode:
+                            name << str(loop_item)
+                            node << loop_item
+                            proj = wk.proj
+
+    Conditional:
+        condition << wk.inst.cfg is None
+
+        Container:
+            constraints = []
+
+            PushButton:
+                text = "Generate CFG"
+                clicked :: wk.inst.add_job(CFGGenerationJob())

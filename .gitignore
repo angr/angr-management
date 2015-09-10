@@ -3,6 +3,13 @@ projects
 # Python cruft
 *.pyc
 *.pyo
+*.egg-info
 
 # vim temp files
 *.swp
+
+# emacs temp files
+*~
+
+# enaml cache
+__enamlcache__/

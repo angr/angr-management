@@ -1,0 +1,179 @@
+import pprint
+from collections import defaultdict
+
+from enaml.core.api import Looper, Conditional
+from enaml.layout.api import vbox
+from enaml.widgets.api import Container, PushButton, PushButton, Label, Field, Form, Feature, Border
+from enaml.styling import StyleSheet, Style, Setter
+from enaml.layout.geometry import Box
+
+from .graph import Graph
+from .wkitem import WorkspaceItem
+
+def eval_with_path(path, expr):
+    try:
+        return eval(expr, {'p': path})
+    except Exception as e:
+        return e
+
+enamldef Path(Container): p:
+    attr path
+    attr watch_expr
+    attr options = {}
+    attr selected = False
+    event select_me
+
+    border = Border(style='box', line_style='plain')
+    style_class << 'selected' if selected else ''
+
+    StyleSheet:
+        Style:
+            style_class = 'active'
+            Setter:
+                field = 'color'
+                value = 'green'
+        Style:
+            style_class = 'deadended'
+            Setter:
+                field = 'color'
+                value = 'gray'
+        Style:
+            style_class = 'selected'
+            Setter:
+                field = 'border'
+                value = '4px solid #2e2'
+            Setter:
+                field = 'padding'
+                value = '10px'
+
+    PushButton:
+        style_class << ' '.join(['bold'] + [option for (option, val) in options.items() if val])
+        text = 'Path at %#x' % path.addr
+
+        clicked :: select_me()
+    Label:
+        text = "%d Runs" % len(path.backtrace)
+    Label:
+        text = "ID is %s" % path.path_id
+    Conditional:
+        condition << watch_expr != ''
+
+        Label:
+            text << "Watched: %s" % (pprint.pformat(eval_with_path(p.path, watch_expr)))
+
+def all_paths(paths, hierarchy):
+    work = set(paths)
+    seen = set()
+    while len(work) > 0:
+        path = work.pop()
+        # print path.path_id
+        if path.state.se not in hierarchy._successors or len(hierarchy._successors[path.state.se]) == 0:
+            if path.path_id not in seen:
+                yield path
+                seen.add(path.path_id)
+        if path.state.se in hierarchy._parents:
+            parent_se = hierarchy._parents[path.state.se]
+            # assume _path_mapping always has the path
+            parent_path = hierarchy._path_mapping[parent_se]
+            work.add(parent_path)
+            if len(hierarchy._successors[parent_se]) > 1:
+                if parent_path.path_id not in seen:
+                    yield parent_path
+                    seen.add(parent_path.path_id)
+
+def all_edges_gen(paths, hierarchy):
+    # TODO: reduce duplication with above function
+    work = set(paths)
+    # __import__('ipdb').set_trace()
+    while len(work) > 0:
+        working_path = bot_path = work.pop()
+        while working_path.state.se in hierarchy._parents:
+            parent_se = hierarchy._parents[working_path.state.se]
+            # assume _path_mapping always has the path
+            parent_path = hierarchy._path_mapping[parent_se]
+            if len(hierarchy._successors[parent_se]) > 1:
+                yield (parent_path.path_id, bot_path.path_id)
+                work.add(parent_path)
+                break
+            else:
+                working_path = parent_path
+        # if path.state.se in hierarchy._parents:
+        #     parent_se = hierarchy._parents[path.state.se]
+        #     if parent_se in hierarchy._path_mapping:
+        #         parent_path = hierarchy._path_mapping[parent_se]
+        #         work.add(parent_path)
+        #         yield (parent_path.path_id, path.path_id)
+
+def all_edges(*args):
+    return list(all_edges_gen(*args))
+
+import itertools
+c = itertools.count()
+
+enamldef PathTreeItem(WorkspaceItem): pti:
+    attr paths = []
+    attr hierarchy = None
+    attr watching = ''
+    attr metadata = {}
+
+    # is this horrible? yes
+    initialized ::
+        on_pg_sel({'value': wk.selected_pg})
+        wk.observe('selected_pg', on_pg_sel)
+
+    func on_pg_sel(change):
+        pg = change['value']
+        if pg is None:
+            return
+        metadata = defaultdict(lambda: defaultdict(dict))
+        for a in pg.active:
+            metadata[a]['active'] = True
+        for d in pg.deadended:
+            metadata[d]['deadended'] = True
+        for e in pg.errored:
+            metadata[e]['errored'] = True
+        pti.metadata = metadata
+        pti.hierarchy = pg._hierarchy
+        pti.paths = [path for (stash, paths) in pg.stashes.items() if stash != 'pruned' for path in paths]
+
+    title = "Path Tree"
+
+    StyleSheet:
+        Style:
+            style_class = 'bold'
+            Setter:
+                field = 'font-weight'
+                value = 'bold'
+
+    Container:
+        constraints = [
+            vbox(watching_form, graph)
+        ]
+
+        Form: watching_form:
+            Label:
+                text = "Watching:"
+            Field: watching_field:
+                text = watching
+                text ::
+                    pti.watching = change['value']
+                    graph.request_relayout()
+
+        Graph: graph:
+            edges << all_edges(paths, hierarchy)
+            selected << wk.selected_path.path_id if wk.selected_path is not None else None
+
+            Looper:
+                iterable << all_paths(paths, hierarchy)
+
+                Path:
+                    name = loop_item.path_id
+                    path = loop_item
+                    selected << wk.selected_path is loop_item
+                    options << metadata.get(loop_item, {})
+                    watch_expr << watching
+
+                    select_me ::
+                        # WTF is up with having to reference it first?
+                        wk.selected_path
+                        wk.selected_path = loop_item

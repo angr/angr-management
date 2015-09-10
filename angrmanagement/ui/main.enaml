@@ -1,0 +1,168 @@
+import os
+from collections import defaultdict
+import websocket
+
+from enaml.core.api import Looper, Include
+from enaml.layout.api import vbox
+from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout, InsertItem
+from enaml.widgets.api import (
+    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton, IPythonConsole, DockItem
+)
+
+import angr
+import simuvex
+import claripy
+from angr import Project
+
+from ..data.instance import Instance
+from ..data.workspace import WorkspaceData
+from .state import RegistersItem, MemoryItem
+from .pathgroup import PathGroupItem
+from .pathtree import PathTreeItem
+from .cfg import CFGItem
+from .functions import FunctionManagerItem
+from .console import ConsoleItem
+
+ALL_ITEMS = {
+    'CFG': CFGItem,
+    'Function Manager': FunctionManagerItem,
+    'Console': ConsoleItem,
+    'Path Tree': PathTreeItem,
+    'Path Group': PathGroupItem,
+    'Registers': RegistersItem,
+    'Memory': MemoryItem,
+}
+
+def gen_static_wk(inst):
+    layout = AreaLayout(item=HSplitLayout('cfg', 'funcs'), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+
+    data = WorkspaceData(name='Static Analysis', layout=layout, inst=inst)
+    cfg = CFGItem(name='cfg', wk=data)
+    funcs = FunctionManagerItem(name='funcs', wk=data)
+    console = ConsoleItem(name='console', wk=data)
+    data.items = [cfg, funcs, console]
+
+    return data
+
+def gen_symbolic_wk(inst):
+    layout = AreaLayout(item=HSplitLayout('path_tree', VSplitLayout('path_group', TabLayout('regs', 'mem'))), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+
+    data = WorkspaceData(name='Symbolic Analysis', layout=layout, inst=inst)
+    path_tree = PathTreeItem(name='path_tree', wk=data)
+    path_group = PathGroupItem(name='path_group', wk=data)
+    regs = RegistersItem(name='regs', wk=data)
+    mem = MemoryItem(name='mem', wk=data)
+    console = ConsoleItem(name='console', wk=data)
+    data.items = [path_tree, path_group, regs, mem, console]
+
+    return data
+
+enamldef Workspace(Page): wk:
+    attr data
+    attr ida_conn
+
+    # is this horrible? yes
+    initialized :: wk.observe('selected_path', on_path_sel)
+
+    func on_path_sel(_):
+        if ida_conn is not None:
+            ida_conn.send('setaddress %d' % data.selected_path.addr)
+
+    title << data.name
+
+    Container:
+        Menu:
+            context_menu = True
+            Menu:
+                title = 'Add Item...'
+                Looper:
+                    iterable << ALL_ITEMS.items()
+
+                    Action:
+                        text = loop_item[0]
+                        triggered ::
+                            name = data.next_item_name()
+                            item = loop_item[1](area, name=name, wk=data)
+                            op = InsertItem(item=name)
+                            area.update_layout(op)
+
+        DockArea: area:
+            layout := data.layout
+
+            Include:
+                objects << data.items
+
+
+enamldef Main(MainWindow): main:
+    attr inst
+    attr ida_conn = None
+
+    initialized ::
+        if inst is not None and len(inst.workspaces) == 0:
+            inst.add_workspace(gen_symbolic_wk(inst))
+            inst.add_workspace(gen_static_wk(inst))
+
+    title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
+
+    MenuBar:
+        Menu:
+            title = '&File'
+            Action:
+                text = 'New\tCtrl+N'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(main)
+                    if path:
+                        main.inst = Instance(proj=Project(path))
+                        main.inst.add_workspace(gen_symbolic_wk(inst))
+                        main.inst.add_workspace(gen_static_wk(inst))
+            Action:
+                text = 'Save\tCtrl+S'
+                enabled << bool(inst)
+                triggered ::
+                    path = FileDialogEx.get_save_file_name(main)
+                    if path:
+                        inst.save(path)
+            Action:
+                text = 'Open\tCtrl+O'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(main)
+                    if path:
+                        main.inst = Instance.from_file(path)
+
+    Container:
+        constraints = [
+            vbox(jobs, nbook),
+        ]
+
+        Menu:
+            context_menu = True
+            Menu:
+                title = 'Add Workspace...'
+                enabled << bool(inst)
+                Action:
+                    text = 'Symbolic Analysis'
+                    triggered :: inst.add_workspace(gen_symbolic_wk(inst))
+                Action:
+                    text = 'Static Analysis'
+                    triggered :: inst.add_workspace(gen_symbolic_wk(inst))
+                Action:
+                    text = 'Blank'
+                    triggered :: inst.add_workspace(WorkspaceData(name='Blank', inst=inst, layout=AreaLayout()))
+            Action:
+                text = 'Connect to IDA'
+                enabled << ida_conn is None
+                triggered ::
+                    main.ida_conn = websocket.create_connection("ws://localhost:3003", subprotocols=['qira'])
+
+        Label: jobs:
+            text << '%d jobs' % len(inst.jobs) if inst else 'no inst'
+
+        Notebook: nbook:
+            tab_style = 'document'
+
+            Looper:
+                iterable << inst.workspaces if inst else []
+
+                Workspace:
+                    data = loop_item
+                    ida_conn := main.ida_conn

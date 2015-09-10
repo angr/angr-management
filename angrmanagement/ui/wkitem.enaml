@@ -1,0 +1,5 @@
+from enaml.widgets.api import DockItem
+
+
+enamldef WorkspaceItem(DockItem):
+    attr wk

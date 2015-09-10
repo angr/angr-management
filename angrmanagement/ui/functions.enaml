@@ -1,0 +1,15 @@
+from enaml.widgets.api import Container
+
+from .listcontrol import QtListControl
+from .wkitem import WorkspaceItem
+
+enamldef FunctionManagerItem(WorkspaceItem): fmi:
+    title = "Function Manager"
+
+    Container:
+        QtListControl: selector:
+            items << wk.inst.cfg.function_manager.functions.values() if wk.inst.cfg else []
+            to_string = repr
+            on_selected ::
+                wk.selected_function
+                wk.selected_function = selector.selected_item
