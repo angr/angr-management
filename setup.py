@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='angr-management',
-    version='4.5.9.14',
+    version='4.5.9.22',
     packages=['angrmanagement', 'angrmanagement.ui', 'angrmanagement.data'],
     package_data={
         'angrmanagement.ui': ['*.enaml']
