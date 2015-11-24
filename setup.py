@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='angr-management',
-    version='4.5.9.22',
+    version='4.5.11.23',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=['angrmanagement', 'angrmanagement.ui', 'angrmanagement.data'],
