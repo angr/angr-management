@@ -6,7 +6,7 @@ from enaml.layout.api import hbox
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label
 
-from .wkitem import get_inst
+from .wkitem import get_inst, get_wk
 
 def gen_op_text(arch, registry, insn, op):
     if arch.cs_arch is capstone.CS_ARCH_X86:
@@ -80,6 +80,19 @@ def op_val(state, insn, stmt_idx, op):
             return op.value.imm
         elif op.type == x86.X86_OP_FP:
             return op.value.fp
+        elif op.type == x86.X86_OP_MEM:
+            try:
+                address = 0
+                if op.mem.base != 0:
+                    address += state.registers.load(str(insn.reg_name(op.mem.base)))
+                if op.mem.index != 0:
+                    address += state.registers.load(str(insn.reg_name(op.mem.index))) * op.mem.scale
+                address += op.mem.disp
+
+                return state.memory.load(address, op.size, endness='Iend_LE')
+            except Exception as e:
+                print e
+                return ''
         else:
             return ''
     else:
@@ -117,6 +130,8 @@ enamldef Instruction(Container): insn_ui:
         hbox(address, mnemonic, *sum(operands_loop.items, []))
     ]
 
+    style_class << 'highlight' if get_wk().selected_function._addr in get_inst().ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk().selected_function._addr][1])
+
     Label: address:
         style_class = 'code'
         text << '%#x: ' % insn.address
@@ -147,20 +162,16 @@ enamldef Block(Container): block_ui:
 
     StyleSheet:
         Style:
-            style_class = 'foo'
-            Setter:
-                field = 'border'
-                value = '2px solid #2e2'
-        Style:
-            style_class = 'bar'
-            Setter:
-                field = 'border'
-                value = '2px solid #e22'
-        Style:
             style_class = 'code'
             Setter:
                 field = 'font'
                 value = '11pt monospace'
+
+        Style:
+            style_class = 'highlight'
+            Setter:
+                field = 'background-color'
+                value = '#0f0'
 
     Looper:
         iterable << block.capstone.insns

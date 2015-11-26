@@ -1,5 +1,5 @@
 from enaml.core.api import Conditional
-from enaml.widgets.api import Container, Label, PushButton
+from enaml.widgets.api import Container, Form, Label, PushButton
 from enaml.layout.api import vbox
 
 from .listcontrol import QtListControl
@@ -28,24 +28,32 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
                 condition << wk.selected_function is not None
 
                 Container:
-                    constraints = [vbox(name, argregs, argstack, prep_regs, prep_stack, run_vsa)]
+                    constraints = [vbox(attrs, run_vsa, run_ddg)]
 
-                    Label: name:
-                        text << wk.selected_function.name
+                    Form: attrs:
+                        Label:
+                            text = "Argument Registers:"
+                        Label:
+                            text << str(wk.selected_function._argument_registers)
 
-                    Label: argregs:
-                        text << str(wk.selected_function._argument_registers)
+                        Label:
+                            text = "Arguments on Stack:"
+                        Label:
+                            text << str(wk.selected_function._argument_stack_variables)
 
-                    Label: argstack:
-                        text << str(wk.selected_function._argument_stack_variables)
-
-                    Label: prep_regs:
-                        text << str(wk.selected_function.prepared_registers)
-
-                    Label: prep_stack:
-                        text << str(wk.selected_function.prepared_stack_variables)
+                        Label:
+                            text = "SP difference:"
+                        Label:
+                            text << '%#x' % wk.selected_function.sp_delta
 
                     PushButton: run_vsa:
                         text = "Run VSA"
                         clicked ::
                             wk.inst.add_job(VFGGenerationJob(wk.selected_function._addr))
+
+                    PushButton: run_ddg:
+                        text = "Run VSA_DDG"
+                        # enabled << wk.selected_function._addr in wk.inst.vfgs
+                        enabled = True
+                        clicked ::
+                            wk.inst.add_job(DDGGenerationJob(wk.selected_function._addr))

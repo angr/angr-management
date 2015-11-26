@@ -49,7 +49,7 @@ def find_vfg_state(wk, func_addr, block_addr):
         return None
 
     try:
-        return next(node.state for node in vfg._graph.nodes() if node.addr == block_addr)
+        return next(node.final_states[0] for node in vfg._graph.nodes() if node.addr == block_addr)
     except StopIteration:
         return None
 

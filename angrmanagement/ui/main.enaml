@@ -112,7 +112,7 @@ enamldef Main(MainWindow): main:
                 triggered ::
                     path = FileDialogEx.get_open_file_name(main)
                     if path:
-                        main.inst = Instance(proj=Project(path))
+                        main.inst = Instance(proj=Project(path, load_options={'auto_load_libs': False}))
                         main.inst.add_workspace(gen_symbolic_wk(inst))
                         main.inst.add_workspace(gen_static_wk(inst))
             Action:

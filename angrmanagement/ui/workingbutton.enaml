@@ -1,0 +1,11 @@
+enamldef WorkingButton(Container):
+    attr working = False
+    attr text
+
+    padding = 0
+
+    Conditional:
+        condition << not working
+
+        Button:
+            text << text
