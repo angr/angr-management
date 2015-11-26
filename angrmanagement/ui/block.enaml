@@ -130,7 +130,7 @@ enamldef Instruction(Container): insn_ui:
         hbox(address, mnemonic, *sum(operands_loop.items, []))
     ]
 
-    style_class << 'highlight' if get_wk().selected_function._addr in get_inst().ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk().selected_function._addr][1])
+    style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
 
     Label: address:
         style_class = 'code'
