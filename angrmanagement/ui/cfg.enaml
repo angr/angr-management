@@ -21,9 +21,16 @@ from ..data.jobs import CFGGenerationJob
 #         font = '10pt Courier'
 #         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
 
+def get_header(node_addr, func_addr):
+    if node_addr == func_addr:
+        return "sub_%#x:" % func_addr
+    else:
+        return "loc_%#x:" % node_addr
+
 enamldef CFGNode(Container): cfgnode:
     attr proj
     attr node
+    attr func_addr
     attr state = None
 
     Conditional:
@@ -31,6 +38,7 @@ enamldef CFGNode(Container): cfgnode:
 
         Block:
             block << proj.factory.block(node)
+            header << get_header(node, func_addr)
             state << cfgnode.state
 
 def get_block(proj, address):
@@ -75,6 +83,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         CFGNode:
                             name << str(loop_item)
                             node << loop_item
+                            func_addr << wk.selected_function._addr
                             proj = wk.proj
                             state << find_vfg_state(wk, wk.selected_function._addr, loop_item)
 
