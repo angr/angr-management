@@ -165,7 +165,7 @@ enamldef Block(Container): block_ui:
             style_class = 'code'
             Setter:
                 field = 'font'
-                value = '11pt monospace'
+                value = '11pt courier new'
 
         Style:
             style_class = 'highlight'
