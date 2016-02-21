@@ -1,7 +1,7 @@
 import textwrap
 
 from enaml.core.api import Conditional, Looper
-from enaml.layout.api import vbox
+from enaml.layout.api import vbox, align
 from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
 
 from angr.errors import AngrError
@@ -68,7 +68,10 @@ enamldef CFGItem(WorkspaceItem): cfgi:
         condition << wk.selected_function is not None
 
         Container:
-            constraints = [vbox(graph)]
+            constraints << [
+                vbox(graph),
+                (width == 500) | 'weak'
+                ]
 
             Graph: graph:
                 selected << str(wk.selected_function._addr)
@@ -90,10 +93,13 @@ enamldef CFGItem(WorkspaceItem): cfgi:
     Conditional:
         condition << wk.inst.cfg is None
 
-        Container:
-            constraints = []
-            hug_width = 'strong'
+        Container: container:
+            constraints = [
+                align('h_center', container, cmd_gencfg),
+                align('v_center', container, cmd_gencfg),
+                (width == 500) | 'weak',
+            ]
 
-            PushButton:
+            PushButton: cmd_gencfg:
                 text = "Generate CFG"
                 clicked :: wk.inst.add_job(CFGGenerationJob())

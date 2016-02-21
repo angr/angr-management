@@ -34,7 +34,7 @@ ALL_ITEMS = {
 }
 
 def gen_static_wk(inst):
-    layout = AreaLayout(item=HSplitLayout('cfg', 'funcs'), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
+    layout = AreaLayout(item=HSplitLayout('funcs', 'cfg'), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
 
     data = WorkspaceData(name='Static Analysis', layout=layout, inst=inst)
     cfg = CFGItem(name='cfg', wk=data)
@@ -99,8 +99,8 @@ enamldef Main(MainWindow): main:
 
     initialized ::
         if inst is not None and len(inst.workspaces) == 0:
-            inst.add_workspace(gen_symbolic_wk(inst))
             inst.add_workspace(gen_static_wk(inst))
+            inst.add_workspace(gen_symbolic_wk(inst))
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 

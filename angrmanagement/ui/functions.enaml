@@ -10,7 +10,10 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
     title = "Function Manager"
 
     Container:
-        constraints = [vbox(selector, fattributes)]
+        constraints << [
+            vbox(selector, fattributes),
+            (width == 200) | 'weak',
+            ]
 
         QtListControl: selector:
             hug_height = 'weak'
