@@ -19,7 +19,7 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
             hug_height = 'weak'
             hug_width = 'ignore'
 
-            items << sorted(wk.inst.cfg.function_manager.functions.values(), key=lambda f: f._addr) if wk.inst.cfg else []
+            items << sorted(wk.inst.cfg.kb.functions.values(), key=lambda f: f.addr) if wk.inst.cfg else []
             to_string = repr
             on_selected ::
                 wk.selected_function

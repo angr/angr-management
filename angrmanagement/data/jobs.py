@@ -20,8 +20,8 @@ class CFGGenerationJob(Job):
         offsets = inst.registry.offsets.copy()
         for node in result.nodes():
             offsets[node.addr] = CodeAddressEntry(address=node.addr)
-        for func in result.function_manager.functions.values():
-            offsets[func._addr] = FunctionEntry(function=func)
+        for func in result.kb.functions.values():
+            offsets[func.addr] = FunctionEntry(function=func)
 
         # This is sort of a hack to get it to propagate the update.
         # Perhaps this model is better in an immutable language...

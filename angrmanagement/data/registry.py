@@ -1,4 +1,4 @@
-from angr.functionmanager import Function
+from angr.knowledge import Function
 
 from atom.api import Atom, Dict, Typed, Value
 

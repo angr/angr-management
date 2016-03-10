@@ -21,11 +21,11 @@ from ..data.jobs import CFGGenerationJob
 #         font = '10pt Courier'
 #         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
 
-def get_header(node_addr, func_addr):
-    if node_addr == func_addr:
+def get_header(node, func_addr):
+    if node.addr == func_addr:
         return "sub_%#x:" % func_addr
     else:
-        return "loc_%#x:" % node_addr
+        return "loc_%#x:" % node.addr
 
 enamldef CFGNode(Container): cfgnode:
     attr proj
@@ -37,7 +37,7 @@ enamldef CFGNode(Container): cfgnode:
         condition << not proj.is_hooked(node)
 
         Block:
-            block << proj.factory.block(node)
+            block << proj.factory.block(node.addr)
             header << get_header(node, func_addr)
             state << cfgnode.state
 
@@ -74,8 +74,8 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                 ]
 
             Graph: graph:
-                selected << str(wk.selected_function._addr)
-                edges << [(str(from_), str(to)) for (from_, to, data) in wk.selected_function.transition_graph.edges(data=True) if edge_qualifies(data)]
+                selected << str(wk.selected_function.addr)
+                edges << [(str(from_.addr), str(to.addr)) for (from_, to, data) in wk.selected_function.graph.edges(data=True) if edge_qualifies(data)]
 
                 Looper:
                     iterable << wk.selected_function.blocks
@@ -84,11 +84,11 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         condition << loop_item != 0
 
                         CFGNode:
-                            name << str(loop_item)
+                            name << str(loop_item.addr)
                             node << loop_item
-                            func_addr << wk.selected_function._addr
+                            func_addr << wk.selected_function.addr
                             proj = wk.proj
-                            state << find_vfg_state(wk, wk.selected_function._addr, loop_item)
+                            state << find_vfg_state(wk, wk.selected_function.addr, loop_item)
 
     Conditional:
         condition << wk.inst.cfg is None
