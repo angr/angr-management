@@ -16,6 +16,10 @@ def eval_with_path(path, expr):
     except Exception as e:
         return e
 
+def log(val):
+    print val
+    return val
+
 enamldef Path(Container): p:
     attr path
     attr watch_expr
@@ -51,10 +55,17 @@ enamldef Path(Container): p:
         text = 'Path at %#x' % path.addr
 
         clicked :: select_me()
-    Label:
-        text = "%d Runs" % len(path.backtrace)
-    Label:
-        text = "ID is %s" % path.path_id
+    Conditional:
+        # condition << len(path.guards) > 0 and any(not g.is_true() for g in path.guards)
+        condition = False
+        Label:
+            text = "Most Recent Guard Variables:"
+        Container:
+            Looper:
+                iterable << next(g for g in reversed(path.guards) if not g.is_true()).variables
+
+                Label:
+                    text << loop_item
     Conditional:
         condition << watch_expr != ''
 

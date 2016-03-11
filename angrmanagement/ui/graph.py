@@ -58,6 +58,9 @@ class QtGraph(QtFrame, ProxyGraph):
     _proxies = Dict()
     _edge_paths = List()
 
+    LEFT_PADDING = 1200
+    TOP_PADDING = 1200
+
     def create_widget(self):
         self.scene = QGraphicsScene(self.parent_widget())
         self.widget = ZoomingGraphicsView(self.parent_widget())
@@ -154,6 +157,16 @@ class QtGraph(QtFrame, ProxyGraph):
 
             self._edge_paths.append(self.scene.addPath(painter))
 
+        rect = self.scene.itemsBoundingRect()
+        # Enlarge the rect so there is enough room at right and bottom
+        rect.setX(rect.x() - self.LEFT_PADDING)
+        rect.setY(rect.y() - self.TOP_PADDING)
+        rect.setWidth(rect.width() + 2 * self.LEFT_PADDING)
+        rect.setHeight(rect.height() + 2 * self.TOP_PADDING)
+
+        self.scene.setSceneRect(rect)
+        self.widget.viewport().update()
+
         self.show_selected()
 
     def minimumSizeHint(self):
@@ -197,3 +210,4 @@ class Graph(Frame):
     def _selected_update(self, change):
         if self.proxy is not None:
             self.proxy.show_selected()
+

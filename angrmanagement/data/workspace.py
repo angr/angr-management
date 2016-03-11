@@ -1,7 +1,8 @@
-from atom.api import Atom, Int, List, Typed, ForwardTyped
+from atom.api import Atom, Int, List, Typed, ForwardTyped, Value
 from enaml.layout.dock_layout import AreaLayout
 
-from angr import CFG, Function, Project, Path, PathGroup
+from angr import CFG, Project, Path, PathGroup
+from angr.knowledge import Function
 
 
 class WorkspaceData(Atom):
@@ -13,6 +14,7 @@ class WorkspaceData(Atom):
     selected_pg = Typed(PathGroup)
     selected_path = Typed(Path)
     selected_function = Typed(Function)
+    selected_insn = Value()
     items = List()
     layout = Typed(AreaLayout)
 
