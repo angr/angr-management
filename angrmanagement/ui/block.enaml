@@ -10,53 +10,59 @@ from .wkitem import get_inst, get_wk
 
 def gen_op_text(arch, registry, insn, op):
     if arch.cs_arch is capstone.CS_ARCH_X86:
-        if op.type == x86.X86_OP_REG:
-            return insn.reg_name(op.value.reg)
-        elif op.type == x86.X86_OP_IMM:
-            if op.value.imm in registry.offsets:
-                return str(registry.offsets[op.value.imm])
-            elif op.value.imm < 10:
-                return '%d' % op.value.imm
-            else:
-                return '%xh' % op.value.imm
-        elif op.type == x86.X86_OP_FP:
-            return '%f' % op.value.fp
-        elif op.type == x86.X86_OP_MEM:
-            sizes = {
-                1: 'byte',
-                2: 'word',
-                4: 'dword',
-                8: 'qword',
-            }
-            size = sizes.get(op.size, None)
-            if size is not None:
-                s = size + ' ptr ['
-            else:
-                s = '%d-byte ptr [' % op.size
-
-            if op.mem.segment != 0:
-                s += insn.reg_name(op.mem.segment) + ':'
-            if op.mem.base != 0:
-                s += insn.reg_name(op.mem.base)
-            if op.mem.index != 0:
-                if s[-1] not in (':', '['):
-                    s += ' + '
-                s += insn.reg_name(op.mem.index)
-            if op.mem.scale != 1:
-                s += '*%d' % op.mem.scale
-            if op.mem.disp != 0:
-                if s[-1] not in (':', '['):
-                    s += ' + '
-                if op.mem.disp in registry.offsets:
-                    s += str(registry.offsets[op.mem.disp])
-                else:
-                    s += '%xh' % op.mem.disp
-
-            return s + ']'
-        else:
-            return '<something>'
+        return gen_op_text_x86(arch, registry, insn, op)
+    elif arch.cs_arch is capstone.CS_ARCH_MIPS:
+        return "-"
     else:
-        raise NotImplementedError("only x86 implemented")
+        raise NotImplementedError("The required architecture is not implemented at the moment")
+
+def gen_op_text_x86(arch, registry, insn, op):
+    if op.type == x86.X86_OP_REG:
+        return insn.reg_name(op.value.reg)
+    elif op.type == x86.X86_OP_IMM:
+        if op.value.imm in registry.offsets:
+            return str(registry.offsets[op.value.imm])
+        elif op.value.imm < 10:
+            return '%d' % op.value.imm
+        else:
+            return '%xh' % op.value.imm
+    elif op.type == x86.X86_OP_FP:
+        return '%f' % op.value.fp
+    elif op.type == x86.X86_OP_MEM:
+        sizes = {
+            1: 'byte',
+            2: 'word',
+            4: 'dword',
+            8: 'qword',
+        }
+        size = sizes.get(op.size, None)
+        if size is not None:
+            s = size + ' ptr ['
+        else:
+            s = '%d-byte ptr [' % op.size
+
+        if op.mem.segment != 0:
+            s += insn.reg_name(op.mem.segment) + ':'
+        if op.mem.base != 0:
+            s += insn.reg_name(op.mem.base)
+        if op.mem.index != 0:
+            if s[-1] not in (':', '['):
+                s += ' + '
+            s += insn.reg_name(op.mem.index)
+        if op.mem.scale != 1:
+            s += '*%d' % op.mem.scale
+        if op.mem.disp != 0:
+            if s[-1] not in (':', '['):
+                s += ' + '
+            if op.mem.disp in registry.offsets:
+                s += str(registry.offsets[op.mem.disp])
+            else:
+                s += '%xh' % op.mem.disp
+
+        return s + ']'
+    else:
+        return '<something>'
+
 
 def op_val(state, insn, stmt_idx, op):
     if state is None:
