@@ -7,7 +7,7 @@ from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineF
 from angr.errors import AngrError
 
 from .block import Block
-from .graph import Graph
+from .graph import FlowGraph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
@@ -30,6 +30,7 @@ def get_header(node, func_addr):
 enamldef CFGNode(Container): cfgnode:
     attr proj
     attr node
+    attr addr
     attr func_addr
     attr state = None
 
@@ -73,9 +74,10 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                 (width == 500) | 'weak'
                 ]
 
-            Graph: graph:
+            FlowGraph: graph:
                 selected << str(wk.selected_function.addr)
                 edges << [(str(from_.addr), str(to.addr)) for (from_, to, data) in wk.selected_function.graph.edges(data=True) if edge_qualifies(data)]
+                func_addr << wk.selected_function.addr
 
                 Looper:
                     iterable << wk.selected_function.blocks
@@ -85,6 +87,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
                         CFGNode:
                             name << str(loop_item.addr)
+                            addr << loop_item.addr
                             node << loop_item
                             func_addr << wk.selected_function.addr
                             proj = wk.proj
