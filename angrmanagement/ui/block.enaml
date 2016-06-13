@@ -142,8 +142,8 @@ enamldef Instruction(Container): insn_ui:
     style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
 
     Label: address:
-        style_class = 'code'
-        text << '%#x: ' % insn.address
+        style_class = 'insn_addr'
+        text << '%08x' % insn.address
 
     Label: mnemonic:
         style_class = 'code'
@@ -175,7 +175,22 @@ enamldef Block(Container): block_ui:
             style_class = 'code'
             Setter:
                 field = 'font'
-                value = '11pt courier new'
+                value = '10pt courier new'
+            Setter:
+                field = 'color'
+                value = '#000080'
+
+        Style:
+            style_class = 'label'
+            Setter:
+                field = 'color'
+                value = '#0000ff'
+
+        Style:
+            style_class = 'insn_addr'
+            Setter:
+                field = 'color'
+                value = 'black'
 
         Style:
             style_class = 'highlight'
@@ -184,7 +199,7 @@ enamldef Block(Container): block_ui:
                 value = '#0f0'
 
     Label:
-        style_class = 'code'
+        style_class = 'label'
         text << header
 
     Looper:
