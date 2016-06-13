@@ -49,7 +49,6 @@ class QtFlowGraph(QtGraph):
 
         for s in sources:
             if not s in g:
-                all_children.append(s)
                 continue
 
             bfs_successors = networkx.bfs_successors(g, s)
@@ -198,14 +197,10 @@ class QtFlowGraph(QtGraph):
         #     scene_proxy.setPos(0.0, y)
         #     y += height + 25.0
 
+        # Remove all paths
         for p in self._edge_paths:
             self.scene.removeItem(p)
         self._edge_paths = []
-
-        g = pygraphviz.AGraph(directed=True)
-        g.graph_attr['nodesep'] = 100
-        g.graph_attr['ranksep'] = 50
-        g.node_attr['shape'] = 'rect'
 
         children_names = {child.declaration.name for child in self.children() if isinstance(child, QtContainer)}
 
@@ -219,12 +214,6 @@ class QtFlowGraph(QtGraph):
             scene_proxy = self._proxy(child)
             width, height = child._layout_manager.best_size()
             scene_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
-            g.add_node(child.declaration.name, width=width, height=height)
-
-        for from_, to in self.declaration.edges:
-            g.add_edge(from_, to)
-
-        g.layout(prog='dot')
 
         coordinates = self._compute_node_locations(self.declaration.func_addr)
 
@@ -250,7 +239,8 @@ class QtFlowGraph(QtGraph):
         for from_, to in edge_coordinates:
             painter = QPainterPath(QPointF(*from_))
             painter.lineTo(QPointF(*to))
-            self.scene.addPath(painter)
+            p = self.scene.addPath(painter)
+            self._edge_paths.append(p)
 
         """
         for from_, to in edge_coordinates:
