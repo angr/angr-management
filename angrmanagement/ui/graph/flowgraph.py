@@ -39,8 +39,8 @@ class QtFlowGraph(QtGraph):
         g = networkx.DiGraph()
         for s, d in self.declaration.edges:
             g.add_edge(int(s), int(d))
-
-        print g.edges()
+        for child in self.children():
+            g.add_node(child.declaration.addr)
 
         # order the children
         zero_indegree_nodes = [ s for s in g.nodes_iter() if g.in_degree(s) == 0 and s != start ]
@@ -48,6 +48,10 @@ class QtFlowGraph(QtGraph):
         all_children = []
 
         for s in sources:
+            if not s in g:
+                all_children.append(s)
+                continue
+
             bfs_successors = networkx.bfs_successors(g, s)
 
             print bfs_successors
@@ -73,8 +77,8 @@ class QtFlowGraph(QtGraph):
             width, height = node._layout_manager.best_size()
 
             # Get its predecessors and successors
-            predecessors = g.predecessors(addr)
-            successors = g.successors(addr)
+            predecessors = [ ] if addr not in g else g.predecessors(addr)
+            successors = [ ] if addr not in g else g.successors(addr)
 
             print hex(addr)
             print "all edges", self.declaration.edges

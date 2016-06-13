@@ -76,7 +76,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
             FlowGraph: graph:
                 selected << str(wk.selected_function.addr)
-                edges << [(str(from_.addr), str(to.addr)) for (from_, to, data) in wk.selected_function.graph.edges(data=True) if edge_qualifies(data)]
+                edges << [ (str(from_.addr), str(to.addr)) for (from_, to, data) in wk.selected_function.graph.edges(data=True) if edge_qualifies(data) ]
                 func_addr << int(wk.selected_function.addr)
 
                 Looper:
