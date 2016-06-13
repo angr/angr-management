@@ -1,8 +1,9 @@
 
 from collections import defaultdict
 
-import pygraphviz
 import networkx
+from grandalf.graphs import Graph, Edge, Vertex
+from grandalf.layouts import VertexViewer, SugiyamaLayout
 
 from atom.api import List, Typed, ForwardTyped, observe
 from enaml.widgets.api import Container
@@ -14,6 +15,7 @@ from enaml.qt.qt_container import QtContainer
 
 from .utils import grouper
 from .graph import QtGraph, ProxyGraph
+
 
 class QtFlowGraph(QtGraph):
     declaration = ForwardTyped(lambda: FlowGraph)
@@ -36,118 +38,51 @@ class QtFlowGraph(QtGraph):
                 continue
             node_map[child.declaration.addr] = child
 
-        g = networkx.DiGraph()
+        if start not in node_map:
+            return { }
+
+        vertices = {}
+        edges = [ ]
+        # Create all edges
         for s, d in self.declaration.edges:
-            g.add_edge(int(s), int(d))
-        for child in self.children():
-            g.add_node(child.declaration.addr)
-
-        # order the children
-        zero_indegree_nodes = [ s for s in g.nodes_iter() if g.in_degree(s) == 0 and s != start ]
-        sources = [ start ] + zero_indegree_nodes
-        all_children = []
-
-        for s in sources:
-            if not s in g:
-                continue
-
-            bfs_successors = networkx.bfs_successors(g, s)
-
-            stack = [s]
-
-            while stack:
-                n = stack[0]
-                stack = stack[1:]
-
-                if n not in all_children:
-                    all_children.append(n)
-                if n in bfs_successors:
-                    for suc in bfs_successors[n]:
-                        if suc not in all_children:
-                            all_children.append(suc)
-                            stack.append(suc)
-
-        for child in all_children:
-
-            node = node_map[child]
-            addr = node.declaration.addr
-            width, height = node._layout_manager.best_size()
-
-            # Get its predecessors and successors
-            predecessors = [ ] if addr not in g else g.predecessors(addr)
-            successors = [ ] if addr not in g else g.successors(addr)
-
-            if addr in coordinates:
-                x, y = coordinates[addr]
+            src, dst = int(s), int(d)
+            if src in vertices:
+                src_v = vertices[src]
             else:
-                x, y = None, None
+                src_v = Vertex(src)
+                vertices[src] = src_v
 
-            if x is None:
-                x = 0
+            if dst in vertices:
+                dst_v = vertices[dst]
+            else:
+                dst_v = Vertex(dst)
+                vertices[dst] = dst_v
 
-            # this node must stay lower than all of its predecessors if addresses of those predecessors come before this
-            # node
-            for p in predecessors:
-                if p < addr and p in coordinates:
-                    new_y = coordinates[p][1] + 50
-                    y = new_y if (y is None or new_y > y) else y
+            edges.append(Edge(src_v, dst_v))
 
-            # is y determined?
-            if y is None:
-                # nope
-                # let's check all successors
-                for s in successors:
-                    if s > addr and s in coordinates:
-                        new_y = coordinates[s][1] - 50 - height
-                        y = new_y if (y is None or new_y > y) else y
+        # Create all vertices
+        for child in self.children():
+            addr = child.declaration.addr
+            if addr not in vertices:
+                vertices[addr] = Vertex(addr)
 
-            # is y determined?
-            if y is None:
-                # nope...
-                # it gotta be something
-                y = 0
+        g = Graph(vertices.values(), edges)
 
+        # create a view for each node
+        for addr, vertex in vertices.iteritems():
+            node = node_map[addr]
+            width, height = node._layout_manager.best_size()
+            vertex.view = VertexViewer(width * 2, height * 2)  # FIXME: figure out why "* 2" is required here to make
+                                                               # FIXME: sure nodes don't overlap
+
+        sug = SugiyamaLayout(g.C[0])
+        sug.init_all(roots=[vertices[start]])
+        sug.draw()
+
+        # extract coordinates
+        for addr, vertex in vertices.iteritems():
+            x, y = vertex.view.xy
             coordinates[addr] = (x, y)
-
-            # let's layout all of its predecessors
-            # TODO:
-
-            # all its successors must stay below it if addresses of those successors come after this node
-            for s in successors:
-                if s > addr:
-                    s_y = y + height + 50
-                    if s in coordinates:
-                        if coordinates[s][1] < s_y:
-                            coordinates[s] = (coordinates[s][0], s_y)
-                    else:
-                        coordinates[s] = (None, s_y)
-
-            # horizontally distribute all its successors
-            successors_after = [s for s in successors if s > addr]
-            if len(successors_after) >= 1:
-                all_width = [node_map[s]._layout_manager.best_size()[0] for s in successors_after]
-                total_width = sum(all_width) + 50 * (len(all_width) - 1)
-
-                # from left to right
-                leftmost_x = x + width / 2 - total_width / 2
-
-                for s in successors_after:
-                    s_node = node_map[s]
-                    s_width, _ = s_node._layout_manager.best_size()
-                    s_x = leftmost_x
-                    leftmost_x += s_width + 50
-
-                    if s in coordinates:
-                        if coordinates[s][0] is None:
-                            coordinates[s] = (s_x, coordinates[s][1])
-                    else:
-                        coordinates[s] = (s_x, None)
-
-        for k in coordinates.keys():
-            if coordinates[k][0] is None:
-                coordinates[k] = (0, coordinates[k][1])
-            if coordinates[k][1] is None:
-                coordinates[k] = (coordinates[k][0], 0)
 
         return coordinates
 
@@ -216,6 +151,9 @@ class QtFlowGraph(QtGraph):
             scene_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
 
         coordinates = self._compute_node_locations(self.declaration.func_addr)
+
+        if not coordinates:
+            return
 
         for child in self.children():
             if not isinstance(child, QtContainer):
