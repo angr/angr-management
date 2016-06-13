@@ -1,6 +1,7 @@
 import itertools
 import functools
 import time
+from collections import defaultdict
 
 import pygraphviz
 
@@ -11,13 +12,9 @@ from enaml.core.declarative import d_
 from enaml.qt.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter
 from enaml.qt.QtCore import QPointF, QRectF, Qt, QSize
 from enaml.qt.qt_frame import QtFrame
-from enaml.qt.qt_factories import QT_FACTORIES
 from enaml.qt.qt_container import QtContainer
 
-def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
-    args = [iter(iterable)] * n
-    return itertools.izip_longest(*args, fillvalue=fillvalue)
+from .utils import grouper
 
 
 class ZoomingGraphicsView(QGraphicsView):
@@ -47,6 +44,7 @@ class ZoomingGraphicsView(QGraphicsView):
             self.translate(delta.x(), delta.y())
         else:
             super(ZoomingGraphicsView, self).wheelEvent(event)
+
 
 class ProxyGraph(ProxyFrame):
     declaration = ForwardTyped(lambda: Graph)
@@ -127,9 +125,7 @@ class QtGraph(QtFrame, ProxyGraph):
         for from_, to in self.declaration.edges:
             g.add_edge(from_, to)
 
-        before = time.time()
         g.layout(prog='dot')
-        after = time.time()
 
         for child in self.children():
             if not isinstance(child, QtContainer):
@@ -179,9 +175,6 @@ class QtGraph(QtFrame, ProxyGraph):
                 self.widget.ensureVisible(proxy)
                 break
 
-QT_FACTORIES['Graph'] = lambda: QtGraph
-
-
 class Graph(Frame):
     #: The edges (as names) of the Graph
     edges = d_(List())
@@ -210,4 +203,3 @@ class Graph(Frame):
     def _selected_update(self, change):
         if self.proxy is not None:
             self.proxy.show_selected()
-
