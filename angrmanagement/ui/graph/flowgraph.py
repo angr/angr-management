@@ -54,8 +54,6 @@ class QtFlowGraph(QtGraph):
 
             bfs_successors = networkx.bfs_successors(g, s)
 
-            print bfs_successors
-
             stack = [s]
 
             while stack:
@@ -79,10 +77,6 @@ class QtFlowGraph(QtGraph):
             # Get its predecessors and successors
             predecessors = [ ] if addr not in g else g.predecessors(addr)
             successors = [ ] if addr not in g else g.successors(addr)
-
-            print hex(addr)
-            print "all edges", self.declaration.edges
-            print "predecessors", predecessors, "successors", successors
 
             if addr in coordinates:
                 x, y = coordinates[addr]
@@ -113,8 +107,6 @@ class QtFlowGraph(QtGraph):
                 # nope...
                 # it gotta be something
                 y = 0
-
-            print "y of %s Determined: %d" % (hex(addr), y)
 
             coordinates[addr] = (x, y)
 
@@ -158,8 +150,6 @@ class QtFlowGraph(QtGraph):
             if coordinates[k][1] is None:
                 coordinates[k] = (coordinates[k][0], 0)
 
-        print coordinates
-
         return coordinates
 
     def _compute_edge_locations(self, node_coordinates, edges):
@@ -194,8 +184,6 @@ class QtFlowGraph(QtGraph):
             else:
                 # TODO
                 pass
-
-        print "edges", edge_coordinates
 
         return edge_coordinates
 
@@ -295,6 +283,9 @@ class QtFlowGraph(QtGraph):
         self.show_selected()
 
 class FlowGraph(Frame):
+
+    supergraph = d_(Typed(networkx.DiGraph))
+
     #: The edges (as names) of the Graph
     edges = d_(List())
 
