@@ -72,8 +72,7 @@ class QtFlowGraph(QtGraph):
         for addr, vertex in vertices.iteritems():
             node = node_map[addr]
             width, height = node._layout_manager.best_size()
-            vertex.view = VertexViewer(width * 2, height * 2)  # FIXME: figure out why "* 2" is required here to make
-                                                               # FIXME: sure nodes don't overlap
+            vertex.view = VertexViewer(width, height)
 
         sug = SugiyamaLayout(g.C[0])
         sug.init_all(roots=[vertices[start]])
@@ -82,7 +81,8 @@ class QtFlowGraph(QtGraph):
         # extract coordinates
         for addr, vertex in vertices.iteritems():
             x, y = vertex.view.xy
-            coordinates[addr] = (x, y)
+            # Convert the center coordinate to left corner coordinate
+            coordinates[addr] = (x - vertex.view.w / 2, y - vertex.view.h / 2)
 
         return coordinates
 
