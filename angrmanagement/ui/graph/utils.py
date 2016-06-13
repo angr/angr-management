@@ -59,8 +59,8 @@ def to_supergraph(transition_graph):
             supernodes_map[node] = src_supernode
 
         if not dests_and_data:
-            # an isolated node
-            super_graph.add_node(SuperCFGNode.from_cfgnode(node))
+            # might be an isolated node
+            super_graph.add_node(src_supernode)
             continue
 
         for edge in ((node, dst) for dst, _ in dests_and_data.iteritems()):
