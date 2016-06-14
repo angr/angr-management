@@ -12,7 +12,7 @@ class Job(object):
 
 class CFGGenerationJob(Job):
     def run(self, inst):
-        return inst.proj.analyses.CFG()
+        return inst.proj.analyses.CFG(resolve_indirect_jumps=True, normalize=True)
 
     def finish(self, inst, result):
         super(CFGGenerationJob, self).finish(inst, result)
