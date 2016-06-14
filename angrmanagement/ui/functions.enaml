@@ -35,6 +35,11 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
 
                     Form: attrs:
                         Label:
+                            text = "Returning"
+                        Label:
+                            text << str(wk.selected_function.returning)
+
+                        Label:
                             text = "Argument Registers:"
                         Label:
                             text << str(wk.selected_function._argument_registers)
