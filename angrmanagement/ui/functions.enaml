@@ -54,6 +54,11 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
                         Label:
                             text << '%#x' % wk.selected_function.sp_delta
 
+                        Label:
+                            text = "Endpoints"
+                        Label:
+                            text << "[ " + ",".join("%#08x" % i.addr for i in wk.selected_function.endpoints) + " ]"
+
                     PushButton: run_vsa:
                         text = "Run VSA"
                         clicked ::
