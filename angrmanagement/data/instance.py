@@ -17,7 +17,7 @@ class PathGroups(Atom):
 
     def add_path_group(self, pg=None):
         if pg is None:
-            pg = self.proj.factory.path_group(immutable=False, strong_path_mapping=True)
+            pg = self.proj.factory.path_group(immutable=False)
         self.groups = self.groups + [pg]
 
 class Instance(Atom):
