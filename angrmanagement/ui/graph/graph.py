@@ -53,7 +53,7 @@ class ProxyGraph(ProxyFrame):
 class QtGraph(QtFrame, ProxyGraph):
     widget = Typed(QGraphicsView)
     scene = Typed(QGraphicsScene)
-    _proxies = Dict()
+    _proxies = {}
     _edge_paths = List()
 
     LEFT_PADDING = 1200

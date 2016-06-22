@@ -1,8 +1,8 @@
 from enaml.core.api import Conditional
 from enaml.widgets.api import Container, Form, Label, PushButton
-from enaml.layout.api import vbox
+from enaml.layout.api import vbox, spacer
 
-from .listcontrol import QtListControl
+from .function_table import FunctionTableControl
 from .wkitem import WorkspaceItem
 from ..data.jobs import VFGGenerationJob
 
@@ -15,20 +15,18 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
             (width == 200) | 'weak',
             ]
 
-        QtListControl: selector:
+        FunctionTableControl: selector:
             hug_height = 'weak'
             hug_width = 'ignore'
+            column_count = 4
+            header_labels = [ 'Name', 'Start address', 'Size', 'Basic blocks' ]
 
             items << sorted(wk.inst.cfg.kb.functions.values(), key=lambda f: f.addr) if wk.inst.cfg else []
-            to_string = repr
             on_selected ::
                 wk.selected_function
                 wk.selected_function = selector.selected_item
 
         Container: fattributes:
-
-            Conditional:
-                condition << wk.selected_function is not None
 
                 Container:
                     constraints = [vbox(attrs, run_vsa, run_ddg)]
@@ -37,27 +35,27 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
                         Label:
                             text = "Returning"
                         Label:
-                            text << str(wk.selected_function.returning)
+                            text << str(wk.selected_function.returning) if wk.selected_function else ""
 
                         Label:
                             text = "Argument Registers:"
                         Label:
-                            text << str(wk.selected_function._argument_registers)
+                            text << str(wk.selected_function._argument_registers) if wk.selected_function else ""
 
                         Label:
                             text = "Arguments on Stack:"
                         Label:
-                            text << str(wk.selected_function._argument_stack_variables)
+                            text << str(wk.selected_function._argument_stack_variables) if wk.selected_function else ""
 
                         Label:
                             text = "SP difference:"
                         Label:
-                            text << '%#x' % wk.selected_function.sp_delta
+                            text << '%#x' % wk.selected_function.sp_delta if wk.selected_function else ""
 
                         Label:
                             text = "Endpoints"
                         Label:
-                            text << "[ " + ",".join("%#08x" % i.addr for i in wk.selected_function.endpoints) + " ]"
+                            text << "[ " + ",".join("%#08x" % i.addr for i in wk.selected_function.endpoints) + " ]" if wk.selected_function else ""
 
                     PushButton: run_vsa:
                         text = "Run VSA"
