@@ -3,6 +3,7 @@ import textwrap
 from enaml.core.api import Conditional, Looper
 from enaml.layout.api import vbox, align
 from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
+from enaml.widgets.timer import Timer
 
 from angr.errors import AngrError
 
@@ -75,13 +76,17 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                 ]
 
             FlowGraph: graph:
+                func_addr << int(wk.selected_function.addr)
                 supergraph << to_supergraph(wk.selected_function.graph)
                 selected << str(wk.selected_function.addr)
                 edges << [ (str(from_.addr), str(to.addr)) for (from_, to, data) in supergraph.edges(data=True) if edge_qualifies(data) ]
-                func_addr << int(wk.selected_function.addr)
+
+                func_addr :: refresh_timer.start()
 
                 Looper:
                     iterable << supergraph.nodes()
+                    iterable ::
+                        refresh_timer.start()
 
                     Conditional:
                         condition << loop_item != 0
@@ -93,6 +98,12 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                             func_addr << wk.selected_function.addr
                             proj = wk.proj
                             state << find_vfg_state(wk, wk.selected_function.addr, loop_item)
+
+            Timer: refresh_timer:
+                interval = 30
+                single_shot = True
+                timeout ::
+                    graph.request_relayout()
 
     Conditional:
         condition << wk.inst.cfg is None
