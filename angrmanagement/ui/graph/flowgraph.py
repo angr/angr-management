@@ -139,7 +139,8 @@ class QtFlowGraph(QtGraph):
 
         children_names = {child.declaration.name for child in self.children() if isinstance(child, QtContainer)}
 
-        if any(from_ not in children_names or to not in children_names for (from_, to) in self.declaration.edges):
+        if self.declaration.edges and \
+                any(from_ not in children_names or to not in children_names for (from_, to) in self.declaration.edges):
             # hasn't finished being set up yet
             return
 
@@ -229,15 +230,6 @@ class FlowGraph(Frame):
 
     def child_added(self, child):
         super(FlowGraph, self).child_added(child)
-        if isinstance(child, Container):
-            self.request_relayout()
 
-    @observe('edges')
-    def _update(self, change):
+    def update(self):
         self.request_relayout()
-
-    @observe('selected')
-    def _selected_update(self, change):
-        if self.proxy is not None:
-            self.proxy.show_selected()
-
