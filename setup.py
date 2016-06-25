@@ -5,7 +5,7 @@ setup(
     version='4.6.6.15',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
-    packages=['angrmanagement', 'angrmanagement.ui', 'angrmanagement.data', 'angrmanagement.graph'],
+    packages=['angrmanagement', 'angrmanagement.ui', 'angrmanagement.data', 'angrmanagement.ui.graph'],
     package_data={
         'angrmanagement.ui': ['*.enaml']
     },
