@@ -60,7 +60,7 @@ class PGStepJob(Job):
         self._callback(result)
 
     def __repr__(self):
-        if self.until_branch:
+        if self._until_branch:
             return "Stepping %r until branch" % self._pg
         else:
             return "Stepping %r" % self._pg

@@ -29,8 +29,6 @@ def gen_op_text_x86(arch, registry, insn, op):
             return '%d' % op.value.imm
         else:
             return '%xh' % op.value.imm
-    elif op.type == x86.X86_OP_FP:
-        return '%f' % op.value.fp
     elif op.type == x86.X86_OP_MEM:
         sizes = {
             1: 'byte',

@@ -78,19 +78,21 @@ def all_paths(paths, hierarchy):
     while len(work) > 0:
         path = work.pop()
         # print path.path_id
-        if path.state.se not in hierarchy._successors or len(hierarchy._successors[path.state.se]) == 0:
+        if not hierarchy.history_contains(path.history) or len(hierarchy.history_successors(path.history)) == 0:
             if path.path_id not in seen:
                 yield path
                 seen.add(path.path_id)
-        if path.state.se in hierarchy._parents:
-            parent_se = hierarchy._parents[path.state.se]
-            # assume _path_mapping always has the path
-            parent_path = hierarchy._path_mapping[parent_se]
-            work.add(parent_path)
-            if len(hierarchy._successors[parent_se]) > 1:
-                if parent_path.path_id not in seen:
-                    yield parent_path
-                    seen.add(parent_path.path_id)
+        # get parents
+        if hierarchy.history_contains(path.history):
+            parents = hierarchy.history_predecessors(path.history)
+            for parent_history in parents:
+                # assume _path_mapping always has the path
+                parent_path = hierarchy._path_mapping[parent_history]
+                work.add(parent_path)
+                if len(hierarchy.history_successors(parent_history)) > 1:
+                    if parent_path.path_id not in seen:
+                        yield parent_path
+                        seen.add(parent_path.path_id)
 
 def all_edges_gen(paths, hierarchy):
     # TODO: reduce duplication with above function
@@ -98,11 +100,15 @@ def all_edges_gen(paths, hierarchy):
     # __import__('ipdb').set_trace()
     while len(work) > 0:
         working_path = bot_path = work.pop()
-        while working_path.state.se in hierarchy._parents:
-            parent_se = hierarchy._parents[working_path.state.se]
+        while hierarchy.history_contains(working_path.history):
+            parent_histories = hierarchy.history_predecessors(working_path.history)
+            if not parent_histories:
+                break
+
+            parent_history = parent_histories[0]
             # assume _path_mapping always has the path
-            parent_path = hierarchy._path_mapping[parent_se]
-            if len(hierarchy._successors[parent_se]) > 1:
+            parent_path = hierarchy._path_mapping[parent_history]
+            if len(hierarchy.history_successors(parent_path.history)) > 1:
                 yield (parent_path.path_id, bot_path.path_id)
                 work.add(parent_path)
                 break
