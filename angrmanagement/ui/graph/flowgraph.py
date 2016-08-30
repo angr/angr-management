@@ -2,8 +2,10 @@
 from collections import defaultdict
 
 import networkx
+from grandalf.utils.geometry import getangle
 from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
+from grandalf.routing import EdgeViewer
 
 from atom.api import List, Typed, ForwardTyped, observe
 from enaml.widgets.api import Container
@@ -20,13 +22,38 @@ from .graph import QtGraph, ProxyGraph
 class QtFlowGraph(QtGraph):
     declaration = ForwardTyped(lambda: FlowGraph)
 
-    def _compute_node_locations(self, start):
+    @staticmethod
+    def _route_edges(edge, points):
         """
-        Compute coordinates for all CFG nodes in the view
+        A simple edge routing algorithm.
+
+        :param edge:
+        :param points:
+        :return:
+        """
+
+        # compute new beginning and ending
+        src = edge.v[0].view
+        src_width, src_height, (src_x, src_y) = src.w, src.h, src.xy
+
+        dst = edge.v[1].view
+        dst_width, dst_height, (dst_x, dst_y) = dst.w, dst.h, dst.xy
+
+        start_point = (src_x, src_y + src_height / 2)
+        end_point = (dst_x, dst_y - dst_height / 2)
+
+        points[-1] = start_point
+        points[0] = end_point
+
+        edge.view.head_angle = getangle(points[-2], points[-1])
+
+    def _layout_nodes_and_edges(self, start):
+        """
+        Compute coordinates for all CFG nodes and edges in the view
 
         :param int start: The starting address
-        :return: a mapping between nodes' names and their coordinates
-        :rtype: dict
+        :return: a mapping between nodes' names and their coordinates (dict), and a list of edge coordinates (list)
+        :rtype: tuple
         """
 
         coordinates = {}
@@ -58,7 +85,9 @@ class QtFlowGraph(QtGraph):
                 dst_v = Vertex(dst)
                 vertices[dst] = dst_v
 
-            edges.append(Edge(src_v, dst_v))
+            edge = Edge(src_v, dst_v)
+            edge.view = EdgeViewer()
+            edges.append(edge)
 
         # Create all vertices
         for child in self.children():
@@ -75,51 +104,23 @@ class QtFlowGraph(QtGraph):
             vertex.view = VertexViewer(width, height)
 
         sug = SugiyamaLayout(g.C[0])
+        sug.route_edge = self._route_edges
         sug.init_all(roots=[vertices[start]])
         sug.draw()
 
-        # extract coordinates
+        # extract coordinates for nodes
         for addr, vertex in vertices.iteritems():
             x, y = vertex.view.xy
             # Convert the center coordinate to left corner coordinate
             coordinates[addr] = (x - vertex.view.w / 2, y - vertex.view.h / 2)
 
-        return coordinates
-
-    def _compute_edge_locations(self, node_coordinates, edges):
-
-        node_map = {}
+        # extract coordinates for edges
         edge_coordinates = [ ]
+        for edge in edges:
+            if hasattr(edge.view, '_pts'):
+                edge_coordinates.append(edge.view._pts)
 
-        # Create the map
-        for child in self.children():
-            if not isinstance(child, QtContainer):
-                continue
-            node_map[child.declaration.addr] = child
-
-        for src_addr_str, dst_addr_str in edges:
-            src_addr = int(src_addr_str)
-            dst_addr = int(dst_addr_str)
-
-            src_node = node_map[src_addr]
-            src_width, src_height = src_node._layout_manager.best_size()
-            src_x, src_y = node_coordinates[src_addr]
-
-            dst_node = node_map[dst_addr]
-            dst_width, dst_height = dst_node._layout_manager.best_size()
-            dst_x, dst_y = node_coordinates[dst_addr]
-
-            if src_node is not dst_node:
-                start_point = (src_x + src_width / 2, src_y + src_height)
-                end_point = (dst_x + dst_width / 2, dst_y)
-
-                edge_coordinates.append((start_point, end_point))
-
-            else:
-                # TODO
-                pass
-
-        return edge_coordinates
+        return coordinates, edge_coordinates
 
     def request_relayout(self):
         # y = 0.0
@@ -151,53 +152,25 @@ class QtFlowGraph(QtGraph):
             width, height = child._layout_manager.best_size()
             scene_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
 
-        coordinates = self._compute_node_locations(self.declaration.func_addr)
+        node_coords, edge_coords = self._layout_nodes_and_edges(self.declaration.func_addr)
 
-        if not coordinates:
+        if not node_coords:
             return
 
         for child in self.children():
             if not isinstance(child, QtContainer):
                 continue
-            """
-            scene_proxy = self._proxies[child]
-            node = g.get_node(child.declaration.name)
-            center_x, center_y = (-float(v)/72.0 for v in node.attr['pos'].split(','))
-            width, height = child._layout_manager.best_size()
-            x = center_x - (width / 2.0)
-            y = center_y - (height / 2.0)
-            scene_proxy.setPos(x, y)
-            """
             scene_proxy = self._proxies[child]
             # width, height = child._layout_manager.best_size()
-            x, y = coordinates[child.declaration.addr]
+            x, y = node_coords[child.declaration.addr]
             scene_proxy.setPos(x, y)
 
-        edge_coordinates = self._compute_edge_locations(coordinates, self.declaration.edges)
-
-        for from_, to in edge_coordinates:
-            painter = QPainterPath(QPointF(*from_))
-            painter.lineTo(QPointF(*to))
-            p = self.scene.addPath(painter)
-            self._edge_paths.append(p)
-
-        """
-        for from_, to in edge_coordinates:
-            if from_ not in children_names or to not in children_names:
-                continue
-            edge = g.get_edge(from_, to)
-            # TODO: look at below code
-            all_points = [tuple(-float(v) / 72.0 for v in t.strip('e,').split(',')) for t in
-                          edge.attr['pos'].split(' ')]
-            arrow = all_points[0]
-            start_point = all_points[1]
-
-            painter = QPainterPath(QPointF(*start_point))
-            for c1, c2, end in grouper(all_points[2:], 3):
-                painter.cubicTo(QPointF(*c1), QPointF(*c2), QPointF(*end))
-
-            self._edge_paths.append(self.scene.addPath(painter))
-        """
+        for edges in edge_coords:
+            for from_, to_ in zip(edges, edges[1:]):
+                painter = QPainterPath(QPointF(*from_))
+                painter.lineTo(QPointF(*to_))
+                p = self.scene.addPath(painter)
+                self._edge_paths.append(p)
 
         rect = self.scene.itemsBoundingRect()
         # Enlarge the rect so there is enough room at right and bottom
