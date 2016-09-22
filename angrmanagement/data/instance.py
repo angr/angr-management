@@ -29,6 +29,7 @@ class Instance(Atom):
     jobs = List(Job)
     vfgs = Dict()
     registry = Typed(Registry, factory=Registry)
+    current_workspace = Typed(object)
 
     _jobs_queue = Value()
 

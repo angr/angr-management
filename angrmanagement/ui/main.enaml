@@ -6,7 +6,8 @@ from enaml.core.api import Looper, Include
 from enaml.layout.api import vbox
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout, InsertItem
 from enaml.widgets.api import (
-    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton, IPythonConsole, DockItem
+    Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
+    IPythonConsole, DockItem, ToolBar, StatusBar, StatusItem
 )
 
 import angr
@@ -16,6 +17,7 @@ from angr import Project
 
 from ..data.instance import Instance
 from ..data.workspace import WorkspaceData
+from ..data.jobs import CFGGenerationJob
 from .state import RegistersItem, MemoryItem
 from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
@@ -56,6 +58,25 @@ def gen_symbolic_wk(inst):
     data.items = [path_tree, path_group, regs, mem, console]
 
     return data
+
+def get_current_wk(inst):
+    return inst.current_workspace
+
+def get_job_stats(inst):
+    if inst:
+        return ("Ready." if len(inst.jobs) == 0 else \
+                         '%d job%s' % (len(inst.jobs), 's' if len(inst.jobs) != 0 else '')
+                )
+    else:
+        return "No available instance."
+
+enamldef AnalysisToolBar(ToolBar):
+    attr inst
+
+    Action:
+        text = 'Re-analyze'
+        tool_tip = text
+        triggered :: inst.add_job(CFGGenerationJob())
 
 enamldef Workspace(Page): wk:
     attr data
@@ -129,9 +150,12 @@ enamldef Main(MainWindow): main:
                     if path:
                         main.inst = Instance.from_file(path)
 
+    AnalysisToolBar: analysis_toolbar:
+        inst << main.inst
+
     Container:
         constraints = [
-            vbox(jobs, nbook),
+            vbox(nbook),
         ]
 
         Menu:
@@ -154,11 +178,9 @@ enamldef Main(MainWindow): main:
                 triggered ::
                     main.ida_conn = websocket.create_connection("ws://localhost:3003", subprotocols=['qira'])
 
-        Label: jobs:
-            text << '%d job%s' % (len(inst.jobs), 's' if len(inst.jobs) != 0 else '') if inst else 'no inst'
-
         Notebook: nbook:
             tab_style = 'document'
+            selected_tab :: inst.current_workspace = self.find(selected_tab)
 
             Looper:
                 iterable << inst.workspaces if inst else []
@@ -166,3 +188,8 @@ enamldef Main(MainWindow): main:
                 Workspace:
                     data = loop_item
                     ida_conn := main.ida_conn
+
+    StatusBar:
+        StatusItem:
+            Label:
+                text << get_job_stats(inst)
