@@ -2,7 +2,7 @@ enaml==0.9.8
 websocket-client
 pygments
 angr
-ipython>=3.0.0,<4.0
+ipython
 pyzmq
 PySide
 pygraphviz
