@@ -65,7 +65,7 @@ def get_current_wk(inst):
 def get_job_stats(inst):
     if inst:
         return ("Ready." if len(inst.jobs) == 0 else \
-                         '%d job%s' % (len(inst.jobs), 's' if len(inst.jobs) != 0 else '')
+                         '%d job%s' % (len(inst.jobs), 's' if len(inst.jobs) != 1 else '')
                 )
     else:
         return "No available instance."
@@ -192,4 +192,4 @@ enamldef Main(MainWindow): main:
     StatusBar:
         StatusItem:
             Label:
-                text << get_job_stats(inst)
+                text << ('Ready.' if not inst.jobs else '%d job%s.' % (len(inst.jobs), 's' if len(inst.jobs) != 1 else '')) if inst else 'No available instance.'
