@@ -122,6 +122,8 @@ enamldef Main(MainWindow): main:
         if inst is not None and len(inst.workspaces) == 0:
             inst.add_workspace(gen_static_wk(inst))
             inst.add_workspace(gen_symbolic_wk(inst))
+        # automatically build the CFG
+        inst.add_job(CFGGenerationJob())
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
