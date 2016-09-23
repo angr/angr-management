@@ -8,7 +8,8 @@ from enaml.widgets.timer import Timer
 from angr.errors import AngrError
 
 from .block import Block
-from .graph import FlowGraph, to_supergraph
+from ..widgets.api import FlowGraph
+from ..utils.graph import to_supergraph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob

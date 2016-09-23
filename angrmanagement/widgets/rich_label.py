@@ -4,7 +4,6 @@ from atom.api import (
 )
 
 from enaml.core.declarative import d_
-
 from enaml.widgets.control import Control, ProxyControl
 
 

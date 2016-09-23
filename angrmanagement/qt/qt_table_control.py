@@ -11,7 +11,7 @@ from enaml.core.declarative import d_
 from enaml.qt.QtGui import QTableWidget, QTableWidgetItem, QAbstractItemView
 from enaml.qt.QtCore import *
 
-from .notify import notify_update
+from angrmanagement.ui.notify import notify_update
 
 
 class QtTableControl(RawWidget):

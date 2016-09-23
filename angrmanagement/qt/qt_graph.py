@@ -1,21 +1,15 @@
-import itertools
-import functools
-import time
-from collections import defaultdict
+
 
 import pygraphviz
 
-from atom.api import List, Typed, Dict, ForwardTyped, observe
-from enaml.widgets.api import Container
-from enaml.widgets.frame import Frame, ProxyFrame
-from enaml.core.declarative import d_
+from atom.api import List, Typed
 from enaml.qt.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter
 from enaml.qt.QtCore import QPointF, QRectF, Qt, QSize
 from enaml.qt.qt_frame import QtFrame
 from enaml.qt.qt_container import QtContainer
 
-from .utils import grouper
-
+from ..utils.graph import grouper
+from ..widgets.graph import ProxyGraph
 
 class ZoomingGraphicsView(QGraphicsView):
     def sizeHint(self):
@@ -44,10 +38,6 @@ class ZoomingGraphicsView(QGraphicsView):
             self.translate(delta.x(), delta.y())
         else:
             super(ZoomingGraphicsView, self).wheelEvent(event)
-
-
-class ProxyGraph(ProxyFrame):
-    declaration = ForwardTyped(lambda: Graph)
 
 
 class QtGraph(QtFrame, ProxyGraph):
@@ -174,32 +164,3 @@ class QtGraph(QtFrame, ProxyGraph):
             if isinstance(child, QtContainer) and child.declaration is not None and child.declaration.name == self.declaration.selected:
                 self.widget.ensureVisible(proxy)
                 break
-
-class Graph(Frame):
-    #: The edges (as names) of the Graph
-    edges = d_(List())
-
-    #: The "selected" node that should be visible
-    selected = d_(Typed(str))
-
-    proxy = Typed(ProxyGraph)
-
-    hug_width = 'weak'
-    hug_height = 'weak'
-
-    def child_added(self, child):
-        super(Graph, self).child_added(child)
-        # print "got a child! %s" % child
-        # if hasattr(child, 'path'):
-        #     print "has id: %s" % child.path.path_id
-        if isinstance(child, Container):
-            self.request_relayout()
-
-    @observe('edges')
-    def _update(self, change):
-        self.request_relayout()
-
-    @observe('selected')
-    def _selected_update(self, change):
-        if self.proxy is not None:
-            self.proxy.show_selected()

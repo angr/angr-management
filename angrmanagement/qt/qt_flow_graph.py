@@ -1,23 +1,17 @@
 
-from collections import defaultdict
-
-import networkx
 from grandalf.utils.geometry import getangle
 from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
 from grandalf.routing import EdgeViewer
 
-from atom.api import List, Typed, ForwardTyped, observe
-from enaml.widgets.api import Container
-from enaml.widgets.frame import Frame
-from enaml.core.declarative import d_
+from atom.api import ForwardTyped
 from enaml.qt.QtGui import QPainterPath
 from enaml.qt.QtCore import QPointF, QRectF
 from enaml.qt.qt_container import QtContainer
 
-from .utils import grouper
-from .graph import QtGraph, ProxyGraph
+from .qt_graph import QtGraph
 
+from ..widgets.flowgraph import FlowGraph
 
 class QtFlowGraph(QtGraph):
     declaration = ForwardTyped(lambda: FlowGraph)
@@ -183,26 +177,3 @@ class QtFlowGraph(QtGraph):
         self.widget.viewport().update()
 
         self.show_selected()
-
-class FlowGraph(Frame):
-
-    supergraph = d_(Typed(networkx.DiGraph))
-
-    #: The edges (as names) of the Graph
-    edges = d_(List())
-
-    #: The "selected" node that should be visible
-    selected = d_(Typed(str))
-
-    func_addr = d_(Typed(int))
-
-    proxy = Typed(ProxyGraph)
-
-    hug_width = 'weak'
-    hug_height = 'weak'
-
-    def child_added(self, child):
-        super(FlowGraph, self).child_added(child)
-
-    def update(self):
-        self.request_relayout()

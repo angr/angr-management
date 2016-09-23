@@ -1,10 +1,9 @@
-
-from enaml.qt.QtGui import QTableWidgetItem, QColor
 from enaml.qt.QtCore import Qt
+from enaml.qt.QtGui import QTableWidgetItem, QColor
 
-from .tablecontrol import QtTableControl
+from .qt_table_control import QtTableControl
 
-class FunctionTableControl(QtTableControl):
+class QtFunctionTableControl(QtTableControl):
     def _to_items(self, function):
         """
 

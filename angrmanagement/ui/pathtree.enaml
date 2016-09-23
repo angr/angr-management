@@ -7,7 +7,7 @@ from enaml.widgets.api import Container, PushButton, PushButton, Label, Field, F
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.layout.geometry import Box
 
-from .graph import Graph
+from ..widgets.api import Graph
 from .wkitem import WorkspaceItem
 
 def eval_with_path(path, expr):

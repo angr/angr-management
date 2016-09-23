@@ -2,7 +2,7 @@ from enaml.core.api import Conditional
 from enaml.widgets.api import Container, Form, Label, PushButton
 from enaml.layout.api import vbox, spacer
 
-from .function_table import FunctionTableControl
+from ..qt.qt_function_table_control import QtFunctionTableControl
 from .wkitem import WorkspaceItem
 from ..data.jobs import VFGGenerationJob
 
@@ -15,7 +15,7 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
             (width == 200) | 'weak',
             ]
 
-        FunctionTableControl: selector:
+        QtFunctionTableControl: selector:
             hug_height = 'weak'
             hug_width = 'ignore'
             column_count = 4
