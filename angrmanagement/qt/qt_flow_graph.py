@@ -4,17 +4,15 @@ from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
 from grandalf.routing import EdgeViewer
 
-from atom.api import ForwardTyped
 from enaml.qt.QtGui import QPainterPath
 from enaml.qt.QtCore import QPointF, QRectF
 from enaml.qt.qt_container import QtContainer
 
-from .qt_graph import QtGraph
+from .qt_graph import QtBaseGraph
 
-from ..widgets.flowgraph import FlowGraph
+from ..widgets.flowgraph import ProxyFlowGraph
 
-class QtFlowGraph(QtGraph):
-    declaration = ForwardTyped(lambda: FlowGraph)
+class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
 
     @staticmethod
     def _route_edges(edge, points):

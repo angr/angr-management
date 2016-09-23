@@ -1,6 +1,6 @@
 
 from atom.api import (
-    Typed, ForwardTyped, Unicode, Enum, Event, observe, set_default, Str
+    Typed, ForwardTyped, Unicode, Enum, Event, observe, set_default
 )
 
 from enaml.core.declarative import d_

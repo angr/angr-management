@@ -1,5 +1,4 @@
 
-
 import pygraphviz
 
 from atom.api import List, Typed
@@ -40,7 +39,7 @@ class ZoomingGraphicsView(QGraphicsView):
             super(ZoomingGraphicsView, self).wheelEvent(event)
 
 
-class QtGraph(QtFrame, ProxyGraph):
+class QtBaseGraph(QtFrame):
     widget = Typed(QGraphicsView)
     scene = Typed(QGraphicsScene)
     _proxies = {}
@@ -57,16 +56,16 @@ class QtGraph(QtFrame, ProxyGraph):
         self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
 
     def child_added(self, child):
-        super(QtGraph, self).child_added(child)
+        super(QtBaseGraph, self).child_added(child)
         self._proxy(child)
 
     def child_removed(self, child):
-        super(QtGraph, self).child_removed(child)
+        super(QtBaseGraph, self).child_removed(child)
         if child in self._proxies:
             self.scene.removeItem(self._proxies[child])
 
     def init_layout(self):
-        super(QtGraph, self).init_layout()
+        super(QtBaseGraph, self).init_layout()
         self.request_relayout()
 
     def _proxy(self, child):
@@ -164,3 +163,7 @@ class QtGraph(QtFrame, ProxyGraph):
             if isinstance(child, QtContainer) and child.declaration is not None and child.declaration.name == self.declaration.selected:
                 self.widget.ensureVisible(proxy)
                 break
+
+
+class QtGraph(QtBaseGraph, ProxyGraph):
+    pass

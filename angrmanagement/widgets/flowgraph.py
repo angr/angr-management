@@ -1,9 +1,13 @@
 import networkx
-from atom.api import List, Typed
+from atom.api import List, Typed, ForwardTyped
 from enaml.core.declarative import d_
 from enaml.widgets.frame import Frame
+from enaml.widgets.control import ProxyControl
 
-from .graph import ProxyGraph
+
+class ProxyFlowGraph(ProxyControl):
+    declaration = ForwardTyped(lambda: FlowGraph)
+
 
 class FlowGraph(Frame):
 
@@ -17,7 +21,7 @@ class FlowGraph(Frame):
 
     func_addr = d_(Typed(int))
 
-    proxy = Typed(ProxyGraph)
+    proxy = Typed(ProxyFlowGraph)
 
     hug_width = 'weak'
     hug_height = 'weak'
