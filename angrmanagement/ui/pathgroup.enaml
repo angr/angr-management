@@ -4,7 +4,7 @@ from enaml.widgets.api import (
     Container, ObjectCombo, PushButton, ScrollArea
 )
 
-from .listcontrol import QtListControl
+from ..qt.qt_list_control import QtListControl
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import PGStepJob

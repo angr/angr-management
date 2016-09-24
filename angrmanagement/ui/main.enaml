@@ -7,7 +7,8 @@ from enaml.layout.api import vbox
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout, InsertItem
 from enaml.widgets.api import (
     Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
-    IPythonConsole, DockItem, ToolBar, StatusBar, StatusItem
+    IPythonConsole,
+    DockItem, ToolBar, StatusBar, StatusItem
 )
 
 import angr
@@ -123,7 +124,8 @@ enamldef Main(MainWindow): main:
             inst.add_workspace(gen_static_wk(inst))
             inst.add_workspace(gen_symbolic_wk(inst))
         # automatically build the CFG
-        inst.add_job(CFGGenerationJob())
+        if inst is not None:
+            inst.add_job(CFGGenerationJob())
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 

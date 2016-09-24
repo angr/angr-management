@@ -7,7 +7,9 @@ from capstone import x86
 from enaml.core.api import Looper
 from enaml.layout.api import hbox, vbox, spacer
 from enaml.styling import StyleSheet, Style, Setter
-from enaml.widgets.api import Container, Label
+from enaml.widgets.api import Container, Label, PushButton
+
+from ..widgets.api import RichLabel
 
 from .wkitem import get_inst, get_wk
 
@@ -119,10 +121,17 @@ enamldef Operand(Container): op_ui:
 
     tool_tip << str(op_val(state, insn, stmt_idx, op))
 
-    Label:
-        style_class = 'code'
+    RichLabel:
+        style_class = 'insn'
         text << gen_op_text(arch, get_inst(op_ui).registry, insn, op) + (',' if not last else '')
-
+        mouse_pressed ::
+            mouse_event = change.get('value')
+            if mouse_event.button() == 1:
+                # left click
+                if self.style_class != 'insn_selected':
+                    self.style_class = 'insn_selected'
+                else:
+                    self.style_class = 'insn'
 
 enamldef Instruction(Container): insn_ui:
     attr insn
@@ -143,9 +152,17 @@ enamldef Instruction(Container): insn_ui:
         style_class = 'insn_addr'
         text << '%08x' % insn.address
 
-    Label: mnemonic:
-        style_class = 'code'
+    RichLabel: mnemonic:
+        style_class = 'insn'
         text << insn.mnemonic
+        mouse_pressed ::
+            mouse_event = change.get('value')
+            if mouse_event.button() == 1:
+                # left click
+                if self.style_class != 'insn_selected':
+                    self.style_class = 'insn_selected'
+                else:
+                    self.style_class = 'insn'
 
     Looper: operands_loop:
         iterable << insn.operands
@@ -165,7 +182,7 @@ enamldef Block(Container): block_ui:
     attr header
     attr state = None
 
-    style_class = 'code'
+    style_class = 'block'
     padding = 0
 
     constraints = [
@@ -174,13 +191,28 @@ enamldef Block(Container): block_ui:
 
     StyleSheet:
         Style:
-            style_class = 'code'
+            style_class = 'block'
+
+        Style:
+            style_class = 'insn'
             Setter:
                 field = 'font'
                 value = '10pt courier new'
             Setter:
                 field = 'color'
                 value = '#000080'
+
+        Style:
+            style_class = 'insn_selected'
+            Setter:
+                field = 'font'
+                value = '10pt courier new'
+            Setter:
+                field = 'color'
+                value = '#000080'
+            Setter:
+                field = 'background-color'
+                value = '#efbfba'
 
         Style:
             style_class = 'label'

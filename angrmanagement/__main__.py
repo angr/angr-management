@@ -6,7 +6,7 @@ from enaml.qt.qt_application import QtApplication
 from .data.instance import Instance
 import angr
 
-if __name__ == '__main__':
+def main():
     with enaml.imports():
         from ui.main import Main
 
@@ -22,3 +22,6 @@ if __name__ == '__main__':
     view.show()
 
     app.start()
+
+if __name__ == '__main__':
+    main()

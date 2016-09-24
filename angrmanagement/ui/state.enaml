@@ -5,7 +5,7 @@ from enaml.widgets.api import (
 )
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout,
 
-from .table import Table
+from ..widgets.api import Table
 from .wkitem import WorkspaceItem
 
 enamldef RegistersItem(WorkspaceItem): regs:

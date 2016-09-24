@@ -4,14 +4,16 @@ from enaml.core.api import Conditional, Looper
 from enaml.layout.api import vbox, align
 from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
 from enaml.widgets.timer import Timer
+from enaml.styling import StyleSheet, Style, Setter
 
 from angr.errors import AngrError
 
 from .block import Block
-from .graph import FlowGraph, to_supergraph
+from ..widgets.api import FlowGraph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
+from ..data.function_graph import FunctionGraph
 
 
 # enamldef CFGNode(Container):
@@ -35,8 +37,17 @@ enamldef CFGNode(Container): cfgnode:
     attr func_addr
     attr state = None
 
+    style_class = 'cfg_node'
+
     Conditional:
         condition << not proj.is_hooked(node)
+
+        StyleSheet:
+            Style:
+                style_class = 'cfg_node'
+                Setter:
+                    field = 'border'
+                    value = '2px solid black'
 
         Block:
             blocks << [ proj.factory.block(n.addr) for n in node.cfg_nodes ]
@@ -49,9 +60,6 @@ def get_block(proj, address):
         return block
     except AngrError:
         return None
-
-def edge_qualifies(data):
-    return data['type'] not in ('call', 'return_from_call')
 
 def find_vfg_state(wk, func_addr, block_addr):
     vfg = wk.inst.vfgs.get(func_addr, None)
@@ -76,16 +84,13 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                 ]
 
             FlowGraph: graph:
-                func_addr << int(wk.selected_function.addr)
-                supergraph << to_supergraph(wk.selected_function.graph)
-                selected << str(wk.selected_function.addr)
-                edges << [ (str(from_.addr), str(to.addr)) for (from_, to, data) in supergraph.edges(data=True) if edge_qualifies(data) ]
-
-                func_addr :: refresh_timer.start()
+                func_graph << FunctionGraph(function=wk.selected_function)
 
                 Looper:
-                    iterable << supergraph.nodes()
+                    iterable << func_graph.supergraph.nodes()
+
                     iterable ::
+                        update_timer.start()
                         refresh_timer.start()
 
                     Conditional:
@@ -99,11 +104,17 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                             proj = wk.proj
                             state << find_vfg_state(wk, wk.selected_function.addr, loop_item)
 
-            Timer: refresh_timer:
+            Timer: update_timer:
                 interval = 30
                 single_shot = True
                 timeout ::
                     graph.request_relayout()
+
+            Timer: refresh_timer:
+                interval = 50
+                single_shot = False
+                timeout ::
+                    graph.proxy.scene.update()
 
     Conditional:
         condition << wk.inst.cfg is None

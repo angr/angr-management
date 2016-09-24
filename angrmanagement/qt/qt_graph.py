@@ -1,21 +1,14 @@
-import itertools
-import functools
-import time
-from collections import defaultdict
 
 import pygraphviz
 
-from atom.api import List, Typed, Dict, ForwardTyped, observe
-from enaml.widgets.api import Container
-from enaml.widgets.frame import Frame, ProxyFrame
-from enaml.core.declarative import d_
+from atom.api import List, Typed
 from enaml.qt.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter
 from enaml.qt.QtCore import QPointF, QRectF, Qt, QSize
 from enaml.qt.qt_frame import QtFrame
 from enaml.qt.qt_container import QtContainer
 
-from .utils import grouper
-
+from ..utils.graph import grouper
+from ..widgets.graph import ProxyGraph
 
 class ZoomingGraphicsView(QGraphicsView):
     def sizeHint(self):
@@ -46,37 +39,35 @@ class ZoomingGraphicsView(QGraphicsView):
             super(ZoomingGraphicsView, self).wheelEvent(event)
 
 
-class ProxyGraph(ProxyFrame):
-    declaration = ForwardTyped(lambda: Graph)
-
-
-class QtGraph(QtFrame, ProxyGraph):
+class QtBaseGraph(QtFrame):
     widget = Typed(QGraphicsView)
     scene = Typed(QGraphicsScene)
-    _proxies = {}
+    _proxies = { }
     _edge_paths = List()
 
-    LEFT_PADDING = 1200
-    TOP_PADDING = 1200
+    LEFT_PADDING = 200
+    TOP_PADDING = 200
 
     def create_widget(self):
         self.scene = QGraphicsScene(self.parent_widget())
         self.widget = ZoomingGraphicsView(self.parent_widget())
         self.widget.setScene(self.scene)
         self.widget.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
+                                   QPainter.HighQualityAntialiasing
+                                   )
 
     def child_added(self, child):
-        super(QtGraph, self).child_added(child)
+        super(QtBaseGraph, self).child_added(child)
         self._proxy(child)
 
     def child_removed(self, child):
-        super(QtGraph, self).child_removed(child)
+        super(QtBaseGraph, self).child_removed(child)
         if child in self._proxies:
             self.scene.removeItem(self._proxies[child])
 
     def init_layout(self):
-        super(QtGraph, self).init_layout()
+        super(QtBaseGraph, self).init_layout()
         self.request_relayout()
 
     def _proxy(self, child):
@@ -85,6 +76,7 @@ class QtGraph(QtFrame, ProxyGraph):
             if cw is not None:
                 cw.setParent(None)
                 self._proxies[child] = self.scene.addWidget(cw)
+                return self._proxies[child]
 
         return self._proxies[child]
 
@@ -175,31 +167,6 @@ class QtGraph(QtFrame, ProxyGraph):
                 self.widget.ensureVisible(proxy)
                 break
 
-class Graph(Frame):
-    #: The edges (as names) of the Graph
-    edges = d_(List())
 
-    #: The "selected" node that should be visible
-    selected = d_(Typed(str))
-
-    proxy = Typed(ProxyGraph)
-
-    hug_width = 'weak'
-    hug_height = 'weak'
-
-    def child_added(self, child):
-        super(Graph, self).child_added(child)
-        # print "got a child! %s" % child
-        # if hasattr(child, 'path'):
-        #     print "has id: %s" % child.path.path_id
-        if isinstance(child, Container):
-            self.request_relayout()
-
-    @observe('edges')
-    def _update(self, change):
-        self.request_relayout()
-
-    @observe('selected')
-    def _selected_update(self, change):
-        if self.proxy is not None:
-            self.proxy.show_selected()
+class QtGraph(QtBaseGraph, ProxyGraph):
+    pass

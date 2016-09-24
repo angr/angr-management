@@ -1,26 +1,18 @@
 
-from collections import defaultdict
-
-import networkx
 from grandalf.utils.geometry import getangle
 from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
 from grandalf.routing import EdgeViewer
 
-from atom.api import List, Typed, ForwardTyped, observe
-from enaml.widgets.api import Container
-from enaml.widgets.frame import Frame
-from enaml.core.declarative import d_
 from enaml.qt.QtGui import QPainterPath
 from enaml.qt.QtCore import QPointF, QRectF
 from enaml.qt.qt_container import QtContainer
 
-from .utils import grouper
-from .graph import QtGraph, ProxyGraph
+from .qt_graph import QtBaseGraph
 
+from ..widgets.flowgraph import ProxyFlowGraph
 
-class QtFlowGraph(QtGraph):
-    declaration = ForwardTyped(lambda: FlowGraph)
+class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
 
     @staticmethod
     def _route_edges(edge, points):
@@ -42,8 +34,8 @@ class QtFlowGraph(QtGraph):
         start_point = (src_x, src_y + src_height / 2)
         end_point = (dst_x, dst_y - dst_height / 2)
 
-        points[-1] = start_point
-        points[0] = end_point
+        points[0] = start_point
+        points[-1] = end_point
 
         edge.view.head_angle = getangle(points[-2], points[-1])
 
@@ -66,12 +58,12 @@ class QtFlowGraph(QtGraph):
             node_map[child.declaration.addr] = child
 
         if start not in node_map:
-            return { }
+            return { }, [ ]
 
         vertices = {}
         edges = [ ]
         # Create all edges
-        for s, d in self.declaration.edges:
+        for s, d in self.declaration.func_graph.edges:
             src, dst = int(s), int(d)
             if src in vertices:
                 src_v = vertices[src]
@@ -140,30 +132,31 @@ class QtFlowGraph(QtGraph):
 
         children_names = {child.declaration.name for child in self.children() if isinstance(child, QtContainer)}
 
-        if self.declaration.edges and \
-                any(from_ not in children_names or to not in children_names for (from_, to) in self.declaration.edges):
+        if self.declaration.func_graph.edges and \
+                any(from_ not in children_names or to not in children_names for (from_, to) in self.declaration.func_graph.edges):
             # hasn't finished being set up yet
             return
 
         for child in self.children():
             if not isinstance(child, QtContainer):
                 continue
-            scene_proxy = self._proxy(child)
+            widget_proxy = self._proxy(child)
             width, height = child._layout_manager.best_size()
-            scene_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
+            widget_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
 
-        node_coords, edge_coords = self._layout_nodes_and_edges(self.declaration.func_addr)
+        node_coords, edge_coords = self._layout_nodes_and_edges(self.declaration.func_graph.function.addr)
 
         if not node_coords:
+            print "faild to get node_coords"
             return
 
         for child in self.children():
             if not isinstance(child, QtContainer):
                 continue
-            scene_proxy = self._proxies[child]
+            widget_proxy = self._proxy(child)
             # width, height = child._layout_manager.best_size()
             x, y = node_coords[child.declaration.addr]
-            scene_proxy.setPos(x, y)
+            widget_proxy.setPos(x, y)
 
         for edges in edge_coords:
             for from_, to_ in zip(edges, edges[1:]):
@@ -183,26 +176,3 @@ class QtFlowGraph(QtGraph):
         self.widget.viewport().update()
 
         self.show_selected()
-
-class FlowGraph(Frame):
-
-    supergraph = d_(Typed(networkx.DiGraph))
-
-    #: The edges (as names) of the Graph
-    edges = d_(List())
-
-    #: The "selected" node that should be visible
-    selected = d_(Typed(str))
-
-    func_addr = d_(Typed(int))
-
-    proxy = Typed(ProxyGraph)
-
-    hug_width = 'weak'
-    hug_height = 'weak'
-
-    def child_added(self, child):
-        super(FlowGraph, self).child_added(child)
-
-    def update(self):
-        self.request_relayout()
