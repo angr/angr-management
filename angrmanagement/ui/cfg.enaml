@@ -4,6 +4,7 @@ from enaml.core.api import Conditional, Looper
 from enaml.layout.api import vbox, align
 from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
 from enaml.widgets.timer import Timer
+from enaml.styling import StyleSheet, Style, Setter
 
 from angr.errors import AngrError
 
@@ -36,8 +37,17 @@ enamldef CFGNode(Container): cfgnode:
     attr func_addr
     attr state = None
 
+    style_class = 'cfg_node'
+
     Conditional:
         condition << not proj.is_hooked(node)
+
+        StyleSheet:
+            Style:
+                style_class = 'cfg_node'
+                Setter:
+                    field = 'border'
+                    value = '2px solid black'
 
         Block:
             blocks << [ proj.factory.block(n.addr) for n in node.cfg_nodes ]

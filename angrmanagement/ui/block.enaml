@@ -182,7 +182,7 @@ enamldef Block(Container): block_ui:
     attr header
     attr state = None
 
-    style_class = 'insn'
+    style_class = 'block'
     padding = 0
 
     constraints = [
@@ -190,6 +190,9 @@ enamldef Block(Container): block_ui:
     ]
 
     StyleSheet:
+        Style:
+            style_class = 'block'
+
         Style:
             style_class = 'insn'
             Setter:
