@@ -1,8 +1,10 @@
 import networkx
-from atom.api import List, Typed, ForwardTyped
+from atom.api import List, Typed, ForwardTyped, observe
 from enaml.core.declarative import d_
 from enaml.widgets.frame import Frame
 from enaml.widgets.control import ProxyControl
+
+from ..data.function_graph import FunctionGraph
 
 
 class ProxyFlowGraph(ProxyControl):
@@ -13,13 +15,10 @@ class FlowGraph(Frame):
 
     supergraph = d_(Typed(networkx.DiGraph))
 
-    #: The edges (as names) of the Graph
-    edges = d_(List())
+    func_graph = d_(Typed(FunctionGraph))
 
     #: The "selected" node that should be visible
     selected = d_(Typed(str))
-
-    func_addr = d_(Typed(int))
 
     proxy = Typed(ProxyFlowGraph)
 
@@ -29,5 +28,6 @@ class FlowGraph(Frame):
     def child_added(self, child):
         super(FlowGraph, self).child_added(child)
 
-    def update(self):
+    @observe('selected')
+    def update(self, change):
         self.request_relayout()

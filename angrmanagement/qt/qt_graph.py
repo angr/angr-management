@@ -42,18 +42,20 @@ class ZoomingGraphicsView(QGraphicsView):
 class QtBaseGraph(QtFrame):
     widget = Typed(QGraphicsView)
     scene = Typed(QGraphicsScene)
-    _proxies = {}
+    _proxies = { }
     _edge_paths = List()
 
-    LEFT_PADDING = 1200
-    TOP_PADDING = 1200
+    LEFT_PADDING = 200
+    TOP_PADDING = 200
 
     def create_widget(self):
         self.scene = QGraphicsScene(self.parent_widget())
         self.widget = ZoomingGraphicsView(self.parent_widget())
         self.widget.setScene(self.scene)
         self.widget.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
+                                   QPainter.HighQualityAntialiasing
+                                   )
 
     def child_added(self, child):
         super(QtBaseGraph, self).child_added(child)
@@ -74,6 +76,7 @@ class QtBaseGraph(QtFrame):
             if cw is not None:
                 cw.setParent(None)
                 self._proxies[child] = self.scene.addWidget(cw)
+                return self._proxies[child]
 
         return self._proxies[child]
 
