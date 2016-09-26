@@ -125,6 +125,10 @@ class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
         #     scene_proxy.setPos(0.0, y)
         #     y += height + 25.0
 
+        if not self.declaration.visible:
+            # The control is not visible - do not relayout the graph
+            return
+
         # Remove all paths
         for p in self._edge_paths:
             self.scene.removeItem(p)
@@ -147,7 +151,7 @@ class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
         node_coords, edge_coords = self._layout_nodes_and_edges(self.declaration.func_graph.function.addr)
 
         if not node_coords:
-            print "faild to get node_coords"
+            print "Failed to get node_coords"
             return
 
         for child in self.children():

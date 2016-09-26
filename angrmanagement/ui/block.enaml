@@ -240,7 +240,7 @@ enamldef Block(Container): block_ui:
         text << header
 
     Looper: insns_loop:
-        iterable << list(itertools.chain.from_iterable(block.capstone.insns for block in blocks))
+        iterable = list(itertools.chain.from_iterable(block.capstone.insns for block in blocks))
 
         Instruction:
             insn = loop_item
@@ -248,5 +248,5 @@ enamldef Block(Container): block_ui:
             thumb = blocks[0].capstone.thumb
             stmt_idx = None
             # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
-            state << block_ui.state
+            state = block_ui.state
 

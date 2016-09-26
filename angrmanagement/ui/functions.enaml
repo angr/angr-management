@@ -23,7 +23,6 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
 
             items << sorted(wk.inst.cfg.kb.functions.values(), key=lambda f: f.addr) if wk.inst.cfg else []
             on_selected ::
-                wk.selected_function
                 wk.selected_function = selector.selected_item
 
         Container: fattributes:
@@ -67,4 +66,4 @@ enamldef FunctionManagerItem(WorkspaceItem): fmi:
                         # enabled << wk.selected_function._addr in wk.inst.vfgs
                         enabled = True
                         clicked ::
-                            wk.inst.add_job(DDGGenerationJob(wk.selected_function._addr))
+                            wk.inst.add_job(DDGGenerationJob(wk.selected_function.addr))
