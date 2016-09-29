@@ -21,6 +21,8 @@ class PathGroups(Atom):
             pg = self.proj.factory.path_group(immutable=False, hierarchy=hierarchy)
         self.groups = self.groups + [pg]
 
+        return pg
+
 class Instance(Atom):
     proj = Typed(Project)
     workspaces = List()
