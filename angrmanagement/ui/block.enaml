@@ -9,7 +9,7 @@ from enaml.layout.api import hbox, vbox, spacer
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label, PushButton
 
-from ..widgets.api import RichLabel
+from ..widgets.api import RichLabel, RichContainer
 
 from .wkitem import get_inst, get_wk
 
@@ -133,12 +133,13 @@ enamldef Operand(Container): op_ui:
                 else:
                     self.style_class = 'insn'
 
-enamldef Instruction(Container): insn_ui:
+enamldef Instruction(RichContainer): insn_ui:
     attr insn
     attr arch
     attr thumb
     attr stmt_idx
     attr state = None
+    attr is_onfocus = False
 
     padding = 0
 
@@ -146,9 +147,14 @@ enamldef Instruction(Container): insn_ui:
         hbox(address, mnemonic, spacing=5, *sum(operands_loop.items + [[spacer]], []))
     ]
 
-    style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
+    # style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
+    style_class << "highlight" if is_onfocus else ""
 
-    Label: address:
+    clicked ::
+        # toggle whether self is selected or not
+        self.is_onfocus = not self.is_onfocus
+
+    RichLabel: address:
         style_class = 'insn_addr'
         text << '%08x' % insn.address
 
@@ -233,7 +239,7 @@ enamldef Block(Container): block_ui:
             style_class = 'highlight'
             Setter:
                 field = 'background-color'
-                value = '#0f0'
+                value = '#ffffbb'
 
     Label: label:
         style_class = 'label'
