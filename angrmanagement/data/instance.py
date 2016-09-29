@@ -76,4 +76,7 @@ class Instance(Atom):
             ana.get_dl()._state_store = saved['store']
             return pickle.loads(saved['pickled'])
 
+    def get_workspaces(self, sort=None):
+        return [ wk for wk in self.workspaces if sort is None or wk.sort == sort ]
+
 from .workspace import WorkspaceData

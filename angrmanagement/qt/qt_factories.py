@@ -13,8 +13,13 @@ def rich_label():
     from .qt_rich_label import QtRichLabel
     return QtRichLabel
 
+def rich_container():
+    from .qt_rich_container import QtRichContainer
+    return QtRichContainer
+
 # Inject into QT_FACTORIES
 
 QT_FACTORIES['RichLabel'] = rich_label
 QT_FACTORIES['Graph'] = qt_graph
 QT_FACTORIES['FlowGraph'] = qt_flow_graph
+QT_FACTORIES['RichContainer'] = rich_container
