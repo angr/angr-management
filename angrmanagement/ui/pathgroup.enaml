@@ -1,5 +1,5 @@
 from enaml.core.api import Looper
-from enaml.layout.api import hbox, vbox
+from enaml.layout.api import hbox, vbox, spacer
 from enaml.widgets.api import (
     Container, ObjectCombo, PushButton, ScrollArea
 )
@@ -38,45 +38,47 @@ enamldef PathGroupItem(WorkspaceItem):
     title = "Path Group"
 
     func step_cb(new_pg):
-        if pg_sel.selected is new_pg:
+        if cmb_pg_sel.selected is new_pg:
             paths.refresh()
             notify_update(wk, 'selected_pg')
 
     Container:
         constraints = [
-            vbox(hbox(pg_sel, new_pg), hbox(step_pg, step_pg_until), hbox(paths, step_path)), paths.top == step_path.top - 5
+            vbox(cmb_pg_sel, hbox(spacer, btn_new_pg, btn_step_pg, btn_step_pg_until), hbox(paths, step_path)), paths.top == step_path.top - 5
         ]
 
-        ObjectCombo: pg_sel:
+        ObjectCombo: cmb_pg_sel:
             items << wk.inst.path_groups.groups
             to_string = repr
             selected := wk.selected_pg
 
-        PushButton: new_pg:
+        PushButton: btn_new_pg:
             text = 'New PG'
-            clicked :: wk.inst.path_groups.add_path_group()
+            clicked ::
+                new_pg = wk.inst.path_groups.add_path_group()
+                wk.selected_pg = new_pg
 
-        PushButton: step_pg:
+        PushButton: btn_step_pg:
             text = 'Step PG'
-            enabled << pg_sel.selected is not None
+            enabled << cmb_pg_sel.selected is not None
             clicked ::
-                wk.inst.add_job(PGStepJob(pg_sel.selected, callback=step_cb))
+                wk.inst.add_job(PGStepJob(cmb_pg_sel.selected, callback=step_cb))
 
-        PushButton: step_pg_until:
+        PushButton: btn_step_pg_until:
             text = 'Step PG Until Branch'
-            enabled << pg_sel.selected is not None
+            enabled << cmb_pg_sel.selected is not None
             clicked ::
-                wk.inst.add_job(PGStepJob(pg_sel.selected, callback=step_cb, until_branch=True))
+                wk.inst.add_job(PGStepJob(cmb_pg_sel.selected, callback=step_cb, until_branch=True))
 
         PathGroup: paths:
-            pg << pg_sel.selected
+            pg << cmb_pg_sel.selected
             selected_path := wk.selected_path
 
         PushButton: step_path:
             text = 'Step Path'
             enabled << wk.selected_path is not None
             clicked ::
-                pg = pg_sel.selected
+                pg = cmb_pg_sel.selected
                 pg.step(selector_func=lambda p, sp=wk.selected_path: p is sp)
                 paths.refresh()
                 new_path = None

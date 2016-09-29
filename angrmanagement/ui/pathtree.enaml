@@ -8,7 +8,7 @@ from enaml.styling import StyleSheet, Style, Setter
 from enaml.layout.geometry import Box
 
 from ..widgets.api import Graph
-from .wkitem import WorkspaceItem
+from .wkitem import WorkspaceItem, get_inst
 
 def eval_with_path(path, expr):
     try:
@@ -19,6 +19,18 @@ def eval_with_path(path, expr):
 def log(val):
     print val
     return val
+
+def find_function(inst, addr):
+    if inst.cfg is None:
+        return None
+
+    functions = inst.cfg.functions
+    for _, function in functions.iteritems():
+        for block in function.blocks:
+            if block.addr <= addr < block.addr + block.size:
+                return function
+
+    return None
 
 enamldef Path(Container): p:
     attr path
@@ -55,6 +67,18 @@ enamldef Path(Container): p:
         text = 'Path at %#x' % path.addr
 
         clicked :: select_me()
+
+    PushButton:
+        text = 'Disasm'
+        clicked ::
+            inst = get_inst(self)
+
+            disasm_wk = inst.get_workspaces(sort='disassembly')[0]
+            function = find_function(inst, p.path.addr)
+            if function is not None:
+                disasm_wk.selected_function = function
+            inst.current_workspace = disasm_wk
+
     Conditional:
         # condition << len(path.guards) > 0 and any(not g.is_true() for g in path.guards)
         condition = False

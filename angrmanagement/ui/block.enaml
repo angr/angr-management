@@ -3,11 +3,11 @@ import itertools
 
 import capstone
 from capstone import x86
-
+from angr import PathHierarchy
 from enaml.core.api import Looper
 from enaml.layout.api import hbox, vbox, spacer
 from enaml.styling import StyleSheet, Style, Setter
-from enaml.widgets.api import Container, Label, PushButton
+from enaml.widgets.api import Container, Label, PushButton, Menu, Action
 
 from ..widgets.api import RichLabel, RichContainer
 
@@ -153,6 +153,23 @@ enamldef Instruction(RichContainer): insn_ui:
     clicked ::
         # toggle whether self is selected or not
         self.is_onfocus = not self.is_onfocus
+
+    Menu:
+        context_menu = True
+        Action:
+            text = "SymExec from %#x" % (insn.address)
+            triggered ::
+                # Create a new path group starting from this address
+                inst = get_inst(self)
+
+                state = inst.proj.factory.blank_state(addr=insn.address)
+                hierarchy = PathHierarchy(weakkey_path_mapping=True)
+                pg = inst.proj.factory.path_group(state, hierarchy=hierarchy)
+                inst.path_groups.add_path_group(pg=pg)
+
+                sym_wk = inst.get_workspaces(sort='symbolic')[0]
+                sym_wk.selected_pg = pg
+                inst.current_workspace = sym_wk
 
     RichLabel: address:
         style_class = 'insn_addr'

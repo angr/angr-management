@@ -1,4 +1,4 @@
-from atom.api import Atom, Int, List, Typed, ForwardTyped, Value
+from atom.api import Atom, Int, List, Typed, ForwardTyped, Value, Unicode
 from enaml.layout.dock_layout import AreaLayout
 
 from angr import CFG, Project, Path, PathGroup
@@ -8,6 +8,7 @@ from angr.knowledge import Function
 class WorkspaceData(Atom):
     item_idx = Int()
     name = Typed(str)
+    sort = Typed(str)
     # who doesn't love back-references?
     inst = ForwardTyped(lambda: Instance)
     proj = Typed(Project)
