@@ -2,7 +2,7 @@ import pprint
 from collections import defaultdict
 
 from enaml.core.api import Looper, Conditional
-from enaml.layout.api import vbox
+from enaml.layout.api import hbox, vbox
 from enaml.widgets.api import Container, PushButton, PushButton, Label, Field, Form, Feature, Border
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.layout.geometry import Box
@@ -42,6 +42,10 @@ enamldef Path(Container): p:
     border = Border(style='box', line_style='plain')
     style_class << 'selected' if selected else ''
 
+    constraints = [
+        hbox(btn_path, btn_disasm)
+    ]
+
     StyleSheet:
         Style:
             style_class = 'active'
@@ -62,13 +66,13 @@ enamldef Path(Container): p:
                 field = 'padding'
                 value = '10px'
 
-    PushButton:
+    PushButton: btn_path:
         style_class << ' '.join(['bold'] + [option for (option, val) in options.items() if val])
         text = 'Path at %#x' % path.addr
 
         clicked :: select_me()
 
-    PushButton:
+    PushButton: btn_disasm:
         text = 'Disasm'
         clicked ::
             inst = get_inst(self)
