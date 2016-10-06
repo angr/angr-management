@@ -24,14 +24,24 @@ from ..data.function_graph import FunctionGraph
 #         font = '10pt Courier'
 #         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
 
-def get_header(node, func_addr):
-    if node.addr == func_addr:
-        return "sub_%#x:" % func_addr
+def get_header(node, function):
+    if node.addr == function.addr:
+        s = [ ]
+        if function.name:
+            s.append("%s:" % function.name)
+        else:
+            s.append("sub_%x:" % function.addr)
+        if function.is_simprocedure:
+            s.append('[SimProcedure]')
+        if function.is_plt:
+            s.append('[PLT]')
+        return "\n".join(s)
     else:
         return "loc_%#x:" % node.addr
 
 enamldef CFGNode(Container): cfgnode:
     attr proj
+    attr function
     attr node
     attr addr
     attr func_addr
@@ -48,7 +58,7 @@ enamldef CFGNode(Container): cfgnode:
 
     Block:
         blocks = [ proj.factory.block(n.addr) for n in node.cfg_nodes ]
-        header = get_header(node, func_addr)
+        header = get_header(node, function)
         state = cfgnode.state
 
 def get_block(proj, address):
@@ -95,6 +105,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         condition << loop_item != 0
 
                         CFGNode:
+                            function = wk.selected_function
                             name = str(loop_item.addr)
                             addr = loop_item.addr
                             node = loop_item
