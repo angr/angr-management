@@ -17,48 +17,39 @@ import claripy
 from angr import Project
 
 from ..data.instance import Instance
-from ..data.workspace import WorkspaceData
+from ..data.workspace import SymexecView, DisasmGraphView
 from ..data.jobs import CFGGenerationJob
 from .state import RegistersItem, MemoryItem
 from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
 from .cfg import CFGItem
 from .functions import FunctionManagerItem
-from .console import ConsoleItem
+from .console import DisasmConsoleItem, SymexecConsoleItem
 
-ALL_ITEMS = {
-    'CFG': CFGItem,
-    'Function Manager': FunctionManagerItem,
-    'Console': ConsoleItem,
-    'Path Tree': PathTreeItem,
-    'Path Group': PathGroupItem,
-    'Registers': RegistersItem,
-    'Memory': MemoryItem,
-}
 
 def gen_static_wk(inst):
     layout = AreaLayout(item=HSplitLayout('funcs', 'cfg'), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
 
-    data = WorkspaceData(name='Disassembly View', sort='disassembly', layout=layout, inst=inst)
-    cfg = CFGItem(name='cfg', wk=data)
-    funcs = FunctionManagerItem(name='funcs', wk=data)
-    console = ConsoleItem(name='console', wk=data)
-    data.items = [cfg, funcs, console]
+    view = DisasmGraphView(name='Disassembly View', sort='disassembly', layout=layout, inst=inst)
+    cfg = CFGItem(name='cfg', wk=view)
+    funcs = FunctionManagerItem(name='funcs', wk=view)
+    console = DisasmConsoleItem(name='console', wk=view)
+    view.items = [cfg, funcs, console]
 
-    return data
+    return view
 
 def gen_symbolic_wk(inst):
     layout = AreaLayout(item=HSplitLayout('path_tree', VSplitLayout('path_group', TabLayout('regs', 'mem'))), dock_bars=[DockBarLayout(ItemLayout('console'), position='bottom')])
 
-    data = WorkspaceData(name='Symbolic Analysis', sort='symbolic', layout=layout, inst=inst)
-    path_tree = PathTreeItem(name='path_tree', wk=data)
-    path_group = PathGroupItem(name='path_group', wk=data)
-    regs = RegistersItem(name='regs', wk=data)
-    mem = MemoryItem(name='mem', wk=data)
-    console = ConsoleItem(name='console', wk=data)
-    data.items = [path_tree, path_group, regs, mem, console]
+    view = SymexecView(name='Symbolic Analysis', sort='symbolic', layout=layout, inst=inst)
+    path_tree = PathTreeItem(name='path_tree', wk=view)
+    path_group = PathGroupItem(name='path_group', wk=view)
+    regs = RegistersItem(name='regs', wk=view)
+    mem = MemoryItem(name='mem', wk=view)
+    console = SymexecConsoleItem(name='console', wk=view)
+    view.items = [path_tree, path_group, regs, mem, console]
 
-    return data
+    return view
 
 def get_current_wk(inst):
     return inst.current_workspace

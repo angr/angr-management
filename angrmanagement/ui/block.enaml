@@ -139,7 +139,8 @@ enamldef Instruction(RichContainer): insn_ui:
     attr thumb
     attr stmt_idx
     attr state = None
-    attr is_onfocus = False
+    attr is_onfocus
+    attr wk
 
     padding = 0
 
@@ -147,12 +148,16 @@ enamldef Instruction(RichContainer): insn_ui:
         hbox(address, mnemonic, spacing=5, *sum(operands_loop.items + [[spacer]], []))
     ]
 
+    is_onfocus << insn.address in insn_ui.wk.highlighted_insns
+
     # style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
     style_class << "highlight" if is_onfocus else ""
 
     clicked ::
         # toggle whether self is selected or not
         self.is_onfocus = not self.is_onfocus
+        if not self.is_onfocus and insn.address in insn_ui.wk.highlighted_insns:
+            insn_ui.wk.highlighted_insns.remove(insn.address)
 
     Menu:
         context_menu = True
@@ -204,6 +209,7 @@ enamldef Block(Container): block_ui:
     attr blocks
     attr header
     attr state = None
+    attr wk
 
     style_class = 'block'
     padding = 0
@@ -258,7 +264,7 @@ enamldef Block(Container): block_ui:
                 field = 'background-color'
                 value = '#ffffbb'
 
-    Label: label:
+    RichLabel: label:
         style_class = 'label'
         text << header
 
@@ -272,4 +278,4 @@ enamldef Block(Container): block_ui:
             stmt_idx = None
             # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
             state = block_ui.state
-
+            wk = block_ui.wk

@@ -9,6 +9,26 @@ import claripy
 
 
 enamldef ConsoleItem(WorkspaceItem):
+    title = 'Console'
+
+
+enamldef DisasmConsoleItem(ConsoleItem):
+    initialized ::
+        pass
+
+    Container: container:
+        constraints = [vbox(console)]
+
+        IPythonConsole: console:
+            initial_ns = {
+                'angr': angr,
+                'simuvex': simuvex,
+                'claripy': claripy,
+                'wk': wk,
+            }
+
+
+enamldef SymexecConsoleItem(ConsoleItem):
     initialized ::
         on_path_sel({'value': wk.selected_path})
         wk.observe('selected_path', on_path_sel)
@@ -25,9 +45,7 @@ enamldef ConsoleItem(WorkspaceItem):
     func addpg(pg):
         wk.inst.path_groups.add_path_group(pg=pg)
 
-    title = 'Console'
-
-    Container:
+    Container: container:
         constraints = [vbox(console)]
 
         IPythonConsole: console:

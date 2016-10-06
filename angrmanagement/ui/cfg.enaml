@@ -39,6 +39,7 @@ def get_header(node, function):
     else:
         return "loc_%#x:" % node.addr
 
+
 enamldef CFGNode(Container): cfgnode:
     attr proj
     attr function
@@ -46,6 +47,7 @@ enamldef CFGNode(Container): cfgnode:
     attr addr
     attr func_addr
     attr state = None
+    attr wk
 
     style_class = 'cfg_node'
 
@@ -60,6 +62,8 @@ enamldef CFGNode(Container): cfgnode:
         blocks = [ proj.factory.block(n.addr) for n in node.cfg_nodes ]
         header = get_header(node, function)
         state = cfgnode.state
+        wk = cfgnode.wk
+
 
 def get_block(proj, address):
     try:
@@ -112,6 +116,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                             func_addr = wk.selected_function.addr
                             proj = wk.proj
                             state = find_vfg_state(wk, wk.selected_function.addr, loop_item)
+                            wk = cfgi.wk
 
             Timer: update_timer:
                 interval = 30

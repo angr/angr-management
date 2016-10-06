@@ -81,6 +81,7 @@ enamldef Path(Container): p:
             function = find_function(inst, p.path.addr)
             if function is not None:
                 disasm_wk.selected_function = function
+                disasm_wk.highlighted_insns = set(list(disasm_wk.highlighted_insns) + [p.path.addr])
             inst.current_workspace = disasm_wk
 
     Conditional:
