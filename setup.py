@@ -5,7 +5,8 @@ setup(
     version='5.6.10.7',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
-    packages=['angrmanagement', 'angrmanagement.ui', 'angrmanagement.data', 'angrmanagement.qt'],
+    packages=['angrmanagement', 'angrmanagement.ui', 'angrmanagement.data', 'angrmanagement.qt',
+              'angrmanagement.utils', 'angrmanagement.widgets'],
     package_data={
         'angrmanagement.ui': ['*.enaml']
     },
@@ -13,6 +14,10 @@ setup(
         'angr',
         'enaml==0.9.8',
         'pygments',
-        'websocket-client'
+        'websocket-client',
+        'grandalf',
+        'qtconsole',
+        'ipython',
+        'pyzmq',
     ]
 )
