@@ -19,5 +19,6 @@ setup(
         'qtconsole',
         'ipython',
         'pyzmq',
+        'PySide',
     ]
 )
