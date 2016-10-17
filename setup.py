@@ -20,5 +20,6 @@ setup(
         'ipython',
         'pyzmq',
         'PySide',
+        'pygraphviz',
     ]
 )
