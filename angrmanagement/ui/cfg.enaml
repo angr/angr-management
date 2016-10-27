@@ -59,7 +59,7 @@ enamldef CFGNode(Container): cfgnode:
                 value = '2px solid black'
 
     Block:
-        blocks = [ proj.factory.block(n.addr) for n in node.cfg_nodes ]
+        blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
         header = get_header(node, function)
         state = cfgnode.state
         wk = cfgnode.wk
