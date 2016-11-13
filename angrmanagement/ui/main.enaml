@@ -183,7 +183,7 @@ enamldef Main(MainWindow): main:
 
         Notebook: nbook:
             tab_style = 'document'
-            selected_tab << inst.current_workspace.name if inst.current_workspace is not None else u''
+            selected_tab << inst.current_workspace.name if inst is not None and inst.current_workspace is not None else u''
             selected_tab ::
                 inst.current_workspace = self.find(selected_tab)
 
