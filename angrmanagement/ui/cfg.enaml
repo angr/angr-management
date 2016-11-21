@@ -62,8 +62,8 @@ enamldef CFGNode(Container): cfgnode:
     Block:
         disasm = cfgnode.disasm
         cfg_nodes = [ n for n in node.cfg_nodes ]
-        blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
-        header = get_header(node, func_addr)
+        # blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
+        header = get_header(node, function)
         state = cfgnode.state
         wk = cfgnode.wk
 

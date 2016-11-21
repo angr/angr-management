@@ -49,7 +49,7 @@ enamldef Operand(Container): op_ui:
         style_class = 'insn'
         text = "," if not is_last else ""
 
-enamldef Instruction(Container): insn_ui:
+enamldef Instruction(RichContainer): insn_ui:
     attr insn
     attr arch
     attr thumb
@@ -64,7 +64,7 @@ enamldef Instruction(Container): insn_ui:
         hbox(address, mnemonic, spacing=5, *sum(operands_loop.items + [[spacer]], []))
     ]
 
-    is_onfocus << insn.address in insn_ui.wk.highlighted_insns
+    is_onfocus << insn.addr in insn_ui.wk.highlighted_insns
 
     # style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
     style_class << "highlight" if is_onfocus else ""
@@ -72,18 +72,18 @@ enamldef Instruction(Container): insn_ui:
     clicked ::
         # toggle whether self is selected or not
         self.is_onfocus = not self.is_onfocus
-        if not self.is_onfocus and insn.address in insn_ui.wk.highlighted_insns:
-            insn_ui.wk.highlighted_insns.remove(insn.address)
+        if not self.is_onfocus and insn.addr in insn_ui.wk.highlighted_insns:
+            insn_ui.wk.highlighted_insns.remove(insn.addr)
 
     Menu:
         context_menu = True
         Action:
-            text = "SymExec from %#x" % (insn.address)
+            text = "SymExec from %#x" % (insn.addr)
             triggered ::
                 # Create a new path group starting from this address
                 inst = get_inst(self)
 
-                state = inst.proj.factory.blank_state(addr=insn.address)
+                state = inst.proj.factory.blank_state(addr=insn.addr)
                 hierarchy = PathHierarchy(weakkey_path_mapping=True)
                 pg = inst.proj.factory.path_group(state, hierarchy=hierarchy)
                 inst.path_groups.add_path_group(pg=pg)
