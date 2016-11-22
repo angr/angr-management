@@ -1,0 +1,72 @@
+
+from enaml.layout.api import hbox, align, vbox
+from enaml.widgets.api import (
+    Container, Field, Label, PushButton, Window,
+)
+from enaml.styling import StyleSheet, Style, Setter
+
+from ..utils import locate_function
+from .wkitem import get_inst
+
+def is_valid_addr(addr):
+    try:
+        _ = int(addr, 16)
+        return True
+    except ValueError:
+        return False
+
+enamldef Jumpto(Window): window:
+    title = 'Jump to address'
+    always_on_top = True
+    modality = 'application_modal'
+
+    attr disasm_wk
+
+    StyleSheet:
+        Style:
+            style_class = 'valid'
+            Setter:
+                field = 'color'
+                value = 'green'
+
+        Style:
+            style_class = 'invalid'
+            Setter:
+                field = 'color'
+                value = 'red'
+
+    Container:
+        constraints = [
+            vbox(
+                 hbox(lbl, fldAddr),
+                 lblAddrStatus,
+                 hbox(btnOK, btnCancel),
+                 )
+        ]
+
+        Label: lbl:
+            text = 'Address'
+
+        Field: fldAddr:
+            submit_triggers = [ 'auto_sync' ]
+
+        Label: lblAddrStatus:
+            text << 'Valid' if is_valid_addr(fldAddr.text) else 'Invalid'
+            style_class << 'valid' if is_valid_addr(fldAddr.text) else 'invalid'
+
+        PushButton: btnOK:
+            text = "OK"
+            clicked ::
+                inst = disasm_wk.inst
+                addr = int(fldAddr.text, 16)
+                function = locate_function(inst, addr)
+                if function is not None:
+                    disasm_wk.selected_function = function
+                    disasm_wk.highlighted_insns = set([addr])
+
+                    window.close()
+
+        PushButton: btnCancel:
+            text = "Cancel"
+            clicked ::
+                window.close()

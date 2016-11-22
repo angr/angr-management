@@ -5,9 +5,11 @@ from enaml.layout.api import vbox, align
 from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
 from enaml.widgets.timer import Timer
 from enaml.styling import StyleSheet, Style, Setter
+from enaml.qt.QtCore import Qt
 
 from angr.errors import AngrError
 
+from .jumpto import Jumpto
 from .block import Block
 from ..widgets.api import FlowGraph
 from .notify import notify_update
@@ -103,6 +105,14 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                 func_graph << FunctionGraph(function=selected_function)
                 selected_function ::
                     graph.visible = False
+
+                key_pressed ::
+                    key = change.get('value')
+                    if key == Qt.Key_G:
+                        # jump to...
+                        jumpto = Jumpto()
+                        jumpto.disasm_wk = wk
+                        jumpto.show()
 
                 Looper:
                     iterable << func_graph.supergraph.nodes()
