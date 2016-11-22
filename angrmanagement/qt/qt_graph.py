@@ -3,7 +3,7 @@ import pygraphviz
 
 from atom.api import List, Typed
 from enaml.qt.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter
-from enaml.qt.QtCore import QPointF, QRectF, Qt, QSize
+from enaml.qt.QtCore import QPointF, QRectF, Qt, QSize, Signal
 from enaml.qt.qt_frame import QtFrame
 from enaml.qt.qt_container import QtContainer
 
@@ -11,6 +11,9 @@ from ..utils.graph import grouper
 from ..widgets.graph import ProxyGraph
 
 class ZoomingGraphicsView(QGraphicsView):
+
+    key_pressed = Signal(int)
+
     def sizeHint(self):
         return QSize(300, 300)
 
@@ -38,6 +41,17 @@ class ZoomingGraphicsView(QGraphicsView):
         else:
             super(ZoomingGraphicsView, self).wheelEvent(event)
 
+    def keyPressEvent(self, event):
+        """
+        KeyPress event
+
+        :param enaml.qt.QtGui.QKeyEvent event: The event
+        :return:
+        """
+
+        key = event.key()
+        self.key_pressed.emit(key)
+
 
 class QtBaseGraph(QtFrame):
     widget = Typed(QGraphicsView)
@@ -56,6 +70,8 @@ class QtBaseGraph(QtFrame):
         self.widget.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
                                    QPainter.HighQualityAntialiasing
                                    )
+
+        self.widget.key_pressed.connect(self.on_key_pressed)
 
     def child_added(self, child):
         super(QtBaseGraph, self).child_added(child)
@@ -167,6 +183,12 @@ class QtBaseGraph(QtFrame):
                 self.widget.ensureVisible(proxy)
                 break
 
+    #
+    # Signal handlers
+    #
+
+    def on_key_pressed(self, key):
+        self.declaration.key_pressed(key)
 
 class QtGraph(QtBaseGraph, ProxyGraph):
     pass

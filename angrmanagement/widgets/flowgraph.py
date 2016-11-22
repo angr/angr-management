@@ -1,6 +1,6 @@
 import networkx
 
-from atom.api import List, Typed, ForwardTyped, observe
+from atom.api import List, Typed, ForwardTyped, observe, Event
 from enaml.core.declarative import d_
 from enaml.widgets.frame import Frame
 from enaml.widgets.control import ProxyControl
@@ -28,6 +28,8 @@ class FlowGraph(Frame):
     selected = d_(Typed(str))
 
     proxy = Typed(ProxyFlowGraph)
+
+    key_pressed = d_(Event())
 
     hug_width = 'weak'
     hug_height = 'weak'
