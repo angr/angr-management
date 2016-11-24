@@ -16,7 +16,6 @@ import simuvex
 import claripy
 from angr import Project
 
-from ..data.instance import Instance
 from ..data.workspace import SymexecView, DisasmGraphView
 from ..data.jobs import CFGGenerationJob
 from .state import RegistersItem, MemoryItem
@@ -74,6 +73,14 @@ def initialize_instance(inst):
     if inst is not None:
         inst.add_job(CFGGenerationJob())
 
+def open_load_binary_window(path, main_window):
+    # TODO: Check if the file exists
+
+    lb_window = LoadBinary(file_path=path)
+    lb_window.main = main_window
+    lb_window.show()
+
+
 enamldef AnalysisToolBar(ToolBar):
     attr inst
 
@@ -123,8 +130,11 @@ enamldef Main(MainWindow): main:
     attr inst
     attr ida_conn = None
 
+    attr file_to_open  # coming from sys.argv[1]
+
     initialized ::
-        initialize_instance(inst)
+        if file_to_open is not None:
+            open_load_binary_window(file_to_open, main)
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
@@ -132,12 +142,11 @@ enamldef Main(MainWindow): main:
         Menu:
             title = '&File'
             Action:
-                text = 'New\tCtrl+N'
+                text = 'Load a new binary\tCtrl+N'
                 triggered ::
                     path = FileDialogEx.get_open_file_name(main)
                     if path:
-                        main.inst = Instance(proj=Project(path, load_options={'auto_load_libs': False}))
-                        initialize_instance(main.inst)
+                        open_load_binary_window(path, main)
 
             Action:
                 text = 'Save\tCtrl+S'
@@ -198,3 +207,6 @@ enamldef Main(MainWindow): main:
         StatusItem:
             Label:
                 text << ('Ready.' if not inst.jobs else '%d job%s.' % (len(inst.jobs), 's' if len(inst.jobs) != 1 else '')) if inst else 'No available instance.'
+
+
+from .load_binary import LoadBinary

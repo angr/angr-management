@@ -11,14 +11,13 @@ def main():
         from ui.main import Main
 
     if len(sys.argv) >= 2:
-        proj = angr.Project(sys.argv[1], load_options={'auto_load_libs': False})
-        inst = Instance(proj=proj)
+        file_to_open = sys.argv[1]
     else:
-        inst = None
+        file_to_open = None
 
     app = QtApplication()
 
-    view = Main(inst=inst)
+    view = Main(file_to_open=file_to_open)
     view.show()
 
     app.start()
