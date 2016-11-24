@@ -4,18 +4,56 @@ from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
 from grandalf.routing import EdgeViewer
 
-from enaml.qt.QtGui import QPainterPath
-from enaml.qt.QtCore import QPointF, QRectF
+from enaml.qt.QtGui import QPainterPath, QPolygonF, QGraphicsPolygonItem, QBrush
+from enaml.qt.QtCore import QPointF, QRectF, Qt
 from enaml.qt.qt_container import QtContainer
 
 from .qt_graph import QtBaseGraph
 
 from ..widgets.flowgraph import ProxyFlowGraph
 
-class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
 
-    @staticmethod
-    def _route_edges(edge, points):
+class EdgeRouter(object):
+    def __init__(self, sug, xspace, yspace):
+        self._sug = sug
+        self.xspace = xspace
+        self.yspace = yspace
+
+    def _make_right_angles(self, points):
+        """
+        Route an edge to make sure each segment either goes horizontally or vertically
+
+        :param list points: A list of point coordinates
+        :return: A list of routed edges
+        :rtype: list
+        """
+
+        new_points = [ ]
+
+        for i, p in enumerate(points):
+            if i < len(points) - 1:
+                next_p = points[i + 1]
+                if p[0] != next_p[0] and p[1] != next_p[1]:
+
+                    if i == len(points) - 2:
+                        new_y = next_p[1] - self.yspace / 2
+                    else:
+                        new_y = p[1] + self.yspace / 2
+
+                    new_points.append(p)
+                    new_points.append((p[0], new_y))
+                    new_points.append((next_p[0], new_y))
+                else:
+                    new_points.append(p)
+            else:
+                new_points.append(p)
+
+        #print points
+        #print new_points
+
+        return new_points
+
+    def route_edges(self, edge, points):
         """
         A simple edge routing algorithm.
 
@@ -37,7 +75,50 @@ class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
         points[0] = start_point
         points[-1] = end_point
 
+        def get_index(v):
+            return self._sug.grx[v].rank, self._sug.grx[v].pos
+
+        if end_point[1] < start_point[1]:
+            # back edges are not routed. we route them here
+            new_points = [ start_point, (start_point[0], start_point[1] + self.yspace / 2) ]
+
+            src_rank, src_pos = get_index(edge.v[0])
+            dst_rank, dst_pos = get_index(edge.v[1])
+
+            assert dst_rank <= src_rank
+
+            if end_point[0] > start_point[0]:
+                # the next point should be on the left side of the source block
+                p = (src_x - src_width / 2 - self.xspace / 2, src_y)
+            else:
+                # the next point should be on the right side of the source block
+                p = (src_x + src_width / 2 + self.xspace / 2, src_y)
+            new_points.append(p)
+
+            # TODO: detect intersection with existing blocks and route the edge around them
+            #for rank in xrange(src_rank - 1, dst_rank, -1):
+            #    p =
+
+            # last point
+            new_points += [ (p[0], end_point[1] - self.yspace / 2), (end_point[0], end_point[1] - self.yspace / 2), end_point ]
+
+            points[:] = new_points
+
+        # make all corners right angles
+        new_points = self._make_right_angles(points)
+        del points[:]
+        for p in new_points:
+            points.append(p)
+
+        #print "Points", points
+
         edge.view.head_angle = getangle(points[-2], points[-1])
+
+
+class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
+
+    XSPACE = 40
+    YSPACE = 40
 
     def _layout_nodes_and_edges(self, start):
         """
@@ -96,7 +177,9 @@ class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
             vertex.view = VertexViewer(width, height)
 
         sug = SugiyamaLayout(g.C[0])
-        sug.route_edge = self._route_edges
+        sug.xspace = self.XSPACE
+        sug.yspace = self.YSPACE
+        sug.route_edge = EdgeRouter(sug, self.XSPACE, self.YSPACE).route_edges
         sug.init_all(roots=[vertices[start]])
         sug.draw()
 
@@ -154,6 +237,7 @@ class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
             print "Failed to get node_coords"
             return
 
+        # layout nodes
         for child in self.children():
             if not isinstance(child, QtContainer):
                 continue
@@ -162,12 +246,22 @@ class QtFlowGraph(QtBaseGraph, ProxyFlowGraph):
             x, y = node_coords[child.declaration.addr]
             widget_proxy.setPos(x, y)
 
+        # draw edges
         for edges in edge_coords:
             for from_, to_ in zip(edges, edges[1:]):
                 painter = QPainterPath(QPointF(*from_))
                 painter.lineTo(QPointF(*to_))
                 p = self.scene.addPath(painter)
                 self._edge_paths.append(p)
+
+            # arrow
+            end_point = edges[-1]
+            arrow = [ QPointF(end_point[0] - 3, end_point[1] - 6), QPointF(end_point[0] + 3, end_point[1] - 6), QPointF(*end_point) ]
+            polygon = QGraphicsPolygonItem(QPolygonF(arrow))
+            polygon.setBrush(QBrush(Qt.darkRed))
+
+            self.scene.addItem(polygon)
+            self._edge_paths.append(polygon)
 
         rect = self.scene.itemsBoundingRect()
         # Enlarge the rect so there is enough room at right and bottom

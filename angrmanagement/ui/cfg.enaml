@@ -5,9 +5,11 @@ from enaml.layout.api import vbox, align
 from enaml.widgets.api import DockItem, Container, Label, PushButton, MultilineField
 from enaml.widgets.timer import Timer
 from enaml.styling import StyleSheet, Style, Setter
+from enaml.qt.QtCore import Qt
 
 from angr.errors import AngrError
 
+from .jumpto import Jumpto
 from .block import Block
 from ..widgets.api import FlowGraph
 from .notify import notify_update
@@ -41,6 +43,7 @@ def get_header(node, function):
 
 
 enamldef CFGNode(Container): cfgnode:
+    attr disasm
     attr proj
     attr function
     attr node
@@ -59,7 +62,9 @@ enamldef CFGNode(Container): cfgnode:
                 value = '2px solid black'
 
     Block:
-        blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
+        disasm = cfgnode.disasm
+        cfg_nodes = [ n for n in node.cfg_nodes ]
+        # blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
         header = get_header(node, function)
         state = cfgnode.state
         wk = cfgnode.wk
@@ -95,9 +100,19 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                 ]
 
             FlowGraph: graph:
-                func_graph << FunctionGraph(function=wk.selected_function)
-                func_graph ::
+                proj = wk.proj
+                selected_function << wk.selected_function
+                func_graph << FunctionGraph(function=selected_function)
+                selected_function ::
                     graph.visible = False
+
+                key_pressed ::
+                    key = change.get('value')
+                    if key == Qt.Key_G:
+                        # jump to...
+                        jumpto = Jumpto()
+                        jumpto.disasm_wk = wk
+                        jumpto.show()
 
                 Looper:
                     iterable << func_graph.supergraph.nodes()
@@ -110,6 +125,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
                         CFGNode:
                             function = wk.selected_function
+                            disasm = graph.disasm
                             name = str(loop_item.addr)
                             addr = loop_item.addr
                             node = loop_item

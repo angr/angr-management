@@ -13,117 +13,29 @@ from ..widgets.api import RichLabel, RichContainer
 
 from .wkitem import get_inst, get_wk
 
-def gen_op_text(arch, registry, insn, op):
-    if arch.cs_arch is capstone.CS_ARCH_X86:
-        return gen_op_text_x86(arch, registry, insn, op)
-    elif arch.cs_arch is capstone.CS_ARCH_MIPS:
-        return "-"
-    else:
-        raise NotImplementedError("The required architecture is not implemented at the moment")
-
-def gen_op_text_x86(arch, registry, insn, op):
-    if op.type == x86.X86_OP_REG:
-        return insn.reg_name(op.value.reg)
-    elif op.type == x86.X86_OP_IMM:
-        if op.value.imm in registry.offsets:
-            return str(registry.offsets[op.value.imm])
-        elif op.value.imm < 10:
-            return '%d' % op.value.imm
-        else:
-            return '%xh' % op.value.imm
-    elif op.type == x86.X86_OP_MEM:
-        sizes = {
-            1: 'byte',
-            2: 'word',
-            4: 'dword',
-            8: 'qword',
-        }
-        size = sizes.get(op.size, None)
-        if size is not None:
-            s = size + ' ptr ['
-        else:
-            s = '%d-byte ptr [' % op.size
-
-        if op.mem.segment != 0:
-            s += insn.reg_name(op.mem.segment) + ':'
-        if op.mem.base != 0:
-            s += insn.reg_name(op.mem.base)
-        if op.mem.index != 0:
-            if s[-1] not in (':', '['):
-                s += ' + '
-            s += insn.reg_name(op.mem.index)
-        if op.mem.scale != 1:
-            s += '*%d' % op.mem.scale
-        if op.mem.disp != 0:
-            if s[-1] not in (':', '['):
-                s += ' + '
-            if op.mem.disp in registry.offsets:
-                s += str(registry.offsets[op.mem.disp])
-            else:
-                s += '%xh' % op.mem.disp
-
-        return s + ']'
-    else:
-        return '<something>'
-
-
-def op_val(state, insn, stmt_idx, op):
-    if state is None:
-        return ''
-
-    if state.arch.cs_arch is capstone.CS_ARCH_X86:
-        if op.type == x86.X86_OP_REG:
-            reg_name = str(insn.reg_name(op.value.reg))
-            try:
-                reg_offset, size = state.arch.registers[reg_name]
-            except KeyError:
-                return ''
-
-            return state.registers.load(reg_offset, size)
-            # value = None
-            # for a in state.log.actions:
-            #     if a.stmt_idx > stmt_idx:
-            #         break
-            #     elif a.type == 'reg' and a.offset 
-        elif op.type == x86.X86_OP_IMM:
-            return op.value.imm
-        elif op.type == x86.X86_OP_FP:
-            return op.value.fp
-        elif op.type == x86.X86_OP_MEM:
-            try:
-                address = 0
-                if op.mem.base != 0:
-                    address += state.registers.load(str(insn.reg_name(op.mem.base)))
-                if op.mem.index != 0:
-                    address += state.registers.load(str(insn.reg_name(op.mem.index))) * op.mem.scale
-                address += op.mem.disp
-
-                return state.memory.load(address, op.size, endness='Iend_LE')
-            except Exception as e:
-                print e
-                return ''
-        else:
-            return ''
-    else:
-        return ''
-
 
 enamldef Operand(Container): op_ui:
     attr insn
-    attr op
-    attr arch
-    attr thumb
-    attr last
-    attr stmt_idx
-    attr state = None
+    attr operand
+    attr operand_index
+    attr is_last
+    #attr arch
+    #attr thumb
+    #attr stmt_idx
+    #attr state = None
 
     padding = 0
 
-    tool_tip << str(op_val(state, insn, stmt_idx, op))
+    # tool_tip << str(op_val(state, insn, stmt_idx, op))
 
-    RichLabel:
+    constraints = [
+        hbox(insn_label, delimiter, spacing=0)
+    ]
+
+    RichLabel: insn_label:
         style_class = 'insn'
-        text << gen_op_text(arch, get_inst(op_ui).registry, insn, op) + (',' if not last else '')
+        text = operand.render()[0]
+        # text << gen_op_text(arch, get_inst(op_ui).registry, insn, op) + (',' if not last else '')
         mouse_pressed ::
             mouse_event = change.get('value')
             if mouse_event.button() == 1:
@@ -132,6 +44,10 @@ enamldef Operand(Container): op_ui:
                     self.style_class = 'insn_selected'
                 else:
                     self.style_class = 'insn'
+
+    Label: delimiter:
+        style_class = 'insn'
+        text = "," if not is_last else ""
 
 enamldef Instruction(RichContainer): insn_ui:
     attr insn
@@ -148,7 +64,7 @@ enamldef Instruction(RichContainer): insn_ui:
         hbox(address, mnemonic, spacing=5, *sum(operands_loop.items + [[spacer]], []))
     ]
 
-    is_onfocus << insn.address in insn_ui.wk.highlighted_insns
+    is_onfocus << insn.addr in insn_ui.wk.highlighted_insns
 
     # style_class << '' #'highlight' if get_wk(self).selected_function._addr in get_inst(self).ddgs and networkx.dijkstra_blah(get_inst().ddgs[get_wk(self).selected_function._addr][1]) else ''
     style_class << "highlight" if is_onfocus else ""
@@ -156,18 +72,18 @@ enamldef Instruction(RichContainer): insn_ui:
     clicked ::
         # toggle whether self is selected or not
         self.is_onfocus = not self.is_onfocus
-        if not self.is_onfocus and insn.address in insn_ui.wk.highlighted_insns:
-            insn_ui.wk.highlighted_insns.remove(insn.address)
+        if not self.is_onfocus and insn.addr in insn_ui.wk.highlighted_insns:
+            insn_ui.wk.highlighted_insns.remove(insn.addr)
 
     Menu:
         context_menu = True
         Action:
-            text = "SymExec from %#x" % (insn.address)
+            text = "SymExec from %#x" % (insn.addr)
             triggered ::
                 # Create a new path group starting from this address
                 inst = get_inst(self)
 
-                state = inst.proj.factory.blank_state(addr=insn.address)
+                state = inst.proj.factory.blank_state(addr=insn.addr)
                 hierarchy = PathHierarchy(weakkey_path_mapping=True)
                 pg = inst.proj.factory.path_group(state, hierarchy=hierarchy)
                 inst.path_groups.add_path_group(pg=pg)
@@ -178,11 +94,11 @@ enamldef Instruction(RichContainer): insn_ui:
 
     RichLabel: address:
         style_class = 'insn_addr'
-        text << '%08x' % insn.address
+        text = '%08x' % insn.addr
 
     RichLabel: mnemonic:
         style_class = 'insn'
-        text << insn.mnemonic
+        text = insn.mnemonic.render()[0]
         mouse_pressed ::
             mouse_event = change.get('value')
             if mouse_event.button() == 1:
@@ -193,20 +109,29 @@ enamldef Instruction(RichContainer): insn_ui:
                     self.style_class = 'insn'
 
     Looper: operands_loop:
-        iterable << insn.operands
+        iterable << list(enumerate(insn.operands))
 
         Operand:
-            op = loop_item
-            arch = insn_ui.arch
+            operand = loop_item[1]
+            operand_index = loop_item[0]
             insn = insn_ui.insn
-            thumb = insn_ui.thumb
-            stmt_idx = insn_ui.stmt_idx
-            last = loop_index == len(insn.operands) - 1
-            state << insn_ui.state
+            #arch = insn_ui.arch
+            #insn = insn_ui.insn
+            #thumb = insn_ui.thumb
+            #stmt_idx = insn_ui.stmt_idx
+            is_last = operand_index == len(insn_ui.insn.operands) - 1
+            #state << insn_ui.state
+
+
+def get_insn_list(disasm, nodes):
+    block_addrs = [ node.addr for node in nodes ]
+    insn_addrs = list(itertools.chain.from_iterable(disasm.block_to_insn_addrs[addr] for addr in block_addrs))
+    return list(disasm.raw_result_map['instructions'][insn_addr] for insn_addr in insn_addrs)
 
 
 enamldef Block(Container): block_ui:
-    attr blocks
+    attr disasm
+    attr cfg_nodes
     attr header
     attr state = None
     attr wk
@@ -230,6 +155,9 @@ enamldef Block(Container): block_ui:
             Setter:
                 field = 'color'
                 value = '#000080'
+            #Setter:
+            #    field = 'border'
+            #    value = '2px solid blue'
 
         Style:
             style_class = 'insn_selected'
@@ -269,13 +197,14 @@ enamldef Block(Container): block_ui:
         text << header
 
     Looper: insns_loop:
-        iterable = list(itertools.chain.from_iterable(block.capstone.insns for block in blocks))
+        #iterable = list(itertools.chain.from_iterable())
+        iterable << get_insn_list(disasm, cfg_nodes)
 
         Instruction:
             insn = loop_item
-            arch = blocks[0].capstone.arch
-            thumb = blocks[0].capstone.thumb
-            stmt_idx = None
+            #arch = blocks[0].capstone.arch
+            #thumb = blocks[0].capstone.thumb
+            #stmt_idx = None
             # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
             state = block_ui.state
             wk = block_ui.wk

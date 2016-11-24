@@ -7,6 +7,7 @@ from enaml.widgets.api import Container, PushButton, PushButton, Label, Field, F
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.layout.geometry import Box
 
+from ..utils import locate_function
 from ..widgets.api import Graph
 from .wkitem import WorkspaceItem, get_inst
 
@@ -19,18 +20,6 @@ def eval_with_path(path, expr):
 def log(val):
     print val
     return val
-
-def find_function(inst, addr):
-    if inst.cfg is None:
-        return None
-
-    functions = inst.cfg.functions
-    for _, function in functions.iteritems():
-        for block in function.blocks:
-            if block.addr <= addr < block.addr + block.size:
-                return function
-
-    return None
 
 enamldef Path(Container): p:
     attr path
@@ -78,7 +67,7 @@ enamldef Path(Container): p:
             inst = get_inst(self)
 
             disasm_wk = inst.get_workspaces(sort='disassembly')[0]
-            function = find_function(inst, p.path.addr)
+            function = locate_function(inst, p.path.addr)
             if function is not None:
                 disasm_wk.selected_function = function
                 disasm_wk.highlighted_insns = set(list(disasm_wk.highlighted_insns) + [p.path.addr])
