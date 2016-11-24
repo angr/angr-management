@@ -9,17 +9,22 @@ def qt_flow_graph():
     from .qt_flow_graph import QtFlowGraph
     return QtFlowGraph
 
-def rich_label():
+def qt_rich_label():
     from .qt_rich_label import QtRichLabel
     return QtRichLabel
 
-def rich_container():
+def qt_rich_container():
     from .qt_rich_container import QtRichContainer
     return QtRichContainer
 
+def qt_rich_field():
+    from .qt_rich_field import QtRichField
+    return QtRichField
+
 # Inject into QT_FACTORIES
 
-QT_FACTORIES['RichLabel'] = rich_label
 QT_FACTORIES['Graph'] = qt_graph
 QT_FACTORIES['FlowGraph'] = qt_flow_graph
-QT_FACTORIES['RichContainer'] = rich_container
+QT_FACTORIES['RichLabel'] = qt_rich_label
+QT_FACTORIES['RichContainer'] = qt_rich_container
+QT_FACTORIES['RichField'] = qt_rich_field

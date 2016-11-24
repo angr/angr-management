@@ -4,16 +4,25 @@ from enaml.widgets.api import (
     Container, Field, Label, PushButton, Window,
 )
 from enaml.styling import StyleSheet, Style, Setter
+from enaml.qt.QtCore import Qt
 
+from ..widgets.rich_container import RichContainer
+from ..widgets.rich_field import RichField
 from ..utils import locate_function
 from .wkitem import get_inst
 
-def is_valid_addr(addr):
+def is_valid_addr_or_label(input):
+    r = convert_to_addr(input)
+    return r is not None
+
+def convert_to_addr(input):
+    # TODO: take care of labels
+
     try:
-        _ = int(addr, 16)
-        return True
+        addr = int(input, 16)
+        return addr
     except ValueError:
-        return False
+        return None
 
 enamldef Jumpto(Window): window:
     title = 'Jump to address'
@@ -35,7 +44,7 @@ enamldef Jumpto(Window): window:
                 field = 'color'
                 value = 'red'
 
-    Container:
+    RichContainer:
         constraints = [
             vbox(
                  hbox(lbl, fldAddr),
@@ -44,27 +53,47 @@ enamldef Jumpto(Window): window:
                  )
         ]
 
+        key_pressed ::
+            key = change.get('value')
+            if key == Qt.Key_Escape:
+                # close the window
+                window.close()
+
         Label: lbl:
             text = 'Address'
 
-        Field: fldAddr:
+        RichField: fldAddr:
             submit_triggers = [ 'auto_sync' ]
 
+            key_pressed ::
+                key = change.get('value')
+                if key == Qt.Key_Return:
+                    # submit
+                    btnOK.clicked()
+
         Label: lblAddrStatus:
-            text << 'Valid' if is_valid_addr(fldAddr.text) else 'Invalid'
-            style_class << 'valid' if is_valid_addr(fldAddr.text) else 'invalid'
+            text << 'Valid' if is_valid_addr_or_label(fldAddr.text) else 'Invalid'
+            style_class << 'valid' if is_valid_addr_or_label(fldAddr.text) else 'invalid'
 
         PushButton: btnOK:
             text = "OK"
             clicked ::
                 inst = disasm_wk.inst
-                addr = int(fldAddr.text, 16)
-                function = locate_function(inst, addr)
-                if function is not None:
-                    disasm_wk.selected_function = function
-                    disasm_wk.highlighted_insns = set([addr])
+                addr = convert_to_addr(fldAddr.text)
+                if addr is None:
+                    # invalid input
+                    pass
+                else:
+                    function = locate_function(inst, addr)
+                    if function is not None:
+                        disasm_wk.selected_function = function
+                        disasm_wk.highlighted_insns = set([addr])
 
-                    window.close()
+                        window.close()
+
+                    else:
+                        # it doesn't belong to any function
+                        lblAddrStatus.text = "TODO: the address does not belong to any function."
 
         PushButton: btnCancel:
             text = "Cancel"
