@@ -17,9 +17,11 @@ class QRichLineEdit(QFocusLineEdit):
         :return:
         """
 
+        # call parent handlers first to ensure text in textbox is fully committed
+        super(QRichLineEdit, self).keyPressEvent(key_event)
+
         key = key_event.key()
         self.key_pressed.emit(key)
-        super(QRichLineEdit, self).keyPressEvent(key_event)
 
 
 class QtRichField(QtField, ProxyRichField):

@@ -10,8 +10,10 @@ from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label, PushButton, Menu, Action
 
 from ..widgets.api import RichLabel, RichContainer
+from ..utils import get_block_header
 
 from .wkitem import get_inst, get_wk
+from .rename_label import RenameLabel
 
 
 enamldef Operand(Container): op_ui:
@@ -135,12 +137,13 @@ enamldef Block(Container): block_ui:
     attr header
     attr state = None
     attr wk
+    attr addr
 
     style_class = 'block'
     padding = 0
 
     constraints = [
-        vbox(label, spacing=2, *sum(insns_loop.items, []))
+        vbox(lblHeader, spacing=2, *sum(insns_loop.items, []))
     ]
 
     StyleSheet:
@@ -178,6 +181,15 @@ enamldef Block(Container): block_ui:
                 value = '#0000ff'
 
         Style:
+            style_class = 'label_selected'
+            Setter:
+                field = 'color'
+                value = '#0000ff'
+            Setter:
+                field = 'background-color'
+                value = '#efbfba'
+
+        Style:
             style_class = 'insn_addr'
             Setter:
                 field = 'font'
@@ -192,9 +204,31 @@ enamldef Block(Container): block_ui:
                 field = 'background-color'
                 value = '#ffffbb'
 
-    RichLabel: label:
+    RichLabel: lblHeader:
+
+        Menu:
+            context_menu = True
+            Action: actRenameHeader:
+                text = "Re&name..."
+                triggered ::
+                    rename_window = RenameLabel(disasm=disasm, disasm_wk=wk, addr=addr)
+                    rename_window.exec_()
+
+                    if rename_window.label_updated:
+                        # redraw the header
+                        block_ui.header = get_block_header(addr, disasm.kb, function=None)
+
         style_class = 'label'
         text << header
+
+        mouse_pressed ::
+            mouse_event = change.get('value')
+            if mouse_event.button() in (1, 2):
+                # left click or right click
+                if self.style_class != 'label_selected':
+                    self.style_class = 'label_selected'
+                else:
+                    self.style_class = 'label'
 
     Looper: insns_loop:
         #iterable = list(itertools.chain.from_iterable())

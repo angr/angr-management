@@ -1,0 +1,89 @@
+from enaml.layout.api import hbox, align, vbox
+from enaml.widgets.api import (
+    Container, Field, Label, PushButton, Dialog,
+)
+from enaml.styling import StyleSheet, Style, Setter
+from enaml.qt.QtCore import Qt
+
+from ..widgets.rich_container import RichContainer
+from ..widgets.rich_field import RichField
+from ..utils import locate_function
+from .wkitem import get_inst
+
+def is_valid_label_name(name):
+    # TODO: Check if the label name is malformed
+    # TODO: Check if the label is duplicated
+    return True
+
+enamldef RenameLabel(Dialog): window:
+    title = 'Rename Label'
+    always_on_top = True
+    modality = 'application_modal'
+
+    attr disasm_wk  # the workspace
+    attr disasm  # the disassembly analysis
+    attr addr  # address of this label
+    attr label_updated = False  # if the label is updated
+
+    StyleSheet:
+        Style:
+            style_class = 'valid'
+            Setter:
+                field = 'color'
+                value = 'green'
+
+        Style:
+            style_class = 'invalid'
+            Setter:
+                field = 'color'
+                value = 'red'
+
+    RichContainer:
+        constraints = [
+            vbox(
+                 hbox(lbl, fldLabel),
+                 lblStatus,
+                 hbox(btnOK, btnCancel),
+                 )
+        ]
+
+        key_pressed ::
+            key = change.get('value')
+            if key == Qt.Key_Escape:
+                # close the window
+                window.close()
+
+        Label: lbl:
+            text = 'New name'
+
+        RichField: fldLabel:
+            submit_triggers = [ 'auto_sync', 'return_pressed' ]
+
+            key_pressed ::
+                key = change.get('value')
+                if key == Qt.Key_Return:
+                    # submit
+                    btnOK.clicked()
+
+        Label: lblStatus:
+            text << 'Valid' if is_valid_label_name(fldLabel.text) else 'Invalid'
+            style_class << 'valid' if is_valid_label_name(fldLabel.text) else 'invalid'
+
+        PushButton: btnOK:
+            text = "OK"
+            clicked ::
+                inst = disasm_wk.inst
+                new_label_name = fldLabel.text.strip()
+
+                # set the label to kb
+                disasm.kb.labels[addr] = new_label_name
+
+                # set the flag to True so the caller knows it should redraw the label
+                window.label_updated = True
+
+                window.close()
+
+        PushButton: btnCancel:
+            text = "Cancel"
+            clicked ::
+                window.close()

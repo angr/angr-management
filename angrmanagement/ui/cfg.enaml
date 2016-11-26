@@ -16,6 +16,7 @@ from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
 from ..data.function_graph import FunctionGraph
+from ..utils import get_block_header
 
 
 # enamldef CFGNode(Container):
@@ -25,21 +26,6 @@ from ..data.function_graph import FunctionGraph
 #     Label:
 #         font = '10pt Courier'
 #         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
-
-def get_header(node, function):
-    if node.addr == function.addr:
-        s = [ ]
-        if function.name:
-            s.append("%s:" % function.name)
-        else:
-            s.append("sub_%x:" % function.addr)
-        if function.is_simprocedure:
-            s.append('[SimProcedure]')
-        if function.is_plt:
-            s.append('[PLT]')
-        return "\n".join(s)
-    else:
-        return "loc_%#x:" % node.addr
 
 
 enamldef CFGNode(Container): cfgnode:
@@ -65,9 +51,10 @@ enamldef CFGNode(Container): cfgnode:
         disasm = cfgnode.disasm
         cfg_nodes = [ n for n in node.cfg_nodes ]
         # blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
-        header = get_header(node, function)
+        header = get_block_header(node.addr, disasm.kb, function=function)
         state = cfgnode.state
         wk = cfgnode.wk
+        addr = cfgnode.addr
 
 
 def get_block(proj, address):
