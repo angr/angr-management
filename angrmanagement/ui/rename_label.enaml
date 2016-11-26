@@ -75,8 +75,12 @@ enamldef RenameLabel(Dialog): window:
                 inst = disasm_wk.inst
                 new_label_name = fldLabel.text.strip()
 
-                # set the label to kb
-                disasm.kb.labels[addr] = new_label_name
+                if not new_label_name:
+                    if addr in disasm.kb.labels:
+                        del disasm.kb.labels[addr]
+                else:
+                    # set the label to kb
+                    disasm.kb.labels[addr] = new_label_name
 
                 # set the flag to True so the caller knows it should redraw the label
                 window.label_updated = True

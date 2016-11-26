@@ -1,4 +1,4 @@
-from atom.api import Atom, Int, List, Typed, ForwardTyped, Value, Unicode, observe
+from atom.api import Atom, Int, Long, List, Typed, ForwardTyped, Value, Unicode, observe
 from enaml.layout.dock_layout import AreaLayout
 
 from angr import CFG, Project, Path, PathGroup
@@ -44,7 +44,8 @@ class SymexecView(WorkspaceData):
 
 class DisasmGraphView(WorkspaceData):
     selected_function = Typed(Function)
-    selected_insn = Value()
+    selected_addr = Long()
+    selected_label = Value()
     highlighted_insns = Typed(set)
 
     def __init__(self, **kwargs):

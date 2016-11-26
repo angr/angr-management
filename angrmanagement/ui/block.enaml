@@ -231,14 +231,22 @@ enamldef Block(Container): block_ui:
                                 # redraw the label
                                 lblLabel.text = get_label_text(lblLabel.label_addr, disasm.kb, function=None)
 
-                style_class = 'label'
+                style_class << 'label_selected' if wk.selected_addr == label_addr else 'label'
                 text = label_text
 
                 mouse_pressed ::
                     mouse_event = change.get('value')
-                    if mouse_event.button() in (1, 2):
-                        # left click or right click
-                        if self.style_class != 'label_selected':
-                            self.style_class = 'label_selected'
+                    btn = mouse_event.button()
+                    if btn == 1:
+                        # left click
+                        if wk.selected_addr != label_addr:
+                            wk.selected_addr = label_addr
+                            wk.selected_label = lblLabel
                         else:
-                            self.style_class = 'label'
+                            wk.selected_addr = -1
+                            wk.selected_label = None
+
+                    elif btn == 2:
+                        # right click
+                        wk.selected_addr = label_addr
+                        wk.selected_label = lblLabel

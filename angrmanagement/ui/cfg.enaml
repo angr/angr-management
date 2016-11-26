@@ -10,12 +10,14 @@ from enaml.qt.QtCore import Qt
 from angr.errors import AngrError
 
 from .jumpto import Jumpto
+from .rename_label import RenameLabel
 from .block import Block
 from ..widgets.api import FlowGraph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
 from ..data.function_graph import FunctionGraph
+from ..utils import get_label_text
 
 
 # enamldef CFGNode(Container):
@@ -99,6 +101,15 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         jumpto = Jumpto()
                         jumpto.disasm_wk = wk
                         jumpto.show()
+                    elif key == Qt.Key_N:
+                        # rename
+                        if wk.selected_addr != -1:
+                            rename_window = RenameLabel(disasm=graph.disasm, disasm_wk=wk, addr=wk.selected_addr)
+                            rename_window.exec_()
+
+                            if rename_window.label_updated:
+                                # redraw the label
+                                wk.selected_label.text = get_label_text(wk.selected_addr, disasm.kb, function=None)
 
                 Looper:
                     iterable << func_graph.supergraph.nodes()
