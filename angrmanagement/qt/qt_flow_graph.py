@@ -35,7 +35,7 @@ class EdgeRouter(object):
                 next_p = points[i + 1]
                 if p[0] != next_p[0] and p[1] != next_p[1]:
 
-                    if i == len(points) - 2:
+                    if len(points) > 2 and i == len(points) - 2:
                         new_y = next_p[1] - self.yspace / 2
                     else:
                         new_y = p[1] + self.yspace / 2
