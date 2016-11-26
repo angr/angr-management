@@ -11,6 +11,25 @@ class Job(object):
 
 
 class CFGGenerationJob(Job):
+
+    DEFAULT_CFG_ARGS = {
+        'normalize': True,  # this is what people naturally expect
+        'resolve_indirect_jumps': True,
+    }
+
+    def __init__(self, **kwargs):
+        super(CFGGenerationJob, self).__init__()
+
+        # TODO: sanitize arguments
+
+        # make a copy
+        cfg_args = dict(kwargs)
+        for key, val in self.DEFAULT_CFG_ARGS.iteritems():
+            if key not in cfg_args:
+                cfg_args[key] = val
+
+        self.cfg_args = cfg_args
+
     def run(self, inst):
         return inst.proj.analyses.CFG(resolve_indirect_jumps=True, normalize=True)
 

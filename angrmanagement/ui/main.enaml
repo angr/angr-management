@@ -7,7 +7,7 @@ from enaml.layout.api import vbox
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout, InsertItem
 from enaml.widgets.api import (
     Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
-    IPythonConsole,
+    IPythonConsole, Timer,
     DockItem, ToolBar, StatusBar, StatusItem
 )
 
@@ -61,7 +61,7 @@ def get_job_stats(inst):
     else:
         return "No available instance."
 
-def initialize_instance(inst):
+def initialize_instance(inst, cfg_args):
     if inst is not None and len(inst.workspaces) == 0:
         static_wk = gen_static_wk(inst)
         symbolic_wk = gen_symbolic_wk(inst)
@@ -71,14 +71,14 @@ def initialize_instance(inst):
 
     # automatically build the CFG
     if inst is not None:
-        inst.add_job(CFGGenerationJob())
+        inst.add_job(CFGGenerationJob(**cfg_args))
 
 def open_load_binary_window(path, main_window):
     # TODO: Check if the file exists
 
     lb_window = LoadBinary(file_path=path)
     lb_window.main = main_window
-    lb_window.show()
+    lb_window.exec_()
 
 
 enamldef AnalysisToolBar(ToolBar):
@@ -127,6 +127,7 @@ enamldef Workspace(Page): wk:
 
 
 enamldef Main(MainWindow): main:
+    attr app
     attr inst
     attr ida_conn = None
 
@@ -135,6 +136,11 @@ enamldef Main(MainWindow): main:
     initialized ::
         if file_to_open is not None:
             open_load_binary_window(file_to_open, main)
+
+            if main.inst is None:
+                # exit the program
+                # TODO: figure out why it doesn't work
+                main.close()
 
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
@@ -161,6 +167,11 @@ enamldef Main(MainWindow): main:
                     path = FileDialogEx.get_open_file_name(main)
                     if path:
                         main.inst = Instance.from_file(path)
+
+            Action:
+                text = 'Exit\tCtrl+X'
+                triggered ::
+                    main.close()
 
     AnalysisToolBar: analysis_toolbar:
         inst << main.inst

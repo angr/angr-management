@@ -17,7 +17,7 @@ def main():
 
     app = QtApplication()
 
-    view = Main(file_to_open=file_to_open)
+    view = Main(file_to_open=file_to_open, app=app)
     view.show()
 
     app.start()

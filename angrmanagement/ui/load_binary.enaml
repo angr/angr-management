@@ -2,13 +2,13 @@
 import os
 
 from enaml.layout.api import hbox, vbox
-from enaml.widgets.api import Window, Container, PushButton, Label, Field
+from enaml.widgets.api import Dialog, Container, PushButton, Label, Field, CheckBox, Notebook, Page
 
 from angr import Project
 
 from ..data.instance import Instance
 
-enamldef LoadBinary(Window): window:
+enamldef LoadBinary(Dialog): window:
     title = "Load a new binary"
     always_on_top = True
     modality = 'application_modal'
@@ -20,6 +20,7 @@ enamldef LoadBinary(Window): window:
         constraints = [
             vbox(
                 hbox(lblFileNameCaption, lblFileName),
+                contOptions,
                 hbox(btnOK, btnCancel),
             )
         ]
@@ -30,15 +31,34 @@ enamldef LoadBinary(Window): window:
         Label: lblFileName:
             text = os.path.basename(file_path)
 
+        Container: contOptions:
+            Notebook:
+                tab_style = 'preferences'
+                tabs_closable = False
+                tabs_movable = False
+
+                Page:
+                    title = 'Initial CFG'
+
+                    Container:
+                        CheckBox: chkResolveIndirJumps:
+                            text = "Resolve indirect jumps"
+                            checked = True
+
         PushButton: btnOK:
             text = 'OK'
 
             clicked ::
+                # initialize CFG arguments
+                cfg_args = {
+                    'resolve_indirect_jumps': chkResolveIndirJumps.checked,
+                }
+
                 # close the window first
                 window.close()
                 # create the project and initialize the instance
                 inst = Instance(proj=Project(file_path, load_options={'auto_load_libs': False}))
-                initialize_instance(inst)
+                initialize_instance(inst, cfg_args=cfg_args)
                 # set the instance to main.inst
                 main.inst = inst
 
