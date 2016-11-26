@@ -1,4 +1,6 @@
 
+import itertools
+
 def locate_function(inst, addr):
     """
     Locate the function that contains the address.
@@ -20,7 +22,7 @@ def locate_function(inst, addr):
 
     return None
 
-def get_block_header(addr, kb, function=None):
+def get_label_text(addr, kb, function=None):
 
     if addr in kb.labels:
         return kb.labels[addr] + ":"
@@ -39,3 +41,29 @@ def get_block_header(addr, kb, function=None):
         return "\n".join(s)
     else:
         return "loc_%#x:" % addr
+
+
+def get_block_objects(disasm, nodes):
+    """
+    Get a list of instructions and labels to be displayed in a block in disassembly view.
+
+    :param angr.analyses.Disassembly disasm: The angr Disassembly Analysis instance.
+    :param iterable nodes: A collection of CFG nodes.
+    :return: a list of Instruction objects and label names (strings).
+    :rtype: list
+    """
+
+    block_addrs = [node.addr for node in nodes]
+    insn_addrs = list(itertools.chain.from_iterable(disasm.block_to_insn_addrs[addr] for addr in block_addrs))
+
+    lst = [ ]
+    for insn_addr in insn_addrs:
+        if insn_addr in disasm.kb.labels:
+            lst.append((insn_addr, disasm.kb.labels[insn_addr] + ":"))
+        lst.append(disasm.raw_result_map['instructions'][insn_addr])
+
+    if not isinstance(lst[0], tuple):
+        # the first element should be a label
+        lst.insert(0, (block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
+
+    return lst
