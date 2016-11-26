@@ -1,17 +1,19 @@
 
-import itertools
-
 import capstone
+import angr
+
 from capstone import x86
 from angr import PathHierarchy
-from enaml.core.api import Looper
+from enaml.core.api import Looper, Conditional
 from enaml.layout.api import hbox, vbox, spacer
 from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label, PushButton, Menu, Action
 
 from ..widgets.api import RichLabel, RichContainer
+from ..utils import get_label_text, get_block_objects
 
 from .wkitem import get_inst, get_wk
+from .rename_label import RenameLabel
 
 
 enamldef Operand(Container): op_ui:
@@ -123,24 +125,18 @@ enamldef Instruction(RichContainer): insn_ui:
             #state << insn_ui.state
 
 
-def get_insn_list(disasm, nodes):
-    block_addrs = [ node.addr for node in nodes ]
-    insn_addrs = list(itertools.chain.from_iterable(disasm.block_to_insn_addrs[addr] for addr in block_addrs))
-    return list(disasm.raw_result_map['instructions'][insn_addr] for insn_addr in insn_addrs)
-
-
 enamldef Block(Container): block_ui:
     attr disasm
     attr cfg_nodes
-    attr header
     attr state = None
     attr wk
+    attr addr
 
     style_class = 'block'
     padding = 0
 
     constraints = [
-        vbox(label, spacing=2, *sum(insns_loop.items, []))
+        vbox(spacing=2, *sum([ i.items for i in sum(insns_loop.items, [])], []))
     ]
 
     StyleSheet:
@@ -178,6 +174,15 @@ enamldef Block(Container): block_ui:
                 value = '#0000ff'
 
         Style:
+            style_class = 'label_selected'
+            Setter:
+                field = 'color'
+                value = '#0000ff'
+            Setter:
+                field = 'background-color'
+                value = '#efbfba'
+
+        Style:
             style_class = 'insn_addr'
             Setter:
                 field = 'font'
@@ -192,19 +197,56 @@ enamldef Block(Container): block_ui:
                 field = 'background-color'
                 value = '#ffffbb'
 
-    RichLabel: label:
-        style_class = 'label'
-        text << header
-
     Looper: insns_loop:
         #iterable = list(itertools.chain.from_iterable())
-        iterable << get_insn_list(disasm, cfg_nodes)
+        iterable << get_block_objects(disasm, cfg_nodes)
 
-        Instruction:
-            insn = loop_item
-            #arch = blocks[0].capstone.arch
-            #thumb = blocks[0].capstone.thumb
-            #stmt_idx = None
-            # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
-            state = block_ui.state
-            wk = block_ui.wk
+        Conditional:
+            condition = isinstance(loop_item, angr.analyses.disassembly.Instruction)
+            Instruction:
+                insn = loop_item
+                #arch = blocks[0].capstone.arch
+                #thumb = blocks[0].capstone.thumb
+                #stmt_idx = None
+                # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
+                state = block_ui.state
+                wk = block_ui.wk
+
+        Conditional:
+            condition = isinstance(loop_item, tuple)
+            RichLabel: lblLabel:
+
+                attr label_addr = loop_item[0]
+                attr label_text = loop_item[1]
+
+                Menu:
+                    context_menu = True
+                    Action: actRenameHeader:
+                        text = "Re&name..."
+                        triggered ::
+                            rename_window = RenameLabel(disasm=disasm, disasm_wk=wk, addr=addr)
+                            rename_window.exec_()
+
+                            if rename_window.label_updated:
+                                # redraw the label
+                                lblLabel.text = get_label_text(lblLabel.label_addr, disasm.kb, function=None)
+
+                style_class << 'label_selected' if wk.selected_addr == label_addr else 'label'
+                text = label_text
+
+                mouse_pressed ::
+                    mouse_event = change.get('value')
+                    btn = mouse_event.button()
+                    if btn == 1:
+                        # left click
+                        if wk.selected_addr != label_addr:
+                            wk.selected_addr = label_addr
+                            wk.selected_label = lblLabel
+                        else:
+                            wk.selected_addr = -1
+                            wk.selected_label = None
+
+                    elif btn == 2:
+                        # right click
+                        wk.selected_addr = label_addr
+                        wk.selected_label = lblLabel

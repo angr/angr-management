@@ -10,12 +10,14 @@ from enaml.qt.QtCore import Qt
 from angr.errors import AngrError
 
 from .jumpto import Jumpto
+from .rename_label import RenameLabel
 from .block import Block
 from ..widgets.api import FlowGraph
 from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
 from ..data.function_graph import FunctionGraph
+from ..utils import get_label_text
 
 
 # enamldef CFGNode(Container):
@@ -25,21 +27,6 @@ from ..data.function_graph import FunctionGraph
 #     Label:
 #         font = '10pt Courier'
 #         text = str(get_block(proj, node).capstone) if not proj.is_hooked(node) else str(proj._sim_procedures[node][0].__name__)
-
-def get_header(node, function):
-    if node.addr == function.addr:
-        s = [ ]
-        if function.name:
-            s.append("%s:" % function.name)
-        else:
-            s.append("sub_%x:" % function.addr)
-        if function.is_simprocedure:
-            s.append('[SimProcedure]')
-        if function.is_plt:
-            s.append('[PLT]')
-        return "\n".join(s)
-    else:
-        return "loc_%#x:" % node.addr
 
 
 enamldef CFGNode(Container): cfgnode:
@@ -65,9 +52,10 @@ enamldef CFGNode(Container): cfgnode:
         disasm = cfgnode.disasm
         cfg_nodes = [ n for n in node.cfg_nodes ]
         # blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
-        header = get_header(node, function)
+        # header = get_block_header(node.addr, disasm.kb, function=function)
         state = cfgnode.state
         wk = cfgnode.wk
+        addr = cfgnode.addr
 
 
 def get_block(proj, address):
@@ -113,6 +101,15 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         jumpto = Jumpto()
                         jumpto.disasm_wk = wk
                         jumpto.show()
+                    elif key == Qt.Key_N:
+                        # rename
+                        if wk.selected_addr != -1:
+                            rename_window = RenameLabel(disasm=graph.disasm, disasm_wk=wk, addr=wk.selected_addr)
+                            rename_window.exec_()
+
+                            if rename_window.label_updated:
+                                # redraw the label
+                                wk.selected_label.text = get_label_text(wk.selected_addr, disasm.kb, function=None)
 
                 Looper:
                     iterable << func_graph.supergraph.nodes()
@@ -120,19 +117,16 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                     iterable ::
                         update_timer.start()
 
-                    Conditional:
-                        condition << loop_item != 0
-
-                        CFGNode:
-                            function = wk.selected_function
-                            disasm = graph.disasm
-                            name = str(loop_item.addr)
-                            addr = loop_item.addr
-                            node = loop_item
-                            func_addr = wk.selected_function.addr
-                            proj = wk.proj
-                            state = find_vfg_state(wk, wk.selected_function.addr, loop_item)
-                            wk = cfgi.wk
+                    CFGNode:
+                        function = wk.selected_function
+                        disasm = graph.disasm
+                        name = str(loop_item.addr)
+                        addr = loop_item.addr
+                        node = loop_item
+                        func_addr = wk.selected_function.addr
+                        proj = wk.proj
+                        state = find_vfg_state(wk, wk.selected_function.addr, loop_item)
+                        wk = cfgi.wk
 
             Timer: update_timer:
                 interval = 30
