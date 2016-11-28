@@ -3,6 +3,9 @@ import itertools
 
 import networkx
 
+from angr.knowledge import Function
+
+
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     args = [iter(iterable)] * n
@@ -22,33 +25,34 @@ def to_supergraph(transition_graph):
 
     # Find all edges to remove in the super graph
     for n in transition_graph.nodes_iter():
-        if transition_graph.out_degree(n) == 1:
-            edges = transition_graph[n]
-            dst, data = edges.items()[0]
+        edges = transition_graph[n]
+
+        if any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
+            continue
+
+        for dst, data in edges.iteritems():
+            if isinstance(dst, Function):
+                continue
             if 'type' in data and data['type'] == 'fake_return':
                 if all(iter('type' in data and data['type'] in ('fake_return', 'return_from_call')
                             for _, _, data in transition_graph.in_edges(dst, data=True))):
                     edges_to_shrink.add((n, dst))
-                continue
-        elif transition_graph.out_degree(n) == 2:
-            edges = transition_graph[n]
-
-            if any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
-                continue
-
-            for dst, data in edges.iteritems():
-                if 'type' in data and data['type'] == 'fake_return':
-                    if all(iter('type' in data and data['type'] in ('fake_return', 'return_from_call')
-                                for _, _, data in transition_graph.in_edges(dst, data=True))):
-                        edges_to_shrink.add((n, dst))
-                    break
+                break
 
     # Create the super graph
     super_graph = networkx.DiGraph()
 
     supernodes_map = {}
 
+    function_nodes = set()  # it will be traversed after all other nodes are added into the supergraph
+
     for node in transition_graph.nodes_iter():
+
+        if isinstance(node, Function):
+            function_nodes.add(node)
+            # don't put functions into the supergraph
+            continue
+
         dests_and_data = transition_graph[node]
 
         # make a super node
@@ -57,17 +61,18 @@ def to_supergraph(transition_graph):
         else:
             src_supernode = SuperCFGNode.from_cfgnode(node)
             supernodes_map[node] = src_supernode
+            # insert it into the graph
+            super_graph.add_node(src_supernode)
 
         if not dests_and_data:
             # might be an isolated node
-            super_graph.add_node(src_supernode)
             continue
 
-        for edge in ((node, dst) for dst, _ in dests_and_data.iteritems()):
+        for dst, data in dests_and_data.iteritems():
+
+            edge = (node, dst)
 
             if edge in edges_to_shrink:
-
-                dst = edge[1]
 
                 if dst in supernodes_map:
                     dst_supernode = supernodes_map[dst]
@@ -81,24 +86,26 @@ def to_supergraph(transition_graph):
 
                 # merge the other supernode
                 if dst_supernode is not None:
+                    src_supernode.merge(dst_supernode)
+
                     for n in dst_supernode.cfg_nodes:
-                        src_supernode.insert_cfgnode(n)
                         supernodes_map[n] = src_supernode
 
                     # link all out edges of dst_supernode to src_supernode
                     for dst_, data_ in super_graph[dst_supernode].iteritems():
                         super_graph.add_edge(src_supernode, dst_, **data_)
 
+                    # link all in edges of dst_supernode to src_supernode
+                    for src_, _, data_ in super_graph.in_edges([dst_supernode], data=True):
+                        super_graph.add_edge(src_, src_supernode, **data_)
+
                     super_graph.remove_node(dst_supernode)
 
-                # insert it into the graph
-                super_graph.add_node(src_supernode)
+            else:
+                if isinstance(dst, Function):
+                    # skip all functions
+                    continue
 
-                break
-
-        else:
-            # insert all edges to our graph as usual
-            for dst, data in dests_and_data.iteritems():
                 # make a super node
                 if dst in supernodes_map:
                     dst_supernode = supernodes_map[dst]
@@ -108,13 +115,49 @@ def to_supergraph(transition_graph):
 
                 super_graph.add_edge(src_supernode, dst_supernode, **data)
 
+    for node in function_nodes:
+        in_edges = transition_graph.in_edges(node, data=True)
+
+        for src, _, data in in_edges:
+            supernode = supernodes_map[src]
+            supernode.register_out_branch(data['ins_addr'], data['stmt_idx'], data['type'], node.addr)
+
     return super_graph
+
+
+class OutBranch(object):
+    def __init__(self, ins_addr, stmt_idx, branch_type):
+        self.ins_addr = ins_addr
+        self.stmt_idx = stmt_idx
+        self.type = branch_type
+
+        self.targets = set()
+
+    def add_target(self, addr):
+        self.targets.add(addr)
+
+    def merge(self, other):
+        """
+        Merge with the other OutBranch descriptor.
+
+        :param OutBranch other: The other item to merge with.
+        :return: None
+        """
+
+        assert self.ins_addr == other.ins_addr
+        assert self.stmt_idx == other.stmt_idx
+        assert self.type == other.type
+
+        self.targets |= other.targets
+
 
 class SuperCFGNode(object):
     def __init__(self, addr):
         self.addr = addr
 
         self.cfg_nodes = [ ]
+
+        self.out_branches = { }
 
     @classmethod
     def from_cfgnode(cls, cfg_node):
@@ -139,5 +182,30 @@ class SuperCFGNode(object):
         # update addr
         self.addr = self.cfg_nodes[0].addr
 
+    def register_out_branch(self, ins_addr, stmt_idx, branch_type, target_addr):
+        if ins_addr not in self.out_branches:
+            self.out_branches[ins_addr] = OutBranch(ins_addr, stmt_idx, branch_type)
+
+        self.out_branches[ins_addr].add_target(target_addr)
+
+    def merge(self, other):
+        """
+        Merge another supernode into the current one.
+
+        :param SuperCFGNode other: The supernode to merge with.
+        :return: None
+        """
+
+        for n in other.cfg_nodes:
+            self.insert_cfgnode(n)
+
+        for addr, item in other.out_branches.iteritems():
+            if addr in self.out_branches:
+                self.out_branches[addr].merge(item)
+            else:
+                self.out_branches[addr] = item
+
     def __repr__(self):
-        return "<SuperCFGNode %#08x, %d blocks>" % (self.addr, len(self.cfg_nodes))
+        return "<SuperCFGNode %#08x, %d blocks, %d out branches>" % (self.addr, len(self.cfg_nodes),
+                                                                     len(self.out_branches)
+                                                                     )

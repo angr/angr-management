@@ -1,6 +1,7 @@
 
 import itertools
 
+
 def locate_function(inst, addr):
     """
     Locate the function that contains the address.
@@ -62,8 +63,34 @@ def get_block_objects(disasm, nodes):
             lst.append((insn_addr, disasm.kb.labels[insn_addr] + ":"))
         lst.append(disasm.raw_result_map['instructions'][insn_addr])
 
-    if not isinstance(lst[0], tuple):
+    if lst and not isinstance(lst[0], tuple):
         # the first element should be a label
         lst.insert(0, (block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
 
     return lst
+
+def get_out_branches(supernode):
+    """
+    Get a list of descriptors of branches going out from the supernode.
+
+    :param SuperCFGNode supernode: The node to work with.
+    :return: A list of out branch descriptors.
+    :rtype: list
+    """
+
+    return supernode.out_branches
+
+def address_to_text(addr, kb):
+    """
+    Properly convert an address to text for a label.
+
+    :param int addr: The address to convert.
+    :param angr.KnowledgeBase kb: The knowledgebase in use.
+    :return: Text representation of the address.
+    :rtype: str
+    """
+
+    if addr in kb.labels:
+        return kb.labels[addr]
+
+    return "loc_%#x" % addr
