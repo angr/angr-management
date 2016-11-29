@@ -99,6 +99,11 @@ def to_supergraph(transition_graph):
                     for src_, _, data_ in super_graph.in_edges([dst_supernode], data=True):
                         super_graph.add_edge(src_, src_supernode, **data_)
 
+                        if 'type' in data_ and data_['type'] == 'transition':
+                            src_supernode.register_out_branch(data_['ins_addr'], data_['stmt_idx'], data_['type'],
+                                                              dst_supernode.addr
+                                                              )
+
                     super_graph.remove_node(dst_supernode)
 
             else:
@@ -114,6 +119,11 @@ def to_supergraph(transition_graph):
                     supernodes_map[dst] = dst_supernode
 
                 super_graph.add_edge(src_supernode, dst_supernode, **data)
+
+                if 'type' in data and data['type'] == 'transition':
+                    src_supernode.register_out_branch(data['ins_addr'], data['stmt_idx'], data['type'],
+                                                      dst_supernode.addr
+                                                      )
 
     for node in function_nodes:
         in_edges = transition_graph.in_edges(node, data=True)
