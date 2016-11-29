@@ -63,7 +63,7 @@ enamldef Jumpto(Window): window:
             text = 'Address'
 
         RichField: fldAddr:
-            submit_triggers = [ 'auto_sync' ]
+            submit_triggers = [ 'auto_sync', 'return_pressed' ]
 
             key_pressed ::
                 key = change.get('value')
@@ -84,7 +84,7 @@ enamldef Jumpto(Window): window:
                     # invalid input
                     pass
                 else:
-                    r = jump_to_address(inst, disasm_wk, addr)
+                    r = jump_to_address(disasm_wk, addr)
                     if r:
                         window.close()
                     else:

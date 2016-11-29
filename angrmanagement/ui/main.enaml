@@ -7,7 +7,7 @@ from enaml.layout.api import vbox
 from enaml.layout.dock_layout import AreaLayout, HSplitLayout, VSplitLayout, TabLayout, DockBarLayout, ItemLayout, InsertItem
 from enaml.widgets.api import (
     Action, Container, DockArea, FileDialogEx, Label, MainWindow, Menu, MenuBar, Notebook, Page, PushButton,
-    IPythonConsole, Timer,
+    Timer,
     DockItem, ToolBar, StatusBar, StatusItem
 )
 
@@ -55,11 +55,12 @@ def get_current_wk(inst):
 
 def get_job_stats(inst):
     if inst:
-        return ("Ready." if len(inst.jobs) == 0 else \
-                         '%d job%s' % (len(inst.jobs), 's' if len(inst.jobs) != 1 else '')
-                )
+        if not inst.jobs:
+            return 'Ready.'
+        else:
+            return '%d job%s.' % (len(inst.jobs), 's' if len(inst.jobs) != 1 else '')
     else:
-        return "No available instance."
+        return 'No available instance.'
 
 def initialize_instance(inst, cfg_args):
     if inst is not None and len(inst.workspaces) == 0:
@@ -142,6 +143,9 @@ enamldef Main(MainWindow): main:
                 # TODO: figure out why it doesn't work
                 main.close()
 
+        main.show()
+        tmrUpdateStatus.start()
+
     title << os.path.basename(inst.proj.filename) + " - Angr Management" if inst else "Angr Management"
 
     MenuBar:
@@ -216,8 +220,17 @@ enamldef Main(MainWindow): main:
 
     StatusBar:
         StatusItem:
-            Label:
+            Label: lblStatus:
                 text << ('Ready.' if not inst.jobs else '%d job%s.' % (len(inst.jobs), 's' if len(inst.jobs) != 1 else '')) if inst else 'No available instance.'
 
+        StatusItem:
+            Label: lblProgress:
+                text = ""
+
+    Timer: tmrUpdateStatus:
+        interval = 500
+        single_shot = False
+        timeout ::
+            lblProgress.text = ('' if not inst.jobs else ('%s: progress ' % (inst.jobs[0].name)) + '{0:.2f}%...'.format(inst.jobs[0].progress_percentage))
 
 from .load_binary import LoadBinary

@@ -128,7 +128,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         out_branches = get_out_branches(loop_item)
                         func_addr = wk.selected_function.addr
                         proj = wk.proj
-                        state = find_vfg_state(wk, wk.selected_function.addr, loop_item)
+                        state = None #find_vfg_state(wk, wk.selected_function.addr, loop_item)
                         wk = cfgi.wk
 
             Timer: update_timer:
@@ -143,11 +143,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
         Container: container:
             constraints = [
-                align('h_center', container, cmd_gencfg),
-                align('v_center', container, cmd_gencfg),
+                align('h_center', container),
+                align('v_center', container),
                 (width == 500) | 'weak',
             ]
-
-            PushButton: cmd_gencfg:
-                text = "Generate CFG"
-                clicked :: wk.inst.add_job(CFGGenerationJob())
