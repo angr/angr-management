@@ -26,6 +26,7 @@ VERTICAL_ALIGN_MAP = {
 
 class QRichLabel(QLabel):
     mousePressed = Signal(QMouseEvent)
+    mouseDoubleClicked = Signal()
 
     def mousePressEvent(self, mouse_event):
         """
@@ -34,6 +35,17 @@ class QRichLabel(QLabel):
         :param QMouseEvent mouse_event: The mouse event.
         """
         self.mousePressed.emit(mouse_event)
+
+    def mouseDoubleClickEvent(self, mouse_event):
+        """
+        Handle mouse double click event.
+
+        :param QMouseEvent mouse_event: The mouse event.
+        :return: None
+        """
+
+        super(QRichLabel, self).mouseDoubleClickEvent(mouse_event)
+        self.mouseDoubleClicked.emit()
 
 
 class QtRichLabel(QtControl, ProxyRichLabel):
@@ -65,6 +77,7 @@ class QtRichLabel(QtControl, ProxyRichLabel):
         self.set_vertical_align(d.vertical_align)
         self.widget.linkActivated.connect(self.on_link_activated)
         self.widget.mousePressed.connect(self.on_mouse_pressed)
+        self.widget.mouseDoubleClicked.connect(self.on_mouse_double_clicked)
 
     #
     # Signal handlers
@@ -84,6 +97,13 @@ class QtRichLabel(QtControl, ProxyRichLabel):
         """
 
         self.declaration.mouse_pressed(mouse_event)
+
+    def on_mouse_double_clicked(self):
+        """
+        Handle the mouse double click signal.
+        """
+
+        self.declaration.mouse_double_clicked()
 
     #
     # ProxyLabel API

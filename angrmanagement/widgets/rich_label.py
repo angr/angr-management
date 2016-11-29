@@ -49,6 +49,8 @@ class RichLabel(Control):
 
     mouse_pressed = d_(Event())
 
+    mouse_double_clicked = d_(Event())
+
     #
     # Observers
     #
