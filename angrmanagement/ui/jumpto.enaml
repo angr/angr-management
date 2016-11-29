@@ -8,7 +8,7 @@ from enaml.qt.QtCore import Qt
 
 from ..widgets.rich_container import RichContainer
 from ..widgets.rich_field import RichField
-from ..utils import locate_function
+from ..utils import jump_to_address
 from .wkitem import get_inst
 
 def is_valid_addr_or_label(input):
@@ -84,13 +84,9 @@ enamldef Jumpto(Window): window:
                     # invalid input
                     pass
                 else:
-                    function = locate_function(inst, addr)
-                    if function is not None:
-                        disasm_wk.selected_function = function
-                        disasm_wk.highlighted_insns = set([addr])
-
+                    r = jump_to_address(inst, disasm_wk, addr)
+                    if r:
                         window.close()
-
                     else:
                         # it doesn't belong to any function
                         lblAddrStatus.text = "TODO: the address does not belong to any function."

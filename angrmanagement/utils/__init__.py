@@ -94,3 +94,21 @@ def address_to_text(addr, kb):
         return kb.labels[addr]
 
     return "loc_%#x" % addr
+
+def jump_to_address(disasm_wk, addr):
+    """
+    Jump to an address in a disassembly workspace.
+
+    :param disasm_wk: The disassembly workspace.
+    :param int addr: The address to jump to.
+    :return: True if successfully jumped, False otherwise.
+    :rtype: bool
+    """
+
+    function = locate_function(disasm_wk.inst, addr)
+    if function is not None:
+        disasm_wk.selected_function = function
+        disasm_wk.highlighted_insns = set([addr])
+        return True
+    else:
+        return False

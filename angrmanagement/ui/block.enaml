@@ -7,10 +7,10 @@ from angr import PathHierarchy
 from enaml.core.api import Looper, Conditional
 from enaml.layout.api import hbox, vbox, spacer
 from enaml.styling import StyleSheet, Style, Setter
-from enaml.widgets.api import Container, Label, PushButton, Menu, Action
+from enaml.widgets.api import Container, Label, PushButton, Menu, Action, Timer
 
 from ..widgets.api import RichLabel, RichContainer
-from ..utils import get_label_text, get_block_objects, address_to_text
+from ..utils import get_label_text, get_block_objects, address_to_text, jump_to_address
 
 from .wkitem import get_inst, get_wk
 from .rename_label import RenameLabel
@@ -25,10 +25,13 @@ enamldef Operand(Container): op_ui:
     attr branch_targets
     attr is_last
     attr disasm
+    attr wk
     #attr arch
     #attr thumb
     #attr stmt_idx
     #attr state = None
+
+    attr addr_jump_to = None
 
     padding = 0
 
@@ -37,6 +40,12 @@ enamldef Operand(Container): op_ui:
     constraints = [
         hbox(cntOperand, delimiter, spacing=0)
     ]
+
+    Timer: tmrJumpTo:
+        interval = 30
+        single_shot = True
+        timeout ::
+            jump_to_address(wk, addr_jump_to)
 
     Container: cntOperand:
         padding = 0
@@ -58,8 +67,12 @@ enamldef Operand(Container): op_ui:
                         iterable << branch_targets
 
                         RichLabel: lblIndirTarget:
-                            style_class = 'operand_branch_target'
+                            style_class = 'operand_branch_target_func' if loop_item in disasm.kb.functions else 'operand_branch_target'
                             text = address_to_text(loop_item, disasm.kb)
+
+                            mouse_double_clicked ::
+                                op_ui.addr_jump_to = loop_item
+                                tmrJumpTo.start()
 
                     Label: lblDelim0:
                         text = '['
@@ -75,8 +88,13 @@ enamldef Operand(Container): op_ui:
                 condition = not is_indirect_branch
 
                 RichLabel: lblDirectTarget:
-                    style_class = 'operand_branch_target'
+                    style_class = 'operand_branch_target_func' if branch_targets is not None and next(iter(branch_targets)) in disasm.kb.functions else 'operand_branch_target'
                     text = operand.render()[0]
+
+                    mouse_double_clicked ::
+                        if branch_targets is not None:
+                            op_ui.addr_jump_to = next(iter(branch_targets))
+                            tmrJumpTo.start()
 
         Conditional:
             condition = not is_branch_target
@@ -132,7 +150,7 @@ enamldef Instruction(RichContainer): insn_ui:
             text = "SymExec from %#x" % (insn.addr)
             triggered ::
                 # Create a new path group starting from this address
-                inst = get_inst(self)
+                inst = wk.inst
 
                 state = inst.proj.factory.blank_state(addr=insn.addr)
                 hierarchy = PathHierarchy(weakkey_path_mapping=True)
@@ -165,6 +183,7 @@ enamldef Instruction(RichContainer): insn_ui:
         Operand:
             operand = loop_item[1]
             operand_index = loop_item[0]
+            wk = insn_ui.wk
             insn = insn_ui.insn
             is_branch_target = insn.type in ('branch', 'call') and operand_index == insn.branch_target_operand
             is_indirect_branch = insn.branch_type == 'indirect'
@@ -217,6 +236,15 @@ enamldef Block(Container): block_ui:
             Setter:
                 field = 'color'
                 value = '#ff0000'
+
+        Style:
+            style_class = 'operand_branch_target_func'
+            Setter:
+                field = 'font'
+                value = '10pt courier new'
+            Setter:
+                field = 'color'
+                value = '#0000ff'
 
         Style:
             style_class = 'insn_selected'
