@@ -10,7 +10,7 @@ from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label, PushButton, Menu, Action, Timer
 
 from ..widgets.api import RichLabel, RichContainer
-from ..utils import get_label_text, get_block_objects, address_to_text, jump_to_address
+from ..utils import get_label_text, get_block_objects, address_to_text, jump_to_address, get_out_branches_for_insn
 
 from .wkitem import get_inst, get_wk
 from .rename_label import RenameLabel
@@ -303,7 +303,7 @@ enamldef Block(Container): block_ui:
                 state = block_ui.state
                 wk = block_ui.wk
                 disasm = block_ui.disasm
-                out_branch = out_branches.get(insn.addr, None)
+                out_branch = get_out_branches_for_insn(out_branches, insn.addr)
 
         Conditional:
             condition = isinstance(loop_item, tuple)

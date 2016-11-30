@@ -112,3 +112,24 @@ def jump_to_address(disasm_wk, addr):
         return True
     else:
         return False
+
+def get_out_branches_for_insn(out_branch_dict, ins_addr):
+
+    if ins_addr not in out_branch_dict:
+        return None
+
+    out_branch_map = out_branch_dict[ins_addr]
+
+    if len(out_branch_map) > 1 and 'default' in out_branch_map:
+        # if there are more than one targets, we return the union of non-default out branches
+        keys = out_branch_map.keys()
+        out_branch = None
+        for k in keys:
+            if k == 'default':
+                continue
+            out_branch = out_branch_map[k].copy() if out_branch is None else out_branch.merge(out_branch_map[k])
+
+        return out_branch
+
+    else:
+        return next(out_branch_map.itervalues())

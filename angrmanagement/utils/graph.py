@@ -1,5 +1,6 @@
 
 import itertools
+from collections import defaultdict
 
 import networkx
 
@@ -160,6 +161,11 @@ class OutBranch(object):
 
         self.targets |= other.targets
 
+    def copy(self):
+        o = OutBranch(self.ins_addr, self.stmt_idx, self.type)
+        o.targets = self.targets.copy()
+        return o
+
 
 class SuperCFGNode(object):
     def __init__(self, addr):
@@ -167,7 +173,7 @@ class SuperCFGNode(object):
 
         self.cfg_nodes = [ ]
 
-        self.out_branches = { }
+        self.out_branches = defaultdict(dict)
 
     @classmethod
     def from_cfgnode(cls, cfg_node):
@@ -193,10 +199,10 @@ class SuperCFGNode(object):
         self.addr = self.cfg_nodes[0].addr
 
     def register_out_branch(self, ins_addr, stmt_idx, branch_type, target_addr):
-        if ins_addr not in self.out_branches:
-            self.out_branches[ins_addr] = OutBranch(ins_addr, stmt_idx, branch_type)
+        if ins_addr not in self.out_branches or stmt_idx not in self.out_branches[ins_addr]:
+            self.out_branches[ins_addr][stmt_idx] = OutBranch(ins_addr, stmt_idx, branch_type)
 
-        self.out_branches[ins_addr].add_target(target_addr)
+        self.out_branches[ins_addr][stmt_idx].add_target(target_addr)
 
     def merge(self, other):
         """
@@ -209,11 +215,17 @@ class SuperCFGNode(object):
         for n in other.cfg_nodes:
             self.insert_cfgnode(n)
 
-        for addr, item in other.out_branches.iteritems():
-            if addr in self.out_branches:
-                self.out_branches[addr].merge(item)
+        for ins_addr, outs in other.out_branches.iteritems():
+            if ins_addr in self.out_branches:
+                for stmt_idx, item in outs.iteritems():
+                    if stmt_idx in self.out_branches[ins_addr]:
+                        self.out_branches[ins_addr][stmt_idx].merge(item)
+                    else:
+                        self.out_branches[ins_addr][stmt_idx] = item
+
             else:
-                self.out_branches[addr] = item
+                item = next(outs.itervalues())
+                self.out_branches[ins_addr][item.stmt_idx] = item
 
     def __repr__(self):
         return "<SuperCFGNode %#08x, %d blocks, %d out branches>" % (self.addr, len(self.cfg_nodes),
