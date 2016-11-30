@@ -19,7 +19,7 @@ class FunctionGraph(Atom):
     def update(self, changes):
 
         if self.function is not None:
-            supergraph = to_supergraph(self.function.graph)
+            supergraph = to_supergraph(self.function.transition_graph)
             self.edges = [(str(from_.addr), str(to.addr)) for (from_, to, data) in supergraph.edges(data=True) if
                           edge_qualifies(data)
                           ]

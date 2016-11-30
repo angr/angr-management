@@ -17,7 +17,7 @@ from .notify import notify_update
 from .wkitem import WorkspaceItem
 from ..data.jobs import CFGGenerationJob
 from ..data.function_graph import FunctionGraph
-from ..utils import get_label_text
+from ..utils import get_label_text, get_out_branches
 
 
 # enamldef CFGNode(Container):
@@ -34,6 +34,7 @@ enamldef CFGNode(Container): cfgnode:
     attr proj
     attr function
     attr node
+    attr out_branches
     attr addr
     attr func_addr
     attr state = None
@@ -51,6 +52,7 @@ enamldef CFGNode(Container): cfgnode:
     Block:
         disasm = cfgnode.disasm
         cfg_nodes = [ n for n in node.cfg_nodes ]
+        out_branches = cfgnode.out_branches
         # blocks = [ proj.factory.block(n.addr, max_size=n.size) for n in node.cfg_nodes ]
         # header = get_block_header(node.addr, disasm.kb, function=function)
         state = cfgnode.state
@@ -123,9 +125,10 @@ enamldef CFGItem(WorkspaceItem): cfgi:
                         name = str(loop_item.addr)
                         addr = loop_item.addr
                         node = loop_item
+                        out_branches = get_out_branches(loop_item)
                         func_addr = wk.selected_function.addr
                         proj = wk.proj
-                        state = find_vfg_state(wk, wk.selected_function.addr, loop_item)
+                        state = None #find_vfg_state(wk, wk.selected_function.addr, loop_item)
                         wk = cfgi.wk
 
             Timer: update_timer:
@@ -140,11 +143,7 @@ enamldef CFGItem(WorkspaceItem): cfgi:
 
         Container: container:
             constraints = [
-                align('h_center', container, cmd_gencfg),
-                align('v_center', container, cmd_gencfg),
+                align('h_center', container),
+                align('v_center', container),
                 (width == 500) | 'weak',
             ]
-
-            PushButton: cmd_gencfg:
-                text = "Generate CFG"
-                clicked :: wk.inst.add_job(CFGGenerationJob())

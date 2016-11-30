@@ -7,10 +7,13 @@ from angr import PathHierarchy
 from enaml.core.api import Looper, Conditional
 from enaml.layout.api import hbox, vbox, spacer
 from enaml.styling import StyleSheet, Style, Setter
-from enaml.widgets.api import Container, Label, PushButton, Menu, Action
+from enaml.widgets.api import Container, Label, PushButton, Menu, Action, Timer
 
 from ..widgets.api import RichLabel, RichContainer
-from ..utils import get_label_text, get_block_objects
+from ..utils import (
+    get_label_text, get_block_objects, address_to_text, jump_to_address, get_out_branches_for_insn,
+    get_string_for_display,
+)
 
 from .wkitem import get_inst, get_wk
 from .rename_label import RenameLabel
@@ -20,32 +23,97 @@ enamldef Operand(Container): op_ui:
     attr insn
     attr operand
     attr operand_index
+    attr is_branch_target
+    attr is_indirect_branch
+    attr branch_targets
     attr is_last
+    attr disasm
+    attr wk
     #attr arch
     #attr thumb
     #attr stmt_idx
     #attr state = None
+
+    attr addr_jump_to = None
 
     padding = 0
 
     # tool_tip << str(op_val(state, insn, stmt_idx, op))
 
     constraints = [
-        hbox(insn_label, delimiter, spacing=0)
+        hbox(cntOperand, delimiter, spacing=0)
     ]
 
-    RichLabel: insn_label:
-        style_class = 'insn'
-        text = operand.render()[0]
-        # text << gen_op_text(arch, get_inst(op_ui).registry, insn, op) + (',' if not last else '')
-        mouse_pressed ::
-            mouse_event = change.get('value')
-            if mouse_event.button() == 1:
-                # left click
-                if self.style_class != 'insn_selected':
-                    self.style_class = 'insn_selected'
-                else:
-                    self.style_class = 'insn'
+    Timer: tmrJumpTo:
+        interval = 30
+        single_shot = True
+        timeout ::
+            jump_to_address(wk, addr_jump_to)
+
+    Container: cntOperand:
+        padding = 0
+
+        Conditional:
+            condition = is_branch_target
+
+            Conditional:
+                condition = is_indirect_branch
+
+                Container:
+                    padding = 0
+
+                    constraints = [
+                        hbox(lblDelim0, lblIndirTargetOperand, lblDelim1, spacing=0, *sum(loopIndirTarget.items, []))
+                    ]
+
+                    Looper: loopIndirTarget:
+                        iterable << branch_targets
+
+                        RichLabel: lblIndirTarget:
+                            style_class = 'operand_branch_target_func' if loop_item in disasm.kb.functions else 'operand_branch_target'
+                            text = address_to_text(loop_item, disasm.kb)
+
+                            mouse_double_clicked ::
+                                op_ui.addr_jump_to = loop_item
+                                tmrJumpTo.start()
+
+                    Label: lblDelim0:
+                        text = '['
+
+                    RichLabel: lblIndirTargetOperand:
+                        style_class = 'insn'
+                        text = operand.render()[0]
+
+                    Label: lblDelim1:
+                        text = '] '
+
+            Conditional:
+                condition = not is_indirect_branch
+
+                RichLabel: lblDirectTarget:
+                    style_class = 'operand_branch_target_func' if branch_targets is not None and next(iter(branch_targets)) in disasm.kb.functions else 'operand_branch_target'
+                    text = operand.render()[0]
+
+                    mouse_double_clicked ::
+                        if branch_targets is not None:
+                            op_ui.addr_jump_to = next(iter(branch_targets))
+                            tmrJumpTo.start()
+
+        Conditional:
+            condition = not is_branch_target
+
+            RichLabel: lblOperand:
+                style_class = 'insn'
+                text = operand.render()[0]
+
+                mouse_pressed ::
+                    mouse_event = change.get('value')
+                    if mouse_event.button() == 1:
+                        # left click
+                        if self.style_class != 'insn_selected':
+                            self.style_class = 'insn_selected'
+                        else:
+                            self.style_class = 'insn'
 
     Label: delimiter:
         style_class = 'insn'
@@ -56,14 +124,16 @@ enamldef Instruction(RichContainer): insn_ui:
     attr arch
     attr thumb
     attr stmt_idx
+    attr out_branch
     attr state = None
     attr is_onfocus
     attr wk
+    attr disasm
 
     padding = 0
 
     constraints = [
-        hbox(address, mnemonic, spacing=5, *sum(operands_loop.items + [[spacer]], []))
+        hbox(address, mnemonic, spacing=5, *(sum(operands_loop.items + [[spacer]], []) + condDataRef.items))
     ]
 
     is_onfocus << insn.addr in insn_ui.wk.highlighted_insns
@@ -83,7 +153,7 @@ enamldef Instruction(RichContainer): insn_ui:
             text = "SymExec from %#x" % (insn.addr)
             triggered ::
                 # Create a new path group starting from this address
-                inst = get_inst(self)
+                inst = wk.inst
 
                 state = inst.proj.factory.blank_state(addr=insn.addr)
                 hierarchy = PathHierarchy(weakkey_path_mapping=True)
@@ -116,13 +186,30 @@ enamldef Instruction(RichContainer): insn_ui:
         Operand:
             operand = loop_item[1]
             operand_index = loop_item[0]
+            wk = insn_ui.wk
             insn = insn_ui.insn
+            is_branch_target = insn.type in ('branch', 'call') and operand_index == insn.branch_target_operand
+            is_indirect_branch = insn.branch_type == 'indirect'
+            branch_targets = (out_branch.targets if out_branch is not None else None) if is_branch_target else None
+            disasm = insn_ui.disasm
             #arch = insn_ui.arch
             #insn = insn_ui.insn
             #thumb = insn_ui.thumb
             #stmt_idx = insn_ui.stmt_idx
             is_last = operand_index == len(insn_ui.insn.operands) - 1
             #state << insn_ui.state
+
+    Conditional: condDataRef:
+        condition = insn.addr in wk.inst.cfg._insn_addr_to_memory_data
+
+        Container:
+            padding = 0
+
+            Conditional:
+                condition = wk.inst.cfg._insn_addr_to_memory_data[insn.addr].sort == 'string'
+
+                RichLabel: lblStringData:
+                    text = get_string_for_display(wk.inst.cfg._insn_addr_to_memory_data[insn.addr])
 
 
 enamldef Block(Container): block_ui:
@@ -131,6 +218,7 @@ enamldef Block(Container): block_ui:
     attr state = None
     attr wk
     attr addr
+    attr out_branches
 
     style_class = 'block'
     padding = 0
@@ -154,6 +242,24 @@ enamldef Block(Container): block_ui:
             #Setter:
             #    field = 'border'
             #    value = '2px solid blue'
+
+        Style:
+            style_class = 'operand_branch_target'
+            Setter:
+                field = 'font'
+                value = '10pt courier new'
+            Setter:
+                field = 'color'
+                value = '#ff0000'
+
+        Style:
+            style_class = 'operand_branch_target_func'
+            Setter:
+                field = 'font'
+                value = '10pt courier new'
+            Setter:
+                field = 'color'
+                value = '#0000ff'
 
         Style:
             style_class = 'insn_selected'
@@ -211,6 +317,8 @@ enamldef Block(Container): block_ui:
                 # stmt_idx = next(i for (i, stmt) in reversed(list(enumerate(block.vex.statements))) if stmt.tag == 'Ist_IMark' and stmt.addr == loop_item.addr)
                 state = block_ui.state
                 wk = block_ui.wk
+                disasm = block_ui.disasm
+                out_branch = get_out_branches_for_insn(out_branches, insn.addr)
 
         Conditional:
             condition = isinstance(loop_item, tuple)

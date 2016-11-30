@@ -3,12 +3,18 @@ import networkx
 from .registry import CodeAddressEntry, FunctionEntry, Registry
 
 class Job(object):
+    def __init__(self, name):
+        self.name = name
+        self.progress_percentage = 0.
+
     def run(self, inst):
         raise NotImplementedError()
 
     def finish(self, inst, result):
         inst.jobs = inst.jobs[1:]
 
+    def _progress_callback(self, percentage):
+        self.progress_percentage = percentage
 
 class CFGGenerationJob(Job):
 
@@ -18,7 +24,7 @@ class CFGGenerationJob(Job):
     }
 
     def __init__(self, **kwargs):
-        super(CFGGenerationJob, self).__init__()
+        super(CFGGenerationJob, self).__init__(name='CFG generation')
 
         # TODO: sanitize arguments
 
@@ -31,7 +37,9 @@ class CFGGenerationJob(Job):
         self.cfg_args = cfg_args
 
     def run(self, inst):
-        return inst.proj.analyses.CFG(resolve_indirect_jumps=True, normalize=True)
+        return inst.proj.analyses.CFG(progress_callback=self._progress_callback,
+                                      **self.cfg_args
+                                      )
 
     def finish(self, inst, result):
         super(CFGGenerationJob, self).finish(inst, result)
@@ -56,7 +64,7 @@ def noop(_new_pg):
 
 class PGStepJob(Job):
     def __init__(self, pg, callback=noop, until_branch=False):
-        super(PGStepJob, self).__init__()
+        super(PGStepJob, self).__init__('PathGroup stepping')
         self._pg = pg
         self._callback = callback
         self._until_branch = until_branch
@@ -87,7 +95,7 @@ class PGStepJob(Job):
 
 class VFGGenerationJob(Job):
     def __init__(self, addr):
-        super(VFGGenerationJob, self).__init__()
+        super(VFGGenerationJob, self).__init__('VFG generation')
         self._addr = addr
 
     def run(self, inst):
@@ -103,7 +111,7 @@ class VFGGenerationJob(Job):
 
 class DDGGenerationJob(Job):
     def __init__(self, addr):
-        super(DDGGenerationJob, self).__init__()
+        super(DDGGenerationJob, self).__init__('DDG generation')
         self._addr = addr
 
     def run(self, inst):
