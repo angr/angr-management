@@ -37,8 +37,8 @@ class CFGGenerationJob(Job):
         self.cfg_args = cfg_args
 
     def run(self, inst):
-        return inst.proj.analyses.CFG(resolve_indirect_jumps=True, normalize=True,
-                                      progress_callback=self._progress_callback
+        return inst.proj.analyses.CFG(progress_callback=self._progress_callback,
+                                      **self.cfg_args
                                       )
 
     def finish(self, inst, result):
