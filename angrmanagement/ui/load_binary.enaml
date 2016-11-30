@@ -45,6 +45,10 @@ enamldef LoadBinary(Dialog): window:
                             text = "Resolve indirect jumps"
                             checked = True
 
+                        CheckBox: chkCollectDataRefs:
+                            text = "Collect cross-references and infer data types."
+                            checked = True
+
         PushButton: btnOK:
             text = 'OK'
 
@@ -52,6 +56,7 @@ enamldef LoadBinary(Dialog): window:
                 # initialize CFG arguments
                 cfg_args = {
                     'resolve_indirect_jumps': chkResolveIndirJumps.checked,
+                    'collect_data_references': chkCollectDataRefs.checked
                 }
 
                 # close the window first
