@@ -23,7 +23,7 @@ from .pathgroup import PathGroupItem
 from .pathtree import PathTreeItem
 from .cfg import CFGItem
 from .functions import FunctionManagerItem
-from .console import DisasmConsoleItem, SymexecConsoleItem
+# from .console import DisasmConsoleItem, SymexecConsoleItem
 
 
 def gen_static_wk(inst):
@@ -32,8 +32,8 @@ def gen_static_wk(inst):
     view = DisasmGraphView(name='Disassembly View', sort='disassembly', layout=layout, inst=inst)
     cfg = CFGItem(name='cfg', wk=view)
     funcs = FunctionManagerItem(name='funcs', wk=view)
-    console = DisasmConsoleItem(name='console', wk=view)
-    view.items = [cfg, funcs, console]
+    # console = DisasmConsoleItem(name='console', wk=view)
+    view.items = [cfg, funcs] #, console]
 
     return view
 
@@ -45,8 +45,8 @@ def gen_symbolic_wk(inst):
     path_group = PathGroupItem(name='path_group', wk=view)
     regs = RegistersItem(name='regs', wk=view)
     mem = MemoryItem(name='mem', wk=view)
-    console = SymexecConsoleItem(name='console', wk=view)
-    view.items = [path_tree, path_group, regs, mem, console]
+    # console = SymexecConsoleItem(name='console', wk=view)
+    view.items = [path_tree, path_group, regs, mem] #, console]
 
     return view
 

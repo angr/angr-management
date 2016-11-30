@@ -133,3 +133,15 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
 
     else:
         return next(out_branch_map.itervalues())
+
+def get_string_for_display(memory_data):
+
+    MAX_SIZE = 10
+
+    if memory_data.content is not None:
+        if memory_data.size > MAX_SIZE:
+            return '"' + memory_data.content[:10] + '...\"'
+        else:
+            return '"' + memory_data.content + '"'
+    else:
+        return '<Unknown>'

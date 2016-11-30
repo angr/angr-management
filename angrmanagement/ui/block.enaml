@@ -10,7 +10,10 @@ from enaml.styling import StyleSheet, Style, Setter
 from enaml.widgets.api import Container, Label, PushButton, Menu, Action, Timer
 
 from ..widgets.api import RichLabel, RichContainer
-from ..utils import get_label_text, get_block_objects, address_to_text, jump_to_address, get_out_branches_for_insn
+from ..utils import (
+    get_label_text, get_block_objects, address_to_text, jump_to_address, get_out_branches_for_insn,
+    get_string_for_display,
+)
 
 from .wkitem import get_inst, get_wk
 from .rename_label import RenameLabel
@@ -130,7 +133,7 @@ enamldef Instruction(RichContainer): insn_ui:
     padding = 0
 
     constraints = [
-        hbox(address, mnemonic, spacing=5, *sum(operands_loop.items + [[spacer]], []))
+        hbox(address, mnemonic, spacing=5, *(sum(operands_loop.items + [[spacer]], []) + condDataRef.items))
     ]
 
     is_onfocus << insn.addr in insn_ui.wk.highlighted_insns
@@ -195,6 +198,18 @@ enamldef Instruction(RichContainer): insn_ui:
             #stmt_idx = insn_ui.stmt_idx
             is_last = operand_index == len(insn_ui.insn.operands) - 1
             #state << insn_ui.state
+
+    Conditional: condDataRef:
+        condition = insn.addr in wk.inst.cfg._insn_addr_to_memory_data
+
+        Container:
+            padding = 0
+
+            Conditional:
+                condition = wk.inst.cfg._insn_addr_to_memory_data[insn.addr].sort == 'string'
+
+                RichLabel: lblStringData:
+                    text = get_string_for_display(wk.inst.cfg._insn_addr_to_memory_data[insn.addr])
 
 
 enamldef Block(Container): block_ui:
