@@ -4,6 +4,9 @@ projects
 *.pyc
 *.pyo
 *.egg-info
+dist
+build
+MANIFEST
 
 # vim temp files
 *.swp
