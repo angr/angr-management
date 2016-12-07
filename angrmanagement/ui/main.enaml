@@ -129,13 +129,13 @@ enamldef Workspace(Page): wk:
 
 enamldef Main(MainWindow): main:
     attr app
-    attr inst
+    attr inst = None
     attr ida_conn = None
 
     attr file_to_open  # coming from sys.argv[1]
 
     initialized ::
-        if file_to_open is not None:
+        if inst is None and file_to_open is not None:
             open_load_binary_window(file_to_open, main)
 
             if main.inst is None:
