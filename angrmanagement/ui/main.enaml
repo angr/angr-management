@@ -231,6 +231,6 @@ enamldef Main(MainWindow): main:
         interval = 500
         single_shot = False
         timeout ::
-            lblProgress.text = ('' if not inst.jobs else ('%s: progress ' % (inst.jobs[0].name)) + '{0:.2f}%...'.format(inst.jobs[0].progress_percentage))
+            lblProgress.text = ('' if not inst or not inst.jobs else ('%s: progress ' % (inst.jobs[0].name)) + '{0:.2f}%...'.format(inst.jobs[0].progress_percentage))
 
 from .load_binary import LoadBinary
