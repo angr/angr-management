@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='angr-management',
-    version='5.6.12.3',
+    version='6.7.1.13',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=packages,
