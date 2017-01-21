@@ -200,16 +200,16 @@ enamldef Instruction(RichContainer): insn_ui:
             #state << insn_ui.state
 
     Conditional: condDataRef:
-        condition = insn.addr in wk.inst.cfg._insn_addr_to_memory_data
+        condition = insn.addr in wk.inst.cfg.insn_addr_to_memory_data
 
         Container:
             padding = 0
 
             Conditional:
-                condition = wk.inst.cfg._insn_addr_to_memory_data[insn.addr].sort == 'string'
+                condition = wk.inst.cfg.insn_addr_to_memory_data[insn.addr].sort == 'string'
 
                 RichLabel: lblStringData:
-                    text = get_string_for_display(wk.inst.cfg._insn_addr_to_memory_data[insn.addr])
+                    text = get_string_for_display(wk.inst.cfg.insn_addr_to_memory_data[insn.addr])
 
 
 enamldef Block(Container): block_ui:
