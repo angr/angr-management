@@ -25,10 +25,21 @@ def to_supergraph(transition_graph):
     edges_to_shrink = set()
 
     # Find all edges to remove in the super graph
-    for n in transition_graph.nodes_iter():
-        edges = transition_graph[n]
+    for src in transition_graph.nodes_iter():
+        edges = transition_graph[src]
 
-        if any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
+        # there are two types of edges we want to remove:
+        # - call or fakerets, since we do not want blocks to break at calls
+        # - boring jumps that directly transfer the control to the block immediately after the current block. this is
+        #   usually caused by how VEX breaks down basic blocks, which happens very often in MIPS
+
+
+
+        if len(edges) == 1 and src.addr + src.size == next(edges.iterkeys()).addr:
+            dst = next(edges.iterkeys())
+            edges_to_shrink.add((src, dst))
+            continue
+        elif any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
             continue
 
         for dst, data in edges.iteritems():
@@ -37,7 +48,7 @@ def to_supergraph(transition_graph):
             if 'type' in data and data['type'] == 'fake_return':
                 if all(iter('type' in data and data['type'] in ('fake_return', 'return_from_call')
                             for _, _, data in transition_graph.in_edges(dst, data=True))):
-                    edges_to_shrink.add((n, dst))
+                    edges_to_shrink.add((src, dst))
                 break
 
     # Create the super graph
@@ -89,8 +100,8 @@ def to_supergraph(transition_graph):
                 if dst_supernode is not None:
                     src_supernode.merge(dst_supernode)
 
-                    for n in dst_supernode.cfg_nodes:
-                        supernodes_map[n] = src_supernode
+                    for src in dst_supernode.cfg_nodes:
+                        supernodes_map[src] = src_supernode
 
                     # link all out edges of dst_supernode to src_supernode
                     for dst_, data_ in super_graph[dst_supernode].iteritems():

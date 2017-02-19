@@ -14,11 +14,9 @@ setup(
     url='https://github.com/angr/angr-management',
     packages=packages,
     package_data={
-        'angrmanagement.ui': ['*.enaml']
     },
     install_requires=[
         'angr',
-        'enaml==0.9.8',
         'pygments',
         'websocket-client',
         'grandalf',
