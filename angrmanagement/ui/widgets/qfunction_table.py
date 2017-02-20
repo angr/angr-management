@@ -1,5 +1,5 @@
 
-from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemView
+from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemView, QHeaderView
 from PySide.QtCore import Qt, QSize
 
 
@@ -56,6 +56,9 @@ class QFunctionTable(QTableWidget):
         self.setHorizontalHeaderLabels([ 'Name', 'Address', 'Size', 'Blocks' ])
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
 
+        self.verticalHeader().setResizeMode(QHeaderView.Fixed)
+        self.verticalHeader().setDefaultSectionSize(24)
+
         self._functions = None
         self.items = [ ]
 
@@ -65,6 +68,8 @@ class QFunctionTable(QTableWidget):
     def set_functions(self, functions):
         self._functions = functions
         self.reload()
+
+        self.resizeColumnsToContents()
 
     def reload(self):
 
