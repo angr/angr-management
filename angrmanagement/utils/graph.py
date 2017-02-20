@@ -12,6 +12,7 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return itertools.izip_longest(*args, fillvalue=fillvalue)
 
+
 def to_supergraph(transition_graph):
     """
     Convert transition graph of a function to a super transition graph. A super transition graph is a graph that looks
@@ -21,6 +22,16 @@ def to_supergraph(transition_graph):
     :return: A converted super transition graph
     :rtype networkx.DiGraph
     """
+
+    # make a copy of the graph
+    transition_graph = networkx.DiGraph(transition_graph)
+
+    # remove all edges that transitions to outside
+    for src, dst, data in transition_graph.edges(data=True):
+        if data['type'] == 'transition' and data.get('outside', False) is True:
+            transition_graph.remove_edge(src, dst)
+        if transition_graph.in_degree(dst) == 0:
+            transition_graph.remove_node(dst)
 
     edges_to_shrink = set()
 
