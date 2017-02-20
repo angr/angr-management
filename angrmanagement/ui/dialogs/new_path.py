@@ -1,10 +1,10 @@
 
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
+from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout
 from PySide.QtCore import Qt
 
 from angr import PathHierarchy
 
-from ..widgets import QAddressInput
+from ..widgets import QAddressInput, QStateComboBox
 
 
 class NewPath(QDialog):
@@ -18,6 +18,7 @@ class NewPath(QDialog):
 
         self._address_box = None
         self._status_label = None
+        self._init_state_combo = None
         self._ok_button = None
 
         self.setWindowTitle('New Path')
@@ -38,6 +39,8 @@ class NewPath(QDialog):
 
     def _init_widgets(self):
 
+        layout = QGridLayout()
+
         # address label
 
         address_label = QLabel(self)
@@ -46,10 +49,19 @@ class NewPath(QDialog):
         address = QAddressInput(None, parent=self, default="%#x" % self._addr)
         self._address_box = address
 
-        address_layout = QHBoxLayout()
-        address_layout.addWidget(address_label)
-        address_layout.addWidget(address)
-        self.main_layout.addLayout(address_layout)
+        layout.addWidget(address_label, 0, 0)
+        layout.addWidget(address, 0, 1)
+
+        # initial state
+
+        state_label = QLabel(self)
+        state_label.setText('Initial state')
+
+        init_state_combo = QStateComboBox(self._workspace.instance.states, self)
+        self._init_state_combo = init_state_combo
+
+        layout.addWidget(state_label, 1, 0)
+        layout.addWidget(init_state_combo, 1, 1)
 
         # buttons
 
@@ -66,6 +78,7 @@ class NewPath(QDialog):
         buttons_layout.addWidget(ok_button)
         buttons_layout.addWidget(cancel_button)
 
+        self.main_layout.addLayout(layout)
         self.main_layout.addLayout(buttons_layout)
 
     #
@@ -99,7 +112,11 @@ class NewPath(QDialog):
     def _new_path(self, addr):
         inst = self._workspace.instance
 
-        state = inst.project.factory.blank_state(addr=addr)
+        state_record = self._init_state_combo.state_record
+        if state_record is None:
+            return False
+
+        state = state_record.state(inst.project, address=addr)
         hierarchy = PathHierarchy(weakkey_path_mapping=True)
         pg = inst.project.factory.path_group(state, hierarchy=hierarchy)
         inst.path_groups.add_pathgroup(pg=pg)

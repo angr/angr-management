@@ -4,7 +4,7 @@ from collections import defaultdict
 from PySide.QtGui import QDockWidget
 from PySide.QtCore import Qt
 
-from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView
+from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView, StatesView
 
 
 class Workspace(object):
@@ -21,6 +21,7 @@ class Workspace(object):
             FunctionsView(self, 'left'),
             DisassemblyView(self, 'right'),
             SymexecView(self, 'right'),
+            StatesView(self, 'right'),
         ]
 
         for tab in default_tabs:

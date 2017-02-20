@@ -16,8 +16,7 @@ class FunctionsView(BaseView):
         self._init_widgets()
 
     def reload(self):
-        self._function_table.set_functions(self.workspace.instance.cfg.functions)
-        self._function_table.reload()
+        self._function_table.function_manager = self.workspace.instance.cfg.functions
 
     def sizeHint(self):
         return QSize(260, 800)

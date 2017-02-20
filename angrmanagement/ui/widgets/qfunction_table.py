@@ -65,10 +65,14 @@ class QFunctionTable(QTableWidget):
         self.itemDoubleClicked.connect(self._on_function_selected)
         self.cellDoubleClicked.connect(self._on_function_selected)
 
-    def set_functions(self, functions):
+    @property
+    def function_manager(self):
+        return self._functions
+
+    @function_manager.setter
+    def function_manager(self, functions):
         self._functions = functions
         self.reload()
-
         self.resizeColumnsToContents()
 
     def reload(self):

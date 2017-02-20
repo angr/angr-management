@@ -8,6 +8,7 @@ from angr import CFG, PathGroup, Project, PathHierarchy
 from .jobs import PGStepJob
 from .jobs import CFGGenerationJob
 from ..logic.threads import gui_thread_schedule
+from .states import StateManager
 
 
 class PathGroups(object):
@@ -57,6 +58,7 @@ class Instance(object):
         self.jobs = []
         self._jobs_queue = Queue()
         self.path_groups = PathGroups(instance=self, project=self.project)
+        self.states = StateManager(instance=self, project=self.project)
 
         self._start_worker()
 
