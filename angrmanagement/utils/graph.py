@@ -37,9 +37,12 @@ def to_supergraph(transition_graph):
 
         if len(edges) == 1 and src.addr + src.size == next(edges.iterkeys()).addr:
             dst = next(edges.iterkeys())
-            edges_to_shrink.add((src, dst))
-            continue
-        elif any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
+            dst_in_edges = transition_graph.in_edges(dst)
+            if len(dst_in_edges) == 1:
+                edges_to_shrink.add((src, dst))
+                continue
+
+        if any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
             continue
 
         for dst, data in edges.iteritems():
@@ -167,10 +170,12 @@ class OutBranch(object):
         """
 
         assert self.ins_addr == other.ins_addr
-        assert self.stmt_idx == other.stmt_idx
         assert self.type == other.type
 
-        self.targets |= other.targets
+        o = self.copy()
+        o.targets |= other.targets
+
+        return o
 
     def copy(self):
         o = OutBranch(self.ins_addr, self.stmt_idx, self.type)
@@ -210,6 +215,8 @@ class SuperCFGNode(object):
         self.addr = self.cfg_nodes[0].addr
 
     def register_out_branch(self, ins_addr, stmt_idx, branch_type, target_addr):
+        if ins_addr == 0x400626:
+            import ipdb; ipdb.set_trace()
         if ins_addr not in self.out_branches or stmt_idx not in self.out_branches[ins_addr]:
             self.out_branches[ins_addr][stmt_idx] = OutBranch(ins_addr, stmt_idx, branch_type)
 

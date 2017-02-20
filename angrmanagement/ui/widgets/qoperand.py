@@ -1,5 +1,9 @@
 
+import logging
+
 from PySide.QtGui import QFrame, QLabel, QHBoxLayout, QSizePolicy
+
+l = logging.getLogger('ui.widgets.qoperand')
 
 
 class QOperandBranchTarget(QLabel):
@@ -43,6 +47,43 @@ class QOperand(QFrame):
 
         self._init_widgets()
 
+    #
+    # Private methods
+    #
+
+    def _branch_target_for_operand(self, operand, branch_targets):
+        if not branch_targets:
+            return None
+
+        if len(branch_targets) == 1:
+            return next(iter(branch_targets))
+
+        # there are more than one targets
+        # we pick the one that complies with the operand's text
+        # my solution is pretty hackish...
+
+        if operand.cs_operand.type == 2:
+            imm = operand.cs_operand.imm
+            if imm in branch_targets:
+                # problem solved
+                return imm
+            else:
+                # umm why?
+                pass
+
+        # try to render it
+        rendered = operand.render()[0]
+        for t in branch_targets:
+            if "%x" % t == rendered or "%#x" == rendered:
+                return t
+            if t == rendered:
+                return t
+
+        # ouch not sure what to do
+        l.warning('Cannot determine branch targets for operand "%s". Please report on GitHub.', rendered)
+        # return a random one
+        return next(iter(branch_targets))
+
     def _init_widgets(self):
 
         layout = QHBoxLayout()
@@ -63,9 +104,11 @@ class QOperand(QFrame):
                 else:
                     # jumping to a non-function address
                     is_target_func = False
+
+                the_branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
                 label = QOperandBranchTarget(self.disasm_view,
                                              self.operand.render()[0],
-                                             None if self.branch_targets is None else next(iter(self.branch_targets)),
+                                             the_branch_target,
                                              is_target_func,
                                              self
                                              )
