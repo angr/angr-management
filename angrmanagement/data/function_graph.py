@@ -1,29 +1,24 @@
 
-from atom.api import Atom, List, Int, Bool, Typed, observe
-
-from enaml.core.api import d_
-
 from ..utils.graph import to_supergraph
 
 def edge_qualifies(data):
     return data['type'] not in ('call', 'return_from_call')
 
-class FunctionGraph(Atom):
-    function = d_(Typed(object))
-    edges = List()
-    supergraph = d_(Typed(object))
+class FunctionGraph(object):
 
-    ready = Bool(False)
+    def __init__(self, function):
+        self.function = function
+        self.edges = None
+        self._supergraph = None
 
-    @observe('function')
-    def update(self, changes):
+    @property
+    def supergraph(self):
+        if self._supergraph is not None:
+            return self._supergraph
 
-        if self.function is not None:
-            supergraph = to_supergraph(self.function.transition_graph)
-            self.edges = [(str(from_.addr), str(to.addr)) for (from_, to, data) in supergraph.edges(data=True) if
-                          edge_qualifies(data)
-                          ]
+        self._supergraph =to_supergraph(self.function.transition_graph)
+        self.edges = [(str(from_.addr), str(to.addr)) for (from_, to, data) in self._supergraph.edges(data=True) if
+                      edge_qualifies(data)
+                      ]
 
-            # do it in the end, since supergraph is being observed on by the UI
-            # self.edges must be initialized before UI draws any CFGNode
-            self.supergraph = supergraph
+        return self._supergraph

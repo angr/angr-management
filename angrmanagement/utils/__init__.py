@@ -23,6 +23,7 @@ def locate_function(inst, addr):
 
     return None
 
+
 def get_label_text(addr, kb, function=None):
 
     if addr in kb.labels:
@@ -69,6 +70,7 @@ def get_block_objects(disasm, nodes):
 
     return lst
 
+
 def get_out_branches(supernode):
     """
     Get a list of descriptors of branches going out from the supernode.
@@ -79,6 +81,7 @@ def get_out_branches(supernode):
     """
 
     return supernode.out_branches
+
 
 def address_to_text(addr, kb):
     """
@@ -94,24 +97,6 @@ def address_to_text(addr, kb):
         return kb.labels[addr]
 
     return "loc_%#x" % addr
-
-def jump_to_address(disasm_wk, addr):
-    """
-    Jump to an address in a disassembly workspace.
-
-    :param disasm_wk: The disassembly workspace.
-    :param int addr: The address to jump to.
-    :return: True if successfully jumped, False otherwise.
-    :rtype: bool
-    """
-
-    function = locate_function(disasm_wk.inst, addr)
-    if function is not None:
-        disasm_wk.selected_function = function
-        disasm_wk.highlighted_insns = set([addr])
-        return True
-    else:
-        return False
 
 def get_out_branches_for_insn(out_branch_dict, ins_addr):
 
@@ -134,14 +119,40 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
     else:
         return next(out_branch_map.itervalues())
 
-def get_string_for_display(memory_data):
 
-    MAX_SIZE = 10
+def should_display_string_label(cfg, insn_addr):
+    memory_data = cfg.insn_addr_to_memory_data[insn_addr]
+    if memory_data.sort == 'string':
+        return True
+    elif memory_data.sort == 'pointer-array' and memory_data.size == cfg.project.arch.bits / 8:
+        # load the pointer
+        ptr = cfg._fast_memory_load_pointer(memory_data.address)
+        try:
+            # see if the pointer is pointing to a string
+            return cfg.memory_data[ptr].sort == 'string'
+        except KeyError:
+            return False
 
-    if memory_data.content is not None:
-        if memory_data.size > MAX_SIZE:
-            return '"' + memory_data.content[:10] + '...\"'
-        else:
-            return '"' + memory_data.content + '"'
+    return False
+
+
+def get_string_for_display(cfg, memory_data):
+
+    MAX_SIZE = 20
+
+    str_content = None
+
+    if memory_data.sort == "string":
+        str_content = memory_data.content
+    elif memory_data.sort == 'pointer-array':
+        ptr = cfg._fast_memory_load_pointer(memory_data.address)
+        if ptr in cfg.memory_data:
+            next_level = cfg.memory_data[ptr]
+            if next_level.sort == 'string':
+                str_content = next_level.content
+
+    if str_content is not None:
+        if len(str_content) > MAX_SIZE: return '"' + str_content[:MAX_SIZE] + '..."'
+        else: return '"' + str_content + '"'
     else:
         return '<Unknown>'

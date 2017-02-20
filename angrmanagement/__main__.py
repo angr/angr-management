@@ -1,26 +1,23 @@
+
 import sys
+import thread
 
-import enaml
-from enaml.qt.qt_application import QtApplication
+from PySide.QtGui import QApplication
 
-from .data.instance import Instance
-import angr
+from .logic import GlobalInfo
+from .ui.css import CSS
+from .ui.main_window import MainWindow
+
 
 def main():
-    with enaml.imports():
-        from ui.main import Main
+    app = QApplication(sys.argv)
 
-    if len(sys.argv) >= 2:
-        file_to_open = sys.argv[1]
-    else:
-        file_to_open = None
+    GlobalInfo.gui_thread = thread.get_ident()
+    GlobalInfo.main_window = MainWindow(file_to_open=sys.argv[1] if len(sys.argv) > 1 else None)
 
-    app = QtApplication()
+    app.setStyleSheet(CSS.global_css())
 
-    view = Main(file_to_open=file_to_open, app=app)
-    view.show()
-
-    app.start()
+    app.exec_()
 
 if __name__ == '__main__':
     main()

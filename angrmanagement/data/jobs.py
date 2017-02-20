@@ -1,6 +1,5 @@
 import networkx
 
-from .registry import CodeAddressEntry, FunctionEntry, Registry
 
 class Job(object):
     def __init__(self, name):
@@ -37,22 +36,23 @@ class CFGGenerationJob(Job):
         self.cfg_args = cfg_args
 
     def run(self, inst):
-        return inst.proj.analyses.CFG(progress_callback=self._progress_callback,
-                                      **self.cfg_args
-                                      )
+        return inst.project.analyses.CFG(progress_callback=self._progress_callback,
+                                         **self.cfg_args
+                                         )
 
     def finish(self, inst, result):
         super(CFGGenerationJob, self).finish(inst, result)
 
-        offsets = inst.registry.offsets.copy()
-        for node in result.nodes():
-            offsets[node.addr] = CodeAddressEntry(address=node.addr)
-        for func in result.kb.functions.values():
-            offsets[func.addr] = FunctionEntry(function=func)
+        #offsets = inst.registry.offsets.copy()
+        #for node in result.nodes():
+        #    offsets[node.addr] = CodeAddressEntry(address=node.addr)
+        #for func in result.kb.functions.values():
+        #    offsets[func.addr] = FunctionEntry(function=func)
 
         # This is sort of a hack to get it to propagate the update.
         # Perhaps this model is better in an immutable language...
-        inst.registry = Registry(offsets=offsets)
+        #inst.registry = Registry(offsets=offsets)
+
         inst.cfg = result
 
     def __repr__(self):
@@ -99,7 +99,7 @@ class VFGGenerationJob(Job):
         self._addr = addr
 
     def run(self, inst):
-        return inst.proj.analyses.VFG(function_start=self._addr)
+        return inst.project.analyses.VFG(function_start=self._addr)
 
     def finish(self, inst, result):
         super(VFGGenerationJob, self).finish(inst, result)
@@ -115,7 +115,7 @@ class DDGGenerationJob(Job):
         self._addr = addr
 
     def run(self, inst):
-        ddg = inst.proj.analyses.VSA_DDG(vfg=inst.vfgs[self._addr], start_addr=self._addr)
+        ddg = inst.project.analyses.VSA_DDG(vfg=inst.vfgs[self._addr], start_addr=self._addr)
         return (ddg, networkx.relabel_nodes(ddg.graph, lambda n: n.insn_addr))
 
     def finish(self, inst, result):
