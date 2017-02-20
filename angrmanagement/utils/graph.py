@@ -215,8 +215,6 @@ class SuperCFGNode(object):
         self.addr = self.cfg_nodes[0].addr
 
     def register_out_branch(self, ins_addr, stmt_idx, branch_type, target_addr):
-        if ins_addr == 0x400626:
-            import ipdb; ipdb.set_trace()
         if ins_addr not in self.out_branches or stmt_idx not in self.out_branches[ins_addr]:
             self.out_branches[ins_addr][stmt_idx] = OutBranch(ins_addr, stmt_idx, branch_type)
 
