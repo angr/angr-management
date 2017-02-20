@@ -59,7 +59,8 @@ class QFunctionTable(QTableWidget):
         self._functions = None
         self.items = [ ]
 
-        self.itemSelectionChanged.connect(self._on_function_selected)
+        self.itemDoubleClicked.connect(self._on_function_selected)
+        self.cellDoubleClicked.connect(self._on_function_selected)
 
     def set_functions(self, functions):
         self._functions = functions
@@ -86,7 +87,7 @@ class QFunctionTable(QTableWidget):
         if 0 <= current_row < len(self.items):
             self.setCurrentIndex(current_row)
 
-    def _on_function_selected(self):
+    def _on_function_selected(self, *args):
         selected_index = self.currentRow()
         if 0 <= selected_index < len(self.items):
             selected_item = self.items[selected_index]
