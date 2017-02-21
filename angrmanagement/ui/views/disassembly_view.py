@@ -1,10 +1,10 @@
 
-from PySide.QtGui import QHBoxLayout, QMenu, QApplication
+from PySide.QtGui import QVBoxLayout, QMenu, QApplication
 from PySide.QtCore import Qt, QSize
 
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
-from ..widgets.qdisasm_graph import QDisasmGraph
+from ..widgets import QDisasmGraph, QDisasmStatusBar
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.new_path import NewPath
@@ -19,6 +19,7 @@ class DisassemblyView(BaseView):
         self.caption = 'Disassembly'
 
         self._flow_graph = None
+        self._statusbar = None
 
         self._insn_menu = None
 
@@ -77,9 +78,13 @@ class DisassemblyView(BaseView):
     #
 
     def display_function(self, function):
+
+        # set status bar
+        self._statusbar.function = function
+
         # clear existing selected instructions
         self._flow_graph.selected_insns.clear()
-
+        # set function graph
         self._flow_graph.function_graph = FunctionGraph(function=function)
 
     def toggle_instruction_selection(self, insn_addr):
@@ -128,8 +133,11 @@ class DisassemblyView(BaseView):
 
         self._flow_graph = QDisasmGraph(self.workspace, self)
 
-        hlayout = QHBoxLayout()
+        self._statusbar = QDisasmStatusBar(self)
+
+        hlayout = QVBoxLayout()
         hlayout.addWidget(self._flow_graph)
+        hlayout.addWidget(self._statusbar)
 
         self.setLayout(hlayout)
 
