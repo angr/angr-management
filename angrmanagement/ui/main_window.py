@@ -1,7 +1,8 @@
 
 import sys
+import os
 
-from PySide.QtGui import QMainWindow, QDockWidget, QListWidget, QTabWidget
+from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog
 from PySide.QtCore import Qt, QSize, QEvent
 
 import angr
@@ -34,12 +35,7 @@ class MainWindow(QMainWindow):
 
         if file_to_open is not None:
             # load a binary
-            load_binary_dialog = LoadBinary(file_to_open)
-            load_binary_dialog.exec_()
-
-            if load_binary_dialog.cfg_args is not None:
-                # load the binary
-                self._load_binary(file_to_open, cfg_args=load_binary_dialog.cfg_args)
+            self._open_loadbinary_dialog(file_to_open)
 
     #
     # Properties
@@ -52,6 +48,18 @@ class MainWindow(QMainWindow):
     @caption.setter
     def caption(self, v):
         self.setWindowTitle(v)
+
+    #
+    # Dialogs
+    #
+
+    def _open_loadbinary_dialog(self, file_to_open):
+        load_binary_dialog = LoadBinary(file_to_open)
+        load_binary_dialog.exec_()
+
+        if load_binary_dialog.cfg_args is not None:
+            # load the binary
+            self._load_binary(file_to_open, cfg_args=load_binary_dialog.cfg_args)
 
     #
     # Widgets
@@ -111,7 +119,15 @@ class MainWindow(QMainWindow):
         self.workspace.reload()
 
     def load_binary(self):
-        print "load binary"
+
+        # Open File window
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
+                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core)",
+                                                   )
+
+        if os.path.isfile(file_path):
+            self._open_loadbinary_dialog(file_path)
+
 
     def quit(self):
         self.close()
