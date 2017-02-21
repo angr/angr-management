@@ -39,6 +39,13 @@ class QBlock(QFrame):
         else:
             raise Exception('Label at address %#x is not found.' % label_addr)
 
+    def instruction_position(self, insn_addr):
+        if insn_addr in self.addr_to_insns:
+            insn = self.addr_to_insns[insn_addr]
+            return self.mapToParent(insn.pos())
+
+        return None
+
     #
     # Initialization
     #

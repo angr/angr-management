@@ -421,4 +421,6 @@ class QDisasmGraph(QBaseGraph):
     def show_instruction(self, insn_addr):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is not None:
-            self.ensureVisible(self._proxies[block])
+            pos = block.instruction_position(insn_addr)
+            x, y = pos.x(), pos.y()
+            self.ensureVisible(x, y, 0, 0)
