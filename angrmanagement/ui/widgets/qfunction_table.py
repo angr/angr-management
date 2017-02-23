@@ -62,7 +62,6 @@ class QFunctionTable(QTableWidget):
         self._functions = None
         self.items = [ ]
 
-        self.itemDoubleClicked.connect(self._on_function_selected)
         self.cellDoubleClicked.connect(self._on_function_selected)
 
     @property
