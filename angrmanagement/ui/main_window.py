@@ -2,11 +2,12 @@
 import sys
 import os
 
-from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog
+from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar
 from PySide.QtCore import Qt, QSize, QEvent
 
 import angr
 
+from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from .workspace import Workspace
@@ -20,6 +21,8 @@ class MainWindow(QMainWindow):
     def __init__(self, file_to_open=None, parent=None):
         super(MainWindow, self).__init__(parent)
 
+        GlobalInfo.main_window = self
+
         # initialization
         self.caption = "angr Management"
         self.setMinimumSize(QSize(800, 800))
@@ -27,11 +30,19 @@ class MainWindow(QMainWindow):
 
         self.workspace = None
 
+        self._progressbar = None  # type: QProgressBar
+
+        self._status = ""
+        self._progress = None
+
         self._init_menus()
+        self._init_statusbar()
         self._init_workspace()
 
         # I'm ready to show off!
         self.show()
+
+        self.status = "Ready."
 
         if file_to_open is not None:
             # load a binary
@@ -49,6 +60,26 @@ class MainWindow(QMainWindow):
     def caption(self, v):
         self.setWindowTitle(v)
 
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, v):
+        self._status = v
+
+        self.statusBar().showMessage(v)
+
+    @property
+    def progress(self):
+        return self._progress
+
+    @progress.setter
+    def progress(self, v):
+        self._progress = v
+        self._progressbar.show()
+        self._progressbar.setValue(v)
+
     #
     # Dialogs
     #
@@ -65,7 +96,15 @@ class MainWindow(QMainWindow):
     # Widgets
     #
 
+    def _init_statusbar(self):
 
+        self._progressbar = QProgressBar()
+
+        self._progressbar.setMinimum(0)
+        self._progressbar.setMaximum(100)
+        self._progressbar.hide()
+
+        self.statusBar().addPermanentWidget(self._progressbar)
 
     #
     # Menus
@@ -131,6 +170,14 @@ class MainWindow(QMainWindow):
 
     def quit(self):
         self.close()
+
+    #
+    # Other public methods
+    #
+
+    def progress_done(self):
+        self._progress = None
+        self._progressbar.hide()
 
     #
     # Private methods

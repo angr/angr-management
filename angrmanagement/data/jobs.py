@@ -1,5 +1,8 @@
 import networkx
 
+from ..logic import GlobalInfo
+from ..logic.threads import gui_thread_schedule
+
 
 class Job(object):
     def __init__(self, name):
@@ -12,8 +15,20 @@ class Job(object):
     def finish(self, inst, result):
         inst.jobs = inst.jobs[1:]
 
+        gui_thread_schedule(self._finish_progress)
+
     def _progress_callback(self, percentage):
         self.progress_percentage = percentage
+
+        gui_thread_schedule(self._set_progress)
+
+    def _set_progress(self):
+        GlobalInfo.main_window.status = "Working... job %s" % self.name
+        GlobalInfo.main_window.progress = self.progress_percentage
+
+    def _finish_progress(self):
+        GlobalInfo.main_window.progress_done()
+
 
 class CFGGenerationJob(Job):
 

@@ -3,10 +3,11 @@ from threading import Thread
 from Queue import Queue
 
 import ana
-from angr import CFG, PathGroup, Project, PathHierarchy
+from angr import PathHierarchy
 
 from .jobs import PGStepJob
 from .jobs import CFGGenerationJob
+from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule
 from .states import StateManager
 
@@ -100,9 +101,17 @@ class Instance(object):
 
     def _worker(self):
         while True:
+            if self._jobs_queue.empty():
+                gui_thread_schedule(self._set_status, args=("Ready.",))
+
             job = self._jobs_queue.get()
+            gui_thread_schedule(self._set_status, args=("Working...",))
+
             result = job.run(self)
             gui_thread_schedule(job.finish, args=(self, result))
+
+    def _set_status(self, status_text):
+        GlobalInfo.main_window.status = status_text
 
     def save(self, loc):
         with open(loc, 'wb') as f:

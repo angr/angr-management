@@ -13,7 +13,7 @@ def main():
     app = QApplication(sys.argv)
 
     GlobalInfo.gui_thread = thread.get_ident()
-    GlobalInfo.main_window = MainWindow(file_to_open=sys.argv[1] if len(sys.argv) > 1 else None)
+    MainWindow(file_to_open=sys.argv[1] if len(sys.argv) > 1 else None)
 
     app.setStyleSheet(CSS.global_css())
 
