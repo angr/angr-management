@@ -45,12 +45,12 @@ QLabel[class=insn_addr] {
     color: black;
 }
 
-insn_string {
+QLabel[class=insn_string] {
     font: 10pt courier new;
     color: gray;
     font-weight: bold;
 }
-    """
+"""
 
     @staticmethod
     def global_css():

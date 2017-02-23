@@ -3,6 +3,7 @@ from PySide.QtGui import QFrame, QLabel, QHBoxLayout, QSizePolicy, QCursor
 from PySide.QtCore import Qt, SIGNAL
 
 from .qoperand import QOperand
+from ...utils import should_display_string_label, get_string_for_display
 
 
 class QInstruction(QFrame):
@@ -81,6 +82,15 @@ class QInstruction(QFrame):
                                )
 
             layout.addWidget(operand)
+
+        # (optional) strings
+
+        if should_display_string_label(self.workspace.instance.cfg, self.insn.addr):
+            # yes we should display a string label
+            string_label = QLabel(self)
+            string_label.setText(get_string_for_display(self.workspace.instance.cfg, self.insn.addr))
+            string_label.setProperty("class", "insn_string")
+            layout.addWidget(string_label)
 
         layout.addStretch(0)
         layout.setContentsMargins(0, 0, 0, 0)

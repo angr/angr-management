@@ -119,6 +119,10 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
 
 
 def should_display_string_label(cfg, insn_addr):
+
+    if not insn_addr in cfg.insn_addr_to_memory_data:
+        return False
+
     memory_data = cfg.insn_addr_to_memory_data[insn_addr]
     if memory_data.sort == 'string':
         return True
@@ -134,11 +138,17 @@ def should_display_string_label(cfg, insn_addr):
     return False
 
 
-def get_string_for_display(cfg, memory_data):
+def filter_string_for_display(s):
+    return s.replace("\r", "\\r").replace("\n", "\\n")
+
+
+def get_string_for_display(cfg, insn_addr):
 
     MAX_SIZE = 20
 
     str_content = None
+
+    memory_data = cfg.insn_addr_to_memory_data[insn_addr]
 
     if memory_data.sort == "string":
         str_content = memory_data.content
@@ -151,6 +161,6 @@ def get_string_for_display(cfg, memory_data):
 
     if str_content is not None:
         if len(str_content) > MAX_SIZE: return '"' + str_content[:MAX_SIZE] + '..."'
-        else: return '"' + str_content + '"'
+        else: return '"' + filter_string_for_display(str_content) + '"'
     else:
         return '<Unknown>'
