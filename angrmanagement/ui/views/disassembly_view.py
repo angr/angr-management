@@ -82,10 +82,14 @@ class DisassemblyView(BaseView):
         # set status bar
         self._statusbar.function = function
 
-        # clear existing selected instructions
-        self._flow_graph.selected_insns.clear()
-        # set function graph
-        self._flow_graph.function_graph = FunctionGraph(function=function)
+        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not function:
+            # clear existing selected instructions
+            self._flow_graph.selected_insns.clear()
+            # set function graph of a new function
+            self._flow_graph.function_graph = FunctionGraph(function=function)
+        else:
+            # still use the current function. just unselect existing selections.
+            self._flow_graph.unselect_all_instructions()
 
     def toggle_instruction_selection(self, insn_addr):
         """
