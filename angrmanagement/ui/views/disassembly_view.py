@@ -152,15 +152,20 @@ class DisassemblyView(BaseView):
 
     def rename_label(self, addr, new_name):
         if self._flow_graph.disasm is not None:
+
+            is_renaming = False
+
             kb = self._flow_graph.disasm.kb
             if new_name == '':
                 if addr in kb.labels:
                     del kb.labels[addr]
             else:
+                if addr in kb.labels:
+                    is_renaming = True
                 kb.labels[addr] = new_name
 
             # redraw the current block
-            self._flow_graph.update_label(addr)
+            self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def sizeHint(self):
         return QSize(800, 800)
