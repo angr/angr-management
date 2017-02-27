@@ -81,6 +81,20 @@ class QBaseGraph(QZoomingGraphicsView):
                             QPainter.HighQualityAntialiasing
                             )
 
+    def _set_pos(self, widget, coord):
+        """
+        Set the position of a widget in the scene with QTransform.
+        Solves this problem:
+        http://stackoverflow.com/questions/23342039/qgraphicsproxywidgetsetposqreal-x-qreal-y-doesnt-place-correctly-in-a-qgra
+
+        :param widget: The widget to set position.
+        :param coord: The new coordinate.
+        :return: None
+        """
+        widget.resetTransform()
+        trans = widget.transform()
+        widget.setTransform(trans.translate(coord.x(), coord.y()))
+
     def add_child(self, child):
         self._proxy(child)
 

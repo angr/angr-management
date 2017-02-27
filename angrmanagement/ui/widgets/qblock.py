@@ -12,8 +12,8 @@ from .qblock_label import QBlockLabel
 
 
 class QBlock(QFrame):
-    def __init__(self, workspace, disasm_view, disasm, addr, cfg_nodes, out_branches, *args, **kwargs):
-        super(QBlock, self).__init__(*args, **kwargs)
+    def __init__(self, workspace, disasm_view, disasm, addr, cfg_nodes, out_branches, parent=None):
+        super(QBlock, self).__init__(parent)
 
         # initialization
         self.workspace = workspace
@@ -42,7 +42,7 @@ class QBlock(QFrame):
     def instruction_position(self, insn_addr):
         if insn_addr in self.addr_to_insns:
             insn = self.addr_to_insns[insn_addr]
-            return self.mapToParent(insn.pos())
+            return insn.pos()
 
         return None
 

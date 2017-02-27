@@ -363,10 +363,10 @@ class QDisasmGraph(QBaseGraph):
         self._edge_paths = []
 
         for child in self.blocks:
-            widget_proxy = self._proxy(child)
-            size = child.baseSize()
-            width, height = size.width(), size.height()
-            widget_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
+            self._proxy(child)
+            #size = child.baseSize()
+            #width, height = size.width(), size.height()
+            #widget_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
 
         node_coords, edge_coords = self._layout_nodes_and_edges(self.function_graph.function.addr)
 
@@ -379,19 +379,19 @@ class QDisasmGraph(QBaseGraph):
             widget_proxy = self._proxy(child)
             # width, height = child._layout_manager.best_size()
             x, y = node_coords[child.addr]
-            widget_proxy.setPos(x, y)
+            self._set_pos(widget_proxy, self.mapToScene(x, y))
 
         # draw edges
         for edges in edge_coords:
             for from_, to_ in zip(edges, edges[1:]):
                 painter = QPainterPath(QPointF(*from_))
                 painter.lineTo(QPointF(*to_))
-                p = self.scene.addPath(painter)
+                p = self.scene.addPath(self.mapToScene(painter))
                 self._edge_paths.append(p)
 
             # arrow
-            end_point = edges[-1]
-            arrow = [ QPointF(end_point[0] - 3, end_point[1] - 6), QPointF(end_point[0] + 3, end_point[1] - 6), QPointF(*end_point) ]
+            end_point = self.mapToScene(*edges[-1])
+            arrow = [QPointF(end_point.x() - 3, end_point.y() - 6), QPointF(end_point.x() + 3, end_point.y() - 6), end_point]
             polygon = QGraphicsPolygonItem(QPolygonF(arrow))
             polygon.setBrush(QBrush(Qt.darkRed))
 
@@ -423,4 +423,6 @@ class QDisasmGraph(QBaseGraph):
         if block is not None:
             pos = block.instruction_position(insn_addr)
             x, y = pos.x(), pos.y()
+            proxy = self._proxy(block)
+            x, y = proxy.transform().map(x, y)
             self.ensureVisible(x, y, 0, 0)
