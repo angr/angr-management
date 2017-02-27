@@ -7,13 +7,13 @@ l = logging.getLogger('data.states')
 class StateRecord(object):
 
     BLANK_STATE = 'blank_state'
-    INITIAL_STATE = 'initial_state'
+    ENTRY_STATE = 'entry_state'
     FULL_INIT_STATE = 'full_init_state'
 
     def __init__(self, name, base_state, is_default, mode, custom_options=None, address=None, custom_code=None):
 
-        if base_state not in {self.BLANK_STATE, self.INITIAL_STATE, self.FULL_INIT_STATE}:
-            l.warning('Unknow base state type "%s". Default to blank_state.', base_state)
+        if base_state not in {self.BLANK_STATE, self.ENTRY_STATE, self.FULL_INIT_STATE}:
+            l.warning('Unknown base state type "%s". Default to blank_state.', base_state)
             base_state = self.BLANK_STATE
 
         self.name = name
@@ -27,8 +27,8 @@ class StateRecord(object):
     def state(self, project, address=None):
         if self.base_state == self.BLANK_STATE:
             s = project.factory.blank_state(addr=address)
-        elif self.base_state == self.INITIAL_STATE:
-            s = project.factory.initial_state(addr=address)
+        elif self.base_state == self.ENTRY_STATE:
+            s = project.factory.entry_state(addr=address)
         elif self.base_state == self.FULL_INIT_STATE:
             s = project.factory.full_init_state(addr=address)
         else:
@@ -54,7 +54,7 @@ class StateManager(object):
         self._state_records = [ ]
 
         self['Blank State'] = StateRecord('Blank State', StateRecord.BLANK_STATE, True, 'symbolic')
-        self['Initial State'] = StateRecord('Initial State', StateRecord.INITIAL_STATE, True, 'symbolic')
+        self['Entry State'] = StateRecord('Entry State', StateRecord.ENTRY_STATE, True, 'symbolic')
         self['Full Initial State'] = StateRecord('Full Initial State', StateRecord.FULL_INIT_STATE, True, 'symbolic')
 
     def __delitem__(self, name):
