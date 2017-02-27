@@ -3,7 +3,7 @@ from functools import wraps
 import logging
 
 from PySide.QtCore import QPointF, QRectF, Qt
-from PySide.QtGui import QPainterPath, QPolygonF, QGraphicsPolygonItem, QBrush
+from PySide.QtGui import QPainterPath, QPolygonF, QGraphicsPolygonItem, QBrush, QApplication
 
 from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
@@ -263,6 +263,13 @@ class QDisasmGraph(QBaseGraph):
             # rename a label
             self.disassembly_view.popup_rename_label_dialog()
             return True
+        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
+            # jump back
+            self.disassembly_view.jump_back()
+            return True
+        elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
+            # jump forward
+            self.disassembly_view.jump_forward()
 
         return False
 

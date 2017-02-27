@@ -12,6 +12,45 @@ from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
 
 
+class JumpHistory(object):
+    def __init__(self):
+        self._history = [ ]
+        self._pos = 0
+
+    def __len__(self):
+        return len(self._history)
+
+    def jump_to(self, addr):
+
+        if self._pos != len(self._history) - 1:
+            self.trim()
+
+        if not self._history or self._history[-1] != addr:
+            self._history.append(addr)
+            self._pos = len(self._history) - 1
+
+    def trim(self):
+        self._history = self._history[ : self._pos + 1]
+
+    def backtrack(self):
+        if self._pos > 0:
+            self._pos -= 1
+
+        if self._pos >= len(self._history):
+            return None
+        else:
+            return self._history[self._pos]
+
+    def forwardstep(self):
+        if self._pos < len(self._history) - 1:
+            self._pos += 1
+
+        if self._pos < len(self._history):
+            return self._history[self._pos]
+        else:
+            return None
+
+
 class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super(DisassemblyView, self).__init__('disassembly', workspace, *args, **kwargs)
@@ -20,6 +59,7 @@ class DisassemblyView(BaseView):
 
         self._flow_graph = None
         self._statusbar = None
+        self._jump_history = JumpHistory()
 
         self._insn_menu = None
 
@@ -79,17 +119,8 @@ class DisassemblyView(BaseView):
 
     def display_function(self, function):
 
-        # set status bar
-        self._statusbar.function = function
-
-        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not function:
-            # clear existing selected instructions
-            self._flow_graph.selected_insns.clear()
-            # set function graph of a new function
-            self._flow_graph.function_graph = FunctionGraph(function=function)
-        else:
-            # still use the current function. just unselect existing selections.
-            self._flow_graph.unselect_all_instructions()
+        self._jump_history.jump_to(function.addr)
+        self._display_function(function)
 
     def toggle_instruction_selection(self, insn_addr):
         """
@@ -106,13 +137,18 @@ class DisassemblyView(BaseView):
             self._flow_graph.show_instruction(insn_addr)
 
     def jump_to(self, addr):
-        function = locate_function(self.workspace.instance, addr)
-        if function is not None:
-            self.display_function(function)
-            self.toggle_instruction_selection(addr)
-            return True
-        else:
-            return False
+        self._jump_history.jump_to(addr)
+        self._jump_to(addr)
+
+    def jump_back(self):
+        addr = self._jump_history.backtrack()
+        if addr is not None:
+            self._jump_to(addr)
+
+    def jump_forward(self):
+        addr = self._jump_history.forwardstep()
+        if addr is not None:
+            self._jump_to(addr)
 
     def rename_label(self, addr, new_name):
         if self._flow_graph.disasm is not None:
@@ -148,6 +184,33 @@ class DisassemblyView(BaseView):
     def _init_menus(self):
 
         self._insn_menu = DisasmInsnContextMenu(self)
+
+    #
+    # Private methods
+    #
+
+    def _display_function(self, function):
+
+        # set status bar
+        self._statusbar.function = function
+
+        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not function:
+            # clear existing selected instructions
+            self._flow_graph.selected_insns.clear()
+            # set function graph of a new function
+            self._flow_graph.function_graph = FunctionGraph(function=function)
+        else:
+            # still use the current function. just unselect existing selections.
+            self._flow_graph.unselect_all_instructions()
+
+    def _jump_to(self, addr):
+        function = locate_function(self.workspace.instance, addr)
+        if function is not None:
+            self._display_function(function)
+            self.toggle_instruction_selection(addr)
+            return True
+        else:
+            return False
 
     #
     # Utils
