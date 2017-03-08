@@ -2,8 +2,8 @@
 from functools import wraps
 import logging
 
-from PySide.QtCore import QPointF, QRectF, Qt
-from PySide.QtGui import QPainterPath, QPolygonF, QGraphicsPolygonItem, QBrush, QApplication
+from PySide.QtCore import QPointF, QRectF, Qt, QPoint
+from PySide.QtGui import QPainter, QPainterPath, QPolygonF, QGraphicsPolygonItem, QBrush, QApplication, QMouseEvent, QResizeEvent
 
 from grandalf.graphs import Graph, Edge, Vertex
 from grandalf.layouts import VertexViewer, SugiyamaLayout
@@ -136,8 +136,8 @@ class QDisasmGraph(QBaseGraph):
 
     XSPACE = 40
     YSPACE = 40
-    LEFT_PADDING = 200
-    TOP_PADDING = 200
+    LEFT_PADDING = 1000
+    TOP_PADDING = 1000
 
     def __init__(self, workspace, parent):
         super(QDisasmGraph, self).__init__(parent)
@@ -149,11 +149,22 @@ class QDisasmGraph(QBaseGraph):
         self.blocks = set()
         self._function_graph = None
 
+        self._edge_coords = None
+
+        # scrolling
+        self._is_scrolling = False
+        self._scrolling_start = None
+
         self.key_pressed.connect(self._on_keypressed_event)
         #self.key_released.connect(self._on_keyreleased_event)
 
         self.selected_insns = set()
+        self.selected_operands = set()
         self._insn_addr_to_block = { }
+
+    #
+    # Properties
+    #
 
     @property
     def function_graph(self):
@@ -167,8 +178,11 @@ class QDisasmGraph(QBaseGraph):
 
             self.reload()
 
-    def reload(self):
+    #
+    # Public methods
+    #
 
+    def reload(self):
         if self.blocks:
             for b in self.blocks.copy():
                 self.remove_block(b)
@@ -180,7 +194,8 @@ class QDisasmGraph(QBaseGraph):
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes_iter():
             block = QBlock(self.workspace, self.disassembly_view, self.disasm, n.addr, n.cfg_nodes,
-                           get_out_branches(n), self)
+                           get_out_branches(n)
+                           )
             self.add_block(block)
 
             for insn_addr in block.addr_to_insns.iterkeys():
@@ -190,10 +205,8 @@ class QDisasmGraph(QBaseGraph):
 
     def add_block(self, block):
         self.blocks.add(block)
-        self.add_child(block)
 
     def remove_block(self, block):
-        self.remove_child(block)
         if block in self.blocks:
             self.blocks.remove(block)
 
@@ -233,6 +246,8 @@ class QDisasmGraph(QBaseGraph):
 
             block.addr_to_insns[insn_addr].select()
 
+        self.viewport().update()
+
     def unselect_instruction(self, insn_addr):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is None:
@@ -243,13 +258,158 @@ class QDisasmGraph(QBaseGraph):
 
             block.addr_to_insns[insn_addr].unselect()
 
+        self.viewport().update()
+
     def unselect_all_instructions(self):
         for insn_addr in self.selected_insns.copy():
             self.unselect_instruction(insn_addr)
 
+    def select_operand(self, insn_addr, operand_idx, unique=True):
+        block = self._insn_addr_to_block.get(insn_addr, None)
+        if block is None:
+            # the instruction does not belong to the current function
+            return
+
+        if insn_addr not in self.selected_insns:
+            if unique:
+                # unselect existing ones
+                self.unselect_all_operands()
+                self.selected_operands = { (insn_addr, operand_idx) }
+            else:
+                self.selected_operands.add((insn_addr, operand_idx))
+
+            block.addr_to_insns[insn_addr].select_operand(operand_idx)
+
+        self.viewport().update()
+
+    def unselect_operand(self, insn_addr, operand_idx):
+        block = self._insn_addr_to_block.get(insn_addr, None)
+        if block is None:
+            return
+
+        if (insn_addr, operand_idx) in self.selected_operands:
+            self.selected_operands.remove((insn_addr, operand_idx))
+
+            block.addr_to_insns[insn_addr].unselect_operand(operand_idx)
+
+        self.viewport().update()
+
+    def unselect_all_operands(self):
+        for insn_addr, operand_idx in self.selected_operands.copy():
+            self.unselect_operand(insn_addr, operand_idx)
+
+    def get_block_by_pos(self, pos):
+        pos = self._to_graph_pos(pos)
+        x, y = pos.x(), pos.y()
+        for b in self.blocks:
+            if b.x <= x < b.x + b.width and b.y <= y < b.y + b.height:
+                return b
+
+        return None
+
     #
     # Event handlers
     #
+
+    def resizeEvent(self, event):
+        """
+
+        :param QResizeEvent event:
+        :return:
+        """
+
+        self._update_size()
+
+    def paintEvent(self, event):
+        """
+        Paint the graph.
+
+        :param event:
+        :return:
+        """
+
+        painter = QPainter(self.viewport())
+
+        # scrollbar values
+        current_x = self.horizontalScrollBar().value()
+        current_y = self.verticalScrollBar().value()
+        # coord translation
+        # (0, 0) -> middle of the page
+        painter.translate(self.width() / 2 - current_x, self.height() / 2 - current_y)
+
+        painter.setFont(self.workspace.disasm_font)
+
+        # draw nodes
+        for block in self.blocks:
+            block.paint(painter)
+
+        painter.setPen(Qt.black)
+
+        # draw edges
+        if self._edge_coords:
+            for edges in self._edge_coords:
+                for from_, to_ in zip(edges, edges[1:]):
+                    painter.drawPolyline((QPointF(*from_), QPointF(*to_)))
+
+                # arrow
+                # end_point = self.mapToScene(*edges[-1])
+                end_point = (edges[-1][0], edges[-1][1])
+                arrow = [QPointF(end_point[0] - 3, end_point[1] - 6), QPointF(end_point[0] + 3, end_point[1] - 6),
+                         QPointF(end_point[0], end_point[1])]
+                painter.drawPolygon(arrow)
+
+    def mousePressEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton:
+            block = self.get_block_by_pos(event.pos())
+            if block is not None:
+                # clicking on a block
+                block.on_mouse_pressed(event.button(), self._to_graph_pos(event.pos()))
+                return
+
+            else:
+                # dragging the entire graph
+                self._is_scrolling = True
+                self._scrolling_start = (event.x(), event.y())
+                self.viewport().grabMouse()
+                return
+
+    def mouseMoveEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if self._is_scrolling:
+            pos = event.pos()
+            delta = (pos.x() - self._scrolling_start[0], pos.y() - self._scrolling_start[1])
+            self._scrolling_start = (pos.x(), pos.y())
+
+            # move the graph
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta[0])
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta[1])
+
+    def mouseReleaseEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton and self._is_scrolling:
+            self._is_scrolling = False
+            self.viewport().releaseMouse()
+
+        elif event.button() == Qt.RightButton:
+            block = self.get_block_by_pos(event.pos())
+            if block is not None:
+                block.on_mouse_released(event.button(), self._to_graph_pos(event.pos()))
 
     def _on_keypressed_event(self, key_event):
 
@@ -329,7 +489,7 @@ class QDisasmGraph(QBaseGraph):
         for addr, vertex in vertices.iteritems():
             node = node_map[addr]
             size = node.size()
-            width, height = size.width(), size.height()
+            width, height = size
             vertex.view = VertexViewer(width, height)
 
         sug = SugiyamaLayout(g.C[0])
@@ -349,71 +509,73 @@ class QDisasmGraph(QBaseGraph):
         edge_coordinates = [ ]
         for edge in edges:
             if hasattr(edge.view, '_pts'):
-                edge_coordinates.append(edge.view._pts)
+                points = [ ]
+                prev_0 = None
+                prev_1 = None
+                for p in edge.view._pts:
+                    if prev_1 is not None:
+                        # check if prev_1, prev_0, and p are on the same line
+                        if (prev_1[0] == prev_0[0] and prev_0[0] == p[0]) or (prev_1[1] == prev_0[1] and prev_0[1] == p[1]):
+                            # skip the mid point (prev_0)
+                            prev_0 = p
+                            continue
+                        else:
+                            # push the earliest point
+                            points.append(prev_1)
+                            prev_1 = None
+
+                    # move forward
+                    prev_1 = prev_0
+                    prev_0 = p
+
+                points.append(prev_1)
+                points.append(prev_0)  # the last two points
+                edge_coordinates.append(points)
 
         return coordinates, edge_coordinates
 
     def request_relayout(self):
-        # y = 0.0
-
-        # for child in self.children():
-        #     if not isinstance(child, QtContainer):
-        #         continue
-        #     scene_proxy = self._proxies[child]
-        #     width, height = child._layout_manager.best_size()
-        #     scene_proxy.setPos(0.0, y)
-        #     y += height + 25.0
-
-        # Remove all paths
-        for p in self._edge_paths:
-            self.scene.removeItem(p)
-        self._edge_paths = []
-
-        for child in self.blocks:
-            self._proxy(child)
-            #size = child.baseSize()
-            #width, height = size.width(), size.height()
-            #widget_proxy.setGeometry(QRectF(0.0, 0.0, width, height))
 
         node_coords, edge_coords = self._layout_nodes_and_edges(self.function_graph.function.addr)
+
+        self._edge_coords = edge_coords
 
         if not node_coords:
             print "Failed to get node_coords"
             return
 
+        min_x, max_x, min_y, max_y = 0, 0, 0, 0
+
         # layout nodes
-        for child in self.blocks:
-            widget_proxy = self._proxy(child)
-            # width, height = child._layout_manager.best_size()
-            x, y = node_coords[child.addr]
-            self._set_pos(widget_proxy, self.mapToScene(x, y))
+        for block in self.blocks:
+            x, y = node_coords[block.addr]
+            block.x, block.y = x, y
 
-        # draw edges
-        for edges in edge_coords:
-            for from_, to_ in zip(edges, edges[1:]):
-                painter = QPainterPath(QPointF(*from_))
-                painter.lineTo(QPointF(*to_))
-                p = self.scene.addPath(self.mapToScene(painter))
-                self._edge_paths.append(p)
+            min_x = min(min_x, block.x)
+            max_x = max(max_x, block.x + block.width)
+            min_y = min(min_y, block.y)
+            max_y = max(max_y, block.y + block.height)
 
-            # arrow
-            end_point = self.mapToScene(*edges[-1])
-            arrow = [QPointF(end_point.x() - 3, end_point.y() - 6), QPointF(end_point.x() + 3, end_point.y() - 6), end_point]
-            polygon = QGraphicsPolygonItem(QPolygonF(arrow))
-            polygon.setBrush(QBrush(Qt.darkRed))
+            # self._set_pos(widget_proxy, self.mapToScene(x, y))
 
-            self.scene.addItem(polygon)
-            self._edge_paths.append(polygon)
+        min_x -= self.LEFT_PADDING
+        max_x += self.LEFT_PADDING
+        min_y -= self.TOP_PADDING
+        max_y += self.TOP_PADDING
+        width = (max_x - min_x) + 2 * self.LEFT_PADDING
+        height = (max_y - min_y) + 2 * self.TOP_PADDING
 
-        rect = self.scene.itemsBoundingRect()
-        # Enlarge the rect so there is enough room at right and bottom
-        rect.setX(rect.x() - self.LEFT_PADDING)
-        rect.setY(rect.y() - self.TOP_PADDING)
-        rect.setWidth(rect.width() + 2 * self.LEFT_PADDING)
-        rect.setHeight(rect.height() + 2 * self.TOP_PADDING)
+        self._update_size()
 
-        self.scene.setSceneRect(rect)
+        # scrollbars
+        self.horizontalScrollBar().setRange(min_x, max_x)
+        self.verticalScrollBar().setRange(min_y, max_y)
+
+        self.setSceneRect(QRectF(min_x, min_y, width, height))
+
         self.viewport().update()
+
+        self._update_size()
 
         if self.selected_insns:
             self.show_selected()
@@ -428,8 +590,34 @@ class QDisasmGraph(QBaseGraph):
     def show_instruction(self, insn_addr):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is not None:
-            pos = block.instruction_position(insn_addr)
+            pos = QPoint(*block.instruction_position(insn_addr))
+            pos_ = self._from_graph_pos(pos)
+
+            # is it visible?
+            if 0 <= pos_.x() < self.width() and 0 <= pos_.y() < self.height():
+                return
+
+            # make it visible
             x, y = pos.x(), pos.y()
-            proxy = self._proxy(block)
-            x, y = proxy.transform().map(x, y)
-            self.ensureVisible(x, y, 0, 0)
+            self.horizontalScrollBar().setValue(x - 50)
+            self.verticalScrollBar().setValue(y - 50)
+
+    #
+    # Private methods
+    #
+
+    def _update_size(self):
+
+        # update scrollbars
+        self.horizontalScrollBar().setPageStep(self.width())
+        self.verticalScrollBar().setPageStep(self.height())
+
+    def _to_graph_pos(self, pos):
+        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
+        y_offset = self.height() / 2 - self.verticalScrollBar().value()
+        return QPoint(pos.x() - x_offset, pos.y() - y_offset)
+
+    def _from_graph_pos(self, pos):
+        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
+        y_offset = self.height() / 2 - self.verticalScrollBar().value()
+        return QPoint(pos.x() + x_offset, pos.y() + y_offset)

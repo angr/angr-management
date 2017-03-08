@@ -1,7 +1,10 @@
 
 import logging
 
-from PySide.QtGui import QFrame, QLabel, QHBoxLayout, QSizePolicy
+from PySide.QtGui import QLabel, QHBoxLayout, QPainter, QColor
+from PySide.QtCore import Qt
+
+from .qgraph_object import QGraphObject
 
 l = logging.getLogger('ui.widgets.qoperand')
 
@@ -26,10 +29,10 @@ class QOperandBranchTarget(QLabel):
             self._disasm_view.jump_to(self._target)
 
 
-class QOperand(QFrame):
+class QOperand(QGraphObject):
     def __init__(self, workspace, disasm_view, disasm, insn, operand, operand_index, is_branch_target, is_indirect_branch,
-                 branch_targets, is_last, parent):
-        super(QOperand, self).__init__(parent)
+                 branch_targets, config):
+        super(QOperand, self).__init__()
 
         self.workspace = workspace
         self.disasm_view = disasm_view
@@ -40,12 +43,55 @@ class QOperand(QFrame):
         self.is_branch_target = is_branch_target
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
-        self.is_last = is_last
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.setContentsMargins(0, 0, 0, 0)
+        self._config = config
+
+        self.selected = False
+
+        # "widets"
+        self._label = None
+        self._label_width = None
+        self._branch_target = None
+        self._is_target_func = None
 
         self._init_widgets()
+
+    #
+    # Public methods
+    #
+
+    def paint(self, painter):
+        """
+
+        :param QPainter painter:
+        :return:
+        """
+
+        if self.selected:
+            painter.setPen(QColor(0xc0, 0xbf, 0x40))
+            painter.setBrush(QColor(0xc0, 0xbf, 0x40))
+            painter.drawRect(self.x, self.y, self.width, self.height + 2)
+
+        x = self.x
+        painter.setPen(QColor(0, 0, 0x80))
+        painter.drawText(x, self.y + self._config.disasm_font_height, self._label)
+
+        x += self._label_width
+
+    def on_mouse_pressed(self, button, pos):
+        if button == Qt.LeftButton:
+            self.disasm_view.toggle_operand_selection(self.insn.addr, self.operand_index)
+
+    def select(self):
+        if not self.selected:
+            self.toggle_select()
+
+    def unselect(self):
+        if self.selected:
+            self.toggle_select()
+
+    def toggle_select(self):
+        self.selected = not self.selected
 
     #
     # Private methods
@@ -91,11 +137,9 @@ class QOperand(QFrame):
         if self.is_branch_target:
             # a branch instruction
             if self.is_indirect_branch:
-                label = QLabel(self)
-                label.setText(self.operand.render()[0])
-                label.setProperty('class', 'insn')
-
-                layout.addWidget(label)
+                # indirect jump
+                self._label = self.operand.render()[0]
+                self._label_width = len(self._label) * self._config.disasm_font_width
 
             else:
                 if self.branch_targets is not None and next(iter(self.branch_targets)) in self.disasm.kb.functions:
@@ -105,31 +149,18 @@ class QOperand(QFrame):
                     # jumping to a non-function address
                     is_target_func = False
 
-                the_branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
-                label = QOperandBranchTarget(self.disasm_view,
-                                             self.operand.render()[0],
-                                             the_branch_target,
-                                             is_target_func,
-                                             self
-                                             )
-
-                layout.addWidget(label)
+                self._label = self.operand.render()[0]
+                self._label_width = len(self._label) * self._config.disasm_font_width
+                self._branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
+                self._is_target_func = is_target_func
 
         else:
             # not a branch
-            label = QLabel(self)
-            label.setText(self.operand.render()[0])
-            label.setProperty('class', 'insn')
+            self._label = self.operand.render()[0]
+            self._label_width = len(self._label) * self._config.disasm_font_width
 
-            layout.addWidget(label)
+        self._update_size()
 
-        if not self.is_last:
-            delimiter = QLabel(self)
-            delimiter.setText(',')
-            delimiter.setProperty('class', 'insn')
-
-            layout.addWidget(delimiter)
-
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
+    def _update_size(self):
+        self._width = self._label_width
+        self._height = self._config.disasm_font_height

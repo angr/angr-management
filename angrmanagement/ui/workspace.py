@@ -1,7 +1,7 @@
 
 from collections import defaultdict
 
-from PySide.QtGui import QDockWidget
+from PySide.QtGui import QDockWidget, QFont, QFontMetricsF
 from PySide.QtCore import Qt
 
 from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView, StatesView
@@ -16,6 +16,14 @@ class Workspace(object):
         self.views = [ ]
         self.dockable_views = [ ]
         self.view_to_dockable = { }
+
+        #
+        # Some generic configurations. move to "configurations" module later
+        #
+        self.disasm_font = QFont("courier new", 10)
+        self.disasm_font_height = QFontMetricsF(self.disasm_font).height()
+        self.disasm_font_width = QFontMetricsF(self.disasm_font).width('A')
+
 
         default_tabs = [
             FunctionsView(self, 'left'),
