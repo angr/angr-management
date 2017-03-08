@@ -99,24 +99,6 @@ class QInstruction(QGraphObject):
             painter.setPen(Qt.gray)
             painter.drawText(x, self.y + self._config.disasm_font_height, self._string)
 
-    def on_mouse_pressed(self, button, pos):
-        if button == Qt.LeftButton:
-            # left click
-
-            # is it on one of the operands?
-            for op in self._operands:
-                if op.x <= pos.x() < op.x + op.width:
-                    op.on_mouse_pressed(button, pos)
-                    return
-
-            self.disasm_view.toggle_instruction_selection(self.insn.addr)
-
-    def on_mouse_released(self, button, pos):
-        if button == Qt.RightButton:
-            # right click
-            # display the context menu
-            self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
-
     def select(self):
         if not self.selected:
             self.toggle_select()
@@ -137,6 +119,39 @@ class QInstruction(QGraphObject):
 
         if operand_idx < len(self._operands):
             self._operands[operand_idx].unselect()
+
+    #
+    # Event handlers
+    #
+
+    def on_mouse_pressed(self, button, pos):
+        if button == Qt.LeftButton:
+            # left click
+
+            # is it on one of the operands?
+            for op in self._operands:
+                if op.x <= pos.x() < op.x + op.width:
+                    op.on_mouse_pressed(button, pos)
+                    return
+
+            self.disasm_view.toggle_instruction_selection(self.insn.addr)
+
+    def on_mouse_released(self, button, pos):
+        if button == Qt.RightButton:
+            # right click
+            # display the context menu
+            self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
+
+    def on_mouse_doubleclicked(self, button, pos):
+
+        if button == Qt.LeftButton:
+            # left double click
+
+            # is it on one of the operands?
+            for op in self._operands:
+                if op.x <= pos.x() < op.x + op.width:
+                    op.on_mouse_doubleclicked(button, pos)
+                    return
 
     #
     # Private methods

@@ -78,10 +78,6 @@ class QOperand(QGraphObject):
 
         x += self._label_width
 
-    def on_mouse_pressed(self, button, pos):
-        if button == Qt.LeftButton:
-            self.disasm_view.toggle_operand_selection(self.insn.addr, self.operand_index)
-
     def select(self):
         if not self.selected:
             self.toggle_select()
@@ -92,6 +88,19 @@ class QOperand(QGraphObject):
 
     def toggle_select(self):
         self.selected = not self.selected
+
+    #
+    # Event handlers
+    #
+
+    def on_mouse_pressed(self, button, pos):
+        if button == Qt.LeftButton:
+            self.disasm_view.toggle_operand_selection(self.insn.addr, self.operand_index)
+
+    def on_mouse_doubleclicked(self, button, pos):
+        if button == Qt.LeftButton:
+            if self._branch_target is not None:
+                self.disasm_view.jump_to(self._branch_target)
 
     #
     # Private methods

@@ -68,3 +68,11 @@ class QGraphObject(object):
         """
 
         pass
+
+    def on_mouse_released(self, button, pos):
+
+        pass
+
+    def on_mouse_doubleclicked(self, button, pos):
+
+        pass

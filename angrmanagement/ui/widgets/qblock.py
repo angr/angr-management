@@ -139,6 +139,12 @@ class QBlock(QGraphObject):
                 obj.on_mouse_released(button, pos)
                 break
 
+    def on_mouse_doubleclicked(self, button, pos):
+        for obj in self.objects:
+            if obj.y <= pos.y() < obj.y + obj.height:
+                obj.on_mouse_doubleclicked(button, pos)
+                break
+
     #
     # Initialization
     #

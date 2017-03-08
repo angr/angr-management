@@ -411,6 +411,18 @@ class QDisasmGraph(QBaseGraph):
             if block is not None:
                 block.on_mouse_released(event.button(), self._to_graph_pos(event.pos()))
 
+    def mouseDoubleClickEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton:
+            block = self.get_block_by_pos(event.pos())
+            if block is not None:
+                block.on_mouse_doubleclicked(event.button(), self._to_graph_pos(event.pos()))
+
     def _on_keypressed_event(self, key_event):
 
         key = key_event.key()
