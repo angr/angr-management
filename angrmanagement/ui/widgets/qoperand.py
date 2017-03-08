@@ -73,7 +73,13 @@ class QOperand(QGraphObject):
             painter.drawRect(self.x, self.y, self.width, self.height + 2)
 
         x = self.x
-        painter.setPen(QColor(0, 0, 0x80))
+        if self._branch_target:
+            if self._is_target_func:
+                painter.setPen(Qt.blue)
+            else:
+                painter.setPen(Qt.red)
+        else:
+            painter.setPen(QColor(0, 0, 0x80))
         painter.drawText(x, self.y + self._config.disasm_font_height, self._label)
 
         x += self._label_width
