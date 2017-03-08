@@ -83,11 +83,8 @@ class QPathGroups(QFrame):
         return None
 
     #
-    # Overriden methods
+    # Overridden methods
     #
-
-    def sizeHint(self):
-        return QSize(100, 100)
 
     #
     # Initialization

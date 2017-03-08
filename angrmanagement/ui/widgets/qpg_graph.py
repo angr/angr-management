@@ -1,7 +1,7 @@
 
 import pygraphviz
 
-from PySide.QtGui import QPainterPath
+from PySide.QtGui import QPainterPath, QGraphicsView
 from PySide.QtCore import QPointF, QRectF
 
 from ...utils.graph import grouper
@@ -18,6 +18,11 @@ class QPathGroupGraph(QBaseGraph):
 
         self._graph = None
         self._selected = None
+
+    def _init_widgets(self):
+        super(QPathGroupGraph, self)._init_widgets()
+
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
 
     @property
     def selected(self):

@@ -8,14 +8,9 @@ QLabel[class=insn] {
     color: #000080;
 }
 
-QLabel[class=operand_branch_target] {
+QLabel[class=reg_viewer_label] {
     font: 10pt courier new;
-    color: #ff0000;
-}
-
-QLabel[class=operand_branch_target_func] {
-    font: 10pt courier new;
-    color: #0000ff;
+    background-color: #ffffff;
 }
 
 QLabel[class=status_valid] {

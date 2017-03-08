@@ -2,12 +2,14 @@
 from PySide.QtGui import QFrame, QHBoxLayout, QPushButton
 
 class QPathBlock(QFrame):
-    def __init__(self, name, path, is_selected, parent=None):
+    def __init__(self, name, path, is_selected, symexec_view, parent=None):
         super(QPathBlock, self).__init__(parent)
+
+        self.symexec_view = symexec_view
 
         self.name = name
         self.path = path
-        self.is_selected = is_selected
+        self.selected = is_selected
 
         self._init_widgets()
 
@@ -36,7 +38,8 @@ class QPathBlock(QFrame):
     #
 
     def _on_path_button_released(self):
-        self.is_selected = True
+        self.selected = True
+        self.symexec_view.view_path(self.path)
 
     def _on_disasm_button_released(self):
         pass
