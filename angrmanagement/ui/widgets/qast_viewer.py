@@ -1,5 +1,6 @@
 
 from PySide.QtGui import QFrame, QHBoxLayout, QLabel, QSizePolicy
+from PySide.QtCore import QSize
 from PySide.QtCore import Qt
 
 import claripy
@@ -50,11 +51,11 @@ class QASTViewer(QFrame):
 
         # set text
         if isinstance(ast, (int, long)):
-            self._size_label.setText('Unknown')
+            self._size_label.setText('pUnknown]')
             self._ast_label.setText("%#x" % ast)
         else:
             # claripy.AST
-            self._size_label.setText("%d" % (len(ast) / 8))  # in bytes
+            self._size_label.setText("[%d]" % (len(ast) / 8))  # in bytes
             if not ast.symbolic:
                 self._ast_label.setText("%#x" % self._ast._model_concrete.value)
             else:
@@ -78,6 +79,9 @@ class QASTViewer(QFrame):
         layout = QHBoxLayout()
 
         size_label = QLabel()
+        size_label.setProperty('class', 'ast_viewer_size')
+        size_label.setAlignment(Qt.AlignRight)
+        size_label.setMaximumSize(QSize(24, 65536))
         self._size_label = size_label
 
         ast_label = QLabel()
