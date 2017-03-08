@@ -76,10 +76,15 @@ class QBaseGraph(QZoomingGraphicsView):
     def _init_widgets(self):
         self.scene = QGraphicsScene(self.parent())
         self.setScene(self.scene)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        # self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
                             QPainter.HighQualityAntialiasing
                             )
+
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.horizontalScrollBar().setSingleStep(16)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.verticalScrollBar().setSingleStep(16)
 
     def _set_pos(self, widget, coord):
         """

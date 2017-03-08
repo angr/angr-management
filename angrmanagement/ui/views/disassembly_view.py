@@ -136,6 +136,21 @@ class DisassemblyView(BaseView):
             self._flow_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
             self._flow_graph.show_instruction(insn_addr)
 
+    def toggle_operand_selection(self, insn_addr, operand_idx):
+        """
+        Toggle the selection state of an operand of an instruction in the disassembly view.
+
+        :param int insn_addr:   Address of the instruction to toggle.
+        :param int operand_idx: The operand to toggle.
+        :return:                None
+        """
+
+        if (insn_addr, operand_idx) in self._flow_graph.selected_operands:
+            self._flow_graph.unselect_operand(insn_addr, operand_idx)
+        else:
+            self._flow_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
+            self._flow_graph.show_instruction(insn_addr)
+
     def jump_to(self, addr):
         self._jump_history.jump_to(addr)
         self._jump_to(addr)
@@ -200,13 +215,15 @@ class DisassemblyView(BaseView):
         self._statusbar.function = function
 
         if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not function:
-            # clear existing selected instructions
+            # clear existing selected instructions and operands
             self._flow_graph.selected_insns.clear()
+            self._flow_graph.selected_operands.clear()
             # set function graph of a new function
             self._flow_graph.function_graph = FunctionGraph(function=function)
         else:
             # still use the current function. just unselect existing selections.
             self._flow_graph.unselect_all_instructions()
+            self._flow_graph.unselect_all_operands()
 
     def _jump_to(self, addr):
         function = locate_function(self.workspace.instance, addr)
