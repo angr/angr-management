@@ -1,5 +1,5 @@
 
-from PySide.QtGui import QFrame, QHBoxLayout, QPushButton
+from PySide.QtGui import QFrame, QHBoxLayout, QVBoxLayout, QPushButton, QLabel
 
 class QPathBlock(QFrame):
     def __init__(self, name, path, is_selected, symexec_view, parent=None):
@@ -15,10 +15,14 @@ class QPathBlock(QFrame):
 
     def _init_widgets(self):
 
-        # the path button
+        # label
+        label = QLabel()
+        label.setText('%#x' % self.path.addr)
+
+        # the select button
 
         path_button = QPushButton()
-        path_button.setText('Path@%#x' % self.path.addr)
+        path_button.setText('Select')
         path_button.released.connect(self._on_path_button_released)
 
         # the disasm button
@@ -27,9 +31,13 @@ class QPathBlock(QFrame):
         disasm_button.setText('Disasm')
         disasm_button.released.connect(self._on_disasm_button_released)
 
-        layout = QHBoxLayout()
-        layout.addWidget(path_button)
-        layout.addWidget(disasm_button)
+        sublayout = QHBoxLayout()
+        sublayout.addWidget(path_button)
+        sublayout.addWidget(disasm_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(label)
+        layout.addLayout(sublayout)
 
         self.setLayout(layout)
 

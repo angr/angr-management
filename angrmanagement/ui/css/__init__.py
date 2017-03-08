@@ -13,6 +13,16 @@ QLabel[class=reg_viewer_label] {
     background-color: #ffffff;
 }
 
+QLabel[class=ast_viewer_ast_concrete] {
+    font: 10pt courier new;
+    color: blue;
+}
+
+QLabel[class=ast_viewer_ast_symbolic] {
+    font: 10pt courier new;
+    color: green;
+}
+
 QLabel[class=status_valid] {
     color: green;
 }

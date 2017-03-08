@@ -26,7 +26,7 @@ class PathGroups(object):
             pg = self.project.factory.path_group(immutable=False, hierarchy=hierarchy)
         self.groups.append(pg)
 
-        self.widget.add_pathgroup(pg)
+        self._widget.add_pathgroup(pg)
 
         return pg
 
@@ -37,17 +37,17 @@ class PathGroups(object):
             self.instance.add_job(PGStepJob(pg, callback=self._pathgroup_stepped, until_branch=True))
 
     def link_widget(self, path_groups_widget):
-        self.widget = path_groups_widget
+        self._widget = path_groups_widget
 
-        self.widget.reload()
+        self._widget.reload()
 
     #
     # Callbacks
     #
 
     def _pathgroup_stepped(self, result):
-        if self.widget is not None:
-            self.widget.refresh()
+        if self._widget is not None:
+            self._widget.refresh()
 
 
 class Instance(object):
