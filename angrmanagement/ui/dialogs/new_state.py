@@ -9,6 +9,7 @@ from angr import PathHierarchy
 
 from ..widgets import QAddressInput, QStateComboBox
 from ...data.states import StateRecord
+from ...utils.namegen import NameGenerator
 
 
 class NewState(QDialog):
@@ -56,6 +57,7 @@ class NewState(QDialog):
         name_label.setText("Name")
 
         txt_name = QLineEdit(self)
+        txt_name.setText(NameGenerator.random_name())
         self._name_edit = txt_name
 
         layout.addWidget(name_label, row, 0)
