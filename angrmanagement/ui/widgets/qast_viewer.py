@@ -7,10 +7,12 @@ import claripy
 
 
 class QASTViewer(QFrame):
-    def __init__(self, ast, parent=None):
+    def __init__(self, ast, display_size=True, byte_format=None, parent=None):
         super(QASTViewer, self).__init__(parent)
 
         self._ast = ast
+        self._display_size = display_size
+        self._byte_format = byte_format
 
         self._size_label = None
         self._ast_label = None
@@ -51,13 +53,15 @@ class QASTViewer(QFrame):
 
         # set text
         if isinstance(ast, (int, long)):
-            self._size_label.setText('pUnknown]')
-            self._ast_label.setText("%#x" % ast)
+            self._size_label.setText('[Unknown]')
+            format = "%#x" if self._byte_format is None else self._byte_format
+            self._ast_label.setText(format % ast)
         else:
             # claripy.AST
             self._size_label.setText("[%d]" % (len(ast) / 8))  # in bytes
             if not ast.symbolic:
-                self._ast_label.setText("%#x" % self._ast._model_concrete.value)
+                format = "%#x" if self._byte_format is None else self._byte_format
+                self._ast_label.setText(format % self._ast._model_concrete.value)
             else:
                 # symbolic
                 if isinstance(ast, claripy.ast.BV) and ast.op == 'BVS':
@@ -89,7 +93,8 @@ class QASTViewer(QFrame):
         if self._ast is not None:
             self.reload()
 
-        layout.addWidget(self._size_label)
+        if self._display_size:
+            layout.addWidget(self._size_label)
         layout.addWidget(ast_label)
         layout.setContentsMargins(0, 0, 0, 0)
 
