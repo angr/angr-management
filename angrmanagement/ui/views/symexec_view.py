@@ -6,6 +6,7 @@ from ..widgets.qpathtree import QPathTree
 from ..widgets.qpath_groups import QPathGroups
 from .view import BaseView
 from ..widgets.qregister_viewer import QRegisterViewer
+from ..widgets.qmemory_viewer import QMemoryViewer
 
 
 class SymexecView(BaseView):
@@ -17,6 +18,7 @@ class SymexecView(BaseView):
         self._pathtree = None  # type: QPathTree
         self._pathgroups = None  # type: QPathGroups
         self._register_viewer = None  # type: QRegisterViewer
+        self._memory_viewer = None  # type: QMemoryViewer
 
         self._init_widgets()
 
@@ -34,6 +36,7 @@ class SymexecView(BaseView):
 
     def view_path(self, path):
         self._register_viewer.state = path.state
+        self._memory_viewer.state = path.state
 
     #
     # Initialization
@@ -63,9 +66,15 @@ class SymexecView(BaseView):
         main.addDockWidget(Qt.RightDockWidgetArea, reg_viewer_dock)
         reg_viewer_dock.setWidget(reg_viewer)
 
+        mem_viewer = QMemoryViewer(self)
+        mem_viewer_dock = QDockWidget('Memory Viewer', mem_viewer)
+        main.addDockWidget(Qt.RightDockWidgetArea, mem_viewer_dock)
+        mem_viewer_dock.setWidget(mem_viewer)
+
         self._pathtree = pathtree
         self._pathgroups = pathgroups
         self._register_viewer = reg_viewer
+        self._memory_viewer = mem_viewer
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(main)
