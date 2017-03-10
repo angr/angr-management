@@ -51,8 +51,10 @@ class QStringTable(QTableWidget):
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setShowGrid(False)
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(24)
+        self.setHorizontalScrollMode(self.ScrollPerPixel)
 
         self._cfg = None
         self._function = None
@@ -119,7 +121,9 @@ class QStringTable(QTableWidget):
         if 0 <= current_row < len(self.items):
             self.setCurrentIndex(current_row)
 
+        self.setVisible(False)
         self.resizeColumnsToContents()
+        self.setVisible(True)
 
     #
     # Event handlers
