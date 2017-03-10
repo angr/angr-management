@@ -119,7 +119,7 @@ class QStringTable(QTableWidget):
                 self.setItem(idx, i, it)
 
         if 0 <= current_row < len(self.items):
-            self.setCurrentIndex(current_row)
+            self.setCurrentCell(current_row, 0)
 
         self.setVisible(False)
         self.resizeColumnsToContents()

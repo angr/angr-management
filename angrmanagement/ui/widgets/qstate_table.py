@@ -95,7 +95,7 @@ class QStateTable(QTableWidget):
                 self.setItem(idx, i, it)
 
         if 0 <= current_row < len(self.items):
-            self.setCurrentIndex(current_row)
+            self.setCurrentItem(current_row, 0)
 
     def _on_state_selected(self, *args):
         selected_index = self.currentRow()
