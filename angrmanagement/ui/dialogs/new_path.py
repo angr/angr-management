@@ -31,7 +31,7 @@ class NewPath(QDialog):
 
         self.setLayout(self.main_layout)
 
-        self.show()
+        # self.show()
 
     #
     # Private methods

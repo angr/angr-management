@@ -1,10 +1,6 @@
 
-import pygraphviz
-
-from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainterPath, QPainter, QKeyEvent
-from PySide.QtCore import QPointF, QRectF, Qt, QSize, Signal
-
-from ...utils.graph import grouper
+from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent
+from PySide.QtCore import Qt, QSize, Signal
 
 
 class QZoomingGraphicsView(QGraphicsView):

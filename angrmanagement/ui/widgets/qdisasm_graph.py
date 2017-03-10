@@ -339,8 +339,18 @@ class QDisasmGraph(QBaseGraph):
 
         painter.setFont(self.workspace.disasm_font)
 
+        topleft_point = self._to_graph_pos(QPoint(0, 0))
+        bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
+
         # draw nodes
         for block in self.blocks:
+            # optimization: don't paint blocks that are outside of the current range
+            block_topleft_point = QPoint(block.x, block.y)
+            block_bottomright_point = QPoint(block.x + block.width, block.y + block.height)
+            if block_topleft_point.x() > bottomright_point.x() or block_topleft_point.y() > bottomright_point.y():
+                continue
+            elif block_bottomright_point.x() < topleft_point.x() or block_bottomright_point.y() < topleft_point.y():
+                continue
             block.paint(painter)
 
         painter.setPen(Qt.black)
@@ -349,7 +359,16 @@ class QDisasmGraph(QBaseGraph):
         if self._edge_coords:
             for edges in self._edge_coords:
                 for from_, to_ in zip(edges, edges[1:]):
-                    painter.drawPolyline((QPointF(*from_), QPointF(*to_)))
+                    start_point = QPointF(*from_)
+                    end_point = QPointF(*to_)
+                    # optimization: don't draw edges that are outside of the current scope
+                    if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and \
+                            (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()):
+                        continue
+                    elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and \
+                            (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()):
+                        continue
+                    painter.drawPolyline((start_point, end_point))
 
                 # arrow
                 # end_point = self.mapToScene(*edges[-1])

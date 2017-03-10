@@ -1,10 +1,11 @@
 
 from PySide.QtGui import QMainWindow, QHBoxLayout, QDockWidget
-from PySide.QtCore import Qt
+from PySide.QtCore import Qt, QSize
 
 from ..widgets.qpathtree import QPathTree
 from ..widgets.qpath_groups import QPathGroups
 from .view import BaseView
+from ..widgets.qregister_viewer import QRegisterViewer
 
 
 class SymexecView(BaseView):
@@ -15,6 +16,7 @@ class SymexecView(BaseView):
 
         self._pathtree = None  # type: QPathTree
         self._pathgroups = None  # type: QPathGroups
+        self._register_viewer = None  # type: QRegisterViewer
 
         self._init_widgets()
 
@@ -30,6 +32,9 @@ class SymexecView(BaseView):
     def select_pathgroup(self, pg):
         self._pathgroups.select_pathgroup(pg)
 
+    def view_path(self, path):
+        self._register_viewer.state = path.state
+
     #
     # Initialization
     #
@@ -39,7 +44,10 @@ class SymexecView(BaseView):
         main = QMainWindow()
         main.setWindowFlags(Qt.Widget)
 
-        pathtree = QPathTree(main)
+        main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
+        main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
+
+        pathtree = QPathTree(self, main)
         pathtree_dock = QDockWidget('PathTree', pathtree)
         main.addDockWidget(Qt.BottomDockWidgetArea, pathtree_dock)
         pathtree_dock.setWidget(pathtree)
@@ -50,8 +58,14 @@ class SymexecView(BaseView):
         main.addDockWidget(Qt.TopDockWidgetArea, pathgroups_dock)
         pathgroups_dock.setWidget(pathgroups)
 
+        reg_viewer = QRegisterViewer(self)
+        reg_viewer_dock = QDockWidget('Register Viewer', reg_viewer)
+        main.addDockWidget(Qt.RightDockWidgetArea, reg_viewer_dock)
+        reg_viewer_dock.setWidget(reg_viewer)
+
         self._pathtree = pathtree
         self._pathgroups = pathgroups
+        self._register_viewer = reg_viewer
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(main)

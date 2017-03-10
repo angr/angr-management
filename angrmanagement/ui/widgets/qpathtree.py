@@ -7,8 +7,10 @@ from .qpg_graph import QPathGroupGraph
 from .qpath_block import QPathBlock
 
 class QPathTree(QFrame):
-    def __init__(self, parent):
+    def __init__(self, symexec_view, parent=None):
         super(QPathTree, self).__init__(parent)
+
+        self._symexec_view = symexec_view
 
         self._pathgroup = None
 
@@ -30,6 +32,10 @@ class QPathTree(QFrame):
         self._pathgroup = v
         self.reload()
 
+    @property
+    def symexec_view(self):
+        return self._symexec_view
+
     #
     # Public methods
     #
@@ -39,7 +45,7 @@ class QPathTree(QFrame):
         paths = [ path for (stash, paths) in self.pathgroup.stashes.items() if stash != 'pruned' for path in paths ]
         hierarchy = self.pathgroup._hierarchy
 
-        graph = self._generate_graph(paths, hierarchy)
+        graph = self._generate_graph(paths, hierarchy, self.symexec_view)
 
         self._graph.graph = graph
 
@@ -121,7 +127,7 @@ class QPathTree(QFrame):
                     #         yield (parent_path.path_id, path.path_id)
 
     @staticmethod
-    def _generate_graph(paths, hierarchy):
+    def _generate_graph(paths, hierarchy, symexec_view):
 
         g = networkx.DiGraph()
 
@@ -129,14 +135,14 @@ class QPathTree(QFrame):
 
         for p in paths:
             if p not in path_to_block:
-                path_to_block[p] = QPathBlock(p.path_id, p, False)
+                path_to_block[p] = QPathBlock(p.path_id, p, False, symexec_view)
             g.add_node(path_to_block[p])
 
         for src, dst in QPathTree._all_edges_gen(paths, hierarchy):
             if src not in path_to_block:
-                path_to_block[src] = QPathBlock(src.path_id, src, False)
+                path_to_block[src] = QPathBlock(src.path_id, src, False, symexec_view)
             if dst not in path_to_block:
-                path_to_block[dst] = QPathBlock(dst.path_id, dst, False)
+                path_to_block[dst] = QPathBlock(dst.path_id, dst, False, symexec_view)
             g.add_edge(path_to_block[src], path_to_block[dst])
 
         return g

@@ -8,14 +8,23 @@ QLabel[class=insn] {
     color: #000080;
 }
 
-QLabel[class=operand_branch_target] {
+QLabel[class=reg_viewer_label] {
     font: 10pt courier new;
-    color: #ff0000;
+    background-color: #ffffff;
 }
 
-QLabel[class=operand_branch_target_func] {
+QLabel[class=ast_viewer_size] {
     font: 10pt courier new;
-    color: #0000ff;
+}
+
+QLabel[class=ast_viewer_ast_concrete] {
+    font: 10pt courier new;
+    color: blue;
+}
+
+QLabel[class=ast_viewer_ast_symbolic] {
+    font: 10pt courier new;
+    color: green;
 }
 
 QLabel[class=status_valid] {

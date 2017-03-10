@@ -21,5 +21,3 @@ class DisasmInsnContextMenu(Menu):
         return self.window
 
     def _toggle_instruction_selection(self): self._disasm_view.toggle_instruction_selection(self.insn_addr)
-
-    def _symexec(self): self._disasm_view.symexec(self.insn_addr)
