@@ -17,6 +17,11 @@ class QRegisterViewer(QFrame):
         },
         'AMD64': {
             'common': [ 'rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'rip' ]
+        },
+        'MIPS32': {
+            'common': [ 'v0', 'v1', 'a0', 'a1', 'a2', 'a3', 't0', 't1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9',
+                        's0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 'gp', 'sp', 'ra', 'pc'
+                        ]
         }
     }
 
@@ -71,7 +76,7 @@ class QRegisterViewer(QFrame):
         state = self._state
 
         if state.arch.name not in self.ARCH_REGISTERS:
-            l.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", self._arch.name)
+            l.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", state.arch.name)
             return
 
         layout = QVBoxLayout()
