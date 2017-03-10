@@ -25,5 +25,7 @@ setup(
         'pyzmq',
         'PySide',
         'pygraphviz',
+        'pyqode.core',
+        'pyqode.python',
     ]
 )

@@ -21,7 +21,7 @@ class QStateTableItem(QTableWidgetItem):
 
         name = state_record.name
         is_default = 'Yes' if state_record.is_default else 'No'
-        base_state = '' if state_record.is_default else state_record.base_state
+        base_state = '' if state_record.is_default else state_record.base_state.name
         mode = state_record.mode
         address = '%#x' % state_record.address if isinstance(state_record.address, (int, long)) else 'Unspecified'
         options = str(state_record.custom_options)
@@ -73,6 +73,7 @@ class QStateTable(QTableWidget):
     @state_manager.setter
     def state_manager(self, state_manager):
         self._state_manager = state_manager
+        self._state_manager.register_view(self)
         self.reload()
 
     def reload(self):

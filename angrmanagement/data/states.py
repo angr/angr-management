@@ -1,6 +1,8 @@
 
 import logging
 
+import simuvex
+
 l = logging.getLogger('data.states')
 
 
@@ -12,7 +14,8 @@ class StateRecord(object):
 
     def __init__(self, name, base_state, is_default, mode, custom_options=None, address=None, custom_code=None):
 
-        if base_state not in {self.BLANK_STATE, self.ENTRY_STATE, self.FULL_INIT_STATE}:
+        if base_state not in {self.BLANK_STATE, self.ENTRY_STATE, self.FULL_INIT_STATE} and \
+                not isinstance(base_state, StateRecord):
             l.warning('Unknown base state type "%s". Default to blank_state.', base_state)
             base_state = self.BLANK_STATE
 
@@ -31,6 +34,8 @@ class StateRecord(object):
             s = project.factory.entry_state(addr=address)
         elif self.base_state == self.FULL_INIT_STATE:
             s = project.factory.full_init_state(addr=address)
+        elif isinstance(self.base_state, StateRecord):
+            s = self.base_state.state(project, address=address).copy()
         else:
             raise Exception()
 
@@ -39,7 +44,8 @@ class StateRecord(object):
             s.options |= self.custom_options
 
         if self.custom_code:
-            raise Exception('Custom code is not yet supported.')
+            custom_code = self.custom_code + "\n\ns = init_state(s)"
+            exec(custom_code)  # s will be updated
 
         return s
 
@@ -53,9 +59,14 @@ class StateManager(object):
         self._name_to_state_records = { }  # name to state records
         self._state_records = [ ]
 
+        self._states_view = None
+
         self['Blank State'] = StateRecord('Blank State', StateRecord.BLANK_STATE, True, 'symbolic')
         self['Entry State'] = StateRecord('Entry State', StateRecord.ENTRY_STATE, True, 'symbolic')
         self['Full Initial State'] = StateRecord('Full Initial State', StateRecord.FULL_INIT_STATE, True, 'symbolic')
+
+    def __contains__(self, name):
+        return name in self._name_to_state_records
 
     def __delitem__(self, name):
         if name in self._name_to_state_records and not self._name_to_state_records[name].is_default:
@@ -69,6 +80,9 @@ class StateManager(object):
         self._name_to_state_records[name] = state_record
         self._state_records.append(state_record)
 
+        if self._states_view is not None:
+            self._states_view.reload()
+
     def values(self):
         return self._state_records
 
@@ -77,3 +91,6 @@ class StateManager(object):
 
     def items(self):
         return self._name_to_state_records.iteritems()
+
+    def register_view(self, states_view):
+        self._states_view = states_view

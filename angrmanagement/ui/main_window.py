@@ -12,6 +12,8 @@ from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary
+from .dialogs.new_state import NewState
+from .toolbars.states_toolbar import StatesToolbar
 
 
 class MainWindow(QMainWindow):
@@ -30,12 +32,14 @@ class MainWindow(QMainWindow):
 
         self.workspace = None
 
+        self._states_toolbar = None  # type: StatesToolbar
         self._progressbar = None  # type: QProgressBar
 
         self._status = ""
         self._progress = None
 
         self._init_menus()
+        self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
 
@@ -92,6 +96,10 @@ class MainWindow(QMainWindow):
             # load the binary
             self._load_binary(file_to_open, cfg_args=load_binary_dialog.cfg_args)
 
+    def open_newstate_dialog(self):
+        new_state_dialog = NewState(self.workspace, parent=None)
+        new_state_dialog.exec_()
+
     #
     # Widgets
     #
@@ -105,6 +113,12 @@ class MainWindow(QMainWindow):
         self._progressbar.hide()
 
         self.statusBar().addPermanentWidget(self._progressbar)
+
+    def _init_toolbars(self):
+
+        self._states_toolbar = StatesToolbar(self)
+
+        self.addToolBar(Qt.TopToolBarArea, self._states_toolbar.qtoolbar())
 
     #
     # Menus
