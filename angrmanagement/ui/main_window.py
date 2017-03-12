@@ -2,8 +2,8 @@
 import sys
 import os
 
-from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar
-from PySide.QtCore import Qt, QSize, QEvent
+from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QResizeEvent
+from PySide.QtCore import Qt, QSize, QEvent, QTimer
 
 import angr
 
@@ -152,6 +152,35 @@ class MainWindow(QMainWindow):
     # Event
     #
 
+    def resizeEvent(self, event):
+        """
+
+        :param QResizeEvent event:
+        :return:
+        """
+
+        left_dockable_views = [ dock for dock in self.workspace.dockable_views
+                                if dock.widget().default_docking_position == 'left' ]
+
+        if not left_dockable_views:
+            return
+
+        left_dock = left_dockable_views[0]
+
+        widget = left_dock.widget()
+
+        # calculate the width ratio
+        if event.oldSize().width() < 0:
+            widget.old_size = widget.sizeHint()
+            return
+
+        ratio = widget.old_size.width() * 1.0 / event.oldSize().width()
+        new_width = int(self.width() * ratio)
+
+        self._resize_dock_widget(left_dock, new_width, widget.height())
+
+        widget.old_size = widget.size()
+
     def event(self, event):
 
         if event.type() == QEvent.User:
@@ -211,3 +240,28 @@ class MainWindow(QMainWindow):
         inst = Instance(project=angr.Project(file_path, load_options=load_options))
         self.workspace.set_instance(inst)
         inst.initialize(cfg_args=cfg_args)
+
+    def _resize_dock_widget(self, widget, new_width, new_height):
+
+        original_size = widget.size()
+        original_min = widget.minimumSize()
+        original_max = widget.maximumSize()
+
+        widget.resize(new_width, new_height)
+
+        if new_width != original_size.width():
+            if original_size.width() > new_width:
+                widget.setMaximumWidth(new_width)
+            else:
+                widget.setMinimumWidth(new_width)
+
+        if new_height != original_size.height():
+            if original_size.height() > new_height:
+                widget.setMaximumHeight(new_height)
+            else:
+                widget.setMinimumHeight(new_height)
+
+        widget.original_min = original_min
+        widget.original_max = original_max
+
+        QTimer.singleShot(1, widget.restore_original_size)

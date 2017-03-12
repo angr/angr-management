@@ -1,10 +1,13 @@
 
 from collections import defaultdict
 
-from PySide.QtGui import QDockWidget, QFont, QFontMetricsF
+from PySide.QtGui import QFont, QFontMetricsF
 from PySide.QtCore import Qt
 
 from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
+from .widgets.qsmart_dockwidget import QSmartDockWidget
+
+from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView
 
 
 class Workspace(object):
@@ -60,7 +63,7 @@ class Workspace(object):
 
         self.views_by_category[category].append(view)
 
-        dock = QDockWidget(caption, view)
+        dock = QSmartDockWidget(caption, view)
         dock_area = docking_positions.get(view.default_docking_position, Qt.RightDockWidgetArea)
         self._main_window.addDockWidget(dock_area, dock)
         dock.setWidget(view)
