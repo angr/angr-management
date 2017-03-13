@@ -1,4 +1,6 @@
 
+import os
+
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemView, QHeaderView
 from PySide.QtCore import Qt, QSize
 
@@ -21,13 +23,16 @@ class QFunctionTableItem(QTableWidgetItem):
 
         name = function.name
         address = function.addr
+        binary = function.binary
+        binary_name = os.path.basename(binary.binary)
         blocks = len(list(function.blocks))
-        size = "Unknown"
+        size = function.size
 
         widgets = [
             QTableWidgetItem(name),
             QTableWidgetItem("%x" % address),
-            QTableWidgetItem(size),
+            QTableWidgetItem(binary_name),
+            QTableWidgetItem("%d" % size),
             QTableWidgetItem("%d" % blocks),
         ]
 
@@ -52,9 +57,13 @@ class QFunctionTable(QTableWidget):
 
         self._selected = selection_callback
 
-        self.setColumnCount(4)
-        self.setHorizontalHeaderLabels([ 'Name', 'Address', 'Size', 'Blocks' ])
+        header = [ 'Name', 'Address', 'Binary', 'Size', 'Blocks' ]
+
+        self.setColumnCount(len(header))
+        self.setHorizontalHeaderLabels(header)
+        self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setHorizontalScrollMode(self.ScrollPerPixel)
 
         self.verticalHeader().setResizeMode(QHeaderView.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
@@ -72,7 +81,9 @@ class QFunctionTable(QTableWidget):
     def function_manager(self, functions):
         self._functions = functions
         self.reload()
+        self.hide()
         self.resizeColumnsToContents()
+        self.show()
 
     def reload(self):
 
