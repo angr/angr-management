@@ -27,6 +27,10 @@ QLabel[class=ast_viewer_ast_symbolic] {
     color: green;
 }
 
+QLabel[class=memory_viewer_address] {
+    font: 10pt courier new;
+}
+
 QLabel[class=status_valid] {
     color: green;
 }

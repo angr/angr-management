@@ -132,6 +132,12 @@ class QMemoryViewer(QFrame):
             row_layout = QHBoxLayout()
 
             col = 0
+
+            addr = addr_base + row * COLUMNS
+            addr_label = QLabel("%x" % addr)
+            addr_label.setProperty("class", "memory_viewer_address")
+            row_layout.addWidget(addr_label)
+
             while col < COLUMNS:
                 addr = addr_base + row * COLUMNS + col
                 data = state.memory.load(addr, 1)
@@ -141,6 +147,7 @@ class QMemoryViewer(QFrame):
                 row_layout.addWidget(ast_viewer)
 
                 col += 1
+            row_layout.addStretch(0)
 
             layout.addLayout(row_layout)
 
