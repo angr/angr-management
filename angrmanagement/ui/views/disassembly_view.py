@@ -155,6 +155,8 @@ class DisassemblyView(BaseView):
         self._jump_history.jump_to(addr)
         self._jump_to(addr)
 
+        return True
+
     def jump_back(self):
         addr = self._jump_history.backtrack()
         if addr is not None:
