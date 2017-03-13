@@ -94,7 +94,10 @@ class MainWindow(QMainWindow):
 
         if load_binary_dialog.cfg_args is not None:
             # load the binary
-            self._load_binary(file_to_open, cfg_args=load_binary_dialog.cfg_args)
+            self._load_binary(file_to_open,
+                              load_options=load_binary_dialog.load_options,
+                              cfg_args=load_binary_dialog.cfg_args
+                              )
 
     def open_newstate_dialog(self):
         new_state_dialog = NewState(self.workspace, parent=None)
@@ -197,11 +200,14 @@ class MainWindow(QMainWindow):
     # Private methods
     #
 
-    def _load_binary(self, file_path, cfg_args=None):
+    def _load_binary(self, file_path, load_options=None, cfg_args=None):
+
+        if load_options is None:
+            load_options = { }
 
         if cfg_args is None:
             cfg_args = { }
 
-        inst = Instance(project=angr.Project(file_path, load_options={'auto_load_libs': False}))
+        inst = Instance(project=angr.Project(file_path, load_options=load_options))
         self.workspace.set_instance(inst)
         inst.initialize(cfg_args=cfg_args)
