@@ -63,17 +63,17 @@ class QPathGroups(QFrame):
         for pg in self._path_groups.groups:
             self.add_pathgroup(pg)
 
-    def add_pathgroup(self, pg):
-        self._pathgroups_list.addItem(repr(pg), pg)
+    def add_pathgroup(self, pg_desc):
+        self._pathgroups_list.addItem(pg_desc.name, pg_desc)
 
-    def select_pathgroup(self, pg):
-        idx = self._pathgroups_list.findData(pg)
+    def select_pathgroup_desc(self, pg_desc):
+        idx = self._pathgroups_list.findText(pg_desc.name)
 
         if idx != -1:
             self._pathgroups_list.setCurrentIndex(idx)
 
     def get_pathgroup(self, index):
-        return self._pathgroups_list.itemData(index)
+        return self._pathgroups_list.itemData(index).pg
 
     def current_pathgroup(self):
         idx = self._pathgroups_list.currentIndex()

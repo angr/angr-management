@@ -31,8 +31,8 @@ class SymexecView(BaseView):
 
         self._pathgroups.on_pathgroup_selection = self._on_pathgroup_selection
 
-    def select_pathgroup(self, pg):
-        self._pathgroups.select_pathgroup(pg)
+    def select_pathgroup_desc(self, pg_desc):
+        self._pathgroups.select_pathgroup_desc(pg_desc)
 
     def view_path(self, path):
         self._register_viewer.state = path.state

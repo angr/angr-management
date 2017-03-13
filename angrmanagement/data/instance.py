@@ -10,6 +10,15 @@ from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule
 from .states import StateManager
+from ..utils.namegen import NameGenerator
+
+class PathGroupDescriptor(object):
+    def __init__(self, name, pg):
+        self.name = name
+        self.pg = pg
+
+    def __repr__(self):
+        return "<PathGroup %s>" % self.name
 
 
 class PathGroups(object):
@@ -20,15 +29,24 @@ class PathGroups(object):
         self.groups = [ ]
         self._widget = None
 
-    def add_pathgroup(self, pg=None):
-        if pg is None:
+    def add_pathgroup(self, pg_desc=None):
+        """
+        Add a new path group descriptor.
+
+        :param PathGroupDescriptor pg_desc:
+        :return: The added/created path group descriptor.
+        """
+
+        if pg_desc is None:
             hierarchy = PathHierarchy(weakkey_path_mapping=True)
             pg = self.project.factory.path_group(immutable=False, hierarchy=hierarchy)
-        self.groups.append(pg)
+            pg_desc = PathGroupDescriptor(NameGenerator.random_name(), pg)
 
-        self._widget.add_pathgroup(pg)
+        self.groups.append(pg_desc)
 
-        return pg
+        self._widget.add_pathgroup(pg_desc)
+
+        return pg_desc
 
     def step_pathgroup(self, pg):
         if self.instance is None:

@@ -1,10 +1,12 @@
 
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout
+from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QLineEdit
 from PySide.QtCore import Qt
 
 from angr import PathHierarchy
 
 from ..widgets import QAddressInput, QStateComboBox
+from ...data.instance import PathGroupDescriptor
+from ...utils.namegen import NameGenerator
 
 
 class NewPath(QDialog):
@@ -16,6 +18,7 @@ class NewPath(QDialog):
         self._addr = addr
         self._workspace = workspace
 
+        self._name_box = None  # type: QLineEdit
         self._address_box = None
         self._status_label = None
         self._init_state_combo = None
@@ -41,6 +44,22 @@ class NewPath(QDialog):
 
         layout = QGridLayout()
 
+        row = 0
+
+        # name
+
+        name_label = QLabel(self)
+        name_label.setText("Name")
+
+        name_box = QLineEdit(self)
+        name_box.setText(NameGenerator.random_name())
+
+        self._name_box = name_box
+
+        layout.addWidget(name_label, row, 0)
+        layout.addWidget(name_box, row, 1)
+        row += 1
+
         # address label
 
         address_label = QLabel(self)
@@ -49,8 +68,9 @@ class NewPath(QDialog):
         address = QAddressInput(None, parent=self, default="%#x" % self._addr)
         self._address_box = address
 
-        layout.addWidget(address_label, 0, 0)
-        layout.addWidget(address, 0, 1)
+        layout.addWidget(address_label, row, 0)
+        layout.addWidget(address, row, 1)
+        row += 1
 
         # initial state
 
@@ -60,8 +80,9 @@ class NewPath(QDialog):
         init_state_combo = QStateComboBox(self._workspace.instance.states, self)
         self._init_state_combo = init_state_combo
 
-        layout.addWidget(state_label, 1, 0)
-        layout.addWidget(init_state_combo, 1, 1)
+        layout.addWidget(state_label, row, 0)
+        layout.addWidget(init_state_combo, row, 1)
+        row += 1
 
         # buttons
 
@@ -93,12 +114,16 @@ class NewPath(QDialog):
 
     def _on_ok_clicked(self):
 
+        name = self._name_box.text()
+        if not name:
+            return
+
         self._addr = self._address_box.raw_target
 
         if self._addr is None:
             return
 
-        if self._new_path(self._addr):
+        if self._new_path(name, self._addr):
             self.close()
 
     def _on_cancel_clicked(self):
@@ -109,7 +134,7 @@ class NewPath(QDialog):
     # Private methods
     #
 
-    def _new_path(self, addr):
+    def _new_path(self, path_name, addr):
         inst = self._workspace.instance
 
         state_record = self._init_state_combo.state_record
@@ -119,10 +144,11 @@ class NewPath(QDialog):
         state = state_record.state(inst.project, address=addr)
         hierarchy = PathHierarchy(weakkey_path_mapping=True)
         pg = inst.project.factory.path_group(state, hierarchy=hierarchy)
-        inst.path_groups.add_pathgroup(pg=pg)
+        pg_desc = PathGroupDescriptor(path_name, pg)
+        inst.path_groups.add_pathgroup(pg_desc=pg_desc)
 
         symexec_view = self._workspace.views_by_category['symexec'][0]
-        symexec_view.select_pathgroup(pg)
+        symexec_view.select_pathgroup_desc(pg_desc)
 
         self._workspace.raise_view(symexec_view)
 
