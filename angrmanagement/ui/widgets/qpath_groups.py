@@ -244,7 +244,7 @@ class QPathGroups(QFrame):
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(pg)
 
-                print "Currently exploring ", pg, pg.active
+                # print "Currently exploring ", pg, pg.active
 
                 return pg
 

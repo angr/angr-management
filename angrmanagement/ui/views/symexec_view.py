@@ -82,6 +82,8 @@ class SymexecView(BaseView):
         main.addDockWidget(Qt.RightDockWidgetArea, mem_viewer_dock)
         mem_viewer_dock.setWidget(mem_viewer)
 
+        main.tabifyDockWidget(reg_viewer_dock, mem_viewer_dock)
+
         self._pathtree = pathtree
         self._pathgroups = pathgroups
         self._register_viewer = reg_viewer
