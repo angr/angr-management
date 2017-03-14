@@ -19,7 +19,7 @@ class FunctionsView(BaseView):
         self._function_table.function_manager = self.workspace.instance.cfg.functions
 
     def sizeHint(self):
-        return QSize(260, 0)
+        return QSize(200, 0)
 
     def _init_widgets(self):
 

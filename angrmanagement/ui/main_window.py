@@ -159,27 +159,35 @@ class MainWindow(QMainWindow):
         :return:
         """
 
-        left_dockable_views = [ dock for dock in self.workspace.dockable_views
-                                if dock.widget().default_docking_position == 'left' ]
+        adjustable_dockable_views = [ dock for dock in self.workspace.dockable_views
+                                if dock.widget().default_docking_position in ('left', 'bottom') ]
 
-        if not left_dockable_views:
+        if not adjustable_dockable_views:
             return
 
-        left_dock = left_dockable_views[0]
+        for dock in adjustable_dockable_views:
+            widget = dock.widget()
 
-        widget = left_dock.widget()
+            # calculate the width ratio
+            if event.oldSize().width() < 0:
+                dock.old_size = widget.sizeHint()
+                continue
 
-        # calculate the width ratio
-        if event.oldSize().width() < 0:
-            widget.old_size = widget.sizeHint()
-            return
+            if widget.default_docking_position == 'left':
+                # we want to adjust the width
+                ratio = dock.old_size.width() * 1.0 / event.oldSize().width()
+                new_width = int(self.width() * ratio)
 
-        ratio = widget.old_size.width() * 1.0 / event.oldSize().width()
-        new_width = int(self.width() * ratio)
+                self._resize_dock_widget(dock, new_width, widget.height())
 
-        self._resize_dock_widget(left_dock, new_width, widget.height())
+            else:
+                # we want to adjust the height
+                ratio = dock.old_size.height() * 1.0 / event.oldSize().height()
+                new_height = int(self.height() * ratio)
 
-        widget.old_size = widget.size()
+                self._resize_dock_widget(dock, widget.width(), new_height)
+
+            dock.old_size = widget.size()
 
     def event(self, event):
 
