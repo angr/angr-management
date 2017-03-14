@@ -3,6 +3,8 @@ from PySide.QtGui import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QL
     QCheckBox, QTabWidget, QListWidget, QListWidgetItem
 from PySide.QtCore import QSize, Qt
 
+from ..widgets.qpathgroup_viewer import QPathGroupViewer
+
 
 class QPathGroups(QFrame):
     def __init__(self, path_groups, parent=None):
@@ -19,9 +21,12 @@ class QPathGroups(QFrame):
 
         self._pathgroups_list = None  # type: QComboBox
         self._avoids_list = None  # type: QListWidget
+        self._pathgroup_viewer = None  # type: QPathGroupViewer
         self._oneactive_checkbox = None  # type: QCheckBox
 
         self._init_widgets()
+
+        self._pathgroups_list.currentIndexChanged.connect(self._on_pathgroup_selection_internal)
 
     #
     # Properties
@@ -47,7 +52,6 @@ class QPathGroups(QFrame):
     def on_pathgroup_selection(self, v):
         if v is not self._on_pathgroup_selection:
             self._on_pathgroup_selection = v
-            self._pathgroups_list.currentIndexChanged.connect(self._on_pathgroup_selection)
 
     #
     # Public methods
@@ -133,6 +137,14 @@ class QPathGroups(QFrame):
         pg_layout.addWidget(pathgroups_label)
         pg_layout.addWidget(pathgroups_list)
 
+        # path group information
+        viewer = QPathGroupViewer(None)
+        self._pathgroup_viewer = viewer
+
+        #
+        # Buttons
+        #
+
         # step button
         step_button = QPushButton()
         step_button.setText('Step Path Group')
@@ -159,6 +171,7 @@ class QPathGroups(QFrame):
 
         pathgroups_layout = QVBoxLayout()
         pathgroups_layout.addLayout(pg_layout)
+        pathgroups_layout.addWidget(viewer)
         pathgroups_layout.addLayout(buttons_layout)
 
         frame = QFrame()
@@ -244,6 +257,13 @@ class QPathGroups(QFrame):
     #
     # Private methods
     #
+
+    def _on_pathgroup_selection_internal(self, idx):
+
+        self._pathgroup_viewer.pathgroup = self.current_pathgroup()
+
+        if self.on_pathgroup_selection is not None:
+            self.on_pathgroup_selection(idx)
 
     @staticmethod
     def _filter_actives(pg):
