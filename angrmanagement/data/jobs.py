@@ -108,6 +108,29 @@ class PGStepJob(Job):
             return "Stepping %r" % self._pg
 
 
+class PGExploreJob(Job):
+    def __init__(self, pg, find=None, avoid=None, step_callback=None, callback=None):
+        super(PGExploreJob, self).__init__('PathGroup exploring')
+        self._pg = pg
+        self._find = find
+        self._avoid = avoid
+        self._callback = callback
+        self._step_callback = step_callback
+
+    def run(self, inst):
+        self._pg.explore(find=self._find, avoid=self._avoid, step_func=self._step_callback)
+
+        return self._pg
+
+    def finish(self, inst, result):
+        super(PGExploreJob, self).finish(inst, result)
+        self._callback(result)
+
+    def __repr__(self):
+        return "Exploring %r" % self._pg
+
+
+
 class VFGGenerationJob(Job):
     def __init__(self, addr):
         super(VFGGenerationJob, self).__init__('VFG generation')

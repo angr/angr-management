@@ -5,12 +5,13 @@ from Queue import Queue
 import ana
 from angr import PathHierarchy
 
-from .jobs import PGStepJob
+from .jobs import PGStepJob, PGExploreJob
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule
 from .states import StateManager
 from ..utils.namegen import NameGenerator
+
 
 class PathGroupDescriptor(object):
     def __init__(self, name, pg):
@@ -48,22 +49,44 @@ class PathGroups(object):
 
         return pg_desc
 
-    def step_pathgroup(self, pg):
-        if self.instance is None:
-            pg.step(until_branch=True)
+    def step_pathgroup(self, pg, until_branch=True, async=True):
+        if self.instance is None or not async:
+            pg.step(until_branch=until_branch)
         else:
-            self.instance.add_job(PGStepJob(pg, callback=self._pathgroup_stepped, until_branch=True))
+            self.instance.add_job(PGStepJob(pg, callback=self._pathgroup_stepped, until_branch=until_branch))
+
+    def explore_pathgroup(self, pg, async=True, avoid=None, find=None, step_callback=None):
+
+        if self.instance is None or not async:
+            # TODO: implement it
+            pass
+
+        else:
+            self.instance.add_job(PGExploreJob(pg, avoid=avoid, find=find, callback=self._pathgroup_explored,
+                                               step_callback=step_callback,
+                                               )
+                                  )
 
     def link_widget(self, path_groups_widget):
         self._widget = path_groups_widget
 
         self._widget.reload()
 
+    def refresh_widget(self):
+        if self._widget is None:
+            return
+
+        self._widget.refresh()
+
     #
     # Callbacks
     #
 
     def _pathgroup_stepped(self, result):
+        if self._widget is not None:
+            self._widget.refresh()
+
+    def _pathgroup_explored(self, result):
         if self._widget is not None:
             self._widget.refresh()
 
