@@ -6,6 +6,7 @@ class QPathBlock(QFrame):
         super(QPathBlock, self).__init__(parent)
 
         self.symexec_view = symexec_view
+        self._workspace = self.symexec_view.workspace
 
         self.name = name
         self.path = path
@@ -50,4 +51,7 @@ class QPathBlock(QFrame):
         self.symexec_view.view_path(self.path)
 
     def _on_disasm_button_released(self):
-        pass
+        disasm_view = self._workspace.views_by_category['disassembly'][0]
+        disasm_view.jump_to(self.path.addr)
+
+        self._workspace.raise_view(disasm_view)
