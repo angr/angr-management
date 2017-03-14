@@ -239,10 +239,12 @@ class QPathGroups(QFrame):
 
             def _step_callback(pg):
                 # refresh the widget
-                self.path_groups.refresh_widget()
+                # self.path_groups.refresh_widget()
 
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(pg)
+
+                print "Currently exploring ", pg, pg.active
 
                 return pg
 
