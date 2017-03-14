@@ -44,6 +44,10 @@ class SymexecView(BaseView):
             'state': path.state,
         })
 
+    def avoid_addr_in_exec(self, addr):
+
+        self._pathgroups.add_avoid_address(addr)
+
     #
     # Initialization
     #

@@ -184,6 +184,10 @@ class DisassemblyView(BaseView):
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
+    def avoid_addr_in_exec(self, addr):
+
+        self.workspace.views_by_category['symexec'][0].avoid_addr_in_exec(addr)
+
     def sizeHint(self):
         return QSize(800, 800)
 

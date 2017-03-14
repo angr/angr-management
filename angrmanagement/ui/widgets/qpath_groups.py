@@ -1,6 +1,7 @@
 
-from PySide.QtGui import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QLineEdit, QPushButton
-from PySide.QtCore import QSize
+from PySide.QtGui import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QLineEdit, QPushButton, QGroupBox, \
+    QCheckBox, QTabWidget, QListWidget, QListWidgetItem
+from PySide.QtCore import QSize, Qt
 
 
 class QPathGroups(QFrame):
@@ -17,6 +18,8 @@ class QPathGroups(QFrame):
         self.path_groups = path_groups
 
         self._pathgroups_list = None  # type: QComboBox
+        self._avoids_list = None  # type: QListWidget
+        self._oneactive_checkbox = None  # type: QCheckBox
 
         self._init_widgets()
 
@@ -51,8 +54,8 @@ class QPathGroups(QFrame):
     #
 
     def refresh(self):
-        for i, pg in enumerate(self._path_groups.groups):
-            self._pathgroups_list.setItemText(i, repr(pg))
+        for i, pg_desc in enumerate(self._path_groups.groups):
+            self._pathgroups_list.setItemText(i, pg_desc.name)
 
         current_index = self._pathgroups_list.currentIndex()
         if current_index != -1:
@@ -82,6 +85,19 @@ class QPathGroups(QFrame):
 
         return None
 
+    def add_avoid_address(self, addr):
+
+        for i in xrange(self._avoids_list.count()):
+            item = self._avoids_list.item(i)  # type: QListWidgetItem
+            if int(item.text(), 16) == addr:
+                # deduplicate
+                return
+
+        item = QListWidgetItem("%#x" % addr)
+        item.setData(Qt.CheckStateRole, Qt.Checked)
+
+        self._avoids_list.addItem(item)
+
     #
     # Overridden methods
     #
@@ -92,6 +108,19 @@ class QPathGroups(QFrame):
 
     def _init_widgets(self):
 
+        tab = QTabWidget()
+
+        self._init_pathgroups_tab(tab)
+        self._init_settings_tab(tab)
+        self._init_avoids_tab(tab)
+
+        layout = QVBoxLayout()
+        layout.addWidget(tab)
+
+        self.setLayout(layout)
+
+    def _init_pathgroups_tab(self, tab):
+
         # pathgroups list
 
         pathgroups_label = QLabel(self)
@@ -100,22 +129,71 @@ class QPathGroups(QFrame):
         pathgroups_list = QComboBox(self)
         self._pathgroups_list = pathgroups_list
 
+        pg_layout = QHBoxLayout()
+        pg_layout.addWidget(pathgroups_label)
+        pg_layout.addWidget(pathgroups_list)
+
         # step button
         step_button = QPushButton()
-        step_button.setText('Step')
+        step_button.setText('Step Path Group')
         step_button.released.connect(self._on_step_clicked)
 
-        pathgroups_layout = QHBoxLayout()
-        pathgroups_layout.addWidget(pathgroups_label)
-        pathgroups_layout.addWidget(pathgroups_list)
-        pathgroups_layout.addWidget(step_button)
+        # step until branch
+        step_until_branch_button = QPushButton('Step Path Group until branch')
+        step_until_branch_button.released.connect(self._on_step_until_branch_clicked)
+
+        # explore button
+        explore_button = QPushButton('Explore')
+        explore_button.released.connect(self._on_explore_clicked)
+
+        # buttons layout
+        buttons_layout = QVBoxLayout()
+        layout = QHBoxLayout()
+        layout.addWidget(explore_button)
+        buttons_layout.addLayout(layout)
+
+        layout = QHBoxLayout()
+        layout.addWidget(step_button)
+        layout.addWidget(step_until_branch_button)
+        buttons_layout.addLayout(layout)
+
+        pathgroups_layout = QVBoxLayout()
+        pathgroups_layout.addLayout(pg_layout)
+        pathgroups_layout.addLayout(buttons_layout)
+
+        frame = QFrame()
+        frame.setLayout(pathgroups_layout)
+
+        tab.addTab(frame, 'General')
+
+    def _init_settings_tab(self, tab):
+
+        oneactive_checkbox = QCheckBox("Keep at most one active path")
+        oneactive_checkbox.setChecked(False)
+        self._oneactive_checkbox = oneactive_checkbox
+
+        settings_layout = QVBoxLayout()
+        settings_layout.addWidget(oneactive_checkbox)
+        settings_layout.addStretch(0)
+
+        frame = QFrame()
+        frame.setLayout(settings_layout)
+
+        tab.addTab(frame, 'Settings')
+
+    def _init_avoids_tab(self, tab):
+
+        avoids_list = QListWidget()
+        self._avoids_list = avoids_list
 
         layout = QVBoxLayout()
-        layout.addLayout(pathgroups_layout)
+        layout.addWidget(avoids_list)
 
-        layout.addStretch()
+        frame = QFrame()
+        frame.setLayout(layout)
 
-        self.setLayout(layout)
+        tab.addTab(frame, 'Avoids')
+
 
     #
     # Event handlers
@@ -124,4 +202,55 @@ class QPathGroups(QFrame):
     def _on_step_clicked(self):
         pg = self.current_pathgroup()
         if pg is not None:
-            self.path_groups.step_pathgroup(pg)
+            self.path_groups.step_pathgroup(pg, until_branch=False, async=False)
+
+            if self._oneactive_checkbox.isChecked():
+                pg = self.current_pathgroup()  # pg is updated
+                if self._filter_actives(pg):
+                    self.path_groups.refresh_widget()
+
+    def _on_step_until_branch_clicked(self):
+        pg = self.current_pathgroup()
+        if pg is not None:
+            self.path_groups.step_pathgroup(pg, until_branch=True)
+
+            if self._oneactive_checkbox.isChecked():
+                pg = self.current_pathgroup()  # pg is updated
+                if self._filter_actives(pg):
+                    self.path_groups.refresh_widget()
+
+    def _on_explore_clicked(self):
+        pg = self.current_pathgroup()
+
+        if pg is not None:
+
+            def _step_callback(pg):
+                # refresh the widget
+                self.path_groups.refresh_widget()
+
+                if self._oneactive_checkbox.isChecked():
+                    self._filter_actives(pg)
+
+                return pg
+
+            avoids = [ ]
+            for i in xrange(self._avoids_list.count()):
+                item = self._avoids_list.item(i)  # type: QListWidgetItem
+                if item.checkState() == Qt.Checked:
+                    avoids.append(int(item.text(), 16))
+
+            self.path_groups.explore_pathgroup(pg, avoid=avoids, find=[], step_callback=_step_callback)
+
+    #
+    # Private methods
+    #
+
+    @staticmethod
+    def _filter_actives(pg):
+        if len(pg.active) > 1:
+            pg.stashes['stashed'].extend(pg.active[1:])
+            pg.stashes['active'] = pg.active[:1]
+
+            return True
+
+        return False
