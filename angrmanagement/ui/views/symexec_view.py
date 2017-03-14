@@ -53,18 +53,19 @@ class SymexecView(BaseView):
         main = QMainWindow()
         main.setWindowFlags(Qt.Widget)
 
-        main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
-        main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
+        # main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
+        # main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
 
         pathtree = QPathTree(self, main)
         pathtree_dock = QDockWidget('PathTree', pathtree)
-        main.addDockWidget(Qt.BottomDockWidgetArea, pathtree_dock)
+        main.setCentralWidget(pathtree_dock)
+        # main.addDockWidget(Qt.BottomDockWidgetArea, pathtree_dock)
         pathtree_dock.setWidget(pathtree)
 
         pathgroups_logic = self.workspace.instance.path_groups if self.workspace.instance is not None else None
         pathgroups = QPathGroups(pathgroups_logic, main)
         pathgroups_dock = QDockWidget('PathGroups', pathgroups)
-        main.addDockWidget(Qt.TopDockWidgetArea, pathgroups_dock)
+        main.addDockWidget(Qt.RightDockWidgetArea, pathgroups_dock)
         pathgroups_dock.setWidget(pathgroups)
 
         reg_viewer = QRegisterViewer(self)
