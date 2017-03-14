@@ -38,6 +38,12 @@ class SymexecView(BaseView):
         self._register_viewer.state = path.state
         self._memory_viewer.state = path.state
 
+        # push namespace into the console
+        self.workspace.views_by_category['console'][0].push_namespace({
+            'path': path,
+            'state': path.state,
+        })
+
     #
     # Initialization
     #
