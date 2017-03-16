@@ -126,6 +126,10 @@ def to_supergraph(transition_graph):
                         super_graph.add_edge(src_, src_supernode, **data_)
 
                         if 'type' in data_ and data_['type'] == 'transition':
+                            if not ('ins_addr' in data_ and 'stmt_idx' in data_):
+                                # this is a hack to work around the issue in Function.normalize() where ins_addr and
+                                # stmt_idx weren't properly set onto edges
+                                continue
                             src_supernode.register_out_branch(data_['ins_addr'], data_['stmt_idx'], data_['type'],
                                                               dst_supernode.addr
                                                               )
@@ -147,6 +151,10 @@ def to_supergraph(transition_graph):
                 super_graph.add_edge(src_supernode, dst_supernode, **data)
 
                 if 'type' in data and data['type'] == 'transition':
+                    if not ('ins_addr' in data and 'stmt_idx' in data):
+                        # this is a hack to work around the issue in Function.normalize() where ins_addr and
+                        # stmt_idx weren't properly set onto edges
+                        continue
                     src_supernode.register_out_branch(data['ins_addr'], data['stmt_idx'], data['type'],
                                                       dst_supernode.addr
                                                       )
@@ -155,6 +163,10 @@ def to_supergraph(transition_graph):
         in_edges = transition_graph.in_edges(node, data=True)
 
         for src, _, data in in_edges:
+            if not ('ins_addr' in data and 'stmt_idx' in data):
+                # this is a hack to work around the issue in Function.normalize() where ins_addr and
+                # stmt_idx weren't properly set onto edges
+                continue
             supernode = supernodes_map[src]
             supernode.register_out_branch(data['ins_addr'], data['stmt_idx'], data['type'], node.addr)
 
