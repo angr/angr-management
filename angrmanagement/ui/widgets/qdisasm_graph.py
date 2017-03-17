@@ -523,12 +523,37 @@ class QDisasmGraph(QBaseGraph):
             width, height = size
             vertex.view = VertexViewer(width, height)
 
+        # a hack to make it a connected graph by adding a temporary vertex
+        tmp_vertex = None
+        if len(g.C) > 1:
+            tmp_vertex = Vertex('temp')
+            tmp_vertex.view = VertexViewer(20, 20)
+            tmp_vertices = [ ]
+            for core in g.C:
+                tmp_vertices.append(core.sV[0])
+            tmp_edges = [ ]
+            for v in tmp_vertices:
+                edge = Edge(v, tmp_vertex)
+                edge.view = EdgeViewer()
+                tmp_edges.append(edge)
+            # rebuild the graph
+            g = Graph(vertices.values() + [ tmp_vertex ], edges + tmp_edges)
+            assert len(g.C) == 1
+
         sug = SugiyamaLayout(g.C[0])
         sug.xspace = self.XSPACE
         sug.yspace = self.YSPACE
         sug.route_edge = EdgeRouter(sug, self.XSPACE, self.YSPACE).route_edges
-        sug.init_all(roots=[vertices[start]])
-        sug.draw()
+
+        # calculate additional roots
+        all_roots = [ n.addr for n in self.function_graph.supergraph.nodes()
+                      if self.function_graph.supergraph.in_degree(n) == 0
+                      ]
+        if start not in all_roots:
+            all_roots.append(start)
+
+        sug.init_all(roots=[vertices[root_addr] for root_addr in all_roots])
+        sug.draw(3)
 
         # extract coordinates for nodes
         for addr, vertex in vertices.iteritems():
