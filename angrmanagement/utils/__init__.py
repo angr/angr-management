@@ -139,7 +139,7 @@ def should_display_string_label(cfg, insn_addr):
 
 
 def filter_string_for_display(s):
-    return s.replace("\r", "\\r").replace("\n", "\\n")
+    return s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t")
 
 
 def get_string_for_display(cfg, insn_addr):
@@ -160,7 +160,7 @@ def get_string_for_display(cfg, insn_addr):
                 str_content = next_level.content
 
     if str_content is not None:
-        if len(str_content) > MAX_SIZE: return '"' + str_content[:MAX_SIZE] + '..."'
+        if len(str_content) > MAX_SIZE: return '"' + filter_string_for_display(str_content[:MAX_SIZE]) + '..."'
         else: return '"' + filter_string_for_display(str_content) + '"'
     else:
         return '<Unknown>'
