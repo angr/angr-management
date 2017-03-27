@@ -18,9 +18,11 @@ class Job(object):
         gui_thread_schedule(self._finish_progress)
 
     def _progress_callback(self, percentage):
-        self.progress_percentage = percentage
+        delta = percentage - self.progress_percentage
 
-        gui_thread_schedule(self._set_progress)
+        if delta > 1.0:
+            self.progress_percentage = percentage
+            gui_thread_schedule(self._set_progress)
 
     def _set_progress(self):
         GlobalInfo.main_window.status = "Working... job %s" % self.name
