@@ -1,10 +1,16 @@
 
+import logging
+
 import networkx
 from PySide.QtGui import QFrame, QHBoxLayout
 from PySide.QtCore import QSize
 
 from .qpg_graph import QPathGroupGraph
 from .qpath_block import QPathBlock
+
+
+l = logging.getLogger('ui.widgets.qpathtree')
+
 
 class QPathTree(QFrame):
     def __init__(self, symexec_view, parent=None):
@@ -112,19 +118,18 @@ class QPathTree(QFrame):
 
                 parent_history = parent_histories[0]
                 # assume _path_mapping always has the path
-                parent_path = hierarchy._path_mapping[parent_history]
-                if len(hierarchy.history_successors(parent_path.history)) > 1:
-                    yield (parent_path, bot_path)
-                    work.add(parent_path)
+                try:
+                    parent_path = hierarchy._path_mapping[parent_history]
+                    if len(hierarchy.history_successors(parent_path.history)) > 1:
+                        yield (parent_path, bot_path)
+                        work.add(parent_path)
+                        break
+                    else:
+                        working_path = parent_path
+                except KeyError:
+                    # the parent history is not found in the path mapping
+                    l.error('Parent history %s is not found', parent_history)
                     break
-                else:
-                    working_path = parent_path
-                    # if path.state.se in hierarchy._parents:
-                    #     parent_se = hierarchy._parents[path.state.se]
-                    #     if parent_se in hierarchy._path_mapping:
-                    #         parent_path = hierarchy._path_mapping[parent_se]
-                    #         work.add(parent_path)
-                    #         yield (parent_path.path_id, path.path_id)
 
     @staticmethod
     def _generate_graph(paths, hierarchy, symexec_view):
