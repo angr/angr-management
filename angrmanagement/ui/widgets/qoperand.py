@@ -4,6 +4,9 @@ import logging
 from PySide.QtGui import QLabel, QHBoxLayout, QPainter, QColor
 from PySide.QtCore import Qt
 
+from angr.analyses.code_location import CodeLocation
+from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand
+
 from .qgraph_object import QGraphObject
 
 l = logging.getLogger('ui.widgets.qoperand')
@@ -30,13 +33,14 @@ class QOperandBranchTarget(QLabel):
 
 
 class QOperand(QGraphObject):
-    def __init__(self, workspace, disasm_view, disasm, insn, operand, operand_index, is_branch_target, is_indirect_branch,
-                 branch_targets, config):
+    def __init__(self, workspace, disasm_view, disasm, variable_manager, insn, operand, operand_index, is_branch_target,
+                 is_indirect_branch, branch_targets, config):
         super(QOperand, self).__init__()
 
         self.workspace = workspace
         self.disasm_view = disasm_view
         self.disasm = disasm
+        self.variable_manager = variable_manager
         self.insn = insn
         self.operand = operand
         self.operand_index = operand_index
@@ -123,7 +127,7 @@ class QOperand(QGraphObject):
         # we pick the one that complies with the operand's text
         # my solution is pretty hackish...
 
-        if operand.cs_operand.type == 2:
+        if isinstance(operand, ConstantOperand):
             imm = operand.cs_operand.imm
             if imm in branch_targets:
                 # problem solved
@@ -171,7 +175,19 @@ class QOperand(QGraphObject):
 
         else:
             # not a branch
-            self._label = self.operand.render()[0]
+
+            formatting = {}
+            if isinstance(self.operand, MemoryOperand):
+                # try find the corresponding variable
+                variable = self.variable_manager.find_variable_by_insn(self.insn.addr)
+                if variable is not None:
+                    ident = (self.insn.addr, 'operand', self.operand_index)
+                    if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
+                    formatting['custom_values_str'][ident] = variable.name
+                    if 'values_style' not in formatting: formatting['values_style'] = { }
+                    formatting['values_style'][ident] = 'curly'
+
+            self._label = self.operand.render(formatting=formatting)[0]
             self._label_width = len(self._label) * self._config.disasm_font_width
 
         self._update_size()
