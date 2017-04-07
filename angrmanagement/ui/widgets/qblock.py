@@ -76,6 +76,14 @@ class QBlock(QGraphObject):
     # Public methods
     #
 
+    def refresh(self):
+        super(QBlock, self).refresh()
+
+        for obj in self.objects:
+            obj.refresh()
+
+        self._update_size()
+
     def update_label(self, label_addr):
         label = self.addr_to_labels.get(label_addr, None)
         if label is not None:

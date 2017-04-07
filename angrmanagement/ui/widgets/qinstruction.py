@@ -66,12 +66,14 @@ class QInstruction(QGraphObject):
             painter.setBrush(QColor(0xef, 0xbf, 0xba))
             painter.drawRect(self.x, self.y, self.width, self.height + 2)
 
-        # address
         x = self.x
-        painter.setPen(Qt.black)
-        painter.drawText(x, self.y + self._config.disasm_font_height, self._addr)
 
-        x += self._addr_width + self.ADDR_SPACING
+        # address
+        if self.disasm_view.show_address:
+            painter.setPen(Qt.black)
+            painter.drawText(x, self.y + self._config.disasm_font_height, self._addr)
+
+            x += self._addr_width + self.ADDR_SPACING
 
         # mnemonic
         painter.setPen(QColor(0, 0, 0x80))
@@ -99,6 +101,11 @@ class QInstruction(QGraphObject):
             x += self.STRING_SPACING
             painter.setPen(Qt.gray)
             painter.drawText(x, self.y + self._config.disasm_font_height, self._string)
+
+    def refresh(self):
+        super(QInstruction, self).refresh()
+
+        self._update_size()
 
     def select(self):
         if not self.selected:
@@ -185,9 +192,13 @@ class QInstruction(QGraphObject):
     def _update_size(self):
 
         self._height = self._config.disasm_font_height
-        self._width = self._addr_width + self.ADDR_SPACING + \
-                      self._mnemonic_width + self.MNEMONIC_SPACING + \
-                      sum([ op.width for op in self._operands ]) + \
-                      (len(self._operands) - 1) * (self._config.disasm_font_width + self.OPERAND_SPACING)
+        self._width = 0
+
+        if self.disasm_view.show_address:
+            self._width += self._addr_width + self.ADDR_SPACING
+
+        self._width += self._mnemonic_width + self.MNEMONIC_SPACING + \
+                       sum([ op.width for op in self._operands ]) + \
+                       (len(self._operands) - 1) * (self._config.disasm_font_width + self.OPERAND_SPACING)
         if self._string is not None:
             self._width += self.STRING_SPACING + self._string_width

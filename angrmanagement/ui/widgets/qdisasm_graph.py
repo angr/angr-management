@@ -205,6 +205,16 @@ class QDisasmGraph(QBaseGraph):
 
         self.request_relayout()
 
+    def refresh(self):
+
+        if not self.blocks:
+            return
+
+        for b in self.blocks:
+            b.refresh()
+
+        self.request_relayout(ensure_visible=False)
+
     def add_block(self, block):
         self.blocks.add(block)
 
@@ -592,7 +602,7 @@ class QDisasmGraph(QBaseGraph):
 
         return coordinates, edge_coordinates
 
-    def request_relayout(self):
+    def request_relayout(self, ensure_visible=True):
 
         node_coords, edge_coords = self._layout_nodes_and_edges(self.function_graph.function.addr)
 
@@ -635,10 +645,11 @@ class QDisasmGraph(QBaseGraph):
 
         self._update_size()
 
-        if self.selected_insns:
-            self.show_selected()
-        else:
-            self.show_instruction(self._function_graph.function.addr)
+        if ensure_visible:
+            if self.selected_insns:
+                self.show_selected()
+            else:
+                self.show_instruction(self._function_graph.function.addr)
 
     def show_selected(self):
         if self.selected_insns:

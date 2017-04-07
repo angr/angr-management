@@ -34,6 +34,9 @@ class QGraphObject(object):
     def height(self):
         return self._height
 
+    def refresh(self):
+        self._width, self._height = None, None
+
     def pos(self):
         """
 

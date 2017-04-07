@@ -57,7 +57,9 @@ class DisassemblyView(BaseView):
 
         self.caption = 'Disassembly'
 
-        self._flow_graph = None
+        self._show_address = False
+
+        self._flow_graph = None  # type: QDisasmGraph
         self._statusbar = None
         self._jump_history = JumpHistory()
 
@@ -78,6 +80,10 @@ class DisassemblyView(BaseView):
     @property
     def disasm(self):
         return self._flow_graph.disasm
+
+    @property
+    def show_address(self):
+        return self._show_address
 
     #
     # UI
@@ -121,6 +127,18 @@ class DisassemblyView(BaseView):
 
         self._jump_history.jump_to(function.addr)
         self._display_function(function)
+
+    def toggle_show_address(self, show_address):
+        """
+        Toggle whether addresses are shown on disassembly graph.
+
+        :param bool show_address: Whether the address should be shown or not. 
+        :return:                  None
+        """
+
+        self._show_address = show_address
+
+        self._flow_graph.refresh()
 
     def toggle_instruction_selection(self, insn_addr):
         """
@@ -199,7 +217,7 @@ class DisassemblyView(BaseView):
 
         self._flow_graph = QDisasmGraph(self.workspace, self)
 
-        self._statusbar = QDisasmStatusBar(self)
+        self._statusbar = QDisasmStatusBar(self, parent=self)
 
         hlayout = QVBoxLayout()
         hlayout.addWidget(self._flow_graph)

@@ -6,7 +6,7 @@ from .menu import Menu, MenuEntry, MenuSeparator
 
 class DisasmInsnContextMenu(Menu):
     def __init__(self, disasm_view):
-        super(DisasmInsnContextMenu, self).__init__(disasm_view, "&File")
+        super(DisasmInsnContextMenu, self).__init__("", parent=disasm_view)
 
         self.insn_addr = None
 
@@ -19,7 +19,7 @@ class DisasmInsnContextMenu(Menu):
 
     @property
     def _disasm_view(self):
-        return self.window
+        return self.parent
 
     def _toggle_instruction_selection(self): self._disasm_view.toggle_instruction_selection(self.insn_addr)
 
