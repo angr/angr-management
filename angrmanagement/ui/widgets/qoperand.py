@@ -179,11 +179,13 @@ class QOperand(QGraphObject):
             formatting = {}
             if isinstance(self.operand, MemoryOperand):
                 # try find the corresponding variable
-                variable = self.variable_manager.find_variable_by_insn(self.insn.addr)
-                if variable is not None:
+                variable_and_offset = self.variable_manager.find_variable_by_insn(self.insn.addr)
+                if variable_and_offset is not None:
+                    variable, offset = variable_and_offset
                     ident = (self.insn.addr, 'operand', self.operand_index)
                     if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                    formatting['custom_values_str'][ident] = variable.name
+                    formatting['custom_values_str'][ident] = variable.name if offset == 0 else \
+                        "%s[%d]" % (variable.name, offset)
                     if 'values_style' not in formatting: formatting['values_style'] = { }
                     formatting['values_style'][ident] = 'curly'
 
