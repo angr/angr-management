@@ -18,7 +18,7 @@ class QBlock(QGraphObject):
     BOTTOM_PADDING = 5
     LEFT_PADDING = 5
     RIGHT_PADDING = 5
-    SPACING = 2
+    SPACING = 0
 
     def __init__(self, workspace, disasm_view, disasm, variable_manager, addr, cfg_nodes, out_branches):
         super(QBlock, self).__init__()
