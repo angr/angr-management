@@ -48,6 +48,9 @@ class QOperand(QGraphObject):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
+        # whether this is a phi node or not
+        self.phi = False
+
         self._config = config
 
         self.selected = False
@@ -55,6 +58,7 @@ class QOperand(QGraphObject):
         # "widets"
         self._label = None
         self._label_width = None
+        self._phi_width = None
         self._branch_target = None
         self._is_target_func = None
 
@@ -77,6 +81,12 @@ class QOperand(QGraphObject):
             painter.drawRect(self.x, self.y, self.width, self.height + 2)
 
         x = self.x
+
+        if self.phi:
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, self.y + self._config.disasm_font_height, u'\u0278 ')
+            x += self._phi_width
+
         if self._branch_target:
             if self._is_target_func:
                 painter.setPen(Qt.blue)
@@ -184,16 +194,27 @@ class QOperand(QGraphObject):
                     variable, offset = variable_and_offset
                     ident = (self.insn.addr, 'operand', self.operand_index)
                     if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                    formatting['custom_values_str'][ident] = variable.name if offset == 0 else \
-                        "%s[%d]" % (variable.name, offset)
+                    if offset == 0: custom_value_str = variable.name
+                    else: custom_value_str = "%s[%d]" % (variable.name, offset)
+
+                    formatting['custom_values_str'][ident] = custom_value_str
+
+                    if variable.phi:
+                        self.phi = True
+
                     if 'values_style' not in formatting: formatting['values_style'] = { }
                     formatting['values_style'][ident] = 'curly'
 
             self._label = self.operand.render(formatting=formatting)[0]
             self._label_width = len(self._label) * self._config.disasm_font_width
 
+        if self.phi:
+            self._phi_width = 2 * self._config.disasm_font_width
+        else:
+            self._phi_width = 0
+
         self._update_size()
 
     def _update_size(self):
-        self._width = self._label_width
+        self._width = self._label_width + self._phi_width
         self._height = self._config.disasm_font_height
