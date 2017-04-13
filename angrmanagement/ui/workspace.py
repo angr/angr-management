@@ -24,8 +24,10 @@ class Workspace(object):
         # Some generic configurations. move to "configurations" module later
         #
         self.disasm_font = QFont("courier new", 10)
-        self.disasm_font_height = QFontMetricsF(self.disasm_font).height()
-        self.disasm_font_width = QFontMetricsF(self.disasm_font).width('A')
+        font_metrics = QFontMetricsF(self.disasm_font)
+        self.disasm_font_height = font_metrics.height()
+        self.disasm_font_width = font_metrics.width('A')
+        self.disasm_font_ascent = font_metrics.ascent()
 
 
         default_tabs = [

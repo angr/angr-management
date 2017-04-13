@@ -45,7 +45,7 @@ class QBlockLabel(QGraphObject):
         :return:
         """
         painter.setPen(Qt.blue)
-        painter.drawText(self.x, self.y + self._config.disasm_font_height, self.text)
+        painter.drawText(self.x, self.y + self._config.disasm_font_ascent, self.text)
 
     def _clear_size(self):
         self._width = None

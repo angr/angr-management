@@ -62,22 +62,23 @@ class QInstruction(QGraphObject):
 
         # selection background
         if self.selected:
+            from .qblock import QBlock
             painter.setPen(QColor(0xef, 0xbf, 0xba))
             painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height + 2)
+            painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
 
         # address
         if self.disasm_view.show_address:
             painter.setPen(Qt.black)
-            painter.drawText(x, self.y + self._config.disasm_font_height, self._addr)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
 
             x += self._addr_width + self.ADDR_SPACING
 
         # mnemonic
         painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_height, self._mnemonic)
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
 
         x += self._mnemonic_width + self.MNEMONIC_SPACING
 
@@ -91,7 +92,7 @@ class QInstruction(QGraphObject):
 
             if i != len(self._operands) - 1:
                 # draw the comma
-                painter.drawText(x, self.y + self._config.disasm_font_height, ",")
+                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
                 x += self._config.disasm_font_width * 1
 
             x += self.OPERAND_SPACING
@@ -100,7 +101,7 @@ class QInstruction(QGraphObject):
         if self._string is not None:
             x += self.STRING_SPACING
             painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_height, self._string)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
 
     def refresh(self):
         super(QInstruction, self).refresh()

@@ -84,7 +84,7 @@ class QOperand(QGraphObject):
 
         if self.phi:
             painter.setPen(Qt.darkGreen)
-            painter.drawText(x, self.y + self._config.disasm_font_height, u'\u0278 ')
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, u'\u0278 ')
             x += self._phi_width
 
         if self._branch_target:
@@ -94,7 +94,7 @@ class QOperand(QGraphObject):
                 painter.setPen(Qt.red)
         else:
             painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_height, self._label)
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._label)
 
         x += self._label_width
 

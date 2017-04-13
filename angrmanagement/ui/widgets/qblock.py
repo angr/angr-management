@@ -120,7 +120,7 @@ class QBlock(QGraphObject):
 
         # content
 
-        y_offset = 0
+        y_offset = self.TOP_PADDING
 
         for obj in self.objects:
 
@@ -130,7 +130,7 @@ class QBlock(QGraphObject):
             obj.y = self.y + y_offset
             obj.paint(painter)
 
-            y_offset += self._config.disasm_font_height
+            y_offset += obj.height
 
     #
     # Event handlers
