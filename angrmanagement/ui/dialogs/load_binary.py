@@ -13,8 +13,8 @@ l = logging.getLogger('dialogs.load_binary')
 
 
 class LoadBinary(QDialog):
-    def __init__(self, file_path, *args, **kwargs):
-        super(LoadBinary, self).__init__(*args, **kwargs)
+    def __init__(self, file_path, parent=None):
+        super(LoadBinary, self).__init__(parent)
 
         # initialization
         self.file_path = file_path
@@ -25,8 +25,6 @@ class LoadBinary(QDialog):
         self.load_options = { }
 
         self.setWindowTitle('Load a new binary')
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setWindowModality(Qt.WindowModal)
 
         self.main_layout = QVBoxLayout()
 

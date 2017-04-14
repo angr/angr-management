@@ -25,8 +25,6 @@ class NewPath(QDialog):
         self._ok_button = None
 
         self.setWindowTitle('New Path')
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setWindowModality(Qt.WindowModal)
 
         self.main_layout = QVBoxLayout()
 

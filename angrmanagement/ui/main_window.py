@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
                               )
 
     def open_newstate_dialog(self):
-        new_state_dialog = NewState(self.workspace, parent=None)
+        new_state_dialog = NewState(self.workspace, parent=self)
         new_state_dialog.exec_()
 
     #

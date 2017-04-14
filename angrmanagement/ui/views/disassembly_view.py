@@ -101,14 +101,14 @@ class DisassemblyView(BaseView):
         self._insn_addr_on_context_menu = None
 
     def popup_jumpto_dialog(self):
-        JumpTo(self, None).exec_()
+        JumpTo(self, parent=self).exec_()
 
     def popup_rename_label_dialog(self):
         label_addr = self._address_in_selection()
         if label_addr is None:
             return
 
-        dialog = RenameLabel(self, label_addr, None)
+        dialog = RenameLabel(self, label_addr, parent=self)
         dialog.exec_()
 
     def popup_newpath_dialog(self):
@@ -116,7 +116,7 @@ class DisassemblyView(BaseView):
         if addr is None:
             return
 
-        dialog = NewPath(self.workspace, addr, parent=None)
+        dialog = NewPath(self.workspace, addr, parent=self)
         dialog.exec_()
 
     #
