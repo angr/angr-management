@@ -5,10 +5,8 @@ from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemVi
 from PySide.QtCore import Qt, QSize
 
 
-class QFunctionTableItem(QTableWidgetItem):
-    def __init__(self, function, *args, **kwargs):
-        super(QFunctionTableItem, self).__init__(*args, **kwargs)
-
+class QFunctionTableItem(object):
+    def __init__(self, function):
         self._function = function
 
     def widgets(self):
