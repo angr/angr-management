@@ -132,6 +132,11 @@ class QInstruction(QGraphObject):
         if operand_idx < len(self._operands):
             self._operands[operand_idx].unselect()
 
+    def get_operand(self, operand_idx):
+        if operand_idx < len(self._operands):
+            return self._operands[operand_idx]
+        return None
+
     #
     # Event handlers
     #

@@ -466,6 +466,18 @@ class QDisasmGraph(QBaseGraph):
             # rename a label
             self.disassembly_view.popup_rename_label_dialog()
             return True
+        elif key == Qt.Key_X:
+            # XRef
+
+            # get the variable
+            if self.selected_operands:
+                ins_addr, operand_idx = next(iter(self.selected_operands))
+                block = self._insn_addr_to_block.get(ins_addr, None)
+                if block is not None:
+                    operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
+                    if operand is not None and operand.variable is not None:
+                        self.disassembly_view.popup_xref_dialog(operand.variable)
+            return True
         elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
             # jump back
             self.disassembly_view.jump_back()

@@ -8,6 +8,7 @@ from ..widgets import QDisasmGraph, QDisasmStatusBar
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.new_path import NewPath
+from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
 
@@ -123,6 +124,11 @@ class DisassemblyView(BaseView):
             return
 
         dialog = NewPath(self.workspace, addr, parent=self)
+        dialog.exec_()
+
+    def popup_xref_dialog(self, variable):
+
+        dialog = XRef(self._flow_graph.variable_manager, variable, parent=self)
         dialog.exec_()
 
     #
