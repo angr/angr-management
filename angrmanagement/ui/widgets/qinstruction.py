@@ -106,6 +106,9 @@ class QInstruction(QGraphObject):
     def refresh(self):
         super(QInstruction, self).refresh()
 
+        for operand in self._operands:
+            operand.refresh()
+
         self._update_size()
 
     def select(self):

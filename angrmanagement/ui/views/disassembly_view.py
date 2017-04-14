@@ -58,6 +58,8 @@ class DisassemblyView(BaseView):
         self.caption = 'Disassembly'
 
         self._show_address = False
+        # whether we want to show identifier or not
+        self._show_variable_ident = False
 
         self._flow_graph = None  # type: QDisasmGraph
         self._statusbar = None
@@ -84,6 +86,10 @@ class DisassemblyView(BaseView):
     @property
     def show_address(self):
         return self._show_address
+
+    @property
+    def show_variable_identifier(self):
+        return self._show_variable_ident
 
     #
     # UI
@@ -137,6 +143,18 @@ class DisassemblyView(BaseView):
         """
 
         self._show_address = show_address
+
+        self._flow_graph.refresh()
+
+    def toggle_show_variable_identifier(self, show_ident):
+        """
+        Toggle whether variable identifiers are shown on disassembly graph.
+
+        :param bool show_ident: Whether variable identifiers should be shown or not.
+        :return:                None
+        """
+
+        self._show_variable_ident = show_ident
 
         self._flow_graph.refresh()
 

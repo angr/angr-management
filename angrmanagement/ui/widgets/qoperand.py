@@ -33,6 +33,9 @@ class QOperandBranchTarget(QLabel):
 
 
 class QOperand(QGraphObject):
+
+    VARIABLE_IDENT_SPACING = 5
+
     def __init__(self, workspace, disasm_view, disasm, variable_manager, insn, operand, operand_index, is_branch_target,
                  is_indirect_branch, branch_targets, config):
         super(QOperand, self).__init__()
@@ -48,6 +51,8 @@ class QOperand(QGraphObject):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
+        # the variable involved
+        self.variable = None
         # whether this is a phi node or not
         self.phi = False
 
@@ -59,6 +64,7 @@ class QOperand(QGraphObject):
         self._label = None
         self._label_width = None
         self._phi_width = None
+        self._variable_ident_width = None
         self._branch_target = None
         self._is_target_func = None
 
@@ -78,7 +84,7 @@ class QOperand(QGraphObject):
         if self.selected:
             painter.setPen(QColor(0xc0, 0xbf, 0x40))
             painter.setBrush(QColor(0xc0, 0xbf, 0x40))
-            painter.drawRect(self.x, self.y, self.width, self.height + 2)
+            painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
 
@@ -97,6 +103,20 @@ class QOperand(QGraphObject):
         painter.drawText(x, self.y + self._config.disasm_font_ascent, self._label)
 
         x += self._label_width
+
+        if self.variable is not None and self.disasm_view.show_variable_identifier:
+            x += self.VARIABLE_IDENT_SPACING
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.variable.ident)
+            x += self._variable_ident_width
+
+        # restores the color
+        painter.setPen(QColor(0, 0, 0x80))
+
+    def refresh(self):
+        super(QOperand, self).refresh()
+
+        self._update_size()
 
     def select(self):
         if not self.selected:
@@ -192,10 +212,14 @@ class QOperand(QGraphObject):
                 variable_and_offset = self.variable_manager.find_variable_by_insn(self.insn.addr)
                 if variable_and_offset is not None:
                     variable, offset = variable_and_offset
+
+                    self.variable = variable
+                    variable_str = variable.name
+
                     ident = (self.insn.addr, 'operand', self.operand_index)
                     if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                    if offset == 0: custom_value_str = variable.name
-                    else: custom_value_str = "%s[%d]" % (variable.name, offset)
+                    if offset == 0: custom_value_str = variable_str
+                    else: custom_value_str = "%s[%d]" % (variable_str, offset)
 
                     formatting['custom_values_str'][ident] = custom_value_str
 
@@ -213,8 +237,15 @@ class QOperand(QGraphObject):
         else:
             self._phi_width = 0
 
+        if self.variable is not None:
+            self._variable_ident_width = len(self.variable.ident) * self._config.disasm_font_width
+        else:
+            self._variable_ident_width = 0
+
         self._update_size()
 
     def _update_size(self):
         self._width = self._label_width + self._phi_width
+        if self.disasm_view.show_variable_identifier and self._variable_ident_width:
+            self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
         self._height = self._config.disasm_font_height
