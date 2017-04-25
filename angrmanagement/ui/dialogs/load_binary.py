@@ -21,8 +21,8 @@ class LoadBinary(QDialog):
         self.option_widgets = { }
 
         # return values
-        self.cfg_args = { }
-        self.load_options = { }
+        self.cfg_args = None
+        self.load_options = None
 
         self.setWindowTitle('Load a new binary')
 
