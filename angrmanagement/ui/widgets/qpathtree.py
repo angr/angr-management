@@ -67,6 +67,7 @@ class QPathTree(QFrame):
 
         layout = QHBoxLayout()
         layout.addWidget(graph)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 

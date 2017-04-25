@@ -246,6 +246,7 @@ class DisassemblyView(BaseView):
         hlayout = QVBoxLayout()
         hlayout.addWidget(self._flow_graph)
         hlayout.addWidget(self._statusbar)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)
 

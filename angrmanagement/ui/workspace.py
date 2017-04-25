@@ -65,7 +65,7 @@ class Workspace(object):
 
         self.views_by_category[category].append(view)
 
-        dock = QSmartDockWidget(caption, view)
+        dock = QSmartDockWidget(caption, parent=view)
         dock_area = docking_positions.get(view.default_docking_position, Qt.RightDockWidgetArea)
         self._main_window.addDockWidget(dock_area, dock)
         dock.setWidget(view)

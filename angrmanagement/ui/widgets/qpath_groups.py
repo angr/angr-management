@@ -120,6 +120,7 @@ class QPathGroups(QFrame):
 
         layout = QVBoxLayout()
         layout.addWidget(tab)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 

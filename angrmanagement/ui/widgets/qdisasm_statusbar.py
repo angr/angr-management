@@ -57,6 +57,7 @@ class QDisasmStatusBar(QFrame):
 
         layout.addStretch(0)
         layout.addWidget(option_btn)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 

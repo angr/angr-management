@@ -91,6 +91,7 @@ class SymexecView(BaseView):
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(main)
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(main_layout)
 

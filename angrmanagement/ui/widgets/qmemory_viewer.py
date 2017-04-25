@@ -113,6 +113,7 @@ class QMemoryViewer(QFrame):
 
         layout.addLayout(top_layout)
         layout.addWidget(area)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 

@@ -27,6 +27,7 @@ class FunctionsView(BaseView):
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._function_table)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)
 
