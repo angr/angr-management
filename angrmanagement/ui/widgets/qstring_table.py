@@ -3,7 +3,7 @@
 from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemView
 from PySide.QtCore import Qt
 
-from angr.analyses.cfg_fast import MemoryData
+from angr.analyses.cfg.cfg_fast import MemoryData
 
 from ...utils import filter_string_for_display
 
