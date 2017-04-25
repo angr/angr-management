@@ -50,7 +50,7 @@ class LoadBinary(QDialog):
             proj = angr.Project(self.file_path)
 
             deps = [ i for i in proj.loader._unsatisfied_deps + list(proj.loader._satisfied_deps)
-                     if i not in ('angr syscalls', 'angr externs', self.filename)
+                     if i not in { 'angr syscalls', 'angr externs', '##cle_tls##', self.filename }
                      ]
 
             dep_list = self.option_widgets['dep_list']  # type: QListWidget
