@@ -188,15 +188,17 @@ class QDisasmGraph(QBaseGraph):
             for b in self.blocks.copy():
                 self.remove_block(b)
 
-        self.variable_manager = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
+        # variable recovery
+        vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
+        self.variable_manager = vr.variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
         self._insn_addr_to_block = { }
 
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes_iter():
-            block = QBlock(self.workspace, self.disassembly_view, self.disasm, self.variable_manager, n.addr,
-                           n.cfg_nodes, get_out_branches(n)
+            block = QBlock(self.workspace, self._function_graph.function.addr, self.disassembly_view, self.disasm,
+                           self.variable_manager, n.addr, n.cfg_nodes, get_out_branches(n)
                            )
             self.add_block(block)
 

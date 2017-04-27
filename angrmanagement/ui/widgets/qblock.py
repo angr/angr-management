@@ -20,11 +20,12 @@ class QBlock(QGraphObject):
     RIGHT_PADDING = 5
     SPACING = 0
 
-    def __init__(self, workspace, disasm_view, disasm, variable_manager, addr, cfg_nodes, out_branches):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, variable_manager, addr, cfg_nodes, out_branches):
         super(QBlock, self).__init__()
 
         # initialization
         self.workspace = workspace
+        self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
         self.variable_manager = variable_manager
@@ -165,8 +166,8 @@ class QBlock(QGraphObject):
         for obj in block_objects:
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
-                insn = QInstruction(self.workspace, self.disasm_view, self.disasm, self.variable_manager, obj,
-                                    out_branch, self._config
+                insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
+                                    self.variable_manager, obj, out_branch, self._config
                                     )
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn

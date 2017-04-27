@@ -36,11 +36,12 @@ class QOperand(QGraphObject):
 
     VARIABLE_IDENT_SPACING = 5
 
-    def __init__(self, workspace, disasm_view, disasm, variable_manager, insn, operand, operand_index, is_branch_target,
-                 is_indirect_branch, branch_targets, config):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, variable_manager, insn, operand, operand_index,
+                 is_branch_target, is_indirect_branch, branch_targets, config):
         super(QOperand, self).__init__()
 
         self.workspace = workspace
+        self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
         self.variable_manager = variable_manager
@@ -212,7 +213,7 @@ class QOperand(QGraphObject):
             formatting = {}
             if isinstance(self.operand, MemoryOperand):
                 # try find the corresponding variable
-                variable_and_offset = self.variable_manager.find_variable_by_insn(self.insn.addr)
+                variable_and_offset = self.variable_manager[self.func_addr].find_variable_by_insn(self.insn.addr)
                 if variable_and_offset is not None:
                     variable, offset = variable_and_offset
 
