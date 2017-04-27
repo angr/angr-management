@@ -146,6 +146,7 @@ class QDisasmGraph(QBaseGraph):
         self.disassembly_view = parent
         self.disasm = None
         self.variable_manager = None
+        self._variable_recovery_flavor = 'fast'
 
         self.blocks = set()
         self._function_graph = None
@@ -179,6 +180,19 @@ class QDisasmGraph(QBaseGraph):
 
             self.reload()
 
+    @property
+    def variable_recovery_flavor(self):
+        return self._variable_recovery_flavor
+
+    @variable_recovery_flavor.setter
+    def variable_recovery_flavor(self, v):
+        if v in ('fast', 'accurate'):
+            if v != self._variable_recovery_flavor:
+                self._variable_recovery_flavor = v
+
+                # TODO: it's enough to call refresh() here if VariableManager is unique in the project
+                self.reload()
+
     #
     # Public methods
     #
@@ -189,7 +203,10 @@ class QDisasmGraph(QBaseGraph):
                 self.remove_block(b)
 
         # variable recovery
-        vr = self.workspace.instance.project.analyses.VariableRecoveryFast(self._function_graph.function)
+        if self._variable_recovery_flavor == 'fast':
+            vr = self.workspace.instance.project.analyses.VariableRecoveryFast(self._function_graph.function)
+        else:
+            vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
         self.variable_manager = vr.variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 

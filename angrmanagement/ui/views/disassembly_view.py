@@ -92,6 +92,14 @@ class DisassemblyView(BaseView):
     def show_variable_identifier(self):
         return self._show_variable_ident
 
+    @property
+    def variable_recovery_flavor(self):
+        return self._flow_graph.variable_recovery_flavor
+
+    @variable_recovery_flavor.setter
+    def variable_recovery_flavor(self, v):
+        self._flow_graph.variable_recovery_flavor = v
+
     #
     # UI
     #
