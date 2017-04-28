@@ -3,6 +3,16 @@ from PySide.QtGui import QTableWidget, QTableWidgetItem, QAbstractItemView, QHea
 from PySide.QtCore import Qt
 
 
+class AddressTableWidgetItem(QTableWidgetItem):
+    def __init__(self, address):
+        super(AddressTableWidgetItem, self).__init__("%x" % address)
+
+        self.address = address
+
+    def __le__(self, other):
+        return self.address <= other.address
+
+
 class QXRefViewerItem(object):
     def __init__(self, variable_access):
         self._variable_access = variable_access
@@ -11,12 +21,11 @@ class QXRefViewerItem(object):
 
         access_type_str = self._variable_access.access_type
         ident_str = self._variable_access.variable.ident
-        address_str = "%x" % self._variable_access.location.ins_addr
 
         widgets = [
             QTableWidgetItem(access_type_str),
             QTableWidgetItem(ident_str),
-            QTableWidgetItem(address_str),
+            QTableWidgetItem(AddressTableWidgetItem(self._variable_access.location.ins_addr)),
             QTableWidgetItem("TODO"),
         ]
 
@@ -44,6 +53,9 @@ class QXRefViewer(QTableWidget):
 
         self._variable_manager = variable_manager
         self._variable = variable
+
+        self.setSortingEnabled(True)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
 
         self.items = [ ]
 
