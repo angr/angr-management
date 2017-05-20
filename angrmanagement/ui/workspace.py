@@ -23,7 +23,8 @@ class Workspace(object):
         #
         # Some generic configurations. move to "configurations" module later
         #
-        self.disasm_font = QFont("courier new", 10)
+        #self.disasm_font = QFont("courier new", 20)
+        self.disasm_font = QFont("DejaVu Sans Mono", 10)
         font_metrics = QFontMetricsF(self.disasm_font)
         self.disasm_font_height = font_metrics.height()
         self.disasm_font_width = font_metrics.width('A')
