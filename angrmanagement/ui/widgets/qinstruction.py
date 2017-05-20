@@ -14,7 +14,7 @@ class QInstruction(QGraphObject):
     OPERAND_SPACING = 2
     STRING_SPACING = 5
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, variable_manager, insn, out_branch, config):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config):
         super(QInstruction, self).__init__()
 
         # initialization
@@ -22,7 +22,8 @@ class QInstruction(QGraphObject):
         self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
-        self.variable_manager = variable_manager
+        self.infodock = infodock
+        self.variable_manager = infodock.variable_manager
         self.insn = insn
         self.out_branch = out_branch
         self._config = config
@@ -187,7 +188,7 @@ class QInstruction(QGraphObject):
             is_indirect_branch = self.insn.branch_type == 'indirect'
             branch_targets = (self.out_branch.targets if self.out_branch is not None else None) \
                 if is_branch_target else None
-            operand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.variable_manager,
+            operand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
                                self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets, self._config
                                )
             self._operands.append(operand)

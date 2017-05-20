@@ -132,6 +132,12 @@ class EdgeRouter(object):
         edge.view.head_angle = getangle(points[-2], points[-1])
 
 
+class InfoDock(object):
+    def __init__(self):
+        self.induction_variable_analysis = None
+        self.variable_manager = None
+
+
 class QDisasmGraph(QBaseGraph):
 
     XSPACE = 40
@@ -164,6 +170,8 @@ class QDisasmGraph(QBaseGraph):
         self.selected_operands = set()
         self._insn_addr_to_block = { }
 
+        self._infodock = InfoDock()
+
     #
     # Properties
     #
@@ -193,6 +201,14 @@ class QDisasmGraph(QBaseGraph):
                 # TODO: it's enough to call refresh() here if VariableManager is unique in the project
                 self.reload()
 
+    @property
+    def induction_variable_analysis(self):
+        return self._infodock.induction_variable_analysis
+
+    @induction_variable_analysis.setter
+    def induction_variable_analysis(self, v):
+        self._infodock.induction_variable_analysis = v
+
     #
     # Public methods
     #
@@ -208,6 +224,7 @@ class QDisasmGraph(QBaseGraph):
         else:
             vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
         self.variable_manager = vr.variable_manager
+        self._infodock.variable_manager = vr.variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
         self._insn_addr_to_block = { }
@@ -215,7 +232,7 @@ class QDisasmGraph(QBaseGraph):
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes_iter():
             block = QBlock(self.workspace, self._function_graph.function.addr, self.disassembly_view, self.disasm,
-                           self.variable_manager, n.addr, n.cfg_nodes, get_out_branches(n)
+                           self._infodock, n.addr, n.cfg_nodes, get_out_branches(n)
                            )
             self.add_block(block)
 

@@ -241,6 +241,14 @@ class DisassemblyView(BaseView):
     def sizeHint(self):
         return QSize(800, 800)
 
+    def run_induction_variable_analysis(self):
+        if self._flow_graph.induction_variable_analysis:
+            self._flow_graph.induction_variable_analysis = None
+        else:
+            ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
+            self._flow_graph.induction_variable_analysis = ana
+        self._flow_graph.refresh()
+
     #
     # Initialization
     #

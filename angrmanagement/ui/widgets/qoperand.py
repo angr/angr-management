@@ -36,7 +36,7 @@ class QOperand(QGraphObject):
 
     VARIABLE_IDENT_SPACING = 5
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, variable_manager, insn, operand, operand_index,
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
                  is_branch_target, is_indirect_branch, branch_targets, config):
         super(QOperand, self).__init__()
 
@@ -44,7 +44,8 @@ class QOperand(QGraphObject):
         self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
-        self.variable_manager = variable_manager
+        self.infodock = infodock
+        self.variable_manager = infodock.variable_manager
         self.insn = insn
         self.operand = operand
         self.operand_index = operand_index
@@ -101,7 +102,16 @@ class QOperand(QGraphObject):
                 painter.setPen(Qt.red)
         else:
             if self.variable is not None:
-                painter.setPen(QColor(0xff, 0x14, 0x93))
+                # it has a variable
+                fallback = True
+                if self.infodock.induction_variable_analysis is not None:
+                    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
+                    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                        painter.setPen(Qt.darkYellow)
+                        fallback = False
+
+                if fallback:
+                    painter.setPen(QColor(0xff, 0x14, 0x93))
             else:
                 painter.setPen(QColor(0, 0, 0x80))
         painter.drawText(x, self.y + self._config.disasm_font_ascent, self._label)
@@ -119,6 +129,9 @@ class QOperand(QGraphObject):
 
     def refresh(self):
         super(QOperand, self).refresh()
+
+        # if self.infodock.induction_variable_analysis is not None:
+        self._init_widgets()
 
         self._update_size()
 
@@ -212,8 +225,17 @@ class QOperand(QGraphObject):
 
             formatting = {}
             if isinstance(self.operand, MemoryOperand):
+                variable_sort = 'memory'
+            elif isinstance(self.operand, RegisterOperand):
+                variable_sort = 'register'
+            else:
+                variable_sort = None
+
+            if variable_sort:
                 # try find the corresponding variable
-                variable_and_offset = self.variable_manager[self.func_addr].find_variable_by_insn(self.insn.addr)
+                variable_and_offset = self.variable_manager[self.func_addr].find_variable_by_insn(self.insn.addr,
+                                                                                                  variable_sort
+                                                                                                  )
                 if variable_and_offset is not None:
                     variable, offset = variable_and_offset
 
@@ -222,8 +244,21 @@ class QOperand(QGraphObject):
 
                     ident = (self.insn.addr, 'operand', self.operand_index)
                     if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                    if offset == 0: custom_value_str = variable_str
-                    else: custom_value_str = "%s[%d]" % (variable_str, offset)
+                    if variable_sort == 'memory':
+                        if offset == 0: custom_value_str = variable_str
+                        else: custom_value_str = "%s[%d]" % (variable_str, offset)
+                    else:
+                        custom_value_str = ''
+
+                    ##
+                    # Hacks
+                    ##
+                    if self.infodock.induction_variable_analysis is not None:
+                        r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
+                        if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                            custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
+                        if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
+                            custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
 
                     formatting['custom_values_str'][ident] = custom_value_str
 

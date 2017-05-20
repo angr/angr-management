@@ -232,6 +232,9 @@ class MainWindow(QMainWindow):
     def run_variable_recovery(self):
         self.workspace.views_by_category['disassembly'][0].variable_recovery_flavor = 'accurate'
 
+    def run_induction_variable_analysis(self):
+        self.workspace.views_by_category['disassembly'][0].run_induction_variable_analysis()
+
     #
     # Other public methods
     #
