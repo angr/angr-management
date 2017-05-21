@@ -112,6 +112,11 @@ class QBlock(QGraphObject):
         :return:
         """
 
+        # shadow
+        painter.setPen(QColor(0, 0, 0, 0))
+        painter.setBrush(QColor(0, 0, 0, 0x80))
+        painter.drawRect(self.x + 3, self.y + 3, self.width, self.height)
+
         # background of the node
         gradient = QLinearGradient(QPointF(0, self.y), QPointF(0, self.y + self.height))
         gradient.setColorAt(0, QColor(0xff, 0xff, 0xfa))
