@@ -145,8 +145,17 @@ class EdgeRouter(object):
             self._edge_valid[col][row] = False
             self._edge_valid[col + 1][row] = False
 
-        self.vertical_edges = defaultdict(dict)
-        self.horizontal_edges = defaultdict(dict)
+        self.vertical_edges = [ ]
+        self.horizontal_edges = [ ]
+
+        for col in xrange(self._max_col + 2):
+            v_edges = [ ]
+            h_edges = [ ]
+            for row in xrange(self._max_row + 1):
+                v_edges.append({ })
+                h_edges.append({ })
+            self.vertical_edges.append(v_edges)
+            self.horizontal_edges.append(h_edges)
 
     def _assign_edge_to(self, edge, sort, col, row, blocks, index=None):
 
@@ -161,15 +170,13 @@ class EdgeRouter(object):
             if index is None:
                 index = self._find_vertical_available_edge_index(col, row, row + blocks)
             for r in xrange(row, row + blocks + 1):
-                key = (col, r)
-                d[key][index] = edge
+                d[col][r][index] = edge
 
         else:  # sort == 'horizontal'
             if index is None:
                 index = self._find_horizontal_available_edge_index(col, col + blocks, row)
             for col_ in xrange(col, col + blocks + 1):
-                key = (col_, row)
-                d[key][index] = edge
+                d[col_][row][index] = edge
 
         return index
 
@@ -180,45 +187,40 @@ class EdgeRouter(object):
                 return False
         return True
 
+    def _first_unused_index(self, indices):
+
+        # find the first unused index
+        last_i = None
+        for i in sorted(indices):
+            if last_i is None or i == last_i + 1:
+                last_i = i
+            else:
+                # we found a gap
+                return last_i + 1
+
+        return 0 if last_i is None else last_i + 1
+
     def _find_vertical_available_edge_index(self, col, start_row, end_row):
-        index = 0
 
-        while True:
-            valid = False
-            for row in xrange(start_row, end_row + 1):
-                key = (col, row)
-                if key in self.vertical_edges:
-                    if index in self.vertical_edges[key]:
-                        break
-            else:
-                valid = True
+        # collect all used indices
+        indices = set()
 
-            if valid:
-                break
-            else:
-                index += 1
+        for row in xrange(start_row, end_row + 1):
+            if self.vertical_edges[col][row]:
+                indices.update(self.vertical_edges[col][row].iterkeys())
 
-        return index
+        return self._first_unused_index(indices)
 
     def _find_horizontal_available_edge_index(self, start_col, end_col, row):
-        index = 0
 
-        while True:
-            valid = False
-            for col in xrange(start_col, end_col + 1):
-                key = (col, row)
-                if key in self.horizontal_edges:
-                    if index in self.horizontal_edges[key]:
-                        break
-            else:
-                valid = True
+        # collect all used indices
+        indices = set()
 
-            if valid:
-                break
-            else:
-                index += 1
+        for col in xrange(start_col, end_col + 1):
+            if self.horizontal_edges[col][row]:
+                indices.update(self.horizontal_edges[col][row].iterkeys())
 
-        return index
+        return self._first_unused_index(indices)
 
     def _add_edge(self, edge):
         """
@@ -503,12 +505,20 @@ class GraphLayouter(object):
         """
 
         # horizontal edges
-        for key, edges in self._horizontal_edges.iteritems():
-            self._grid_max_horizontal_id[key] = max(edges.keys())
+        for col, row_edges in enumerate(self._horizontal_edges):
+            for row, edges in enumerate(row_edges):
+                if not edges:
+                    continue
+                key = (col, row)
+                self._grid_max_horizontal_id[key] = max(edges.iterkeys())
 
         # vertical edges
-        for key, edges in self._vertical_edges.iteritems():
-            self._grid_max_vertical_id[key] = max(edges.keys())
+        for col, row_edges in enumerate(self._vertical_edges):
+            for row, edges in enumerate(row_edges):
+                if not edges:
+                    continue
+                key = (col, row)
+                self._grid_max_vertical_id[key] = max(edges.iterkeys())
 
     def _calculate_coordinates(self):
         """
