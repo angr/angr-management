@@ -111,7 +111,7 @@ class EdgeRouter(object):
 
         if start_row != end_row:
             # generate a line to move to the target row
-            idx = self._assign_edge_to(edge, 'vertical', col, min(start_row + 1, end_row), abs(end_row - start_row) - 1)
+            idx = self._assign_edge_to(edge, 'vertical', col, min(start_row + 1, end_row), abs(end_row - start_row - 1))
             edge.add_point(col, end_row, idx)
 
         if col != end_col:
