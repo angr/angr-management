@@ -576,7 +576,7 @@ class GraphLayouter(object):
             dst_node_x, dst_node_y = self.node_coordinates[edge.dst]
             dst_node_width, dst_node_height = self._node_sizes[edge.dst]
 
-            dst_node_col, dst_node_row = self._locations[edge.dst]
+            # dst_node_col, dst_node_row = self._locations[edge.dst]
 
             # start point
             start_point_x_base = src_node_x + src_node_width / 2 - 5 * ((edge.max_start_index + 1) / 2)
@@ -584,14 +584,22 @@ class GraphLayouter(object):
             start_point = (start_point_x, src_node_y + src_node_height)
             edge.add_coordinate(*start_point)
 
-            # add a line that moves downwards from the exit
-            next_point = (start_point[0], start_point[1] + ROW_MARGIN)
-            edge.add_coordinate(*next_point)
-
             prev_col, prev_row = self._locations[edge.src]
             prev_col += 1
             prev_row += 1
-            prev_x, prev_y = next_point
+            x, y_base = start_point[0], start_point[1] + ROW_MARGIN
+
+            if edge.points:
+                next_col, next_row, next_idx = edge.points[0]
+                y = self._indexed_y(y_base, next_idx, self._grid_max_horizontal_id[(next_col, next_row)])
+            else:
+                y = y_base
+
+            # add a line that moves downwards from the exit
+            edge.add_coordinate(x, y)
+            # set previous x and y
+            prev_x, prev_y = x, y
+
             # each point on the edge
 
             for point_id, (col, row, _) in enumerate(edge.points):
@@ -616,7 +624,7 @@ class GraphLayouter(object):
                     else:
                         next_col, next_row, next_idx = edge.points[point_id + 1]
                         base_x = self._grid_coordinates[(col, row)][0]
-                        x = self._indexed_x(base_x, next_idx, self._grid_max_horizontal_id[(next_col, next_row)])
+                        x = self._indexed_x(base_x, next_idx, self._grid_max_vertical_id[(next_col, next_row)])
 
                     y = prev_y
 
