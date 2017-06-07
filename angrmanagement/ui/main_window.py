@@ -14,6 +14,7 @@ from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary
 from .dialogs.new_state import NewState
 from .toolbars.states_toolbar import StatesToolbar
+from .toolbars.analysis_toolbar import AnalysisToolbar
 
 
 class MainWindow(QMainWindow):
@@ -33,6 +34,7 @@ class MainWindow(QMainWindow):
         self.workspace = None
 
         self._states_toolbar = None  # type: StatesToolbar
+        self._analysis_toolbar = None  # type: AnalysisToolbar
         self._progressbar = None  # type: QProgressBar
 
         self._status = ""
@@ -100,7 +102,7 @@ class MainWindow(QMainWindow):
                               )
 
     def open_newstate_dialog(self):
-        new_state_dialog = NewState(self.workspace, parent=None)
+        new_state_dialog = NewState(self.workspace, parent=self)
         new_state_dialog.exec_()
 
     #
@@ -120,8 +122,10 @@ class MainWindow(QMainWindow):
     def _init_toolbars(self):
 
         self._states_toolbar = StatesToolbar(self)
+        self._analysis_toolbar = AnalysisToolbar(self)
 
         self.addToolBar(Qt.TopToolBarArea, self._states_toolbar.qtoolbar())
+        self.addToolBar(Qt.TopToolBarArea, self._analysis_toolbar.qtoolbar())
 
     #
     # Menus
@@ -224,6 +228,12 @@ class MainWindow(QMainWindow):
 
     def quit(self):
         self.close()
+
+    def run_variable_recovery(self):
+        self.workspace.views_by_category['disassembly'][0].variable_recovery_flavor = 'accurate'
+
+    def run_induction_variable_analysis(self):
+        self.workspace.views_by_category['disassembly'][0].run_induction_variable_analysis()
 
     #
     # Other public methods

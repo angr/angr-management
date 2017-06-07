@@ -33,16 +33,12 @@ class RenameLabel(QDialog):
         self._ok_button = None
 
         self.setWindowTitle('Rename Label')
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setWindowModality(Qt.WindowModal)
 
         self.main_layout = QVBoxLayout()
 
         self._init_widgets()
 
         self.setLayout(self.main_layout)
-
-        self.show()
 
     #
     # Private methods

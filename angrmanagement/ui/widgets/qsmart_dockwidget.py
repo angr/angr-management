@@ -3,8 +3,8 @@ from PySide.QtGui import QDockWidget
 
 
 class QSmartDockWidget(QDockWidget):
-    def __init__(self, *args, **kwargs):
-        super(QSmartDockWidget, self).__init__(*args, **kwargs)
+    def __init__(self, caption, parent=None):
+        super(QSmartDockWidget, self).__init__(caption, parent)
 
         self.old_size = None
         self.original_min = None

@@ -40,9 +40,11 @@ def main():
     app = QApplication(sys.argv)
 
     GlobalInfo.gui_thread = thread.get_ident()
-    MainWindow(file_to_open=sys.argv[1] if len(sys.argv) > 1 else None)
 
+    # apply the CSS
     app.setStyleSheet(CSS.global_css())
+
+    MainWindow(file_to_open=sys.argv[1] if len(sys.argv) > 1 else None)
 
     app.exec_()
 

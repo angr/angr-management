@@ -181,6 +181,9 @@ class OutBranch(object):
 
         self.targets = set()
 
+    def __repr__(self):
+        return "<OutBranch at %#x, type %s>" % (self.ins_addr, self.type)
+
     def add_target(self, addr):
         self.targets.add(addr)
 
@@ -213,6 +216,10 @@ class SuperCFGNode(object):
         self.cfg_nodes = [ ]
 
         self.out_branches = defaultdict(dict)
+
+    @property
+    def size(self):
+        return sum(node.size for node in self.cfg_nodes)
 
     @classmethod
     def from_cfgnode(cls, cfg_node):

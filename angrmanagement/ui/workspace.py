@@ -23,9 +23,12 @@ class Workspace(object):
         #
         # Some generic configurations. move to "configurations" module later
         #
-        self.disasm_font = QFont("courier new", 10)
-        self.disasm_font_height = QFontMetricsF(self.disasm_font).height()
-        self.disasm_font_width = QFontMetricsF(self.disasm_font).width('A')
+        #self.disasm_font = QFont("courier new", 20)
+        self.disasm_font = QFont("DejaVu Sans Mono", 10)
+        font_metrics = QFontMetricsF(self.disasm_font)
+        self.disasm_font_height = font_metrics.height()
+        self.disasm_font_width = font_metrics.width('A')
+        self.disasm_font_ascent = font_metrics.ascent()
 
 
         default_tabs = [
@@ -63,7 +66,7 @@ class Workspace(object):
 
         self.views_by_category[category].append(view)
 
-        dock = QSmartDockWidget(caption, view)
+        dock = QSmartDockWidget(caption, parent=view)
         dock_area = docking_positions.get(view.default_docking_position, Qt.RightDockWidgetArea)
         self._main_window.addDockWidget(dock_area, dock)
         dock.setWidget(view)

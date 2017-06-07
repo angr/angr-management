@@ -19,7 +19,6 @@ setup(
         'angr',
         'pygments',
         'websocket-client',
-        'grandalf',
         'qtconsole',
         'ipython',
         'pyzmq',

@@ -6,4 +6,3 @@ pyzmq
 PySide
 pygraphviz
 qtconsole
-grandalf

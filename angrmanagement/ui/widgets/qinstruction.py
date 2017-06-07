@@ -14,13 +14,16 @@ class QInstruction(QGraphObject):
     OPERAND_SPACING = 2
     STRING_SPACING = 5
 
-    def __init__(self, workspace, disasm_view, disasm, insn, out_branch, config):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config):
         super(QInstruction, self).__init__()
 
         # initialization
         self.workspace = workspace
+        self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
+        self.infodock = infodock
+        self.variable_manager = infodock.variable_manager
         self.insn = insn
         self.out_branch = out_branch
         self._config = config
@@ -61,20 +64,23 @@ class QInstruction(QGraphObject):
 
         # selection background
         if self.selected:
+            from .qblock import QBlock
             painter.setPen(QColor(0xef, 0xbf, 0xba))
             painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height + 2)
+            painter.drawRect(self.x, self.y, self.width, self.height)
+
+        x = self.x
 
         # address
-        x = self.x
-        painter.setPen(Qt.black)
-        painter.drawText(x, self.y + self._config.disasm_font_height, self._addr)
+        if self.disasm_view.show_address:
+            painter.setPen(Qt.black)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
 
-        x += self._addr_width + self.ADDR_SPACING
+            x += self._addr_width + self.ADDR_SPACING
 
         # mnemonic
         painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_height, self._mnemonic)
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
 
         x += self._mnemonic_width + self.MNEMONIC_SPACING
 
@@ -88,7 +94,7 @@ class QInstruction(QGraphObject):
 
             if i != len(self._operands) - 1:
                 # draw the comma
-                painter.drawText(x, self.y + self._config.disasm_font_height, ",")
+                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
                 x += self._config.disasm_font_width * 1
 
             x += self.OPERAND_SPACING
@@ -97,7 +103,15 @@ class QInstruction(QGraphObject):
         if self._string is not None:
             x += self.STRING_SPACING
             painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_height, self._string)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+
+    def refresh(self):
+        super(QInstruction, self).refresh()
+
+        for operand in self._operands:
+            operand.refresh()
+
+        self._update_size()
 
     def select(self):
         if not self.selected:
@@ -119,6 +133,11 @@ class QInstruction(QGraphObject):
 
         if operand_idx < len(self._operands):
             self._operands[operand_idx].unselect()
+
+    def get_operand(self, operand_idx):
+        if operand_idx < len(self._operands):
+            return self._operands[operand_idx]
+        return None
 
     #
     # Event handlers
@@ -169,8 +188,8 @@ class QInstruction(QGraphObject):
             is_indirect_branch = self.insn.branch_type == 'indirect'
             branch_targets = (self.out_branch.targets if self.out_branch is not None else None) \
                 if is_branch_target else None
-            operand = QOperand(self.workspace, self.disasm_view, self.disasm, self.insn, operand, i, is_branch_target,
-                               is_indirect_branch, branch_targets, self._config
+            operand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
+                               self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets, self._config
                                )
             self._operands.append(operand)
 
@@ -184,9 +203,13 @@ class QInstruction(QGraphObject):
     def _update_size(self):
 
         self._height = self._config.disasm_font_height
-        self._width = self._addr_width + self.ADDR_SPACING + \
-                      self._mnemonic_width + self.MNEMONIC_SPACING + \
-                      sum([ op.width for op in self._operands ]) + \
-                      (len(self._operands) - 1) * (self._config.disasm_font_width + self.OPERAND_SPACING)
+        self._width = 0
+
+        if self.disasm_view.show_address:
+            self._width += self._addr_width + self.ADDR_SPACING
+
+        self._width += self._mnemonic_width + self.MNEMONIC_SPACING + \
+                       sum([ op.width for op in self._operands ]) + \
+                       (len(self._operands) - 1) * (self._config.disasm_font_width + self.OPERAND_SPACING)
         if self._string is not None:
             self._width += self.STRING_SPACING + self._string_width

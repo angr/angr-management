@@ -8,6 +8,7 @@ from ..widgets import QDisasmGraph, QDisasmStatusBar
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.new_path import NewPath
+from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
 
@@ -57,7 +58,11 @@ class DisassemblyView(BaseView):
 
         self.caption = 'Disassembly'
 
-        self._flow_graph = None
+        self._show_address = False
+        # whether we want to show identifier or not
+        self._show_variable_ident = False
+
+        self._flow_graph = None  # type: QDisasmGraph
         self._statusbar = None
         self._jump_history = JumpHistory()
 
@@ -79,6 +84,22 @@ class DisassemblyView(BaseView):
     def disasm(self):
         return self._flow_graph.disasm
 
+    @property
+    def show_address(self):
+        return self._show_address
+
+    @property
+    def show_variable_identifier(self):
+        return self._show_variable_ident
+
+    @property
+    def variable_recovery_flavor(self):
+        return self._flow_graph.variable_recovery_flavor
+
+    @variable_recovery_flavor.setter
+    def variable_recovery_flavor(self, v):
+        self._flow_graph.variable_recovery_flavor = v
+
     #
     # UI
     #
@@ -95,14 +116,14 @@ class DisassemblyView(BaseView):
         self._insn_addr_on_context_menu = None
 
     def popup_jumpto_dialog(self):
-        JumpTo(self, None).exec_()
+        JumpTo(self, parent=self).exec_()
 
     def popup_rename_label_dialog(self):
         label_addr = self._address_in_selection()
         if label_addr is None:
             return
 
-        dialog = RenameLabel(self, label_addr, None)
+        dialog = RenameLabel(self, label_addr, parent=self)
         dialog.exec_()
 
     def popup_newpath_dialog(self):
@@ -110,7 +131,12 @@ class DisassemblyView(BaseView):
         if addr is None:
             return
 
-        dialog = NewPath(self.workspace, addr, parent=None)
+        dialog = NewPath(self.workspace, addr, parent=self)
+        dialog.exec_()
+
+    def popup_xref_dialog(self, variable):
+
+        dialog = XRef(self._flow_graph.variable_manager, variable, parent=self)
         dialog.exec_()
 
     #
@@ -121,6 +147,30 @@ class DisassemblyView(BaseView):
 
         self._jump_history.jump_to(function.addr)
         self._display_function(function)
+
+    def toggle_show_address(self, show_address):
+        """
+        Toggle whether addresses are shown on disassembly graph.
+
+        :param bool show_address: Whether the address should be shown or not. 
+        :return:                  None
+        """
+
+        self._show_address = show_address
+
+        self._flow_graph.refresh()
+
+    def toggle_show_variable_identifier(self, show_ident):
+        """
+        Toggle whether variable identifiers are shown on disassembly graph.
+
+        :param bool show_ident: Whether variable identifiers should be shown or not.
+        :return:                None
+        """
+
+        self._show_variable_ident = show_ident
+
+        self._flow_graph.refresh()
 
     def toggle_instruction_selection(self, insn_addr):
         """
@@ -191,6 +241,14 @@ class DisassemblyView(BaseView):
     def sizeHint(self):
         return QSize(800, 800)
 
+    def run_induction_variable_analysis(self):
+        if self._flow_graph.induction_variable_analysis:
+            self._flow_graph.induction_variable_analysis = None
+        else:
+            ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
+            self._flow_graph.induction_variable_analysis = ana
+        self._flow_graph.refresh()
+
     #
     # Initialization
     #
@@ -199,11 +257,12 @@ class DisassemblyView(BaseView):
 
         self._flow_graph = QDisasmGraph(self.workspace, self)
 
-        self._statusbar = QDisasmStatusBar(self)
+        self._statusbar = QDisasmStatusBar(self, parent=self)
 
         hlayout = QVBoxLayout()
         hlayout.addWidget(self._flow_graph)
         hlayout.addWidget(self._statusbar)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)
 

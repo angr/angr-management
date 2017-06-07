@@ -3,14 +3,12 @@ from functools import wraps
 import logging
 
 from PySide.QtCore import QPointF, QRectF, Qt, QPoint
-from PySide.QtGui import QPainter, QPainterPath, QPolygonF, QGraphicsPolygonItem, QBrush, QApplication, QMouseEvent, QResizeEvent
-
-from grandalf.graphs import Graph, Edge, Vertex
-from grandalf.layouts import VertexViewer, SugiyamaLayout
-from grandalf.routing import EdgeViewer
-from grandalf.utils.geometry import getangle
+from PySide.QtGui import QPainter, QBrush, QApplication, QMouseEvent, QResizeEvent, QPen
 
 from ...utils import get_out_branches
+from ...utils.graph_layouter import GraphLayouter
+from ...utils.cfg import categorize_edges
+from ...utils.edge import EdgeSort
 from .qblock import QBlock
 from .qgraph import QBaseGraph
 
@@ -30,106 +28,10 @@ def timeit(f):
     return decorator
 
 
-class EdgeRouter(object):
-    def __init__(self, sug, xspace, yspace):
-        self._sug = sug
-        self.xspace = xspace
-        self.yspace = yspace
-
-    def _make_right_angles(self, points):
-        """
-        Route an edge to make sure each segment either goes horizontally or vertically
-
-        :param list points: A list of point coordinates
-        :return: A list of routed edges
-        :rtype: list
-        """
-
-        new_points = [ ]
-
-        for i, p in enumerate(points):
-            if i < len(points) - 1:
-                next_p = points[i + 1]
-                if p[0] != next_p[0] and p[1] != next_p[1]:
-
-                    if len(points) > 2 and i == len(points) - 2:
-                        new_y = next_p[1] - self.yspace / 2
-                    else:
-                        new_y = p[1] + self.yspace / 2
-
-                    new_points.append(p)
-                    new_points.append((p[0], new_y))
-                    new_points.append((next_p[0], new_y))
-                else:
-                    new_points.append(p)
-            else:
-                new_points.append(p)
-
-        #print points
-        #print new_points
-
-        return new_points
-
-    def route_edges(self, edge, points):
-        """
-        A simple edge routing algorithm.
-
-        :param edge:
-        :param points:
-        :return:
-        """
-
-        # compute new beginning and ending
-        src = edge.v[0].view
-        src_width, src_height, (src_x, src_y) = src.w, src.h, src.xy
-
-        dst = edge.v[1].view
-        dst_width, dst_height, (dst_x, dst_y) = dst.w, dst.h, dst.xy
-
-        start_point = (src_x, src_y + src_height / 2)
-        end_point = (dst_x, dst_y - dst_height / 2)
-
-        points[0] = start_point
-        points[-1] = end_point
-
-        def get_index(v):
-            return self._sug.grx[v].rank, self._sug.grx[v].pos
-
-        if end_point[1] < start_point[1]:
-            # back edges are not routed. we route them here
-            new_points = [ start_point, (start_point[0], start_point[1] + self.yspace / 2) ]
-
-            src_rank, src_pos = get_index(edge.v[0])
-            dst_rank, dst_pos = get_index(edge.v[1])
-
-            assert dst_rank <= src_rank
-
-            if end_point[0] > start_point[0]:
-                # the next point should be on the left side of the source block
-                p = (src_x - src_width / 2 - self.xspace / 2, src_y)
-            else:
-                # the next point should be on the right side of the source block
-                p = (src_x + src_width / 2 + self.xspace / 2, src_y)
-            new_points.append(p)
-
-            # TODO: detect intersection with existing blocks and route the edge around them
-            #for rank in xrange(src_rank - 1, dst_rank, -1):
-            #    p =
-
-            # last point
-            new_points += [ (p[0], end_point[1] - self.yspace / 2), (end_point[0], end_point[1] - self.yspace / 2), end_point ]
-
-            points[:] = new_points
-
-        # make all corners right angles
-        new_points = self._make_right_angles(points)
-        del points[:]
-        for p in new_points:
-            points.append(p)
-
-        #print "Points", points
-
-        edge.view.head_angle = getangle(points[-2], points[-1])
+class InfoDock(object):
+    def __init__(self):
+        self.induction_variable_analysis = None
+        self.variable_manager = None
 
 
 class QDisasmGraph(QBaseGraph):
@@ -145,11 +47,13 @@ class QDisasmGraph(QBaseGraph):
         self.workspace = workspace
         self.disassembly_view = parent
         self.disasm = None
+        self.variable_manager = None
+        self._variable_recovery_flavor = 'fast'
 
         self.blocks = set()
         self._function_graph = None
 
-        self._edge_coords = None
+        self._edges = None
 
         # scrolling
         self._is_scrolling = False
@@ -161,6 +65,8 @@ class QDisasmGraph(QBaseGraph):
         self.selected_insns = set()
         self.selected_operands = set()
         self._insn_addr_to_block = { }
+
+        self._infodock = InfoDock()
 
     #
     # Properties
@@ -178,6 +84,27 @@ class QDisasmGraph(QBaseGraph):
 
             self.reload()
 
+    @property
+    def variable_recovery_flavor(self):
+        return self._variable_recovery_flavor
+
+    @variable_recovery_flavor.setter
+    def variable_recovery_flavor(self, v):
+        if v in ('fast', 'accurate'):
+            if v != self._variable_recovery_flavor:
+                self._variable_recovery_flavor = v
+
+                # TODO: it's enough to call refresh() here if VariableManager is unique in the project
+                self.reload()
+
+    @property
+    def induction_variable_analysis(self):
+        return self._infodock.induction_variable_analysis
+
+    @induction_variable_analysis.setter
+    def induction_variable_analysis(self, v):
+        self._infodock.induction_variable_analysis = v
+
     #
     # Public methods
     #
@@ -187,14 +114,21 @@ class QDisasmGraph(QBaseGraph):
             for b in self.blocks.copy():
                 self.remove_block(b)
 
+        # variable recovery
+        if self._variable_recovery_flavor == 'fast':
+            vr = self.workspace.instance.project.analyses.VariableRecoveryFast(self._function_graph.function)
+        else:
+            vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
+        self.variable_manager = vr.variable_manager
+        self._infodock.variable_manager = vr.variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
         self._insn_addr_to_block = { }
 
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes_iter():
-            block = QBlock(self.workspace, self.disassembly_view, self.disasm, n.addr, n.cfg_nodes,
-                           get_out_branches(n)
+            block = QBlock(self.workspace, self._function_graph.function.addr, self.disassembly_view, self.disasm,
+                           self._infodock, n.addr, n.cfg_nodes, get_out_branches(n)
                            )
             self.add_block(block)
 
@@ -202,6 +136,16 @@ class QDisasmGraph(QBaseGraph):
                 self._insn_addr_to_block[insn_addr] = block
 
         self.request_relayout()
+
+    def refresh(self):
+
+        if not self.blocks:
+            return
+
+        for b in self.blocks:
+            b.refresh()
+
+        self.request_relayout(ensure_visible=False)
 
     def add_block(self, block):
         self.blocks.add(block)
@@ -342,40 +286,8 @@ class QDisasmGraph(QBaseGraph):
         topleft_point = self._to_graph_pos(QPoint(0, 0))
         bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
 
-        # draw nodes
-        for block in self.blocks:
-            # optimization: don't paint blocks that are outside of the current range
-            block_topleft_point = QPoint(block.x, block.y)
-            block_bottomright_point = QPoint(block.x + block.width, block.y + block.height)
-            if block_topleft_point.x() > bottomright_point.x() or block_topleft_point.y() > bottomright_point.y():
-                continue
-            elif block_bottomright_point.x() < topleft_point.x() or block_bottomright_point.y() < topleft_point.y():
-                continue
-            block.paint(painter)
-
-        painter.setPen(Qt.black)
-
-        # draw edges
-        if self._edge_coords:
-            for edges in self._edge_coords:
-                for from_, to_ in zip(edges, edges[1:]):
-                    start_point = QPointF(*from_)
-                    end_point = QPointF(*to_)
-                    # optimization: don't draw edges that are outside of the current scope
-                    if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and \
-                            (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()):
-                        continue
-                    elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and \
-                            (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()):
-                        continue
-                    painter.drawPolyline((start_point, end_point))
-
-                # arrow
-                # end_point = self.mapToScene(*edges[-1])
-                end_point = (edges[-1][0], edges[-1][1])
-                arrow = [QPointF(end_point[0] - 3, end_point[1] - 6), QPointF(end_point[0] + 3, end_point[1] - 6),
-                         QPointF(end_point[0], end_point[1])]
-                painter.drawPolygon(arrow)
+        self._draw_edges(painter, topleft_point, bottomright_point)
+        self._draw_nodes(painter, topleft_point, bottomright_point)
 
     def mousePressEvent(self, event):
         """
@@ -454,6 +366,18 @@ class QDisasmGraph(QBaseGraph):
             # rename a label
             self.disassembly_view.popup_rename_label_dialog()
             return True
+        elif key == Qt.Key_X:
+            # XRef
+
+            # get the variable
+            if self.selected_operands:
+                ins_addr, operand_idx = next(iter(self.selected_operands))
+                block = self._insn_addr_to_block.get(ins_addr, None)
+                if block is not None:
+                    operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
+                    if operand is not None and operand.variable is not None:
+                        self.disassembly_view.popup_xref_dialog(operand.variable)
+            return True
         elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
             # jump back
             self.disassembly_view.jump_back()
@@ -468,133 +392,30 @@ class QDisasmGraph(QBaseGraph):
     # Layout
     #
 
-    def _layout_nodes_and_edges(self, start):
-        """
-        Compute coordinates for all CFG nodes and edges in the view
+    def _layout_graph(self):
 
-        :param int start: The starting address
-        :return: a mapping between nodes' names and their coordinates (dict), and a list of edge coordinates (list)
-        :rtype: tuple
-        """
-
-        coordinates = {}
+        node_sizes = {}
         node_map = {}
+        for block in self.blocks:
+            node_map[block.addr] = block
+        for node in self.function_graph.supergraph.nodes_iter():
+            block = node_map[node.addr]
+            node_sizes[node] = block.width, block.height
+        gl = GraphLayouter(self.function_graph.supergraph, node_sizes)
 
-        # Create the map
-        for child in self.blocks:
-            node_map[child.addr] = child
+        nodes = { }
+        for node, coords in gl.node_coordinates.iteritems():
+            nodes[node.addr] = coords
 
-        if start not in node_map:
-            return { }, [ ]
+        return nodes, gl.edges
 
-        vertices = {}
-        edges = [ ]
-        # Create all edges
-        for s, d in self.function_graph.edges:
-            src, dst = int(s), int(d)
-            if src in vertices:
-                src_v = vertices[src]
-            else:
-                src_v = Vertex(src)
-                vertices[src] = src_v
+    def request_relayout(self, ensure_visible=True):
 
-            if dst in vertices:
-                dst_v = vertices[dst]
-            else:
-                dst_v = Vertex(dst)
-                vertices[dst] = dst_v
+        node_coords, edges = self._layout_graph()
 
-            edge = Edge(src_v, dst_v)
-            edge.view = EdgeViewer()
-            edges.append(edge)
+        self._edges = edges
 
-        # Create all vertices
-        for child in self.blocks:
-            addr = child.addr
-            if addr not in vertices:
-                vertices[addr] = Vertex(addr)
-
-        g = Graph(vertices.values(), edges)
-
-        # create a view for each node
-        for addr, vertex in vertices.iteritems():
-            node = node_map[addr]
-            size = node.size()
-            width, height = size
-            vertex.view = VertexViewer(width, height)
-
-        # a hack to make it a connected graph by adding a temporary vertex
-        tmp_vertex = None
-        if len(g.C) > 1:
-            tmp_vertex = Vertex('temp')
-            tmp_vertex.view = VertexViewer(20, 20)
-            tmp_vertices = [ ]
-            for core in g.C:
-                tmp_vertices.append(core.sV[0])
-            tmp_edges = [ ]
-            for v in tmp_vertices:
-                edge = Edge(v, tmp_vertex)
-                edge.view = EdgeViewer()
-                tmp_edges.append(edge)
-            # rebuild the graph
-            g = Graph(vertices.values() + [ tmp_vertex ], edges + tmp_edges)
-            assert len(g.C) == 1
-
-        sug = SugiyamaLayout(g.C[0])
-        sug.xspace = self.XSPACE
-        sug.yspace = self.YSPACE
-        sug.route_edge = EdgeRouter(sug, self.XSPACE, self.YSPACE).route_edges
-
-        # calculate additional roots
-        all_roots = [ n.addr for n in self.function_graph.supergraph.nodes()
-                      if self.function_graph.supergraph.in_degree(n) == 0
-                      ]
-        if start not in all_roots:
-            all_roots.append(start)
-
-        sug.init_all(roots=[vertices[root_addr] for root_addr in all_roots])
-        sug.draw(3)
-
-        # extract coordinates for nodes
-        for addr, vertex in vertices.iteritems():
-            x, y = vertex.view.xy
-            # Convert the center coordinate to left corner coordinate
-            coordinates[addr] = (x - vertex.view.w / 2, y - vertex.view.h / 2)
-
-        # extract coordinates for edges
-        edge_coordinates = [ ]
-        for edge in edges:
-            if hasattr(edge.view, '_pts'):
-                points = [ ]
-                prev_0 = None
-                prev_1 = None
-                for p in edge.view._pts:
-                    if prev_1 is not None:
-                        # check if prev_1, prev_0, and p are on the same line
-                        if (prev_1[0] == prev_0[0] and prev_0[0] == p[0]) or (prev_1[1] == prev_0[1] and prev_0[1] == p[1]):
-                            # skip the mid point (prev_0)
-                            prev_0 = p
-                            continue
-                        else:
-                            # push the earliest point
-                            points.append(prev_1)
-                            prev_1 = None
-
-                    # move forward
-                    prev_1 = prev_0
-                    prev_0 = p
-
-                points.append(prev_1)
-                points.append(prev_0)  # the last two points
-                edge_coordinates.append(points)
-
-        return coordinates, edge_coordinates
-
-    def request_relayout(self):
-
-        node_coords, edge_coords = self._layout_nodes_and_edges(self.function_graph.function.addr)
-
-        self._edge_coords = edge_coords
+        categorize_edges(self.disasm, edges)
 
         if not node_coords:
             print "Failed to get node_coords"
@@ -633,10 +454,11 @@ class QDisasmGraph(QBaseGraph):
 
         self._update_size()
 
-        if self.selected_insns:
-            self.show_selected()
-        else:
-            self.show_instruction(self._function_graph.function.addr)
+        if ensure_visible:
+            if self.selected_insns:
+                self.show_selected()
+            else:
+                self.show_instruction(self._function_graph.function.addr)
 
     def show_selected(self):
         if self.selected_insns:
@@ -661,6 +483,62 @@ class QDisasmGraph(QBaseGraph):
     #
     # Private methods
     #
+
+    def _draw_nodes(self, painter, topleft_point, bottomright_point):
+
+        # draw nodes
+        for block in self.blocks:
+            # optimization: don't paint blocks that are outside of the current range
+            block_topleft_point = QPoint(block.x, block.y)
+            block_bottomright_point = QPoint(block.x + block.width, block.y + block.height)
+            if block_topleft_point.x() > bottomright_point.x() or block_topleft_point.y() > bottomright_point.y():
+                continue
+            elif block_bottomright_point.x() < topleft_point.x() or block_bottomright_point.y() < topleft_point.y():
+                continue
+            block.paint(painter)
+
+    def _draw_edges(self, painter, topleft_point, bottomright_point):
+
+        # draw edges
+        if self._edges:
+            for edge in self._edges:
+                edge_coords = edge.coordinates
+
+                if edge.sort == EdgeSort.BACK_EDGE:
+                    # it's a back edge
+                    color = Qt.darkYellow
+                elif edge.sort == EdgeSort.TRUE_BRANCH:
+                    # True branch
+                    color = Qt.darkGreen
+                elif edge.sort == EdgeSort.FALSE_BRANCH:
+                    # False branch
+                    color = Qt.red
+                else:
+                    color = Qt.blue
+                pen = QPen(color)
+                pen.setWidth(2)
+                painter.setPen(pen)
+
+                for from_, to_ in zip(edge_coords, edge_coords[1:]):
+                    start_point = QPointF(*from_)
+                    end_point = QPointF(*to_)
+                    # optimization: don't draw edges that are outside of the current scope
+                    if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and \
+                            (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()):
+                        continue
+                    elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and \
+                            (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()):
+                        continue
+                    painter.drawPolyline((start_point, end_point))
+
+                # arrow
+                # end_point = self.mapToScene(*edges[-1])
+                end_point = (edge_coords[-1][0], edge_coords[-1][1])
+                arrow = [QPointF(end_point[0] - 3, end_point[1]), QPointF(end_point[0] + 3, end_point[1]),
+                         QPointF(end_point[0], end_point[1] + 6)]
+                brush = QBrush(color)
+                painter.setBrush(brush)
+                painter.drawPolygon(arrow)
 
     def _update_size(self):
 

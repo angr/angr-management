@@ -13,20 +13,18 @@ l = logging.getLogger('dialogs.load_binary')
 
 
 class LoadBinary(QDialog):
-    def __init__(self, file_path, *args, **kwargs):
-        super(LoadBinary, self).__init__(*args, **kwargs)
+    def __init__(self, file_path, parent=None):
+        super(LoadBinary, self).__init__(parent)
 
         # initialization
         self.file_path = file_path
         self.option_widgets = { }
 
         # return values
-        self.cfg_args = { }
-        self.load_options = { }
+        self.cfg_args = None
+        self.load_options = None
 
         self.setWindowTitle('Load a new binary')
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setWindowModality(Qt.WindowModal)
 
         self.main_layout = QVBoxLayout()
 
@@ -52,7 +50,7 @@ class LoadBinary(QDialog):
             proj = angr.Project(self.file_path)
 
             deps = [ i for i in proj.loader._unsatisfied_deps + list(proj.loader._satisfied_deps)
-                     if i not in ('angr syscalls', 'angr externs', self.filename)
+                     if i not in { 'angr syscalls', 'angr externs', '##cle_tls##', self.filename }
                      ]
 
             dep_list = self.option_widgets['dep_list']  # type: QListWidget

@@ -75,6 +75,7 @@ class StringsView(BaseView):
         layout = QVBoxLayout()
         layout.addLayout(function_layout)
         layout.addWidget(self._string_table)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 

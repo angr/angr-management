@@ -17,8 +17,6 @@ class JumpTo(QDialog):
         self._ok_button = None
 
         self.setWindowTitle('Jump to address')
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
-        self.setWindowModality(Qt.WindowModal)
 
         self.main_layout = QVBoxLayout()
 

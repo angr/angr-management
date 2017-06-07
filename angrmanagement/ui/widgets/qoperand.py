@@ -4,6 +4,9 @@ import logging
 from PySide.QtGui import QLabel, QHBoxLayout, QPainter, QColor
 from PySide.QtCore import Qt
 
+from angr.analyses.code_location import CodeLocation
+from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand
+
 from .qgraph_object import QGraphObject
 
 l = logging.getLogger('ui.widgets.qoperand')
@@ -30,19 +33,30 @@ class QOperandBranchTarget(QLabel):
 
 
 class QOperand(QGraphObject):
-    def __init__(self, workspace, disasm_view, disasm, insn, operand, operand_index, is_branch_target, is_indirect_branch,
-                 branch_targets, config):
+
+    VARIABLE_IDENT_SPACING = 5
+
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
+                 is_branch_target, is_indirect_branch, branch_targets, config):
         super(QOperand, self).__init__()
 
         self.workspace = workspace
+        self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
+        self.infodock = infodock
+        self.variable_manager = infodock.variable_manager
         self.insn = insn
         self.operand = operand
         self.operand_index = operand_index
         self.is_branch_target = is_branch_target
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
+
+        # the variable involved
+        self.variable = None
+        # whether this is a phi node or not
+        self.phi = False
 
         self._config = config
 
@@ -51,6 +65,8 @@ class QOperand(QGraphObject):
         # "widets"
         self._label = None
         self._label_width = None
+        self._phi_width = None
+        self._variable_ident_width = None
         self._branch_target = None
         self._is_target_func = None
 
@@ -70,19 +86,54 @@ class QOperand(QGraphObject):
         if self.selected:
             painter.setPen(QColor(0xc0, 0xbf, 0x40))
             painter.setBrush(QColor(0xc0, 0xbf, 0x40))
-            painter.drawRect(self.x, self.y, self.width, self.height + 2)
+            painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
+
+        if self.phi:
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, u'\u0278 ')
+            x += self._phi_width
+
         if self._branch_target:
             if self._is_target_func:
                 painter.setPen(Qt.blue)
             else:
                 painter.setPen(Qt.red)
         else:
-            painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_height, self._label)
+            if self.variable is not None:
+                # it has a variable
+                fallback = True
+                if self.infodock.induction_variable_analysis is not None:
+                    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
+                    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                        painter.setPen(Qt.darkYellow)
+                        fallback = False
+
+                if fallback:
+                    painter.setPen(QColor(0xff, 0x14, 0x93))
+            else:
+                painter.setPen(QColor(0, 0, 0x80))
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._label)
 
         x += self._label_width
+
+        if self.variable is not None and self.disasm_view.show_variable_identifier:
+            x += self.VARIABLE_IDENT_SPACING
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.variable.ident)
+            x += self._variable_ident_width
+
+        # restores the color
+        painter.setPen(QColor(0, 0, 0x80))
+
+    def refresh(self):
+        super(QOperand, self).refresh()
+
+        # if self.infodock.induction_variable_analysis is not None:
+        self._init_widgets()
+
+        self._update_size()
 
     def select(self):
         if not self.selected:
@@ -123,7 +174,7 @@ class QOperand(QGraphObject):
         # we pick the one that complies with the operand's text
         # my solution is pretty hackish...
 
-        if operand.cs_operand.type == 2:
+        if isinstance(operand, ConstantOperand):
             imm = operand.cs_operand.imm
             if imm in branch_targets:
                 # problem solved
@@ -171,11 +222,69 @@ class QOperand(QGraphObject):
 
         else:
             # not a branch
-            self._label = self.operand.render()[0]
+
+            formatting = {}
+            if isinstance(self.operand, MemoryOperand):
+                variable_sort = 'memory'
+            elif isinstance(self.operand, RegisterOperand):
+                variable_sort = 'register'
+            else:
+                variable_sort = None
+
+            if variable_sort:
+                # try find the corresponding variable
+                variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(self.insn.addr,
+                                                                                                   variable_sort
+                                                                                                   )
+                if variable_and_offsets:
+                    variable, offset = variable_and_offsets[0]
+
+                    self.variable = variable
+                    variable_str = variable.name
+
+                    ident = (self.insn.addr, 'operand', self.operand_index)
+                    if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
+                    if variable_sort == 'memory':
+                        if offset == 0: custom_value_str = variable_str
+                        else: custom_value_str = "%s[%d]" % (variable_str, offset)
+                    else:
+                        custom_value_str = ''
+
+                    ##
+                    # Hacks
+                    ##
+                    if self.infodock.induction_variable_analysis is not None:
+                        r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
+                        if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                            custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
+                        if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
+                            custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
+
+                    formatting['custom_values_str'][ident] = custom_value_str
+
+                    if variable.phi:
+                        self.phi = True
+
+                    if 'values_style' not in formatting: formatting['values_style'] = { }
+                    formatting['values_style'][ident] = 'curly'
+
+            self._label = self.operand.render(formatting=formatting)[0]
             self._label_width = len(self._label) * self._config.disasm_font_width
+
+        if self.phi:
+            self._phi_width = 2 * self._config.disasm_font_width
+        else:
+            self._phi_width = 0
+
+        if self.variable is not None:
+            self._variable_ident_width = len(self.variable.ident) * self._config.disasm_font_width
+        else:
+            self._variable_ident_width = 0
 
         self._update_size()
 
     def _update_size(self):
-        self._width = self._label_width
+        self._width = self._label_width + self._phi_width
+        if self.disasm_view.show_variable_identifier and self._variable_ident_width:
+            self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
         self._height = self._config.disasm_font_height

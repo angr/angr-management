@@ -1,12 +1,30 @@
 
-from PySide.QtGui import QMenu
+from PySide.QtGui import QMenu, QAction
 
 
 class MenuEntry(object):
-    def __init__(self, caption, action, shortcut=None):
+    def __init__(self, caption, action, shortcut=None, checkable=False, checked=False):
         self.caption = caption
         self.action = action
         self.shortcut = shortcut
+        self.checkable = checkable
+        self.checked_initially = checked
+
+        self._qaction = None
+
+    @property
+    def qaction(self):
+        return self._qaction
+
+    @qaction.setter
+    def qaction(self, v):
+        self._qaction = v
+
+    @property
+    def checked(self):
+        if self._qaction is None or not self.checkable:
+            return False
+        return self._qaction.isChecked()
 
 
 class MenuSeparator(object):
@@ -15,9 +33,9 @@ class MenuSeparator(object):
 
 
 class Menu(object):
-    def __init__(self, window, caption):
+    def __init__(self, caption, parent=None):
 
-        self.window = window
+        self.parent = parent
         self.caption = caption
 
         self.entries = [ ]
@@ -28,13 +46,20 @@ class Menu(object):
         if self._qmenu is not None:
             return self._qmenu
 
-        menu = QMenu(self.caption, self.window)
+        if self.parent is not None:
+            menu = QMenu(self.caption, self.parent)
+        else:
+            menu = QMenu(self.caption)
 
         for entry in self.entries:
             if isinstance(entry, MenuEntry):
-                action = menu.addAction(entry.caption, entry.action)
+                action = menu.addAction(entry.caption, entry.action)  # type: QAction
                 if entry.shortcut is not None:
                     action.setShortcut(entry.shortcut)
+                if entry.checkable:
+                    action.setCheckable(True)
+                    action.setChecked(entry.checked_initially)
+                entry.qaction = action
             elif isinstance(entry, MenuSeparator):
                 menu.addSeparator()
             else:

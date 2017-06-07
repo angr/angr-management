@@ -18,15 +18,18 @@ class QBlock(QGraphObject):
     BOTTOM_PADDING = 5
     LEFT_PADDING = 5
     RIGHT_PADDING = 5
-    SPACING = 2
+    SPACING = 0
 
-    def __init__(self, workspace, disasm_view, disasm, addr, cfg_nodes, out_branches):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches):
         super(QBlock, self).__init__()
 
         # initialization
         self.workspace = workspace
+        self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
+        self.infodock = infodock
+        self.variable_manager = infodock.variable_manager
         self.addr = addr
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
@@ -75,6 +78,14 @@ class QBlock(QGraphObject):
     # Public methods
     #
 
+    def refresh(self):
+        super(QBlock, self).refresh()
+
+        for obj in self.objects:
+            obj.refresh()
+
+        self._update_size()
+
     def update_label(self, label_addr):
         label = self.addr_to_labels.get(label_addr, None)
         if label is not None:
@@ -101,6 +112,11 @@ class QBlock(QGraphObject):
         :return:
         """
 
+        # shadow
+        painter.setPen(QColor(0, 0, 0, 0))
+        painter.setBrush(QColor(0, 0, 0, 0x80))
+        painter.drawRect(self.x + 3, self.y + 3, self.width, self.height)
+
         # background of the node
         gradient = QLinearGradient(QPointF(0, self.y), QPointF(0, self.y + self.height))
         gradient.setColorAt(0, QColor(0xff, 0xff, 0xfa))
@@ -111,7 +127,7 @@ class QBlock(QGraphObject):
 
         # content
 
-        y_offset = 0
+        y_offset = self.TOP_PADDING
 
         for obj in self.objects:
 
@@ -121,7 +137,7 @@ class QBlock(QGraphObject):
             obj.y = self.y + y_offset
             obj.paint(painter)
 
-            y_offset += self._config.disasm_font_height
+            y_offset += obj.height
 
     #
     # Event handlers
@@ -156,7 +172,9 @@ class QBlock(QGraphObject):
         for obj in block_objects:
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
-                insn = QInstruction(self.workspace, self.disasm_view, self.disasm, obj, out_branch, self._config)
+                insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
+                                    self.infodock, obj, out_branch, self._config
+                                    )
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, tuple):
