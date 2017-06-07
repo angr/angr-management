@@ -233,11 +233,11 @@ class QOperand(QGraphObject):
 
             if variable_sort:
                 # try find the corresponding variable
-                variable_and_offset = self.variable_manager[self.func_addr].find_variable_by_insn(self.insn.addr,
-                                                                                                  variable_sort
-                                                                                                  )
-                if variable_and_offset is not None:
-                    variable, offset = variable_and_offset
+                variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(self.insn.addr,
+                                                                                                   variable_sort
+                                                                                                   )
+                if variable_and_offsets:
+                    variable, offset = variable_and_offsets[0]
 
                     self.variable = variable
                     variable_str = variable.name
