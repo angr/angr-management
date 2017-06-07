@@ -72,13 +72,16 @@ class EdgeRouter(object):
         start_col, start_row = self._node_locations[src]
         end_col, end_row = self._node_locations[dst]
 
+        # start from the middle of the block
         start_col += 1
         end_col += 1
+        # start from the next row
+        start_row += 1
 
         if start_row < end_row:
-            min_row, max_row = start_row + 1, end_row
+            min_row, max_row = start_row, end_row
         else:
-            max_row, min_row = start_row + 1, end_row
+            max_row, min_row = start_row, end_row
 
         # find a vertical column to route the edge to the target node
         col = start_col
@@ -111,7 +114,7 @@ class EdgeRouter(object):
 
         if start_row != end_row:
             # generate a line to move to the target row
-            idx = self._assign_edge_to(edge, 'vertical', col, min(start_row + 1, end_row), abs(end_row - start_row - 1))
+            idx = self._assign_edge_to(edge, 'vertical', col, min(start_row + 1, end_row), abs(end_row - start_row) + 1)
             edge.add_point(col, end_row, idx)
 
         if col != end_col:
@@ -151,7 +154,7 @@ class EdgeRouter(object):
         for col in xrange(self._max_col + 2):
             v_edges = [ ]
             h_edges = [ ]
-            for row in xrange(self._max_row + 1):
+            for row in xrange(self._max_row + 3):
                 v_edges.append({ })
                 h_edges.append({ })
             self.vertical_edges.append(v_edges)
@@ -477,7 +480,7 @@ class GraphLayouter(object):
         :return: None
         """
 
-        self._row_heights = [ None ] * (self._max_row + 1)
+        self._row_heights = [ None ] * (self._max_row + 2)
         self._col_widths = [ None ] * (self._max_col + 2)
 
         for node in self.graph.nodes_iter():
@@ -539,7 +542,7 @@ class GraphLayouter(object):
                 row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
 
         y = 0
-        for row in xrange(self._max_row + 1):
+        for row in xrange(self._max_row + 2):
             x = 0
             for col in xrange(self._max_col + 2):
                 self._grid_coordinates[(col, row)] = (x, y)
@@ -587,6 +590,7 @@ class GraphLayouter(object):
 
             prev_col, prev_row = self._locations[edge.src]
             prev_col += 1
+            prev_row += 1
             prev_x, prev_y = next_point
             # each point on the edge
 
