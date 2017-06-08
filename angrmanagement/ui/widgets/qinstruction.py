@@ -64,7 +64,6 @@ class QInstruction(QGraphObject):
 
         # selection background
         if self.selected:
-            from .qblock import QBlock
             painter.setPen(QColor(0xef, 0xbf, 0xba))
             painter.setBrush(QColor(0xef, 0xbf, 0xba))
             painter.drawRect(self.x, self.y, self.width, self.height)

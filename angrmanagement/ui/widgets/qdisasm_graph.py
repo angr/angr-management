@@ -28,10 +28,34 @@ def timeit(f):
     return decorator
 
 
+class OperandHighlightMode(object):
+    SAME_IDENT = 0
+    SAME_TEXT = 1
+
+
 class InfoDock(object):
     def __init__(self):
         self.induction_variable_analysis = None
         self.variable_manager = None
+
+        self.highlight_mode = OperandHighlightMode.SAME_IDENT  # default highlight mode
+        self.selected_operand = None
+
+    def initialize(self):
+        self.selected_operand = None
+
+    def should_highlight_operand(self, operand):
+        if self.selected_operand is None:
+            return False
+
+        if self.highlight_mode == OperandHighlightMode.SAME_TEXT or self.selected_operand.variable is None:
+            # when there is no related variable, we highlight as long as they have the same text
+            return operand.text == self.selected_operand.text
+        elif self.highlight_mode == OperandHighlightMode.SAME_IDENT:
+            if self.selected_operand.variable is not None and operand.variable is not None:
+                return self.selected_operand.variable.ident == operand.variable.ident
+
+        return False
 
 
 class QDisasmGraph(QBaseGraph):
@@ -120,6 +144,7 @@ class QDisasmGraph(QBaseGraph):
         else:
             vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
         self.variable_manager = vr.variable_manager
+        self._infodock.initialize()
         self._infodock.variable_manager = vr.variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
@@ -385,6 +410,15 @@ class QDisasmGraph(QBaseGraph):
         elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
             # jump forward
             self.disassembly_view.jump_forward()
+
+        elif key == Qt.Key_A:
+            # switch between highlight mode
+            if self._infodock.highlight_mode == OperandHighlightMode.SAME_TEXT:
+                self._infodock.highlight_mode = OperandHighlightMode.SAME_IDENT
+            else:
+                self._infodock.highlight_mode = OperandHighlightMode.SAME_TEXT
+            # refresh myself
+            self.viewport().update()
 
         return False
 

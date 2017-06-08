@@ -12,26 +12,6 @@ from .qgraph_object import QGraphObject
 l = logging.getLogger('ui.widgets.qoperand')
 
 
-class QOperandBranchTarget(QLabel):
-    def __init__(self, disasm_view, text, target, is_target_func, parent):
-
-        super(QOperandBranchTarget, self).__init__(parent)
-
-        self.setText(text)
-
-        if is_target_func:
-            self.setProperty('class', 'operand_branch_target_func')
-        else:
-            self.setProperty('class', 'operand_branch_target')
-
-        self._target = target
-        self._disasm_view = disasm_view
-
-    def mouseDoubleClickEvent(self, mouse_event):
-        if self._target is not None:
-            self._disasm_view.jump_to(self._target)
-
-
 class QOperand(QGraphObject):
 
     VARIABLE_IDENT_SPACING = 5
@@ -62,7 +42,7 @@ class QOperand(QGraphObject):
 
         self.selected = False
 
-        # "widets"
+        # "widgets"
         self._label = None
         self._label_width = None
         self._phi_width = None
@@ -71,6 +51,14 @@ class QOperand(QGraphObject):
         self._is_target_func = None
 
         self._init_widgets()
+
+    #
+    # Properties
+    #
+
+    @property
+    def text(self):
+        return self._label
 
     #
     # Public methods
@@ -87,6 +75,12 @@ class QOperand(QGraphObject):
             painter.setPen(QColor(0xc0, 0xbf, 0x40))
             painter.setBrush(QColor(0xc0, 0xbf, 0x40))
             painter.drawRect(self.x, self.y, self.width, self.height)
+        else:
+            # should we highlight ourselves?
+            if self.infodock.should_highlight_operand(self):
+                painter.setPen(QColor(0x7f, 0xf5, 0))
+                painter.setBrush(QColor(0x7f, 0xf5, 0))
+                painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
 
@@ -145,6 +139,10 @@ class QOperand(QGraphObject):
 
     def toggle_select(self):
         self.selected = not self.selected
+        if self.selected:
+            self.infodock.selected_operand = self
+        else:
+            self.infodock.selected_operand = None
 
     #
     # Event handlers
