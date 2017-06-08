@@ -198,8 +198,6 @@ class QOperand(QGraphObject):
 
     def _init_widgets(self):
 
-        layout = QHBoxLayout()
-
         if self.is_branch_target:
             # a branch instruction
             if self.is_indirect_branch:
@@ -237,36 +235,37 @@ class QOperand(QGraphObject):
                                                                                                    variable_sort
                                                                                                    )
                 if variable_and_offsets:
-                    variable, offset = variable_and_offsets[0]
+                    variable, offset = self._pick_variable(variable_and_offsets)
 
-                    self.variable = variable
-                    variable_str = variable.name
+                    if variable is not None:
+                        self.variable = variable
+                        variable_str = variable.name
 
-                    ident = (self.insn.addr, 'operand', self.operand_index)
-                    if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                    if variable_sort == 'memory':
-                        if offset == 0: custom_value_str = variable_str
-                        else: custom_value_str = "%s[%d]" % (variable_str, offset)
-                    else:
-                        custom_value_str = ''
+                        ident = (self.insn.addr, 'operand', self.operand_index)
+                        if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
+                        if variable_sort == 'memory':
+                            if offset == 0: custom_value_str = variable_str
+                            else: custom_value_str = "%s[%d]" % (variable_str, offset)
+                        else:
+                            custom_value_str = ''
 
-                    ##
-                    # Hacks
-                    ##
-                    if self.infodock.induction_variable_analysis is not None:
-                        r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
-                        if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                            custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
-                        if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
-                            custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
+                        ##
+                        # Hacks
+                        ##
+                        if self.infodock.induction_variable_analysis is not None:
+                            r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
+                            if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                                custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
+                            if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
+                                custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
 
-                    formatting['custom_values_str'][ident] = custom_value_str
+                        formatting['custom_values_str'][ident] = custom_value_str
 
-                    if variable.phi:
-                        self.phi = True
+                        if variable.phi:
+                            self.phi = True
 
-                    if 'values_style' not in formatting: formatting['values_style'] = { }
-                    formatting['values_style'][ident] = 'curly'
+                        if 'values_style' not in formatting: formatting['values_style'] = { }
+                        formatting['values_style'][ident] = 'curly'
 
             self._label = self.operand.render(formatting=formatting)[0]
             self._label_width = len(self._label) * self._config.disasm_font_width
@@ -288,3 +287,83 @@ class QOperand(QGraphObject):
         if self.disasm_view.show_variable_identifier and self._variable_ident_width:
             self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
         self._height = self._config.disasm_font_height
+
+    def _pick_variable(self, variable_and_offsets):
+        """
+        Pick the corresponding variable for the current operand.
+
+        :param list variable_and_offsets:   A list of variables and the offsets into each variable.
+        :return:                            A tuple of variable and the offset.
+        :rtype:                             tuple
+        """
+
+        if isinstance(self.operand, MemoryOperand):
+            if len(variable_and_offsets) > 1:
+                l.error("Instruction %#x has two memory operands. Please report it on GitHub.", self.insn.addr)
+            return variable_and_offsets[0]
+
+        elif isinstance(self.operand, RegisterOperand):
+            # there might be multiple register-type variables for an instruction. pick the right one is... not easy
+
+            the_reg = self.operand.register
+            if the_reg is None:
+                # huh, it does not have a Register child
+                return None, None
+
+            reg_name = the_reg.reg
+            arch = self.workspace.instance.project.arch
+
+            if len(variable_and_offsets) == 1:
+                # only one candidate...
+                var, offset = variable_and_offsets[0]
+                if arch.registers[reg_name][0] == var.reg:
+                    return var, offset
+                return None, None
+
+            if self.operand_index > 0:
+                # this is the source operand
+                # which variable is read here?
+                for var, offset in variable_and_offsets:
+                    if arch.registers[reg_name][0] == var.reg:
+                        if self._variable_has_access(var, self.insn.addr, 'read'):
+                            return var, offset
+
+                l.debug('Cannot find any source variable for operand %d at instruction %#x.',
+                        self.operand_index,
+                        self.insn.addr
+                        )
+                return None, None
+
+            # this is the destination operand
+            # which variable is written here?
+            for var, offset in variable_and_offsets:
+                if arch.registers[reg_name][0] == var.reg:
+                    if self._variable_has_access(var, self.insn.addr, 'write'):
+                        return var, offset
+
+            l.debug('Cannot find any destination variable for operand %d at instruction %#x.',
+                    self.operand_index,
+                    self.insn.addr
+                    )
+            # just return the first one
+            return None, None
+
+        else:
+            # what's this type? why am I here?
+            l.error('_pick_variable: Unsupported operand type %s.', self.operand.__class__)
+
+            return None, None
+
+
+    def _variable_has_access(self, variable, ins_addr, access_type):
+
+        if variable not in self.variable_manager[self.func_addr]._variable_accesses:
+            l.error('Variable %s does not have any accessing records.', variable)
+            return False
+
+        accesses = self.variable_manager[self.func_addr]._variable_accesses[variable]
+        for access in accesses:
+            if access.location.ins_addr == ins_addr and access.access_type == access_type:
+                return True
+
+        return False
