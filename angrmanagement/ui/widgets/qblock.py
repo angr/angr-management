@@ -193,4 +193,5 @@ class QBlock(QGraphObject):
                       (len(self.objects) - 1) * self.SPACING + self.BOTTOM_PADDING
 
         # calculate width
-        self._width = self.LEFT_PADDING + max([obj.width for obj in self.objects]) + self.RIGHT_PADDING
+        self._width = self.LEFT_PADDING + (max([obj.width for obj in self.objects]) if self.objects else 0) +\
+                      self.RIGHT_PADDING
