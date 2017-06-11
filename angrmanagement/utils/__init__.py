@@ -1,6 +1,8 @@
 
 import itertools
 
+from .block_objects import Variables, Label
+
 
 def locate_function(inst, addr):
     """
@@ -45,28 +47,42 @@ def get_label_text(addr, kb, function=None):
         return "loc_%#x:" % addr
 
 
-def get_block_objects(disasm, nodes):
+def get_block_objects(disasm, nodes, func_addr):
     """
-    Get a list of instructions and labels to be displayed in a block in disassembly view.
+    Get a list of objects to be displayed in a block in disassembly view. Objects may include instructions, stack
+    variables, and labels.
 
-    :param angr.analyses.Disassembly disasm: The angr Disassembly Analysis instance.
-    :param iterable nodes: A collection of CFG nodes.
-    :return: a list of Instruction objects and label names (strings).
-    :rtype: list
+    :param angr.analyses.Disassembly disasm:    The angr Disassembly Analysis instance.
+    :param iterable nodes:                      A collection of CFG nodes.
+    :param int func_addr:                       The function address of the current block.
+    :return:                                    a list of Instruction objects and label names (strings).
+    :rtype:                                     list
     """
 
     block_addrs = [node.addr for node in nodes]
     insn_addrs = list(itertools.chain.from_iterable(disasm.block_to_insn_addrs[addr] for addr in block_addrs))
 
     lst = [ ]
+
+    # stack variables
+    if block_addrs[0] == func_addr:
+        variable_manager = disasm.kb.variables[func_addr]
+        # filter out all stack variables
+        variables = variable_manager.get_variables(sort='stack', collapse_same_ident=False)
+        variables = sorted(variables, key=lambda v: v.offset)
+        lst.append(Variables(variables))
+
+    # instructions and labels
     for insn_addr in insn_addrs:
         if insn_addr in disasm.kb.labels:
             lst.append((insn_addr, disasm.kb.labels[insn_addr] + ":"))
         lst.append(disasm.raw_result_map['instructions'][insn_addr])
 
+    # initial label, if there is any
+    # FIXME: all labels should be generated during CFG recovery, and this step should not be necessary.
     if lst and not isinstance(lst[0], tuple):
         # the first element should be a label
-        lst.insert(0, (block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
+        lst.insert(0, Label(block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
 
     return lst
 

@@ -30,9 +30,6 @@ class QInstruction(QGraphObject):
 
         self.selected = False
 
-        self._width = None
-        self._height = None
-
         # all "widgets"
         self._addr = None
         self._addr_width = None
@@ -46,14 +43,6 @@ class QInstruction(QGraphObject):
 
         #self.setContextMenuPolicy(Qt.CustomContextMenu)
         #self.connect(self, SIGNAL('customContextMenuRequested(QPoint)'), self._on_context_menu)
-
-    @property
-    def width(self):
-        return self._width
-
-    @property
-    def height(self):
-        return self._height
 
     def paint(self, painter):
         """

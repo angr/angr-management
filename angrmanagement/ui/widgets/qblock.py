@@ -8,8 +8,10 @@ from ...utils import (
     get_label_text, get_block_objects, address_to_text, get_out_branches_for_insn,
     get_string_for_display, should_display_string_label,
 )
+from ...utils.block_objects import Variables, Label
 from .qinstruction import QInstruction
 from .qblock_label import QBlockLabel
+from .qvariable import QVariable
 from .qgraph_object import QGraphObject
 
 
@@ -167,7 +169,7 @@ class QBlock(QGraphObject):
 
     def _init_widgets(self):
 
-        block_objects = get_block_objects(self.disasm, self.cfg_nodes)
+        block_objects = get_block_objects(self.disasm, self.cfg_nodes, self.func_addr)
 
         for obj in block_objects:
             if isinstance(obj, Instruction):
@@ -177,12 +179,15 @@ class QBlock(QGraphObject):
                                     )
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
-            elif isinstance(obj, tuple):
+            elif isinstance(obj, Label):
                 # label
-                addr, text = obj
-                label = QBlockLabel(addr, text, self._config)
+                label = QBlockLabel(obj.addr, obj.text, self._config)
                 self.objects.append(label)
-                self.addr_to_labels[addr] = label
+                self.addr_to_labels[obj.addr] = label
+            elif isinstance(obj, Variables):
+                for var in obj.variables:
+                    variable = QVariable(self.workspace, self.disasm_view, var, self._config)
+                    self.objects.append(variable)
 
         self._update_size()
 

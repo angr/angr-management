@@ -46,6 +46,7 @@ class QOperand(QGraphObject):
         self._label = None
         self._label_width = None
         self._phi_width = None
+        self._variable_ident = None
         self._variable_ident_width = None
         self._branch_target = None
         self._is_target_func = None
@@ -115,7 +116,7 @@ class QOperand(QGraphObject):
         if self.variable is not None and self.disasm_view.show_variable_identifier:
             x += self.VARIABLE_IDENT_SPACING
             painter.setPen(Qt.darkGreen)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.variable.ident)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_ident)
             x += self._variable_ident_width
 
         # restores the color
@@ -237,6 +238,7 @@ class QOperand(QGraphObject):
 
                     if variable is not None:
                         self.variable = variable
+                        self._variable_ident = "<%s>" % variable.ident
                         variable_str = variable.name
 
                         ident = (self.insn.addr, 'operand', self.operand_index)
@@ -274,7 +276,7 @@ class QOperand(QGraphObject):
             self._phi_width = 0
 
         if self.variable is not None:
-            self._variable_ident_width = len(self.variable.ident) * self._config.disasm_font_width
+            self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width
         else:
             self._variable_ident_width = 0
 
