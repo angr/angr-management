@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
 
         # initialization
         self.caption = "angr Management"
-        self.setMinimumSize(QSize(800, 800))
+        self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
         self.workspace = None
