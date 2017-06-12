@@ -14,6 +14,7 @@ l = logging.getLogger('ui.widgets.qoperand')
 
 class QOperand(QGraphObject):
 
+    BRANCH_TARGETS_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
@@ -49,6 +50,9 @@ class QOperand(QGraphObject):
         self._variable_ident = None
         self._variable_ident_width = None
         self._branch_target = None
+        self._branch_targets = None
+        self._branch_targets_text = None
+        self._branch_targets_text_width = None
         self._is_target_func = None
 
         self._init_widgets()
@@ -90,7 +94,7 @@ class QOperand(QGraphObject):
             painter.drawText(x, self.y + self._config.disasm_font_ascent, u'\u0278 ')
             x += self._phi_width
 
-        if self._branch_target:
+        if self._branch_target or self._branch_targets:
             if self._is_target_func:
                 painter.setPen(Qt.blue)
             else:
@@ -112,6 +116,13 @@ class QOperand(QGraphObject):
         painter.drawText(x, self.y + self._config.disasm_font_ascent, self._label)
 
         x += self._label_width
+
+        # draw additional branch targets
+        if self._branch_targets_text:
+            painter.setPen(Qt.darkYellow)
+            x += self.BRANCH_TARGETS_SPACING
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._branch_targets_text, )
+            x += self._branch_targets_text_width
 
         if self.variable is not None and self.disasm_view.show_variable_identifier:
             x += self.VARIABLE_IDENT_SPACING
@@ -195,27 +206,46 @@ class QOperand(QGraphObject):
         # return a random one
         return next(iter(branch_targets))
 
+    def _first_n_branch_targets(self, branch_targets, n):
+
+        if not branch_targets:
+            return [ ]
+
+        return list(branch_targets)[ : n]
+
     def _init_widgets(self):
 
         if self.is_branch_target:
             # a branch instruction
+
+            if self.branch_targets is not None and next(iter(self.branch_targets)) in self.disasm.kb.functions:
+                # jumping to a function
+                is_target_func = True
+            else:
+                # jumping to a non-function address
+                is_target_func = False
+
             if self.is_indirect_branch:
                 # indirect jump
                 self._label = self.operand.render()[0]
                 self._label_width = len(self._label) * self._config.disasm_font_width
+                self._is_target_func = is_target_func
+
+                self._branch_targets = self.branch_targets
+                first_n_targets = self._first_n_branch_targets(self._branch_targets, 3)
+                if first_n_targets:
+                    self._branch_targets_text = "[ %s ]" % ", ".join([ "%xh" % t for t in first_n_targets ])
+                    self._branch_targets_text_width = len(self._branch_targets_text) * self._config.disasm_font_width
+
+                if self._branch_targets and len(self._branch_targets) == 1:
+                    self._branch_target = next(iter(self._branch_targets))
 
             else:
-                if self.branch_targets is not None and next(iter(self.branch_targets)) in self.disasm.kb.functions:
-                    # jumping to a function
-                    is_target_func = True
-                else:
-                    # jumping to a non-function address
-                    is_target_func = False
-
                 self._label = self.operand.render()[0]
                 self._label_width = len(self._label) * self._config.disasm_font_width
-                self._branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
                 self._is_target_func = is_target_func
+
+                self._branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
 
         else:
             # not a branch
@@ -286,6 +316,8 @@ class QOperand(QGraphObject):
         self._width = self._label_width + self._phi_width
         if self.disasm_view.show_variable_identifier and self._variable_ident_width:
             self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
+        if self._branch_targets_text_width:
+            self._width += self.BRANCH_TARGETS_SPACING + self._branch_targets_text_width
         self._height = self._config.disasm_font_height
 
     def _pick_variable(self, variable_and_offsets):
