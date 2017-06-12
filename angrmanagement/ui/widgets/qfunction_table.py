@@ -22,7 +22,10 @@ class QFunctionTableItem(object):
         name = function.name
         address = function.addr
         binary = function.binary
-        binary_name = os.path.basename(binary.binary)
+        if binary is not None:
+            binary_name = os.path.basename(binary.binary)
+        else:
+            binary_name = ""
         blocks = len(list(function.blocks))
         size = function.size
 
