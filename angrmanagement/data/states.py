@@ -1,8 +1,6 @@
 
 import logging
 
-import simuvex
-
 l = logging.getLogger('data.states')
 
 

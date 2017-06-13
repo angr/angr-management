@@ -17,10 +17,9 @@ class ConsoleView(BaseView):
 
     def reload(self):
 
-        import angr, simuvex, claripy, cle
+        import angr, claripy, cle
 
         namespace = {'angr': angr,
-                     'simuvex': simuvex,
                      'claripy': claripy,
                      'cle': cle,
                      'workspace': self.workspace,
@@ -37,11 +36,10 @@ class ConsoleView(BaseView):
 
     def _init_widgets(self):
 
-        import angr, simuvex, claripy, cle
+        import angr, claripy, cle
 
         namespace = {
             'angr': angr,
-            'simuvex': simuvex,
             'claripy': claripy,
             'cle': cle,
         }
