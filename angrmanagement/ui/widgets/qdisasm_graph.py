@@ -549,7 +549,7 @@ class QDisasmGraph(QBaseGraph):
                 elif edge.sort == EdgeSort.FALSE_BRANCH:
                     # False branch
                     # Tomato
-                    color = QColor(0xf1,0x66,0x64)
+                    color = QColor(0xf1, 0x66, 0x64)
                 else:
                     # Dark Gray
                     color = QColor(0x56, 0x5a, 0x5c)
