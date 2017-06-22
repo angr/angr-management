@@ -1,5 +1,5 @@
 
-from PySide.QtGui import QPainter, QLinearGradient, QColor, QBrush
+from PySide.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen
 from PySide.QtCore import QPointF, Qt
 
 from angr.analyses.disassembly import Instruction
@@ -18,8 +18,8 @@ from .qgraph_object import QGraphObject
 class QBlock(QGraphObject):
     TOP_PADDING = 5
     BOTTOM_PADDING = 5
-    LEFT_PADDING = 5
-    RIGHT_PADDING = 5
+    LEFT_PADDING = 10
+    RIGHT_PADDING = 10
     SPACING = 0
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches):
@@ -115,16 +115,18 @@ class QBlock(QGraphObject):
         """
 
         # shadow
-        painter.setPen(QColor(0, 0, 0, 0))
-        painter.setBrush(QColor(0, 0, 0, 0x80))
-        painter.drawRect(self.x + 3, self.y + 3, self.width, self.height)
+        # painter.setPen(QColor(0, 0, 0, 0))
+        # painter.setBrush(QColor(0, 0, 0, 0x80))
+        # painter.drawRect(self.x + 3, self.y + 3, self.width, self.height)
 
         # background of the node
         gradient = QLinearGradient(QPointF(0, self.y), QPointF(0, self.y + self.height))
         gradient.setColorAt(0, QColor(0xff, 0xff, 0xfa))
         gradient.setColorAt(1, QColor(0xff, 0xff, 0xdb))
-        painter.setBrush(QBrush(gradient))
-        painter.setPen(Qt.black)
+        #painter.setBrush(QBrush(gradient))
+        painter.setBrush(QColor(0xfa, 0xfa, 0xfa))
+        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
+        # painter.setPen(QPen(QBrush(Qt.gray), 1))
         painter.drawRect(self.x, self.y, self.width, self.height)
 
         # content

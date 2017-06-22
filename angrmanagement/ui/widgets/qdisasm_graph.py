@@ -3,7 +3,7 @@ from functools import wraps
 import logging
 
 from PySide.QtCore import QPointF, QRectF, Qt, QPoint
-from PySide.QtGui import QPainter, QBrush, QApplication, QMouseEvent, QResizeEvent, QPen
+from PySide.QtGui import QPainter, QBrush, QColor, QApplication, QMouseEvent, QResizeEvent, QPen
 
 from ...utils import get_out_branches
 from ...utils.graph_layouter import GraphLayouter
@@ -540,15 +540,19 @@ class QDisasmGraph(QBaseGraph):
 
                 if edge.sort == EdgeSort.BACK_EDGE:
                     # it's a back edge
-                    color = Qt.darkYellow
+                    # Honey
+                    color = QColor(0xf9, 0xd5, 0x77)
                 elif edge.sort == EdgeSort.TRUE_BRANCH:
                     # True branch
-                    color = Qt.darkGreen
+                    # Aqar
+                    color = QColor(0x79, 0xcc, 0xcd)
                 elif edge.sort == EdgeSort.FALSE_BRANCH:
                     # False branch
-                    color = Qt.red
+                    # Tomato
+                    color = QColor(0xf1,0x66,0x64)
                 else:
-                    color = Qt.blue
+                    # Dark Gray
+                    color = QColor(0x56, 0x5a, 0x5c)
                 pen = QPen(color)
                 pen.setWidth(2)
                 painter.setPen(pen)
