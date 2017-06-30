@@ -2,7 +2,7 @@
 from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QLineEdit
 from PySide.QtCore import Qt
 
-from angr import PathHierarchy
+from angr import StateHierarchy
 
 from ..widgets import QAddressInput, QStateComboBox
 from ...data.instance import PathGroupDescriptor
@@ -140,7 +140,7 @@ class NewPath(QDialog):
             return False
 
         state = state_record.state(inst.project, address=addr)
-        hierarchy = PathHierarchy(weakkey_path_mapping=True)
+        hierarchy = StateHierarchy()
         pg = inst.project.factory.path_group(state, hierarchy=hierarchy)
         pg_desc = PathGroupDescriptor(path_name, pg)
         inst.path_groups.add_pathgroup(pg_desc=pg_desc)

@@ -3,7 +3,7 @@ from threading import Thread
 from Queue import Queue
 
 import ana
-from angr import PathHierarchy
+from angr import StateHierarchy
 
 from .jobs import PGStepJob, PGExploreJob
 from .jobs import CFGGenerationJob
@@ -39,7 +39,7 @@ class PathGroups(object):
         """
 
         if pg_desc is None:
-            hierarchy = PathHierarchy(weakkey_path_mapping=True)
+            hierarchy = StateHierarchy()
             pg = self.project.factory.path_group(immutable=False, hierarchy=hierarchy)
             pg_desc = PathGroupDescriptor(NameGenerator.random_name(), pg)
 

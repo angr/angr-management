@@ -5,8 +5,6 @@ from PySide.QtCore import Qt
 import pyqode.core.api
 import pyqode.core.modes
 
-from angr import PathHierarchy
-
 from ..widgets import QAddressInput, QStateComboBox
 from ...data.states import StateRecord
 from ...utils.namegen import NameGenerator
