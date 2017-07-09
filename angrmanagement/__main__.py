@@ -11,7 +11,7 @@ def check_dependencies():
     try:
         import PySide
     except ImportError:
-        sys.stderr.write("Cannot find PySide package. You may install it via pip:\n" +
+        sys.stderr.write("Cannot find the PySide package. You may install it via pip:\n" +
                          "    pip install pyside\n")
         return False
 
@@ -19,8 +19,15 @@ def check_dependencies():
         import pyqode.core
         import pyqode.python
     except ImportError:
-        sys.stderr.write("Cannot find pyqode package. You may install it via pip:\n" +
+        sys.stderr.write("Cannot find the pyqode package. You may install it via pip:\n" +
                          "    pip install pyqode.core pyqode.python\n")
+        return False
+
+    try:
+        import qtconsole
+    except ImportError:
+        sys.stderr.write("Cannot find the qtconsole package. You may install it via pip:\n" +
+                         "    pip install qtconsole\n")
         return False
 
     return True
