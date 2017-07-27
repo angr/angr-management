@@ -258,7 +258,7 @@ class QOperand(QGraphObject):
             else:
                 variable_sort = None
 
-            if variable_sort:
+            if self.disasm_view.show_variable and variable_sort:
                 # try find the corresponding variable
                 variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(self.insn.addr,
                                                                                                    variable_sort
