@@ -126,13 +126,24 @@ def gui_thread_schedule(callable, args=None):
         if args is None:
             return callable()
         else:
-            callable(*args)
+            return callable(*args)
 
     event = ExecuteCodeEvent(callable, args)
     QCoreApplication.postEvent(GlobalInfo.main_window, event)
-    event.event.wait()
+    event.event.wait()  # TODO: unsafe. to be fixed later.
 
     if event.exception is not None:
         raise event.exception[0], event.exception[1], event.exception[2]
 
     return event.result
+
+
+def gui_thread_schedule_async(callable, args=None):
+    if is_gui_thread():
+        if args is None:
+            callable()
+        else:
+            callable(*args)
+
+    event = ExecuteCodeEvent(callable, args)
+    QCoreApplication.postEvent(GlobalInfo.main_window, event)

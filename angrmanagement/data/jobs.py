@@ -1,7 +1,7 @@
 import networkx
 
 from ..logic import GlobalInfo
-from ..logic.threads import gui_thread_schedule
+from ..logic.threads import gui_thread_schedule_async
 
 
 class Job(object):
@@ -15,14 +15,14 @@ class Job(object):
     def finish(self, inst, result):
         inst.jobs = inst.jobs[1:]
 
-        gui_thread_schedule(self._finish_progress)
+        gui_thread_schedule_async(self._finish_progress)
 
     def _progress_callback(self, percentage):
         delta = percentage - self.progress_percentage
 
         if delta > 1.0:
             self.progress_percentage = percentage
-            gui_thread_schedule(self._set_progress)
+            gui_thread_schedule_async(self._set_progress)
 
     def _set_progress(self):
         GlobalInfo.main_window.status = "Working... job %s" % self.name

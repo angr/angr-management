@@ -8,7 +8,7 @@ from angr import StateHierarchy
 from .jobs import PGStepJob, PGExploreJob
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
-from ..logic.threads import gui_thread_schedule
+from ..logic.threads import gui_thread_schedule_async
 from .states import StateManager
 from ..utils.namegen import NameGenerator
 
@@ -143,13 +143,13 @@ class Instance(object):
     def _worker(self):
         while True:
             if self._jobs_queue.empty():
-                gui_thread_schedule(self._set_status, args=("Ready.",))
+                gui_thread_schedule_async(self._set_status, args=("Ready.",))
 
             job = self._jobs_queue.get()
-            gui_thread_schedule(self._set_status, args=("Working...",))
+            gui_thread_schedule_async(self._set_status, args=("Working...",))
 
             result = job.run(self)
-            gui_thread_schedule(job.finish, args=(self, result))
+            gui_thread_schedule_async(job.finish, args=(self, result))
 
     def _set_status(self, status_text):
         GlobalInfo.main_window.status = status_text
