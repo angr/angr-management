@@ -239,7 +239,7 @@ class QDisasmGraph(QBaseGraph):
             # the instruction does not belong to the current function
             return
 
-        if insn_addr not in self.selected_insns:
+        if (insn_addr, operand_idx) not in self.selected_operands:
             if unique:
                 # unselect existing ones
                 self.unselect_all_operands()
