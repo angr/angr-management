@@ -269,33 +269,35 @@ class QOperand(QGraphObject):
                     if variable is not None:
                         self.variable = variable
                         self._variable_ident = "<%s>" % variable.ident
-                        variable_str = variable.name
 
-                        ident = (self.insn.addr, 'operand', self.operand_index)
-                        if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                        if variable_sort == 'memory':
-                            if offset == 0: custom_value_str = variable_str
-                            else: custom_value_str = "%s[%d]" % (variable_str, offset)
-                        else:
-                            custom_value_str = ''
+                        if self.disasm_view.show_variable:
+                            variable_str = variable.name
 
-                        ##
-                        # Hacks
-                        ##
-                        if self.infodock.induction_variable_analysis is not None:
-                            r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
-                            if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                                custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
-                            if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
-                                custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
+                            ident = (self.insn.addr, 'operand', self.operand_index)
+                            if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
+                            if variable_sort == 'memory':
+                                if offset == 0: custom_value_str = variable_str
+                                else: custom_value_str = "%s[%d]" % (variable_str, offset)
+                            else:
+                                custom_value_str = ''
 
-                        formatting['custom_values_str'][ident] = custom_value_str
+                            ##
+                            # Hacks
+                            ##
+                            if self.infodock.induction_variable_analysis is not None:
+                                r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
+                                if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                                    custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
+                                if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
+                                    custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
 
-                        if variable.phi:
-                            self.phi = True
+                            formatting['custom_values_str'][ident] = custom_value_str
 
-                        if 'values_style' not in formatting: formatting['values_style'] = { }
-                        formatting['values_style'][ident] = 'curly'
+                            if variable.phi:
+                                self.phi = True
+
+                            if 'values_style' not in formatting: formatting['values_style'] = { }
+                            formatting['values_style'][ident] = 'curly'
 
             self._label = self.operand.render(formatting=formatting)[0]
             self._label_width = len(self._label) * self._config.disasm_font_width
