@@ -49,7 +49,7 @@ class LoadBinary(QDialog):
         try:
             proj = angr.Project(self.file_path)
 
-            deps = [ i for i in proj.loader._unsatisfied_deps + list(proj.loader._satisfied_deps)
+            deps = [ i for i in list(proj.loader._satisfied_deps)
                      if i not in { 'angr syscalls', 'angr externs', '##cle_tls##', self.filename }
                      ]
 
