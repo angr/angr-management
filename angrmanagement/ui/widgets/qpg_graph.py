@@ -1,5 +1,13 @@
 
-import pygraphviz
+import logging
+
+l = logging.getLogger('ui.widgets.qpg_graph')
+
+try:
+    import pygraphviz
+except ImportError:
+    l.warning("Cannot import pygraphviz. The symbolic execution window might not work. However, we are currently "
+              "working on removing this dependency in future versions.")
 
 from PySide.QtGui import QPainterPath, QGraphicsView
 from PySide.QtCore import QPointF, QRectF
