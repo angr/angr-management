@@ -12,7 +12,7 @@ class QFunctionTableItem(object):
     def widgets(self):
         """
 
-        :param angr.knowledge.Function function: The Function object.
+        :param angr.knowledge_plugins.Function function: The Function object.
         :return: a list of QTableWidgetItem objects
         :rtype: list
         """

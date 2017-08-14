@@ -2,7 +2,7 @@
 from PySide.QtGui import QHBoxLayout, QVBoxLayout, QComboBox, QLabel
 from PySide.QtCore import QSize
 
-from angr.knowledge.function import Function
+from angr.knowledge_plugins import Function
 
 from .view import BaseView
 from ..widgets.qstring_table import QStringTable

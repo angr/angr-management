@@ -1,7 +1,7 @@
 
 from PySide.QtGui import QComboBox, QHBoxLayout
 
-from angr.knowledge.function_manager import FunctionManager
+from angr.knowledge_plugins import FunctionManager
 
 
 class QFunctionComboBox(QComboBox):

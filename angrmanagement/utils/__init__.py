@@ -11,7 +11,7 @@ def locate_function(inst, addr):
     :param inst:
     :param int addr: The address.
     :return: The function object or None if address is not inside any function.
-    :rtype: angr.knowledge.Function or None
+    :rtype: angr.knowledge_plugins.Function or None
     """
 
     if inst.cfg is None:

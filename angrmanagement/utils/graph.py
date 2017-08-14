@@ -4,7 +4,7 @@ from collections import defaultdict
 
 import networkx
 
-from angr.knowledge import Function
+from angr.knowledge_plugins import Function
 
 
 def grouper(iterable, n, fillvalue=None):
