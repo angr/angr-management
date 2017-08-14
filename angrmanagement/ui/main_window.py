@@ -45,6 +45,8 @@ class MainWindow(QMainWindow):
         self._init_statusbar()
         self._init_workspace()
 
+        self.showMaximized()
+
         # I'm ready to show off!
         self.show()
 
