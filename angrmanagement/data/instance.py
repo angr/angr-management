@@ -53,7 +53,6 @@ class SimulationManagers(object):
     def step_simgr(self, simgr, until_branch=True, async=True):
         if self.instance is None or not async:
             simgr.step(until_branch=until_branch)
-            print simgr, simgr.stashes
             self._simgr_stepped(None)
         else:
             self.instance.add_job(SimGrStepJob(simgr, callback=self._simgr_stepped, until_branch=until_branch))
