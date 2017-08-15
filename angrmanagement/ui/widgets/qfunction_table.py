@@ -65,6 +65,7 @@ class QFunctionTable(QTableWidget):
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
 
         self.verticalHeader().setResizeMode(QHeaderView.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
