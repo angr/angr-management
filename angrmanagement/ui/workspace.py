@@ -30,6 +30,11 @@ class Workspace(object):
         self.disasm_font_width = font_metrics.width('A')
         self.disasm_font_ascent = font_metrics.ascent()
 
+        self.symexec_font = QFont("DejaVu Sans Mono", 10)
+        font_metrics = QFontMetricsF(self.symexec_font)
+        self.symexec_font_height = font_metrics.height()
+        self.symexec_font_width = font_metrics.width('A')
+        self.symexec_font_ascent = font_metrics.ascent()
 
         default_tabs = [
             FunctionsView(self, 'left'),

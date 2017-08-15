@@ -79,9 +79,9 @@ def noop(_new_pg):
     pass
 
 
-class PGStepJob(Job):
+class SimGrStepJob(Job):
     def __init__(self, pg, callback=noop, until_branch=False):
-        super(PGStepJob, self).__init__('PathGroup stepping')
+        super(SimGrStepJob, self).__init__('PathGroup stepping')
         self._pg = pg
         self._callback = callback
         self._until_branch = until_branch
@@ -100,7 +100,7 @@ class PGStepJob(Job):
         return self._pg
 
     def finish(self, inst, result):
-        super(PGStepJob, self).finish(inst, result)
+        super(SimGrStepJob, self).finish(inst, result)
         self._callback(result)
 
     def __repr__(self):

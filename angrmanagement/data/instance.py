@@ -5,7 +5,7 @@ from Queue import Queue
 import ana
 from angr import StateHierarchy
 
-from .jobs import PGStepJob, PGExploreJob
+from .jobs import SimGrStepJob, PGExploreJob
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
@@ -13,16 +13,16 @@ from .states import StateManager
 from ..utils.namegen import NameGenerator
 
 
-class PathGroupDescriptor(object):
+class SimulationManagerDescriptor(object):
     def __init__(self, name, pg):
         self.name = name
         self.pg = pg
 
     def __repr__(self):
-        return "<PathGroup %s>" % self.name
+        return "<SimGr %s>" % self.name
 
 
-class PathGroups(object):
+class SimulationManagers(object):
     def __init__(self, instance, project):
         self.instance = instance
         self.project = project
@@ -30,45 +30,48 @@ class PathGroups(object):
         self.groups = [ ]
         self._widget = None
 
-    def add_pathgroup(self, pg_desc=None):
+    def add_simgr(self, pg_desc=None):
         """
-        Add a new path group descriptor.
+        Add a new simulation manager descriptor.
 
-        :param PathGroupDescriptor pg_desc:
-        :return: The added/created path group descriptor.
+        :param SimulationManagerDescriptor pg_desc:
+        :return: The added/created simulation manager descriptor.
         """
 
         if pg_desc is None:
             hierarchy = StateHierarchy()
-            pg = self.project.factory.path_group(immutable=False, hierarchy=hierarchy)
-            pg_desc = PathGroupDescriptor(NameGenerator.random_name(), pg)
+            pg = self.project.factory.simgr(immutable=False, hierarchy=hierarchy, save_unconstrained=True,
+                                            save_unsat=True)
+            pg_desc = SimulationManagerDescriptor(NameGenerator.random_name(), pg)
 
         self.groups.append(pg_desc)
 
-        self._widget.add_pathgroup(pg_desc)
+        self._widget.add_simgr(pg_desc)
 
         return pg_desc
 
-    def step_pathgroup(self, pg, until_branch=True, async=True):
+    def step_simgr(self, simgr, until_branch=True, async=True):
         if self.instance is None or not async:
-            pg.step(until_branch=until_branch)
+            simgr.step(until_branch=until_branch)
+            print simgr, simgr.stashes
+            self._simgr_stepped(None)
         else:
-            self.instance.add_job(PGStepJob(pg, callback=self._pathgroup_stepped, until_branch=until_branch))
+            self.instance.add_job(SimGrStepJob(simgr, callback=self._simgr_stepped, until_branch=until_branch))
 
-    def explore_pathgroup(self, pg, async=True, avoid=None, find=None, step_callback=None):
+    def explore_simgr(self, pg, async=True, avoid=None, find=None, step_callback=None):
 
         if self.instance is None or not async:
             # TODO: implement it
             pass
 
         else:
-            self.instance.add_job(PGExploreJob(pg, avoid=avoid, find=find, callback=self._pathgroup_explored,
+            self.instance.add_job(PGExploreJob(pg, avoid=avoid, find=find, callback=self._simgr_explored,
                                                step_callback=step_callback,
                                                )
                                   )
 
-    def link_widget(self, path_groups_widget):
-        self._widget = path_groups_widget
+    def link_widget(self, simgrs_widget):
+        self._widget = simgrs_widget
 
         self._widget.reload()
 
@@ -82,11 +85,11 @@ class PathGroups(object):
     # Callbacks
     #
 
-    def _pathgroup_stepped(self, result):
+    def _simgr_stepped(self, result):
         if self._widget is not None:
             self._widget.refresh()
 
-    def _pathgroup_explored(self, result):
+    def _simgr_explored(self, result):
         if self._widget is not None:
             self._widget.refresh()
 
@@ -99,7 +102,7 @@ class Instance(object):
 
         self.jobs = []
         self._jobs_queue = Queue()
-        self.path_groups = PathGroups(instance=self, project=self.project)
+        self.simgrs = SimulationManagers(instance=self, project=self.project)
         self.states = StateManager(instance=self, project=self.project)
 
         self._start_worker()

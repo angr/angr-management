@@ -13,13 +13,15 @@ class DisasmInsnContextMenu(Menu):
         self.entries.extend([
             MenuEntry('T&oggle selection', self._toggle_instruction_selection),
             MenuSeparator(),
-            MenuEntry('E&xecute symbolically...', self._disasm_view.popup_newpath_dialog),
+            MenuEntry('E&xecute symbolically...', self._popup_newpath_dialog),
             MenuEntry('&Avoid in execution...', self._avoid_in_execution)
         ])
 
     @property
     def _disasm_view(self):
         return self.parent
+
+    def _popup_newpath_dialog(self): self._disasm_view.popup_newpath_dialog(async=True)
 
     def _toggle_instruction_selection(self): self._disasm_view.toggle_instruction_selection(self.insn_addr)
 

@@ -5,7 +5,7 @@ from PySide.QtCore import Qt
 from angr import StateHierarchy
 
 from ..widgets import QAddressInput, QStateComboBox
-from ...data.instance import PathGroupDescriptor
+from ...data.instance import SimulationManagerDescriptor
 from ...utils.namegen import NameGenerator
 
 
@@ -141,12 +141,12 @@ class NewPath(QDialog):
 
         state = state_record.state(inst.project, address=addr)
         hierarchy = StateHierarchy()
-        pg = inst.project.factory.path_group(state, hierarchy=hierarchy)
-        pg_desc = PathGroupDescriptor(path_name, pg)
-        inst.path_groups.add_pathgroup(pg_desc=pg_desc)
+        simgr = inst.project.factory.simgr(state, hierarchy=hierarchy)
+        desc = SimulationManagerDescriptor(path_name, simgr)
+        inst.simgrs.add_simgr(pg_desc=desc)
 
         symexec_view = self._workspace.views_by_category['symexec'][0]
-        symexec_view.select_pathgroup_desc(pg_desc)
+        symexec_view.select_simgr_desc(desc)
 
         self._workspace.raise_view(symexec_view)
 

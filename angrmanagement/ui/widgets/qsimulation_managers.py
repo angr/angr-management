@@ -3,53 +3,53 @@ from PySide.QtGui import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QL
     QCheckBox, QTabWidget, QListWidget, QListWidgetItem
 from PySide.QtCore import QSize, Qt
 
-from ..widgets.qpathgroup_viewer import QPathGroupViewer
+from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 
 
-class QPathGroups(QFrame):
-    def __init__(self, path_groups, parent=None):
+class QSimulationManagers(QFrame):
+    def __init__(self, simgrs, parent=None):
         """
-        :param PathGroups path_groups:  A manager that manages a collection of PathGroup instances.
+        :param SimulationManagers simgrs:  A manager that manages a collection of PathGroup instances.
         :param object parent:           The parent widget.
         """
-        super(QPathGroups, self).__init__(parent)
+        super(QSimulationManagers, self).__init__(parent)
 
-        self._path_groups = None
+        self._simgrs = None
         self._on_pathgroup_selection = None
 
-        self.path_groups = path_groups
+        self.simgrs = simgrs
 
-        self._pathgroups_list = None  # type: QComboBox
+        self._simgrs_list = None  # type: QComboBox
         self._avoids_list = None  # type: QListWidget
-        self._pathgroup_viewer = None  # type: QPathGroupViewer
+        self._pathgroup_viewer = None  # type: QSimulationManagerViewer
         self._oneactive_checkbox = None  # type: QCheckBox
 
         self._init_widgets()
 
-        self._pathgroups_list.currentIndexChanged.connect(self._on_pathgroup_selection_internal)
+        self._simgrs_list.currentIndexChanged.connect(self._on_pathgroup_selection_internal)
 
     #
     # Properties
     #
 
     @property
-    def path_groups(self):
-        return self._path_groups
+    def simgrs(self):
+        return self._simgrs
 
-    @path_groups.setter
-    def path_groups(self, v):
-        if v is not self._path_groups:
-            self._path_groups = v
+    @simgrs.setter
+    def simgrs(self, v):
+        if v is not self._simgrs:
+            self._simgrs = v
 
-            if self._path_groups is not None:
-                self._path_groups.link_widget(self)
+            if self._simgrs is not None:
+                self._simgrs.link_widget(self)
 
     @property
-    def on_pathgroup_selection(self):
+    def on_simgr_selection(self):
         return self._on_pathgroup_selection
 
-    @on_pathgroup_selection.setter
-    def on_pathgroup_selection(self, v):
+    @on_simgr_selection.setter
+    def on_simgr_selection(self, v):
         if v is not self._on_pathgroup_selection:
             self._on_pathgroup_selection = v
 
@@ -58,34 +58,34 @@ class QPathGroups(QFrame):
     #
 
     def refresh(self):
-        for i, pg_desc in enumerate(self._path_groups.groups):
-            self._pathgroups_list.setItemText(i, pg_desc.name)
+        for i, pg_desc in enumerate(self._simgrs.groups):
+            self._simgrs_list.setItemText(i, pg_desc.name)
 
-        current_index = self._pathgroups_list.currentIndex()
+        current_index = self._simgrs_list.currentIndex()
         if current_index != -1:
             # refresh the pathtrees
-            self._pathgroups_list.currentIndexChanged.emit(current_index)
+            self._simgrs_list.currentIndexChanged.emit(current_index)
 
     def reload(self):
-        for pg in self._path_groups.groups:
-            self.add_pathgroup(pg)
+        for pg in self._simgrs.groups:
+            self.add_simgr(pg)
 
-    def add_pathgroup(self, pg_desc):
-        self._pathgroups_list.addItem(pg_desc.name, pg_desc)
+    def add_simgr(self, pg_desc):
+        self._simgrs_list.addItem(pg_desc.name, pg_desc)
 
-    def select_pathgroup_desc(self, pg_desc):
-        idx = self._pathgroups_list.findText(pg_desc.name)
+    def select_simgr_desc(self, pg_desc):
+        idx = self._simgrs_list.findText(pg_desc.name)
 
         if idx != -1:
-            self._pathgroups_list.setCurrentIndex(idx)
+            self._simgrs_list.setCurrentIndex(idx)
 
-    def get_pathgroup(self, index):
-        return self._pathgroups_list.itemData(index).pg
+    def get_simgr(self, index):
+        return self._simgrs_list.itemData(index).pg
 
-    def current_pathgroup(self):
-        idx = self._pathgroups_list.currentIndex()
+    def current_simgr(self):
+        idx = self._simgrs_list.currentIndex()
         if idx != -1:
-            return self.get_pathgroup(idx)
+            return self.get_simgr(idx)
 
         return None
 
@@ -114,7 +114,7 @@ class QPathGroups(QFrame):
 
         tab = QTabWidget()
 
-        self._init_pathgroups_tab(tab)
+        self._init_simgrs_tab(tab)
         self._init_settings_tab(tab)
         self._init_avoids_tab(tab)
 
@@ -124,22 +124,22 @@ class QPathGroups(QFrame):
 
         self.setLayout(layout)
 
-    def _init_pathgroups_tab(self, tab):
+    def _init_simgrs_tab(self, tab):
 
         # pathgroups list
 
-        pathgroups_label = QLabel(self)
-        pathgroups_label.setText('PathGroup')
+        simgrs_label = QLabel(self)
+        simgrs_label.setText('Simulation Manager')
 
-        pathgroups_list = QComboBox(self)
-        self._pathgroups_list = pathgroups_list
+        simgrs_list = QComboBox(self)
+        self._simgrs_list = simgrs_list
 
         pg_layout = QHBoxLayout()
-        pg_layout.addWidget(pathgroups_label)
-        pg_layout.addWidget(pathgroups_list)
+        pg_layout.addWidget(simgrs_label)
+        pg_layout.addWidget(simgrs_list)
 
-        # path group information
-        viewer = QPathGroupViewer(None)
+        # simulation manager information
+        viewer = QSimulationManagerViewer(None)
         self._pathgroup_viewer = viewer
 
         #
@@ -148,11 +148,11 @@ class QPathGroups(QFrame):
 
         # step button
         step_button = QPushButton()
-        step_button.setText('Step Path Group')
+        step_button.setText('Step actives')
         step_button.released.connect(self._on_step_clicked)
 
         # step until branch
-        step_until_branch_button = QPushButton('Step Path Group until branch')
+        step_until_branch_button = QPushButton('Step actives until branch')
         step_until_branch_button.released.connect(self._on_step_until_branch_clicked)
 
         # explore button
@@ -214,27 +214,27 @@ class QPathGroups(QFrame):
     #
 
     def _on_step_clicked(self):
-        pg = self.current_pathgroup()
+        pg = self.current_simgr()
         if pg is not None:
-            self.path_groups.step_pathgroup(pg, until_branch=False, async=False)
+            self.simgrs.step_simgr(pg, until_branch=False, async=False)
 
             if self._oneactive_checkbox.isChecked():
-                pg = self.current_pathgroup()  # pg is updated
+                pg = self.current_simgr()  # pg is updated
                 if self._filter_actives(pg):
-                    self.path_groups.refresh_widget()
+                    self.simgrs.refresh_widget()
 
     def _on_step_until_branch_clicked(self):
-        pg = self.current_pathgroup()
+        pg = self.current_simgr()
         if pg is not None:
-            self.path_groups.step_pathgroup(pg, until_branch=True)
+            self.simgrs.step_simgr(pg, until_branch=True)
 
             if self._oneactive_checkbox.isChecked():
-                pg = self.current_pathgroup()  # pg is updated
+                pg = self.current_simgr()  # pg is updated
                 if self._filter_actives(pg):
-                    self.path_groups.refresh_widget()
+                    self.simgrs.refresh_widget()
 
     def _on_explore_clicked(self):
-        pg = self.current_pathgroup()
+        pg = self.current_simgr()
 
         if pg is not None:
 
@@ -255,7 +255,7 @@ class QPathGroups(QFrame):
                 if item.checkState() == Qt.Checked:
                     avoids.append(int(item.text(), 16))
 
-            self.path_groups.explore_pathgroup(pg, avoid=avoids, find=[], step_callback=_step_callback)
+            self.simgrs.explore_simgr(pg, avoid=avoids, find=[], step_callback=_step_callback)
 
     #
     # Private methods
@@ -263,10 +263,10 @@ class QPathGroups(QFrame):
 
     def _on_pathgroup_selection_internal(self, idx):
 
-        self._pathgroup_viewer.pathgroup = self.current_pathgroup()
+        self._pathgroup_viewer.simgr = self.current_simgr()
 
-        if self.on_pathgroup_selection is not None:
-            self.on_pathgroup_selection(idx)
+        if self.on_simgr_selection is not None:
+            self.on_simgr_selection(idx)
 
     @staticmethod
     def _filter_actives(pg):

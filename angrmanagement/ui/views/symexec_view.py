@@ -3,7 +3,7 @@ from PySide.QtGui import QMainWindow, QHBoxLayout, QDockWidget
 from PySide.QtCore import Qt, QSize
 
 from ..widgets.qpathtree import QPathTree
-from ..widgets.qpath_groups import QPathGroups
+from ..widgets.qsimulation_managers import QSimulationManagers
 from .view import BaseView
 from ..widgets.qregister_viewer import QRegisterViewer
 from ..widgets.qmemory_viewer import QMemoryViewer
@@ -16,7 +16,7 @@ class SymexecView(BaseView):
         self.caption = 'Symbolic Execution'
 
         self._pathtree = None  # type: QPathTree
-        self._pathgroups = None  # type: QPathGroups
+        self._simgrs = None  # type: QSimulationManagers
         self._register_viewer = None  # type: QRegisterViewer
         self._memory_viewer = None  # type: QMemoryViewer
 
@@ -27,12 +27,12 @@ class SymexecView(BaseView):
     #
 
     def reload(self):
-        self._pathgroups.path_groups = self.workspace.instance.path_groups
+        self._simgrs.simgrs = self.workspace.instance.simgrs
 
-        self._pathgroups.on_pathgroup_selection = self._on_pathgroup_selection
+        self._simgrs.on_simgr_selection = self._on_simgr_selection
 
-    def select_pathgroup_desc(self, pg_desc):
-        self._pathgroups.select_pathgroup_desc(pg_desc)
+    def select_simgr_desc(self, pg_desc):
+        self._simgrs.select_simgr_desc(pg_desc)
 
     def view_path(self, path):
         self._register_viewer.state = path.state
@@ -46,7 +46,7 @@ class SymexecView(BaseView):
 
     def avoid_addr_in_exec(self, addr):
 
-        self._pathgroups.add_avoid_address(addr)
+        self._simgrs.add_avoid_address(addr)
 
     #
     # Initialization
@@ -60,17 +60,17 @@ class SymexecView(BaseView):
         # main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
         # main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
 
-        pathtree = QPathTree(self, main)
+        pathtree = QPathTree(self, self.workspace, parent=main)
         pathtree_dock = QDockWidget('PathTree', pathtree)
         main.setCentralWidget(pathtree_dock)
         # main.addDockWidget(Qt.BottomDockWidgetArea, pathtree_dock)
         pathtree_dock.setWidget(pathtree)
 
-        pathgroups_logic = self.workspace.instance.path_groups if self.workspace.instance is not None else None
-        pathgroups = QPathGroups(pathgroups_logic, main)
-        pathgroups_dock = QDockWidget('PathGroups', pathgroups)
+        simgrs_logic = self.workspace.instance.simgrs if self.workspace.instance is not None else None
+        simgrs = QSimulationManagers(simgrs_logic, main)
+        pathgroups_dock = QDockWidget('SimulationManagers', simgrs)
         main.addDockWidget(Qt.RightDockWidgetArea, pathgroups_dock)
-        pathgroups_dock.setWidget(pathgroups)
+        pathgroups_dock.setWidget(simgrs)
 
         reg_viewer = QRegisterViewer(self)
         reg_viewer_dock = QDockWidget('Register Viewer', reg_viewer)
@@ -85,7 +85,7 @@ class SymexecView(BaseView):
         main.tabifyDockWidget(reg_viewer_dock, mem_viewer_dock)
 
         self._pathtree = pathtree
-        self._pathgroups = pathgroups
+        self._simgrs = simgrs
         self._register_viewer = reg_viewer
         self._memory_viewer = mem_viewer
 
@@ -99,8 +99,8 @@ class SymexecView(BaseView):
     # Event handlers
     #
 
-    def _on_pathgroup_selection(self, idx):
+    def _on_simgr_selection(self, idx):
         if idx != -1:
-            pg = self._pathgroups.get_pathgroup(idx)
+            simgr = self._simgrs.get_simgr(idx)
 
-            self._pathtree.pathgroup = pg
+            self._pathtree.simgr = simgr

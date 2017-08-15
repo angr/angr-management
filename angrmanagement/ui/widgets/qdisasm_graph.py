@@ -65,10 +65,9 @@ class QDisasmGraph(QBaseGraph):
     LEFT_PADDING = 1000
     TOP_PADDING = 1000
 
-    def __init__(self, workspace, parent):
-        super(QDisasmGraph, self).__init__(parent)
+    def __init__(self, workspace, parent=None):
+        super(QDisasmGraph, self).__init__(workspace, parent=parent)
 
-        self.workspace = workspace
         self.disassembly_view = parent
         self.disasm = None
         self.variable_manager = None
@@ -350,6 +349,7 @@ class QDisasmGraph(QBaseGraph):
             # move the graph
             self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta[0])
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta[1])
+            event.accept()
 
     def mouseReleaseEvent(self, event):
         """
@@ -361,11 +361,14 @@ class QDisasmGraph(QBaseGraph):
         if event.button() == Qt.LeftButton and self._is_scrolling:
             self._is_scrolling = False
             self.viewport().releaseMouse()
+            event.accept()
 
         elif event.button() == Qt.RightButton:
             block = self.get_block_by_pos(event.pos())
             if block is not None:
                 block.on_mouse_released(event.button(), self._to_graph_pos(event.pos()))
+            event.setAccepted(True)
+            return True
 
     def mouseDoubleClickEvent(self, event):
         """
@@ -378,6 +381,8 @@ class QDisasmGraph(QBaseGraph):
             block = self.get_block_by_pos(event.pos())
             if block is not None:
                 block.on_mouse_doubleclicked(event.button(), self._to_graph_pos(event.pos()))
+            event.accept()
+            return True
 
     def _on_keypressed_event(self, key_event):
 
@@ -466,8 +471,6 @@ class QDisasmGraph(QBaseGraph):
             max_x = max(max_x, block.x + block.width)
             min_y = min(min_y, block.y)
             max_y = max(max_y, block.y + block.height)
-
-            # self._set_pos(widget_proxy, self.mapToScene(x, y))
 
         min_x -= self.LEFT_PADDING
         max_x += self.LEFT_PADDING
@@ -577,19 +580,3 @@ class QDisasmGraph(QBaseGraph):
                 brush = QBrush(color)
                 painter.setBrush(brush)
                 painter.drawPolygon(arrow)
-
-    def _update_size(self):
-
-        # update scrollbars
-        self.horizontalScrollBar().setPageStep(self.width())
-        self.verticalScrollBar().setPageStep(self.height())
-
-    def _to_graph_pos(self, pos):
-        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
-        y_offset = self.height() / 2 - self.verticalScrollBar().value()
-        return QPoint(pos.x() - x_offset, pos.y() - y_offset)
-
-    def _from_graph_pos(self, pos):
-        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
-        y_offset = self.height() / 2 - self.verticalScrollBar().value()
-        return QPoint(pos.x() + x_offset, pos.y() + y_offset)

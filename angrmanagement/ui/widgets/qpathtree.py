@@ -5,20 +5,21 @@ import networkx
 from PySide.QtGui import QFrame, QHBoxLayout
 from PySide.QtCore import QSize
 
-from .qpg_graph import QPathGroupGraph
-from .qpath_block import QPathBlock
+from .qsymexec_graph import QSymExecGraph
+from .qstate_block import QStateBlock
 
 
 l = logging.getLogger('ui.widgets.qpathtree')
 
 
 class QPathTree(QFrame):
-    def __init__(self, symexec_view, parent=None):
-        super(QPathTree, self).__init__(parent)
+    def __init__(self, symexec_view, workspace, parent=None):
+        super(QPathTree, self).__init__(parent=parent)
 
         self._symexec_view = symexec_view
+        self.workspace = workspace
 
-        self._pathgroup = None
+        self._simgr = None
 
         # widgets
         self._graph = None
@@ -30,12 +31,12 @@ class QPathTree(QFrame):
     #
 
     @property
-    def pathgroup(self):
-        return self._pathgroup
+    def simgr(self):
+        return self._simgr
 
-    @pathgroup.setter
-    def pathgroup(self, v):
-        self._pathgroup = v
+    @simgr.setter
+    def simgr(self, v):
+        self._simgr = v
         self.reload()
 
     @property
@@ -48,10 +49,10 @@ class QPathTree(QFrame):
 
     def reload(self):
 
-        paths = [ path for (stash, paths) in self.pathgroup.stashes.items() if stash != 'pruned' for path in paths ]
-        hierarchy = self.pathgroup._hierarchy
+        states = [ state for (stash, states) in self.simgr.stashes.items() if stash != 'pruned' for state in states ]
+        hierarchy = self.simgr._hierarchy
 
-        graph = self._generate_graph(paths, hierarchy, self.symexec_view)
+        graph = self._generate_graph(states, hierarchy, self.symexec_view)
 
         self._graph.graph = graph
 
@@ -61,7 +62,7 @@ class QPathTree(QFrame):
 
     def _init_widgets(self):
 
-        graph = QPathGroupGraph(self)
+        graph = QSymExecGraph(self.workspace, parent=self)
 
         self._graph = graph
 
@@ -133,22 +134,22 @@ class QPathTree(QFrame):
                     break
 
     @staticmethod
-    def _generate_graph(paths, hierarchy, symexec_view):
+    def _generate_graph(states, hierarchy, symexec_view):
 
         g = networkx.DiGraph()
 
         path_to_block = { }
 
-        for p in paths:
-            if p not in path_to_block:
-                path_to_block[p] = QPathBlock(p.path_id, p, False, symexec_view)
-            g.add_node(path_to_block[p])
+        for state in states:
+            if state not in path_to_block:
+                path_to_block[state] = QStateBlock(state, False, symexec_view)
+            g.add_node(path_to_block[state])
 
-        for src, dst in QPathTree._all_edges_gen(paths, hierarchy):
+        for src, dst in QPathTree._all_edges_gen(states, hierarchy):
             if src not in path_to_block:
-                path_to_block[src] = QPathBlock(src.path_id, src, False, symexec_view)
+                path_to_block[src] = QStateBlock(src, False, symexec_view)
             if dst not in path_to_block:
-                path_to_block[dst] = QPathBlock(dst.path_id, dst, False, symexec_view)
+                path_to_block[dst] = QStateBlock(dst, False, symexec_view)
             g.add_edge(path_to_block[src], path_to_block[dst])
 
         return g

@@ -268,9 +268,10 @@ class EdgeRouter(object):
 
 
 class GraphLayouter(object):
-    def __init__(self, graph, node_sizes):
+    def __init__(self, graph, node_sizes, compare_nodes_func=None):
         self.graph = graph
         self._node_sizes = node_sizes
+        self._compare_nodes = compare_nodes_func
 
         self._cols = None
         self._rows = None
@@ -426,7 +427,11 @@ class GraphLayouter(object):
             row_to_nodes[row].append(node)
 
         for row in row_to_nodes.keys():
-            row_to_nodes[row] = sorted(row_to_nodes[row], key=lambda n_: n_.addr, reverse=True)
+            if self._compare_nodes is not None:
+                row_to_nodes[row] = sorted(row_to_nodes[row], cmp=self._compare_nodes)
+            else:
+                # TODO: Use a custom comparator for displaying the CFG, too
+                row_to_nodes[row] = sorted(row_to_nodes[row], key=lambda n_: n_.addr, reverse=True)
 
         self._row_to_nodes = row_to_nodes
 
@@ -480,8 +485,8 @@ class GraphLayouter(object):
         :return: None
         """
 
-        self._row_heights = [ None ] * (self._max_row + 2)
-        self._col_widths = [ None ] * (self._max_col + 2)
+        self._row_heights = [ 0 ] * (self._max_row + 2)
+        self._col_widths = [ 0 ] * (self._max_col + 2)
 
         for node in self.graph.nodes_iter():
             col, row = self._locations[node]

@@ -1,6 +1,6 @@
 
 from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent
-from PySide.QtCore import Qt, QSize, Signal
+from PySide.QtCore import Qt, QSize, Signal, QPoint
 
 
 class QZoomingGraphicsView(QGraphicsView):
@@ -60,14 +60,44 @@ class QZoomingGraphicsView(QGraphicsView):
 
 class QBaseGraph(QZoomingGraphicsView):
 
-    def __init__(self, parent=None):
+    def __init__(self, workspace, parent=None):
         super(QBaseGraph, self).__init__(parent)
 
+        self.workspace = workspace
         self.scene = None
         self._proxies = { }
         self._edge_paths = [ ]
 
         self._init_widgets()
+
+    def add_child(self, child):
+        self._proxy(child)
+
+    def remove_child(self, child):
+        if child in self._proxies:
+            self.scene.removeItem(self._proxies[child])
+
+    def _proxy(self, child):
+        if child not in self._proxies:
+            child.setParent(None)
+            self._proxies[child] = self.scene.addWidget(child)
+            return self._proxies[child]
+
+        return self._proxies[child]
+
+    def remove_all_children(self):
+        for child in self._proxies:
+            self.scene.removeItem(self._proxies[child])
+            child.setParent(self)
+        self._proxies.clear()
+
+    def request_relayout(self):
+
+        raise NotImplementedError()
+
+    #
+    # Private methods
+    #
 
     def _init_widgets(self):
         self.scene = QGraphicsScene(self.parent())
@@ -96,27 +126,19 @@ class QBaseGraph(QZoomingGraphicsView):
         trans = widget.transform()
         widget.setTransform(trans.translate(coord.x(), coord.y()))
 
-    def add_child(self, child):
-        self._proxy(child)
+    def _update_size(self):
 
-    def remove_child(self, child):
-        if child in self._proxies:
-            self.scene.removeItem(self._proxies[child])
+        # update scrollbars
+        self.horizontalScrollBar().setPageStep(self.width())
+        self.verticalScrollBar().setPageStep(self.height())
 
-    def _proxy(self, child):
-        if child not in self._proxies:
-            child.setParent(None)
-            self._proxies[child] = self.scene.addWidget(child)
-            return self._proxies[child]
+    def _to_graph_pos(self, pos):
+        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
+        y_offset = self.height() / 2 - self.verticalScrollBar().value()
+        return QPoint(pos.x() - x_offset, pos.y() - y_offset)
 
-        return self._proxies[child]
+    def _from_graph_pos(self, pos):
+        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
+        y_offset = self.height() / 2 - self.verticalScrollBar().value()
+        return QPoint(pos.x() + x_offset, pos.y() + y_offset)
 
-    def remove_all_children(self):
-        for child in self._proxies:
-            self.scene.removeItem(self._proxies[child])
-            child.setParent(self)
-        self._proxies.clear()
-
-    def request_relayout(self):
-
-        raise NotImplementedError()
