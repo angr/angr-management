@@ -68,7 +68,10 @@ class Workspace(object):
 
         dock = QSmartDockWidget(caption, parent=view)
         dock_area = docking_positions.get(view.default_docking_position, Qt.RightDockWidgetArea)
-        self._main_window.addDockWidget(dock_area, dock)
+        if view.default_docking_position == 'right':
+            self._main_window.central_widget.addDockWidget(dock_area, dock)
+        else:
+            self._main_window.addDockWidget(dock_area, dock)
         dock.setWidget(view)
 
         self.views.append(view)
