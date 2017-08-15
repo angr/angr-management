@@ -2,7 +2,7 @@
 import sys
 import os
 
-from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QResizeEvent
+from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QResizeEvent, QIcon
 from PySide.QtCore import Qt, QSize, QEvent, QTimer
 
 import angr
@@ -16,6 +16,8 @@ from .dialogs.new_state import NewState
 from .toolbars.states_toolbar import StatesToolbar
 from .toolbars.analysis_toolbar import AnalysisToolbar
 
+APP_LOCATION = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+
 
 class MainWindow(QMainWindow):
     """
@@ -23,6 +25,9 @@ class MainWindow(QMainWindow):
     """
     def __init__(self, file_to_open=None, parent=None):
         super(MainWindow, self).__init__(parent)
+
+        icon_location = os.path.join(APP_LOCATION, 'resources', 'images', 'angr.png')
+        self.setWindowIcon(QIcon(icon_location))
 
         GlobalInfo.main_window = self
 
