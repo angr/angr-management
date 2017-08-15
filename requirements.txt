@@ -4,5 +4,4 @@ angr
 ipython
 pyzmq
 PySide
-pygraphviz
 qtconsole
