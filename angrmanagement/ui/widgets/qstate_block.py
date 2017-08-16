@@ -95,6 +95,8 @@ class QStateBlock(QGraphObject):
             self.selected = True
             if self.state is not None:
                 self.symexec_view.view_state(self.state)
+            elif self.history is not None:
+                self.symexec_view.view_state(self.history.state)
         else:
             self.selected = False
             self.symexec_view.view_state(None)

@@ -78,6 +78,9 @@ class QRegisterViewer(QFrame):
 
         state = self._state
 
+        if state is None:
+            return
+
         if state.arch.name not in self.ARCH_REGISTERS:
             l.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", state.arch.name)
             return
