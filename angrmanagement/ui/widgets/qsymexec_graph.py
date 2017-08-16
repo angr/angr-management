@@ -1,8 +1,8 @@
 
 import logging
 
-from PySide.QtGui import QPainter, QGraphicsView
-from PySide.QtCore import QPoint, Qt
+from PySide.QtGui import QPainter, QGraphicsView, QColor, QPen, QBrush
+from PySide.QtCore import QPoint, Qt, QPointF, QRectF
 
 from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QBaseGraph
@@ -12,8 +12,8 @@ l = logging.getLogger('ui.widgets.qpg_graph')
 
 class QSymExecGraph(QBaseGraph):
 
-    LEFT_PADDING = 200
-    TOP_PADDING = 200
+    LEFT_PADDING = 2000
+    TOP_PADDING = 2000
 
     def __init__(self, workspace, parent=None):
 
@@ -22,10 +22,10 @@ class QSymExecGraph(QBaseGraph):
         self._graph = None
         self._selected = None
 
+        self._edges = [ ]
+
     def _init_widgets(self):
         super(QSymExecGraph, self)._init_widgets()
-
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
 
     @property
     def selected(self):
@@ -66,14 +66,40 @@ class QSymExecGraph(QBaseGraph):
         node_sizes = { }
         for node in self.graph.nodes():
             self.blocks.add(node)
-            node_sizes[node] = (100, 100)
+            node_sizes[node] = (node.width, node.height)
         gl = GraphLayouter(self.graph, node_sizes,
                            compare_nodes_func=lambda n0, n1: 0)
+
+        self._edges = gl.edges
+
+        min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
         for node, coords in gl.node_coordinates.iteritems():
             node.x, node.y = coords
 
+            min_x = min(min_x, node.x)
+            max_x = max(max_x, node.x + node.width)
+            min_y = min(min_y, node.y)
+            max_y = max(max_y, node.y + node.height)
+
+        min_x -= self.LEFT_PADDING
+        max_x += self.LEFT_PADDING
+        min_y -= self.TOP_PADDING
+        max_y += self.TOP_PADDING
+        width = (max_x - min_x) + 2 * self.LEFT_PADDING
+        height = (max_y - min_y) + 2 * self.TOP_PADDING
+
+        self._update_size()
+
+        # scrollbars
+        self.horizontalScrollBar().setRange(min_x, max_x)
+        self.verticalScrollBar().setRange(min_y, max_y)
+
+        self.setSceneRect(QRectF(min_x, min_y, width, height))
+
         self.viewport().update()
+
+        self._update_size()
 
         if self.selected is not None:
             self.show_selected()
@@ -106,7 +132,10 @@ class QSymExecGraph(QBaseGraph):
             block = self._get_block_by_pos(pos)
             if block is not None:
                 block.on_mouse_pressed(btn, self._to_graph_pos(pos))
-            event.accept()
+                event.accept()
+                return
+
+        super(QSymExecGraph, self).mousePressEvent(event)
 
     def paintEvent(self, event):
         """
@@ -136,7 +165,35 @@ class QSymExecGraph(QBaseGraph):
     #
 
     def _draw_edges(self, painter, topleft_point, bottomright_point):
-        pass
+
+        for edge in self._edges:
+            edge_coords = edge.coordinates
+
+            color = QColor(0x70, 0x70, 0x70)
+            pen = QPen(color)
+            pen.setWidth(1.5)
+            painter.setPen(pen)
+
+            for from_, to_ in zip(edge_coords, edge_coords[1:]):
+                start_point = QPointF(*from_)
+                end_point = QPointF(*to_)
+                # optimization: don't draw edges that are outside of the current scope
+                if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and \
+                        (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()):
+                    continue
+                elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and \
+                        (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()):
+                    continue
+                painter.drawPolyline((start_point, end_point))
+
+            # arrow
+            # end_point = self.mapToScene(*edges[-1])
+            end_point = (edge_coords[-1][0], edge_coords[-1][1])
+            arrow = [QPointF(end_point[0] - 3, end_point[1]), QPointF(end_point[0] + 3, end_point[1]),
+                     QPointF(end_point[0], end_point[1] + 6)]
+            brush = QBrush(color)
+            painter.setBrush(brush)
+            painter.drawPolygon(arrow)
 
     def _draw_nodes(self, painter, topleft_point, bottomright_point):
         if self.graph is None:

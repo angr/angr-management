@@ -6,7 +6,7 @@ from .qgraph_object import QGraphObject
 
 
 class QStateBlock(QGraphObject):
-    def __init__(self, state, is_selected, symexec_view):
+    def __init__(self, is_selected, symexec_view, state=None, history=None):
         super(QStateBlock, self).__init__()
 
         self.symexec_view = symexec_view
@@ -14,6 +14,9 @@ class QStateBlock(QGraphObject):
         self._config = self.symexec_view.workspace
 
         self.state = state
+        self.history = history
+        if history is None and state is not None:
+            self.history = state.history
         self.selected = is_selected
 
         # widgets
@@ -24,7 +27,10 @@ class QStateBlock(QGraphObject):
 
     def _init_widgets(self):
 
-        self._label_str = "%#x" % self.state.addr
+        if self.history.successor_ip.symbolic:
+            self._label_str = str(self.history.successor_ip)
+        else:
+            self._label_str = "%#x" % self.history.successor_ip._model_concrete.value
 
         return
 
@@ -87,7 +93,8 @@ class QStateBlock(QGraphObject):
     def on_mouse_pressed(self, button, pos):
         if not self.selected:
             self.selected = True
-            self.symexec_view.view_state(self.state)
+            if self.state is not None:
+                self.symexec_view.view_state(self.state)
         else:
             self.selected = False
             self.symexec_view.view_state(None)
@@ -95,7 +102,7 @@ class QStateBlock(QGraphObject):
 
     def _on_disasm_button_released(self):
         disasm_view = self._workspace.views_by_category['disassembly'][0]
-        disasm_view.jump_to(self.state.addr)
+        disasm_view.jump_to(self.history.addr)
 
         self._workspace.raise_view(disasm_view)
 

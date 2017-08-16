@@ -77,10 +77,6 @@ class QDisasmGraph(QBaseGraph):
 
         self._edges = None
 
-        # scrolling
-        self._is_scrolling = False
-        self._scrolling_start = None
-
         self.key_pressed.connect(self._on_keypressed_event)
         #self.key_released.connect(self._on_keyreleased_event)
 
@@ -315,31 +311,10 @@ class QDisasmGraph(QBaseGraph):
             if block is not None:
                 # clicking on a block
                 block.on_mouse_pressed(event.button(), self._to_graph_pos(event.pos()))
+                event.accept()
                 return
 
-            else:
-                # dragging the entire graph
-                self._is_scrolling = True
-                self._scrolling_start = (event.x(), event.y())
-                self.viewport().grabMouse()
-                return
-
-    def mouseMoveEvent(self, event):
-        """
-
-        :param QMouseEvent event:
-        :return:
-        """
-
-        if self._is_scrolling:
-            pos = event.pos()
-            delta = (pos.x() - self._scrolling_start[0], pos.y() - self._scrolling_start[1])
-            self._scrolling_start = (pos.x(), pos.y())
-
-            # move the graph
-            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta[0])
-            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta[1])
-            event.accept()
+        super(QDisasmGraph, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         """
@@ -348,17 +323,14 @@ class QDisasmGraph(QBaseGraph):
         :return:
         """
 
-        if event.button() == Qt.LeftButton and self._is_scrolling:
-            self._is_scrolling = False
-            self.viewport().releaseMouse()
-            event.accept()
-
-        elif event.button() == Qt.RightButton:
+        if event.button() == Qt.RightButton:
             block = self._get_block_by_pos(event.pos())
             if block is not None:
                 block.on_mouse_released(event.button(), self._to_graph_pos(event.pos()))
-            event.setAccepted(True)
-            return True
+            event.accept()
+            return
+
+        super(QDisasmGraph, self).mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event):
         """

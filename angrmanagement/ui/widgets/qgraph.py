@@ -1,5 +1,5 @@
 
-from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent
+from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent, QApplication
 from PySide.QtCore import Qt, QSize, Signal, QPoint
 
 
@@ -69,6 +69,10 @@ class QBaseGraph(QZoomingGraphicsView):
         self._edge_paths = [ ]
         self.blocks = set()
 
+        # scrolling
+        self._is_scrolling = False
+        self._scrolling_start = None
+
         self._init_widgets()
 
     def add_child(self, child):
@@ -95,6 +99,50 @@ class QBaseGraph(QZoomingGraphicsView):
     def request_relayout(self):
 
         raise NotImplementedError()
+
+    #
+    # Event handlers
+    #
+
+    def mousePressEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+            # dragging the entire graph
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self._is_scrolling = True
+            self._scrolling_start = (event.x(), event.y())
+            self.viewport().grabMouse()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if self._is_scrolling:
+            pos = event.pos()
+            delta = (pos.x() - self._scrolling_start[0], pos.y() - self._scrolling_start[1])
+            self._scrolling_start = (pos.x(), pos.y())
+
+            # move the graph
+            self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - delta[0])
+            self.verticalScrollBar().setValue(self.verticalScrollBar().value() - delta[1])
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton and self._is_scrolling:
+            self._is_scrolling = False
+            self.setDragMode(QGraphicsView.NoDrag)
+            self.viewport().releaseMouse()
+            event.accept()
 
     #
     # Private methods

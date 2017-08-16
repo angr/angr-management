@@ -1,4 +1,5 @@
 
+import weakref
 import logging
 
 import networkx
@@ -52,7 +53,7 @@ class QPathTree(QFrame):
         states = [ state for (stash, states) in self.simgr.stashes.items() if stash != 'pruned' for state in states ]
         hierarchy = self.simgr._hierarchy
 
-        graph = self._generate_graph(states, hierarchy, self.symexec_view)
+        graph = self._generate_graph([ state.history for state in states ], hierarchy, self.symexec_view)
 
         self._graph.graph = graph
 
@@ -107,49 +108,49 @@ class QPathTree(QFrame):
                             seen.add(parent_path.path_id)
 
     @staticmethod
-    def _all_edges_gen(paths, hierarchy):
+    def _all_edges_gen(state_histories, hierarchy):
+
         # TODO: reduce duplication with above function
-        work = set(paths)
-        # __import__('ipdb').set_trace()
+        work = set(state_histories)
         while len(work) > 0:
-            working_path = bot_path = work.pop()
-            while hierarchy.history_contains(working_path.history):
-                parent_histories = hierarchy.history_predecessors(working_path.history)
+            working_history = bot_history = work.pop()
+            while hierarchy.history_contains(working_history):
+                parent_histories = hierarchy.history_predecessors(working_history)
                 if not parent_histories:
                     break
 
                 parent_history = parent_histories[0]
-                # assume _path_mapping always has the path
+
                 try:
-                    parent_path = hierarchy._path_mapping[parent_history]
-                    if len(hierarchy.history_successors(parent_path.history)) > 1:
-                        yield (parent_path, bot_path)
-                        work.add(parent_path)
+                    successors = hierarchy.history_successors(parent_history)
+                    if len(successors) > 1:
+                        yield (parent_history, bot_history)
+                        work.add(parent_history)
                         break
                     else:
-                        working_path = parent_path
+                        working_history = parent_history
                 except KeyError:
                     # the parent history is not found in the path mapping
                     l.error('Parent history %s is not found', parent_history)
                     break
 
     @staticmethod
-    def _generate_graph(states, hierarchy, symexec_view):
+    def _generate_graph(state_histories, hierarchy, symexec_view):
 
         g = networkx.DiGraph()
 
-        path_to_block = { }
+        history_to_block = { }
 
-        for state in states:
-            if state not in path_to_block:
-                path_to_block[state] = QStateBlock(state, False, symexec_view)
-            g.add_node(path_to_block[state])
+        for state_history in state_histories:
+            if state_history not in history_to_block:
+                history_to_block[state_history] = QStateBlock(False, symexec_view, history=state_history)
+            g.add_node(history_to_block[state_history])
 
-        for src, dst in QPathTree._all_edges_gen(states, hierarchy):
-            if src not in path_to_block:
-                path_to_block[src] = QStateBlock(src, False, symexec_view)
-            if dst not in path_to_block:
-                path_to_block[dst] = QStateBlock(dst, False, symexec_view)
-            g.add_edge(path_to_block[src], path_to_block[dst])
+        for src, dst in QPathTree._all_edges_gen(state_histories, hierarchy):
+            if src not in history_to_block:
+                history_to_block[src] = QStateBlock(False, symexec_view, history=src)
+            if dst not in history_to_block:
+                history_to_block[dst] = QStateBlock(dst, False, symexec_view, history=dst)
+            g.add_edge(history_to_block[src], history_to_block[dst])
 
         return g
