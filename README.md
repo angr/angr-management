@@ -54,11 +54,6 @@ python start.py
 
 ## Issues
 
-### ImportError: ... undefined symbol: Agundirected
-
-`pygraphviz` is not compiled correctly.
-See [stackoverflow](http://stackoverflow.com/questions/32885486/pygraphviz-importerror-undefined-symbol-agundirected) and [GitHub issue](https://github.com/pygraphviz/pygraphviz/issues/71).
-
 ### 'module' object has noattribute 'MIPS_GRP_CALL'
 
 Your capstone install is too old.
