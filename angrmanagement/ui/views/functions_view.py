@@ -39,4 +39,4 @@ class FunctionsView(BaseView):
         :return:
         """
 
-        self.workspace.views_by_category['disassembly'][0].display_function(function)
+        self.workspace.on_function_selected(function)

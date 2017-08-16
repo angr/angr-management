@@ -57,6 +57,25 @@ class Workspace(object):
         return self._instance
 
     #
+    # Events
+    #
+
+    def on_function_selected(self, function):
+
+        self.views_by_category['disassembly'][0].display_function(function)
+
+    def on_cfg_generated(self):
+
+        # display the main function if it exists, otherwise display the function at the entry point
+        if self.instance.cfg is not None:
+            the_func = self.instance.cfg.kb.functions.function(name='main')
+            if the_func is None:
+                the_func = self.instance.cfg.kb.functions.function(addr=self.instance.cfg.project.entry)
+
+            if the_func is not None:
+                self.on_function_selected(the_func)
+
+    #
     # Public methods
     #
 

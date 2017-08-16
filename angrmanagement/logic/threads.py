@@ -144,6 +144,7 @@ def gui_thread_schedule_async(callable, args=None):
             callable()
         else:
             callable(*args)
+        return
 
     event = ExecuteCodeEvent(callable, args)
     QCoreApplication.postEvent(GlobalInfo.main_window, event)

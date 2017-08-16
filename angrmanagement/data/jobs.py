@@ -5,9 +5,12 @@ from ..logic.threads import gui_thread_schedule_async
 
 
 class Job(object):
-    def __init__(self, name):
+    def __init__(self, name, on_finish=None):
         self.name = name
         self.progress_percentage = 0.
+
+        # callbacks
+        self._on_finish = on_finish
 
     def run(self, inst):
         raise NotImplementedError()
@@ -16,6 +19,8 @@ class Job(object):
         inst.jobs = inst.jobs[1:]
 
         gui_thread_schedule_async(self._finish_progress)
+        if self._on_finish:
+            gui_thread_schedule_async(self._on_finish)
 
     def _progress_callback(self, percentage):
         delta = percentage - self.progress_percentage
@@ -39,8 +44,8 @@ class CFGGenerationJob(Job):
         'resolve_indirect_jumps': True,
     }
 
-    def __init__(self, **kwargs):
-        super(CFGGenerationJob, self).__init__(name='CFG generation')
+    def __init__(self, on_finish=None, **kwargs):
+        super(CFGGenerationJob, self).__init__(name='CFG generation', on_finish=on_finish)
 
         # TODO: sanitize arguments
 
@@ -58,6 +63,7 @@ class CFGGenerationJob(Job):
                                          )
 
     def finish(self, inst, result):
+        inst.cfg = result
         super(CFGGenerationJob, self).finish(inst, result)
 
         #offsets = inst.registry.offsets.copy()
@@ -69,8 +75,6 @@ class CFGGenerationJob(Job):
         # This is sort of a hack to get it to propagate the update.
         # Perhaps this model is better in an immutable language...
         #inst.registry = Registry(offsets=offsets)
-
-        inst.cfg = result
 
     def __repr__(self):
         return "Generating CFG"

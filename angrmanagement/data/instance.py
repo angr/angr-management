@@ -131,7 +131,11 @@ class Instance(object):
     def initialize(self, cfg_args=None):
         if cfg_args is None:
             cfg_args = { }
-        self.add_job(CFGGenerationJob(**cfg_args))
+        self.add_job(CFGGenerationJob(
+            on_finish=self.workspace.on_cfg_generated,
+            **cfg_args
+                     )
+        )
 
     def add_job(self, job):
         self.jobs.append(job)
