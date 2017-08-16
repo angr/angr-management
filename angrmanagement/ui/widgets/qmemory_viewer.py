@@ -141,9 +141,9 @@ class QMemoryViewer(QFrame):
 
             while col < COLUMNS:
                 addr = addr_base + row * COLUMNS + col
-                data = state.memory.load(addr, 1)
+                data = state.memory.load(addr, 1, inspect=False, disable_actions=True)
 
-                ast_viewer = QASTViewer(data, display_size=False, byte_format="%02x")
+                ast_viewer = QASTViewer(data, display_size=False, byte_format="%02x", parent=self)
 
                 row_layout.addWidget(ast_viewer)
 

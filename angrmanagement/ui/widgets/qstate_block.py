@@ -62,8 +62,14 @@ class QStateBlock(QGraphObject):
         :return: None
         """
 
+        normal_background = QColor(0xfa, 0xfa, 0xfa)
+        selected_background = QColor(0xcc, 0xcc, 0xcc)
+
         # The node background
-        painter.setBrush(QColor(0xfa, 0xfa, 0xfa))
+        if self.selected:
+            painter.setBrush(selected_background)
+        else:
+            painter.setBrush(normal_background)
         painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
         painter.drawRect(self.x, self.y, self.width, self.height)
 
@@ -78,9 +84,14 @@ class QStateBlock(QGraphObject):
     # Events
     #
 
-    def _on_path_button_released(self):
-        self.selected = True
-        self.symexec_view.view_path(self.state)
+    def on_mouse_pressed(self, button, pos):
+        if not self.selected:
+            self.selected = True
+            self.symexec_view.view_state(self.state)
+        else:
+            self.selected = False
+            self.symexec_view.view_state(None)
+        self.symexec_view.redraw_graph()
 
     def _on_disasm_button_released(self):
         disasm_view = self._workspace.views_by_category['disassembly'][0]

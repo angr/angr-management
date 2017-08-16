@@ -67,6 +67,7 @@ class QBaseGraph(QZoomingGraphicsView):
         self.scene = None
         self._proxies = { }
         self._edge_paths = [ ]
+        self.blocks = set()
 
         self._init_widgets()
 
@@ -141,4 +142,13 @@ class QBaseGraph(QZoomingGraphicsView):
         x_offset = self.width() / 2 - self.horizontalScrollBar().value()
         y_offset = self.height() / 2 - self.verticalScrollBar().value()
         return QPoint(pos.x() + x_offset, pos.y() + y_offset)
+
+    def _get_block_by_pos(self, pos):
+        pos = self._to_graph_pos(pos)
+        x, y = pos.x(), pos.y()
+        for b in self.blocks:
+            if b.x <= x < b.x + b.width and b.y <= y < b.y + b.height:
+                return b
+
+        return None
 

@@ -41,6 +41,7 @@ class QASTViewer(QFrame):
 
     def reload(self):
         if self._ast is None:
+            self._ast_label.setText("")
             return
 
         ast = self._ast
@@ -53,12 +54,14 @@ class QASTViewer(QFrame):
 
         # set text
         if isinstance(ast, (int, long)):
-            self._size_label.setText('[Unknown]')
+            if self._display_size:
+                self._size_label.setText('[Unknown]')
             format = "%#x" if self._byte_format is None else self._byte_format
             self._ast_label.setText(format % ast)
         else:
             # claripy.AST
-            self._size_label.setText("[%d]" % (len(ast) / 8))  # in bytes
+            if self._display_size:
+                self._size_label.setText("[%d]" % (len(ast) / 8))  # in bytes
             if not ast.symbolic:
                 format = "%#x" if self._byte_format is None else self._byte_format
                 self._ast_label.setText(format % self._ast._model_concrete.value)
@@ -82,19 +85,20 @@ class QASTViewer(QFrame):
 
         layout = QHBoxLayout()
 
-        size_label = QLabel()
-        size_label.setProperty('class', 'ast_viewer_size')
-        size_label.setAlignment(Qt.AlignRight)
-        size_label.setMaximumSize(QSize(24, 65536))
-        self._size_label = size_label
-
-        ast_label = QLabel()
+        ast_label = QLabel(self)
         self._ast_label = ast_label
+
+        if self._display_size:
+            size_label = QLabel(self)
+            size_label.setProperty('class', 'ast_viewer_size')
+            size_label.setAlignment(Qt.AlignRight)
+            size_label.setMaximumSize(QSize(24, 65536))
+            self._size_label = size_label
+            layout.addWidget(self._size_label)
+
         if self._ast is not None:
             self.reload()
 
-        if self._display_size:
-            layout.addWidget(self._size_label)
         layout.addWidget(ast_label)
         layout.setContentsMargins(0, 0, 0, 0)
 

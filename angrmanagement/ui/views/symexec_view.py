@@ -7,6 +7,7 @@ from ..widgets.qsimulation_managers import QSimulationManagers
 from .view import BaseView
 from ..widgets.qregister_viewer import QRegisterViewer
 from ..widgets.qmemory_viewer import QMemoryViewer
+from ..widgets.qvextemps_viewer import QVEXTempsViewer
 
 
 class SymexecView(BaseView):
@@ -19,8 +20,19 @@ class SymexecView(BaseView):
         self._simgrs = None  # type: QSimulationManagers
         self._register_viewer = None  # type: QRegisterViewer
         self._memory_viewer = None  # type: QMemoryViewer
+        self._vextemps_viewer = None  # type: QVEXTempsViewer
 
         self._init_widgets()
+
+    #
+    # Properties
+    #
+
+    @property
+    def graph(self):
+        if self._pathtree is None:
+            return None
+        return self._pathtree._graph
 
     #
     # Public methods
@@ -34,19 +46,23 @@ class SymexecView(BaseView):
     def select_simgr_desc(self, pg_desc):
         self._simgrs.select_simgr_desc(pg_desc)
 
-    def view_path(self, path):
-        self._register_viewer.state = path.state
-        self._memory_viewer.state = path.state
+    def view_state(self, state):
+        self._register_viewer.state = state
+        self._memory_viewer.state = state
+        self._vextemps_viewer.state = state
 
         # push namespace into the console
         self.workspace.views_by_category['console'][0].push_namespace({
-            'path': path,
-            'state': path.state,
+            'state': state,
         })
 
     def avoid_addr_in_exec(self, addr):
 
         self._simgrs.add_avoid_address(addr)
+
+    def redraw_graph(self):
+        if self.graph is not None:
+            self.graph.viewport().update()
 
     #
     # Initialization
@@ -82,12 +98,20 @@ class SymexecView(BaseView):
         main.addDockWidget(Qt.RightDockWidgetArea, mem_viewer_dock)
         mem_viewer_dock.setWidget(mem_viewer)
 
+        vextemps_viewer = QVEXTempsViewer(self)
+        vextemps_viewer_dock = QDockWidget('VEX Temps Viewer', vextemps_viewer)
+        main.addDockWidget(Qt.RightDockWidgetArea, vextemps_viewer_dock)
+        vextemps_viewer_dock.setWidget(vextemps_viewer)
+
         main.tabifyDockWidget(reg_viewer_dock, mem_viewer_dock)
+        main.tabifyDockWidget(mem_viewer_dock, vextemps_viewer_dock)
+        reg_viewer_dock.raise_()
 
         self._pathtree = pathtree
         self._simgrs = simgrs
         self._register_viewer = reg_viewer
         self._memory_viewer = mem_viewer
+        self._vextemps_viewer = vextemps_viewer
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(main)

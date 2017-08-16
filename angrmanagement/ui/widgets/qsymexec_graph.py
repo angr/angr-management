@@ -2,7 +2,7 @@
 import logging
 
 from PySide.QtGui import QPainter, QGraphicsView
-from PySide.QtCore import QPoint
+from PySide.QtCore import QPoint, Qt
 
 from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QBaseGraph
@@ -59,11 +59,13 @@ class QSymExecGraph(QBaseGraph):
             self.scene.removeItem(p)
 
         # remove all nodes
+        self.blocks.clear()
         self.remove_all_children()
         self._edge_paths = []
 
         node_sizes = { }
         for node in self.graph.nodes():
+            self.blocks.add(node)
             node_sizes[node] = (100, 100)
         gl = GraphLayouter(self.graph, node_sizes,
                            compare_nodes_func=lambda n0, n1: 0)
@@ -90,6 +92,21 @@ class QSymExecGraph(QBaseGraph):
     #
     # Event handlers
     #
+
+    def mousePressEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        btn = event.button()
+        if btn == Qt.LeftButton:
+            pos = event.pos()
+            block = self._get_block_by_pos(pos)
+            if block is not None:
+                block.on_mouse_pressed(btn, self._to_graph_pos(pos))
+            event.accept()
 
     def paintEvent(self, event):
         """

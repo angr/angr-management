@@ -73,7 +73,6 @@ class QDisasmGraph(QBaseGraph):
         self.variable_manager = None
         self._variable_recovery_flavor = 'fast'
 
-        self.blocks = set()
         self._function_graph = None
 
         self._edges = None
@@ -266,15 +265,6 @@ class QDisasmGraph(QBaseGraph):
         for insn_addr, operand_idx in self.selected_operands.copy():
             self.unselect_operand(insn_addr, operand_idx)
 
-    def get_block_by_pos(self, pos):
-        pos = self._to_graph_pos(pos)
-        x, y = pos.x(), pos.y()
-        for b in self.blocks:
-            if b.x <= x < b.x + b.width and b.y <= y < b.y + b.height:
-                return b
-
-        return None
-
     #
     # Event handlers
     #
@@ -321,7 +311,7 @@ class QDisasmGraph(QBaseGraph):
         """
 
         if event.button() == Qt.LeftButton:
-            block = self.get_block_by_pos(event.pos())
+            block = self._get_block_by_pos(event.pos())
             if block is not None:
                 # clicking on a block
                 block.on_mouse_pressed(event.button(), self._to_graph_pos(event.pos()))
@@ -364,7 +354,7 @@ class QDisasmGraph(QBaseGraph):
             event.accept()
 
         elif event.button() == Qt.RightButton:
-            block = self.get_block_by_pos(event.pos())
+            block = self._get_block_by_pos(event.pos())
             if block is not None:
                 block.on_mouse_released(event.button(), self._to_graph_pos(event.pos()))
             event.setAccepted(True)
@@ -378,7 +368,7 @@ class QDisasmGraph(QBaseGraph):
         """
 
         if event.button() == Qt.LeftButton:
-            block = self.get_block_by_pos(event.pos())
+            block = self._get_block_by_pos(event.pos())
             if block is not None:
                 block.on_mouse_doubleclicked(event.button(), self._to_graph_pos(event.pos()))
             event.accept()

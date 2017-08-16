@@ -65,7 +65,10 @@ class QRegisterViewer(QFrame):
         state = self._state
 
         for reg_name, reg_ctrl in self._registers.iteritems():
-            reg_ctrl.ast = getattr(state.regs, reg_name)
+            if state is None:
+                reg_ctrl.ast = None
+            else:
+                reg_ctrl.ast = getattr(state.regs, "_" + reg_name)
 
     #
     # Private methods
@@ -100,8 +103,7 @@ class QRegisterViewer(QFrame):
             sublayout.addWidget(lbl_reg_name)
 
             sublayout.addSpacing(10)
-
-            reg_value = QASTViewer(None, self)
+            reg_value = QASTViewer(None, parent=self)
             self._registers[reg_name] = reg_value
             sublayout.addWidget(reg_value)
 
