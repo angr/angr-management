@@ -174,7 +174,8 @@ class MainWindow(QMainWindow):
         :return:
         """
 
-        self._recalculate_view_sizes(event.oldSize())
+        pass
+        # self._recalculate_view_sizes(event.oldSize())
 
     def event(self, event):
 
