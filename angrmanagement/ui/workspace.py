@@ -4,11 +4,9 @@ from collections import defaultdict
 from PySide.QtGui import QFont, QFontMetricsF
 from PySide.QtCore import Qt
 
-from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
+from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
-
-from angrmanagement.ui.views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView
-
+from ..config import Conf
 
 class Workspace(object):
     def __init__(self, main_window):
@@ -21,20 +19,9 @@ class Workspace(object):
         self.view_to_dockable = { }
 
         #
-        # Some generic configurations. move to "configurations" module later
+        # Initialize font configurations
         #
-        #self.disasm_font = QFont("courier new", 20)
-        self.disasm_font = QFont("DejaVu Sans Mono", 10)
-        font_metrics = QFontMetricsF(self.disasm_font)
-        self.disasm_font_height = font_metrics.height()
-        self.disasm_font_width = font_metrics.width('A')
-        self.disasm_font_ascent = font_metrics.ascent()
-
-        self.symexec_font = QFont("DejaVu Sans Mono", 10)
-        font_metrics = QFontMetricsF(self.symexec_font)
-        self.symexec_font_height = font_metrics.height()
-        self.symexec_font_width = font_metrics.width('A')
-        self.symexec_font_ascent = font_metrics.ascent()
+        Conf.init_font_config()
 
         default_tabs = [
             FunctionsView(self, 'left'),

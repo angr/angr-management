@@ -4,6 +4,7 @@ import logging
 from PySide.QtGui import QPainter, QGraphicsView, QColor, QPen, QBrush
 from PySide.QtCore import QPoint, Qt, QPointF, QRectF
 
+from ...config import Conf
 from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QBaseGraph
 
@@ -152,7 +153,7 @@ class QSymExecGraph(QBaseGraph):
 
         painter.translate(self.width() / 2 - current_x, self.height() / 2 - current_y)
 
-        painter.setFont(self.workspace.symexec_font)
+        painter.setFont(Conf.symexec_font)
 
         topleft_point = self._to_graph_pos(QPoint(0, 0))
         bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
