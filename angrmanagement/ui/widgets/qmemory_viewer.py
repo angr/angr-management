@@ -1,12 +1,52 @@
 
 import logging
 
-from PySide.QtGui import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QTextEdit, QLineEdit
+from PySide.QtGui import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit,\
+    QWidget, QPainter, QBrush, QPen
 from PySide.QtCore import Qt, QSize
 
+from ...config import Conf
 from .qast_viewer import QASTViewer
 
 l = logging.getLogger('ui.widgets.qregister_viewer')
+
+
+class QMemoryView(QWidget):
+    def __init__(self, parent=None):
+        super(QMemoryView, self).__init__(parent)
+
+        self.state = None
+        self.cols = None
+        self.rows = None
+        self.address = None
+
+    def paintEvent(self, event):
+
+        if self.address is None:
+            return
+
+        MARGIN_LEFT = 5
+        MARGIN_TOP = 5
+        LINE_MARGIN = 3
+
+        painter = QPainter(self)
+
+        painter.setPen(QPen(Qt.black, 1))
+
+        addr_base = self.address
+        x = MARGIN_LEFT
+        y = MARGIN_TOP
+
+        for row in xrange(self.rows):
+
+            x = MARGIN_LEFT  # carriage return
+
+            # address
+            addr = addr_base + row * self.cols
+            addr_str = "%x" % addr
+            painter.drawText(x, y + Conf.symexec_font_ascent, addr_str)
+
+            y += Conf.symexec_font_height + LINE_MARGIN
 
 
 class QMemoryViewer(QFrame):
@@ -16,6 +56,7 @@ class QMemoryViewer(QFrame):
 
         self._scrollarea = None  # type: QScrollArea
         self._txt_addr = None  # type: QLineEdit
+        self._view = None  # type: QMemoryView
 
         self._addr = None  # the address to display
         self._state = None
@@ -67,7 +108,7 @@ class QMemoryViewer(QFrame):
         if self.addr is None:
             return
 
-        self._load_memory_widgets()
+        self._refresh_memory_view()
 
     #
     # Event handlers
@@ -105,11 +146,15 @@ class QMemoryViewer(QFrame):
         top_layout.addWidget(lbl_addr)
         top_layout.addWidget(txt_addr)
 
+        self._view = QMemoryView()
+
         area = QScrollArea()
         self._scrollarea = area
         area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         area.setWidgetResizable(True)
+
+        area.setWidget(self._view)
 
         layout.addLayout(top_layout)
         layout.addWidget(area)
@@ -117,41 +162,11 @@ class QMemoryViewer(QFrame):
 
         self.setLayout(layout)
 
-    def _load_memory_widgets(self):
+    def _refresh_memory_view(self):
 
-        state = self._state
+        self._view.state = self._state
+        self._view.cols = 16
+        self._view.rows = 10
+        self._view.address = self.addr
 
-        COLUMNS = 16
-        ROWS = 10
-
-        layout = QVBoxLayout()
-
-        addr_base = self.addr
-
-        for row in xrange(ROWS):
-
-            row_layout = QHBoxLayout()
-
-            col = 0
-
-            addr = addr_base + row * COLUMNS
-            addr_label = QLabel("%x" % addr)
-            addr_label.setProperty("class", "memory_viewer_address")
-            row_layout.addWidget(addr_label)
-
-            while col < COLUMNS:
-                addr = addr_base + row * COLUMNS + col
-                data = state.memory.load(addr, 1, inspect=False, disable_actions=True)
-
-                ast_viewer = QASTViewer(data, display_size=False, byte_format="%02x", parent=self)
-
-                row_layout.addWidget(ast_viewer)
-
-                col += 1
-            row_layout.addStretch(0)
-
-            layout.addLayout(row_layout)
-
-        container = QFrame()
-        container.setLayout(layout)
-        self._scrollarea.setWidget(container)
+        self._view.repaint()
