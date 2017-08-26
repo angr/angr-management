@@ -9,6 +9,7 @@ from ...utils import (
     get_string_for_display, should_display_string_label,
 )
 from ...utils.block_objects import Variables, Label
+from ...config import Conf
 from .qinstruction import QInstruction
 from .qblock_label import QBlockLabel
 from .qvariable import QVariable
@@ -36,7 +37,7 @@ class QBlock(QGraphObject):
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
 
-        self._config = workspace
+        self._config = Conf
 
         self.objects = [ ]  # instructions and labels
         self.addr_to_insns = { }

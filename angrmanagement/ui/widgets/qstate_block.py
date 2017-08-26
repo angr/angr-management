@@ -2,6 +2,7 @@
 from PySide.QtGui import QColor, QPen
 from PySide.QtCore import Qt
 
+from ...config import Conf
 from .qgraph_object import QGraphObject
 
 
@@ -11,7 +12,7 @@ class QStateBlock(QGraphObject):
 
         self.symexec_view = symexec_view
         self._workspace = self.symexec_view.workspace
-        self._config = self.symexec_view.workspace
+        self._config = Conf
 
         self.state = state
         self.history = history

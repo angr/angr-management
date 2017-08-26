@@ -5,6 +5,7 @@ import logging
 from PySide.QtCore import QPointF, QRectF, Qt, QPoint
 from PySide.QtGui import QPainter, QBrush, QColor, QApplication, QMouseEvent, QResizeEvent, QPen
 
+from ...config import Conf
 from ...utils import get_out_branches
 from ...utils.graph_layouter import GraphLayouter
 from ...utils.cfg import categorize_edges
@@ -291,7 +292,7 @@ class QDisasmGraph(QBaseGraph):
         # (0, 0) -> middle of the page
         painter.translate(self.width() / 2 - current_x, self.height() / 2 - current_y)
 
-        painter.setFont(self.workspace.disasm_font)
+        painter.setFont(Conf.disasm_font)
 
         topleft_point = self._to_graph_pos(QPoint(0, 0))
         bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
