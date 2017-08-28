@@ -11,6 +11,17 @@ from .qast_viewer import QASTViewer
 l = logging.getLogger('ui.widgets.qregister_viewer')
 
 
+class AddressPiece(object):
+    __slots__ = ['address']
+
+    def __init__(self, address):
+        self.address = address
+
+
+class NewLinePiece(object):
+    pass
+
+
 class QMemoryView(QWidget):
     def __init__(self, parent=None):
         super(QMemoryView, self).__init__(parent)
@@ -18,7 +29,21 @@ class QMemoryView(QWidget):
         self.state = None
         self.cols = None
         self.rows = None
-        self.address = None
+
+        # The current address being displayed. Must be set through .address
+        self._address = None
+
+        self._objects = [ ]
+
+    @property
+    def address(self):
+        return self._address
+
+    @address.setter
+    def address(self, v):
+        if v != self._address:
+            self._address = v
+            self._reload_objects()
 
     def paintEvent(self, event):
 
@@ -32,21 +57,64 @@ class QMemoryView(QWidget):
         painter = QPainter(self)
 
         painter.setPen(QPen(Qt.black, 1))
+        painter.setFont(Conf.symexec_font)
 
-        addr_base = self.address
         x = MARGIN_LEFT
         y = MARGIN_TOP
 
+        for obj in self._objects:
+
+            obj_type = type(obj)
+
+            if obj_type is NewLinePiece:
+                # carriage return
+                x = MARGIN_LEFT
+                y += Conf.symexec_font_height + LINE_MARGIN
+            elif obj_type is AddressPiece:
+                # address
+                addr_str = "%08x" % obj.address
+                painter.drawText(x, y + Conf.symexec_font_ascent, addr_str)
+                x += Conf.symexec_font_width * len(addr_str)
+                x += 7
+            elif obj_type is QASTViewer:
+                # AST viewer
+                obj.x = x
+                obj.y = y
+                obj.paint(painter)
+
+                x += obj.width + 2
+            else:
+                raise TypeError('paintEvent(): Unsupported object type %s.' % obj_type)
+
+    def _reload_objects(self):
+        """
+        Reload addresses and text pieces to be displayed.
+
+        :return: None
+        """
+
+        objects = [ ]
+
+        addr_base = self.address
         for row in xrange(self.rows):
 
-            x = MARGIN_LEFT  # carriage return
+            addr = addr_base + row * self.cols
 
             # address
-            addr = addr_base + row * self.cols
-            addr_str = "%x" % addr
-            painter.drawText(x, y + Conf.symexec_font_ascent, addr_str)
+            addr_piece = AddressPiece(addr)
+            objects.append(addr_piece)
 
-            y += Conf.symexec_font_height + LINE_MARGIN
+            # QASTViewer objects
+            for col in xrange(self.cols):
+                data = self.state.memory.load(addr + col, 1, inspect=False, disable_actions=True)
+                ast_viewer = QASTViewer(data, custom_painting=True, display_size=False)
+                objects.append(ast_viewer)
+
+            # end of the line
+            newline_piece = NewLinePiece()
+            objects.append(newline_piece)
+
+        self._objects = objects
 
 
 class QMemoryViewer(QFrame):
