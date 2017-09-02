@@ -169,11 +169,13 @@ class LoadBinary(QDialog):
             else:
                 skip_libs.add(item.text())
 
-        self.load_options = {
-            'auto_load_libs': self.option_widgets['auto_load_libs'].isChecked(),
-            'force_load_libs': force_load_libs,
-            'skip_libs': skip_libs,
-        }
+        self.load_options = { }
+        self.load_options['auto_load_libs'] = self.option_widgets['auto_load_libs'].isChecked()
+        if force_load_libs:
+            self.load_options['force_load_libs'] = force_load_libs
+        if skip_libs:
+            self.load_options['skip_libs'] = skip_libs
+
         self.cfg_args = {
             'resolve_indirect_jumps': self.option_widgets['resolve_indirect_jumps'].isChecked(),
             'collect_data_references': self.option_widgets['collect_data_refs'].isChecked(),
