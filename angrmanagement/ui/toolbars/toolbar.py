@@ -1,5 +1,7 @@
 
 from PySide.QtGui import QToolBar, QAction
+from PySide.QtCore import QSize
+
 
 class ToolbarAction(object):
     def __init__(self, icon, name, tooltip, triggered):
@@ -37,5 +39,7 @@ class Toolbar(object):
                 if action.tooltip:
                     act.setToolTip(action.tooltip)
                 toolbar.addAction(act)
+
+        toolbar.setIconSize(QSize(16, 16))
 
         return toolbar

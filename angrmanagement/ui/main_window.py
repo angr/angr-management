@@ -14,10 +14,7 @@ from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary
 from .dialogs.new_state import NewState
-from .toolbars.states_toolbar import StatesToolbar
-from .toolbars.analysis_toolbar import AnalysisToolbar
-
-APP_LOCATION = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
 
 class MainWindow(QMainWindow):
@@ -40,6 +37,7 @@ class MainWindow(QMainWindow):
         self.workspace = None
         self.central_widget = None
 
+        self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
         self._analysis_toolbar = None  # type: AnalysisToolbar
         self._progressbar = None  # type: QProgressBar
@@ -130,9 +128,11 @@ class MainWindow(QMainWindow):
 
     def _init_toolbars(self):
 
+        self._file_toolbar = FileToolbar(self)
         self._states_toolbar = StatesToolbar(self)
         self._analysis_toolbar = AnalysisToolbar(self)
 
+        self.addToolBar(Qt.TopToolBarArea, self._file_toolbar.qtoolbar())
         self.addToolBar(Qt.TopToolBarArea, self._states_toolbar.qtoolbar())
         self.addToolBar(Qt.TopToolBarArea, self._analysis_toolbar.qtoolbar())
 
