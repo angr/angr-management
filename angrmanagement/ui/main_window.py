@@ -10,6 +10,7 @@ import angr
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
+from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary
 from .dialogs.new_state import NewState
@@ -26,7 +27,7 @@ class MainWindow(QMainWindow):
     def __init__(self, file_to_open=None, parent=None):
         super(MainWindow, self).__init__(parent)
 
-        icon_location = os.path.join(APP_LOCATION, 'resources', 'images', 'angr.png')
+        icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
 
         GlobalInfo.main_window = self
