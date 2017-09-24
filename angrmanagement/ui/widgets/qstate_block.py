@@ -3,6 +3,7 @@ from PySide.QtGui import QColor, QPen
 from PySide.QtCore import Qt
 
 from ...config import Conf
+from ...utils import locate_function
 from .qgraph_object import QGraphObject
 
 
@@ -10,6 +11,7 @@ class QStateBlock(QGraphObject):
 
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
+    LINE_MARGIN = 3
 
     def __init__(self, is_selected, symexec_view, state=None, history=None):
         super(QStateBlock, self).__init__()
@@ -28,17 +30,39 @@ class QStateBlock(QGraphObject):
 
         # widgets
         self._label_str = None
+        self._function_str = None
 
         self._init_widgets()
         self._update_size()
 
     def _init_widgets(self):
 
+        addr = None
         if self.state.regs._ip.symbolic:
             self._label_str = str(self.state.regs._ip)
         else:
-            self._label_str = "%#x" % self.state.regs._ip._model_concrete.value
+            addr = self.state.regs._ip._model_concrete.value
+            self._label_str = "%#x" % addr
         self._label_str = "State " + self._label_str
+
+        if addr is None:
+            self._function_str = "Unknown"
+        else:
+            the_func = locate_function(self._workspace.instance, addr)
+            if the_func is None:
+                # is it a SimProcedure?
+                if self._workspace.instance.project.is_hooked(addr):
+                    hooker = self._workspace.instance.project.hooked_by(addr)
+                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split('.')[-1]
+                else:
+                    self._function_str = "Unknown"
+            else:
+                offset = addr - the_func.addr
+                if not the_func.name:
+                    self._function_str = "%#x%+x" % (the_func.addr, offset)
+                else:
+                    self._function_str = "%s%+x" % (the_func.name, offset)
+        self._function_str = "Function: %s" % self._function_str
 
     def paint(self, painter):
         """
@@ -68,6 +92,14 @@ class QStateBlock(QGraphObject):
         painter.setPen(Qt.black)
         painter.drawText(addr_label_x, addr_label_y + self._config.symexec_font_ascent, self._label_str)
 
+        y += self._config.symexec_font_height + self.LINE_MARGIN
+        x = self.x
+
+        # The function label
+        function_label_x = x + self.HORIZONTAL_PADDING
+        function_label_y = y + self.VERTICAL_PADDING
+        painter.drawText(function_label_x, function_label_y + self._config.symexec_font_ascent, self._function_str)
+
     #
     # Events
     #
@@ -93,11 +125,12 @@ class QStateBlock(QGraphObject):
     #
 
     def _update_size(self):
-        width_candidates = [ self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width ]
+        width_candidates = [ self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width,
+                             self.HORIZONTAL_PADDING * 2 + len(self._function_str) * self._config.symexec_font_width
+                             ]
         height_candidates = [ 0 ]
         self._width = max(width_candidates)
         self._height = max(height_candidates)
-
 
         self._width = max(100, self._width)
         self._height = max(50, self._height)
