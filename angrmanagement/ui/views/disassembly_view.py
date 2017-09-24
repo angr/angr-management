@@ -297,21 +297,26 @@ class DisassemblyView(BaseView):
     # Private methods
     #
 
-    def _display_function(self, function):
+    def _display_function(self, the_func):
 
         # set status bar
-        self._statusbar.function = function
+        self._statusbar.function = the_func
 
-        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not function:
+        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
             # clear existing selected instructions and operands
             self._flow_graph.selected_insns.clear()
             self._flow_graph.selected_operands.clear()
             # set function graph of a new function
-            self._flow_graph.function_graph = FunctionGraph(function=function)
+            self._flow_graph.function_graph = FunctionGraph(function=the_func)
         else:
             # still use the current function. just unselect existing selections.
             self._flow_graph.unselect_all_instructions()
             self._flow_graph.unselect_all_operands()
+
+        self.workspace.views_by_category['console'][0].push_namespace({
+            'func': the_func,
+            'function_': the_func,
+        })
 
     def _jump_to(self, addr):
         function = locate_function(self.workspace.instance, addr)
