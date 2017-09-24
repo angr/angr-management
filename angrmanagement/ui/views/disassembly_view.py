@@ -4,7 +4,7 @@ from PySide.QtCore import Qt, QSize
 
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
-from ..widgets import QDisasmGraph, QDisasmStatusBar
+from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearViewer
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.new_path import NewPath
@@ -63,6 +63,7 @@ class DisassemblyView(BaseView):
         # whether we want to show identifier or not
         self._show_variable_ident = False
 
+        self._linear_viewer = None  # type: QLinearViewer
         self._flow_graph = None  # type: QDisasmGraph
         self._statusbar = None
         self._jump_history = JumpHistory()
@@ -165,6 +166,30 @@ class DisassemblyView(BaseView):
     #
     # Public methods
     #
+
+    def display_disasm_graph(self):
+
+        self._flow_graph.setVisible(True)
+        self._linear_viewer.setVisible(False)
+
+        hlayout = QVBoxLayout()
+        hlayout.addWidget(self._flow_graph)
+        hlayout.addWidget(self._statusbar)
+        hlayout.setContentsMargins(0, 0, 0, 0)
+
+        self.setLayout(hlayout)
+
+    def display_linear_viewer(self):
+
+        self._flow_graph.setVisible(False)
+        self._linear_viewer.setVisible(True)
+
+        hlayout = QVBoxLayout()
+        hlayout.addWidget(self._linear_viewer)
+        hlayout.addWidget(self._statusbar)
+        hlayout.setContentsMargins(0, 0, 0, 0)
+
+        self.setLayout(hlayout)
 
     def display_function(self, function):
 
@@ -302,16 +327,13 @@ class DisassemblyView(BaseView):
 
     def _init_widgets(self):
 
+        self._linear_viewer = QLinearViewer(self.workspace, self)
         self._flow_graph = QDisasmGraph(self.workspace, self)
 
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
-        hlayout = QVBoxLayout()
-        hlayout.addWidget(self._flow_graph)
-        hlayout.addWidget(self._statusbar)
-        hlayout.setContentsMargins(0, 0, 0, 0)
-
-        self.setLayout(hlayout)
+        #self.display_disasm_graph()
+        self.display_linear_viewer()
 
     def _init_menus(self):
 
