@@ -16,7 +16,9 @@ class QRegisterViewer(QFrame):
             'common': [ 'eax', 'ecx', 'edx', 'ebx', 'esp', 'ebp', 'esi', 'edi', 'eip' ]
         },
         'AMD64': {
-            'common': [ 'rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'rip' ]
+            'common': [ 'rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'rip', 'r8', 'r9', 'r10', 'r11', 'r12',
+                        'r13', 'r14', 'r15'
+                        ]
         },
         'MIPS32': {
             'common': [ 'v0', 'v1', 'a0', 'a1', 'a2', 'a3', 't0', 't1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9',
