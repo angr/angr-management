@@ -16,9 +16,13 @@ class QSymExecGraph(QBaseGraph):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace, symexec_view, parent=None):
 
         super(QSymExecGraph, self).__init__(workspace, parent=parent)
+
+        self._symexec_view = symexec_view
+
+        self.key_pressed.connect(self._on_keypressed_event)
 
         self._graph = None
         self._selected = None
@@ -137,6 +141,21 @@ class QSymExecGraph(QBaseGraph):
                 return
 
         super(QSymExecGraph, self).mousePressEvent(event)
+
+    def _on_keypressed_event(self, key_event):
+        """
+
+        :param QKeyEvent event:
+        :return:
+        """
+
+        key = key_event.key()
+
+        if key == Qt.Key_Tab:
+            self._symexec_view.switch_to_disassembly_view()
+            return True
+
+        return False
 
     def paintEvent(self, event):
         """

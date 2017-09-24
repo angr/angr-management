@@ -1,6 +1,6 @@
 
-from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent, QApplication
-from PySide.QtCore import Qt, QSize, Signal, QPoint
+from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent
+from PySide.QtCore import Qt, QSize, Signal, QPoint, QEvent
 
 
 class QZoomingGraphicsView(QGraphicsView):
@@ -36,6 +36,17 @@ class QZoomingGraphicsView(QGraphicsView):
             self.translate(delta.x(), delta.y())
         else:
             super(QZoomingGraphicsView, self).wheelEvent(event)
+
+    def event(self, event):
+        """
+        Reimplemented to capture the Tab keypress event.
+        """
+
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
+            self.key_pressed.emit(event)
+            return True
+
+        return super(QZoomingGraphicsView, self).event(event)
 
     def keyPressEvent(self, event):
         """

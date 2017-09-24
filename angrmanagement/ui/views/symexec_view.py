@@ -22,6 +22,8 @@ class SymexecView(BaseView):
         self._memory_viewer = None  # type: QMemoryViewer
         self._vextemps_viewer = None  # type: QVEXTempsViewer
 
+        self._selected_state_block = None
+
         self._init_widgets()
 
     #
@@ -63,6 +65,21 @@ class SymexecView(BaseView):
     def redraw_graph(self):
         if self.graph is not None:
             self.graph.viewport().update()
+
+    def select_state_block(self, state_block):
+        if self._selected_state_block is not None:
+            self._selected_state_block.selected = False
+            self._selected_state_block = None
+        self._selected_state_block = state_block
+
+    def deselect_state_block(self, state_block):
+        if self._selected_state_block is state_block:
+            self._selected_state_block = None
+
+    def switch_to_disassembly_view(self):
+        if self._selected_state_block:
+            addr = self._selected_state_block.state.addr
+            self._switch_to_disassembly_view(addr)
 
     #
     # Initialization
@@ -128,3 +145,13 @@ class SymexecView(BaseView):
             simgr = self._simgrs.get_simgr(idx)
 
             self._pathtree.simgr = simgr
+
+    #
+    # Private methods
+    #
+
+    def _switch_to_disassembly_view(self, addr):
+        disasm_view = self.workspace.views_by_category['disassembly'][0]
+        disasm_view.jump_to(addr)
+
+        self.workspace.raise_view(disasm_view)

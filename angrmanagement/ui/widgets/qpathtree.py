@@ -63,7 +63,7 @@ class QPathTree(QFrame):
 
     def _init_widgets(self):
 
-        graph = QSymExecGraph(self.workspace, parent=self)
+        graph = QSymExecGraph(self.workspace, self._symexec_view, parent=self)
 
         self._graph = graph
 

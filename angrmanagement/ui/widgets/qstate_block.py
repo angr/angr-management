@@ -7,6 +7,10 @@ from .qgraph_object import QGraphObject
 
 
 class QStateBlock(QGraphObject):
+
+    HORIZONTAL_PADDING = 5
+    VERTICAL_PADDING = 5
+
     def __init__(self, is_selected, symexec_view, state=None, history=None):
         super(QStateBlock, self).__init__()
 
@@ -18,6 +22,8 @@ class QStateBlock(QGraphObject):
         self.history = history
         if history is None and state is not None:
             self.history = state.history
+        if history is not None and state is None:
+            self.state = history.state.state
         self.selected = is_selected
 
         # widgets
@@ -28,38 +34,11 @@ class QStateBlock(QGraphObject):
 
     def _init_widgets(self):
 
-        if self.history.successor_ip.symbolic:
-            self._label_str = str(self.history.successor_ip)
+        if self.state.regs._ip.symbolic:
+            self._label_str = str(self.state.regs._ip)
         else:
-            self._label_str = "%#x" % self.history.successor_ip._model_concrete.value
-
-        return
-
-        # label
-        label = QLabel()
-        label.setText('%#x' % self.state.addr)
-
-        # the select button
-
-        path_button = QPushButton()
-        path_button.setText('Select')
-        path_button.released.connect(self._on_path_button_released)
-
-        # the disasm button
-
-        disasm_button = QPushButton()
-        disasm_button.setText('Disasm')
-        disasm_button.released.connect(self._on_disasm_button_released)
-
-        sublayout = QHBoxLayout()
-        sublayout.addWidget(path_button)
-        sublayout.addWidget(disasm_button)
-
-        layout = QVBoxLayout()
-        layout.addWidget(label)
-        layout.addLayout(sublayout)
-
-        self.setLayout(layout)
+            self._label_str = "%#x" % self.state.regs._ip._model_concrete.value
+        self._label_str = "State " + self._label_str
 
     def paint(self, painter):
         """
@@ -83,9 +62,11 @@ class QStateBlock(QGraphObject):
         x = self.x
         y = self.y
 
-        # The label
+        # The addr label
+        addr_label_x = x + self.HORIZONTAL_PADDING
+        addr_label_y = y + self.VERTICAL_PADDING
         painter.setPen(Qt.black)
-        painter.drawText(x, self.y + self._config.symexec_font_ascent, self._label_str)
+        painter.drawText(addr_label_x, addr_label_y + self._config.symexec_font_ascent, self._label_str)
 
     #
     # Events
@@ -94,25 +75,29 @@ class QStateBlock(QGraphObject):
     def on_mouse_pressed(self, button, pos):
         if not self.selected:
             self.selected = True
+            self.symexec_view.select_state_block(self)
             if self.state is not None:
                 self.symexec_view.view_state(self.state)
             elif self.history is not None:
-                self.symexec_view.view_state(self.history.state)
+                weak_state = self.history.state
+                state = weak_state.state
+                self.symexec_view.view_state(state)
         else:
             self.selected = False
+            self.symexec_view.deselect_state_block(self)
             self.symexec_view.view_state(None)
         self.symexec_view.redraw_graph()
-
-    def _on_disasm_button_released(self):
-        disasm_view = self._workspace.views_by_category['disassembly'][0]
-        disasm_view.jump_to(self.history.addr)
-
-        self._workspace.raise_view(disasm_view)
 
     #
     # Private methods
     #
 
     def _update_size(self):
-        self._width = 100
-        self._height = 50
+        width_candidates = [ self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width ]
+        height_candidates = [ 0 ]
+        self._width = max(width_candidates)
+        self._height = max(height_candidates)
+
+
+        self._width = max(100, self._width)
+        self._height = max(50, self._height)
