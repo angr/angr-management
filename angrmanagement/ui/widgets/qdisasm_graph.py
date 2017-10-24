@@ -2,8 +2,8 @@
 from functools import wraps
 import logging
 
-from PySide.QtCore import QPointF, QRectF, Qt, QPoint
-from PySide.QtGui import QPainter, QBrush, QColor, QApplication, QMouseEvent, QResizeEvent, QPen
+from PySide.QtCore import QPointF, QRectF, Qt, QPoint, QSize
+from PySide.QtGui import QPainter, QBrush, QColor, QApplication, QMouseEvent, QResizeEvent, QPen, QImage
 
 from ...config import Conf
 from ...utils import get_out_branches
@@ -167,6 +167,32 @@ class QDisasmGraph(QBaseGraph):
 
         self.request_relayout(ensure_visible=False)
 
+    def save_image_to(self, path):
+
+        TOP_MARGIN = 50
+        LEFT_MARGIN = 50
+
+        # Determine the size of the entire graph
+        graph_size = self._graph_size()
+
+        image_size = QSize(graph_size.width() + LEFT_MARGIN * 2,
+                           graph_size.height() + TOP_MARGIN * 2
+                           )
+
+        image = QImage(image_size, QImage.Format_ARGB32)
+        image.fill(Qt.white)  # white background
+
+        painter = QPainter(image)
+        painter.translate(TOP_MARGIN, LEFT_MARGIN)
+        painter.setRenderHint(QPainter.TextAntialiasing)
+        self._paint(painter,
+                    QPoint(-TOP_MARGIN, -LEFT_MARGIN),
+                    QPoint(image_size.width(), image_size.height())
+                    )
+        painter.end()
+
+        image.save(path)
+
     def add_block(self, block):
         self.blocks.add(block)
 
@@ -292,13 +318,10 @@ class QDisasmGraph(QBaseGraph):
         # (0, 0) -> middle of the page
         painter.translate(self.width() / 2 - current_x, self.height() / 2 - current_y)
 
-        painter.setFont(Conf.disasm_font)
-
         topleft_point = self._to_graph_pos(QPoint(0, 0))
         bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
 
-        self._draw_edges(painter, topleft_point, bottomright_point)
-        self._draw_nodes(painter, topleft_point, bottomright_point)
+        self._paint(painter, topleft_point, bottomright_point)
 
     def mousePressEvent(self, event):
         """
@@ -394,6 +417,20 @@ class QDisasmGraph(QBaseGraph):
     # Layout
     #
 
+    def _graph_size(self):
+
+        width, height = 0, 0
+
+        for block in self.blocks:
+            if block.x + block.width > width:
+                width = block.x + block.width
+            if block.y + block.height > height:
+                height = block.y + block.height
+
+        # TODO: Check all edges as well
+
+        return QSize(width, height)
+
     def _layout_graph(self):
 
         node_sizes = {}
@@ -483,6 +520,15 @@ class QDisasmGraph(QBaseGraph):
     #
     # Private methods
     #
+
+    def _paint(self, painter, topleft, bottomright):
+
+        # Set the default font
+        painter.setFont(Conf.disasm_font)
+        # Draw edges
+        self._draw_edges(painter, topleft, bottomright)
+        # Draw nodes
+        self._draw_nodes(painter, topleft, bottomright)
 
     def _draw_nodes(self, painter, topleft_point, bottomright_point):
 

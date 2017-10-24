@@ -1,5 +1,7 @@
 
-from PySide.QtGui import QFrame, QHBoxLayout, QLabel, QPushButton
+import os
+
+from PySide.QtGui import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
 
@@ -11,6 +13,7 @@ class QDisasmStatusBar(QFrame):
         self.disasm_view = disasm_view
 
         # widgets
+        self._saveimage_btn = None  # type: QPushButton
         self._function_label = None  # type: QLabel
         self._options_menu = None  # type: DisasmOptionsMenu
 
@@ -51,11 +54,17 @@ class QDisasmStatusBar(QFrame):
         option_btn.setText('Options')
         option_btn.setMenu(self._options_menu.qmenu())
 
+        # Save image button
+        saveimage_btn = QPushButton()
+        saveimage_btn.setText('Save image to...')
+        saveimage_btn.clicked.connect(self._on_saveimage_btn_clicked)
+
         layout = QHBoxLayout()
         layout.setContentsMargins(2, 2, 2, 2)
         layout.addWidget(function_label)
 
         layout.addStretch(0)
+        layout.addWidget(saveimage_btn)
         layout.addWidget(option_btn)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -71,3 +80,14 @@ class QDisasmStatusBar(QFrame):
     def _update_function_address(self):
         if self.function_address is not None:
             self._function_label.setText("Function %x" % self.function_address)
+
+    def _on_saveimage_btn_clicked(self):
+
+        filename, folder = QFileDialog.getSaveFileName(self, 'Save image to...',
+                                           '',
+                                           'PNG Files (*.png);;Bitmaps (*.bmp)'
+                                           )
+        if not filename or not folder:
+            return
+
+        self.disasm_view.save_image_to(os.path.join(folder, filename))

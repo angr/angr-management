@@ -77,6 +77,10 @@ class DisassemblyView(BaseView):
     def reload(self):
         pass
 
+    def save_image_to(self, path):
+        if self._flow_graph is not None:
+            self._flow_graph.save_image_to(path)
+
     #
     # Properties
     #
