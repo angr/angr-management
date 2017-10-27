@@ -58,15 +58,16 @@ python start.py
 
 Your capstone install does not support functionality that angr-management uses.
 
-To install a version that does:
+To install a version that does (in your angr virtualenv):
 ```
+workon angr
 git clone https://github.com/angr/capstone
 cd capstone
 git checkout next
 ./make.sh
-sudo ./make.sh install
+cp libcapstone.so.4 $(python -c "from distutils.sysconfig import get_python_lib; import os; print(os.path.join(get_python_lib(), 'capstone/libcapstone.so'))")
 cd bindings/python
-sudo pip uninstall capstone  # if already installed
-sudo python setup.py install
+pip uninstall capstone  # if already installed
+python setup.py install
 ```
 
