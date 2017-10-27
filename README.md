@@ -56,6 +56,20 @@ python start.py
 
 ### 'module' object has noattribute 'MIPS_GRP_CALL'
 
-Your capstone install is too old.
-You may install the version from [our fork](https://github.com/angr/capstone).
+Your capstone install does not support functionality that angr-management uses.
+
+To install a version that does (in your angr virtualenv):
+```
+workon angr
+git clone https://github.com/angr/capstone
+cd capstone
+git checkout next
+./make.sh
+PACKAGES_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+mkdir -p $PACKAGES_PATH/capstone
+cp libcapstone.so.4 $PACKAGES_PATH/capstone/libcapstone.so
+cd bindings/python
+pip uninstall capstone  # if already installed
+python setup.py install
+```
 
