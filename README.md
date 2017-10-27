@@ -65,7 +65,9 @@ git clone https://github.com/angr/capstone
 cd capstone
 git checkout next
 ./make.sh
-cp libcapstone.so.4 $(python -c "from distutils.sysconfig import get_python_lib; import os; print(os.path.join(get_python_lib(), 'capstone/libcapstone.so'))")
+PACKAGES_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+mkdir -p $PACKAGES_PATH/capstone
+cp libcapstone.so.4 $PACKAGES_PATH/capstone/libcapstone.so
 cd bindings/python
 pip uninstall capstone  # if already installed
 python setup.py install
