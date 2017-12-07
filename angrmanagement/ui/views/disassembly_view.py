@@ -90,6 +90,14 @@ class DisassemblyView(BaseView):
         return self._flow_graph.disasm
 
     @property
+    def smart_highlighting(self):
+        if self._flow_graph is None:
+            return False
+        if self._flow_graph.infodock is None:
+            return False
+        return self._flow_graph.infodock.smart_highlighting
+
+    @property
     def show_address(self):
         return self._show_address
 
@@ -162,6 +170,18 @@ class DisassemblyView(BaseView):
 
         self._jump_history.jump_to(function.addr)
         self._display_function(function)
+
+    def toggle_smart_highlighting(self, enabled):
+        """
+        Toggle between the smart highlighting mode and the text-based highlighting mode.
+
+        :param bool enabled: Enable smart highlighting.
+        :return:             None
+        """
+
+        self._flow_graph.infodock.smart_highlighting = enabled
+
+        self._flow_graph.refresh()
 
     def toggle_show_address(self, show_address):
         """

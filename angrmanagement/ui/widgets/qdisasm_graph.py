@@ -42,6 +42,17 @@ class InfoDock(object):
         self.highlight_mode = OperandHighlightMode.SAME_IDENT  # default highlight mode
         self.selected_operand = None
 
+    @property
+    def smart_highlighting(self):
+        return self.highlight_mode == OperandHighlightMode.SAME_IDENT
+
+    @smart_highlighting.setter
+    def smart_highlighting(self, v):
+        if v:
+            self.highlight_mode = OperandHighlightMode.SAME_IDENT
+        else:
+            self.highlight_mode = OperandHighlightMode.SAME_TEXT
+
     def initialize(self):
         self.selected_operand = None
 
@@ -102,6 +113,10 @@ class QDisasmGraph(QBaseGraph):
             self._function_graph = v
 
             self.reload()
+
+    @property
+    def infodock(self):
+        return self._infodock
 
     @property
     def variable_recovery_flavor(self):
@@ -404,12 +419,7 @@ class QDisasmGraph(QBaseGraph):
 
         elif key == Qt.Key_A:
             # switch between highlight mode
-            if self._infodock.highlight_mode == OperandHighlightMode.SAME_TEXT:
-                self._infodock.highlight_mode = OperandHighlightMode.SAME_IDENT
-            else:
-                self._infodock.highlight_mode = OperandHighlightMode.SAME_TEXT
-            # refresh myself
-            self.viewport().update()
+            self.disassembly_view.toggle_smart_highlighting(not self.infodock.smart_highlighting)
 
         return False
 

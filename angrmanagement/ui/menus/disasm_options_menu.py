@@ -6,6 +6,9 @@ class DisasmOptionsMenu(Menu):
     def __init__(self, disasm_view):
         super(DisasmOptionsMenu, self).__init__("", parent=disasm_view)
 
+        self._smart_highlighting_action = MenuEntry('Smart &highlighting', self._smart_highlighting, checkable=True,
+                                             checked=self.parent.smart_highlighting
+                                             )
         self._show_address_action = MenuEntry('Show &address', self._show_address, checkable=True,
                                               checked=self.parent.show_address
                                               )
@@ -17,10 +20,15 @@ class DisasmOptionsMenu(Menu):
                                                      )
 
         self.entries.extend([
+            self._smart_highlighting_action,
             self._show_address_action,
             self._show_variable_action,
             self._show_variable_ident_action,
         ])
+
+    def _smart_highlighting(self):
+        checked = self._smart_highlighting_action.checked
+        self.parent.toggle_smart_highlighting(checked)
 
     def _show_address(self):
         checked = self._show_address_action.checked
