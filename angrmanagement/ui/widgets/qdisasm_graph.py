@@ -161,7 +161,7 @@ class QDisasmGraph(QBaseGraph):
         self._insn_addr_to_block = { }
 
         supergraph = self._function_graph.supergraph
-        for n in supergraph.nodes_iter():
+        for n in supergraph.nodes():
             block = QBlock(self.workspace, self._function_graph.function.addr, self.disassembly_view, self.disasm,
                            self._infodock, n.addr, n.cfg_nodes, get_out_branches(n)
                            )
@@ -447,7 +447,7 @@ class QDisasmGraph(QBaseGraph):
         node_map = {}
         for block in self.blocks:
             node_map[block.addr] = block
-        for node in self.function_graph.supergraph.nodes_iter():
+        for node in self.function_graph.supergraph.nodes():
             block = node_map[node.addr]
             node_sizes[node] = block.width, block.height
         gl = GraphLayouter(self.function_graph.supergraph, node_sizes)
@@ -544,6 +544,12 @@ class QDisasmGraph(QBaseGraph):
 
         # draw nodes
         for block in self.blocks:
+
+            # safety check
+            if block.x is None or block.y is None:
+                l.warning("Failed to assign coordinates to block %s.", block)
+                continue
+
             # optimization: don't paint blocks that are outside of the current range
             block_topleft_point = QPoint(block.x, block.y)
             block_bottomright_point = QPoint(block.x + block.width, block.y + block.height)

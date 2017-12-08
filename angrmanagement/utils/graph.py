@@ -36,7 +36,7 @@ def to_supergraph(transition_graph):
     edges_to_shrink = set()
 
     # Find all edges to remove in the super graph
-    for src in transition_graph.nodes_iter():
+    for src in transition_graph.nodes():
         edges = transition_graph[src]
 
         # there are two types of edges we want to remove:
@@ -72,7 +72,7 @@ def to_supergraph(transition_graph):
 
     function_nodes = set()  # it will be traversed after all other nodes are added into the supergraph
 
-    for node in transition_graph.nodes_iter():
+    for node in transition_graph.nodes():
 
         if isinstance(node, Function):
             function_nodes.add(node)

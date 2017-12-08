@@ -44,7 +44,7 @@ class EdgeRouter(object):
 
         edges = [ ]
 
-        for src, dst in self._graph.edges_iter():
+        for src, dst in self._graph.edges():
             edge = self._route_edge(src, dst)
             edges.append(edge)
 
@@ -347,7 +347,7 @@ class GraphLayouter(object):
         for node in ordered_nodes:
             visited.add(node)
             acyclic_graph.add_node(node)
-            for successor in graph.successors_iter(node):
+            for successor in graph.successors(node):
                 if successor not in visited:
                     acyclic_graph.add_edge(node, successor)
 
@@ -395,7 +395,7 @@ class GraphLayouter(object):
                 max_rows[node] = 0
             row = max_rows[node]
             global_max_row = max(global_max_row, row)
-            for successor in acyclic_graph.successors_iter(node):
+            for successor in acyclic_graph.successors(node):
                 if successor not in max_rows or max_rows[successor] < row + 1:
                     max_rows[successor] = row + 1
                     global_max_row = max(global_max_row, row + 1)
@@ -488,7 +488,7 @@ class GraphLayouter(object):
         self._row_heights = [ 0 ] * (self._max_row + 2)
         self._col_widths = [ 0 ] * (self._max_col + 2)
 
-        for node in self.graph.nodes_iter():
+        for node in self.graph.nodes():
             col, row = self._locations[node]
 
             width, height = self._node_sizes[node]
@@ -561,7 +561,7 @@ class GraphLayouter(object):
             y += self._row_heights[row] + margin_height
 
         # nodes
-        for node in self.graph.nodes_iter():
+        for node in self.graph.nodes():
             col, row = self._locations[node]
             grid_x, grid_y = self._grid_coordinates[(col, row)]
             grid_a_width, grid_b_width = self._col_widths[col], self._col_widths[col + 1]
