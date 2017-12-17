@@ -9,14 +9,14 @@ except ImportError:
 
 setup(
     name='angr-management',
-    version='7.7.9.8',
+    version='7.7.12.16',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=packages,
     package_data={
     },
     install_requires=[
-        'angr>=7.0.0.0rc1',
+        'angr>=7.7.12.16',
         'pygments',
         'websocket-client',
         'qtconsole',
