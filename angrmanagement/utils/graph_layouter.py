@@ -623,6 +623,8 @@ class GraphLayouter(object):
 
             if edge.points:
                 next_col, next_row, next_idx = edge.points[0]
+                starting_col, starting_row = self._locations[edge.src]
+                y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + ROW_MARGIN
                 y = self._indexed_y(y_base, next_idx, self._grid_max_horizontal_id[(next_col, next_row)])
             else:
                 y = y_base
@@ -688,3 +690,32 @@ class GraphLayouter(object):
 
         MARGIN = 5
         return base_y + idx * MARGIN
+
+    def _nointersecting_y(self, row, starting_col, ending_col, default=None):
+        """
+        Return the correct y coordinate for a point on an edge that will not lead to the following edge segment
+        intersect with any node between `min_col` and `max_col`.
+
+        :param int row:             Row of this point.
+        :param int starting_col:    The starting column of the next edge segment.
+        :param int ending_col:      The ending column of the next edge segment.
+        :param float default:       The default y coordinate to use if we fail to determine a desired y coordinate.
+        :return:                    The desired y coordinate.
+        :rtype:                     float
+        """
+
+        max_y = None
+
+        if starting_col < ending_col:
+            min_col, max_col = starting_col, ending_col
+        else:
+            min_col, max_col = ending_col, starting_col
+
+        for col in xrange(min_col, max_col + 1):
+            key = (col, row)
+            if key not in self._grid_coordinates:
+                continue
+            _, y = self._grid_coordinates[key]
+            max_y = max(max_y, y + self._row_heights[row])
+
+        return max_y if max_y is not None else default
