@@ -439,7 +439,7 @@ class GraphLayouter(object):
 
         global_max_col = 0
 
-        # assign column ID bottom-up
+        # First iteration: assign column ID bottom-up
         for row_idx in reversed(self._row_to_nodes.keys()):
             row_nodes = self._row_to_nodes[row_idx]
 
@@ -475,6 +475,33 @@ class GraphLayouter(object):
                 # update min_col and max_col for the next iteration
                 next_min_col = max_col + 1
                 next_max_col = next_min_col + 1
+
+        # Second iteration: Adjust column IDs top-down
+        for row_idx in self._row_to_nodes.keys():
+            row_nodes = self._row_to_nodes[row_idx]
+
+            for i, node in enumerate(row_nodes):
+                predecessors = list(acyclic_graph.predecessors(node))
+                if len(predecessors) < 2:
+                    continue
+                min_col, max_col = None, None
+
+                for predecessor in predecessors:
+                    if predecessor in self._cols:
+                        pred_col = self._cols[predecessor]
+                        if min_col is None or min_col > pred_col:
+                            min_col = pred_col
+                        if max_col is None or max_col < pred_col:
+                            max_col = pred_col + 1
+
+                if min_col is not None and max_col is not None:
+                    # now assign a column ID to the current node
+                    col = (min_col + max_col) / 2
+                    self._cols[node] = col
+                    self._locations[node] = (col, row_idx)
+                else:
+                    col = self._cols[node]
+                global_max_col = max(global_max_col, col)
 
         self._max_col = global_max_col + 1
 
