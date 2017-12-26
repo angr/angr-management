@@ -19,11 +19,11 @@ from .qgraph_object import QGraphObject
 class QBlock(QGraphObject):
     TOP_PADDING = 5
     BOTTOM_PADDING = 5
-    LEFT_PADDING = 10
+    GRAPH_LEFT_PADDING = 10
     RIGHT_PADDING = 10
     SPACING = 0
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, mode='graph'):
         super(QBlock, self).__init__()
 
         # initialization
@@ -37,6 +37,8 @@ class QBlock(QGraphObject):
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
 
+        self.mode = mode  # 'graph' or 'linear'
+
         self._config = Conf
 
         self.objects = [ ]  # instructions and labels
@@ -48,22 +50,6 @@ class QBlock(QGraphObject):
     #
     # Properties
     #
-
-    @property
-    def x(self):
-        return self._x
-
-    @x.setter
-    def x(self, v):
-        self._x = v
-
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
-    def y(self, v):
-        self._y = v
 
     @property
     def width(self):
@@ -99,7 +85,7 @@ class QBlock(QGraphObject):
     def instruction_position(self, insn_addr):
         if insn_addr in self.addr_to_insns:
             insn = self.addr_to_insns[insn_addr]
-            x = self.x + self.LEFT_PADDING
+            x = self.x + self.GRAPH_LEFT_PADDING
             y = self.y + self.TOP_PADDING + self.objects.index(insn) * (self._config.disasm_font_height + self.SPACING)
             return x, y
 
@@ -115,24 +101,10 @@ class QBlock(QGraphObject):
         :return:
         """
 
-        # background of the node
-        painter.setBrush(QColor(0xfa, 0xfa, 0xfa))
-        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
-        painter.drawRect(self.x, self.y, self.width, self.height)
-
-        # content
-
-        y_offset = self.TOP_PADDING
-
-        for obj in self.objects:
-
-            y_offset += self.SPACING
-
-            obj.x = self.x + self.LEFT_PADDING
-            obj.y = self.y + y_offset
-            obj.paint(painter)
-
-            y_offset += obj.height
+        if self.mode == 'linear':
+            self._paint_linear(painter)
+        else:
+            self._paint_graph(painter)
 
     #
     # Event handlers
@@ -168,13 +140,13 @@ class QBlock(QGraphObject):
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
                 insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
-                                    self.infodock, obj, out_branch, self._config
+                                    self.infodock, obj, out_branch, self._config, mode=self.mode,
                                     )
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
                 # label
-                label = QBlockLabel(obj.addr, obj.text, self._config)
+                label = QBlockLabel(obj.addr, obj.text, self._config, mode=self.mode)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, Variables):
@@ -184,12 +156,57 @@ class QBlock(QGraphObject):
 
         self._update_size()
 
+    #
+    # Private methods
+    #
+
     def _update_size(self):
 
         # calculate height
         self._height = self.TOP_PADDING + len(self.objects) * self._config.disasm_font_height + \
-                      (len(self.objects) - 1) * self.SPACING + self.BOTTOM_PADDING
+                      (len(self.objects) - 1) * self.SPACING
+
+        if self.mode == "graph":
+            self._height += self.BOTTOM_PADDING
 
         # calculate width
-        self._width = self.LEFT_PADDING + (max([obj.width for obj in self.objects]) if self.objects else 0) +\
+
+        self._width = (max([obj.width for obj in self.objects]) if self.objects else 0) + \
                       self.RIGHT_PADDING
+        if self.mode == "graph":
+            self._width += self.GRAPH_LEFT_PADDING
+
+    def _paint_graph(self, painter):
+
+        # background of the node
+        painter.setBrush(QColor(0xfa, 0xfa, 0xfa))
+        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
+        painter.drawRect(self.x, self.y, self.width, self.height)
+
+        # content
+
+        y_offset = self.TOP_PADDING
+
+        for obj in self.objects:
+            y_offset += self.SPACING
+
+            obj.x = self.x + self.GRAPH_LEFT_PADDING
+            obj.y = self.y + y_offset
+            obj.paint(painter)
+
+            y_offset += obj.height
+
+    def _paint_linear(self, painter):
+
+        # content
+
+        y_offset = self.SPACING
+
+        for obj in self.objects:
+            y_offset += self.SPACING
+
+            obj.x = self.x
+            obj.y = self.y + y_offset
+            obj.paint(painter)
+
+            y_offset += obj.height

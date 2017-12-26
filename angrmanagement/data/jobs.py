@@ -58,12 +58,17 @@ class CFGGenerationJob(Job):
         self.cfg_args = cfg_args
 
     def run(self, inst):
-        return inst.project.analyses.CFG(progress_callback=self._progress_callback,
-                                         **self.cfg_args
-                                         )
+        cfg = inst.project.analyses.CFG(progress_callback=self._progress_callback,
+                                        **self.cfg_args
+                                        )
+        cfb = inst.project.analyses.CFB(cfg=cfg)
+
+        return cfg, cfb
 
     def finish(self, inst, result):
-        inst.cfg = result
+        cfg, cfb = result
+        inst.cfb = cfb
+        inst.cfg = cfg
         super(CFGGenerationJob, self).finish(inst, result)
 
         #offsets = inst.registry.offsets.copy()

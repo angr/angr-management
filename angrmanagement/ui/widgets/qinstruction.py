@@ -9,12 +9,14 @@ from ...utils import should_display_string_label, get_string_for_display
 
 class QInstruction(QGraphObject):
 
-    ADDR_SPACING = 20
-    MNEMONIC_SPACING = 10
-    OPERAND_SPACING = 2
-    STRING_SPACING = 5
+    GRAPH_ADDR_SPACING = 20
+    GRAPH_MNEMONIC_SPACING = 10
+    GRAPH_OPERAND_SPACING = 2
+    GRAPH_STRING_SPACING = 5
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config):
+    LINEAR_INSTRUCTION_OFFSET = 120
+
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, mode='graph'):
         super(QInstruction, self).__init__()
 
         # initialization
@@ -27,6 +29,7 @@ class QInstruction(QGraphObject):
         self.insn = insn
         self.out_branch = out_branch
         self._config = config
+        self.mode = mode
 
         self.selected = False
 
@@ -51,47 +54,10 @@ class QInstruction(QGraphObject):
         :return:
         """
 
-        # selection background
-        if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height)
-
-        x = self.x
-
-        # address
-        if self.disasm_view.show_address:
-            painter.setPen(Qt.black)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
-
-            x += self._addr_width + self.ADDR_SPACING
-
-        # mnemonic
-        painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
-
-        x += self._mnemonic_width + self.MNEMONIC_SPACING
-
-        # operands
-        for i, op in enumerate(self._operands):
-            op.x = x
-            op.y = self.y
-            op.paint(painter)
-
-            x += op.width
-
-            if i != len(self._operands) - 1:
-                # draw the comma
-                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
-                x += self._config.disasm_font_width * 1
-
-            x += self.OPERAND_SPACING
-
-        # string
-        if self._string is not None:
-            x += self.STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+        if self.mode == "linear":
+            self._paint_linear(painter)
+        else:
+            self._paint_graph(painter)
 
     def refresh(self):
         super(QInstruction, self).refresh()
@@ -194,10 +160,101 @@ class QInstruction(QGraphObject):
         self._width = 0
 
         if self.disasm_view.show_address:
-            self._width += self._addr_width + self.ADDR_SPACING
+            self._width += self._addr_width + self.GRAPH_ADDR_SPACING
 
-        self._width += self._mnemonic_width + self.MNEMONIC_SPACING + \
+        self._width += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING + \
                        sum([ op.width for op in self._operands ]) + \
-                       (len(self._operands) - 1) * (self._config.disasm_font_width + self.OPERAND_SPACING)
+                       (len(self._operands) - 1) * (self._config.disasm_font_width + self.GRAPH_OPERAND_SPACING)
         if self._string is not None:
-            self._width += self.STRING_SPACING + self._string_width
+            self._width += self.GRAPH_STRING_SPACING + self._string_width
+
+    def _paint_graph(self, painter):
+
+        # selection background
+        if self.selected:
+            painter.setPen(QColor(0xef, 0xbf, 0xba))
+            painter.setBrush(QColor(0xef, 0xbf, 0xba))
+            painter.drawRect(self.x, self.y, self.width, self.height)
+
+        x = self.x
+
+        # address
+        if self.disasm_view.show_address:
+            painter.setPen(Qt.black)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
+
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
+
+        # mnemonic
+        painter.setPen(QColor(0, 0, 0x80))
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
+
+        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING
+
+        # operands
+        for i, op in enumerate(self._operands):
+            op.x = x
+            op.y = self.y
+            op.paint(painter)
+
+            x += op.width
+
+            if i != len(self._operands) - 1:
+                # draw the comma
+                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
+                x += self._config.disasm_font_width * 1
+
+            x += self.GRAPH_OPERAND_SPACING
+
+        # string
+        if self._string is not None:
+            x += self.GRAPH_STRING_SPACING
+            painter.setPen(Qt.gray)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+
+    def _paint_linear(self, painter):
+
+        # selection background
+        if self.selected:
+            painter.setPen(QColor(0xef, 0xbf, 0xba))
+            painter.setBrush(QColor(0xef, 0xbf, 0xba))
+            painter.drawRect(self.x, self.y, self.width, self.height)
+
+        x = self.x
+
+        # address
+        painter.setPen(Qt.black)
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
+
+        x += self._addr_width + self.LINEAR_INSTRUCTION_OFFSET
+
+        # TODO: splitter
+        #painter.setPen(Qt.black)
+        #painter.drawLine()
+
+        # mnemonic
+        painter.setPen(QColor(0, 0, 0x80))
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
+
+        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING
+
+        # operands
+        for i, op in enumerate(self._operands):
+            op.x = x
+            op.y = self.y
+            op.paint(painter)
+
+            x += op.width
+
+            if i != len(self._operands) - 1:
+                # draw the comma
+                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
+                x += self._config.disasm_font_width * 1
+
+            x += self.GRAPH_OPERAND_SPACING
+
+        # string
+        if self._string is not None:
+            x += self.GRAPH_STRING_SPACING
+            painter.setPen(Qt.gray)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)

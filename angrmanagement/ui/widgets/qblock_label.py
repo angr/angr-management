@@ -6,11 +6,15 @@ from .qgraph_object import QGraphObject
 
 
 class QBlockLabel(QGraphObject):
-    def __init__(self, addr, text, config):
+
+    LINEAR_LABEL_OFFSET = 60
+
+    def __init__(self, addr, text, config, mode='graph'):
         super(QBlockLabel, self).__init__()
 
         self.addr = addr
         self.text = text
+        self.mode = mode
 
         self._config = config
 
@@ -44,6 +48,24 @@ class QBlockLabel(QGraphObject):
         :param QPainter painter:
         :return:
         """
+
+        if self.mode == "linear":
+            self._paint_linear(painter)
+        else:
+            self._paint_graph(painter)
+
+    def _paint_linear(self, painter):
+
+        # Address
+
+        painter.setPen(Qt.black)
+        painter.drawText(self.x, self.y + self._config.disasm_font_ascent, "%08x" % self.addr)
+
+        # Label
+        painter.setPen(Qt.blue)
+        painter.drawText(self.x + self.LINEAR_LABEL_OFFSET, self.y + self._config.disasm_font_ascent, self.text)
+
+    def _paint_graph(self, painter):
         painter.setPen(Qt.blue)
         painter.drawText(self.x, self.y + self._config.disasm_font_ascent, self.text)
 

@@ -29,47 +29,6 @@ def timeit(f):
     return decorator
 
 
-class OperandHighlightMode(object):
-    SAME_IDENT = 0
-    SAME_TEXT = 1
-
-
-class InfoDock(object):
-    def __init__(self):
-        self.induction_variable_analysis = None
-        self.variable_manager = None
-
-        self.highlight_mode = OperandHighlightMode.SAME_IDENT  # default highlight mode
-        self.selected_operand = None
-
-    @property
-    def smart_highlighting(self):
-        return self.highlight_mode == OperandHighlightMode.SAME_IDENT
-
-    @smart_highlighting.setter
-    def smart_highlighting(self, v):
-        if v:
-            self.highlight_mode = OperandHighlightMode.SAME_IDENT
-        else:
-            self.highlight_mode = OperandHighlightMode.SAME_TEXT
-
-    def initialize(self):
-        self.selected_operand = None
-
-    def should_highlight_operand(self, operand):
-        if self.selected_operand is None:
-            return False
-
-        if self.highlight_mode == OperandHighlightMode.SAME_TEXT or self.selected_operand.variable is None:
-            # when there is no related variable, we highlight as long as they have the same text
-            return operand.text == self.selected_operand.text
-        elif self.highlight_mode == OperandHighlightMode.SAME_IDENT:
-            if self.selected_operand.variable is not None and operand.variable is not None:
-                return self.selected_operand.variable.ident == operand.variable.ident
-
-        return False
-
-
 class QDisasmGraph(QBaseGraph):
 
     XSPACE = 40
@@ -83,20 +42,17 @@ class QDisasmGraph(QBaseGraph):
         self.disassembly_view = parent
         self.disasm = None
         self.variable_manager = None
-        self._variable_recovery_flavor = 'fast'
 
         self._function_graph = None
 
         self._edges = None
 
         self.key_pressed.connect(self._on_keypressed_event)
-        #self.key_released.connect(self._on_keyreleased_event)
+        self.key_released.connect(self._on_keyreleased_event)
 
         self.selected_insns = set()
         self.selected_operands = set()
         self._insn_addr_to_block = { }
-
-        self._infodock = InfoDock()
 
     #
     # Properties
@@ -116,28 +72,15 @@ class QDisasmGraph(QBaseGraph):
 
     @property
     def infodock(self):
-        return self._infodock
-
-    @property
-    def variable_recovery_flavor(self):
-        return self._variable_recovery_flavor
-
-    @variable_recovery_flavor.setter
-    def variable_recovery_flavor(self, v):
-        if v in ('fast', 'accurate'):
-            if v != self._variable_recovery_flavor:
-                self._variable_recovery_flavor = v
-
-                # TODO: it's enough to call refresh() here if VariableManager is unique in the project
-                self.reload()
+        return self.disassembly_view.infodock
 
     @property
     def induction_variable_analysis(self):
-        return self._infodock.induction_variable_analysis
+        return self.infodock.induction_variable_analysis
 
     @induction_variable_analysis.setter
     def induction_variable_analysis(self, v):
-        self._infodock.induction_variable_analysis = v
+        self.infodock.induction_variable_analysis = v
 
     #
     # Public methods
@@ -148,14 +91,6 @@ class QDisasmGraph(QBaseGraph):
             for b in self.blocks.copy():
                 self.remove_block(b)
 
-        # variable recovery
-        if self._variable_recovery_flavor == 'fast':
-            vr = self.workspace.instance.project.analyses.VariableRecoveryFast(self._function_graph.function)
-        else:
-            vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
-        self.variable_manager = vr.variable_manager
-        self._infodock.initialize()
-        self._infodock.variable_manager = vr.variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
         self._insn_addr_to_block = { }
@@ -163,7 +98,7 @@ class QDisasmGraph(QBaseGraph):
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes():
             block = QBlock(self.workspace, self._function_graph.function.addr, self.disassembly_view, self.disasm,
-                           self._infodock, n.addr, n.cfg_nodes, get_out_branches(n)
+                           self.infodock, n.addr, n.cfg_nodes, get_out_branches(n)
                            )
             self.add_block(block)
 
@@ -416,10 +351,24 @@ class QDisasmGraph(QBaseGraph):
         elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
             # jump forward
             self.disassembly_view.jump_forward()
+            return True
 
         elif key == Qt.Key_A:
             # switch between highlight mode
             self.disassembly_view.toggle_smart_highlighting(not self.infodock.smart_highlighting)
+            return True
+
+        return False
+
+    def _on_keyreleased_event(self, key_event):
+
+        key = key_event.key()
+
+        if key == Qt.Key_Space:
+            # switch to linear view
+            self.disassembly_view.display_linear_viewer()
+
+            return True
 
         return False
 
@@ -488,8 +437,6 @@ class QDisasmGraph(QBaseGraph):
         max_y += self.TOP_PADDING
         width = (max_x - min_x) + 2 * self.LEFT_PADDING
         height = (max_y - min_y) + 2 * self.TOP_PADDING
-
-        self._update_size()
 
         # scrollbars
         self.horizontalScrollBar().setRange(min_x, max_x)

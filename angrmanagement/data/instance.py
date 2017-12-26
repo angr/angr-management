@@ -107,6 +107,7 @@ class Instance(object):
         self._start_worker()
 
         self._cfg = None
+        self._cfb = None
 
     #
     # Properties
@@ -123,6 +124,14 @@ class Instance(object):
         # notify the workspace
         if self.workspace is not None:
             self.workspace.reload()
+
+    @property
+    def cfb(self):
+        return self._cfb
+
+    @cfb.setter
+    def cfb(self, v):
+        self._cfb = v
 
     #
     # Public methods
