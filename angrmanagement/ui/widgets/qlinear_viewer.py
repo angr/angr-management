@@ -6,12 +6,12 @@ from PySide.QtCore import Qt
 from bintrees import AVLTree
 
 from angr.block import Block
-from angr.analyses.cfg.cfb import Unmapped
+from angr.analyses.cfg.cfb import Unknown
 
 from ...config import Conf
 from .qgraph import QBaseGraph
 from .qblock import QBlock
-from .qunmapped_block import QUnmappedBlock
+from .qunknown_block import QUnknownBlock
 
 _l = logging.getLogger('ui.widgets.qlinear_viewer')
 
@@ -234,8 +234,8 @@ class QLinearViewer(QWidget):
                                  self.disasm_view._flow_graph.infodock, obj.addr, [ obj ], { }, mode='linear',
                                  )
 
-            elif isinstance(obj, Unmapped):
-                qobject = QUnmappedBlock(self.workspace, obj_addr)
+            elif isinstance(obj, Unknown):
+                qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
 
             else:
                 continue
