@@ -1,8 +1,6 @@
 from angr/angr
 maintainer yans@yancomm.net
 
-run apt-get install -y graphviz
-
 user angr
 run /home/angr/.virtualenvs/angr/bin/pip install pyside --install-option "--jobs=$(nproc)"
 run cd /home/angr/angr-dev && /home/angr/.virtualenvs/angr/bin/pip install -e angr-management/
