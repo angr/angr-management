@@ -49,9 +49,16 @@ class LoadBinary(QDialog):
         try:
             proj = angr.Project(self.file_path)
 
-            deps = [ i for i in list(proj.loader._satisfied_deps)
-                     if i not in { 'angr syscalls', 'angr externs', '##cle_tls##', self.filename }
-                     ]
+            deps = [ ]
+            processed_objects = set()
+            for ident, obj in proj.loader._satisfied_deps.items():
+                if ident in { 'angr syscalls', 'angr externs', '##cle_tls##' } or \
+                        obj is proj.loader.main_object:
+                    continue
+                if obj in processed_objects:
+                    continue
+                deps.append(ident)
+                processed_objects.add(obj)
 
             dep_list = self.option_widgets['dep_list']  # type: QListWidget
             for dep in deps:
