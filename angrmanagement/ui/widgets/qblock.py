@@ -2,7 +2,7 @@
 from PySide.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen
 from PySide.QtCore import QPointF, Qt
 
-from angr.analyses.disassembly import Instruction
+from angr.analyses.disassembly import Instruction, SootStatement
 
 from ...utils import (
     get_label_text, get_block_objects, address_to_text, get_out_branches_for_insn,
@@ -11,6 +11,7 @@ from ...utils import (
 from ...utils.block_objects import Variables, Label
 from ...config import Conf
 from .qinstruction import QInstruction
+from .qsoot_statement import QSootStatement
 from .qblock_label import QBlockLabel
 from .qvariable import QVariable
 from .qgraph_object import QGraphObject
@@ -166,12 +167,20 @@ class QBlock(QGraphObject):
 
         for obj in block_objects:
             if isinstance(obj, Instruction):
+                # Instruction
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
                 insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
                                     self.infodock, obj, out_branch, self._config
                                     )
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
+            elif isinstance(obj, SootStatement):
+                # Soot statement
+                stmt = QSootStatement(self.workspace, self.func_addr, self.disasm_view, self.disasm,
+                                      self.infodock, obj, self._config
+                                      )
+                self.objects.append(stmt)
+                self.addr_to_insns[obj.addr] = stmt
             elif isinstance(obj, Label):
                 # label
                 label = QBlockLabel(obj.addr, obj.text, self._config)

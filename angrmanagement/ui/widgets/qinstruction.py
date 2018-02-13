@@ -176,10 +176,10 @@ class QInstruction(QGraphObject):
             is_indirect_branch = self.insn.branch_type == 'indirect'
             branch_targets = (self.out_branch.targets if self.out_branch is not None else None) \
                 if is_branch_target else None
-            operand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
+            qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
                                self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets, self._config
                                )
-            self._operands.append(operand)
+            self._operands.append(qoperand)
 
         if should_display_string_label(self.workspace.instance.cfg, self.insn.addr):
             # yes we should display a string label

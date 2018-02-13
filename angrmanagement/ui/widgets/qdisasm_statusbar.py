@@ -3,6 +3,8 @@ import os
 
 from PySide.QtGui import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog
 
+from angr.misc import repr_addr
+
 from ..menus.disasm_options_menu import DisasmOptionsMenu
 
 
@@ -79,7 +81,7 @@ class QDisasmStatusBar(QFrame):
 
     def _update_function_address(self):
         if self.function_address is not None:
-            self._function_label.setText("Function %x" % self.function_address)
+            self._function_label.setText("Function %s" % repr_addr(self.function_address, x=False))
 
     def _on_saveimage_btn_clicked(self):
 

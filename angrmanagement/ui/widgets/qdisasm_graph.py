@@ -149,13 +149,17 @@ class QDisasmGraph(QBaseGraph):
                 self.remove_block(b)
 
         # variable recovery
-        if self._variable_recovery_flavor == 'fast':
+        if self.workspace.instance.project.arch.name == "Soot":
+            variable_manager = None
+        elif self._variable_recovery_flavor == 'fast':
             vr = self.workspace.instance.project.analyses.VariableRecoveryFast(self._function_graph.function)
+            variable_manager = vr.variable_manager
         else:
             vr = self.workspace.instance.project.analyses.VariableRecovery(self._function_graph.function)
-        self.variable_manager = vr.variable_manager
+            variable_manager = vr.variable_manager
+        self.variable_manager = variable_manager
         self._infodock.initialize()
-        self._infodock.variable_manager = vr.variable_manager
+        self._infodock.variable_manager = variable_manager
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
         self._insn_addr_to_block = { }

@@ -5,12 +5,28 @@ from collections import defaultdict
 import networkx
 
 from angr.knowledge_plugins import Function
+from angr.block import SootBlockNode
 
 
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     args = [iter(iterable)] * n
     return itertools.izip_longest(*args, fillvalue=fillvalue)
+
+
+def is_adjacent_block(first_block, second_block_addr):
+    """
+    Test if the second block is immediately after the first block.
+
+    :param first_block:
+    :param second_block_addr:
+    :return:
+    """
+
+    if type(first_block) is SootBlockNode:
+        return first_block.addr.stmt_idx + first_block.size == second_block_addr.stmt_idx
+    else:
+        return first_block.addr + first_block.size == second_block_addr
 
 
 def to_supergraph(transition_graph):
@@ -44,9 +60,7 @@ def to_supergraph(transition_graph):
         # - boring jumps that directly transfer the control to the block immediately after the current block. this is
         #   usually caused by how VEX breaks down basic blocks, which happens very often in MIPS
 
-
-
-        if len(edges) == 1 and src.addr + src.size == next(edges.iterkeys()).addr:
+        if len(edges) == 1 and is_adjacent_block(src, next(edges.iterkeys()).addr):
             dst = next(edges.iterkeys())
             dst_in_edges = transition_graph.in_edges(dst)
             if len(dst_in_edges) == 1:

@@ -4,6 +4,8 @@ import os
 from PySide.QtGui import QTableView, QBrush, QColor, QAbstractItemView, QHeaderView, QTableWidgetItem
 from PySide.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL
 
+from angr.misc import repr_addr
+
 
 class QFunctionTableModel(QAbstractTableModel):
 
@@ -66,7 +68,7 @@ class QFunctionTableModel(QAbstractTableModel):
                 self.NAME_COL:
                     lambda f: f.name,
                 self.ADDRESS_COL:
-                    lambda f: "%x" % f.addr,
+                    lambda f: repr_addr(f.addr, x=False),
                 self.BINARY_COL:
                     lambda f: self._get_binary_name(f),
                 self.SIZE_COL:

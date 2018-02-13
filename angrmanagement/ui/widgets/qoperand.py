@@ -388,7 +388,6 @@ class QOperand(QGraphObject):
 
             return None, None
 
-
     def _variable_has_access(self, variable, ins_addr, access_type):
 
         if variable not in self.variable_manager[self.func_addr]._variable_accesses:

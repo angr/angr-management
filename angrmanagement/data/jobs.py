@@ -58,9 +58,15 @@ class CFGGenerationJob(Job):
         self.cfg_args = cfg_args
 
     def run(self, inst):
-        return inst.project.analyses.CFG(progress_callback=self._progress_callback,
-                                         **self.cfg_args
-                                         )
+        if inst.project.arch.name == "Soot":
+            return inst.project.analyses.CFGFastSoot(
+                progress_callback=self._progress_callback,
+                **self.cfg_args
+            )
+        else:
+            return inst.project.analyses.CFG(progress_callback=self._progress_callback,
+                                             **self.cfg_args
+                                             )
 
     def finish(self, inst, result):
         inst.cfg = result
