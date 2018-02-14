@@ -5,6 +5,15 @@ from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemVi
 from PySide.QtCore import Qt, QSize
 
 
+class QFunctionTableAddressItem(QTableWidgetItem):
+    def __init__(self, address):
+        super(QFunctionTableAddressItem, self).__init__("%x" % address)
+        self.address = address
+
+    def __lt__(self, other):
+        return self.address < other.address
+
+
 class QFunctionTableItem(object):
     def __init__(self, function):
         self._function = function
@@ -31,7 +40,7 @@ class QFunctionTableItem(object):
 
         widgets = [
             QTableWidgetItem(name),
-            QTableWidgetItem("%x" % address),
+            QFunctionTableAddressItem(address),
             QTableWidgetItem(binary_name),
             QTableWidgetItem("%d" % size),
             QTableWidgetItem("%d" % blocks),
@@ -67,13 +76,20 @@ class QFunctionTable(QTableWidget):
         self.setHorizontalScrollMode(self.ScrollPerPixel)
         self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
 
+        # sorting
+        self.horizontalHeader().setSortIndicatorShown(True)
+        self._last_sorting_column = None
+        self._last_sorting_order = None
+
         self.verticalHeader().setResizeMode(QHeaderView.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._functions = None
         self.items = [ ]
 
+        # slots
         self.cellDoubleClicked.connect(self._on_function_selected)
+        self.horizontalHeader().sectionClicked.connect(self._on_horizontal_header_clicked)
 
     @property
     def function_manager(self):
@@ -118,3 +134,28 @@ class QFunctionTable(QTableWidget):
 
         if self._selected is not None:
             self._selected(selected_item._function)
+
+    def _on_horizontal_header_clicked(self, column_number):
+        if column_number != self._last_sorting_column:
+            self._last_sorting_column = column_number
+            self._last_sorting_order = 0
+
+            self.setSortingEnabled(True)
+            self.sortByColumn(column_number, Qt.SortOrder(0))
+
+        else:
+            if self._last_sorting_order == 0:
+                self._last_sorting_order = 1
+            elif self._last_sorting_order == 1:
+                self._last_sorting_order = None
+            elif self._last_sorting_order is None:
+                self._last_sorting_order = 0
+
+            if self._last_sorting_order is None:
+                # roll back to the default sorting mechanism: Sorting by address
+                self.sortByColumn(1, Qt.SortOrder(0))
+                # disable sorting
+                self.setSortingEnabled(False)
+            else:
+                self.setSortingEnabled(True)
+                self.sortByColumn(column_number, Qt.SortOrder(self._last_sorting_order))
