@@ -5,7 +5,8 @@ from PySide.QtCore import Qt
 from .qgraph_object import QGraphObject
 from .qsoot_expression import QSootExpression
 
-from angr.analyses.disassembly import SootExpression
+from angr.analyses.disassembly import SootExpression, SootExpressionTarget, SootExpressionInvoke, \
+    SootExpressionStaticFieldRef
 
 
 class QSootStatement(QGraphObject):
@@ -106,8 +107,21 @@ class QSootStatement(QGraphObject):
 
         for i, component in enumerate(self.stmt.components):
             if isinstance(component, SootExpression):
+
+                branch_type = None
+                if isinstance(component, SootExpressionTarget):
+                    # Local target
+                    branch_type = 'local'
+                elif isinstance(component, SootExpressionInvoke):
+                    # Invoke a function
+                    branch_type = 'function'
+
+                field_ref = False
+                if isinstance(component, SootExpressionStaticFieldRef):
+                    field_ref = True
+
                 expr = QSootExpression(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
-                                       self.stmt, component, expr_id, self._config
+                                       self.stmt, component, expr_id, branch_type, field_ref, self._config
                                        )
                 expr_id += 1
                 self._components.append(expr)

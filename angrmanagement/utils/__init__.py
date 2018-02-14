@@ -2,6 +2,7 @@
 import itertools
 
 from angr.misc import repr_addr
+from archinfo.arch_soot import SootAddressDescriptor
 
 from .block_objects import Variables, Label
 
@@ -46,6 +47,8 @@ def get_label_text(addr, kb, function=None):
             s.append('[PLT]')
         return "\n".join(s)
     else:
+        if isinstance(addr, SootAddressDescriptor):
+            return "// Block %d, statement %d" % (addr.block_idx, addr.stmt_idx)
         return "loc_%s:" % repr_addr(addr)
 
 
