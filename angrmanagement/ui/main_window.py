@@ -1,11 +1,13 @@
 
 import sys
 import os
+import logging
 
 from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QResizeEvent, QIcon
 from PySide.QtCore import Qt, QSize, QEvent, QTimer
 
 import angr
+from angr.errors import AngrAnalysisError
 
 from ..logic import GlobalInfo
 from ..data.instance import Instance
@@ -15,6 +17,9 @@ from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
+
+
+_l = logging.getLogger('main_window')
 
 
 class MainWindow(QMainWindow):
@@ -219,6 +224,38 @@ class MainWindow(QMainWindow):
 
     def run_induction_variable_analysis(self):
         self.workspace.views_by_category['disassembly'][0].run_induction_variable_analysis()
+
+    def run_loop_analysis(self):
+
+        # TODO: Move the logic elsewhere
+
+        if self.workspace.instance._cfg is None:
+            return
+
+        proj = self.workspace.instance.project
+
+        loop_and_funcaddrs = [ ]
+
+        for func in self.workspace.instance._cfg.kb.functions.values():
+            if list(func.blocks):
+                # It has blocks. Run loop analysis on it
+                loop_finder = proj.analyses.LoopFinder(functions=[func])
+
+                if loop_finder.loops:
+                    # Run def-use analysis
+                    defuse = proj.analyses.DefUseAnalysis(func)
+
+                    for loop in loop_finder.loops:
+                        try:
+                            loop_analysis = proj.analyses.LoopAnalysis(loop, defuse)
+                        except AngrAnalysisError:
+                            # Skip this loop
+                            _l.error("LoopAnalysis failed on Loop %s. Resume the analysis.", loop, exc_info=True)
+                            continue
+
+                        loop_and_funcaddrs.append((loop_analysis, func.addr))
+
+        self.workspace.instance.loops = loop_and_funcaddrs
 
     #
     # Other public methods

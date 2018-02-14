@@ -4,7 +4,7 @@ from collections import defaultdict
 from PySide.QtGui import QFont, QFontMetricsF
 from PySide.QtCore import Qt
 
-from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
+from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, ConstructsView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from ..config import Conf
 
@@ -29,6 +29,7 @@ class Workspace(object):
             SymexecView(self, 'right'),
             StatesView(self, 'right'),
             StringsView(self, 'right'),
+            ConstructsView(self, 'right'),
             ConsoleView(self, 'bottom'),
         ]
 

@@ -13,4 +13,7 @@ class AnalysisToolbar(Toolbar):
             ToolbarAction(None, "Induction Variables", "Execute the InductionVariable analysis.",
                           main_window.run_induction_variable_analysis,
                           ),
+            ToolbarAction(None, "Find Loops", "Execute the full program loop discovery and analysis.",
+                          main_window.run_loop_analysis,
+                          ),
         ]

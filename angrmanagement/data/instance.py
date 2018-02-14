@@ -108,6 +108,8 @@ class Instance(object):
 
         self._cfg = None
 
+        self._loops = None
+
     #
     # Properties
     #
@@ -123,6 +125,18 @@ class Instance(object):
         # notify the workspace
         if self.workspace is not None:
             self.workspace.reload()
+
+    @property
+    def loops(self):
+        return self._loops
+
+    @loops.setter
+    def loops(self, v):
+        self._loops = v
+
+        # notify the workspace
+        if self.workspace is not None:
+            self.workspace.views_by_category['constructs'][0].reload()
 
     #
     # Public methods
