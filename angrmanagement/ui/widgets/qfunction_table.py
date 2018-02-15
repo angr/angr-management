@@ -1,95 +1,148 @@
 
 import os
 
-from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemView, QHeaderView
-from PySide.QtCore import Qt, QSize
+from PySide.QtGui import QTableView, QBrush, QColor, QAbstractItemView, QHeaderView, QTableWidgetItem
+from PySide.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL
 
 
-class QFunctionTableAddressItem(QTableWidgetItem):
-    def __init__(self, address):
-        super(QFunctionTableAddressItem, self).__init__("%x" % address)
-        self.address = address
+class QFunctionTableModel(QAbstractTableModel):
 
-    def __lt__(self, other):
-        return self.address < other.address
+    Headers = ['Name', 'Address', 'Binary', 'Size', 'Blocks']
+    NAME_COL = 0
+    ADDRESS_COL = 1
+    BINARY_COL = 2
+    SIZE_COL = 3
+    BLOCKS_COL = 4
+
+    def __init__(self, func_list=None):
+
+        super(QFunctionTableModel, self).__init__()
+
+        self._func_list = func_list
+
+    def __len__(self):
+        if self._func_list is None:
+            return 0
+        return len(self._func_list)
+
+    @property
+    def func_list(self):
+        return self._func_list
+
+    @func_list.setter
+    def func_list(self, v):
+        self._func_list = v
+        self.emit(SIGNAL("layoutChanged()"))
+
+    def rowCount(self, *args, **kwargs):
+        if self.func_list is None:
+            return 0
+        return len(self.func_list)
+
+    def columnCount(self, *args, **kwargs):
+        return len(self.Headers)
+
+    def headerData(self, section, orientation, role):
+
+        if role != Qt.DisplayRole:
+            return None
+
+        return self.Headers[section]
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+
+        row = index.row()
+        if row >= len(self):
+            return None
+
+        col = index.column()
+        func = self.func_list[row]
+
+        if role == Qt.DisplayRole:
+
+            mapping = {
+                self.NAME_COL:
+                    lambda f: f.name,
+                self.ADDRESS_COL:
+                    lambda f: "%x" % f.addr,
+                self.BINARY_COL:
+                    lambda f: self._get_binary_name(f),
+                self.SIZE_COL:
+                    lambda f: "%d" % f.size,
+                self.BLOCKS_COL:
+                    lambda f: "%d" % len(f.block_addrs_set),
+            }
+
+            return mapping[col](func)
+
+        elif role == Qt.ForegroundRole:
+            # calculate the foreground color
+
+            color = QColor(0, 0, 0)
+            if func.is_syscall:
+                color = QColor(0, 0, 0x80)
+            elif func.is_plt:
+                color = QColor(0, 0x80, 0)
+            elif func.is_simprocedure:
+                color = QColor(0x80, 0, 0)
+
+            #for w in widgets:
+            #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
+            #    w.setForeground(color)
+
+            return QBrush(color)
+
+    def sort(self, column, order):
+        mapping = {
+            self.NAME_COL:
+                lambda: sorted(self.func_list, key=lambda f: f.name, reverse=order==Qt.DescendingOrder),
+            self.ADDRESS_COL:
+                lambda: sorted(self.func_list, key=lambda f: f.addr, reverse=order==Qt.DescendingOrder),
+            self.BINARY_COL:
+                lambda: sorted(self.func_list, key=lambda f: self._get_binary_name(f), reverse=order==Qt.DescendingOrder),
+            self.SIZE_COL:
+                lambda: sorted(self.func_list, key=lambda f: f.size, reverse=order==Qt.DescendingOrder),
+            self.BLOCKS_COL:
+                lambda: sorted(self.func_list, key=lambda f: len(f.block_addrs_set), reverse=order==Qt.DescendingOrder),
+        }
+
+        self.func_list = mapping[column]()
+
+    #
+    # Private methods
+    #
+
+    def _get_binary_name(self, func):
+        return os.path.basename(func.binary.binary) if func.binary is not None else ""
 
 
-class QFunctionTableItem(object):
-    def __init__(self, function):
-        self._function = function
-
-    def widgets(self):
-        """
-
-        :param angr.knowledge_plugins.Function function: The Function object.
-        :return: a list of QTableWidgetItem objects
-        :rtype: list
-        """
-
-        function = self._function
-
-        name = function.name
-        address = function.addr
-        binary = function.binary
-        if binary is not None:
-            binary_name = os.path.basename(binary.binary)
-        else:
-            binary_name = ""
-        blocks = len(list(function.blocks))
-        size = function.size
-
-        widgets = [
-            QTableWidgetItem(name),
-            QFunctionTableAddressItem(address),
-            QTableWidgetItem(binary_name),
-            QTableWidgetItem("%d" % size),
-            QTableWidgetItem("%d" % blocks),
-        ]
-
-        color = QColor(0, 0, 0)
-        if function.is_syscall:
-            color = QColor(0, 0, 0x80)
-        elif function.is_plt:
-            color = QColor(0, 0x80, 0)
-        elif function.is_simprocedure:
-            color = QColor(0x80, 0, 0)
-
-        for w in widgets:
-            w.setFlags(w.flags() & ~Qt.ItemIsEditable)
-            w.setForeground(color)
-
-        return widgets
-
-
-class QFunctionTable(QTableWidget):
+class QFunctionTable(QTableView):
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
 
         self._selected = selection_callback
 
-        header = [ 'Name', 'Address', 'Binary', 'Size', 'Blocks' ]
-
-        self.setColumnCount(len(header))
-        self.setHorizontalHeaderLabels(header)
+        self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setHorizontalScrollMode(self.ScrollPerPixel)
         self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
 
         # sorting
-        self.horizontalHeader().setSortIndicatorShown(True)
-        self._last_sorting_column = None
-        self._last_sorting_order = None
+        # self.horizontalHeader().setSortIndicatorShown(True)
 
         self.verticalHeader().setResizeMode(QHeaderView.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._functions = None
-        self.items = [ ]
+        self._model = QFunctionTableModel()
+        self.setModel(self._model)
 
         # slots
-        self.cellDoubleClicked.connect(self._on_function_selected)
-        self.horizontalHeader().sectionClicked.connect(self._on_horizontal_header_clicked)
+        self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
+        self.doubleClicked.connect(self._on_function_selected)
 
     @property
     def function_manager(self):
@@ -98,64 +151,16 @@ class QFunctionTable(QTableWidget):
     @function_manager.setter
     def function_manager(self, functions):
         self._functions = functions
-        self.reload()
-        self.hide()
+        self._model.func_list = list(self._functions.values())
+
         self.resizeColumnsToContents()
-        self.show()
 
-    def reload(self):
-
-        current_row = self.currentRow()
-
-        self.clearContents()
-
-        if self._functions is None:
-            return
-
-        self.items = [QFunctionTableItem(f) for f in self._functions.values()]
-
-        items_count = len(self.items)
-        self.setRowCount(items_count)
-
-        for idx, item in enumerate(self.items):
-            for i, it in enumerate(item.widgets()):
-                self.setItem(idx, i, it)
-
-        if 0 <= current_row < len(self.items):
-            self.setCurrentIndex(current_row)
-
-    def _on_function_selected(self, *args):
-        selected_index = self.currentRow()
-        if 0 <= selected_index < len(self.items):
-            selected_item = self.items[selected_index]
+    def _on_function_selected(self, model_index):
+        row = model_index.row()
+        if 0 <= row < len(self._model):
+            selected_func = self._model.func_list[row]
         else:
-            selected_item = None
-            selected_index = -1
+            selected_func = None
 
         if self._selected is not None:
-            self._selected(selected_item._function)
-
-    def _on_horizontal_header_clicked(self, column_number):
-        if column_number != self._last_sorting_column:
-            self._last_sorting_column = column_number
-            self._last_sorting_order = 0
-
-            self.setSortingEnabled(True)
-            self.sortByColumn(column_number, Qt.SortOrder(0))
-
-        else:
-            if self._last_sorting_order == 0:
-                self._last_sorting_order = 1
-            elif self._last_sorting_order == 1:
-                self._last_sorting_order = None
-            elif self._last_sorting_order is None:
-                self._last_sorting_order = 0
-
-            if self._last_sorting_order is None:
-                # roll back to the default sorting mechanism: Sorting by address
-                self.sortByColumn(1, Qt.SortOrder(0))
-                # disable sorting
-                self.setSortingEnabled(False)
-            else:
-                self.setSortingEnabled(True)
-                self.sortByColumn(column_number, Qt.SortOrder(self._last_sorting_order))
+            self._selected(selected_func)
