@@ -6,6 +6,7 @@ import networkx
 
 from angr.knowledge_plugins import Function
 from angr.block import SootBlockNode
+from angr.misc import repr_addr
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -196,7 +197,7 @@ class OutBranch(object):
         self.targets = set()
 
     def __repr__(self):
-        return "<OutBranch at %#x, type %s>" % (self.ins_addr, self.type)
+        return "<OutBranch at %s, type %s>" % (repr_addr(self.ins_addr), self.type)
 
     def add_target(self, addr):
         self.targets.add(addr)
@@ -300,7 +301,7 @@ class SuperCFGNode(object):
                 self.out_branches[ins_addr][item.stmt_idx] = item
 
     def __repr__(self):
-        return "<SuperCFGNode %#08x, %d blocks, %d out branches>" % (self.addr, len(self.cfg_nodes),
+        return "<SuperCFGNode %s, %d blocks, %d out branches>" % (repr_addr(self.addr), len(self.cfg_nodes),
                                                                      len(self.out_branches)
                                                                      )
 
