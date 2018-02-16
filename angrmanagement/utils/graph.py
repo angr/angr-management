@@ -208,6 +208,18 @@ class OutBranch(object):
         o.targets = self.targets.copy()
         return o
 
+    def __eq__(self, other):
+        if not isinstance(other, OutBranch):
+            return False
+
+        return self.ins_addr == other.ins_addr and \
+               self.stmt_idx == other.stmt_idx and \
+               self.type == other.type and \
+               self.targets == other.targets
+
+    def __hash__(self):
+        return hash((self.ins_addr, self.stmt_idx, self.type))
+
 
 class SuperCFGNode(object):
     def __init__(self, addr):
@@ -277,3 +289,12 @@ class SuperCFGNode(object):
         return "<SuperCFGNode %#08x, %d blocks, %d out branches>" % (self.addr, len(self.cfg_nodes),
                                                                      len(self.out_branches)
                                                                      )
+
+    def __hash__(self):
+        return hash(('supercfgnode', self.addr))
+
+    def __eq__(self, other):
+        if not isinstance(other, SuperCFGNode):
+            return False
+
+        return self.addr == other.addr
