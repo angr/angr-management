@@ -1,8 +1,9 @@
 
 import os
+import string
 
-from PySide.QtGui import QTableView, QBrush, QColor, QAbstractItemView, QHeaderView, QTableWidgetItem
-from PySide.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL
+from PySide.QtGui import QWidget, QTableView, QBrush, QColor, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
+from PySide.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -18,20 +19,35 @@ class QFunctionTableModel(QAbstractTableModel):
 
         super(QFunctionTableModel, self).__init__()
 
-        self._func_list = func_list
+        self._func_list = None
+        self._raw_func_list = func_list
 
     def __len__(self):
-        if self._func_list is None:
-            return 0
-        return len(self._func_list)
+        if self._func_list is not None:
+            return len(self._func_list)
+        if self._raw_func_list is not None:
+            return len(self._raw_func_list)
+        return 0
 
     @property
     def func_list(self):
-        return self._func_list
+        if self._func_list is not None:
+            return self._func_list
+        return self._raw_func_list
 
     @func_list.setter
     def func_list(self, v):
-        self._func_list = v
+        self._func_list = None
+        self._raw_func_list = v
+        self.emit(SIGNAL("layoutChanged()"))
+
+    def filter(self, keyword):
+        if not keyword:
+            # remove the filtering
+            self._func_list = None
+        else:
+            self._func_list = [ func for func in self._raw_func_list if self._func_match_keyword(func, keyword) ]
+
         self.emit(SIGNAL("layoutChanged()"))
 
     def rowCount(self, *args, **kwargs):
@@ -117,12 +133,34 @@ class QFunctionTableModel(QAbstractTableModel):
     def _get_binary_name(self, func):
         return os.path.basename(func.binary.binary) if func.binary is not None else ""
 
+    def _func_match_keyword(self, func, keyword):
+        """
+        Check whether the function matches against the given keyword or not.
 
-class QFunctionTable(QTableView):
+        :param func:        The function to match on.
+        :param str keyword: The keyword to match against.
+        :return:            True if the function matches the keyword, False otherwise.
+        :rtype:             bool
+        """
+
+        if keyword in func.name:
+            return True
+        if type(func.addr) in (int, long):
+            if keyword in "%x" % func.addr:
+                return True
+            if keyword in "%#x" % func.addr:
+                return True
+        if func.binary and keyword in func.binary.binary:
+            return True
+        return False
+
+
+class QFunctionTableView(QTableView):
     def __init__(self, parent, selection_callback=None):
-        super(QFunctionTable, self).__init__(parent)
+        super(QFunctionTableView, self).__init__(parent)
 
-        self._selected = selection_callback
+        self._selection_callback = selection_callback
+        self._function_table = parent  # type: QFunctionTable
 
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
@@ -155,6 +193,9 @@ class QFunctionTable(QTableView):
 
         self.resizeColumnsToContents()
 
+    def filter(self, keyword):
+        self._model.filter(keyword)
+
     def _on_function_selected(self, model_index):
         row = model_index.row()
         if 0 <= row < len(self._model):
@@ -162,5 +203,112 @@ class QFunctionTable(QTableView):
         else:
             selected_func = None
 
-        if self._selected is not None:
-            self._selected(selected_func)
+        if self._selection_callback is not None:
+            self._selection_callback(selected_func)
+
+    def keyPressEvent(self, key_event):
+
+        text = key_event.text()
+        if not text or text not in string.printable or text in string.whitespace:
+            # modifier keys
+            return super(QFunctionTableView, self).keyPressEvent(key_event)
+
+        # show the filtering text box
+        self._function_table.show_filter_box(prefix=text)
+        return True
+
+
+class QFunctionTableFilterBox(QLineEdit):
+    def __init__(self, parent):
+        super(QFunctionTableFilterBox, self).__init__()
+
+        self._table = parent
+
+        self.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_Escape:
+                if self.text():
+                    # clear the text
+                    self.setText("")
+                else:
+                    # close the filterbox and set the function table on focus
+                    self._table.hide_filter_box()
+                return True
+
+        return False
+
+
+class QFunctionTable(QWidget):
+    def __init__(self, parent, selection_callback=None):
+        super(QFunctionTable, self).__init__(parent)
+
+        self._selection_callback = selection_callback
+
+        self._view = None  # type: QFunctionTableView
+        self._filter_box = None  # type: QFunctionTableFilterBox
+
+        self._init_widgets()
+
+    @property
+    def function_manager(self):
+        if self._view is not None:
+            return self._view.function_manager
+        return None
+
+    @function_manager.setter
+    def function_manager(self, v):
+        if self._view is not None:
+            self._view.function_manager = v
+        else:
+            raise ValueError("QFunctionTableView is uninitialized.")
+
+    #
+    # Public methods
+    #
+
+    def show_filter_box(self, prefix=""):
+        if prefix:
+            self._filter_box.setText(prefix)
+        self._filter_box.show()
+        self._filter_box.setFocus()
+
+    def hide_filter_box(self):
+        self._filter_box.hide()
+        self._view.setFocus()
+
+    #
+    # Private methods
+    #
+
+    def _init_widgets(self):
+
+        # function table view
+        self._view = QFunctionTableView(self, selection_callback=self._selection_callback)
+
+        # filter text box
+        self._filter_box = QFunctionTableFilterBox(self)
+        self._filter_box.hide()
+        self._filter_box.textChanged.connect(self._on_filter_box_text_changed)
+        self._filter_box.returnPressed.connect(self._on_filter_box_return_pressed)
+
+        # layout
+        layout = QVBoxLayout()
+        layout.addWidget(self._filter_box)
+        layout.addWidget(self._view)
+
+        self.setLayout(layout)
+
+    #
+    # Events
+    #
+
+    def _on_filter_box_text_changed(self, text):
+        self._view.filter(text)
+
+    def _on_filter_box_return_pressed(self):
+        # Clear the filter
+        self._filter_box.setText("")
+        # Hide the filter box
+        self.hide_filter_box()
