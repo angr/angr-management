@@ -1,6 +1,6 @@
 websocket-client
 pygments
-angr>=7.7.12.16
+angr>=7.8.2.21
 ipython
 pyzmq
 PySide
