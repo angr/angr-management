@@ -223,10 +223,11 @@ class QInstruction(QGraphObject):
         x = self.x
 
         # address
-        painter.setPen(Qt.black)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
+        if self.disasm_view.show_address:
+            painter.setPen(Qt.black)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
 
-        x += self._addr_width + self.LINEAR_INSTRUCTION_OFFSET
+            x += self._addr_width + self.LINEAR_INSTRUCTION_OFFSET
 
         # TODO: splitter
         #painter.setPen(Qt.black)

@@ -7,9 +7,9 @@ from .qgraph_object import QGraphObject
 
 class QBlockLabel(QGraphObject):
 
-    LINEAR_LABEL_OFFSET = 60
+    LINEAR_LABEL_OFFSET = 10
 
-    def __init__(self, addr, text, config, mode='graph'):
+    def __init__(self, addr, text, config, disasm_view, mode='graph'):
         super(QBlockLabel, self).__init__()
 
         self.addr = addr
@@ -17,6 +17,7 @@ class QBlockLabel(QGraphObject):
         self.mode = mode
 
         self._config = config
+        self._disasm_view = disasm_view
 
     @property
     def label(self):
@@ -56,14 +57,21 @@ class QBlockLabel(QGraphObject):
 
     def _paint_linear(self, painter):
 
-        # Address
+        x = self.x
 
-        painter.setPen(Qt.black)
-        painter.drawText(self.x, self.y + self._config.disasm_font_ascent, "%08x" % self.addr)
+        if self._disasm_view.show_address:
+            # Address
+            addr_text = "%08x" % self.addr
+
+            painter.setPen(Qt.black)
+            painter.drawText(self.x, self.y + self._config.disasm_font_ascent, addr_text)
+
+            x += len(addr_text) * self._config.disasm_font_width
+            x += self.LINEAR_LABEL_OFFSET
 
         # Label
         painter.setPen(Qt.blue)
-        painter.drawText(self.x + self.LINEAR_LABEL_OFFSET, self.y + self._config.disasm_font_ascent, self.text)
+        painter.drawText(x, self.y + self._config.disasm_font_ascent, self.text)
 
     def _paint_graph(self, painter):
         painter.setPen(Qt.blue)

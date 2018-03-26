@@ -27,8 +27,8 @@ class QLinearGraphicsView(QBaseGraph):
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.horizontalScrollBar().setSingleStep(Conf.disasm_font_height)
-        self.verticalScrollBar().setSingleStep(1)
+        self.horizontalScrollBar().setSingleStep(Conf.disasm_font_width)
+        self.verticalScrollBar().setSingleStep(Conf.disasm_font_height)
 
     #
     # Events
@@ -56,6 +56,10 @@ class QLinearGraphicsView(QBaseGraph):
         """
 
         painter = QPainter(self.viewport())
+
+        # Set the disassembly font
+        painter.setFont(Conf.disasm_font)
+
         self._paint_objects(painter)
 
     #

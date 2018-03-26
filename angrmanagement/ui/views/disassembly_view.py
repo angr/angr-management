@@ -174,6 +174,7 @@ class DisassemblyView(BaseView):
         self.infodock.smart_highlighting = enabled
 
         self._flow_graph.refresh()
+        self._linear_viewer.refresh()
 
     def toggle_show_address(self, show_address):
         """
@@ -186,6 +187,7 @@ class DisassemblyView(BaseView):
         self._show_address = show_address
 
         self._flow_graph.refresh()
+        self._linear_viewer.refresh()
 
     def toggle_show_variable(self, show_variable):
         """

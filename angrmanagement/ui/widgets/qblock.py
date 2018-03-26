@@ -146,7 +146,7 @@ class QBlock(QGraphObject):
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
                 # label
-                label = QBlockLabel(obj.addr, obj.text, self._config, mode=self.mode)
+                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, mode=self.mode)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, Variables):
@@ -163,10 +163,11 @@ class QBlock(QGraphObject):
     def _update_size(self):
 
         # calculate height
-        self._height = self.TOP_PADDING + len(self.objects) * self._config.disasm_font_height + \
+        self._height = len(self.objects) * self._config.disasm_font_height + \
                       (len(self.objects) - 1) * self.SPACING
 
         if self.mode == "graph":
+            self._height += self.TOP_PADDING
             self._height += self.BOTTOM_PADDING
 
         # calculate width
@@ -200,7 +201,7 @@ class QBlock(QGraphObject):
 
         # content
 
-        y_offset = self.SPACING
+        y_offset = 0
 
         for obj in self.objects:
             y_offset += self.SPACING
