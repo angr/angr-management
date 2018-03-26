@@ -50,10 +50,6 @@ class QDisasmGraph(QBaseGraph):
         self.key_pressed.connect(self._on_keypressed_event)
         self.key_released.connect(self._on_keyreleased_event)
 
-        self.selected_insns = set()
-        self.selected_operands = set()
-        self._insn_addr_to_block = { }
-
     #
     # Properties
     #
@@ -93,7 +89,7 @@ class QDisasmGraph(QBaseGraph):
 
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
 
-        self._insn_addr_to_block = { }
+        self._clear_insn_addr_block_mapping()
 
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes():
@@ -103,7 +99,7 @@ class QDisasmGraph(QBaseGraph):
             self.add_block(block)
 
             for insn_addr in block.addr_to_insns.iterkeys():
-                self._insn_addr_to_block[insn_addr] = block
+                self._add_insn_addr_block_mapping(insn_addr, block)
 
         self.request_relayout()
 
@@ -149,94 +145,6 @@ class QDisasmGraph(QBaseGraph):
     def remove_block(self, block):
         if block in self.blocks:
             self.blocks.remove(block)
-
-    def update_label(self, label_addr, is_renaming=False):
-        """
-
-
-        :return:
-        """
-
-        # if it's just a renaming, we simply update the text of the label
-        if is_renaming:
-            if label_addr in self._insn_addr_to_block:
-                block = self._insn_addr_to_block[label_addr]
-                block.update_label(label_addr)
-
-            else:
-                # umm not sure what's going wrong
-                l.error('Label address %#x is not found in the current function.', label_addr)
-
-        else:
-            self.reload()
-
-    def select_instruction(self, insn_addr, unique=True):
-        block = self._insn_addr_to_block.get(insn_addr, None)
-        if block is None:
-            # the instruction does not belong to the current function
-            return
-
-        if insn_addr not in self.selected_insns:
-            if unique:
-                # unselect existing ones
-                self.unselect_all_instructions()
-                self.selected_insns = { insn_addr }
-            else:
-                self.selected_insns.add(insn_addr)
-
-            block.addr_to_insns[insn_addr].select()
-
-        self.viewport().update()
-
-    def unselect_instruction(self, insn_addr):
-        block = self._insn_addr_to_block.get(insn_addr, None)
-        if block is None:
-            return
-
-        if insn_addr in self.selected_insns:
-            self.selected_insns.remove(insn_addr)
-
-            block.addr_to_insns[insn_addr].unselect()
-
-        self.viewport().update()
-
-    def unselect_all_instructions(self):
-        for insn_addr in self.selected_insns.copy():
-            self.unselect_instruction(insn_addr)
-
-    def select_operand(self, insn_addr, operand_idx, unique=True):
-        block = self._insn_addr_to_block.get(insn_addr, None)
-        if block is None:
-            # the instruction does not belong to the current function
-            return
-
-        if (insn_addr, operand_idx) not in self.selected_operands:
-            if unique:
-                # unselect existing ones
-                self.unselect_all_operands()
-                self.selected_operands = { (insn_addr, operand_idx) }
-            else:
-                self.selected_operands.add((insn_addr, operand_idx))
-
-            block.addr_to_insns[insn_addr].select_operand(operand_idx)
-
-        self.viewport().update()
-
-    def unselect_operand(self, insn_addr, operand_idx):
-        block = self._insn_addr_to_block.get(insn_addr, None)
-        if block is None:
-            return
-
-        if (insn_addr, operand_idx) in self.selected_operands:
-            self.selected_operands.remove((insn_addr, operand_idx))
-
-            block.addr_to_insns[insn_addr].unselect_operand(operand_idx)
-
-        self.viewport().update()
-
-    def unselect_all_operands(self):
-        for insn_addr, operand_idx in self.selected_operands.copy():
-            self.unselect_operand(insn_addr, operand_idx)
 
     #
     # Event handlers
@@ -453,11 +361,6 @@ class QDisasmGraph(QBaseGraph):
                 self.show_selected()
             else:
                 self.show_instruction(self._function_graph.function.addr)
-
-    def show_selected(self):
-        if self.selected_insns:
-            addr = next(iter(self.selected_insns))
-            self.show_instruction(addr)
 
     def show_instruction(self, insn_addr):
         block = self._insn_addr_to_block.get(insn_addr, None)

@@ -43,6 +43,53 @@ class QLinearGraphicsView(QBaseGraph):
 
         return False
 
+    def mousePressEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton:
+            block = self._get_object_by_pos(event.pos())
+            if block is not None:
+                # clicking on a block
+                block.on_mouse_pressed(event.button(), event.pos())
+                event.accept()
+                return
+
+        super(QLinearGraphicsView, self).mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.RightButton:
+            block = self._get_object_by_pos(event.pos())
+            if block is not None:
+                block.on_mouse_released(event.button(), event.pos())
+            event.accept()
+            return
+
+        super(QLinearGraphicsView, self).mouseReleaseEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton:
+            block = self._get_object_by_pos(event.pos())
+            if block is not None:
+                block.on_mouse_doubleclicked(event.button(), event.pos())
+            event.accept()
+            return True
+
     def resizeEvent(self, event):
 
         self._update_size()
@@ -74,6 +121,10 @@ class QLinearGraphicsView(QBaseGraph):
     def request_relayout(self):
         pass
 
+    def show_instruction(self, insn_addr):
+        # Don't do anything
+        pass
+
     #
     # Private methods
     #
@@ -100,6 +151,14 @@ class QLinearGraphicsView(QBaseGraph):
         # TODO: horizontalScrollbar().setRange()
 
         self._update_size()
+
+    def _get_object_by_pos(self, pos):
+        x, y = pos.x(), pos.y()
+        for obj in self.viewer.objects:
+            if obj.x <= x <= obj.x + obj.width and \
+                    obj.y <= y <= obj.y + obj.height:
+                return obj
+        return None
 
 
 class QLinearViewer(QWidget):
@@ -152,6 +211,17 @@ class QLinearViewer(QWidget):
 
         return max_off + obj.height
 
+    #
+    # Proxy properties
+    #
+
+    @property
+    def selected_operands(self):
+        return self._linear_view.selected_operands
+
+    @property
+    def selected_insns(self):
+        return self._linear_view.selected_insns
 
     #
     # Public methods
@@ -220,6 +290,17 @@ class QLinearViewer(QWidget):
 
         self.setLayout(layout)
 
+        # Setup proxy methods
+        self.update_label = self._linear_view.update_label
+        self.select_instruction = self._linear_view.select_instruction
+        self.unselect_instruction = self._linear_view.unselect_instruction
+        self.unselect_all_instructions = self._linear_view.unselect_all_instructions
+        self.select_operand = self._linear_view.select_operand
+        self.unselect_operand = self._linear_view.unselect_operand
+        self.unselect_all_operands = self._linear_view.unselect_all_operands
+        self.show_selected = self._linear_view.show_selected
+        self.show_instruction = self._linear_view.show_instruction
+
     def _make_objects(self):
 
         self._addr_to_offset.clear()
@@ -228,6 +309,8 @@ class QLinearViewer(QWidget):
 
         y = 0
 
+        self._linear_view._clear_insn_addr_block_mapping()
+
         for obj_addr, obj in self.cfb.floor_items():
 
             if isinstance(obj, Block):
@@ -235,8 +318,11 @@ class QLinearViewer(QWidget):
                 func = self.cfg.kb.functions[func_addr]  # FIXME: Resiliency
                 disasm = self._get_disasm(func)
                 qobject = QBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                 self.disasm_view._flow_graph.infodock, obj.addr, [ obj ], { }, mode='linear',
+                                 self.disasm_view.infodock, obj.addr, [ obj ], { }, mode='linear',
                                  )
+
+                for insn_addr in qobject.addr_to_insns.keys():
+                    self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
 
             elif isinstance(obj, Unknown):
                 qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)

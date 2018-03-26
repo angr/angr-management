@@ -94,6 +94,13 @@ class DisassemblyView(BaseView):
                 self._variable_recovery_flavor = v
                 # TODO: Rerun the variable recovery analysis and update the current view
 
+    @property
+    def current_graph(self):
+        if self._linear_viewer.isVisible():
+            return self._linear_viewer
+        else:
+            return self._flow_graph
+
     #
     # UI
     #
@@ -186,8 +193,7 @@ class DisassemblyView(BaseView):
 
         self._show_address = show_address
 
-        self._flow_graph.refresh()
-        self._linear_viewer.refresh()
+        self.current_graph.refresh()
 
     def toggle_show_variable(self, show_variable):
         """
@@ -199,7 +205,7 @@ class DisassemblyView(BaseView):
 
         self._show_variable = show_variable
 
-        self._flow_graph.refresh()
+        self.current_graph.refresh()
 
     def toggle_show_variable_identifier(self, show_ident):
         """
@@ -211,7 +217,7 @@ class DisassemblyView(BaseView):
 
         self._show_variable_ident = show_ident
 
-        self._flow_graph.refresh()
+        self.current_graph.refresh()
 
     def toggle_instruction_selection(self, insn_addr):
         """
@@ -221,11 +227,11 @@ class DisassemblyView(BaseView):
         :return:              None
         """
 
-        if insn_addr in self._flow_graph.selected_insns:
-            self._flow_graph.unselect_instruction(insn_addr)
+        if insn_addr in self.current_graph.selected_insns:
+            self.current_graph.unselect_instruction(insn_addr)
         else:
-            self._flow_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
-            self._flow_graph.show_instruction(insn_addr)
+            self.current_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
+            self.current_graph.show_instruction(insn_addr)
 
     def toggle_operand_selection(self, insn_addr, operand_idx):
         """
@@ -236,11 +242,11 @@ class DisassemblyView(BaseView):
         :return:                None
         """
 
-        if (insn_addr, operand_idx) in self._flow_graph.selected_operands:
-            self._flow_graph.unselect_operand(insn_addr, operand_idx)
+        if (insn_addr, operand_idx) in self.current_graph.selected_operands:
+            self.current_graph.unselect_operand(insn_addr, operand_idx)
         else:
-            self._flow_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
-            self._flow_graph.show_instruction(insn_addr)
+            self.current_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
+            self.current_graph.show_instruction(insn_addr)
 
     def jump_to(self, addr):
         self._jump_history.jump_to(addr)
