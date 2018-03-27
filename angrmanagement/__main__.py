@@ -1,6 +1,7 @@
 
 import sys
 import os
+import ctypes
 # make pyqode happy
 os.environ['QT_API'] = 'pyside'
 import thread
@@ -33,10 +34,22 @@ def check_dependencies():
     return True
 
 
+def set_app_user_model_id():
+    # Explicitly call SetCurrentProcessExplicitAppUserModelID() so the taskbar icon is displayed correctly.
+
+    if sys.platform == 'win32':
+        winver = sys.getwindowsversion()
+        if winver.major >= 5:
+            myappid = u'angr-management'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+
 def main():
 
     if not check_dependencies():
         sys.exit(1)
+
+    set_app_user_model_id()
 
     from PySide.QtGui import QApplication
 
