@@ -3,7 +3,7 @@ import logging
 
 from PySide.QtGui import QWidget, QHBoxLayout, QPainter
 from PySide.QtCore import Qt
-from bintrees import AVLTree
+from sortedcontainers import SortedDict
 
 from angr.block import Block
 from angr.analyses.cfg.cfb import Unknown
@@ -172,9 +172,9 @@ class QLinearViewer(QWidget):
 
         self.cfg = None
         self.cfb = None
-        self._offset_to_addr = AVLTree()
-        self._addr_to_offset = AVLTree()
-        self._offset_to_object = AVLTree()
+        self._offset_to_addr = SortedDict()
+        self._addr_to_offset = SortedDict()
+        self._offset_to_object = SortedDict()
         self._offset = 0
         self._paint_start_offset = 0
 
@@ -205,8 +205,9 @@ class QLinearViewer(QWidget):
         # TODO: Cache it
 
         try:
-            max_off, obj = self._offset_to_object.max_item()
-        except (KeyError, ValueError):
+            max_off = next(self._offset_to_object.irange(reverse=True))
+            obj = self._offset_to_object[max_off]
+        except StopIteration:
             return 0
 
         return max_off + obj.height
@@ -234,9 +235,10 @@ class QLinearViewer(QWidget):
         if not self._addr_to_offset:
             return
         try:
-            _, floor_offset = self._addr_to_offset.floor_item(addr)
-        except KeyError:
-            _, floor_offset = floor_offset = self._addr_to_offset.min_item()
+            floor_addr = next(self._addr_to_offset.irange(maximum=addr, reverse=True))
+        except StopIteration:
+            floor_addr = next(self._addr_to_offset.irange())
+        floor_offset = self._addr_to_offset[floor_addr]
         self.navigate_to(floor_offset)
 
     def refresh(self):
@@ -256,11 +258,11 @@ class QLinearViewer(QWidget):
             return
 
         try:
-            start_offset = self._offset_to_object.floor_key(offset)
-        except (KeyError, ValueError):
+            start_offset = next(self._offset_to_object.irange(maximum=offset, reverse=True))
+        except StopIteration:
             try:
-                start_offset = self._offset_to_object.min_key()
-            except ValueError:
+                start_offset = next(self._offset_to_object.irange())
+            except StopIteration:
                 # Tree is empty
                 return
 
@@ -271,7 +273,8 @@ class QLinearViewer(QWidget):
         self.objects = [ ]
         max_height = self.height()
 
-        for off, obj in self._offset_to_object.iter_items(start_key=start_offset):
+        for off in self._offset_to_object.irange(minimum=start_offset):
+            obj = self._offset_to_object[off]
             self.objects.append(obj)
             if off - offset > max_height:
                 break
