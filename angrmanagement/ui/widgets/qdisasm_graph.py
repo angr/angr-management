@@ -360,22 +360,24 @@ class QDisasmGraph(QBaseGraph):
             if self.selected_insns:
                 self.show_selected()
             else:
-                self.show_instruction(self._function_graph.function.addr)
+                self.show_instruction(self._function_graph.function.addr, centering=True, use_block_pos=True)
 
-    def show_instruction(self, insn_addr):
+    def show_instruction(self, insn_addr, centering=False, use_block_pos=False):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is not None:
-            pos = QPoint(*block.instruction_position(insn_addr))
-            pos_ = self._from_graph_pos(pos)
+            if use_block_pos:
+                x, y = block.x, block.y
+            else:
+                x, y = block.instruction_position(insn_addr)
 
-            # is it visible?
-            if 0 <= pos_.x() < self.width() and 0 <= pos_.y() < self.height():
-                return
+            if not centering:
+                # is it visible?
+                if 0 <= x < self.width() and 0 <= y < self.height():
+                    return
 
-            # make it visible
-            x, y = pos.x(), pos.y()
-            self.horizontalScrollBar().setValue(x - 50)
-            self.verticalScrollBar().setValue(y - 50)
+            # make it visible in the center
+            self.horizontalScrollBar().setValue(x + block.width / 2)
+            self.verticalScrollBar().setValue(y + 300)
 
     #
     # Private methods
