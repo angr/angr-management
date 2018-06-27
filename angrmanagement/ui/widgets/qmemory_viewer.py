@@ -107,7 +107,7 @@ class QMemoryView(QWidget):
             # QASTViewer objects
             for col in xrange(self.cols):
                 data = self.state.memory.load(addr + col, 1, inspect=False, disable_actions=True)
-                ast_viewer = QASTViewer(data, custom_painting=True, display_size=False)
+                ast_viewer = QASTViewer(data, workspace=self.workspace, custom_painting=True, display_size=False)
                 objects.append(ast_viewer)
 
             # end of the line
@@ -119,8 +119,9 @@ class QMemoryView(QWidget):
 
 class QMemoryViewer(QFrame):
 
-    def __init__(self, parent):
+    def __init__(self, parent, workspace):
         super(QMemoryViewer, self).__init__(parent)
+        self.workspace = workspace
 
         self._scrollarea = None  # type: QScrollArea
         self._txt_addr = None  # type: QLineEdit

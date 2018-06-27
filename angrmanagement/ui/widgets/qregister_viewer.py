@@ -27,10 +27,11 @@ class QRegisterViewer(QFrame):
         }
     }
 
-    def __init__(self, parent):
+    def __init__(self, parent, workspace):
         super(QRegisterViewer, self).__init__(parent)
 
         self._state = None
+        self.workspace = workspace
 
         self._registers = { }
 
@@ -108,7 +109,7 @@ class QRegisterViewer(QFrame):
             sublayout.addWidget(lbl_reg_name)
 
             sublayout.addSpacing(10)
-            reg_value = QASTViewer(None, parent=self)
+            reg_value = QASTViewer(None, parent=self, workspace=self.workspace)
             self._registers[reg_name] = reg_value
             sublayout.addWidget(reg_value)
 

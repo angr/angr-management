@@ -11,8 +11,9 @@ l = logging.getLogger('ui.widgets.qvextemps_viewer')
 
 class QVEXTempsViewer(QFrame):
 
-    def __init__(self, parent):
+    def __init__(self, parent, workspace):
         super(QVEXTempsViewer, self).__init__(parent)
+        self.workspace = workspace
 
         self._state = None
 
@@ -103,7 +104,7 @@ class QVEXTempsViewer(QFrame):
 
             sublayout.addSpacing(10)
 
-            tmp_viewer = QASTViewer(tmp_value, parent=self)
+            tmp_viewer = QASTViewer(tmp_value, workspace=self.workspace, parent=self)
             self._tmps[tmp_id] = tmp_viewer
             sublayout.addWidget(tmp_viewer)
 

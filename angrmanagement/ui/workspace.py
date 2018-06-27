@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from PySide.QtGui import QFont, QFontMetricsF
 from PySide.QtCore import Qt
+from angr.knowledge_plugins import Function
 
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
@@ -114,3 +115,30 @@ class Workspace(object):
     def reload(self):
         for view in self.views:
             view.reload()
+
+    def viz(self, obj):
+        """
+        Visualize the given object.
+
+        - For integers, open the disassembly view and jump to that address
+        - For Function objects, open the disassembly view and jump there
+        - For strings, look up the symbol of that name and jump there
+        """
+
+        if type(obj) in (int, long):
+            self.jump_to(obj)
+        elif type(obj) is str:
+            sym = self.instance.project.loader.find_symbol(obj)
+            if sym is not None:
+                self.jump_to(sym.rebased_addr)
+        elif type(obj) is Function:
+            self.jump_to(obj.addr)
+
+    def jump_to(self, addr):
+        if self.views_by_category['disassembly']:
+            self.views_by_category['disassembly'][0].jump_to(addr)
+            self.raise_view(self.views_by_category['disassembly'][0])
+        else:
+            tab = DisassemblyView(self, 'right')
+            self.add_view(tab, tab.caption, tab.category)
+            tab.jump_to(addr)

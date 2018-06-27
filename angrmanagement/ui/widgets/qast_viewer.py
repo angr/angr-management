@@ -9,7 +9,7 @@ from ...config import Conf
 
 
 class QASTViewer(QFrame):
-    def __init__(self, ast, custom_painting=False, display_size=True, byte_format=None, parent=None):
+    def __init__(self, ast, workspace=None, custom_painting=False, display_size=True, byte_format=None, parent=None):
         super(QASTViewer, self).__init__(parent)
 
         # configs
@@ -35,10 +35,17 @@ class QASTViewer(QFrame):
         self.setFrameShape(QFrame.NoFrame)
         self.setLineWidth(0)
 
+        # workspace backref
+        self.workspace = workspace
+
         if not self._custom_painting:
             self._init_widgets()
         else:
             self.reload()
+
+    def mouseDoubleClickEvent(self, event):
+        if self._ast is not None and not self._ast.symbolic:
+            self.workspace.viz(self._ast._model_concrete.value)
 
     #
     # Properties

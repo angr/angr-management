@@ -105,17 +105,17 @@ class SymexecView(BaseView):
         main.addDockWidget(Qt.RightDockWidgetArea, pathgroups_dock)
         pathgroups_dock.setWidget(simgrs)
 
-        reg_viewer = QRegisterViewer(self)
+        reg_viewer = QRegisterViewer(self, self.workspace)
         reg_viewer_dock = QDockWidget('Register Viewer', reg_viewer)
         main.addDockWidget(Qt.RightDockWidgetArea, reg_viewer_dock)
         reg_viewer_dock.setWidget(reg_viewer)
 
-        mem_viewer = QMemoryViewer(self)
+        mem_viewer = QMemoryViewer(self, self.workspace)
         mem_viewer_dock = QDockWidget('Memory Viewer', mem_viewer)
         main.addDockWidget(Qt.RightDockWidgetArea, mem_viewer_dock)
         mem_viewer_dock.setWidget(mem_viewer)
 
-        vextemps_viewer = QVEXTempsViewer(self)
+        vextemps_viewer = QVEXTempsViewer(self, self.workspace)
         vextemps_viewer_dock = QDockWidget('VEX Temps Viewer', vextemps_viewer)
         main.addDockWidget(Qt.RightDockWidgetArea, vextemps_viewer_dock)
         vextemps_viewer_dock.setWidget(vextemps_viewer)
