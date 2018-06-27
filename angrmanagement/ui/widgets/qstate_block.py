@@ -120,6 +120,12 @@ class QStateBlock(QGraphObject):
             self.symexec_view.view_state(None)
         self.symexec_view.redraw_graph()
 
+    def on_mouse_doubleclicked(self, button, pos):
+        if self.state is not None:
+            self._workspace.viz(self.state.addr)
+        elif self.history is not None:
+            self._workspace.viz(self.history.state.addr)
+
     #
     # Private methods
     #

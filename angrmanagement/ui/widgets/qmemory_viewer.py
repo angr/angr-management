@@ -23,8 +23,9 @@ class NewLinePiece(object):
 
 
 class QMemoryView(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, workspace, parent=None):
         super(QMemoryView, self).__init__(parent)
+        self.workspace = workspace
 
         self.state = None
         self.cols = None
@@ -215,7 +216,7 @@ class QMemoryViewer(QFrame):
         top_layout.addWidget(lbl_addr)
         top_layout.addWidget(txt_addr)
 
-        self._view = QMemoryView()
+        self._view = QMemoryView(self.workspace)
 
         area = QScrollArea()
         self._scrollarea = area

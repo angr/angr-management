@@ -1,13 +1,11 @@
 
 from PySide.QtGui import QMainWindow, QHBoxLayout, QDockWidget
-from PySide.QtCore import Qt, QSize
+from PySide.QtCore import Qt
+from angrmanagement.ui.widgets.state_inspector import StateInspector
 
 from ..widgets.qpathtree import QPathTree
 from ..widgets.qsimulation_managers import QSimulationManagers
 from .view import BaseView
-from ..widgets.qregister_viewer import QRegisterViewer
-from ..widgets.qmemory_viewer import QMemoryViewer
-from ..widgets.qvextemps_viewer import QVEXTempsViewer
 
 
 class SymexecView(BaseView):
@@ -18,9 +16,7 @@ class SymexecView(BaseView):
 
         self._pathtree = None  # type: QPathTree
         self._simgrs = None  # type: QSimulationManagers
-        self._register_viewer = None  # type: QRegisterViewer
-        self._memory_viewer = None  # type: QMemoryViewer
-        self._vextemps_viewer = None  # type: QVEXTempsViewer
+        self._state_viewer = None  # type: StateInspector
 
         self._selected_state_block = None
 
@@ -49,9 +45,7 @@ class SymexecView(BaseView):
         self._simgrs.select_simgr_desc(pg_desc)
 
     def view_state(self, state):
-        self._register_viewer.state = state
-        self._memory_viewer.state = state
-        self._vextemps_viewer.state = state
+        self._state_viewer.state = state
 
         # push namespace into the console
         self.workspace.views_by_category['console'][0].push_namespace({
@@ -105,30 +99,14 @@ class SymexecView(BaseView):
         main.addDockWidget(Qt.RightDockWidgetArea, pathgroups_dock)
         pathgroups_dock.setWidget(simgrs)
 
-        reg_viewer = QRegisterViewer(self, self.workspace)
-        reg_viewer_dock = QDockWidget('Register Viewer', reg_viewer)
-        main.addDockWidget(Qt.RightDockWidgetArea, reg_viewer_dock)
-        reg_viewer_dock.setWidget(reg_viewer)
-
-        mem_viewer = QMemoryViewer(self, self.workspace)
-        mem_viewer_dock = QDockWidget('Memory Viewer', mem_viewer)
-        main.addDockWidget(Qt.RightDockWidgetArea, mem_viewer_dock)
-        mem_viewer_dock.setWidget(mem_viewer)
-
-        vextemps_viewer = QVEXTempsViewer(self, self.workspace)
-        vextemps_viewer_dock = QDockWidget('VEX Temps Viewer', vextemps_viewer)
-        main.addDockWidget(Qt.RightDockWidgetArea, vextemps_viewer_dock)
-        vextemps_viewer_dock.setWidget(vextemps_viewer)
-
-        main.tabifyDockWidget(reg_viewer_dock, mem_viewer_dock)
-        main.tabifyDockWidget(mem_viewer_dock, vextemps_viewer_dock)
-        reg_viewer_dock.raise_()
+        state_viewer = StateInspector(self.workspace, parent=self)
+        state_viewer_dock = QDockWidget('Selected State', state_viewer)
+        main.addDockWidget(Qt.RightDockWidgetArea, state_viewer_dock)
+        state_viewer_dock.setWidget(state_viewer)
 
         self._pathtree = pathtree
         self._simgrs = simgrs
-        self._register_viewer = reg_viewer
-        self._memory_viewer = mem_viewer
-        self._vextemps_viewer = vextemps_viewer
+        self._state_viewer = state_viewer
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(main)

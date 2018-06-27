@@ -1,7 +1,6 @@
 
 from collections import defaultdict
 
-from PySide.QtGui import QFont, QFontMetricsF
 from PySide.QtCore import Qt
 from angr.knowledge_plugins import Function
 

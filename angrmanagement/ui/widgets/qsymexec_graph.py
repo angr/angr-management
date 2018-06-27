@@ -142,6 +142,24 @@ class QSymExecGraph(QBaseGraph):
 
         super(QSymExecGraph, self).mousePressEvent(event)
 
+    def mouseDoubleClickEvent(self, event):
+        """
+
+        :param QMouseEvent event:
+        :return:
+        """
+
+        btn = event.button()
+        if btn == Qt.LeftButton:
+            pos = event.pos()
+            block = self._get_block_by_pos(pos)
+            if block is not None:
+                block.on_mouse_doubleclicked(btn, self._to_graph_pos(pos))
+                event.accept()
+                return
+
+        super(QSymExecGraph, self).mouseDoubleClickEvent(event)
+
     def _on_keypressed_event(self, key_event):
         """
 
