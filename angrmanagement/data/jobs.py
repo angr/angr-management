@@ -84,62 +84,71 @@ class CFGGenerationJob(Job):
     def __repr__(self):
         return "Generating CFG"
 
-def noop(_new_pg):
-    pass
 
-
-class SimGrStepJob(Job):
-    def __init__(self, pg, callback=noop, until_branch=False):
-        super(SimGrStepJob, self).__init__('PathGroup stepping')
-        self._pg = pg
+class SimgrStepJob(Job):
+    def __init__(self, simgr, callback=None, until_branch=False):
+        super(SimgrStepJob, self).__init__('Simulation manager stepping')
+        self._simgr = simgr
         self._callback = callback
         self._until_branch = until_branch
 
     def run(self, inst):
         if self._until_branch:
-            orig_len = len(self._pg.active)
+            orig_len = len(self._simgr.active)
             if orig_len > 0:
-                while len(self._pg.active) == orig_len:
-                    self._pg.step()
-                    self._pg.prune()
+                while len(self._simgr.active) == orig_len:
+                    self._simgr.step()
+                    self._simgr.prune()
         else:
-            self._pg.step()
-            self._pg.prune()
+            self._simgr.step()
+            self._simgr.prune()
 
-        return self._pg
+        return self._simgr
 
     def finish(self, inst, result):
-        super(SimGrStepJob, self).finish(inst, result)
-        self._callback(result)
+        super(SimgrStepJob, self).finish(inst, result)
+        if self._callback is not None:
+            self._callback(result)
 
     def __repr__(self):
         if self._until_branch:
-            return "Stepping %r until branch" % self._pg
+            return "Stepping %r until branch" % self._simgr
         else:
-            return "Stepping %r" % self._pg
+            return "Stepping %r" % self._simgr
+
+    @classmethod
+    def create(cls, simgr, **kwargs):
+        def callback(result):
+            simgr.am_event(src='job_done', job='step', result=result)
+        return cls(simgr, callback=callback, **kwargs)
 
 
-class PGExploreJob(Job):
-    def __init__(self, pg, find=None, avoid=None, step_callback=None, callback=None):
-        super(PGExploreJob, self).__init__('PathGroup exploring')
-        self._pg = pg
+class SimgrExploreJob(Job):
+    def __init__(self, simgr, find=None, avoid=None, step_callback=None, callback=None):
+        super(SimgrExploreJob, self).__init__('Simulation manager exploring')
+        self._simgr = simgr
         self._find = find
         self._avoid = avoid
         self._callback = callback
         self._step_callback = step_callback
 
     def run(self, inst):
-        self._pg.explore(find=self._find, avoid=self._avoid, step_func=self._step_callback)
+        self._simgr.explore(find=self._find, avoid=self._avoid, step_func=self._step_callback)
 
-        return self._pg
+        return self._simgr
 
     def finish(self, inst, result):
-        super(PGExploreJob, self).finish(inst, result)
+        super(SimgrExploreJob, self).finish(inst, result)
         self._callback(result)
 
     def __repr__(self):
-        return "Exploring %r" % self._pg
+        return "Exploring %r" % self._simgr
 
+    @classmethod
+    def create(cls, simgr, **kwargs):
+        def callback(result):
+            simgr.am_event(src='job_done', job='explore', result=result)
+        return cls(simgr, callback=callback, **kwargs)
 
 
 class VFGGenerationJob(Job):

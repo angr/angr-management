@@ -80,13 +80,13 @@ class QBaseGraph(QZoomingGraphicsView):
 
         self.workspace = workspace
         self.scene = None
-        self._proxies = { }
-        self._edge_paths = [ ]
+        self._proxies = {}
+        self._edge_paths = []
         self.blocks = set()
 
         self.selected_insns = set()
         self.selected_operands = set()
-        self._insn_addr_to_block = { }
+        self._insn_addr_to_block = {}
 
         # scrolling
         self._is_scrolling = False
@@ -116,16 +116,9 @@ class QBaseGraph(QZoomingGraphicsView):
         self._proxies.clear()
 
     def request_relayout(self):
-
         raise NotImplementedError()
 
     def update_label(self, label_addr, is_renaming=False):
-        """
-
-
-        :return:
-        """
-
         # if it's just a renaming, we simply update the text of the label
         if is_renaming:
             if label_addr in self._insn_addr_to_block:
@@ -220,7 +213,6 @@ class QBaseGraph(QZoomingGraphicsView):
     #
 
     def mousePressEvent(self, event):
-
         if event.button() == Qt.LeftButton:
             # dragging the entire graph
             self.setDragMode(QGraphicsView.ScrollHandDrag)

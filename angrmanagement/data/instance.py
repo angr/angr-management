@@ -3,106 +3,102 @@ from threading import Thread
 from Queue import Queue
 
 import ana
-from angr import StateHierarchy
 
-from .jobs import SimGrStepJob, PGExploreJob
+from angrmanagement.data.states import StateRecord
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
-from .states import StateManager
 from ..utils.namegen import NameGenerator
 
 
-class SimulationManagerDescriptor(object):
-    def __init__(self, name, pg):
-        self.name = name
-        self.pg = pg
+class EventSentinel(object):
+    def __init__(self):
+        self.am_subscribers = []
+
+    def am_subscribe(self, listener):
+        self.am_subscribers.append(listener)
+
+    def am_unsubscribe(self, listener):
+        self.am_subscribers.remove(listener)
+
+    def am_event(self, **kwargs):
+        for listener in self.am_subscribers:
+            listener(**kwargs)
+
+
+class ObjectContainer(EventSentinel):
+    def __init__(self, obj, name=None, notes=''):
+        super(ObjectContainer, self).__init__()
+        self._am_obj = None
+        self.am_obj = obj
+        self.am_name = name if name is not None else NameGenerator.random_name()
+        self.am_notes = notes
+
+    # cause events to propogate upward through nested objectcontainers
+    @property
+    def am_obj(self):
+        return self._am_obj
+
+    @am_obj.setter
+    def am_obj(self, v):
+        if type(self._am_obj) is ObjectContainer:
+            self._am_obj.am_unsubscribe(self.__forwarder)
+        if type(v) is ObjectContainer:
+            v.am_subscribe(self.__forwarder)
+        self._am_obj = v
+
+    def am_none(self):
+        return self._am_obj is None
+
+    def __forwarder(self, **kwargs):
+        kwargs['forwarded'] = True
+        self.am_event(**kwargs)
+
+    def __getattr__(self, item):
+        if item.startswith('am_') or item.startswith('_am_'):
+            return object.__getattribute__(self, item)
+        return getattr(self._am_obj, item)
+
+    def __setattr__(self, key, value):
+        if key.startswith('am_') or key.startswith('_am_'):
+            return object.__setattr__(self, key, value)
+        setattr(self._am_obj, key, value)
+
+    def __getitem__(self, item):
+        return self._am_obj[item]
+
+    def __setitem__(self, key, value):
+        self._am_obj[key] = value
+
+    def __dir__(self):
+        return dir(self._am_obj) + list(self.__dict__) + list(EventSentinel.__dict__) + ['am_obj', 'am_full']
+
+    def __iter__(self):
+        return iter(self._am_obj)
+
+    def __len__(self):
+        return len(self._am_obj)
+
+    def __eq__(self, other):
+        return self is other or self._am_obj == other
+
+    def __ne__(self, other):
+        return not (self == other)
 
     def __repr__(self):
-        return "<SimGr %s>" % self.name
-
-
-class SimulationManagers(object):
-    def __init__(self, instance, project):
-        self.instance = instance
-        self.project = project
-
-        self.groups = [ ]
-        self._widget = None
-
-    def add_simgr(self, pg_desc=None):
-        """
-        Add a new simulation manager descriptor.
-
-        :param SimulationManagerDescriptor pg_desc:
-        :return: The added/created simulation manager descriptor.
-        """
-
-        if pg_desc is None:
-            hierarchy = StateHierarchy()
-            pg = self.project.factory.simgr(immutable=False, hierarchy=hierarchy, save_unconstrained=True,
-                                            save_unsat=True)
-            pg_desc = SimulationManagerDescriptor(NameGenerator.random_name(), pg)
-
-        self.groups.append(pg_desc)
-
-        self._widget.add_simgr(pg_desc)
-
-        return pg_desc
-
-    def step_simgr(self, simgr, until_branch=True, async=True):
-        if self.instance is None or not async:
-            simgr.step(until_branch=until_branch)
-            self._simgr_stepped(None)
-        else:
-            self.instance.add_job(SimGrStepJob(simgr, callback=self._simgr_stepped, until_branch=until_branch))
-
-    def explore_simgr(self, pg, async=True, avoid=None, find=None, step_callback=None):
-
-        if self.instance is None or not async:
-            # TODO: implement it
-            pass
-
-        else:
-            self.instance.add_job(PGExploreJob(pg, avoid=avoid, find=find, callback=self._simgr_explored,
-                                               step_callback=step_callback,
-                                               )
-                                  )
-
-    def link_widget(self, simgrs_widget):
-        self._widget = simgrs_widget
-
-        self._widget.reload()
-
-    def refresh_widget(self):
-        if self._widget is None:
-            return
-
-        self._widget.refresh()
-
-    #
-    # Callbacks
-    #
-
-    def _simgr_stepped(self, result):
-        if self._widget is not None:
-            self._widget.refresh()
-
-    def _simgr_explored(self, result):
-        if self._widget is not None:
-            self._widget.refresh()
+        return '(container %s)%s' % (self.am_name, repr(self._am_obj))
 
 
 class Instance(object):
-    def __init__(self, project):
+    def __init__(self, project=None):
         self.project = project
 
         self.workspace = None
 
         self.jobs = []
         self._jobs_queue = Queue()
-        self.simgrs = SimulationManagers(instance=self, project=self.project)
-        self.states = StateManager(instance=self, project=self.project)
+        self.simgrs = ObjectContainer([], name='Global simulation managers list')
+        self.states = ObjectContainer([], name='Global states list')
 
         self._start_worker()
 
@@ -137,13 +133,19 @@ class Instance(object):
     # Public methods
     #
 
+    def set_project(self, project):
+        self.project = project
+        self.states.am_obj = StateRecord.basics()
+        self.states.am_event(src='set_project')
+
     def initialize(self, cfg_args=None):
         if cfg_args is None:
-            cfg_args = { }
-        self.add_job(CFGGenerationJob(
-            on_finish=self.workspace.on_cfg_generated,
-            **cfg_args
-                     )
+            cfg_args = {}
+        self.add_job(
+            CFGGenerationJob(
+                on_finish=self.workspace.on_cfg_generated,
+                **cfg_args
+             )
         )
 
     def add_job(self, job):

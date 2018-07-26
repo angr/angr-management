@@ -1,4 +1,3 @@
-
 import logging
 
 from PySide.QtGui import QPainter, QGraphicsView, QColor, QPen, QBrush
@@ -16,30 +15,20 @@ class QSymExecGraph(QBaseGraph):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, workspace, symexec_view, parent=None):
-
+    def __init__(self, current_state, workspace, symexec_view, parent=None):
         super(QSymExecGraph, self).__init__(workspace, parent=parent)
 
+        self.state = current_state
         self._symexec_view = symexec_view
 
-        self.key_pressed.connect(self._on_keypressed_event)
-
         self._graph = None
-        self._selected = None
+        self._edges = []
 
-        self._edges = [ ]
+        self.key_pressed.connect(self._on_keypressed_event)
+        self.state.am_subscribe(self._watch_state)
 
     def _init_widgets(self):
         super(QSymExecGraph, self)._init_widgets()
-
-    @property
-    def selected(self):
-        return self._selected
-
-    @selected.setter
-    def selected(self, v):
-        self._selected = v
-        self.show_selected()
 
     @property
     def graph(self):
@@ -55,7 +44,6 @@ class QSymExecGraph(QBaseGraph):
         self.request_relayout()
 
     def request_relayout(self):
-
         if self.graph is None:
             return
 
@@ -68,7 +56,7 @@ class QSymExecGraph(QBaseGraph):
         self.remove_all_children()
         self._edge_paths = []
 
-        node_sizes = { }
+        node_sizes = {}
         for node in self.graph.nodes():
             self.blocks.add(node)
             node_sizes[node] = (node.width, node.height)
@@ -106,10 +94,10 @@ class QSymExecGraph(QBaseGraph):
 
         self._update_size()
 
-        if self.selected is not None:
-            self.show_selected()
-        else:
+        if self.state.am_none():
             self.show_any()
+        else:
+            self.show_selected()
 
     def show_any(self):
         if self._proxies:
@@ -117,7 +105,7 @@ class QSymExecGraph(QBaseGraph):
             self.ensureVisible(proxy)
 
     def show_selected(self):
-        if self.selected is not None:
+        if not self.state.am_none():
             print "show_selected(): TODO"
 
     #
@@ -130,13 +118,18 @@ class QSymExecGraph(QBaseGraph):
         :param QMouseEvent event:
         :return:
         """
-
         btn = event.button()
         if btn == Qt.LeftButton:
             pos = event.pos()
             block = self._get_block_by_pos(pos)
             if block is not None:
                 block.on_mouse_pressed(btn, self._to_graph_pos(pos))
+                if block.selected:
+                    self.state.am_obj = block.get_state()
+                else:
+                    self.state.am_obj = None
+                self.state.am_event(src='qsymexec_graph')
+
                 event.accept()
                 return
 
@@ -198,12 +191,30 @@ class QSymExecGraph(QBaseGraph):
         self._draw_edges(painter, topleft_point, bottomright_point)
         self._draw_nodes(painter, topleft_point, bottomright_point)
 
+    def _watch_state(self, **kwargs):
+        # for now we need to run this always to deselect the old block
+        # if kwargs.get('src') == 'qsymexec_graph':
+        #     return
+
+        for block in self.blocks:
+            if block.get_state() == self.state:
+                block.selected = True
+            else:
+                block.selected = False
+
+        self.viewport().update()
+
     #
     # Private methods
     #
 
-    def _draw_edges(self, painter, topleft_point, bottomright_point):
+    def _block_from_state(self, state):
+        for block in self.blocks:
+            if block.get_state() == state:
+                return block
+        return None
 
+    def _draw_edges(self, painter, topleft_point, bottomright_point):
         for edge in self._edges:
             edge_coords = edge.coordinates
 

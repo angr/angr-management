@@ -3,9 +3,9 @@ from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
 from PySide.QtCore import Qt
 
 from angr import StateHierarchy
+from angrmanagement.data.instance import ObjectContainer
 
 from ..widgets import QAddressInput, QStateComboBox
-from ...data.instance import SimulationManagerDescriptor
 from ...utils.namegen import NameGenerator
 
 
@@ -111,7 +111,6 @@ class NewPath(QDialog):
             self._ok_button.setEnabled(False)
 
     def _on_ok_clicked(self):
-
         name = self._name_box.text()
         if not name:
             return
@@ -142,11 +141,12 @@ class NewPath(QDialog):
         state = state_record.state(inst.project, address=addr)
         hierarchy = StateHierarchy()
         simgr = inst.project.factory.simgr(state, hierarchy=hierarchy)
-        desc = SimulationManagerDescriptor(path_name, simgr)
-        inst.simgrs.add_simgr(pg_desc=desc)
+        simgr_container = ObjectContainer(simgr, name=path_name)
+        inst.simgrs.append(simgr_container)
+        inst.simgrs.am_event(src='new_path')
 
         symexec_view = self._workspace.views_by_category['symexec'][0]
-        symexec_view.select_simgr_desc(desc)
+        symexec_view.select_simgr(simgr_container)
 
         self._workspace.raise_view(symexec_view)
 

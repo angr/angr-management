@@ -9,10 +9,11 @@ from .widgets.qsmart_dockwidget import QSmartDockWidget
 from ..config import Conf
 
 class Workspace(object):
-    def __init__(self, main_window):
+    def __init__(self, main_window, instance):
 
         self._main_window = main_window
-        self._instance = None
+        self._instance = instance
+        instance.workspace = self
         self.views_by_category = defaultdict(list)
         self.views = [ ]
         self.dockable_views = [ ]
@@ -103,13 +104,6 @@ class Workspace(object):
             return
 
         dockable.raise_()
-
-    def set_instance(self, instance):
-        if self._instance is not None:
-            raise Exception('You cannot set instance to this workspace. It already has an instance associated.')
-
-        self._instance = instance
-        self._instance.workspace = self
 
     def reload(self):
         for view in self.views:

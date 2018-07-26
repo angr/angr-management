@@ -1,6 +1,7 @@
-
 from PySide.QtGui import QMainWindow, QHBoxLayout, QDockWidget
 from PySide.QtCore import Qt
+
+from angrmanagement.data.instance import ObjectContainer
 from angrmanagement.ui.widgets.state_inspector import StateInspector
 
 from ..widgets.qpathtree import QPathTree
@@ -17,6 +18,10 @@ class SymexecView(BaseView):
         self._pathtree = None  # type: QPathTree
         self._simgrs = None  # type: QSimulationManagers
         self._state_viewer = None  # type: StateInspector
+
+        # I think the best way to do this is for this to be a container containing the container containing the simgr?
+        self.current_simgr = ObjectContainer(None, name='Active simulation manager')
+        self.current_state = ObjectContainer(None, name='Selected state')
 
         self._selected_state_block = None
 
@@ -37,12 +42,11 @@ class SymexecView(BaseView):
     #
 
     def reload(self):
-        self._simgrs.simgrs = self.workspace.instance.simgrs
+        pass
 
-        self._simgrs.on_simgr_selection = self._on_simgr_selection
-
-    def select_simgr_desc(self, pg_desc):
-        self._simgrs.select_simgr_desc(pg_desc)
+    def select_simgr(self, simgr):
+        self.current_simgr.am_obj = simgr
+        self.current_simgr.am_event(src='from above')
 
     def view_state(self, state):
         self._state_viewer.state = state
@@ -53,22 +57,11 @@ class SymexecView(BaseView):
         })
 
     def avoid_addr_in_exec(self, addr):
-
         self._simgrs.add_avoid_address(addr)
 
     def redraw_graph(self):
         if self.graph is not None:
             self.graph.viewport().update()
-
-    def select_state_block(self, state_block):
-        if self._selected_state_block is not None:
-            self._selected_state_block.selected = False
-            self._selected_state_block = None
-        self._selected_state_block = state_block
-
-    def deselect_state_block(self, state_block):
-        if self._selected_state_block is state_block:
-            self._selected_state_block = None
 
     def switch_to_disassembly_view(self):
         if self._selected_state_block:
@@ -87,19 +80,18 @@ class SymexecView(BaseView):
         # main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
         # main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
 
-        pathtree = QPathTree(self, self.workspace, parent=main)
+        pathtree = QPathTree(self.current_simgr, self.current_state, self, self.workspace, parent=main)
         pathtree_dock = QDockWidget('PathTree', pathtree)
         main.setCentralWidget(pathtree_dock)
         # main.addDockWidget(Qt.BottomDockWidgetArea, pathtree_dock)
         pathtree_dock.setWidget(pathtree)
 
-        simgrs_logic = self.workspace.instance.simgrs if self.workspace.instance is not None else None
-        simgrs = QSimulationManagers(simgrs_logic, main)
-        pathgroups_dock = QDockWidget('SimulationManagers', simgrs)
-        main.addDockWidget(Qt.RightDockWidgetArea, pathgroups_dock)
-        pathgroups_dock.setWidget(simgrs)
+        simgrs = QSimulationManagers(self.workspace.instance, self.current_simgr, self.current_state, parent=main)
+        simgrs_dock = QDockWidget('SimulationManagers', simgrs)
+        main.addDockWidget(Qt.RightDockWidgetArea, simgrs_dock)
+        simgrs_dock.setWidget(simgrs)
 
-        state_viewer = StateInspector(self.workspace, parent=self)
+        state_viewer = StateInspector(self.workspace, self.current_state, parent=self)
         state_viewer_dock = QDockWidget('Selected State', state_viewer)
         main.addDockWidget(Qt.RightDockWidgetArea, state_viewer_dock)
         state_viewer_dock.setWidget(state_viewer)
@@ -113,16 +105,6 @@ class SymexecView(BaseView):
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(main_layout)
-
-    #
-    # Event handlers
-    #
-
-    def _on_simgr_selection(self, idx):
-        if idx != -1:
-            simgr = self._simgrs.get_simgr(idx)
-
-            self._pathtree.simgr = simgr
 
     #
     # Private methods
