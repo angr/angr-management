@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
         self._states_toolbar = None  # type: StatesToolbar
         self._analysis_toolbar = None  # type: AnalysisToolbar
         self._progressbar = None  # type: QProgressBar
+        self._load_binary_dialog = None
 
         self._status = ""
         self._progress = None
@@ -98,14 +99,15 @@ class MainWindow(QMainWindow):
     #
 
     def _open_loadbinary_dialog(self, file_to_open):
-        load_binary_dialog = LoadBinary(file_to_open)
-        load_binary_dialog.exec_()
+        self._load_binary_dialog = LoadBinary(file_to_open)
+        self._load_binary_dialog.setModal(True)
+        self._load_binary_dialog.exec_()
 
-        if load_binary_dialog.cfg_args is not None:
+        if self._load_binary_dialog.cfg_args is not None:
             # load the binary
             self._load_binary(file_to_open,
-                              load_options=load_binary_dialog.load_options,
-                              cfg_args=load_binary_dialog.cfg_args
+                              load_options=self._load_binary_dialog.load_options,
+                              cfg_args=self._load_binary_dialog.cfg_args
                               )
 
     def open_newstate_dialog(self):

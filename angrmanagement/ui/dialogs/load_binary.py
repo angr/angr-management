@@ -34,8 +34,6 @@ class LoadBinary(QDialog):
 
         self.setLayout(self.main_layout)
 
-        self.show()
-
     @property
     def filename(self):
         return os.path.basename(self.file_path)
