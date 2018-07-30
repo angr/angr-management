@@ -47,48 +47,10 @@ class StateRecord(object):
 
         return s
 
-
-class StateManager(object):
-    def __init__(self, instance, project):
-
-        self.instance = instance
-        self.project = project
-
-        self._name_to_state_records = { }  # name to state records
-        self._state_records = [ ]
-
-        self._states_view = None
-
-        self['Blank State'] = StateRecord('Blank State', StateRecord.BLANK_STATE, True, 'symbolic')
-        self['Entry State'] = StateRecord('Entry State', StateRecord.ENTRY_STATE, True, 'symbolic')
-        self['Full Initial State'] = StateRecord('Full Initial State', StateRecord.FULL_INIT_STATE, True, 'symbolic')
-
-    def __contains__(self, name):
-        return name in self._name_to_state_records
-
-    def __delitem__(self, name):
-        if name in self._name_to_state_records and not self._name_to_state_records[name].is_default:
-            del self._name_to_state_records[name]
-            self._state_records.remove(name)
-
-    def __setitem__(self, name, state_record):
-        if name in self._name_to_state_records:
-            raise Exception('State record of name "%s" already exists.' % name)
-
-        self._name_to_state_records[name] = state_record
-        self._state_records.append(state_record)
-
-        if self._states_view is not None:
-            self._states_view.reload()
-
-    def values(self):
-        return self._state_records
-
-    def keys(self):
-        return self._name_to_state_records.iterkeys()
-
-    def items(self):
-        return self._name_to_state_records.iteritems()
-
-    def register_view(self, states_view):
-        self._states_view = states_view
+    @classmethod
+    def basics(cls):
+        return [
+            cls('Blank State', StateRecord.BLANK_STATE, True, 'symbolic'),
+            cls('Entry State', StateRecord.ENTRY_STATE, True, 'symbolic'),
+            cls('Full-init State', StateRecord.FULL_INIT_STATE, True, 'symbolic'),
+        ]

@@ -3,15 +3,13 @@ from PySide.QtGui import QComboBox
 
 
 class QStateComboBox(QComboBox):
-    def __init__(self, state_manager, parent=None):
+    def __init__(self, states, parent=None):
         super(QStateComboBox, self).__init__(parent)
-
-        self._state_manager = state_manager
-
+        self.states = states
         self._init_items()
 
     def _init_items(self):
-        for state_record in self._state_manager.values():
+        for state_record in self.states:
             self.addItem(state_record.name, state_record)
 
     @property

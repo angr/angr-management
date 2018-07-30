@@ -1,4 +1,3 @@
-
 from PySide.QtGui import QPainter
 
 

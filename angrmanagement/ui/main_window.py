@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
         self._states_toolbar = None  # type: StatesToolbar
         self._analysis_toolbar = None  # type: AnalysisToolbar
         self._progressbar = None  # type: QProgressBar
+        self._load_binary_dialog = None
 
         self._status = ""
         self._progress = None
@@ -98,14 +99,15 @@ class MainWindow(QMainWindow):
     #
 
     def _open_loadbinary_dialog(self, file_to_open):
-        load_binary_dialog = LoadBinary(file_to_open)
-        load_binary_dialog.exec_()
+        self._load_binary_dialog = LoadBinary(file_to_open)
+        self._load_binary_dialog.setModal(True)
+        self._load_binary_dialog.exec_()
 
-        if load_binary_dialog.cfg_args is not None:
+        if self._load_binary_dialog.cfg_args is not None:
             # load the binary
             self._load_binary(file_to_open,
-                              load_options=load_binary_dialog.load_options,
-                              cfg_args=load_binary_dialog.cfg_args
+                              load_options=self._load_binary_dialog.load_options,
+                              cfg_args=self._load_binary_dialog.cfg_args
                               )
 
     def open_newstate_dialog(self):
@@ -152,11 +154,11 @@ class MainWindow(QMainWindow):
         self.central_widget = QMainWindow()
         self.setCentralWidget(self.central_widget)
 
-        wk = Workspace(self)
+        wk = Workspace(self, Instance())
         self.workspace = wk
 
-        right_dockable_views = [ dock for dock in self.workspace.dockable_views
-                                 if dock.widget().default_docking_position == 'right' ]
+        right_dockable_views = [dock for dock in self.workspace.dockable_views
+                                if dock.widget().default_docking_position == 'right']
 
         for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
             self.central_widget.tabifyDockWidget(d0, d1)
@@ -233,16 +235,15 @@ class MainWindow(QMainWindow):
     #
 
     def _load_binary(self, file_path, load_options=None, cfg_args=None):
-
         if load_options is None:
-            load_options = { }
+            load_options = {}
 
         if cfg_args is None:
-            cfg_args = { }
+            cfg_args = {}
 
-        inst = Instance(project=angr.Project(file_path, load_options=load_options))
-        self.workspace.set_instance(inst)
-        inst.initialize(cfg_args=cfg_args)
+        proj = angr.Project(file_path, load_options=load_options)
+        self.workspace.instance.set_project(proj)
+        self.workspace.instance.initialize(cfg_args=cfg_args)
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.dockable_views

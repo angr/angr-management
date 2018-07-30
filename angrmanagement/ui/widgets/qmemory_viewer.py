@@ -23,11 +23,11 @@ class NewLinePiece(object):
 
 
 class QMemoryView(QWidget):
-    def __init__(self, workspace, parent=None):
+    def __init__(self, state, workspace, parent=None):
         super(QMemoryView, self).__init__(parent)
         self.workspace = workspace
 
-        self.state = None
+        self.state = state
         self.cols = None
         self.rows = None
 
@@ -119,8 +119,7 @@ class QMemoryView(QWidget):
 
 
 class QMemoryViewer(QFrame):
-
-    def __init__(self, parent, workspace):
+    def __init__(self, state, parent, workspace):
         super(QMemoryViewer, self).__init__(parent)
         self.workspace = workspace
 
@@ -129,23 +128,11 @@ class QMemoryViewer(QFrame):
         self._view = None  # type: QMemoryView
 
         self._addr = None  # the address to display
-        self._state = None
+        self.state = state
 
         self._init_widgets()
 
-    #
-    # Properties
-    #
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, v):
-        self._state = v
-
-        self.reload()
+        self.state.am_subscribe(self._watch_state)
 
     @property
     def addr(self):
@@ -171,8 +158,7 @@ class QMemoryViewer(QFrame):
     #
 
     def reload(self):
-
-        if self._state is None:
+        if self.state.am_none():
             return
 
         if self.addr is None:
@@ -185,7 +171,6 @@ class QMemoryViewer(QFrame):
     #
 
     def _on_address_entered(self):
-
         address_str = self._txt_addr.text()
 
         try:
@@ -200,7 +185,6 @@ class QMemoryViewer(QFrame):
     #
 
     def _init_widgets(self):
-
         layout = QVBoxLayout()
 
         # address
@@ -216,7 +200,7 @@ class QMemoryViewer(QFrame):
         top_layout.addWidget(lbl_addr)
         top_layout.addWidget(txt_addr)
 
-        self._view = QMemoryView(self.workspace)
+        self._view = QMemoryView(self.state, self.workspace)
 
         area = QScrollArea()
         self._scrollarea = area
@@ -233,10 +217,11 @@ class QMemoryViewer(QFrame):
         self.setLayout(layout)
 
     def _refresh_memory_view(self):
-
-        self._view.state = self._state
         self._view.cols = 16
         self._view.rows = 10
         self._view.address = self.addr
 
         self._view.repaint()
+
+    def _watch_state(self, **kwargs):
+        self.reload()

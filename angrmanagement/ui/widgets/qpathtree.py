@@ -14,46 +14,33 @@ l = logging.getLogger('ui.widgets.qpathtree')
 
 
 class QPathTree(QFrame):
-    def __init__(self, symexec_view, workspace, parent=None):
+    def __init__(self, simgr, state, symexec_view, workspace, parent=None):
         super(QPathTree, self).__init__(parent=parent)
 
-        self._symexec_view = symexec_view
+        self.symexec_view = symexec_view
         self.workspace = workspace
-
-        self._simgr = None
+        self.simgr = simgr
+        self.state = state
 
         # widgets
         self._graph = None
 
         self._init_widgets()
 
-    #
-    # Properties
-    #
-
-    @property
-    def simgr(self):
-        return self._simgr
-
-    @simgr.setter
-    def simgr(self, v):
-        self._simgr = v
-        self.reload()
-
-    @property
-    def symexec_view(self):
-        return self._symexec_view
+        self.simgr.am_subscribe(self._watch_simgr)
 
     #
     # Public methods
     #
 
     def reload(self):
+        if self.simgr.am_none():
+            return
 
-        states = [ state for (stash, states) in self.simgr.stashes.items() if stash != 'pruned' for state in states ]
+        states = [state for (stash, states) in self.simgr.stashes.items() if stash != 'pruned' for state in states]
         hierarchy = self.simgr._hierarchy
 
-        graph = self._generate_graph([ state.history for state in states ], hierarchy, self.symexec_view)
+        graph = self._generate_graph([state.history for state in states], hierarchy, self.symexec_view)
 
         self._graph.graph = graph
 
@@ -62,8 +49,7 @@ class QPathTree(QFrame):
     #
 
     def _init_widgets(self):
-
-        graph = QSymExecGraph(self.workspace, self._symexec_view, parent=self)
+        graph = QSymExecGraph(self.state, self.workspace, self.symexec_view, parent=self)
 
         self._graph = graph
 
@@ -154,3 +140,6 @@ class QPathTree(QFrame):
             g.add_edge(history_to_block[src], history_to_block[dst])
 
         return g
+
+    def _watch_simgr(self, **kwargs):
+        self.reload()

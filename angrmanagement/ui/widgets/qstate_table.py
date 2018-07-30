@@ -49,7 +49,7 @@ class QStateTableItem(QTableWidgetItem):
 
 
 class QStateTable(QTableWidget):
-    def __init__(self, parent, selection_callback=None):
+    def __init__(self, state_records, parent, selection_callback=None):
         super(QStateTable, self).__init__(parent)
 
         self._selected = selection_callback
@@ -60,33 +60,18 @@ class QStateTable(QTableWidget):
         self.setHorizontalHeaderLabels(header_labels)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
 
-        self._state_manager = None
         self.items = [ ]
+        self.state_records = state_records
 
         self.itemDoubleClicked.connect(self._on_state_selected)
         self.cellDoubleClicked.connect(self._on_state_selected)
-
-    @property
-    def state_manager(self):
-        return self._state_manager
-
-    @state_manager.setter
-    def state_manager(self, state_manager):
-        self._state_manager = state_manager
-        self._state_manager.register_view(self)
-        self.reload()
+        self.state_records.am_subscribe(self._watch_state_records)
 
     def reload(self):
-
         current_row = self.currentRow()
-
         self.clearContents()
 
-        if self._state_manager is None:
-            return
-
-        self.items = [QStateTableItem(f) for f in self._state_manager.values()]
-
+        self.items = [QStateTableItem(f) for f in self.state_records]
         items_count = len(self.items)
         self.setRowCount(items_count)
 
@@ -106,3 +91,6 @@ class QStateTable(QTableWidget):
 
         if self._selected is not None:
             self._selected(selected_item)
+
+    def _watch_state_records(self, **kwargs):
+        self.reload()

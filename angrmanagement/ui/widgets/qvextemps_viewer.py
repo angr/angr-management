@@ -1,4 +1,3 @@
-
 import logging
 
 from PySide.QtGui import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
@@ -11,31 +10,17 @@ l = logging.getLogger('ui.widgets.qvextemps_viewer')
 
 class QVEXTempsViewer(QFrame):
 
-    def __init__(self, parent, workspace):
+    def __init__(self, state, parent, workspace):
         super(QVEXTempsViewer, self).__init__(parent)
         self.workspace = workspace
 
-        self._state = None
+        self.state = state
 
         # widgets
         self._area = None
-        self._tmps = { }
+        self._tmps = {}
 
         self._init_widgets()
-
-    #
-    # Properties
-    #
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, v):
-        self._state = v
-
-        self._load_tmps()
 
     #
     # Overridden methods
@@ -43,24 +28,6 @@ class QVEXTempsViewer(QFrame):
 
     def sizeHint(self, *args, **kwargs):
         return QSize(100, 100)
-
-    #
-    # Public methods
-    #
-
-    def reload(self):
-
-        state = self._state
-
-        if state is None:
-            return
-
-        for tmp_id, tmp_value in state.scratch.temps.iteritems():
-            print tmp_id, tmp_value, id(self._tmps[tmp_id])
-            if state is None:
-                self._tmps[tmp_id].ast = None
-            else:
-                self._tmps[tmp_id].ast = tmp_value
 
     #
     # Private methods
@@ -80,15 +47,13 @@ class QVEXTempsViewer(QFrame):
         self.setLayout(base_layout)
 
     def _load_tmps(self):
-
-        state = self._state
+        state = self.state.am_obj
 
         layout = QVBoxLayout()
 
-
         self._tmps.clear()
         if state is None:
-            tmps = { }
+            tmps = {}
         else:
             tmps = state.scratch.temps
 
@@ -123,3 +88,6 @@ class QVEXTempsViewer(QFrame):
         container.setLayout(layout)
 
         self._area.setWidget(container)
+
+    def _watch_state(self, **kwargs):
+        self._load_tmps()

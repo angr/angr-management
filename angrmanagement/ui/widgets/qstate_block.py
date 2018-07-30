@@ -1,4 +1,3 @@
-
 from PySide.QtGui import QColor, QPen
 from PySide.QtCore import Qt
 
@@ -34,6 +33,14 @@ class QStateBlock(QGraphObject):
 
         self._init_widgets()
         self._update_size()
+
+    def get_state(self):
+        if self.state is not None:
+            return self.state
+        elif self.history is not None:
+            return self.history.state.state
+        else:
+            return None
 
     def _init_widgets(self):
 
@@ -105,19 +112,7 @@ class QStateBlock(QGraphObject):
     #
 
     def on_mouse_pressed(self, button, pos):
-        if not self.selected:
-            self.selected = True
-            self.symexec_view.select_state_block(self)
-            if self.state is not None:
-                self.symexec_view.view_state(self.state)
-            elif self.history is not None:
-                weak_state = self.history.state
-                state = weak_state.state
-                self.symexec_view.view_state(state)
-        else:
-            self.selected = False
-            self.symexec_view.deselect_state_block(self)
-            self.symexec_view.view_state(None)
+        self.selected = not self.selected
         self.symexec_view.redraw_graph()
 
     def on_mouse_doubleclicked(self, button, pos):
