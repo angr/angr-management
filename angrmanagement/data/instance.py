@@ -4,7 +4,7 @@ from Queue import Queue
 
 import ana
 
-from angrmanagement.data.states import StateRecord
+from .states import StateRecord
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async

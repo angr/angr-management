@@ -3,10 +3,10 @@ from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
 from PySide.QtCore import Qt
 
 from angr import StateHierarchy
-from angrmanagement.data.instance import ObjectContainer
 
-from ..widgets import QAddressInput, QStateComboBox
+from ...data.instance import ObjectContainer
 from ...utils.namegen import NameGenerator
+from ..widgets import QAddressInput, QStateComboBox
 
 
 class NewPath(QDialog):

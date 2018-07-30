@@ -2,9 +2,9 @@ from PySide.QtGui import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QL
     QCheckBox, QTabWidget, QListWidget, QListWidgetItem
 from PySide.QtCore import QSize, Qt
 
-from angrmanagement.data.jobs import SimgrStepJob, SimgrExploreJob
-from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
+from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
+from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 
 
 class QSimulationManagers(QFrame):

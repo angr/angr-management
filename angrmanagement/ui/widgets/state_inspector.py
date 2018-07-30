@@ -1,7 +1,8 @@
 from PySide.QtGui import QTabWidget
-from angrmanagement.ui.widgets.qmemory_viewer import QMemoryViewer
-from angrmanagement.ui.widgets.qregister_viewer import QRegisterViewer
-from angrmanagement.ui.widgets.qvextemps_viewer import QVEXTempsViewer
+
+from .qmemory_viewer import QMemoryViewer
+from .qregister_viewer import QRegisterViewer
+from .qvextemps_viewer import QVEXTempsViewer
 
 
 class StateInspector(QTabWidget):

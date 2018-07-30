@@ -1,9 +1,8 @@
 from PySide.QtGui import QMainWindow, QHBoxLayout, QDockWidget
 from PySide.QtCore import Qt
 
-from angrmanagement.data.instance import ObjectContainer
-from angrmanagement.ui.widgets.state_inspector import StateInspector
-
+from ...data.instance import ObjectContainer
+from ..widgets.state_inspector import StateInspector
 from ..widgets.qpathtree import QPathTree
 from ..widgets.qsimulation_managers import QSimulationManagers
 from .view import BaseView
