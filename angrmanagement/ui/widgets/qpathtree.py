@@ -1,10 +1,9 @@
-
 import weakref
 import logging
 
 import networkx
-from PySide.QtGui import QFrame, QHBoxLayout
-from PySide.QtCore import QSize
+from PySide2.QtWidgets import QFrame, QHBoxLayout
+from PySide2.QtCore import QSize
 
 from .qsymexec_graph import QSymExecGraph
 from .qstate_block import QStateBlock
@@ -76,7 +75,7 @@ class QPathTree(QFrame):
         seen = set()
         while len(work) > 0:
             path = work.pop()
-            # print path.path_id
+            # print(path.path_id)
             if not hierarchy.history_contains(path.history) or len(hierarchy.history_successors(path.history)) == 0:
                 if path.path_id not in seen:
                     yield path

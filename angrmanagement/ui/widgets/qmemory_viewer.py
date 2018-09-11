@@ -1,9 +1,9 @@
-
 import logging
 
-from PySide.QtGui import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit,\
-    QWidget, QPainter, QBrush, QPen
-from PySide.QtCore import Qt, QSize
+from PySide2.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit,\
+    QWidget
+from PySide2.QtGui import QPainter, QBrush, QPen
+from PySide2.QtCore import Qt, QSize
 
 from ...config import Conf
 from .qast_viewer import QASTViewer
@@ -97,7 +97,7 @@ class QMemoryView(QWidget):
         objects = [ ]
 
         addr_base = self.address
-        for row in xrange(self.rows):
+        for row in range(self.rows):
 
             addr = addr_base + row * self.cols
 
@@ -106,7 +106,7 @@ class QMemoryView(QWidget):
             objects.append(addr_piece)
 
             # QASTViewer objects
-            for col in xrange(self.cols):
+            for col in range(self.cols):
                 data = self.state.memory.load(addr + col, 1, inspect=False, disable_actions=True)
                 ast_viewer = QASTViewer(data, workspace=self.workspace, custom_painting=True, display_size=False)
                 objects.append(ast_viewer)

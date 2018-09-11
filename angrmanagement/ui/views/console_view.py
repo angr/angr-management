@@ -1,6 +1,5 @@
-
-from PySide.QtGui import QHBoxLayout
-from PySide.QtCore import QSize
+from PySide2.QtWidgets import QHBoxLayout
+from PySide2.QtCore import QSize
 
 from .view import BaseView
 from ..widgets.qipython_widget import QIPythonWidget

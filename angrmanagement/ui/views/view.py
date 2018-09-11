@@ -1,5 +1,4 @@
-
-from PySide.QtGui import QFrame
+from PySide2.QtWidgets import QFrame
 
 
 class BaseView(QFrame):

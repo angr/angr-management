@@ -1,5 +1,4 @@
-
-from PySide.QtGui import QComboBox, QHBoxLayout
+from PySide2.QtWidgets import QComboBox, QHBoxLayout
 
 from angr.knowledge_plugins import FunctionManager
 
@@ -43,7 +42,7 @@ class QFunctionComboBox(QComboBox):
         if self._show_all_functions:
             self.addItem("All functions", "all")
 
-        for function in self._function_manager.itervalues():
+        for function in self._function_manager.values():
             self.addItem(repr(function), function)
 
     #

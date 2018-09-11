@@ -1,5 +1,4 @@
-
-from PySide.QtGui import QLineEdit
+from PySide2.QtWidgets import QLineEdit
 
 
 class QAddressInput(QLineEdit):

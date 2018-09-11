@@ -1,4 +1,4 @@
-from PySide.QtGui import QPainter
+from PySide2.QtGui import QPainter
 
 
 class QGraphObject(object):

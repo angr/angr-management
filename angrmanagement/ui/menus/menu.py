@@ -1,5 +1,4 @@
-
-from PySide.QtGui import QMenu, QAction
+from PySide2.QtWidgets import QMenu, QAction
 
 
 class MenuEntry(object):

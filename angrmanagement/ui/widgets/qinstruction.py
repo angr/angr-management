@@ -1,6 +1,6 @@
-
-from PySide.QtGui import QLabel, QHBoxLayout, QSizePolicy, QCursor, QPainter, QColor
-from PySide.QtCore import Qt, SIGNAL
+from PySide2.QtWidgets import QLabel, QHBoxLayout, QSizePolicy
+from PySide2.QtGui import QCursor, QPainter, QColor
+from PySide2.QtCore import Qt, SIGNAL
 
 from .qgraph_object import QGraphObject
 from .qoperand import QOperand

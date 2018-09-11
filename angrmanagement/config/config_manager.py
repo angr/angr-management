@@ -1,5 +1,5 @@
 
-from PySide.QtGui import QFont, QFontMetricsF
+from PySide2.QtGui import QFont, QFontMetricsF
 
 from .config_entry import ConfigurationEntry as CE
 

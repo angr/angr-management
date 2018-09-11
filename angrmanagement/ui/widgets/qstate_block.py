@@ -1,5 +1,5 @@
-from PySide.QtGui import QColor, QPen
-from PySide.QtCore import Qt
+from PySide2.QtGui import QColor, QPen
+from PySide2.QtCore import Qt
 
 from ...config import Conf
 from ...utils import locate_function

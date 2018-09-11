@@ -22,8 +22,6 @@ setup(
         'qtconsole',
         'ipython',
         'pyzmq',
-        'PySide',
-        'pyqode.core',
-        'pyqode.python',
+        'PySide2',
     ]
 )

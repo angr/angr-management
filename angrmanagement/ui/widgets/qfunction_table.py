@@ -1,9 +1,9 @@
-
 import os
 import string
 
-from PySide.QtGui import QWidget, QTableView, QBrush, QColor, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
-from PySide.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
+from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
+from PySide2.QtGui import QBrush, QColor
+from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -145,7 +145,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
         if keyword in func.name:
             return True
-        if type(func.addr) in (int, long):
+        if type(func.addr) is int:
             if keyword in "%x" % func.addr:
                 return True
             if keyword in "%#x" % func.addr:
@@ -171,7 +171,7 @@ class QFunctionTableView(QTableView):
         # sorting
         # self.horizontalHeader().setSortIndicatorShown(True)
 
-        self.verticalHeader().setResizeMode(QHeaderView.Fixed)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._functions = None

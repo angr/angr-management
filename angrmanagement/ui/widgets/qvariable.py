@@ -1,6 +1,6 @@
 
-from PySide.QtGui import QColor
-from PySide.QtCore import Qt
+from PySide2.QtGui import QColor
+from PySide2.QtCore import Qt
 
 from .qgraph_object import QGraphObject
 

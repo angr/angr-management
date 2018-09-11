@@ -1,5 +1,5 @@
-from PySide.QtGui import QMainWindow, QHBoxLayout, QDockWidget
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QMainWindow, QHBoxLayout, QDockWidget
+from PySide2.QtCore import Qt
 
 from ...data.instance import ObjectContainer
 from ..widgets.state_inspector import StateInspector

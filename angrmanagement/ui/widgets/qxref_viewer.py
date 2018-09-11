@@ -1,6 +1,5 @@
-
-from PySide.QtGui import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
+from PySide2.QtCore import Qt
 
 
 class AddressTableWidgetItem(QTableWidgetItem):

@@ -1,6 +1,5 @@
-
-from PySide.QtGui import QHBoxLayout, QVBoxLayout, QComboBox, QLabel
-from PySide.QtCore import QSize
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QComboBox, QLabel
+from PySide2.QtCore import QSize
 
 from angr.knowledge_plugins import Function
 

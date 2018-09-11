@@ -1,7 +1,6 @@
-import thread
 import threading
 
-from PySide.QtCore import QEvent, QCoreApplication
+from PySide2.QtCore import QEvent, QCoreApplication
 
 from . import GlobalInfo
 
@@ -117,7 +116,7 @@ class GUIObjProxy(object):
 
 
 def is_gui_thread():
-    return thread.get_ident() == GlobalInfo.gui_thread
+    return threading.get_ident() == GlobalInfo.gui_thread
 
 
 def gui_thread_schedule(callable, args=None):
@@ -132,7 +131,7 @@ def gui_thread_schedule(callable, args=None):
     event.event.wait()  # TODO: unsafe. to be fixed later.
 
     if event.exception is not None:
-        raise event.exception[0], event.exception[1], event.exception[2]
+        raise event.exception
 
     return event.result
 

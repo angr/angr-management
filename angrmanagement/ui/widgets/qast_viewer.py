@@ -1,7 +1,6 @@
-
-from PySide.QtGui import QFrame, QHBoxLayout, QLabel, QSizePolicy, QPainter
-from PySide.QtCore import QSize
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy
+from PySide2.QtGui import QPainter
+from PySide2.QtCore import QSize, Qt
 
 import claripy
 
@@ -160,7 +159,7 @@ class QASTViewer(QFrame):
         ast = self._ast
 
         # set style
-        if isinstance(ast, (int, long)) or not ast.symbolic:
+        if isinstance(ast, int) or not ast.symbolic:
             self._ast_label.setProperty('class', 'ast_viewer_ast_concrete')
         else:
             self._ast_label.setProperty('class', 'ast_viewer_ast_symbolic')
@@ -186,7 +185,7 @@ class QASTViewer(QFrame):
         ast = self._ast
 
         # set text
-        if isinstance(ast, (int, long)):
+        if isinstance(ast, int):
             if self._display_size:
                 self._size_str = '[Unknown]'
             format = "%02x" if self._byte_format is None else self._byte_format
@@ -194,7 +193,7 @@ class QASTViewer(QFrame):
         else:
             # claripy.AST
             if self._display_size:
-                self._size_label.setText("[%d]" % (len(ast) / 8))  # in bytes
+                self._size_label.setText("[%d]" % (len(ast) // 8))  # in bytes
             if not ast.symbolic:
                 format = "%02x" if self._byte_format is None else self._byte_format
                 self._ast_str = format % self._ast._model_concrete.value

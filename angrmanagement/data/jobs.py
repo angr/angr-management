@@ -51,7 +51,7 @@ class CFGGenerationJob(Job):
 
         # make a copy
         cfg_args = dict(kwargs)
-        for key, val in self.DEFAULT_CFG_ARGS.iteritems():
+        for key, val in self.DEFAULT_CFG_ARGS.items():
             if key not in cfg_args:
                 cfg_args[key] = val
 

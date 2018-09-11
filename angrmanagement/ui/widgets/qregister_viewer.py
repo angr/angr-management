@@ -1,7 +1,7 @@
 import logging
 
-from PySide.QtGui import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PySide.QtCore import Qt, QSize
+from PySide2.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
+from PySide2.QtCore import Qt, QSize
 
 from .qast_viewer import QASTViewer
 
@@ -60,7 +60,7 @@ class QRegisterViewer(QFrame):
     #
 
     def reload(self):
-        for reg_name, reg_ctrl in self._registers.iteritems():
+        for reg_name, reg_ctrl in self._registers.items():
             if self._state.am_none():
                 reg_ctrl.ast = None
             else:

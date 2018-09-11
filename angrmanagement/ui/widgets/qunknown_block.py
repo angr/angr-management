@@ -1,5 +1,5 @@
 
-from PySide.QtCore import Qt
+from PySide2.QtCore import Qt
 
 from ...config import Conf
 from .qgraph_object import QGraphObject

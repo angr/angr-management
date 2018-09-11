@@ -141,9 +141,9 @@ class EdgeRouter(object):
         """
 
         self._edge_valid = [ ]
-        for col in xrange(self._max_col + 2):
+        for col in range(self._max_col + 2):
             self._edge_valid.append([True] * (self._max_row + 1))
-        for col, row in self._node_locations.itervalues():
+        for col, row in self._node_locations.values():
             # edges should not overlap with existing nodes
             self._edge_valid[col][row] = False
             self._edge_valid[col + 1][row] = False
@@ -151,10 +151,10 @@ class EdgeRouter(object):
         self.vertical_edges = [ ]
         self.horizontal_edges = [ ]
 
-        for col in xrange(self._max_col + 2):
+        for col in range(self._max_col + 2):
             v_edges = [ ]
             h_edges = [ ]
-            for row in xrange(self._max_row + 3):
+            for row in range(self._max_row + 3):
                 v_edges.append({ })
                 h_edges.append({ })
             self.vertical_edges.append(v_edges)
@@ -172,20 +172,20 @@ class EdgeRouter(object):
         if sort == 'vertical':
             if index is None:
                 index = self._find_vertical_available_edge_index(col, row, row + blocks)
-            for r in xrange(row, row + blocks + 1):
+            for r in range(row, row + blocks + 1):
                 d[col][r][index] = edge
 
         else:  # sort == 'horizontal'
             if index is None:
                 index = self._find_horizontal_available_edge_index(col, col + blocks, row)
-            for col_ in xrange(col, col + blocks + 1):
+            for col_ in range(col, col + blocks + 1):
                 d[col_][row][index] = edge
 
         return index
 
     def _edge_available(self, col, start_row, end_row):
 
-        for i in xrange(start_row, end_row):
+        for i in range(start_row, end_row):
             if not self._edge_valid[col][i]:
                 return False
         return True
@@ -208,9 +208,9 @@ class EdgeRouter(object):
         # collect all used indices
         indices = set()
 
-        for row in xrange(start_row, end_row + 1):
+        for row in range(start_row, end_row + 1):
             if self.vertical_edges[col][row]:
-                indices.update(self.vertical_edges[col][row].iterkeys())
+                indices.update(self.vertical_edges[col][row].keys())
 
         return self._first_unused_index(indices)
 
@@ -219,9 +219,9 @@ class EdgeRouter(object):
         # collect all used indices
         indices = set()
 
-        for col in xrange(start_col, end_col + 1):
+        for col in range(start_col, end_col + 1):
             if self.horizontal_edges[col][row]:
-                indices.update(self.horizontal_edges[col][row].iterkeys())
+                indices.update(self.horizontal_edges[col][row].keys())
 
         return self._first_unused_index(indices)
 
@@ -239,7 +239,7 @@ class EdgeRouter(object):
     def _set_in_edge_indices(self):
 
         # assign in-edge indices
-        for _, edges in self._in_edges.iteritems():
+        for _, edges in self._in_edges.items():
             max_idx = None
 
             if len(edges) == 2:
@@ -254,7 +254,7 @@ class EdgeRouter(object):
 
     def _set_out_edge_indices(self):
 
-        for _, edges in self._out_edges.iteritems():
+        for _, edges in self._out_edges.items():
             max_idx = None
             if len(edges) == 2:
                 edges = sorted(edges, key=lambda edge: edge.first_move)  # sort by their first horizontal move
@@ -268,10 +268,10 @@ class EdgeRouter(object):
 
 
 class GraphLayouter(object):
-    def __init__(self, graph, node_sizes, compare_nodes_func=None):
+    def __init__(self, graph, node_sizes, node_compare_key=None):
         self.graph = graph
         self._node_sizes = node_sizes
-        self._compare_nodes = compare_nodes_func
+        self._node_compare_key = node_compare_key
 
         self._cols = None
         self._rows = None
@@ -427,8 +427,8 @@ class GraphLayouter(object):
             row_to_nodes[row].append(node)
 
         for row in row_to_nodes.keys():
-            if self._compare_nodes is not None:
-                row_to_nodes[row] = sorted(row_to_nodes[row], cmp=self._compare_nodes)
+            if self._node_compare_key is not None:
+                row_to_nodes[row] = sorted(row_to_nodes[row], key=self._node_compare_key)
             else:
                 # TODO: Use a custom comparator for displaying the CFG, too
                 row_to_nodes[row] = sorted(row_to_nodes[row], key=lambda n_: n_.addr, reverse=True)
@@ -440,7 +440,7 @@ class GraphLayouter(object):
         global_max_col = 0
 
         # First iteration: assign column ID bottom-up
-        for row_idx in reversed(self._row_to_nodes.keys()):
+        for row_idx in reversed(list(self._row_to_nodes.keys())):
             row_nodes = self._row_to_nodes[row_idx]
 
             next_min_col, next_max_col = 1, 2
@@ -467,7 +467,7 @@ class GraphLayouter(object):
                         max_col = next_min_col + 1
 
                 # now assign a column ID to the current node
-                col = (min_col + max_col) / 2
+                col = (min_col + max_col) // 2
                 self._cols[node] = col
                 self._locations[node] = (col, row_idx)
                 global_max_col = max(global_max_col, col)
@@ -503,7 +503,7 @@ class GraphLayouter(object):
                             max_col = pred_col + 1
 
                 # now assign a column ID to the current node
-                col = (min_col + max_col) / 2
+                col = (min_col + max_col) // 2
                 self._cols[node] = col
                 self._locations[node] = (col, row_idx)
 
@@ -532,10 +532,10 @@ class GraphLayouter(object):
             if self._row_heights[row] < height:
                 self._row_heights[row] = height
 
-            if self._col_widths[col] < width / 2:
-                self._col_widths[col] = width / 2
-            if col + 1 < len(self._col_widths) and self._col_widths[col + 1] < width / 2:
-                self._col_widths[col + 1] = width / 2
+            if self._col_widths[col] < width // 2:
+                self._col_widths[col] = width // 2
+            if col + 1 < len(self._col_widths) and self._col_widths[col + 1] < width // 2:
+                self._col_widths[col + 1] = width // 2
 
         # the left-most and the right-most column do not have any node assigned to it
         self._col_widths[0] = 20
@@ -554,7 +554,7 @@ class GraphLayouter(object):
                 if not edges:
                     continue
                 key = (col, row)
-                self._grid_max_horizontal_id[key] = max(edges.iterkeys())
+                self._grid_max_horizontal_id[key] = max(edges.keys())
 
         # vertical edges
         for col, row_edges in enumerate(self._vertical_edges):
@@ -562,7 +562,7 @@ class GraphLayouter(object):
                 if not edges:
                     continue
                 key = (col, row)
-                self._grid_max_vertical_id[key] = max(edges.iterkeys())
+                self._grid_max_vertical_id[key] = max(edges.keys())
 
     def _calculate_coordinates(self):
         """
@@ -583,9 +583,9 @@ class GraphLayouter(object):
                 row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
 
         y = 0
-        for row in xrange(self._max_row + 2):
+        for row in range(self._max_row + 2):
             x = 0
-            for col in xrange(self._max_col + 2):
+            for col in range(self._max_col + 2):
                 self._grid_coordinates[(col, row)] = (x, y)
                 x += self._col_widths[col] + COL_MARGIN
             if self._row_heights[row] is None:
@@ -604,8 +604,8 @@ class GraphLayouter(object):
             grid_height = self._row_heights[row]
             node_width, node_height = self._node_sizes[node]
 
-            self.node_coordinates[node] = (grid_x + ((grid_a_width + grid_b_width) / 2 - node_width / 2),
-                                           grid_y + (grid_height / 2 - node_height / 2)
+            self.node_coordinates[node] = (grid_x + ((grid_a_width + grid_b_width) // 2 - node_width // 2),
+                                           grid_y + (grid_height // 2 - node_height // 2)
                                            )
 
         # edges
@@ -620,7 +620,7 @@ class GraphLayouter(object):
             # dst_node_col, dst_node_row = self._locations[edge.dst]
 
             # start point
-            start_point_x_base = src_node_x + src_node_width / 2 - 5 * ((edge.max_start_index + 1) / 2)
+            start_point_x_base = src_node_x + src_node_width // 2 - 5 * ((edge.max_start_index + 1) // 2)
             start_point_x = self._indexed_x(start_point_x_base, edge.start_index, edge.max_start_index)
             start_point = (start_point_x, src_node_y + src_node_height)
             edge.add_coordinate(*start_point)
@@ -662,7 +662,7 @@ class GraphLayouter(object):
                     assert col != prev_col
                     # horizontal
                     if point_id == len(edge.points) - 1:
-                        base_x = dst_node_x + dst_node_width / 2
+                        base_x = dst_node_x + dst_node_width // 2
                         x = self._indexed_x(base_x, edge.end_index, edge.max_end_index)
                     else:
                         next_col, next_row, next_idx = edge.points[point_id + 1]
@@ -682,7 +682,7 @@ class GraphLayouter(object):
                 prev_x, prev_y = x, y
 
             # the last point, which is always at the top of the destination node
-            base_x = dst_node_x + dst_node_width / 2 - 5 * ((edge.max_end_index + 1) / 2)
+            base_x = dst_node_x + dst_node_width // 2 - 5 * ((edge.max_end_index + 1) // 2)
             x = self._indexed_x(base_x, edge.end_index, edge.max_end_index)
             if x != prev_x:
                 # add an extra coordinate to move horizontally
@@ -720,7 +720,7 @@ class GraphLayouter(object):
         else:
             min_col, max_col = ending_col, starting_col
 
-        for col in xrange(min_col, max_col + 1):
+        for col in range(min_col, max_col + 1):
             key = (col, row)
             if key not in self._grid_coordinates:
                 continue

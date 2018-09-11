@@ -1,9 +1,9 @@
-
 from functools import wraps
 import logging
 
-from PySide.QtCore import QPointF, QRectF, Qt, QPoint, QSize
-from PySide.QtGui import QPainter, QBrush, QColor, QApplication, QMouseEvent, QResizeEvent, QPen, QImage
+from PySide2.QtCore import QPointF, QRectF, Qt, QPoint, QSize
+from PySide2.QtGui import QPainter, QBrush, QColor, QMouseEvent, QResizeEvent, QPen, QImage
+from PySide2.QtWidgets import QApplication
 
 from ...config import Conf
 from ...utils import get_out_branches
@@ -23,7 +23,7 @@ def timeit(f):
         start = time.time()
         r = f(*args, **kwargs)
         elapsed = time.time() - start
-        print "%s takes %f sec." % (f.__name__, elapsed)
+        print("%s takes %f sec." % (f.__name__, elapsed))
 
         return r
     return decorator
@@ -98,7 +98,7 @@ class QDisasmGraph(QBaseGraph):
                            )
             self.add_block(block)
 
-            for insn_addr in block.addr_to_insns.iterkeys():
+            for insn_addr in block.addr_to_insns.keys():
                 self._add_insn_addr_block_mapping(insn_addr, block)
 
         self.request_relayout()
@@ -174,7 +174,7 @@ class QDisasmGraph(QBaseGraph):
         current_y = self.verticalScrollBar().value()
         # coord translation
         # (0, 0) -> middle of the page
-        painter.translate(self.width() / 2 - current_x, self.height() / 2 - current_y)
+        painter.translate(self.width() // 2 - current_x, self.height() // 2 - current_y)
 
         topleft_point = self._to_graph_pos(QPoint(0, 0))
         bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
@@ -310,7 +310,7 @@ class QDisasmGraph(QBaseGraph):
         gl = GraphLayouter(self.function_graph.supergraph, node_sizes)
 
         nodes = { }
-        for node, coords in gl.node_coordinates.iteritems():
+        for node, coords in gl.node_coordinates.items():
             nodes[node.addr] = coords
 
         return nodes, gl.edges
@@ -324,7 +324,7 @@ class QDisasmGraph(QBaseGraph):
         categorize_edges(self.disasm, edges)
 
         if not node_coords:
-            print "Failed to get node_coords"
+            print("Failed to get node_coords")
             return
 
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
@@ -376,7 +376,7 @@ class QDisasmGraph(QBaseGraph):
                     return
 
             # make it visible in the center
-            self.horizontalScrollBar().setValue(x + block.width / 2)
+            self.horizontalScrollBar().setValue(x + block.width // 2)
             self.verticalScrollBar().setValue(y + 300)
 
     #

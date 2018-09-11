@@ -1,8 +1,8 @@
-
 import logging
 
-from PySide.QtGui import QWidget, QHBoxLayout, QPainter
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QWidget, QHBoxLayout
+from PySide2.QtGui import QPainter
+from PySide2.QtCore import Qt
 from sortedcontainers import SortedDict
 
 from angr.block import Block
@@ -146,7 +146,7 @@ class QLinearGraphicsView(QBaseGraph):
             y += obj.height
 
     def _update(self):
-        self.verticalScrollBar().setRange(0, self.viewer.max_offset - self.height() / 2)
+        self.verticalScrollBar().setRange(0, self.viewer.max_offset - self.height() // 2)
         self.verticalScrollBar().setValue(self.viewer.offset)
         # TODO: horizontalScrollbar().setRange()
 
