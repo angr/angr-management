@@ -9,21 +9,22 @@ except ImportError:
 
 setup(
     name='angr-management',
-    version='7.8.8.1',
+    version='7.8.9.26',
+    python_requires='<3.0',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=packages,
     package_data={
     },
     install_requires=[
-        'angr>=7.8.8.1',
-        'pygments',
-        'websocket-client',
-        'qtconsole',
-        'ipython',
-        'pyzmq',
-        'PySide',
-        'pyqode.core',
-        'pyqode.python',
+        'angr==7.8.9.26',
+        'pygments==2.2.0',
+        'websocket-client==0.53.0',
+        'qtconsole==4.4.1',
+        'ipython==5.8.0',
+        'pyzmq==17.1.2',
+        'PySide==1.2.4',
+        'pyqode.core==2.11.0',
+        'pyqode.python==1.10.0',
     ]
 )
