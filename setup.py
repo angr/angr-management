@@ -25,6 +25,6 @@ setup(
         'pyzmq==17.1.2',
         'PySide==1.2.4',
         'pyqode.core==2.11.0',
-        'pyqode.python==1.10.0',
+        'pyqode.python==2.10.0',
     ]
 )
