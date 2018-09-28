@@ -46,8 +46,8 @@ def to_supergraph(transition_graph):
 
 
 
-        if len(edges) == 1 and src.addr + src.size == next(edges.keys()).addr:
-            dst = next(edges.keys())
+        if len(edges) == 1 and src.addr + src.size == next(iter(edges.keys())).addr:
+            dst = next(iter(edges.keys()))
             dst_in_edges = transition_graph.in_edges(dst)
             if len(dst_in_edges) == 1:
                 edges_to_shrink.add((src, dst))

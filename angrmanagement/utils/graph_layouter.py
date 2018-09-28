@@ -247,7 +247,7 @@ class EdgeRouter(object):
 
             for idx, edge in enumerate(edges):
                 edge.end_index = idx
-                if idx > max_idx:
+                if max_idx is None or idx > max_idx:
                     max_idx = idx
             for edge in edges:
                 edge.max_end_index = max_idx
@@ -261,7 +261,7 @@ class EdgeRouter(object):
 
             for idx, edge in enumerate(edges):
                 edge.start_index = idx
-                if edge.start_index > max_idx:
+                if max_idx is None or edge.start_index > max_idx:
                     max_idx = edge.start_index
             for edge in edges:
                 edge.max_start_index = max_idx
@@ -725,6 +725,8 @@ class GraphLayouter(object):
             if key not in self._grid_coordinates:
                 continue
             _, y = self._grid_coordinates[key]
-            max_y = max(max_y, y + self._row_heights[row])
+            new_y = y + self._row_heights[row]
+            if max_y is None or new_y > max_y:
+                max_y = new_y
 
         return max_y if max_y is not None else default
