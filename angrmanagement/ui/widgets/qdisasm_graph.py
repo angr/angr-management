@@ -372,7 +372,9 @@ class QDisasmGraph(QBaseGraph):
 
             if not centering:
                 # is it visible?
-                if 0 <= x < self.width() and 0 <= y < self.height():
+                topx = self.horizontalScrollBar().value() - self.width() // 2
+                topy = self.verticalScrollBar().value() - self.height() // 2
+                if topx <= x < topx + self.width() and topy <= y < topy + self.height():
                     return
 
             # make it visible in the center
