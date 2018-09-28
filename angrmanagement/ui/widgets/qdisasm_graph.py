@@ -88,6 +88,9 @@ class QDisasmGraph(QBaseGraph):
                 self.remove_block(b)
 
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
+        self.workspace.views_by_category['console'][0].push_namespace({
+            'disasm': self.disasm,
+        })
 
         self._clear_insn_addr_block_mapping()
 
