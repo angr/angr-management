@@ -10,7 +10,6 @@ Launch it and analyze some binaries!
 To install angr-management, use pip:
 
 ```
-pip install PySide --install-option "--jobs=4"  # replace 4 with the number of cores on your machine
 pip install angr-management
 ```
 
@@ -23,12 +22,6 @@ Please consider having a development install if you plan to use latest features/
 
 ```
 git clone git@github.com:angr/angr-management.git
-```
-
-- Install PySide
-
-```
-pip install PySide --install-option "--jobs=4"  # replace 4 with the number of cores on your machine
 ```
 
 - Install angr Management
