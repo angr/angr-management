@@ -127,21 +127,21 @@ class DisassemblyView(BaseView):
         dialog = RenameLabel(self, label_addr, parent=self)
         dialog.exec_()
 
-    def popup_newpath_dialog(self, async=True):
+    def popup_newpath_dialog(self, asynch=True):
         addr = self._address_in_selection()
         if addr is None:
             return
 
         dialog = NewPath(self.workspace, addr, parent=self)
-        if async:
+        if asynch:
             dialog.show()
         else:
             dialog.exec_()
 
-    def popup_xref_dialog(self, variable, async=True):
+    def popup_xref_dialog(self, variable, asynch=True):
 
         dialog = XRef(self.variable_manager, variable, parent=self)
-        if async:
+        if asynch:
             dialog.show()
         else:
             dialog.exec_()
