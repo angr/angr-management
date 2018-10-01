@@ -1,45 +1,46 @@
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
 from PySide2.QtGui import QColor
 from PySide2.QtCore import Qt
 
+import angr
+
+from ..dialogs.new_state import NewState
+
 
 class QStateTableItem(QTableWidgetItem):
-    def __init__(self, state_record, *args, **kwargs):
+    def __init__(self, state, *args, **kwargs):
         super(QStateTableItem, self).__init__(*args, **kwargs)
 
-        self._state_record = state_record
+        self.state = state
 
     def widgets(self):
-        """
+        state = self.state
 
-        :param angr.knowledge_plugins.Function function: The Function object.
-        :return: a list of QTableWidgetItem objects
-        :rtype: list
-        """
-
-        state_record = self._state_record
-
-        name = state_record.name
-        is_default = 'Yes' if state_record.is_default else 'No'
-        base_state = '' if state_record.is_default else state_record.base_state.name
-        mode = state_record.mode
-        address = '%#x' % state_record.address if isinstance(state_record.address, int) else 'Unspecified'
-        options = str(state_record.custom_options)
-        custom_code = 'Yes' if state_record.custom_code else 'No'
+        name = state.gui_data.name
+        base_name = state.gui_data.base_name
+        is_changed = 'No' if state.gui_data.is_original else 'Yes'
+        mode = state.mode
+        address = '%#x' % state.addr if isinstance(state.addr, int) else 'Symbolic'
+        state_options = {o for o, v in state.options._options.items() if v is True}
+        options_plus = state_options - angr.sim_options.modes[mode]
+        options_minus = angr.sim_options.modes[mode] - state_options
+        options = ' '.join([' '.join('+' + o for o in options_plus), ' '.join('-' + o for o in options_minus)])
 
         widgets = [
             QTableWidgetItem(name),
-            QTableWidgetItem(is_default),
-            QTableWidgetItem(base_state),
-            QTableWidgetItem(mode),
             QTableWidgetItem(address),
+            QTableWidgetItem(is_changed),
+            QTableWidgetItem(base_name),
+            QTableWidgetItem(mode),
             QTableWidgetItem(options),
-            QTableWidgetItem(custom_code),
         ]
 
-        color = QColor(0, 0, 0)
-        if state_record.is_default:
+        if state.gui_data.is_base:
             color = QColor(0, 0, 0x80)
+        elif state.gui_data.is_original:
+            color = QColor(0, 0x80, 0)
+        else:
+            color = QColor(0, 0, 0)
 
         for w in widgets:
             w.setFlags(w.flags() & ~Qt.ItemIsEditable)
@@ -49,29 +50,38 @@ class QStateTableItem(QTableWidgetItem):
 
 
 class QStateTable(QTableWidget):
-    def __init__(self, state_records, parent, selection_callback=None):
+    def __init__(self, instance, parent, selection_callback=None):
         super(QStateTable, self).__init__(parent)
 
         self._selected = selection_callback
 
-        header_labels = [ 'Name', 'Default?', 'Base State', 'Mode', 'Initial Address', 'Options', 'Custom Code' ]
+        header_labels = [ 'Name', 'Address', 'Changed?', 'Base State', 'Mode', 'Options' ]
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.items = [ ]
-        self.state_records = state_records
+        self.instance = instance
+        self.states = instance.states
 
         self.itemDoubleClicked.connect(self._on_state_selected)
         self.cellDoubleClicked.connect(self._on_state_selected)
-        self.state_records.am_subscribe(self._watch_state_records)
+        self.states.am_subscribe(self._watch_states)
+
+    def current_state_record(self):
+        selected_index = self.currentRow()
+        if 0 <= selected_index < len(self.items):
+            return self.items[selected_index]
+        else:
+            return None
+
 
     def reload(self):
         current_row = self.currentRow()
         self.clearContents()
 
-        self.items = [QStateTableItem(f) for f in self.state_records]
+        self.items = [QStateTableItem(f) for f in self.states]
         items_count = len(self.items)
         self.setRowCount(items_count)
 
@@ -79,18 +89,51 @@ class QStateTable(QTableWidget):
             for i, it in enumerate(item.widgets()):
                 self.setItem(idx, i, it)
 
-        if 0 <= current_row < len(self.items):
-            self.setCurrentItem(current_row, 0)
+        #if 0 <= current_row < len(self.items):
+        #    self.setCurrentItem(current_row, 0)
 
     def _on_state_selected(self, *args):
-        selected_index = self.currentRow()
-        if 0 <= selected_index < len(self.items):
-            selected_item = self.items[selected_index]
-        else:
-            selected_item = None
-
         if self._selected is not None:
-            self._selected(selected_item)
+            self._selected(self.current_state_record())
 
-    def _watch_state_records(self, **kwargs):
+    def contextMenuEvent(self, event):
+        sr = self.current_state_record()
+
+        menu = QMenu("", self)
+
+        menu.addAction('New state...', self._action_new_state)
+        menu.addSeparator()
+
+        a = menu.addAction('Duplicate state', self._action_duplicate)
+        if sr is None:
+            a.setDisabled(True)
+
+        a = menu.addAction('Delete state', self._action_delete)
+        if sr is None:
+            a.setDisabled(True)
+
+        a = menu.addAction('New simulation manager', self._action_new_simgr)
+        if sr is None:
+            a.setDisabled(True)
+
+        menu.exec_(event.globalPos())
+
+    def _action_new_state(self):
+        dialog = NewState(self.instance, parent=self)
+        dialog.exec_()
+        if dialog.state is not None:
+            self.states.append(dialog.state)
+            self.states.am_event()
+
+    def _action_duplicate(self):
+        pass
+
+    def _action_delete(self):
+        self.states.pop(self.currentRow())
+        self.states.am_event()
+
+    def _action_new_simgr(self):
+        pass
+
+    def _watch_states(self, **kwargs):
         self.reload()
