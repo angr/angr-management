@@ -1,5 +1,4 @@
-
-from PySide.QtGui import QComboBox
+from PySide2.QtWidgets import QComboBox
 
 
 class QStateComboBox(QComboBox):

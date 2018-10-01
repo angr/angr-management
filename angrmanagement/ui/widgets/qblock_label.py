@@ -1,6 +1,6 @@
 
-from PySide.QtGui import QPainter
-from PySide.QtCore import Qt
+from PySide2.QtGui import QPainter
+from PySide2.QtCore import Qt
 
 from .qgraph_object import QGraphObject
 

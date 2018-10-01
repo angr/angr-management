@@ -1,6 +1,6 @@
-
-from PySide.QtGui import QTableWidget, QTableWidgetItem, QColor, QAbstractItemView
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
+from PySide2.QtGui import QColor
+from PySide2.QtCore import Qt
 
 
 class QStateTableItem(QTableWidgetItem):
@@ -23,7 +23,7 @@ class QStateTableItem(QTableWidgetItem):
         is_default = 'Yes' if state_record.is_default else 'No'
         base_state = '' if state_record.is_default else state_record.base_state.name
         mode = state_record.mode
-        address = '%#x' % state_record.address if isinstance(state_record.address, (int, long)) else 'Unspecified'
+        address = '%#x' % state_record.address if isinstance(state_record.address, int) else 'Unspecified'
         options = str(state_record.custom_options)
         custom_code = 'Yes' if state_record.custom_code else 'No'
 

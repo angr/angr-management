@@ -1,6 +1,6 @@
-from PySide.QtGui import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QLineEdit, QPushButton, QGroupBox, \
+from PySide2.QtWidgets import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QLineEdit, QPushButton, QGroupBox, \
     QCheckBox, QTabWidget, QListWidget, QListWidgetItem
-from PySide.QtCore import QSize, Qt
+from PySide2.QtCore import QSize, Qt
 
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
@@ -43,7 +43,7 @@ class QSimulationManagers(QFrame):
                 self._simgrs_list.setCurrentIndex(i)
 
     def add_avoid_address(self, addr):
-        for i in xrange(self._avoids_list.count()):
+        for i in range(self._avoids_list.count()):
             item = self._avoids_list.item(i)  # type: QListWidgetItem
             if int(item.text(), 16) == addr:
                 # deduplicate
@@ -174,7 +174,7 @@ class QSimulationManagers(QFrame):
                 return simgr
 
             avoids = []
-            for i in xrange(self._avoids_list.count()):
+            for i in range(self._avoids_list.count()):
                 item = self._avoids_list.item(i)  # type: QListWidgetItem
                 if item.checkState() == Qt.Checked:
                     avoids.append(int(item.text(), 16))

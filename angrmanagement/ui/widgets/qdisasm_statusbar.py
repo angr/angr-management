@@ -1,7 +1,6 @@
-
 import os
 
-from PySide.QtGui import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog
+from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
 

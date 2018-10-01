@@ -1,6 +1,6 @@
 
-from PySide.QtGui import QVBoxLayout, QMenu, QApplication
-from PySide.QtCore import Qt, QSize
+from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
+from PySide2.QtCore import Qt, QSize
 
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph

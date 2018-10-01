@@ -1,6 +1,6 @@
 import pickle
 from threading import Thread
-from Queue import Queue
+from queue import Queue
 
 import ana
 

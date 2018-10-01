@@ -1,7 +1,7 @@
 
 from collections import defaultdict
 
-from PySide.QtCore import Qt
+from PySide2.QtCore import Qt
 from angr.knowledge_plugins import Function
 
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
@@ -118,7 +118,7 @@ class Workspace(object):
         - For strings, look up the symbol of that name and jump there
         """
 
-        if type(obj) in (int, long):
+        if type(obj) is int:
             self.jump_to(obj)
         elif type(obj) is str:
             sym = self.instance.project.loader.find_symbol(obj)

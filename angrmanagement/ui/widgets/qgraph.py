@@ -1,8 +1,8 @@
-
 import logging
 
-from PySide.QtGui import QGraphicsScene, QGraphicsView, QPainter, QKeyEvent
-from PySide.QtCore import Qt, QSize, Signal, QPoint, QEvent
+from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
+from PySide2.QtGui import QPainter, QKeyEvent
+from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
 
 _l = logging.getLogger('ui.widgets.qgraph')
 
@@ -56,7 +56,7 @@ class QZoomingGraphicsView(QGraphicsView):
         """
         KeyPress event
 
-        :param PySide.QtGui.QKeyEvent event: The event
+        :param PySide2.QtGui.QKeyEvent event: The event
         :return: True/False
         """
 
@@ -66,7 +66,7 @@ class QZoomingGraphicsView(QGraphicsView):
         """
         KeyRelease event
 
-        :param PySide.QtGui.QKeyEvent event: The event
+        :param PySide2.QtGui.QKeyEvent event: The event
         :return: True/False
         """
 
@@ -289,13 +289,13 @@ class QBaseGraph(QZoomingGraphicsView):
         self.verticalScrollBar().setPageStep(self.height())
 
     def _to_graph_pos(self, pos):
-        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
-        y_offset = self.height() / 2 - self.verticalScrollBar().value()
+        x_offset = self.width() // 2 - self.horizontalScrollBar().value()
+        y_offset = self.height() // 2 - self.verticalScrollBar().value()
         return QPoint(pos.x() - x_offset, pos.y() - y_offset)
 
     def _from_graph_pos(self, pos):
-        x_offset = self.width() / 2 - self.horizontalScrollBar().value()
-        y_offset = self.height() / 2 - self.verticalScrollBar().value()
+        x_offset = self.width() // 2 - self.horizontalScrollBar().value()
+        y_offset = self.height() // 2 - self.verticalScrollBar().value()
         return QPoint(pos.x() + x_offset, pos.y() + y_offset)
 
     def _get_block_by_pos(self, pos):

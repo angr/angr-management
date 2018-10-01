@@ -21,7 +21,7 @@ def _get_branch_instr(disassembly, node):
         return None
 
     # Get the instruction address that contains the jump
-    ins_addr = node.out_branches.keys()[0]
+    ins_addr = next(iter(node.out_branches.keys()))
 
     # Get the Instruction
     try:
@@ -48,7 +48,7 @@ def categorize_edges(disassembly, edges):
     for edge in edges:
         edges_by_node[edge.src].append(edge)
 
-    for src_node, items in edges_by_node.iteritems():
+    for src_node, items in edges_by_node.items():
         if len(items) == 1:
             # is it a back edge?
             edge = items[0]

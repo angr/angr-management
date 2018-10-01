@@ -2,8 +2,9 @@
 import sys
 import os
 
-from PySide.QtGui import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QResizeEvent, QIcon
-from PySide.QtCore import Qt, QSize, QEvent, QTimer
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
+from PySide2.QtGui import QResizeEvent, QIcon
+from PySide2.QtCore import Qt, QSize, QEvent, QTimer
 
 import angr
 
@@ -187,8 +188,8 @@ class MainWindow(QMainWindow):
 
             try:
                 event.result = event.execute()
-            except Exception:
-                event.exception = sys.exc_info()
+            except Exception as e:
+                event.exception = e
             event.event.set()
 
             return True

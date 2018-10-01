@@ -1,7 +1,7 @@
 import logging
 
-from PySide.QtGui import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PySide.QtCore import Qt, QSize
+from PySide2.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
+from PySide2.QtCore import Qt, QSize
 
 from .qast_viewer import QASTViewer
 
@@ -58,7 +58,7 @@ class QVEXTempsViewer(QFrame):
             tmps = state.scratch.temps
 
         # tmps
-        for tmp_id, tmp_value in tmps.iteritems():
+        for tmp_id, tmp_value in tmps.items():
             sublayout = QHBoxLayout()
 
             lbl_tmp_name = QLabel(self)

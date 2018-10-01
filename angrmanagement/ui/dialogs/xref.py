@@ -1,6 +1,5 @@
-
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QPushButton
-from PySide.QtCore import QSize
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide2.QtCore import QSize
 
 from ..widgets.qxref_viewer import QXRefViewer
 

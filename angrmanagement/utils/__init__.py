@@ -18,7 +18,7 @@ def locate_function(inst, addr):
         return None
 
     functions = inst.cfg.functions
-    for _, function in functions.iteritems():
+    for _, function in functions.items():
         for block in function.blocks:
             if block.addr <= addr < block.addr + block.size:
                 return function
@@ -123,7 +123,7 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
 
     if len(out_branch_map) > 1:
         # if there are more than one targets, we return the union of non-default out branches
-        keys = out_branch_map.keys()
+        keys = list(out_branch_map.keys())
         out_branch = None
         for k in keys:
             out_branch = out_branch_map[k].copy() if out_branch is None else out_branch.merge(out_branch_map[k])
@@ -131,7 +131,7 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
         return out_branch
 
     else:
-        return next(out_branch_map.itervalues())
+        return next(iter(out_branch_map.values()))
 
 
 def should_display_string_label(cfg, insn_addr):
@@ -142,7 +142,7 @@ def should_display_string_label(cfg, insn_addr):
     memory_data = cfg.insn_addr_to_memory_data[insn_addr]
     if memory_data.sort == 'string':
         return True
-    elif memory_data.sort == 'pointer-array' and memory_data.size == cfg.project.arch.bits / 8:
+    elif memory_data.sort == 'pointer-array' and memory_data.size == cfg.project.arch.bytes:
         # load the pointer
         ptr = cfg._fast_memory_load_pointer(memory_data.address)
         try:

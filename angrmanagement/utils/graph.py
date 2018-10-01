@@ -27,7 +27,7 @@ def to_supergraph(transition_graph):
     transition_graph = networkx.DiGraph(transition_graph)
 
     # remove all edges that transitions to outside
-    for src, dst, data in transition_graph.edges(data=True):
+    for src, dst, data in list(transition_graph.edges(data=True)):
         if data['type'] == 'transition' and data.get('outside', False) is True:
             transition_graph.remove_edge(src, dst)
         if transition_graph.in_degree(dst) == 0:
@@ -46,8 +46,8 @@ def to_supergraph(transition_graph):
 
 
 
-        if len(edges) == 1 and src.addr + src.size == next(edges.iterkeys()).addr:
-            dst = next(edges.iterkeys())
+        if len(edges) == 1 and src.addr + src.size == next(iter(edges.keys())).addr:
+            dst = next(iter(edges.keys()))
             dst_in_edges = transition_graph.in_edges(dst)
             if len(dst_in_edges) == 1:
                 edges_to_shrink.add((src, dst))
@@ -56,7 +56,7 @@ def to_supergraph(transition_graph):
         if any(iter('type' in data and data['type'] not in ('fake_return', 'call') for data in edges.values())):
             continue
 
-        for dst, data in edges.iteritems():
+        for dst, data in edges.items():
             if isinstance(dst, Function):
                 continue
             if 'type' in data and data['type'] == 'fake_return':
@@ -94,7 +94,7 @@ def to_supergraph(transition_graph):
             # might be an isolated node
             continue
 
-        for dst, data in dests_and_data.iteritems():
+        for dst, data in dests_and_data.items():
 
             edge = (node, dst)
 
@@ -118,7 +118,7 @@ def to_supergraph(transition_graph):
                         supernodes_map[src] = src_supernode
 
                     # link all out edges of dst_supernode to src_supernode
-                    for dst_, data_ in super_graph[dst_supernode].iteritems():
+                    for dst_, data_ in super_graph[dst_supernode].items():
                         super_graph.add_edge(src_supernode, dst_, **data_)
 
                     # link all in edges of dst_supernode to src_supernode
@@ -273,16 +273,16 @@ class SuperCFGNode(object):
         for n in other.cfg_nodes:
             self.insert_cfgnode(n)
 
-        for ins_addr, outs in other.out_branches.iteritems():
+        for ins_addr, outs in other.out_branches.items():
             if ins_addr in self.out_branches:
-                for stmt_idx, item in outs.iteritems():
+                for stmt_idx, item in outs.items():
                     if stmt_idx in self.out_branches[ins_addr]:
                         self.out_branches[ins_addr][stmt_idx].merge(item)
                     else:
                         self.out_branches[ins_addr][stmt_idx] = item
 
             else:
-                item = next(outs.itervalues())
+                item = next(iter(outs.values()))
                 self.out_branches[ins_addr][item.stmt_idx] = item
 
     def __repr__(self):

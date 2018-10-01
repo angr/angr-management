@@ -1,9 +1,6 @@
-
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QComboBox, \
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QComboBox, \
     QLineEdit, QTextEdit
-from PySide.QtCore import Qt
-import pyqode.core.api
-import pyqode.core.modes
+from PySide2.QtCore import Qt
 
 from ..widgets import QAddressInput, QStateComboBox
 from ...data.states import StateRecord
@@ -89,18 +86,18 @@ class NewState(QDialog):
 
         # custom code
 
-        code_label = QLabel(self)
-        code_label.setText('Initialization code')
+        #code_label = QLabel(self)
+        #code_label.setText('Initialization code')
 
-        self._editor = pyqode.core.api.CodeEdit()
-        self._editor.modes.append(pyqode.core.modes.PygmentsSyntaxHighlighter(self._editor.document()))
-        self._editor.modes.append(pyqode.core.modes.CaretLineHighlighterMode())
+        #self._editor = pyqode.core.api.CodeEdit()
+        #self._editor.modes.append(pyqode.core.modes.PygmentsSyntaxHighlighter(self._editor.document()))
+        #self._editor.modes.append(pyqode.core.modes.CaretLineHighlighterMode())
 
-        self._editor.insertPlainText(self.INITIAL_INIT_CODE)
+        #self._editor.insertPlainText(self.INITIAL_INIT_CODE)
 
-        layout.addWidget(code_label, row, 0)
-        layout.addWidget(self._editor, row, 1)
-        row += 1
+        #layout.addWidget(code_label, row, 0)
+        #layout.addWidget(self._editor, row, 1)
+        #row += 1
 
         # buttons
 
@@ -161,11 +158,11 @@ class NewState(QDialog):
         mode = self._mode_combo.itemData(self._mode_combo.currentIndex())
 
         # custom code
-        code = self._editor.toPlainText()
-        if code == self.INITIAL_INIT_CODE:
-            code = None
+        #code = self._editor.toPlainText()
+        #if code == self.INITIAL_INIT_CODE:
+        #    code = None
 
-        self.state_record = StateRecord(name, base, False, mode, custom_code=code)
+        self.state_record = StateRecord(name, base, False, mode)
 
         self._workspace.instance.states[name] = self.state_record
 

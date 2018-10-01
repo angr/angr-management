@@ -1,7 +1,8 @@
 import logging
 
-from PySide.QtGui import QPainter, QGraphicsView, QColor, QPen, QBrush
-from PySide.QtCore import QPoint, Qt, QPointF, QRectF
+from PySide2.QtGui import QPainter, QColor, QPen, QBrush
+from PySide2.QtWidgets import QGraphicsView
+from PySide2.QtCore import QPoint, Qt, QPointF, QRectF
 
 from ...config import Conf
 from ...utils.graph_layouter import GraphLayouter
@@ -60,14 +61,13 @@ class QSymExecGraph(QBaseGraph):
         for node in self.graph.nodes():
             self.blocks.add(node)
             node_sizes[node] = (node.width, node.height)
-        gl = GraphLayouter(self.graph, node_sizes,
-                           compare_nodes_func=lambda n0, n1: 0)
+        gl = GraphLayouter(self.graph, node_sizes, node_compare_key=lambda n: 0)
 
         self._edges = gl.edges
 
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
-        for node, coords in gl.node_coordinates.iteritems():
+        for node, coords in gl.node_coordinates.items():
             node.x, node.y = coords
 
             min_x = min(min_x, node.x)
@@ -101,12 +101,12 @@ class QSymExecGraph(QBaseGraph):
 
     def show_any(self):
         if self._proxies:
-            proxy = next(self._proxies.itervalues())
+            proxy = next(iter(self._proxies.values()))
             self.ensureVisible(proxy)
 
     def show_selected(self):
         if not self.state.am_none():
-            print "show_selected(): TODO"
+            print("show_selected(): TODO")
 
     #
     # Event handlers
@@ -181,7 +181,7 @@ class QSymExecGraph(QBaseGraph):
         current_x = self.horizontalScrollBar().value()
         current_y = self.verticalScrollBar().value()
 
-        painter.translate(self.width() / 2 - current_x, self.height() / 2 - current_y)
+        painter.translate(self.width() // 2 - current_x, self.height() // 2 - current_y)
 
         painter.setFont(Conf.symexec_font)
 

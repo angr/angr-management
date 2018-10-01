@@ -2,9 +2,9 @@
 import os
 import logging
 
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
     QGroupBox, QListWidgetItem, QListWidget
-from PySide.QtCore import Qt
+from PySide2.QtCore import Qt
 
 import angr
 
@@ -167,7 +167,7 @@ class LoadBinary(QDialog):
         skip_libs = set()
 
         dep_list = self.option_widgets['dep_list']  # type: QListWidget
-        for i in xrange(dep_list.count()):
+        for i in range(dep_list.count()):
             item = dep_list.item(i)  # type: QListWidgetItem
             if item.checkState() == Qt.Checked:
                 force_load_libs.append(item.text())

@@ -1,5 +1,5 @@
-from PySide.QtGui import QTreeWidget, QTreeWidgetItem
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PySide2.QtCore import Qt
 
 
 class QSimulationManagerViewer(QTreeWidget):
@@ -29,9 +29,9 @@ class QSimulationManagerViewer(QTreeWidget):
         if state is None:
             self.setCurrentItem(None)
         else:
-            for i in xrange(self.topLevelItemCount()):
+            for i in range(self.topLevelItemCount()):
                 item = self.topLevelItem(i)
-                for j in xrange(item.childCount()):
+                for j in range(item.childCount()):
                     subitem = item.child(j)
                     if subitem.data(0, 1) == state:
                         self.setCurrentItem(subitem)
@@ -46,7 +46,7 @@ class QSimulationManagerViewer(QTreeWidget):
         if self.simgr.am_none():
             return
 
-        for stash_name, stash in self.simgr.stashes.iteritems():
+        for stash_name, stash in self.simgr.stashes.items():
             if not stash and stash_name not in ('active', 'deadended', 'avoided'):
                 continue
 

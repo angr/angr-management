@@ -1,8 +1,8 @@
-
 import logging
 
-from PySide.QtGui import QLabel, QHBoxLayout, QPainter, QColor
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QLabel, QHBoxLayout
+from PySide2.QtGui import QPainter, QColor
+from PySide2.QtCore import Qt
 
 from angr.analyses.code_location import CodeLocation
 from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand

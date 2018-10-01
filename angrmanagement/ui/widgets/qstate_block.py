@@ -1,5 +1,5 @@
-from PySide.QtGui import QColor, QPen
-from PySide.QtCore import Qt
+from PySide2.QtGui import QColor, QPen
+from PySide2.QtCore import Qt
 
 from ...config import Conf
 from ...utils import locate_function
@@ -24,7 +24,7 @@ class QStateBlock(QGraphObject):
         if history is None and state is not None:
             self.history = state.history
         if history is not None and state is None:
-            self.state = history.state.state
+            self.state = history.state
         self.selected = is_selected
 
         # widgets
@@ -38,7 +38,7 @@ class QStateBlock(QGraphObject):
         if self.state is not None:
             return self.state
         elif self.history is not None:
-            return self.history.state.state
+            return self.history.state
         else:
             return None
 

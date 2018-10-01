@@ -1,6 +1,5 @@
-
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
+from PySide2.QtCore import Qt
 
 
 class LabelNameBox(QLineEdit):

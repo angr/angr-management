@@ -1,26 +1,16 @@
 import sys
 import os
 import ctypes
-# make pyqode happy
-os.environ['QT_API'] = 'pyside'
-import thread
+import threading
 
 
 def check_dependencies():
 
     try:
-        import PySide
+        import PySide2
     except ImportError:
-        sys.stderr.write("Cannot find the PySide package. You may install it via pip:\n" +
+        sys.stderr.write("Cannot find the PySide2 package. You may install it via pip:\n" +
                          "    pip install pyside\n")
-        return False
-
-    try:
-        import pyqode.core
-        import pyqode.python
-    except ImportError:
-        sys.stderr.write("Cannot find the pyqode package. You may install it via pip:\n" +
-                         "    pip install pyqode.core pyqode.python\n")
         return False
 
     try:
@@ -50,7 +40,7 @@ def main():
 
     set_app_user_model_id()
 
-    from PySide.QtGui import QApplication
+    from PySide2.QtWidgets import QApplication
 
     from .logic import GlobalInfo
     from .ui.css import CSS
@@ -58,7 +48,7 @@ def main():
 
     app = QApplication(sys.argv)
 
-    GlobalInfo.gui_thread = thread.get_ident()
+    GlobalInfo.gui_thread = threading.get_ident()
 
     # apply the CSS
     app.setStyleSheet(CSS.global_css())

@@ -1,6 +1,6 @@
 
-from PySide.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen
-from PySide.QtCore import QPointF, Qt
+from PySide2.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen
+from PySide2.QtCore import QPointF, Qt
 
 from angr.analyses.disassembly import Instruction
 

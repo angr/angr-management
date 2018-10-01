@@ -1,6 +1,5 @@
-
-from PySide.QtGui import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QLineEdit
-from PySide.QtCore import Qt
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QLineEdit
+from PySide2.QtCore import Qt
 
 from angr import StateHierarchy
 
@@ -140,7 +139,7 @@ class NewPath(QDialog):
 
         state = state_record.state(inst.project, address=addr)
         hierarchy = StateHierarchy()
-        simgr = inst.project.factory.simgr(state, hierarchy=hierarchy)
+        simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
         simgr_container = ObjectContainer(simgr, name=path_name)
         inst.simgrs.append(simgr_container)
         inst.simgrs.am_event(src='new_path')
