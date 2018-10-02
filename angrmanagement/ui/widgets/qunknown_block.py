@@ -79,7 +79,7 @@ class QUnknownBlock(QGraphObject):
             self._bytes_text = [ ]
             line = ""
             for i, b in enumerate(self.bytes):
-                line += "%02x " % ord(b)
+                line += "%02x " % b
                 if i > 0 and (i + 1) % 16 == 0:
                     self._bytes_text.append(line)
                     line = ""

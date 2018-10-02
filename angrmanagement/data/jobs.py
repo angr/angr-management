@@ -4,7 +4,7 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
 
-class Job(object):
+class Job:
     def __init__(self, name, on_finish=None):
         self.name = name
         self.progress_percentage = 0.

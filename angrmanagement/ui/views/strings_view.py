@@ -35,7 +35,7 @@ class StringsView(BaseView):
 
     def _on_function_selected(self, function):
 
-        if isinstance(function, (str, unicode)) and str(function) == "all":
+        if isinstance(function, str) and function == "all":
             # all functions
             self._selected_function = None
 
