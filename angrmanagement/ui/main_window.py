@@ -13,7 +13,7 @@ from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
-from .dialogs.load_binary import LoadBinary
+from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
@@ -100,16 +100,20 @@ class MainWindow(QMainWindow):
     #
 
     def _open_loadbinary_dialog(self, file_to_open):
-        self._load_binary_dialog = LoadBinary(file_to_open)
-        self._load_binary_dialog.setModal(True)
-        self._load_binary_dialog.exec_()
+        try:
+            self._load_binary_dialog = LoadBinary(file_to_open)
+            self._load_binary_dialog.setModal(True)
+            self._load_binary_dialog.exec_()
 
-        if self._load_binary_dialog.cfg_args is not None:
-            # load the binary
-            self._load_binary(file_to_open,
-                              load_options=self._load_binary_dialog.load_options,
-                              cfg_args=self._load_binary_dialog.cfg_args
-                              )
+
+            if self._load_binary_dialog.cfg_args is not None:
+                # load the binary
+                self._load_binary(file_to_open,
+                                  load_options=self._load_binary_dialog.load_options,
+                                  cfg_args=self._load_binary_dialog.cfg_args
+                                  )
+        except LoadBinaryError:
+            pass
 
     def open_newstate_dialog(self):
         new_state_dialog = NewState(self.workspace, parent=self)

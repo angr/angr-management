@@ -3,13 +3,17 @@ import os
 import logging
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
-    QGroupBox, QListWidgetItem, QListWidget
+    QGroupBox, QListWidgetItem, QListWidget, QMessageBox
 from PySide2.QtCore import Qt
 
 import angr
 
 
 l = logging.getLogger('dialogs.load_binary')
+
+
+class LoadBinaryError(Exception):
+    pass
 
 
 class LoadBinary(QDialog):
@@ -44,6 +48,11 @@ class LoadBinary(QDialog):
 
     def _try_loading(self):
 
+        # Make sure that the binary exists
+        if not os.path.isfile(self.file_path):
+            QMessageBox.critical(self, "File not found", "File \"%s\" is not found." % self.file_path, QMessageBox.Ok)
+            raise LoadBinaryError("File not found.")
+
         try:
             proj = angr.Project(self.file_path)
 
@@ -64,9 +73,13 @@ class LoadBinary(QDialog):
                 dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
                 dep_list.addItem(dep_item)
 
-        except Exception:
+        except Exception as ex:
             # I guess we will have to load it as a blob?
             l.warning("Preloading of the binary fails due to an exception.", exc_info=True)
+            QMessageBox.critical(self, "Error preloading the binary",
+                                 "Preloading of the binary fails due to an exception %s." % str(ex),
+                                 QMessageBox.Ok)
+            raise LoadBinaryError("File not found.")
 
     def _init_widgets(self):
 
