@@ -24,7 +24,7 @@ class QStringTableItem(QTableWidgetItem):
 
         address = "%#x" % str_data.address
         length = "%d" % str_data.size
-        content = filter_string_for_display(str_data.content)
+        content = filter_string_for_display(str_data.content.decode("utf-8"))
 
 
         widgets = [

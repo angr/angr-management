@@ -167,7 +167,7 @@ def get_string_for_display(cfg, insn_addr):
     memory_data = cfg.insn_addr_to_memory_data[insn_addr]
 
     if memory_data.sort == "string":
-        str_content = memory_data.content
+        str_content = memory_data.content.decode("utf-8")
     elif memory_data.sort == 'pointer-array':
         ptr = cfg._fast_memory_load_pointer(memory_data.address)
         if ptr in cfg.memory_data:
