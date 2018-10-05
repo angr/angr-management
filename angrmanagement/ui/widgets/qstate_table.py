@@ -1,3 +1,6 @@
+
+import re
+
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
 from PySide2.QtGui import QColor
 from PySide2.QtCore import Qt
@@ -76,7 +79,6 @@ class QStateTable(QTableWidget):
         else:
             return None
 
-
     def reload(self):
         current_row = self.currentRow()
         self.clearContents()
@@ -126,7 +128,11 @@ class QStateTable(QTableWidget):
             self.states.am_event()
 
     def _action_duplicate(self):
-        pass
+        state = self.states[self.currentRow()]
+        copy = state.copy()
+        copy.gui_data.name = self._get_copied_state_name(copy.gui_data.name)
+        self.states.append(copy)
+        self.states.am_event()
 
     def _action_delete(self):
         self.states.pop(self.currentRow())
@@ -137,3 +143,35 @@ class QStateTable(QTableWidget):
 
     def _watch_states(self, **kwargs):
         self.reload()
+
+    def _get_copied_state_name(self, current_name):
+        """
+        Get a non-duplicating name for the copied state.
+
+        :param str current_name:    The current name of the state.
+        :return:                    A new name of the copied state.
+        :rtype:                     str
+        """
+
+        m = re.match(r"^([\s\S]*) copy\s*(\d*)$", current_name)
+
+        if m:
+            # ends with copy
+            ctr_str = m.group(2)
+            if ctr_str:
+                ctr = int(ctr_str) + 1
+            else:
+                ctr = 1
+
+            current_name = m.group(1)
+            name = current_name + " copy %d" % ctr
+        else:
+            ctr = 0
+            name = current_name + " copy"
+
+        # Increment the counter until there is no conflict with existing names
+        all_names = set(s.gui_data.name for s in self.states)
+        while name in all_names:
+            ctr += 1
+            name = current_name + " copy %d" % ctr
+        return name

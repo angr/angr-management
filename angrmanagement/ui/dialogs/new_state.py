@@ -24,13 +24,16 @@ class StateMetadata(angr.SimStatePlugin):
         c.is_base = False
         return c
 
+
 StateMetadata.register_default('gui_data')
+
 
 def is_option(o):
     for ch in o:
         if ch not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_':
             return False
     return True
+
 
 class NewState(QDialog):
     def __init__(self, instance, parent=None):
