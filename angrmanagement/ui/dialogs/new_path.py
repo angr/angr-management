@@ -1,4 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, QLineEdit
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, \
+    QLineEdit, QMessageBox
 from PySide2.QtCore import Qt
 
 from angr import StateHierarchy
@@ -74,7 +75,7 @@ class NewPath(QDialog):
         state_label = QLabel(self)
         state_label.setText('Initial state')
 
-        init_state_combo = QStateComboBox(self._workspace.instance.states, self)
+        init_state_combo = QStateComboBox(self._workspace.instance, self)
         self._init_state_combo = init_state_combo
 
         layout.addWidget(state_label, row, 0)
@@ -133,11 +134,16 @@ class NewPath(QDialog):
     def _new_path(self, path_name, addr):
         inst = self._workspace.instance
 
-        state_record = self._init_state_combo.state_record
-        if state_record is None:
+        state = self._init_state_combo.state
+
+        if state is None:
+            QMessageBox.critical(self, "Unknown initial state",
+                                 "Please select a state to start symbolic execution with.",
+                                 QMessageBox.Ok
+                                 )
             return False
 
-        state = state_record.state(inst.project, address=addr)
+        state._ip = addr
         hierarchy = StateHierarchy()
         simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
         simgr_container = ObjectContainer(simgr, name=path_name)
