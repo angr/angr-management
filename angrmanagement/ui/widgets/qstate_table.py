@@ -7,6 +7,7 @@ from PySide2.QtCore import Qt
 
 import angr
 
+from ...utils.namegen import NameGenerator
 from ..dialogs.new_state import NewState
 
 
@@ -114,7 +115,7 @@ class QStateTable(QTableWidget):
         if sr is None:
             a.setDisabled(True)
 
-        a = menu.addAction('New simulation manager', self._action_new_simgr)
+        a = menu.addAction('New simulation manager', self._action_new_simulation_manager)
         if sr is None:
             a.setDisabled(True)
 
@@ -138,8 +139,10 @@ class QStateTable(QTableWidget):
         self.states.pop(self.currentRow())
         self.states.am_event()
 
-    def _action_new_simgr(self):
-        pass
+    def _action_new_simulation_manager(self):
+        state = self.states[self.currentRow()]
+        simgr_name = NameGenerator.random_name()
+        self.instance.workspace.create_simulation_manager(state, simgr_name)
 
     def _watch_states(self, **kwargs):
         self.reload()

@@ -3,10 +3,12 @@ from collections import defaultdict
 
 from PySide2.QtCore import Qt
 from angr.knowledge_plugins import Function
+from angr import StateHierarchy
 
+from ..data.instance import ObjectContainer
+from ..config import Conf
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
-from ..config import Conf
 
 class Workspace(object):
     def __init__(self, main_window, instance):
@@ -135,3 +137,17 @@ class Workspace(object):
             tab = DisassemblyView(self, 'right')
             self.add_view(tab, tab.caption, tab.category)
             tab.jump_to(addr)
+
+    def create_simulation_manager(self, state, state_name):
+
+        inst = self.instance
+        hierarchy = StateHierarchy()
+        simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
+        simgr_container = ObjectContainer(simgr, name=state_name)
+        inst.simgrs.append(simgr_container)
+        inst.simgrs.am_event(src='new_path')
+
+        symexec_view = self.views_by_category['symexec'][0]
+        symexec_view.select_simgr(simgr_container)
+
+        self.raise_view(symexec_view)

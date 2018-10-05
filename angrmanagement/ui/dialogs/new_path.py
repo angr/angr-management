@@ -1,10 +1,6 @@
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, QGridLayout, \
     QLineEdit, QMessageBox
-from PySide2.QtCore import Qt
 
-from angr import StateHierarchy
-
-from ...data.instance import ObjectContainer
 from ...utils.namegen import NameGenerator
 from ..widgets import QAddressInput, QStateComboBox
 
@@ -120,7 +116,7 @@ class NewPath(QDialog):
         if self._addr is None:
             return
 
-        if self._new_path(name, self._addr):
+        if self._new_state(name, self._addr):
             self.close()
 
     def _on_cancel_clicked(self):
@@ -131,8 +127,7 @@ class NewPath(QDialog):
     # Private methods
     #
 
-    def _new_path(self, path_name, addr):
-        inst = self._workspace.instance
+    def _new_state(self, state_name, addr):
 
         state = self._init_state_combo.state
 
@@ -144,15 +139,7 @@ class NewPath(QDialog):
             return False
 
         state._ip = addr
-        hierarchy = StateHierarchy()
-        simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
-        simgr_container = ObjectContainer(simgr, name=path_name)
-        inst.simgrs.append(simgr_container)
-        inst.simgrs.am_event(src='new_path')
 
-        symexec_view = self._workspace.views_by_category['symexec'][0]
-        symexec_view.select_simgr(simgr_container)
-
-        self._workspace.raise_view(symexec_view)
+        self._workspace.create_simulation_manager(state, state_name)
 
         return True
