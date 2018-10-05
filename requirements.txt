@@ -3,5 +3,5 @@ pygments
 angr==8.18.10.1
 ipython
 pyzmq
-PySide
+PySide2
 qtconsole
