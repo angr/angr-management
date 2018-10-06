@@ -248,7 +248,12 @@ class DisassemblyView(BaseView):
             self.current_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
             self.current_graph.show_instruction(insn_addr)
 
-    def jump_to(self, addr):
+    def jump_to(self, addr, src_ins_addr=None):
+
+        # Record the current instruction address first
+        if src_ins_addr is not None:
+            self._jump_history.record_address(src_ins_addr)
+
         self._jump_history.jump_to(addr)
         self._jump_to(addr)
 

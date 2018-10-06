@@ -2,6 +2,8 @@ from PySide2.QtWidgets import QLabel, QHBoxLayout, QSizePolicy
 from PySide2.QtGui import QCursor, QPainter, QColor
 from PySide2.QtCore import Qt, SIGNAL
 
+from angr.analyses.disassembly import Value
+
 from .qgraph_object import QGraphObject
 from .qoperand import QOperand
 from ...utils import should_display_string_label, get_string_for_display
@@ -140,12 +142,18 @@ class QInstruction(QGraphObject):
         for i, operand in enumerate(self.insn.operands):
             is_branch_target = self.insn.type in ('branch', 'call') and i == self.insn.branch_target_operand
             is_indirect_branch = self.insn.branch_type == 'indirect'
-            branch_targets = (self.out_branch.targets if self.out_branch is not None else None) \
-                if is_branch_target else None
-            operand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
+            branch_targets = None
+            if is_branch_target:
+                if self.out_branch is not None:
+                    branch_targets = self.out_branch.targets
+                else:
+                    # it does not create multiple branches. e.g., a call instruction
+                    if len(operand.children) == 1 and type(operand.children[0]) is Value:
+                        branch_targets = (operand.children[0].val,)
+            qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
                                self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets, self._config
                                )
-            self._operands.append(operand)
+            self._operands.append(qoperand)
 
         if should_display_string_label(self.workspace.instance.cfg, self.insn.addr):
             # yes we should display a string label

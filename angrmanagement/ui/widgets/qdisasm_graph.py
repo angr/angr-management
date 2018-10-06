@@ -188,13 +188,22 @@ class QDisasmGraph(QBaseGraph):
         :return:
         """
 
-        if event.button() == Qt.LeftButton:
+        btn = event.button()
+        if btn == Qt.LeftButton:
             block = self._get_block_by_pos(event.pos())
             if block is not None:
                 # clicking on a block
                 block.on_mouse_pressed(event.button(), self._to_graph_pos(event.pos()))
                 event.accept()
                 return
+        elif btn == Qt.ForwardButton:
+            # Jump forward
+            self.disassembly_view.jump_forward()
+            return
+        elif btn == Qt.BackButton:
+            # Jump backward
+            self.disassembly_view.jump_back()
+            return
 
         super(QDisasmGraph, self).mousePressEvent(event)
 
