@@ -167,7 +167,7 @@ class QOperand(QGraphObject):
     def on_mouse_doubleclicked(self, button, pos):
         if button == Qt.LeftButton:
             if self._branch_target is not None:
-                self.disasm_view.jump_to(self._branch_target)
+                self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr)
 
     #
     # Private methods
