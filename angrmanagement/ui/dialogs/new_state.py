@@ -36,7 +36,7 @@ def is_option(o):
 
 
 class NewState(QDialog):
-    def __init__(self, instance, parent=None):
+    def __init__(self, instance, addr=None, create_simgr=False, parent=None):
         super(NewState, self).__init__(parent)
 
         # initialization
@@ -45,6 +45,8 @@ class NewState(QDialog):
         self.state = None  # output
 
         self._options = set()
+        self._addr = addr
+        self._create_simgr = create_simgr  # Shall we create a new simgr after clicking OK?
 
         self._name_edit = None  # type: QLineEdit
         self._base_state_combo = None  # type: QStateComboBox
@@ -98,7 +100,8 @@ class NewState(QDialog):
         address_label.setText("Address")
 
         address_box = QLineEdit(self)
-        address_box.setText(hex(self.instance.project.entry))
+        address_box.setText(hex(self.instance.project.entry) if self._addr is None else hex(self._addr))
+
         def handle_address(_):
             nonlocal validation_failures
             key = {'addr'}
@@ -287,6 +290,10 @@ class NewState(QDialog):
 
             self.state.gui_data.name = name
             self.state.gui_data.is_original = True
+
+            if self._create_simgr:
+                self.instance.workspace.create_simulation_manager(self.state, name)
+
             self.close()
 
         ok_button.clicked.connect(do_ok)
