@@ -29,6 +29,7 @@ class QStateTableItem(QTableWidgetItem):
         options_plus = state_options - angr.sim_options.modes[mode]
         options_minus = angr.sim_options.modes[mode] - state_options
         options = ' '.join([' '.join('+' + o for o in options_plus), ' '.join('-' + o for o in options_minus)])
+        arguments = '<None>' if not state.gui_data.arguments else state.gui_data.arguments
 
         widgets = [
             QTableWidgetItem(name),
@@ -37,6 +38,7 @@ class QStateTableItem(QTableWidgetItem):
             QTableWidgetItem(base_name),
             QTableWidgetItem(mode),
             QTableWidgetItem(options),
+            QTableWidgetItem(arguments),
         ]
 
         if state.gui_data.is_base:
@@ -59,7 +61,7 @@ class QStateTable(QTableWidget):
 
         self._selected = selection_callback
 
-        header_labels = [ 'Name', 'Address', 'Changed?', 'Base State', 'Mode', 'Options' ]
+        header_labels = [ 'Name', 'Address', 'Changed?', 'Base State', 'Mode', 'Options', 'Arguments' ]
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)

@@ -1,8 +1,10 @@
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, \
     QGridLayout, QComboBox, \
-    QLineEdit, QTextEdit, QTreeView, QTreeWidget, QTreeWidgetItem
+    QLineEdit, QTextEdit, QTreeView, QTreeWidget, QTreeWidgetItem, QMessageBox
 from PySide2.QtCore import Qt
+
 import angr
+from angr.sim_type import parse_defns
 
 from ..widgets import QAddressInput, QStateComboBox
 from ...utils.namegen import NameGenerator
@@ -15,6 +17,7 @@ class StateMetadata(angr.SimStatePlugin):
         self.base_name = None           # the name of the base state this was created from
         self.is_original = False         # is this the original instanciation of this name?
         self.is_base = False             # is this state created with nothing else as a base?
+        self.arguments = None           # Function arguments
 
     def copy(self, memo=None):
         c = StateMetadata()
@@ -22,6 +25,7 @@ class StateMetadata(angr.SimStatePlugin):
         c.base_name = self.base_name
         c.is_original = False
         c.is_base = False
+        c.arguments = self.arguments.copy()
         return c
 
 
@@ -260,6 +264,14 @@ class NewState(QDialog):
         layout.addWidget(options_filter_box, row, 1)
         row += 1
 
+        # arguments
+
+        arguments_label = QLabel("Arguments")
+        arguments_box = QLineEdit("void func(void);")
+
+        layout.addWidget(arguments_label, row, 0)
+        layout.addWidget(arguments_box, row, 1)
+
         # buttons
 
         ok_button = QPushButton(self)
@@ -268,6 +280,23 @@ class NewState(QDialog):
             name = name_box.text()
             template = template_combo.currentData()
             addr = parse_address()
+
+            # Try parsing the arguments and raise an error if it cannot be parsed
+            try:
+                args = arguments_box.text()
+                parse_defns(args)
+                # it parses!
+            except Exception as ex:
+                QMessageBox.critical(
+                    self,
+                    "Incorrect arguments",
+                    "Failed to parse arguments: %s" % str(ex),
+                    QMessageBox.Ok,
+                )
+                arguments_box.selectAll()
+                arguments_box.setFocus()
+                return
+
             base_state = base_state_combo.state
             mode = mode_combo.currentData()
             if template in ('blank', 'call') and base_state is not None:
@@ -290,6 +319,7 @@ class NewState(QDialog):
 
             self.state.gui_data.name = name
             self.state.gui_data.is_original = True
+            self.state.gui_data.arguments = args
 
             if self._create_simgr:
                 self.instance.workspace.create_simulation_manager(self.state, name)
