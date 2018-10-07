@@ -22,7 +22,7 @@ class StatesView(BaseView):
         return QSize(400, 800)
 
     def _init_widgets(self):
-        self._state_table = QStateTable(self.workspace.instance.states, self, selection_callback=self._on_state_selected)
+        self._state_table = QStateTable(self.workspace.instance, self, selection_callback=self._on_state_selected)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._state_table)

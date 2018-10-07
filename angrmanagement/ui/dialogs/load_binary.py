@@ -1,4 +1,3 @@
-
 import os
 import logging
 
@@ -6,7 +5,7 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWid
     QGroupBox, QListWidgetItem, QListWidget, QMessageBox
 from PySide2.QtCore import Qt
 
-import angr
+import cle
 
 
 l = logging.getLogger('dialogs.load_binary')
@@ -54,13 +53,15 @@ class LoadBinary(QDialog):
             raise LoadBinaryError("File not found.")
 
         try:
-            proj = angr.Project(self.file_path)
+            ld = cle.Loader(self.file_path, perform_relocations=False)
 
             deps = [ ]
             processed_objects = set()
-            for ident, obj in proj.loader._satisfied_deps.items():
-                if ident in { 'angr syscalls', 'angr externs', '##cle_tls##' } or \
-                        obj is proj.loader.main_object:
+            for ident, obj in ld._satisfied_deps.items():
+                if obj is ld._kernel_object or \
+                        obj is ld._tls_object or \
+                        obj is ld._extern_object or \
+                        obj is ld.main_object:
                     continue
                 if obj in processed_objects:
                     continue

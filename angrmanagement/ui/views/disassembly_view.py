@@ -8,7 +8,7 @@ from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearViewer
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
-from ..dialogs.new_path import NewPath
+from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
@@ -127,12 +127,12 @@ class DisassemblyView(BaseView):
         dialog = RenameLabel(self, label_addr, parent=self)
         dialog.exec_()
 
-    def popup_newpath_dialog(self, asynch=True):
+    def popup_newstate_dialog(self, asynch=True):
         addr = self._address_in_selection()
         if addr is None:
             return
 
-        dialog = NewPath(self.workspace, addr, parent=self)
+        dialog = NewState(self.workspace.instance, addr=addr, create_simgr=True, parent=self)
         if asynch:
             dialog.show()
         else:

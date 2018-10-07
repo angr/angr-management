@@ -4,7 +4,6 @@ from queue import Queue
 
 import ana
 
-from .states import StateRecord
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
@@ -135,8 +134,6 @@ class Instance(object):
 
     def set_project(self, project):
         self.project = project
-        self.states.am_obj = StateRecord.basics()
-        self.states.am_event(src='set_project')
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:
