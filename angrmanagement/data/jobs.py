@@ -71,18 +71,25 @@ class CFGGenerationJob(Job):
         inst.cfg = cfg
         super(CFGGenerationJob, self).finish(inst, result)
 
-        #offsets = inst.registry.offsets.copy()
-        #for node in result.nodes():
-        #    offsets[node.addr] = CodeAddressEntry(address=node.addr)
-        #for func in result.kb.functions.values():
-        #    offsets[func.addr] = FunctionEntry(function=func)
-
-        # This is sort of a hack to get it to propagate the update.
-        # Perhaps this model is better in an immutable language...
-        #inst.registry = Registry(offsets=offsets)
-
     def __repr__(self):
         return "Generating CFG"
+
+
+class CodeTaggingJob(Job):
+
+    def __init__(self, on_finish=None):
+        super(CodeTaggingJob, self).__init__(name="Code tagging", on_finish=on_finish)
+
+    def run(self, inst):
+        for func in inst.cfg.functions.values():
+            ct = inst.project.analyses.CodeTagging(func)
+            func.tags = tuple(ct.tags)
+
+    def finish(self, inst, result):
+        super(CodeTaggingJob, self).finish(inst, result)
+
+    def __repr__(self):
+        return "Tagging Code"
 
 
 class SimgrStepJob(Job):
