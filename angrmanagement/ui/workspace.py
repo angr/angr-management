@@ -2,10 +2,12 @@
 from collections import defaultdict
 
 from PySide2.QtCore import Qt
+
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
 
 from ..data.instance import ObjectContainer
+from ..data.jobs import CodeTaggingJob
 from ..config import Conf
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
@@ -64,6 +66,15 @@ class Workspace(object):
 
             if the_func is not None:
                 self.on_function_selected(the_func)
+
+        self.instance.add_job(
+            CodeTaggingJob(
+                on_finish=self.on_function_tagged,
+            )
+        )
+
+    def on_function_tagged(self):
+        pass
 
     #
     # Public methods

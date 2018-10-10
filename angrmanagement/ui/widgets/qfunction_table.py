@@ -1,19 +1,23 @@
 import os
 import string
 
-from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
+from angr.analyses.code_tagging import CodeTags
+
+from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit, \
+    QStyledItemDelegate
 from PySide2.QtGui import QBrush, QColor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
 
 class QFunctionTableModel(QAbstractTableModel):
 
-    Headers = ['Name', 'Address', 'Binary', 'Size', 'Blocks']
+    Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
     NAME_COL = 0
-    ADDRESS_COL = 1
-    BINARY_COL = 2
-    SIZE_COL = 3
-    BLOCKS_COL = 4
+    TAGS_COL = 1
+    ADDRESS_COL = 2
+    BINARY_COL = 3
+    SIZE_COL = 4
+    BLOCKS_COL = 5
 
     def __init__(self, func_list=None):
 
@@ -66,6 +70,16 @@ class QFunctionTableModel(QAbstractTableModel):
         return self.Headers[section]
 
     def data(self, index, role):
+
+        TAG_STRS = {
+            CodeTags.HAS_XOR: "Xor",
+            CodeTags.HAS_BITSHIFTS: "Shift",
+        }
+
+        def _get_tags_display_string(tags):
+
+            return ", ".join(TAG_STRS.get(t, t) for t in tags)
+
         if not index.isValid():
             return None
 
@@ -81,6 +95,8 @@ class QFunctionTableModel(QAbstractTableModel):
             mapping = {
                 self.NAME_COL:
                     lambda f: f.name,
+                self.TAGS_COL:
+                    lambda f: _get_tags_display_string(f.tags),
                 self.ADDRESS_COL:
                     lambda f: "%x" % f.addr,
                 self.BINARY_COL:
@@ -114,6 +130,8 @@ class QFunctionTableModel(QAbstractTableModel):
         mapping = {
             self.NAME_COL:
                 lambda: sorted(self.func_list, key=lambda f: f.name, reverse=order==Qt.DescendingOrder),
+            self.TAGS_COL:
+                lambda: sorted(self.func_list, key=lambda f: f.tags, reverse=order==Qt.DescendingOrder),
             self.ADDRESS_COL:
                 lambda: sorted(self.func_list, key=lambda f: f.addr, reverse=order==Qt.DescendingOrder),
             self.BINARY_COL:
@@ -150,6 +168,8 @@ class QFunctionTableModel(QAbstractTableModel):
                 return True
             if keyword in "%#x" % func.addr:
                 return True
+        if keyword.lower() in ",".join(func.tags).lower():
+            return True
         if func.binary and keyword in func.binary.binary:
             return True
         return False
