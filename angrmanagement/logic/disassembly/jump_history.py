@@ -18,6 +18,10 @@ class JumpHistory(object):
             self._pos = len(self._history) - 1
 
     def record_address(self, addr):
+
+        if self._pos != len(self._history) - 1:
+            self.trim()
+
         if not self._history or self._history[-1] != addr:
             self._history.append(addr)
             self._pos = len(self._history) - 1
