@@ -173,7 +173,7 @@ def get_string_for_display(cfg, insn_addr):
         if ptr in cfg.memory_data:
             next_level = cfg.memory_data[ptr]
             if next_level.sort == 'string':
-                str_content = next_level.content
+                str_content = next_level.content.decode('utf-8')
 
     if str_content is not None:
         if len(str_content) > MAX_SIZE: return '"' + filter_string_for_display(str_content[:MAX_SIZE]) + '..."'
