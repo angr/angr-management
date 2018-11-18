@@ -317,15 +317,22 @@ class QLinearViewer(QWidget):
         for obj_addr, obj in self.cfb.floor_items():
 
             if isinstance(obj, Block):
-                func_addr = self.cfg.get_any_node(obj.addr).function_address  # FIXME: Resiliency
-                func = self.cfg.kb.functions[func_addr]  # FIXME: Resiliency
-                disasm = self._get_disasm(func)
-                qobject = QBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                 self.disasm_view.infodock, obj.addr, [ obj ], { }, mode='linear',
-                                 )
+                cfg_node = self.cfg.get_any_node(obj.addr)
+                if cfg_node is not None:
+                    func_addr = cfg_node.function_address
+                    func = self.cfg.kb.functions[func_addr]  # FIXME: Resiliency
+                    disasm = self._get_disasm(func)
+                    qobject = QBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                     self.disasm_view.infodock, obj.addr, [ obj ], { }, mode='linear',
+                                     )
 
-                for insn_addr in qobject.addr_to_insns.keys():
-                    self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
+                    for insn_addr in qobject.addr_to_insns.keys():
+                        self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
+                else:
+                    # TODO: This should be displayed as a function thunk
+                    _l.error("QLinearViewer: Unexpected result: CFGNode %#x is not found in CFG."
+                             "Display it as a QUnknownBlock.", obj.addr)
+                    qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
 
             elif isinstance(obj, Unknown):
                 qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)

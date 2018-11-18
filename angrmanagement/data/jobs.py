@@ -1,7 +1,13 @@
+
+import logging
+
 import networkx
 
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
+
+
+l = logging.getLogger(name=__name__)
 
 
 class Job:
@@ -66,10 +72,13 @@ class CFGGenerationJob(Job):
         return cfg, cfb
 
     def finish(self, inst, result):
-        cfg, cfb = result
-        inst.cfb = cfb
-        inst.cfg = cfg
-        super(CFGGenerationJob, self).finish(inst, result)
+        try:
+            cfg, cfb = result
+            inst.cfb = cfb
+            inst.cfg = cfg
+            super(CFGGenerationJob, self).finish(inst, result)
+        except Exception:
+            l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)
 
     def __repr__(self):
         return "Generating CFG"
