@@ -75,7 +75,7 @@ class QZoomingGraphicsView(QGraphicsView):
 
 class QBaseGraph(QZoomingGraphicsView):
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace, parent=None, allow_dragging=True):
         super(QBaseGraph, self).__init__(parent)
 
         self.workspace = workspace
@@ -87,6 +87,7 @@ class QBaseGraph(QZoomingGraphicsView):
         self.selected_insns = set()
         self.selected_operands = set()
         self._insn_addr_to_block = {}
+        self._allow_dragging = allow_dragging
 
         # scrolling
         self._is_scrolling = False
@@ -213,7 +214,7 @@ class QBaseGraph(QZoomingGraphicsView):
     #
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if self._allow_dragging and event.button() == Qt.LeftButton:
             # dragging the entire graph
             self.setDragMode(QGraphicsView.ScrollHandDrag)
             self._is_scrolling = True

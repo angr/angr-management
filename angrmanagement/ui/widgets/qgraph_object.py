@@ -1,7 +1,7 @@
 from PySide2.QtGui import QPainter
 
 
-class QGraphObject(object):
+class QGraphObject:
     def __init__(self):
 
         self._x = None
