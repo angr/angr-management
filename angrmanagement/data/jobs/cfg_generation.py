@@ -1,6 +1,9 @@
 
+import time
 import logging
 
+from ...logic import GlobalInfo
+from ...logic.threads import gui_thread_schedule_async
 from .job import Job
 
 _l = logging.getLogger(name=__name__)
@@ -26,10 +29,19 @@ class CFGGenerationJob(Job):
 
         self.cfg_args = cfg_args
 
+        self._cfb = None
+        self._last_progress_callback_triggered = None
+
     def run(self, inst):
+        temp_cfb = inst.project.analyses.CFB()
+        self._cfb = temp_cfb
         cfg = inst.project.analyses.CFG(progress_callback=self._progress_callback,
+                                        low_priority=True,
+                                        cfb=temp_cfb,
                                         **self.cfg_args
                                         )
+        self._cfb = None
+        # Build the real one
         cfb = inst.project.analyses.CFB(cfg=cfg)
 
         return cfg, cfb
@@ -45,3 +57,27 @@ class CFGGenerationJob(Job):
 
     def __repr__(self):
         return "Generating CFG"
+
+    #
+    # Private methods
+    #
+
+    def _progress_callback(self, percentage, cfg=None):
+
+        t = time.time()
+        if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
+            return
+        self._last_progress_callback_triggered = t
+
+        super()._progress_callback(percentage)
+
+        print("FUCK?", cfg, self._cfb)
+
+        if cfg is not None:
+            # Peek into the CFG
+            gui_thread_schedule_async(self._refresh, args=(cfg, self._cfb, ))
+
+    def _refresh(self, cfg, cfb):
+        print("Huh?")
+        GlobalInfo.main_window.workspace.instance.async_set_cfg(cfg)
+        GlobalInfo.main_window.workspace.instance.async_set_cfb(cfb)

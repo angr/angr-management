@@ -1,4 +1,5 @@
 import pickle
+import time
 from threading import Thread
 from queue import Queue
 
@@ -132,27 +133,37 @@ class Instance(object):
     # Public methods
     #
 
+    def async_set_cfg(self, cfg):
+        self._cfg = cfg
+
+    def async_set_cfb(self, cfb):
+        self._cfb = cfb
+
     def set_project(self, project):
         self.project = project
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:
             cfg_args = {}
-        self.add_job(
-            CFGGenerationJob(
+        cfg_job = CFGGenerationJob(
                 on_finish=self.workspace.on_cfg_generated,
                 **cfg_args
              )
-        )
+        self.add_job(cfg_job)
+
+        self._start_daemon_thread(self._refresh_cfg, 'Progressive Refreshing CFG', args=(cfg_job,))
 
     def add_job(self, job):
         self.jobs.append(job)
         self._jobs_queue.put(job)
 
-    def _start_worker(self):
-        t = Thread(target=self._worker, name='angr Management Worker Thread')
+    def _start_daemon_thread(self, target, name, args=None):
+        t = Thread(target=target, name=name, args=args if args else tuple())
         t.daemon = True
         t.start()
+
+    def _start_worker(self):
+        self._start_daemon_thread(self._worker, 'angr Management Worker Thread')
 
     def _worker(self):
         while True:
@@ -165,8 +176,21 @@ class Instance(object):
             result = job.run(self)
             gui_thread_schedule_async(job.finish, args=(self, result))
 
+            self.jobs.remove(job)
+
     def _set_status(self, status_text):
         GlobalInfo.main_window.status = status_text
+
+    def _refresh_cfg(self, cfg_job):
+        time.sleep(1.0)
+        while True:
+            if self._cfg is not None:
+                if self.workspace is not None:
+                    gui_thread_schedule_async(lambda: self.workspace.reload())
+
+            time.sleep(0.3)
+            if cfg_job not in self.jobs:
+                break
 
     def save(self, loc):
         with open(loc, 'wb') as f:

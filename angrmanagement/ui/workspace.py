@@ -1,4 +1,5 @@
 
+import logging
 from collections import defaultdict
 
 from PySide2.QtCore import Qt
@@ -12,7 +13,10 @@ from ..config import Conf
 from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
-class Workspace(object):
+_l = logging.getLogger(__name__)
+
+
+class Workspace:
     def __init__(self, main_window, instance):
 
         self._main_window = main_window
@@ -119,8 +123,16 @@ class Workspace(object):
         dockable.raise_()
 
     def reload(self):
+        # import time
+        # start = time.time()
         for view in self.views:
-            view.reload()
+            try:
+                view.reload()
+            except Exception:
+                _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
+                pass
+        # elapsed = time.time() - start
+        # print("Reloading took %f seconds." % elapsed)
 
     def viz(self, obj):
         """

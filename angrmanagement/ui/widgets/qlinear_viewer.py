@@ -14,6 +14,7 @@ from .qblock import QBlock
 from .qunknown_block import QUnknownBlock
 
 _l = logging.getLogger('ui.widgets.qlinear_viewer')
+# _l.setLevel(logging.DEBUG)
 
 
 class QLinearGraphicsView(QBaseGraph):
@@ -295,6 +296,10 @@ class QLinearViewer(QWidget):
 
         self._addr_to_region_offset.clear()
         self._offset_to_region.clear()
+        self._disasms.clear()
+        self._offset = 0
+        self._max_offset = None
+        self._start_line_in_object = 0
 
         # enumerate memory regions
         byte_offset = 0
@@ -302,8 +307,6 @@ class QLinearViewer(QWidget):
             self._addr_to_region_offset[mr.addr] = byte_offset
             self._offset_to_region[byte_offset] = mr
             byte_offset += mr.size
-
-        self._max_offset = None  # reset it
 
     def navigate_to_addr(self, addr):
         if not self._addr_to_region_offset:
