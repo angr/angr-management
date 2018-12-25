@@ -71,13 +71,10 @@ class CFGGenerationJob(Job):
 
         super()._progress_callback(percentage)
 
-        print("FUCK?", cfg, self._cfb)
-
         if cfg is not None:
             # Peek into the CFG
             gui_thread_schedule_async(self._refresh, args=(cfg, self._cfb, ))
 
     def _refresh(self, cfg, cfb):
-        print("Huh?")
         GlobalInfo.main_window.workspace.instance.async_set_cfg(cfg)
         GlobalInfo.main_window.workspace.instance.async_set_cfb(cfb)
