@@ -1,12 +1,12 @@
 import logging
 
-from PySide2.QtWidgets import QWidget, QHBoxLayout
-from PySide2.QtGui import QPainter
+from PySide2.QtWidgets import QWidget, QHBoxLayout, QAbstractSlider
+from PySide2.QtGui import QPainter, QWheelEvent
 from PySide2.QtCore import Qt
 from sortedcontainers import SortedDict
 
 from angr.block import Block
-from angr.analyses.cfg.cfb import Unknown
+from angr.analyses.cfg.cfb import Unknown, MemoryRegion
 
 from ...config import Conf
 from .qgraph import QBaseGraph
@@ -14,14 +14,16 @@ from .qblock import QBlock
 from .qunknown_block import QUnknownBlock
 
 _l = logging.getLogger('ui.widgets.qlinear_viewer')
+# _l.setLevel(logging.DEBUG)
 
 
 class QLinearGraphicsView(QBaseGraph):
     def __init__(self, viewer, disasm_view, parent=None):
-        super(QLinearGraphicsView, self).__init__(viewer.workspace, parent)
+        super(QLinearGraphicsView, self).__init__(viewer.workspace, parent=parent, allow_dragging=False)
 
-        self.viewer = viewer
+        self.viewer = viewer  # type:QLinearViewer
         self.disasm_view = disasm_view
+        self._line_height = Conf.disasm_font_height
 
         self.key_released.connect(self._on_keyreleased_event)
 
@@ -29,6 +31,8 @@ class QLinearGraphicsView(QBaseGraph):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.horizontalScrollBar().setSingleStep(Conf.disasm_font_width)
         self.verticalScrollBar().setSingleStep(Conf.disasm_font_height)
+
+        self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
     #
     # Events
@@ -40,8 +44,48 @@ class QLinearGraphicsView(QBaseGraph):
         if key == Qt.Key_Space:
             self.disasm_view.display_disasm_graph()
             return True
+        elif key == Qt.Key_Down:
+            self._on_vertical_scroll_bar_triggered(QAbstractSlider.SliderSingleStepAdd)
+            return True
+        elif key == Qt.Key_Up:
+            self._on_vertical_scroll_bar_triggered(QAbstractSlider.SliderSingleStepSub)
+            return True
+        elif key == Qt.Key_PageDown:
+            self._on_vertical_scroll_bar_triggered(QAbstractSlider.SliderPageStepAdd)
+            return True
+        elif key == Qt.Key_PageUp:
+            self._on_vertical_scroll_bar_triggered(QAbstractSlider.SliderPageStepSub)
+            return True
 
         return False
+
+    def _on_vertical_scroll_bar_triggered(self, action):
+
+        if action == QAbstractSlider.SliderSingleStepAdd:
+            # scroll down by one line
+            self.viewer.prepare_objects(self.viewer.offset, start_line=self.viewer.start_line_in_object + 1)
+            self.viewport().update()
+        elif action == QAbstractSlider.SliderSingleStepSub:
+            # Scroll up by one line
+            self.viewer.prepare_objects(self.viewer.offset, start_line=self.viewer.start_line_in_object - 1)
+            self.viewport().update()
+        elif action == QAbstractSlider.SliderPageStepAdd:
+            # Scroll down by one page
+            lines_per_page = int(self.height() // self.line_height())
+            self.viewer.prepare_objects(self.viewer.offset, start_line=self.viewer.start_line_in_object
+                                                                       + lines_per_page)
+            self.viewport().update()
+        elif action == QAbstractSlider.SliderPageStepSub:
+            # Scroll up by one page
+            lines_per_page = int(self.height() // self.line_height())
+            self.viewer.prepare_objects(self.viewer.offset,
+                                        start_line=self.viewer.start_line_in_object - lines_per_page)
+            self.viewport().update()
+        elif action == QAbstractSlider.SliderMove:
+            # Setting a new offset
+            new_offset = int(self.verticalScrollBar().value() // self.line_height())
+            self.viewer.prepare_objects(new_offset)
+            self.viewport().update()
 
     def mousePressEvent(self, event):
         """
@@ -90,6 +134,21 @@ class QLinearGraphicsView(QBaseGraph):
             event.accept()
             return True
 
+    def wheelEvent(self, event):
+        """
+
+        :param QWheelEvent event:
+        :return:
+        """
+        delta = event.delta()
+        if delta < 0:
+            # scroll down by some lines
+            self.viewer.prepare_objects(self.viewer.offset, start_line=self.viewer.start_line_in_object + int(-delta // self.line_height()))
+        elif delta > 0:
+            # Scroll up by some lines
+            self.viewer.prepare_objects(self.viewer.offset, start_line=self.viewer.start_line_in_object - int(delta // self.line_height()))
+        self.viewport().update()
+
     def resizeEvent(self, event):
 
         self._update_size()
@@ -125,18 +184,20 @@ class QLinearGraphicsView(QBaseGraph):
         # Don't do anything
         pass
 
+    def line_height(self):
+        return self._line_height
+
+    def navigate_to(self, offset):
+        self.verticalScrollBar().setValue(offset * self.line_height())
+
     #
     # Private methods
     #
 
     def _paint_objects(self, painter):
 
-        new_offset = self.verticalScrollBar().value()
-
-        self.viewer.prepare_objects(new_offset)
-
         x = 80
-        y = self.viewer.paint_start_offset - self.viewer.offset
+        y = int(-self.viewer.start_line_in_object * self.line_height())
 
         for obj in self.viewer.objects:
             obj.x = x
@@ -146,8 +207,8 @@ class QLinearGraphicsView(QBaseGraph):
             y += obj.height
 
     def _update(self):
-        self.verticalScrollBar().setRange(0, self.viewer.max_offset - self.height() // 2)
-        self.verticalScrollBar().setValue(self.viewer.offset)
+        self.verticalScrollBar().setRange(0, self.viewer.max_offset * self.line_height() - self.height() // 2)
+        self.verticalScrollBar().setValue(self.viewer.offset * self.line_height())
         # TODO: horizontalScrollbar().setRange()
 
         self._update_size()
@@ -155,6 +216,8 @@ class QLinearGraphicsView(QBaseGraph):
     def _get_object_by_pos(self, pos):
         x, y = pos.x(), pos.y()
         for obj in self.viewer.objects:
+            if obj.x is None or obj.y is None:
+                continue
             if obj.x <= x <= obj.x + obj.width and \
                     obj.y <= y <= obj.y + obj.height:
                 return obj
@@ -172,11 +235,16 @@ class QLinearViewer(QWidget):
 
         self.cfg = None
         self.cfb = None
-        self._offset_to_addr = SortedDict()
-        self._addr_to_offset = SortedDict()
-        self._offset_to_object = SortedDict()
+
+        self._offset_to_region = SortedDict()
+        self._addr_to_region_offset = SortedDict()
+
+        # Offset (in bytes) into the entire blanket view
         self._offset = 0
-        self._paint_start_offset = 0
+        # The maximum offset (in bytes) of the blanket view
+        self._max_offset = None
+        # The first line that is rendered of the first object in self.objects. Start from 0.
+        self._start_line_in_object = 0
 
         self._linear_view = None  # type: QLinearGraphicsView
         self._disasms = { }
@@ -196,21 +264,14 @@ class QLinearViewer(QWidget):
         self._offset = v
 
     @property
-    def paint_start_offset(self):
-        return self._paint_start_offset
+    def start_line_in_object(self):
+        return self._start_line_in_object
 
     @property
     def max_offset(self):
-
-        # TODO: Cache it
-
-        try:
-            max_off = next(self._offset_to_object.irange(reverse=True))
-            obj = self._offset_to_object[max_off]
-        except StopIteration:
-            return 0
-
-        return max_off + obj.height
+        if self._max_offset is None:
+            self._max_offset = self._calculate_max_offset()
+        return self._max_offset
 
     #
     # Proxy properties
@@ -229,55 +290,146 @@ class QLinearViewer(QWidget):
     #
 
     def initialize(self):
-        self._make_objects()
+
+        if self.cfb is None:
+            return
+
+        self._addr_to_region_offset.clear()
+        self._offset_to_region.clear()
+        self._disasms.clear()
+        self._offset = 0
+        self._max_offset = None
+        self._start_line_in_object = 0
+
+        # enumerate memory regions
+        byte_offset = 0
+        for mr in self.cfb.regions:  # type:MemoryRegion
+            self._addr_to_region_offset[mr.addr] = byte_offset
+            self._offset_to_region[byte_offset] = mr
+            byte_offset += mr.size
 
     def navigate_to_addr(self, addr):
-        if not self._addr_to_offset:
+        if not self._addr_to_region_offset:
             return
         try:
-            floor_addr = next(self._addr_to_offset.irange(maximum=addr, reverse=True))
+            floor_region_addr = next(self._addr_to_region_offset.irange(maximum=addr, reverse=True))
         except StopIteration:
-            floor_addr = next(self._addr_to_offset.irange())
-        floor_offset = self._addr_to_offset[floor_addr]
-        self.navigate_to(floor_offset)
+            floor_region_addr = next(self._addr_to_region_offset.irange())
+        floor_region_offset = self._addr_to_region_offset[floor_region_addr]
+
+        offset_into_region = addr - floor_region_addr
+        self.navigate_to(floor_region_offset + offset_into_region)
 
     def refresh(self):
         self._linear_view.refresh()
 
     def navigate_to(self, offset):
 
-        self._linear_view.verticalScrollBar().setValue(int(offset))
+        self._linear_view.navigate_to(int(offset))
 
         self.prepare_objects(offset)
 
         self._linear_view.refresh()
 
-    def prepare_objects(self, offset):
+    def prepare_objects(self, offset, start_line=0):
+        """
+        Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
+        self._start_line_in_object.
 
-        if offset == self._offset:
+        :param int offset:      Beginning offset (in bytes) to display in the linear viewer.
+        :param int start_line:  The first line into the first object to display in the linear viewer.
+        :return:                None
+        """
+
+        if offset == self._offset and start_line == self._start_line_in_object:
             return
 
-        try:
-            start_offset = next(self._offset_to_object.irange(maximum=offset, reverse=True))
-        except StopIteration:
+        # Convert the offset to memory region
+        base_offset, mr = self._region_from_offset(offset)  # type: int,MemoryRegion
+        if mr is None:
+            return
+
+        addr = self._addr_from_offset(mr, base_offset, offset)
+        _l.debug("Address %#x, offset %d, start_line %d.", addr, offset, start_line)
+
+        if start_line < 0:
+            # Which object are we currently displaying at the top of the disassembly view?
             try:
-                start_offset = next(self._offset_to_object.irange())
-            except StopIteration:
-                # Tree is empty
-                return
+                top_obj_addr = self.cfb.floor_addr(addr=addr)
+            except KeyError:
+                top_obj_addr = addr
 
-        # Update offset
-        self._offset = offset
-        self._paint_start_offset = start_offset
+            # Reverse-iterate until we have enough lines to compensate start_line
+            for obj_addr, obj in self.cfb.ceiling_items(addr=top_obj_addr, reverse=True, include_first=False):
+                qobject = self._obj_to_paintable(obj_addr, obj)
+                if qobject is None:
+                    continue
+                object_lines = int(qobject.height // self._linear_view.line_height())
+                _l.debug("Compensating negative start_line: object %s, object_lines %d.", obj, object_lines)
+                start_line += object_lines
+                if start_line >= 0:
+                    addr = obj_addr
+                    # Update offset
+                    new_region_addr = next(self._addr_to_region_offset.irange(maximum=addr, reverse=True))
+                    new_region_offset = self._addr_to_region_offset[new_region_addr]
+                    offset = (addr - new_region_addr) + new_region_offset
+                    break
+            else:
+                # umm we don't have enough objects to compensate the negative start_line
+                start_line = 0
+                # update addr and offset to their minimal values
+                addr = next(self._addr_to_region_offset.irange())
+                offset = self._addr_to_region_offset[addr]
 
-        self.objects = [ ]
-        max_height = self.height()
+        _l.debug("After adjustment: Address %#x, offset %d, start_line %d.", addr, offset, start_line)
 
-        for off in self._offset_to_object.irange(minimum=start_offset):
-            obj = self._offset_to_object[off]
-            self.objects.append(obj)
-            if off - offset > max_height:
+        self.objects = []
+
+        viewable_lines = int(self._linear_view.height() // self._linear_view.line_height())
+        lines = 0
+        start_line_in_object = 0
+
+        # Load a page of objects
+        for obj_addr, obj in self.cfb.floor_items(addr=addr):
+            qobject = self._obj_to_paintable(obj_addr, obj)
+            if qobject is None:
+                # Conversion failed
+                continue
+
+            if isinstance(qobject, QBlock):
+                for insn_addr in qobject.addr_to_insns.keys():
+                    self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
+
+            object_lines = int(qobject.height // self._linear_view.line_height())
+
+            if start_line >= object_lines:
+                # this object should be skipped. ignore it
+                start_line -= object_lines
+                # adjust the offset as well
+                if obj_addr <= addr < obj_addr + obj.size:
+                    offset += obj_addr + obj.size - addr
+                else:
+                    offset += obj.size
+                _l.debug("Skipping object %s (size %d). New offset: %d.", obj, obj.size, offset)
+            else:
+                if start_line > 0:
+                    _l.debug("First object to paint: %s (size %d). Current offset %d.", obj, obj.size, offset)
+                    # this is the first object to paint
+                    start_line_in_object = start_line
+                    start_line = 0
+                    lines += object_lines - start_line_in_object
+                else:
+                    lines += object_lines
+                self.objects.append(qobject)
+
+            if lines > viewable_lines:
                 break
+
+        _l.debug("Final offset %d, start_line_in_object %d.", offset, start_line_in_object)
+
+        # Update properties
+        self._offset = offset
+        self._start_line_in_object = start_line_in_object
 
     #
     # Private methods
@@ -304,46 +456,47 @@ class QLinearViewer(QWidget):
         self.show_selected = self._linear_view.show_selected
         self.show_instruction = self._linear_view.show_instruction
 
-    def _make_objects(self):
-
-        self._addr_to_offset.clear()
-        self._offset_to_addr.clear()
-        self._offset_to_object.clear()
-
-        y = 0
-
-        self._linear_view._clear_insn_addr_block_mapping()
-
-        for obj_addr, obj in self.cfb.floor_items():
-
-            if isinstance(obj, Block):
-                cfg_node = self.cfg.get_any_node(obj.addr)
-                if cfg_node is not None:
-                    func_addr = cfg_node.function_address
-                    func = self.cfg.kb.functions[func_addr]  # FIXME: Resiliency
-                    disasm = self._get_disasm(func)
-                    qobject = QBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                     self.disasm_view.infodock, obj.addr, [ obj ], { }, mode='linear',
-                                     )
-
-                    for insn_addr in qobject.addr_to_insns.keys():
-                        self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
-                else:
-                    # TODO: This should be displayed as a function thunk
-                    _l.error("QLinearViewer: Unexpected result: CFGNode %#x is not found in CFG."
-                             "Display it as a QUnknownBlock.", obj.addr)
-                    qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
-
-            elif isinstance(obj, Unknown):
+    def _obj_to_paintable(self, obj_addr, obj):
+        if isinstance(obj, Block):
+            cfg_node = self.cfg.get_any_node(obj.addr, force_fastpath=True)
+            if cfg_node is not None:
+                func_addr = cfg_node.function_address
+                func = self.cfg.kb.functions[func_addr]  # FIXME: Resiliency
+                disasm = self._get_disasm(func)
+                qobject = QBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                 self.disasm_view.infodock, obj.addr, [obj], {}, mode='linear',
+                                 )
+            else:
+                # TODO: This should be displayed as a function thunk
+                _l.error("QLinearViewer: Unexpected result: CFGNode %#x is not found in CFG."
+                         "Display it as a QUnknownBlock.", obj.addr)
                 qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
 
-            else:
-                continue
+        elif isinstance(obj, Unknown):
+            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
 
-            self._offset_to_object[y] = qobject
-            if obj_addr not in self._addr_to_offset:
-                self._addr_to_offset[obj_addr] = y
-            y += qobject.height
+        else:
+            qobject = None
+
+        return qobject
+
+    def _calculate_max_offset(self):
+        try:
+            max_off = next(self._offset_to_region.irange(reverse=True))
+            mr = self._offset_to_region[max_off]  # type: MemoryRegion
+            return max_off + mr.size
+        except StopIteration:
+            return 0
+
+    def _region_from_offset(self, offset):
+        try:
+            off = next(self._offset_to_region.irange(maximum=offset, reverse=True))
+            return off, self._offset_to_region[off]
+        except StopIteration:
+            return None, None
+
+    def _addr_from_offset(self, mr, base_offset, offset):
+        return mr.addr + (offset - base_offset)
 
     def _get_disasm(self, func):
         """

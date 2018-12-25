@@ -1,8 +1,13 @@
+
+import logging
 from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtCore import QSize
+from traitlets.config.configurable import MultipleInstanceError
 
 from .view import BaseView
 from ..widgets.qipython_widget import QIPythonWidget
+
+_l = logging.getLogger(name=__name__)
 
 
 class ConsoleView(BaseView):
@@ -16,6 +21,9 @@ class ConsoleView(BaseView):
 
     def reload(self):
 
+        if self._ipython_widget is None:
+            return
+
         import angr, claripy, cle
 
         namespace = {'angr': angr,
@@ -28,6 +36,9 @@ class ConsoleView(BaseView):
         self._ipython_widget.push_namespace(namespace)
 
     def push_namespace(self, namespace):
+        if self._ipython_widget is None:
+            return
+
         self._ipython_widget.push_namespace(namespace)
 
     def sizeHint(self):
@@ -43,7 +54,13 @@ class ConsoleView(BaseView):
             'cle': cle,
         }
 
-        ipython_widget = QIPythonWidget(namespace=namespace)
+        try:
+            ipython_widget = QIPythonWidget(namespace=namespace)
+        except MultipleInstanceError:
+            _l.warning("Fails to load the Console view since an IPython interpreter has already been loaded. "
+                       "You might be running angr Management with IPython.")
+            return
+
         self._ipython_widget = ipython_widget
 
         hlayout = QHBoxLayout()

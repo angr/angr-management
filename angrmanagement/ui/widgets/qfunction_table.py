@@ -211,8 +211,6 @@ class QFunctionTableView(QTableView):
         self._functions = functions
         self._model.func_list = list(self._functions.values())
 
-        self.resizeColumnsToContents()
-
     def filter(self, keyword):
         self._model.filter(keyword)
 
@@ -265,22 +263,25 @@ class QFunctionTable(QWidget):
         super(QFunctionTable, self).__init__(parent)
 
         self._selection_callback = selection_callback
+        self._view = parent
 
-        self._view = None  # type: QFunctionTableView
+        self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
 
         self._init_widgets()
 
     @property
     def function_manager(self):
-        if self._view is not None:
-            return self._view.function_manager
+        if self._table_view is not None:
+            return self._table_view.function_manager
         return None
 
     @function_manager.setter
     def function_manager(self, v):
-        if self._view is not None:
-            self._view.function_manager = v
+        if v is not None:
+            self._view.set_function_count(len(v))
+        if self._table_view is not None:
+            self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
 
@@ -296,7 +297,7 @@ class QFunctionTable(QWidget):
 
     def hide_filter_box(self):
         self._filter_box.hide()
-        self._view.setFocus()
+        self._table_view.setFocus()
 
     #
     # Private methods
@@ -305,7 +306,7 @@ class QFunctionTable(QWidget):
     def _init_widgets(self):
 
         # function table view
-        self._view = QFunctionTableView(self, selection_callback=self._selection_callback)
+        self._table_view = QFunctionTableView(self, selection_callback=self._selection_callback)
 
         # filter text box
         self._filter_box = QFunctionTableFilterBox(self)
@@ -316,7 +317,9 @@ class QFunctionTable(QWidget):
         # layout
         layout = QVBoxLayout()
         layout.addWidget(self._filter_box)
-        layout.addWidget(self._view)
+        layout.addWidget(self._table_view)
+
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 
@@ -325,7 +328,7 @@ class QFunctionTable(QWidget):
     #
 
     def _on_filter_box_text_changed(self, text):
-        self._view.filter(text)
+        self._table_view.filter(text)
 
     def _on_filter_box_return_pressed(self):
         # Clear the filter
