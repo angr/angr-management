@@ -36,8 +36,6 @@ class QOperand(QGraphObject):
 
         # the variable involved
         self.variable = None
-        # whether this is a phi node or not
-        self.phi = False
 
         self._config = config
 
@@ -46,7 +44,6 @@ class QOperand(QGraphObject):
         # "widgets"
         self._label = None
         self._label_width = None
-        self._phi_width = None
         self._variable_ident = None
         self._variable_ident_width = None
         self._branch_target = None
@@ -88,11 +85,6 @@ class QOperand(QGraphObject):
                 painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
-
-        if self.phi:
-            painter.setPen(Qt.darkGreen)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, u'\u0278 ')
-            x += self._phi_width
 
         if self._branch_target or self._branch_targets:
             if self._is_target_func:
@@ -261,8 +253,8 @@ class QOperand(QGraphObject):
             if self.disasm_view.show_variable and variable_sort:
                 # try find the corresponding variable
                 variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(self.insn.addr,
-                                                                                                   variable_sort
-                                                                                                   )
+                                                                                                    variable_sort
+                                                                                                    )
                 if variable_and_offsets:
                     variable, offset = self._pick_variable(variable_and_offsets)
 
@@ -293,19 +285,11 @@ class QOperand(QGraphObject):
 
                             formatting['custom_values_str'][ident] = custom_value_str
 
-                            if variable.phi:
-                                self.phi = True
-
                             if 'values_style' not in formatting: formatting['values_style'] = { }
                             formatting['values_style'][ident] = 'curly'
 
             self._label = self.operand.render(formatting=formatting)[0]
             self._label_width = len(self._label) * self._config.disasm_font_width
-
-        if self.phi:
-            self._phi_width = 2 * self._config.disasm_font_width
-        else:
-            self._phi_width = 0
 
         if self.variable is not None:
             self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width
@@ -315,7 +299,7 @@ class QOperand(QGraphObject):
         self._update_size()
 
     def _update_size(self):
-        self._width = self._label_width + self._phi_width
+        self._width = self._label_width
         if self.disasm_view.show_variable_identifier and self._variable_ident_width:
             self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
         if self._branch_targets_text_width:

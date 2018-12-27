@@ -1,6 +1,6 @@
 
 
-class Variables(object):
+class Variables:
 
     __slots__ = ['variables']
 
@@ -8,7 +8,16 @@ class Variables(object):
         self.variables = variables
 
 
-class Label(object):
+class PhiVariable(Variables):
+
+    __slots__ = ['variable']
+
+    def __init__(self, variable, variables):
+        super().__init__(variables)
+        self.variable = variable
+
+
+class Label:
 
     __slots__ = ['addr', 'text']
 
