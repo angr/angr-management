@@ -3,15 +3,17 @@ from PySide2.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen
 from PySide2.QtCore import QPointF, Qt
 
 from angr.analyses.disassembly import Instruction
+from angr.sim_variable import SimRegisterVariable
 
 from ...utils import (
     get_label_text, get_block_objects, address_to_text, get_out_branches_for_insn,
     get_string_for_display, should_display_string_label,
 )
-from ...utils.block_objects import Variables, Label
+from ...utils.block_objects import Variables, PhiVariable, Label
 from ...config import Conf
 from .qinstruction import QInstruction
 from .qblock_label import QBlockLabel
+from .qphivariable import QPhiVariable
 from .qvariable import QVariable
 from .qgraph_object import QGraphObject
 
@@ -149,6 +151,10 @@ class QBlock(QGraphObject):
                 label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, mode=self.mode)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
+            elif isinstance(obj, PhiVariable):
+                if not isinstance(obj.variable, SimRegisterVariable):
+                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config)
+                    self.objects.append(phivariable)
             elif isinstance(obj, Variables):
                 for var in obj.variables:
                     variable = QVariable(self.workspace, self.disasm_view, var, self._config)

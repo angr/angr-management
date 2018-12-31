@@ -1,7 +1,7 @@
 
 import itertools
 
-from .block_objects import Variables, Label
+from .block_objects import Variables, PhiVariable, Label
 
 
 def locate_function(inst, addr):
@@ -60,17 +60,25 @@ def get_block_objects(disasm, nodes, func_addr):
     """
 
     block_addrs = [node.addr for node in nodes]
+    block_addr = block_addrs[0]
     insn_addrs = list(itertools.chain.from_iterable(disasm.block_to_insn_addrs[addr] for addr in block_addrs))
 
     lst = [ ]
 
+    variable_manager = disasm.kb.variables[func_addr]
+
     # stack variables
-    if block_addrs[0] == func_addr:
-        variable_manager = disasm.kb.variables[func_addr]
+    if block_addr == func_addr:
         # filter out all stack variables
         variables = variable_manager.get_variables(sort='stack', collapse_same_ident=False)
         variables = sorted(variables, key=lambda v: v.offset)
         lst.append(Variables(variables))
+
+    # phi variables
+    phi_variables = variable_manager.get_phi_variables(block_addr)
+    if phi_variables:
+        for phi, variables in phi_variables.items():
+            lst.append(PhiVariable(phi, variables))
 
     # instructions and labels
     for insn_addr in insn_addrs:
