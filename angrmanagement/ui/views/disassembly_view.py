@@ -170,6 +170,11 @@ class DisassemblyView(BaseView):
         self._jump_history.jump_to(function.addr)
         self._display_function(function)
 
+    def decompile_current_function(self):
+
+        if self._current_function is not None:
+            self.workspace.decompile_function(self._current_function)
+
     def toggle_smart_highlighting(self, enabled):
         """
         Toggle between the smart highlighting mode and the text-based highlighting mode.

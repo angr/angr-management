@@ -10,7 +10,7 @@ from angr import StateHierarchy
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
-from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView
+from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
 _l = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ class Workspace:
         default_tabs = [
             FunctionsView(self, 'left'),
             DisassemblyView(self, 'right'),
+            CodeView(self, 'right'),
             SymexecView(self, 'right'),
             StatesView(self, 'right'),
             StringsView(self, 'right'),
@@ -160,6 +161,11 @@ class Workspace:
             tab = DisassemblyView(self, 'right')
             self.add_view(tab, tab.caption, tab.category)
             tab.jump_to(addr)
+
+    def decompile_function(self, func):
+        pseudocode = self.views_by_category['pseudocode'][0]
+        pseudocode.function = func
+        self.raise_view(pseudocode)
 
     def create_simulation_manager(self, state, state_name):
 
