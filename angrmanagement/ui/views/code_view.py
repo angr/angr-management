@@ -20,7 +20,7 @@ class CodeView(BaseView):
         self._init_widgets()
 
     def reload(self):
-        d = self.workspace.instance.project.analyses.Decompiler(self._function)
+        d = self.workspace.instance.project.analyses.Decompiler(self._function, cfg=self.workspace.instance.cfg)
         self._doc = QCodeDocument(d.codegen)
         self._text_edit.setDocument(self._doc)
 
