@@ -17,7 +17,7 @@ class QCodeDocument(QTextDocument):
         self._codegen = codegen
 
         # default font
-        self.setDefaultFont(Conf.disasm_font)
+        self.setDefaultFont(Conf.code_font)
 
         self.setPlainText(self._codegen.text)
         self.setDocumentLayout(QPlainTextDocumentLayout(self))

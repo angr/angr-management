@@ -41,12 +41,17 @@ def main():
     set_app_user_model_id()
 
     from PySide2.QtWidgets import QApplication
+    from PySide2.QtGui import QFontDatabase
 
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
+    from .config import FONT_LOCATION
 
     app = QApplication(sys.argv)
+
+    # Load fonts
+    QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
 
     GlobalInfo.gui_thread = threading.get_ident()
 
