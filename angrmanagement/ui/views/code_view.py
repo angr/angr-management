@@ -1,5 +1,6 @@
 
-from PySide2.QtWidgets import QVBoxLayout, QPlainTextEdit
+from PySide2.QtWidgets import QVBoxLayout, QPlainTextEdit, QTextEdit
+from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
 from ..documents import QCodeDocument
@@ -14,15 +15,20 @@ class CodeView(BaseView):
 
         self._function = None
 
-        self._text_edit = None  # type:QPlainTextEdit
+        self._textedit = None  # type:QPlainTextEdit
         self._doc = None  # type:QCodeDocument
 
         self._init_widgets()
 
+        self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
+        self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
+
     def reload(self):
+        if self._function is None:
+            return
         d = self.workspace.instance.project.analyses.Decompiler(self._function, cfg=self.workspace.instance.cfg)
         self._doc = QCodeDocument(d.codegen)
-        self._text_edit.setDocument(self._doc)
+        self._textedit.setDocument(self._doc)
 
     #
     # Properties
@@ -40,14 +46,48 @@ class CodeView(BaseView):
         self.reload()
 
     #
+    # Public methods
+    #
+
+    def highlight_chunks(self, chunks):
+        extra_selections = [ ]
+        for start, end in chunks:
+            sel = QTextEdit.ExtraSelection()
+            sel.cursor = self._textedit.textCursor()
+            sel.cursor.setPosition(start)
+            sel.cursor.setPosition(end, QTextCursor.KeepAnchor)
+            sel.format.setBackground(Qt.yellow)
+            extra_selections.append(sel)
+        self._textedit.setExtraSelections(extra_selections)
+
+    #
+    # Event callbacks
+    #
+
+    def _on_cursor_position_changed(self):
+        if self._doc is None:
+            return
+
+        cursor = self._textedit.textCursor()
+        pos = cursor.position()
+        selected_node = self._doc.get_node_at_position(pos)
+        if selected_node is not None:
+            # find all related text chunks and highlight them all
+            chunks = self._doc.find_related_text_chunks(selected_node)
+            # highlight these chunks
+            self.highlight_chunks(chunks)
+        else:
+            self.highlight_chunks([ ])
+
+    #
     # Private methods
     #
 
     def _init_widgets(self):
-        self._text_edit = QPlainTextEdit()
-        self._text_edit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
-        self._text_edit.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self._textedit = QPlainTextEdit()
+        self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
+        self._textedit.setLineWrapMode(QPlainTextEdit.NoWrap)
 
         layout = QVBoxLayout()
-        layout.addWidget(self._text_edit)
+        layout.addWidget(self._textedit)
         self.setLayout(layout)
