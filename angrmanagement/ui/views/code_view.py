@@ -1,9 +1,12 @@
 
-from PySide2.QtWidgets import QVBoxLayout, QPlainTextEdit, QTextEdit
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QPlainTextEdit, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
+import angr
+
 from ..widgets.qccode_highlighter import QCCodeHighlighter
+from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
 from .view import BaseView
 
@@ -19,6 +22,7 @@ class CodeView(BaseView):
         self._textedit = None  # type:QPlainTextEdit
         self._doc = None  # type:QCodeDocument
         self._highlighter = None  # type:QCCodeHighlighter
+        self._options = None  # type:QDecompilationOptions
 
         self._init_widgets()
 
@@ -26,9 +30,23 @@ class CodeView(BaseView):
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
 
     def reload(self):
+        if self.workspace.instance.project is None:
+            return
+        self._options.options = self._options.get_default_options()
+
+    def decompile(self):
+
         if self._function is None:
             return
-        d = self.workspace.instance.project.analyses.Decompiler(self._function, cfg=self.workspace.instance.cfg)
+        # create a temporary kb
+        # dec_kb = angr.KnowledgeBase(self.workspace.instance.project, self.workspace.instance.project.loader.main_object)
+        # move over the function manager
+        # dec_kb.functions = self.workspace.instance.cfg.kb.functions
+        d = self.workspace.instance.project.analyses.Decompiler(self._function,
+                                                                cfg=self.workspace.instance.cfg,
+                                                                optimization_passes=self._options.selected_options,
+                                                                # kb=dec_kb
+                                                                )
         self._doc = QCodeDocument(d.codegen)
         self._textedit.setDocument(self._doc)
         self._highlighter = QCCodeHighlighter(self._doc)
@@ -46,7 +64,7 @@ class CodeView(BaseView):
         if v is self._function:
             return
         self._function = v
-        self.reload()
+        self.decompile()
 
     #
     # Public methods
@@ -87,10 +105,25 @@ class CodeView(BaseView):
     #
 
     def _init_widgets(self):
+
+        window = QMainWindow()
+        window.setWindowFlags(Qt.Widget)
+
+        # pseudo code text box
         self._textedit = QPlainTextEdit()
         self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self._textedit.setLineWrapMode(QPlainTextEdit.NoWrap)
+        textedit_dock = QDockWidget('Code', self._textedit)
+        window.setCentralWidget(textedit_dock)
+        textedit_dock.setWidget(self._textedit)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self._textedit)
+        # decompilation
+        self._options = QDecompilationOptions(self, self.workspace.instance, options=None)
+        options_dock = QDockWidget('Decompilation Options', self._options)
+        window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
+        options_dock.setWidget(self._options)
+
+        layout = QHBoxLayout()
+        layout.addWidget(window)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
