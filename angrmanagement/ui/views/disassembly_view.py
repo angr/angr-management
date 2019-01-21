@@ -20,7 +20,7 @@ class DisassemblyView(BaseView):
 
         self.caption = 'Disassembly'
 
-        self._show_address = False
+        self._show_address = True
         self._show_variable = False #True
         # whether we want to show identifier or not
         self._show_variable_ident = False
