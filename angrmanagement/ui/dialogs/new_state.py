@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QGroupBox, \
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, \
     QGridLayout, QComboBox, \
-    QLineEdit, QTextEdit, QTreeView, QTreeWidget, QTreeWidgetItem
+    QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
 
