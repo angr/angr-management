@@ -1,10 +1,11 @@
 
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QPlainTextEdit, QTextEdit, QMainWindow, QDockWidget
+from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
 import angr
 
+from ..widgets.qccode_edit import QCCodeEdit
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
@@ -19,7 +20,7 @@ class CodeView(BaseView):
 
         self._function = None
 
-        self._textedit = None  # type:QPlainTextEdit
+        self._textedit = None  # type:QCCodeEdit
         self._doc = None  # type:QCodeDocument
         self._highlighter = None  # type:QCCodeHighlighter
         self._options = None  # type:QDecompilationOptions
@@ -38,10 +39,7 @@ class CodeView(BaseView):
 
         if self._function is None:
             return
-        # create a temporary kb
-        # dec_kb = angr.KnowledgeBase(self.workspace.instance.project, self.workspace.instance.project.loader.main_object)
-        # move over the function manager
-        # dec_kb.functions = self.workspace.instance.cfg.kb.functions
+
         d = self.workspace.instance.project.analyses.Decompiler(self._function,
                                                                 cfg=self.workspace.instance.cfg,
                                                                 optimization_passes=self._options.selected_options,
@@ -110,9 +108,9 @@ class CodeView(BaseView):
         window.setWindowFlags(Qt.Widget)
 
         # pseudo code text box
-        self._textedit = QPlainTextEdit()
+        self._textedit = QCCodeEdit(self)
         self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
-        self._textedit.setLineWrapMode(QPlainTextEdit.NoWrap)
+        self._textedit.setLineWrapMode(QCCodeEdit.NoWrap)
         textedit_dock = QDockWidget('Code', self._textedit)
         window.setCentralWidget(textedit_dock)
         textedit_dock.setWidget(self._textedit)
