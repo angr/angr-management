@@ -16,4 +16,8 @@ class FileToolbar(Toolbar):
                           "Open", "Open a new file for analysis",
                           main_window.load_binary,
                           ),
+            ToolbarAction(QIcon(os.path.join(IMG_LOCATION, 'toolbar-file-open.ico')),
+                          "Save", "Save angr database",
+                          main_window.save_database,
+                          ),
         ]
