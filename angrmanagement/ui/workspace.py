@@ -162,6 +162,9 @@ class Workspace:
             self.add_view(tab, tab.caption, tab.category)
             tab.jump_to(addr)
 
+    def decompile_current_function(self):
+        self.views_by_category['disassembly'][0].decompile_current_function()
+
     def decompile_function(self, func):
         pseudocode = self.views_by_category['pseudocode'][0]
         pseudocode.function = func

@@ -278,9 +278,10 @@ class QDisasmGraph(QBaseGraph):
             self.disassembly_view.toggle_smart_highlighting(not self.infodock.smart_highlighting)
             return True
 
-        elif key == Qt.Key_F5:
+        elif key == Qt.Key_Tab:
             # decompile
             self.disassembly_view.decompile_current_function()
+            return True
 
         return False
 
