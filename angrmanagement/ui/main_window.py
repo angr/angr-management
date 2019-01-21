@@ -211,12 +211,27 @@ class MainWindow(QMainWindow):
 
         # Open File window
         file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
-                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core)",
+                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
                                                    )
 
         if os.path.isfile(file_path):
-            self._open_loadbinary_dialog(file_path)
+            if file_path.endswith(".adb"):
+                self._load_database(file_path)
+            else:
+                self._open_loadbinary_dialog(file_path)
 
+    def save_database(self):
+
+        # Open File window
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Save angr database", ".",
+            "angr databases (*.adb)",
+        )
+
+        if not file_path.endswith(".adb"):
+            file_path = file_path + ".adb"
+
+        self._save_database(file_path)
 
     def quit(self):
         self.close()
@@ -249,6 +264,26 @@ class MainWindow(QMainWindow):
         proj = angr.Project(file_path, load_options=load_options)
         self.workspace.instance.set_project(proj)
         self.workspace.instance.initialize(cfg_args=cfg_args)
+
+    def _load_database(self, file_path):
+        v = angr.vaults.VaultShelf(file_path)
+        import ipdb; ipdb.set_trace()
+        print("LOADING...")
+        p,cfg,cfb = v['am-state']
+        print("LOADED")
+        self.workspace.instance.project = p
+        print("SET PROJECT")
+        self.workspace.instance.cfg = cfg
+        print("SET CFG")
+        self.workspace.instance.cfb = cfb
+        print("SET CFB")
+        v.close()
+        self.workspace.reload()
+
+    def _save_database(self, file_path):
+        v = angr.vaults.VaultShelf(file_path)
+        v['am-state'] = (self.workspace.instance.project, self.workspace.instance.cfg, self.workspace.instance.cfb)
+        v.close()
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.dockable_views
