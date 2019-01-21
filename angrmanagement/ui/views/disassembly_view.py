@@ -55,6 +55,9 @@ class DisassemblyView(BaseView):
         if self._flow_graph is not None:
             self._flow_graph.save_image_to(path)
 
+    def setFocus(self):
+        self._flow_graph.setFocus()
+
     #
     # Properties
     #

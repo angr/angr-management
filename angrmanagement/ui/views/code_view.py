@@ -49,6 +49,9 @@ class CodeView(BaseView):
         self._textedit.setDocument(self._doc)
         self._highlighter = QCCodeHighlighter(self._doc)
 
+    def setFocus(self):
+        self._textedit.setFocus()
+
     #
     # Properties
     #

@@ -157,6 +157,7 @@ class Workspace:
         if self.views_by_category['disassembly']:
             self.views_by_category['disassembly'][0].jump_to(addr)
             self.raise_view(self.views_by_category['disassembly'][0])
+            self.views_by_category['disassembly'][0].setFocus()
         else:
             tab = DisassemblyView(self, 'right')
             self.add_view(tab, tab.caption, tab.category)
@@ -169,6 +170,7 @@ class Workspace:
         pseudocode = self.views_by_category['pseudocode'][0]
         pseudocode.function = func
         self.raise_view(pseudocode)
+        pseudocode.setFocus()
 
     def create_simulation_manager(self, state, state_name):
 
