@@ -223,6 +223,12 @@ class MainWindow(QMainWindow):
                 self._open_loadbinary_dialog(file_path)
 
     def save_database(self):
+        if self.workspace.instance.database_path is None:
+            self.save_database_as()
+        else:
+            self._save_database(self.workspace.instance.database_path)
+
+    def save_database_as(self):
 
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
@@ -275,10 +281,14 @@ class MainWindow(QMainWindow):
         self.workspace.instance.cfb = cfb
         self.workspace.reload()
         self.workspace.on_cfg_generated()
+        self.workspace.instance.database_path = file_path
+        print("DATABASE %s LOADED" % file_path)
 
     def _save_database(self, file_path):
         with open(file_path, "wb") as o:
             pickle.dump((self.workspace.instance.project, self.workspace.instance.cfg, self.workspace.instance.cfb), o)
+        self.workspace.instance.database_path = file_path
+        print("DATABASE %s SAVED" % file_path)
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.dockable_views

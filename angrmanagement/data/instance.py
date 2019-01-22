@@ -105,6 +105,8 @@ class Instance(object):
         self._cfg = None
         self._cfb = None
 
+        self.database_path = None
+
     #
     # Properties
     #
