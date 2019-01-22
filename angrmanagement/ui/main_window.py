@@ -1,5 +1,4 @@
-
-import sys
+import pickle
 import os
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
@@ -61,7 +60,10 @@ class MainWindow(QMainWindow):
 
         if file_to_open is not None:
             # load a binary
-            self._open_loadbinary_dialog(file_to_open)
+            if file_to_open.endswith(".adb"):
+                self._load_database(file_to_open)
+            else:
+                self._open_loadbinary_dialog(file_to_open)
 
     #
     # Properties
@@ -266,24 +268,17 @@ class MainWindow(QMainWindow):
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
     def _load_database(self, file_path):
-        v = angr.vaults.VaultShelf(file_path)
-        import ipdb; ipdb.set_trace()
-        print("LOADING...")
-        p,cfg,cfb = v['am-state']
-        print("LOADED")
+        with open(file_path, "rb") as o:
+            p,cfg,cfb = pickle.load(o)
         self.workspace.instance.project = p
-        print("SET PROJECT")
         self.workspace.instance.cfg = cfg
-        print("SET CFG")
         self.workspace.instance.cfb = cfb
-        print("SET CFB")
-        v.close()
         self.workspace.reload()
+        self.workspace.on_cfg_generated()
 
     def _save_database(self, file_path):
-        v = angr.vaults.VaultShelf(file_path)
-        v['am-state'] = (self.workspace.instance.project, self.workspace.instance.cfg, self.workspace.instance.cfb)
-        v.close()
+        with open(file_path, "wb") as o:
+            pickle.dump((self.workspace.instance.project, self.workspace.instance.cfg, self.workspace.instance.cfb), o)
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.dockable_views
