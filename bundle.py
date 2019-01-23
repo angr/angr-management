@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import os
 
 # for finding various libs
@@ -9,7 +10,7 @@ import pyvex
 import angr
 import cle
 
-def make_command():
+def make_common_options():
 	"""
 	Create the pyinstaller command.
 	"""
@@ -44,12 +45,19 @@ def make_bundle():
 	"""
 	Execute the pyinstaller command.
 	"""
-	common_args = make_command()
+	common_args = make_common_options()
 
 	print("")
 	print("")
-	print("CREATING LINUX BUNDLE")
-	linux_args = [ "pyinstaller" ] + common_args
-	os.system(" ".join(linux_args))
+	if sys.platform.startswith('linux'):
+		print("CREATING LINUX BUNDLE")
+		linux_args = [ "pyinstaller" ] + common_args
+		os.system(" ".join(linux_args))
+	elif sys.platform.startswith('win') or sys.platform.startswith('darwin'):
+		print("CREATING %s BUNDLE" % sys.platform)
+		linux_args = [ "pyinstaller", "-w", "-i", os.path.join(os.path.dirname(angrmanagement.__file__), "resources", "angr.ico") ] + common_args
+	else:
+		print("UNSUPPORTED PLATFORM")
+
 
 make_bundle()
