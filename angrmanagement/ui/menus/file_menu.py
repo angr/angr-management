@@ -11,8 +11,8 @@ class FileMenu(Menu):
 
         self.entries.extend([
             MenuEntry('L&oad a new binary...', main_window.load_binary, shortcut=QKeySequence(Qt.CTRL + Qt.Key_O)),
-            MenuEntry('Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL + Qt.Key_S)),
-            MenuEntry('Save angr database as...', main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
+            MenuEntry('&Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL + Qt.Key_S)),
+            MenuEntry('S&ave angr database as...', main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
             MenuSeparator(),
             MenuEntry('E&xit', main_window.quit),
         ])
