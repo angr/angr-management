@@ -9,6 +9,7 @@ import capstone
 import pyvex
 import angr
 import cle
+import z3
 
 def make_common_options():
 	"""
@@ -28,9 +29,10 @@ def make_common_options():
 	included_libs = [
 		( os.path.join(os.path.dirname(pyvex.__file__), "lib"), "pyvex/lib" ),
 		( capstone._path, "capstone/lib" ),
+		( os.path.join(os.path.dirname(z3.__file__), "lib"), "z3/lib" ),
 	]
 
-	all_mappings = [ ':'.join(mapping) for mapping in (included_data + included_libs) ]
+	all_mappings = [ ';'.join(mapping) for mapping in (included_data + included_libs) ]
 
 	# we add onefile to make a single-executable bundle, and include ipython because it's not autodetected for some reason
 	args = [ "--onefile", "--hidden-import=ipykernel.datapub" ]
@@ -55,7 +57,10 @@ def make_bundle():
 		os.system(" ".join(linux_args))
 	elif sys.platform.startswith('win') or sys.platform.startswith('darwin'):
 		print("CREATING %s BUNDLE" % sys.platform)
-		linux_args = [ "pyinstaller", "-w", "-i", os.path.join(os.path.dirname(angrmanagement.__file__), "resources", "angr.ico") ] + common_args
+		windows_args = [ "pyinstaller", "-w",
+						 "-i", os.path.join(os.path.dirname(angrmanagement.__file__), "resources", "images", "angr.ico")
+						 ] + common_args
+		os.system(" ".join(windows_args))
 	else:
 		print("UNSUPPORTED PLATFORM")
 
