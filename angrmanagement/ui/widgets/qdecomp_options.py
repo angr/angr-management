@@ -30,7 +30,7 @@ class QDecompilationOptions(QWidget):
         # widgets
         self._search_box = None  # type:QLineEdit
         self._treewidget = None  # type:QTreeWidget
-        self._refresh_btn = None  # type:QPushButton
+        self._apply_btn = None  # type:QPushButton
 
         self._qoptions = [ ]
 
@@ -68,13 +68,13 @@ class QDecompilationOptions(QWidget):
         self._treewidget.setHeaderHidden(True)
 
         # refresh button
-        self._refresh_btn = QPushButton("Refresh")
-        self._refresh_btn.clicked.connect(self._code_view.decompile)
+        self._apply_btn = QPushButton("Apply")
+        self._apply_btn.clicked.connect(self._code_view.decompile)
 
         layout = QVBoxLayout()
         layout.addWidget(self._search_box)
         layout.addWidget(self._treewidget)
-        layout.addWidget(self._refresh_btn)
+        layout.addWidget(self._apply_btn)
 
         self.setLayout(layout)
 
