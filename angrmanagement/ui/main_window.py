@@ -10,6 +10,7 @@ import angr
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
+from .menus.analyze_menu import AnalyzeMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
@@ -118,7 +119,7 @@ class MainWindow(QMainWindow):
             pass
 
     def open_newstate_dialog(self):
-        new_state_dialog = NewState(self.workspace, parent=self)
+        new_state_dialog = NewState(self.workspace.instance, parent=self)
         new_state_dialog.exec_()
 
     #
@@ -151,7 +152,9 @@ class MainWindow(QMainWindow):
 
     def _init_menus(self):
         fileMenu = FileMenu(self)
+        analyzeMenu = AnalyzeMenu(self)
         self.menuBar().addMenu(fileMenu.qmenu())
+        self.menuBar().addMenu(analyzeMenu.qmenu())
 
     #
     # Workspace
@@ -249,6 +252,10 @@ class MainWindow(QMainWindow):
 
     def run_induction_variable_analysis(self):
         self.workspace.views_by_category['disassembly'][0].run_induction_variable_analysis()
+
+    def decompile_current_function(self):
+        if self.workspace is not None:
+            self.workspace.decompile_current_function()
 
     #
     # Other public methods

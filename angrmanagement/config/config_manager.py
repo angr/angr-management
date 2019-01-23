@@ -13,6 +13,10 @@ ENTRIES = [
     CE('symexec_font_height', int, None),
     CE('symexec_font_width', int, None),
     CE('symexec_font_ascent', int, None),
+    CE('code_font', QFont, None),
+    CE('code_font_height', int, None),
+    CE('code_font_width', int, None),
+    CE('code_font_ascent', int, None),
 ]
 
 
@@ -39,6 +43,12 @@ class ConfigurationManager(object):
         self.symexec_font_height = font_metrics.height()
         self.symexec_font_width = font_metrics.width('A')
         self.symexec_font_ascent = font_metrics.ascent()
+
+        self.code_font = QFont("Source Code Pro", 10)
+        font_metrics = QFontMetricsF(self.code_font)
+        self.code_font_height = font_metrics.height()
+        self.code_font_width = font_metrics.width('A')
+        self.code_font_ascent = font_metrics.ascent()
 
     def __getattr__(self, item):
 
