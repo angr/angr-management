@@ -33,7 +33,7 @@ def set_app_user_model_id():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
-def main():
+def main(filepath):
 
     if not check_dependencies():
         sys.exit(1)
@@ -58,7 +58,7 @@ def main():
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
 
-    MainWindow(file_to_open=sys.argv[1] if len(sys.argv) > 1 else None)
+    MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
 
     app.exec_()
 
