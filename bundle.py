@@ -6,6 +6,7 @@ import os
 # for finding various libs
 import angrmanagement
 import capstone
+import unicorn
 import pyvex
 import angr
 import cle
@@ -28,6 +29,7 @@ def make_common_options():
     # dynamically-loaded DLLs have to be explicitly added. We just include the entire lib dir.
     included_libs = [
         ( os.path.join(os.path.dirname(pyvex.__file__), "lib"), "pyvex/lib" ),
+        ( os.path.join(os.path.dirname(unicorn.__file__), "lib"), "unicorn/lib" ),
         ( capstone._path, "capstone/lib" ),
         ( os.path.join(os.path.dirname(z3.__file__), "lib"), "z3/lib" ),
     ]
