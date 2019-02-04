@@ -14,6 +14,10 @@ setup(
     url='https://github.com/angr/angr-management',
     packages=packages,
     package_data={
+        'angrmanagement': [
+            'resources/fonts/*.ttf',
+            'resources/images/*',
+        ]
     },
     install_requires=[
         'angr==8.18.10.25',
