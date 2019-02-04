@@ -33,7 +33,7 @@ def set_app_user_model_id():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
-def main(filepath):
+def main(filepath=None):
 
     if not check_dependencies():
         sys.exit(1)
