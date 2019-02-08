@@ -1,7 +1,8 @@
 websocket-client
 pygments
-angr==8.18.10.5
+angr
 ipython
 pyzmq
-PySide2
+shiboken2<=5.12.0
+PySide2<=5.12.0
 qtconsole
