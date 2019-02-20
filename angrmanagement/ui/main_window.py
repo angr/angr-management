@@ -1,16 +1,18 @@
 import pickle
 import os
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox
 from PySide2.QtGui import QResizeEvent, QIcon
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer
 
 import angr
 
+
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
+from .menus.help_menu import HelpMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
@@ -122,6 +124,13 @@ class MainWindow(QMainWindow):
         new_state_dialog = NewState(self.workspace.instance, parent=self)
         new_state_dialog.exec_()
 
+    def open_doc_link(self):
+        from PySide2.QtGui import QDesktopServices
+        from PySide2.QtCore import QUrl
+        QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
+
+    def open_about_dialog(self):
+        QMessageBox.about(self, "About angr", "version 8.19.2.4")
     #
     # Widgets
     #
@@ -153,9 +162,10 @@ class MainWindow(QMainWindow):
     def _init_menus(self):
         fileMenu = FileMenu(self)
         analyzeMenu = AnalyzeMenu(self)
+        helpMenu = HelpMenu(self)
         self.menuBar().addMenu(fileMenu.qmenu())
         self.menuBar().addMenu(analyzeMenu.qmenu())
-
+        self.menuBar().addMenu(helpMenu.qmenu())
     #
     # Workspace
     #
@@ -256,7 +266,6 @@ class MainWindow(QMainWindow):
     def decompile_current_function(self):
         if self.workspace is not None:
             self.workspace.decompile_current_function()
-
     #
     # Other public methods
     #
@@ -264,6 +273,7 @@ class MainWindow(QMainWindow):
     def progress_done(self):
         self._progress = None
         self._progressbar.hide()
+
 
     #
     # Private methods
