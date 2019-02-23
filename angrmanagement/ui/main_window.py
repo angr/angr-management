@@ -7,7 +7,6 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 
-
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
@@ -128,7 +127,7 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
 
     def open_about_dialog(self):
-        QMessageBox.about(self, "About angr", "version 8.19.2.4")
+        QMessageBox.about(self, "About angr", "Version 8")
     #
     # Widgets
     #
