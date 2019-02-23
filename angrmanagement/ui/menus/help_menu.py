@@ -7,7 +7,6 @@ from pyside2uic.uiparser import QtGui
 from .menu import Menu, MenuEntry, MenuSeparator
 
 
-
 class HelpMenu(Menu):
     def __init__(self, main_window):
         super().__init__("&Help", parent=main_window)
