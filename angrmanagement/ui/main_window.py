@@ -163,8 +163,8 @@ class MainWindow(QMainWindow):
         helpMenu = HelpMenu(self)
         self.menuBar().addMenu(fileMenu.qmenu())
         self.menuBar().addMenu(analyzeMenu.qmenu())
-
         self.menuBar().addMenu(helpMenu.qmenu())
+
     #
     # Workspace
     #
