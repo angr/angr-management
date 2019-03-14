@@ -1,7 +1,7 @@
 import pickle
 import os
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut, QLabel
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -15,6 +15,8 @@ except ImportError as e:
     keystone = None
 
 from ..plugins import PluginManager
+from angr.misc.bug_report import get_version
+
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
@@ -161,9 +163,6 @@ class MainWindow(QMainWindow):
     def open_doc_link(self):
         QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
 
-    def open_about_dialog(self):
-        QMessageBox.about(self, "About angr", "Version 8")
-
     def open_sync_config_dialog(self):
         if self.workspace.instance.project is None:
             # project does not exist yet
@@ -171,6 +170,19 @@ class MainWindow(QMainWindow):
 
         sync_config = SyncConfig(self.workspace.instance, parent=self)
         sync_config.exec_()
+
+
+    def open_about_dialog(self, icon_location='angr.png'):
+        self.aboutDialog = QMessageBox()
+        self.aboutDialog.setIconPixmap(icon_location)
+        self.aboutDialog.setWindowTitle("about Angr")
+        self.aboutDialog.setText("about Angr")
+        #aboutDialog.setInformativeText(get_version())
+        #creditLabel = QLabel()
+        #creditLabel.setText("<a href=\"http://angr.io/\">Credits</a>")
+        #creditLabel.setTextFormat(Qt.RichText)
+        #creditLabel.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        #creditLabel.setOpenExternalLinks(True)
 
     #
     # Widgets
