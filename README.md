@@ -60,10 +60,10 @@ python start.py
 
 ### Shortcuts
 - Load a new binary: ```Ctrl + O```
-- Save angr database... ```Ctrl+S```
-- Save angr database as... ```Ctrl+Shift+S```
+- Save angr database... : ```Ctrl+S```
+- Save angr database as... : ```Ctrl+Shift+S```
 - Decompile: ```F5```
-- Documentation ```Alt + H```
+- Documentation: ```Alt + H```
 
 ## Issues
 
