@@ -133,6 +133,18 @@ class QBaseGraph(QZoomingGraphicsView):
         else:
             self.reload()
 
+    def update_comment(self, comment_addr, comment_text):
+        if comment_addr in self._insn_addr_to_block:
+            block = self._insn_addr_to_block[comment_addr]
+            insn = block.addr_to_insns[comment_addr]
+            if insn:
+                insn.set_comment(comment_text)
+        else:
+            # umm not sure what's going wrong
+            _l.error('Label address %#x is not found in the current function.', comment_addr)
+
+        self.reload()
+
     def select_instruction(self, insn_addr, unique=True):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is None:
