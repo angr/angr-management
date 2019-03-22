@@ -2,7 +2,7 @@
 import logging
 from collections import defaultdict
 
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, Slot
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
@@ -45,6 +45,8 @@ class Workspace:
         for tab in default_tabs:
             self.add_view(tab, tab.caption, tab.category)
 
+        self.views_by_category['functions'][0].sig_function_selected.connect(self.on_function_selected)
+
     #
     # Properties
     #
@@ -57,6 +59,7 @@ class Workspace:
     # Events
     #
 
+    @Slot(Function)
     def on_function_selected(self, function):
 
         self.views_by_category['disassembly'][0].display_function(function)
