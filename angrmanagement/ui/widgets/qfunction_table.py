@@ -183,8 +183,7 @@ class QFunctionTableView(QTableView):
 
         self._function_table = parent  # type: QFunctionTable
         self._selected_func = ObjectContainer(None, 'Currently selected function')
-        if selection_callback is not None:
-            self._selected_func.am_subscribe(selection_callback)
+        self._selected_func.am_subscribe(selection_callback)
 
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
