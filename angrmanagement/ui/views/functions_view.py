@@ -29,6 +29,9 @@ class FunctionsView(BaseView):
     def sizeHint(self):
         return QSize(200, 0)
 
+    def set_cb_on_func_select(self, callback):
+        self._function_table.set_cb_on_func_selected(callback)
+
     #
     # Private methods
     #
