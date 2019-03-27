@@ -151,7 +151,8 @@ class QBaseGraph(QZoomingGraphicsView):
 
             block.addr_to_insns[insn_addr].select()
 
-        self.selected_insns.am_event(addr=insn_addr)
+        # Notify subscribers BEFORE we update the viewport so they can make any further changes
+        self.selected_insns.am_event(graph=self, addr=insn_addr, block=block)
         self.viewport().update()
 
     def unselect_instruction(self, insn_addr):
