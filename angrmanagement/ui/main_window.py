@@ -1,8 +1,8 @@
 import pickle
 import os
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut
+from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
@@ -36,6 +36,9 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
+        self.right_dockable_views = None
+        #self._undockCurrentView = None
+
         self.workspace = None
         self.central_widget = None
 
@@ -48,10 +51,13 @@ class MainWindow(QMainWindow):
         self._status = ""
         self._progress = None
 
+        self.defaultWindowFlags = None
+
         self._init_menus()
         self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
+        self._init_shortcuts()
 
         self.showMaximized()
 
@@ -175,14 +181,50 @@ class MainWindow(QMainWindow):
         wk = Workspace(self, Instance())
         self.workspace = wk
 
-        right_dockable_views = [dock for dock in self.workspace.dockable_views
+
+        self.right_dockable_views = [dock for dock in self.workspace.dockable_views
                                 if dock.widget().default_docking_position == 'right']
 
-        for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
+        for d0, d1 in zip(self.right_dockable_views, self.right_dockable_views[1:]):
             self.central_widget.tabifyDockWidget(d0, d1)
-        right_dockable_views[0].raise_()
+        self.right_dockable_views[0].raise_()
 
+        #self.central_widget.splitDockWidget(right_dockable_views[3], right_dockable_views[4], Qt.Horizontal)
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
+
+
+    #
+    # Shortcuts and Shortcut handlers
+    #
+
+    def _undockCurrentView(self):
+        print("undocking current view")
+        currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
+        print("Current view: " + str(currentTab))
+        self.defaultWindowFlags = self.right_dockable_views[currentTab].windowFlags()
+        self.right_dockable_views[currentTab].setWindowFlags(Qt.Window)
+        self.right_dockable_views[currentTab].show()
+        self.right_dockable_views[currentTab].raise_()
+
+    def _dockCurrentView(self):
+        print("docking current view")
+        currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
+        print("Current view: " + str(currentTab))
+        self.right_dockable_views[currentTab].setWindowFlags(Qt.Widget)
+        self.right_dockable_views[currentTab].setWindowFlags(QMainWindow.VerticalTabs)
+        # self.central_widget.tabifyDockWidget(self.right_dockable_views[0], self.right_dockable_views[1])
+        self.right_dockable_views[currentTab].show()
+        self.right_dockable_views[currentTab].raise_()
+
+
+    def _init_shortcuts(self):
+
+        QShortcut(QKeySequence('Ctrl+U'), self, self._undockCurrentView)
+        QShortcut(QKeySequence('Ctrl+D'), self, self._dockCurrentView)
+
+        for i in range(1,6):
+            QShortcut(QKeySequence('Ctrl+'+str(i)), self, self.right_dockable_views[i-1].raise_)
+
 
     #
     # Event
