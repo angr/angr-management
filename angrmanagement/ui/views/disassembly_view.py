@@ -155,6 +155,14 @@ class DisassemblyView(BaseView):
     #
 
     def subscribe_insn_select(self, callback):
+        """
+        Appends the provided function to the list of callbacks to be called when an instruction is selected in the
+        disassembly. The callback's parameters are:
+            'graph': the `QBaseGraph` object
+            'addr': integer address of the selected instruction
+            'block': the `QBlock` containing the instruction
+        :param callback: The callback function to call, which must accept **kwargs
+        """
         self._linear_viewer.selected_insns.am_subscribe(callback)
         self._flow_graph.selected_insns.am_subscribe(callback)
 

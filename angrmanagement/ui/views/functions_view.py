@@ -30,6 +30,11 @@ class FunctionsView(BaseView):
         return QSize(200, 0)
 
     def subscribe_func_select(self, callback):
+        """
+        Appends the provided function to the list of callbacks to be called when a function is selected in the
+        functions table. The callback's only parameter is the `angr.knowledge_plugins.functions.function.Function`
+        :param callback: The callback function to call, which must accept **kwargs
+        """
         self._function_table.subscribe_func_select(callback)
 
     #
