@@ -154,7 +154,7 @@ class DisassemblyView(BaseView):
     # Public methods
     #
 
-    def set_cb_on_insn_select(self, callback):
+    def subscribe_insn_select(self, callback):
         self._linear_viewer.selected_insns.am_subscribe(callback)
         self._flow_graph.selected_insns.am_subscribe(callback)
 

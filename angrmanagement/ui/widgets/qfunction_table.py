@@ -214,7 +214,7 @@ class QFunctionTableView(QTableView):
         self._functions = functions
         self._model.func_list = list(self._functions.values())
 
-    def set_cb_on_func_selected(self, callback):
+    def subscribe_func_select(self, callback):
         self._selected_func.am_subscribe(callback)
 
     def filter(self, keyword):
@@ -298,8 +298,8 @@ class QFunctionTable(QWidget):
         self._filter_box.hide()
         self._table_view.setFocus()
 
-    def set_cb_on_func_selected(self, callback):
-        self._table_view.set_cb_on_func_selected(callback)
+    def subscribe_func_select(self, callback):
+        self._table_view.subscribe_func_select(callback)
 
     #
     # Private methods
