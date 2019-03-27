@@ -4,6 +4,8 @@ from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide2.QtGui import QPainter, QKeyEvent
 from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
 
+from angrmanagement.data.instance import ObjectContainer
+
 _l = logging.getLogger('ui.widgets.qgraph')
 
 
@@ -84,7 +86,7 @@ class QBaseGraph(QZoomingGraphicsView):
         self._edge_paths = []
         self.blocks = set()
 
-        self.selected_insns = set()
+        self.selected_insns = ObjectContainer(set(), 'The currently selected instructions')
         self.selected_operands = set()
         self._insn_addr_to_block = {}
         self._allow_dragging = allow_dragging
@@ -143,12 +145,13 @@ class QBaseGraph(QZoomingGraphicsView):
             if unique:
                 # unselect existing ones
                 self.unselect_all_instructions()
-                self.selected_insns = { insn_addr }
+                self.selected_insns.add(insn_addr)
             else:
                 self.selected_insns.add(insn_addr)
 
             block.addr_to_insns[insn_addr].select()
 
+        self.selected_insns.am_event(addr=insn_addr)
         self.viewport().update()
 
     def unselect_instruction(self, insn_addr):
