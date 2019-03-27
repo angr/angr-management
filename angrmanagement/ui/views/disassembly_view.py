@@ -1,6 +1,6 @@
 
 from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
-from PySide2.QtCore import Qt, QSize, Signal
+from PySide2.QtCore import Qt, QSize
 
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
@@ -15,8 +15,6 @@ from .view import BaseView
 
 
 class DisassemblyView(BaseView):
-    sig_insn_selected = Signal(int)
-
     def __init__(self, workspace, *args, **kwargs):
         super(DisassemblyView, self).__init__('disassembly', workspace, *args, **kwargs)
 
@@ -155,6 +153,10 @@ class DisassemblyView(BaseView):
     # Public methods
     #
 
+    def set_cb_on_insn_select(self, callback):
+        self._linear_viewer.selected_insns.am_subscribe(callback)
+        self._flow_graph.selected_insns.am_subscribe(callback)
+
     def display_disasm_graph(self):
 
         self._linear_viewer.hide()
@@ -242,7 +244,6 @@ class DisassemblyView(BaseView):
         else:
             self.current_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
             self.current_graph.show_instruction(insn_addr)
-            self.sig_insn_selected.emit(insn_addr)
 
     def toggle_operand_selection(self, insn_addr, operand_idx):
         """
