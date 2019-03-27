@@ -181,9 +181,10 @@ class QFunctionTableView(QTableView):
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTableView, self).__init__(parent)
 
-        self._selection_callback = selection_callback
         self._function_table = parent  # type: QFunctionTable
         self._selected_func = ObjectContainer(None, 'Currently selected function')
+        if selection_callback is not None:
+            self._selected_func.am_subscribe(selection_callback)
 
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
@@ -226,8 +227,6 @@ class QFunctionTableView(QTableView):
 
         self._selected_func.am_obj = selected_func
         self._selected_func.am_event(func=selected_func)
-        if self._selection_callback is not None:
-            self._selection_callback(selected_func)
 
     def keyPressEvent(self, key_event):
 
@@ -267,13 +266,11 @@ class QFunctionTable(QWidget):
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
 
-        self._selection_callback = selection_callback
         self._view = parent
-
         self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
 
-        self._init_widgets()
+        self._init_widgets(selection_callback)
 
     @property
     def function_manager(self):
@@ -308,10 +305,10 @@ class QFunctionTable(QWidget):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self, selection_callback=None):
 
         # function table view
-        self._table_view = QFunctionTableView(self, selection_callback=self._selection_callback)
+        self._table_view = QFunctionTableView(self, selection_callback)
 
         # filter text box
         self._filter_box = QFunctionTableFilterBox(self)
