@@ -38,6 +38,10 @@ class DisassemblyView(BaseView):
 
         self._insn_addr_on_context_menu = None
 
+        # Callbacks
+        self._insn_backcolor_callback = None
+        self._insn_select_backcolor_callback = None
+
         self._init_widgets()
         self._init_menus()
 
@@ -61,6 +65,22 @@ class DisassemblyView(BaseView):
     #
     # Properties
     #
+
+    @property
+    def insn_backcolor_callback(self):
+        return self._insn_backcolor_callback
+
+    @insn_backcolor_callback.setter
+    def insn_backcolor_callback(self, v):
+        self._insn_backcolor_callback = v
+
+    @property
+    def insn_select_backcolor_callback(self):
+        return self._insn_select_backcolor_callback
+
+    @insn_select_backcolor_callback.setter
+    def insn_select_backcolor_callback(self, v):
+        self._insn_select_backcolor_callback = v
 
     @property
     def disasm(self):

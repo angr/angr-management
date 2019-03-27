@@ -85,6 +85,21 @@ class Workspace:
     # Public methods
     #
 
+    def set_cb_function_backcolor(self, callback):
+        fv: FunctionsView = self.views_by_category['functions'][0]
+        if fv:
+            fv.backcolor_callback = callback
+
+    def set_cb_insn_backcolor(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.insn_backcolor_callback = callback
+
+    def set_cb_insn_select_backcolor(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.insn_select_backcolor_callback = callback
+
     def add_view(self, view, caption, category):
 
         docking_positions = {

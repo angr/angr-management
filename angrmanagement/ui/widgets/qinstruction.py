@@ -178,10 +178,16 @@ class QInstruction(QGraphObject):
 
     def _paint_graph(self, painter):
 
+        r = b = g = None
         # selection background
         if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
+            r, g, b = self.disasm_view.insn_select_backcolor_callback(self.insn.addr)
+        elif self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
+
+        if r and b and g:
+            painter.setPen(QColor(r, g, b))
+            painter.setBrush(QColor(r, g, b))
             painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
@@ -222,10 +228,16 @@ class QInstruction(QGraphObject):
 
     def _paint_linear(self, painter):
 
+        r = b = g = None
         # selection background
         if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
+            r, g, b = self.disasm_view.insn_select_backcolor_callback()
+        elif self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
+
+        if r and b and g:
+            painter.setPen(QColor(r, g, b))
+            painter.setBrush(QColor(r, g, b))
             painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
