@@ -2,6 +2,7 @@
 from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
 
+from angrmanagement.data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
@@ -32,7 +33,7 @@ class DisassemblyView(BaseView):
         self.infodock = InfoDock()
         self._variable_recovery_flavor = 'fast'
         self.variable_manager = None  # type: VariableManager
-        self._current_function = None
+        self._current_function = ObjectContainer(None, 'The currently selected function')
 
         self._insn_menu = None
 

@@ -8,6 +8,8 @@ from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderVie
 from PySide2.QtGui import QBrush, QColor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
+from angrmanagement.data.instance import ObjectContainer
+
 
 class QFunctionTableModel(QAbstractTableModel):
 
@@ -181,6 +183,7 @@ class QFunctionTableView(QTableView):
 
         self._selection_callback = selection_callback
         self._function_table = parent  # type: QFunctionTable
+        self._selected_func = ObjectContainer(None, 'Currently selected function')
 
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
@@ -221,6 +224,8 @@ class QFunctionTableView(QTableView):
         else:
             selected_func = None
 
+        self._selected_func.am_obj = selected_func
+        self._selected_func.am_event(func=selected_func)
         if self._selection_callback is not None:
             self._selection_callback(selected_func)
 
