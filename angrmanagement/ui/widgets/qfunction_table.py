@@ -7,8 +7,7 @@ from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderVie
     QStyledItemDelegate
 from PySide2.QtGui import QBrush, QColor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
-
-from angrmanagement.data.instance import ObjectContainer
+from ...data.instance import ObjectContainer
 
 
 class QFunctionTableModel(QAbstractTableModel):
