@@ -16,10 +16,12 @@ class EventSentinel(object):
         self.am_subscribers = []
 
     def am_subscribe(self, listener):
-        self.am_subscribers.append(listener)
+        if listener is not None:
+            self.am_subscribers.append(listener)
 
     def am_unsubscribe(self, listener):
-        self.am_subscribers.remove(listener)
+        if listener is not None:
+            self.am_subscribers.remove(listener)
 
     def am_event(self, **kwargs):
         for listener in self.am_subscribers:
