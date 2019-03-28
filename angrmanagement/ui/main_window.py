@@ -174,53 +174,81 @@ class MainWindow(QMainWindow):
     # Workspace
     #
 
+    def _tabify(self):
+        print("Tabifying")
+        self.right_dockable_views = [dock for dock in           self.workspace.dockable_views if dock.widget() is not None and dock.widget().default_docking_position == 'right']
+
+        for d0, d1 in zip(self.right_dockable_views, self.right_dockable_views[1:]):
+            print(d0.widget().caption)
+            self.central_widget.tabifyDockWidget(d0, d1)
+        self.right_dockable_views[0].raise_()
+
     def _init_workspace(self):
+        self.central_widget_main = QSplitter(Qt.Horizontal)
+        self.setCentralWidget(self.central_widget_main)
         self.central_widget = QMainWindow()
-        self.setCentralWidget(self.central_widget)
+        self.central_widget2 = QMainWindow()
+        self.central_widget_main.addWidget(self.central_widget)
+        self.central_widget_main.addWidget(self.central_widget2)
 
         wk = Workspace(self, Instance())
         self.workspace = wk
 
+        self._tabify()
 
-        self.right_dockable_views = [dock for dock in self.workspace.dockable_views
-                                if dock.widget().default_docking_position == 'right']
+        # for dock in self.workspace.dockable_views:
+        #     print(dock.default_docking_position)
 
-        for d0, d1 in zip(self.right_dockable_views, self.right_dockable_views[1:]):
-            self.central_widget.tabifyDockWidget(d0, d1)
-        self.right_dockable_views[0].raise_()
+        #try:
+        
+
+        #except:
+        #    pass
+
+
+
+        # self.right_dockable_views2 = [dock for dock in self.workspace.dockable_views2 if dock.widget().default_docking_position == 'right']
+        #                         if dock.widget().default_docking_position == 'right']
+
+        # for d02, d12 in zip(self.right_dockable_views2, self.right_dockable_views2[1:]):
+        #     self.central_widget2.tabifyDockWidget(d02, d12)
+        # self.right_dockable_views2[0].raise_()
+        
 
         #self.central_widget.splitDockWidget(right_dockable_views[3], right_dockable_views[4], Qt.Horizontal)
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
+        # self.central_widget2.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
 
     #
     # Shortcuts and Shortcut handlers
     #
 
-    def _undockCurrentView(self):
-        print("undocking current view")
-        currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
-        print("Current view: " + str(currentTab))
-        self.defaultWindowFlags = self.right_dockable_views[currentTab].windowFlags()
-        self.right_dockable_views[currentTab].setWindowFlags(Qt.Window)
-        self.right_dockable_views[currentTab].show()
-        self.right_dockable_views[currentTab].raise_()
+    # def _undockCurrentView(self):
+    #     print("undocking current view")
+    #     currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
+    #     print("Current view: " + str(currentTab))
+    #     self.defaultWindowFlags = self.right_dockable_views[currentTab].windowFlags()
+    #     self.right_dockable_views[currentTab].setWindowFlags(Qt.Window)
+    #     self.right_dockable_views[currentTab].show()
+    #     self.right_dockable_views[currentTab].raise_()
 
-    def _dockCurrentView(self):
-        print("docking current view")
-        currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
-        print("Current view: " + str(currentTab))
-        self.right_dockable_views[currentTab].setWindowFlags(Qt.Widget)
-        self.right_dockable_views[currentTab].setWindowFlags(QMainWindow.VerticalTabs)
-        # self.central_widget.tabifyDockWidget(self.right_dockable_views[0], self.right_dockable_views[1])
-        self.right_dockable_views[currentTab].show()
-        self.right_dockable_views[currentTab].raise_()
+    # def _dockCurrentView(self):
+    #     print("docking current view")
+    #     currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
+    #     print("Current view: " + str(currentTab))
+    #     self.right_dockable_views[currentTab].setWindowFlags(Qt.Widget)
+    #     self.right_dockable_views[currentTab].setWindowFlags(QMainWindow.VerticalTabs)
+    #     # self.central_widget.tabifyDockWidget(self.right_dockable_views[0], self.right_dockable_views[1])
+    #     self.right_dockable_views[currentTab].show()
+    #     self.right_dockable_views[currentTab].raise_()
+
 
 
     def _init_shortcuts(self):
 
-        QShortcut(QKeySequence('Ctrl+U'), self, self._undockCurrentView)
-        QShortcut(QKeySequence('Ctrl+D'), self, self._dockCurrentView)
+        QShortcut(QKeySequence('Ctrl+U'), self, self.workspace.split_view)
+        QShortcut(QKeySequence('Ctrl+D'), self, self.workspace.unsplit_view)
 
         for i in range(1,6):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, self.right_dockable_views[i-1].raise_)

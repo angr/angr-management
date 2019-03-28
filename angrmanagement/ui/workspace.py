@@ -4,6 +4,8 @@ from collections import defaultdict
 
 from PySide2.QtCore import Qt
 
+from PySide2.QtWidgets import QSplitter
+
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
 
@@ -25,14 +27,17 @@ class Workspace:
         self.views_by_category = defaultdict(list)
         self.views = [ ]
         self.dockable_views = [ ]
+        self.dockable_views2 = [ ]
         self.view_to_dockable = { }
+        self.last_unsplit_view = None
+        self.is_split = 0
 
         #
         # Initialize font configurations
         #
         Conf.init_font_config()
 
-        default_tabs = [
+        self.default_tabs = [
             FunctionsView(self, 'left'),
             DisassemblyView(self, 'right'),
             CodeView(self, 'right'),
@@ -42,8 +47,17 @@ class Workspace:
             ConsoleView(self, 'bottom'),
         ]
 
-        for tab in default_tabs:
+        # self.splitter = QSplitter()
+        # self._main_window.central_widget.addDockWidget(dock_area, self.splitter)
+
+        # self.add_view(default_tabs[1], default_tabs[1].caption,)
+
+        for tab in self.default_tabs:
             self.add_view(tab, tab.caption, tab.category)
+
+
+        # for tab2 in default_tabs:
+        #     self.add_view2(tab2, tab2.caption, tab2.category)
 
     #
     # Properties
@@ -85,6 +99,47 @@ class Workspace:
     # Public methods
     #
 
+
+    def split_view(self):
+        if self.is_split == 0:
+            print("Split view called")
+            docking_positions = {
+                'left': Qt.LeftDockWidgetArea,
+                'right': Qt.RightDockWidgetArea,
+                'top': Qt.TopDockWidgetArea,
+                'bottom': Qt.BottomDockWidgetArea,
+            }
+
+            self._main_window.central_widget.removeDockWidget(self.dockable_views[2])
+            if self.last_unsplit_view is not None:
+                self._main_window.central_widget.removeDockWidget(self.last_unsplit_view)
+            dock_area = docking_positions.get(self.default_tabs[2].default_docking_position, Qt.RightDockWidgetArea)
+            dock = QSmartDockWidget(self.default_tabs[2].caption, parent=self.default_tabs[2])
+            self._main_window.central_widget2.addDockWidget(dock_area, dock)
+            self.dockable_views[2] = dock
+            dock.setWidget(self.default_tabs[2])
+            self.is_split = 1
+
+
+    def unsplit_view(self):
+        if self.is_split == 1:
+            print("Unsplit view called")
+            docking_positions = {
+                'left': Qt.LeftDockWidgetArea,
+                'right': Qt.RightDockWidgetArea,
+                'top': Qt.TopDockWidgetArea,
+                'bottom': Qt.BottomDockWidgetArea,
+            }
+
+            self._main_window.central_widget2.removeDockWidget(self.dockable_views[2])
+            dock_area = docking_positions.get(self.default_tabs[2].default_docking_position, Qt.RightDockWidgetArea)
+            dock = QSmartDockWidget(self.default_tabs[2].caption, parent=self.default_tabs[2])
+            self._main_window.central_widget.addDockWidget(dock_area, dock)
+            self.last_unsplit_view = dock
+            dock.setWidget(self.default_tabs[2])
+            self.is_split = 0
+
+
     def add_view(self, view, caption, category):
 
         docking_positions = {
@@ -107,6 +162,30 @@ class Workspace:
         self.views.append(view)
         self.dockable_views.append(dock)
         self.view_to_dockable[view] = dock
+
+
+    def add_view2(self, view, caption, category):
+
+        docking_positions2 = {
+            'left': Qt.LeftDockWidgetArea,
+            'right': Qt.RightDockWidgetArea,
+            'top': Qt.TopDockWidgetArea,
+            'bottom': Qt.BottomDockWidgetArea,
+        }
+
+        dock2 = QSmartDockWidget(caption, parent=view)
+        dock_area2 = docking_positions2.get(view.default_docking_position, Qt.RightDockWidgetArea)
+
+        if view.default_docking_position == 'right':
+            self._main_window.central_widget2.addDockWidget(dock_area2, dock2)
+        else:
+            self._main_window.addDockWidget(dock_area2, dock2)
+            self._main_window.removeDockWidget(dock2)
+        
+        dock2.setWidget(view)
+
+        self.dockable_views2.append(dock2)
+
 
     def raise_view(self, view):
         """
