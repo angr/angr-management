@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide2.QtGui import QPainter, QKeyEvent
 from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
 
-from angrmanagement.data.instance import ObjectContainer
+from ...data.instance import ObjectContainer
 
 _l = logging.getLogger('ui.widgets.qgraph')
 

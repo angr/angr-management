@@ -2,7 +2,7 @@
 from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
 
-from angrmanagement.data.instance import ObjectContainer
+from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
