@@ -13,7 +13,6 @@ class BasePlugin:
     def register_theme_callbacks(self):
         self._workspace.set_cb_function_backcolor(self.func_back_color)
         self._workspace.set_cb_insn_backcolor(self.insn_backcolor)
-        self._workspace.set_cb_insn_select_backcolor(self.insn_select_backcolor)
 
     def register_data_callbacks(self):
         pass
@@ -21,11 +20,8 @@ class BasePlugin:
     def register_other(self):
         pass
 
-    def insn_backcolor(self, addr):
+    def insn_backcolor(self, addr, selected):
         return None, None, None
-
-    def insn_select_backcolor(self, addr):
-        return 0xef, 0xbf, 0xba
 
     def func_back_color(self, func):
         return 255, 255, 255

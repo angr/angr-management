@@ -10,8 +10,12 @@ class TestPlugin(BasePlugin):
         super().__init__(*args, **kwargs)
         self.bookmarks = []
 
-    #def insn_backcolor(self, addr):
-    #    return 0xd6, 0xff, 0xd6
+    def insn_backcolor(self, addr, selected):
+        if not selected:
+            if addr in self.bookmarks:
+                return 0xd6, 0xff, 0xd6  # light green
+
+        return None, None, None
 
     def func_back_color(self, func):
         if func.name is None or func.name is '':
@@ -29,6 +33,7 @@ class TestPlugin(BasePlugin):
     def on_ctx_menu_bookmark(self, ctx_menu: DisasmInsnContextMenu):
         print("Bookmarking {:#010x}".format(ctx_menu.insn_addr))
         self.bookmarks.append(ctx_menu.insn_addr)
+        self._workspace.views_by_category['disassembly'][0].current_graph.viewport().update()
 
     def on_label_rename(self, addr: int, new_name: str):
         print("Setting label at {:#010x}='{}'".format(addr, new_name))

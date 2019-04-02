@@ -41,7 +41,6 @@ class DisassemblyView(BaseView):
 
         # Callbacks
         self._insn_backcolor_callback = None
-        self._insn_select_backcolor_callback = None
         self._label_rename_callback = None
 
         self._init_widgets()
@@ -121,14 +120,6 @@ class DisassemblyView(BaseView):
     @insn_backcolor_callback.setter
     def insn_backcolor_callback(self, v):
         self._insn_backcolor_callback = v
-
-    @property
-    def insn_select_backcolor_callback(self):
-        return self._insn_select_backcolor_callback
-
-    @insn_select_backcolor_callback.setter
-    def insn_select_backcolor_callback(self, v):
-        self._insn_select_backcolor_callback = v
 
     @property
     def label_rename_callback(self):

@@ -199,15 +199,10 @@ class Workspace:
         if fv:
             fv.backcolor_callback = callback
 
-    def set_cb_insn_backcolor(self, callback: Callable[[int], None]):
+    def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
         dv = self.views_by_category['disassembly'][0]
         if dv:
             dv.insn_backcolor_callback = callback
-
-    def set_cb_insn_select_backcolor(self, callback: Callable[[int], None]):
-        dv = self.views_by_category['disassembly'][0]
-        if dv:
-            dv.insn_select_backcolor_callback = callback
 
     def set_cb_label_rename(self, callback):
         dv = self.views_by_category['disassembly'][0]

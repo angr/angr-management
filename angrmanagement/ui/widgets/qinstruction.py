@@ -133,11 +133,19 @@ class QInstruction(QGraphObject):
     #
 
     @property
-    def insn_select_backcolor(self):
-        if self.disasm_view.insn_select_backcolor_callback:
-            return self.disasm_view.insn_select_backcolor_callback(self.insn.addr)
-        else:
-            return 0xef, 0xbf, 0xba
+    def insn_backcolor(self):
+        r, g, b = None, None, None
+
+        # First we'll check for customizations
+        if self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr, self.selected)
+
+        # Fallback to defaults (or None if not selected)
+        if r is None or g is None or b is None:
+            if self.selected:
+                r, g, b = 0xef, 0xbf, 0xba
+
+        return r, g, b
 
     def _init_widgets(self):
 
@@ -183,19 +191,17 @@ class QInstruction(QGraphObject):
         if self._string is not None:
             self._width += self.GRAPH_STRING_SPACING + self._string_width
 
-    def _paint_graph(self, painter):
-
-        r = g = b = None
-        # selection background
-        if self.selected:
-            r, g, b = self.insn_select_backcolor
-        elif self.disasm_view.insn_backcolor_callback:
-            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
+    def _paint_highlight(self, painter):
+        r, g, b = self.insn_backcolor
 
         if r and b and g:
             painter.setPen(QColor(r, g, b))
             painter.setBrush(QColor(r, g, b))
             painter.drawRect(self.x, self.y, self.width, self.height)
+
+    def _paint_graph(self, painter):
+
+        self._paint_highlight(painter)
 
         x = self.x
 
@@ -235,17 +241,7 @@ class QInstruction(QGraphObject):
 
     def _paint_linear(self, painter):
 
-        r = g = b = None
-        # selection background
-        if self.selected:
-            r, g, b = self.disasm_view.insn_select_backcolor_callback()
-        elif self.disasm_view.insn_backcolor_callback:
-            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
-
-        if r and b and g:
-            painter.setPen(QColor(r, g, b))
-            painter.setBrush(QColor(r, g, b))
-            painter.drawRect(self.x, self.y, self.width, self.height)
+        self._paint_highlight(painter)
 
         x = self.x
 
