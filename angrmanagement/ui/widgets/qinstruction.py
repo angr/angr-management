@@ -132,6 +132,13 @@ class QInstruction(QGraphObject):
     # Private methods
     #
 
+    @property
+    def insn_select_backcolor(self):
+        if self.disasm_view.insn_select_backcolor_callback:
+            return self.disasm_view.insn_select_backcolor_callback(self.insn.addr)
+        else:
+            return 0xef, 0xbf, 0xba
+
     def _init_widgets(self):
 
         self._addr = "%08x" % self.insn.addr
@@ -181,7 +188,7 @@ class QInstruction(QGraphObject):
         r = g = b = None
         # selection background
         if self.selected:
-            r, g, b = self.disasm_view.insn_select_backcolor_callback(self.insn.addr)
+            r, g, b = self.insn_select_backcolor
         elif self.disasm_view.insn_backcolor_callback:
             r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr)
 
