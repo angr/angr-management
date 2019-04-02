@@ -209,6 +209,11 @@ class Workspace:
         if dv:
             dv.insn_select_backcolor_callback = callback
 
+    def set_cb_label_rename(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.label_rename_callback = callback
+
     def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None]):
         dv = self.views_by_category['disassembly'][0]
         if dv._insn_menu:

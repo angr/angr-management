@@ -24,10 +24,14 @@ class TestPlugin(BasePlugin):
 
     def register_other(self):
         self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
+        self._workspace.set_cb_label_rename(self.on_label_rename)
 
     def on_ctx_menu_bookmark(self, ctx_menu: DisasmInsnContextMenu):
         print("Bookmarking {:#010x}".format(ctx_menu.insn_addr))
         self.bookmarks.append(ctx_menu.insn_addr)
+
+    def on_label_rename(self, addr: int, new_name: str):
+        print("Setting label at {:#010x}='{}'".format(addr, new_name))
 
 
 # Uncomment this line to override BasePlugin and see the extras
