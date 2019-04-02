@@ -43,6 +43,14 @@ class FunctionsView(BaseView):
     def sizeHint(self):
         return QSize(200, 0)
 
+    def subscribe_func_select(self, callback):
+        """
+        Appends the provided function to the list of callbacks to be called when a function is selected in the
+        functions table. The callback's only parameter is the `angr.knowledge_plugins.functions.function.Function`
+        :param callback: The callback function to call, which must accept **kwargs
+        """
+        self._function_table.subscribe_func_select(callback)
+
     #
     # Private methods
     #
@@ -58,12 +66,12 @@ class FunctionsView(BaseView):
 
         self.setLayout(vlayout)
 
-    def _on_function_selected(self, function):
+    def _on_function_selected(self, func):
         """
         A new function is on selection right now. Update the disassembly view that is currently at front.
 
         :param function:
         :return:
         """
+        self.workspace.on_function_selected(func=func)
 
-        self.workspace.on_function_selected(function)

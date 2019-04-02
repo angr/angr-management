@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderVie
     QStyledItemDelegate
 from PySide2.QtGui import QBrush, QColor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
+from ...data.instance import ObjectContainer
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -197,8 +198,9 @@ class QFunctionTableView(QTableView):
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTableView, self).__init__(parent)
 
-        self._selection_callback = selection_callback
         self._function_table = parent  # type: QFunctionTable
+        self._selected_func = ObjectContainer(None, 'Currently selected function')
+        self._selected_func.am_subscribe(selection_callback)
 
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
@@ -229,26 +231,16 @@ class QFunctionTableView(QTableView):
         self._functions = functions
         self._model.func_list = list(self._functions.values())
 
-    @property
-    def backcolor_callback(self):
-        return self._model.backcolor_callback
-
-    @backcolor_callback.setter
-    def backcolor_callback(self, v):
-        self._model.backcolor_callback = v
+    def subscribe_func_select(self, callback):
+        self._selected_func.am_subscribe(callback)
 
     def filter(self, keyword):
         self._model.filter(keyword)
 
     def _on_function_selected(self, model_index):
         row = model_index.row()
-        if 0 <= row < len(self._model):
-            selected_func = self._model.func_list[row]
-        else:
-            selected_func = None
-
-        if self._selection_callback is not None:
-            self._selection_callback(selected_func)
+        self._selected_func.am_obj = self._model.func_list[row]
+        self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def keyPressEvent(self, key_event):
 
@@ -290,13 +282,11 @@ class QFunctionTable(QWidget):
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
 
-        self._selection_callback = selection_callback
         self._view = parent
-
         self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
 
-        self._init_widgets()
+        self._init_widgets(selection_callback)
 
     @property
     def function_manager(self):
@@ -339,14 +329,17 @@ class QFunctionTable(QWidget):
         self._filter_box.hide()
         self._table_view.setFocus()
 
+    def subscribe_func_select(self, callback):
+        self._table_view.subscribe_func_select(callback)
+
     #
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self, selection_callback=None):
 
         # function table view
-        self._table_view = QFunctionTableView(self, selection_callback=self._selection_callback)
+        self._table_view = QFunctionTableView(self, selection_callback)
 
         # filter text box
         self._filter_box = QFunctionTableFilterBox(self)
