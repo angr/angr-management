@@ -20,13 +20,13 @@ class QFunctionTableModel(QAbstractTableModel):
     SIZE_COL = 4
     BLOCKS_COL = 5
 
-    def __init__(self, func_list=None):
+    def __init__(self, backcolor_callback=None, func_list=None):
 
         super(QFunctionTableModel, self).__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
-        self._backcolor_callback = None
+        self._backcolor_callback = backcolor_callback
 
     def __len__(self):
         if self._func_list is not None:
@@ -46,15 +46,6 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = v
         self.emit(SIGNAL("layoutChanged()"))
-
-    @property
-    def backcolor_callback(self):
-        return self._backcolor_callback
-
-    @backcolor_callback.setter
-    def backcolor_callback(self, v):
-        self._backcolor_callback = v
-
 
     def filter(self, keyword):
         if not keyword:
@@ -79,6 +70,9 @@ class QFunctionTableModel(QAbstractTableModel):
             return None
 
         return self.Headers[section]
+
+    def _get_function_backcolor(self, func) -> (int, int, int):
+        return self._backcolor_callback(func)
 
     def data(self, index, role):
 
@@ -139,9 +133,8 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = QColor(0xff, 0xff, 0xff)
-            if self.backcolor_callback is not None:
-                r, g, b = self.backcolor_callback(func)
-                color = QColor(r, g, b)
+            r, g, b = self._get_function_backcolor(func)
+            color = QColor(r, g, b)
 
             return QBrush(color)
 
@@ -215,7 +208,7 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._functions = None
-        self._model = QFunctionTableModel()
+        self._model = QFunctionTableModel(self._function_table.get_function_backcolor)
         self.setModel(self._model)
 
         # slots
@@ -277,14 +270,13 @@ class QFunctionTableFilterBox(QLineEdit):
 
 
 class QFunctionTable(QWidget):
-    _table_view: QFunctionTableView
 
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
 
-        self._view = parent
-        self._table_view = None  # type: QFunctionTableView
-        self._filter_box = None  # type: QFunctionTableFilterBox
+        self._view: 'FunctionsView' = parent
+        self._table_view: QFunctionTableView = None
+        self._filter_box: QFunctionTableFilterBox = None
 
         self._init_widgets(selection_callback)
 
@@ -303,17 +295,8 @@ class QFunctionTable(QWidget):
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
 
-    @property
-    def backcolor_callback(self):
-        ret = None
-        if self._table_view:
-            ret = self._table_view.backcolor_callback
-        return ret
-
-    @backcolor_callback.setter
-    def backcolor_callback(self, v):
-        if self._table_view:
-            self._table_view.backcolor_callback = v
+    def get_function_backcolor(self, func):
+        return self._view.get_function_backcolor(func)
 
     #
     # Public methods

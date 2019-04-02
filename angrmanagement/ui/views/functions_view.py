@@ -14,24 +14,20 @@ class FunctionsView(BaseView):
         self.caption = 'Functions'
         self._function_table = None
         self._status_label = None
-        self._backcolor_callback = None
+
+        self.backcolor_callback = None
 
         self._init_widgets()
-
-    @property
-    def backcolor_callback(self):
-        if self._function_table:
-            return self._function_table.backcolor_callback
-
-    @backcolor_callback.setter
-    def backcolor_callback(self, v):
-        self._backcolor_callback = v
-        if self._function_table:
-            self._function_table.backcolor_callback = v
 
     #
     # Public methods
     #
+
+    def get_function_backcolor(self, func):
+        if self.backcolor_callback:
+            return self.backcolor_callback(func)
+        else:
+            return 255, 255, 255
 
     def set_function_count(self, count):
         if self._status_label is not None:
