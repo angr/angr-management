@@ -7,7 +7,7 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 
-from angrmanagement.ui.plugin_manager import PluginManager
+from ..plugins import PluginManager
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
@@ -193,7 +193,7 @@ class MainWindow(QMainWindow):
 
     def _init_plugins(self):
         self._pm = PluginManager(self.workspace)
-        self._pm.load_all()
+        self._pm.initialize_all()
 
     #
     # Event
