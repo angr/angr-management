@@ -10,8 +10,8 @@ class TestPlugin(BasePlugin):
         super().__init__(*args, **kwargs)
         self.bookmarks = []
 
-    def insn_backcolor(self, addr):
-        return 0xd6, 0xff, 0xd6
+    #def insn_backcolor(self, addr):
+    #    return 0xd6, 0xff, 0xd6
 
     def register_other(self):
         self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)

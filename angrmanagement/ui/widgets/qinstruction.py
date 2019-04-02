@@ -178,7 +178,7 @@ class QInstruction(QGraphObject):
 
     def _paint_graph(self, painter):
 
-        r = b = g = None
+        r = g = b = None
         # selection background
         if self.selected:
             r, g, b = self.disasm_view.insn_select_backcolor_callback(self.insn.addr)
@@ -228,7 +228,7 @@ class QInstruction(QGraphObject):
 
     def _paint_linear(self, painter):
 
-        r = b = g = None
+        r = g = b = None
         # selection background
         if self.selected:
             r, g, b = self.disasm_view.insn_select_backcolor_callback()
