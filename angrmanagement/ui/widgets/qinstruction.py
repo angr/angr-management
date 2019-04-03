@@ -140,7 +140,7 @@ class QInstruction(QGraphObject):
         if self.disasm_view.insn_backcolor_callback:
             r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr, self.selected)
 
-        # Fallback to defaults (or None if not selected)
+        # Fallback to defaults if we get Nones from the callback
         if r is None or g is None or b is None:
             if self.selected:
                 r, g, b = 0xef, 0xbf, 0xba
@@ -194,7 +194,7 @@ class QInstruction(QGraphObject):
     def _paint_highlight(self, painter):
         r, g, b = self.insn_backcolor
 
-        if r and b and g:
+        if r is not None and b is not None and g is not None:
             painter.setPen(QColor(r, g, b))
             painter.setBrush(QColor(r, g, b))
             painter.drawRect(self.x, self.y, self.width, self.height)

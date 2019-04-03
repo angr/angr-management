@@ -19,6 +19,8 @@ from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
+from angr_plugins import ChessPlugin
+
 
 class MainWindow(QMainWindow):
     """
@@ -69,6 +71,9 @@ class MainWindow(QMainWindow):
                 self._load_database(file_to_open)
             else:
                 self._open_loadbinary_dialog(file_to_open)
+
+        self.activity_monitor = ChessPlugin(self)
+        self.activity_monitor.start()
 
     #
     # Properties
