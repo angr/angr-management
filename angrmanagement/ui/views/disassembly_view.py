@@ -9,6 +9,7 @@ from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearViewer
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
+from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
@@ -129,6 +130,14 @@ class DisassemblyView(BaseView):
             return
 
         dialog = RenameLabel(self, label_addr, parent=self)
+        dialog.exec_()
+
+    def popup_comment_dialog(self):
+        comment_addr = self._address_in_selection()
+        if comment_addr is None:
+            return
+
+        dialog = SetComment(self, comment_addr, parent=self)
         dialog.exec_()
 
     def popup_newstate_dialog(self, asynch=True):
@@ -306,6 +315,22 @@ class DisassemblyView(BaseView):
 
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
+
+    def set_comment(self, addr, comment_text):
+        if self._flow_graph.disasm is not None:
+
+            is_updating = False
+
+            kb = self._flow_graph.disasm.kb
+            if comment_text is None and addr in kb.comments:
+                del kb.comments[addr]
+            else:
+                is_updating = addr in kb.comments
+
+            kb.comments[addr] = comment_text
+
+            # redraw the current block
+            self._flow_graph.update_comment(addr, comment_text)
 
     def avoid_addr_in_exec(self, addr):
 

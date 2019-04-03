@@ -6,7 +6,7 @@ from angr.analyses.disassembly import Value
 
 from .qgraph_object import QGraphObject
 from .qoperand import QOperand
-from ...utils import should_display_string_label, get_string_for_display
+from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
 
 
 class QInstruction(QGraphObject):
@@ -14,7 +14,7 @@ class QInstruction(QGraphObject):
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
-    GRAPH_STRING_SPACING = 5
+    GRAPH_COMMENT_STRING_SPACING = 5
 
     LINEAR_INSTRUCTION_OFFSET = 120
 
@@ -43,6 +43,8 @@ class QInstruction(QGraphObject):
         self._operands = [ ]
         self._string = None
         self._string_width = None
+        self._comment = None
+        self._comment_width = None
 
         self._init_widgets()
 
@@ -94,6 +96,11 @@ class QInstruction(QGraphObject):
         if operand_idx < len(self._operands):
             return self._operands[operand_idx]
         return None
+
+    def set_comment(self, new_text):
+        self._comment = new_text
+        self._comment_width = self._config.disasm_font_width * len(self._comment)
+        self._update_size()
 
     #
     # Event handlers
@@ -160,6 +167,10 @@ class QInstruction(QGraphObject):
             self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr)
             self._string_width = self._config.disasm_font_width * len(self._string)
 
+        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        if self._comment is not None:
+            self._comment_width = self._config.disasm_font_width * len(self._comment)
+
         self._update_size()
 
     def _update_size(self):
@@ -173,8 +184,12 @@ class QInstruction(QGraphObject):
         self._width += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING + \
                        sum([ op.width for op in self._operands ]) + \
                        (len(self._operands) - 1) * (self._config.disasm_font_width + self.GRAPH_OPERAND_SPACING)
-        if self._string is not None:
-            self._width += self.GRAPH_STRING_SPACING + self._string_width
+
+        # we only display string if there's no comment
+        if self._comment is not None:
+            self._width += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
+        elif self._string is not None:
+            self._width += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
 
     def _paint_graph(self, painter):
 
@@ -214,11 +229,13 @@ class QInstruction(QGraphObject):
 
             x += self.GRAPH_OPERAND_SPACING
 
-        # string
-        if self._string is not None:
-            x += self.GRAPH_STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+        # comment or string - comments have precedence
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.blue)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
 
     def _paint_linear(self, painter):
 
@@ -262,8 +279,10 @@ class QInstruction(QGraphObject):
 
             x += self.GRAPH_OPERAND_SPACING
 
-        # string
-        if self._string is not None:
-            x += self.GRAPH_STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+        # comment or string - comments have precedence
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.blue)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
