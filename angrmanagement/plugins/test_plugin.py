@@ -1,14 +1,19 @@
+import logging
+
 from . import PluginManager
 from .base_plugin import BasePlugin
 
 # For type hints
 from ..ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
+_l = logging.getLogger(__name__)
+_l.setLevel(logging.DEBUG)
 
 class TestPlugin(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bookmarks = []
+        self._autostart = True
 
     def insn_backcolor(self, addr, selected):
         if not selected:
@@ -31,13 +36,22 @@ class TestPlugin(BasePlugin):
         self._workspace.set_cb_label_rename(self.on_label_rename)
 
     def on_ctx_menu_bookmark(self, ctx_menu: DisasmInsnContextMenu):
-        print("Bookmarking {:#010x}".format(ctx_menu.insn_addr))
+        _l.info("Bookmarking {:#010x}".format(ctx_menu.insn_addr))
         self.bookmarks.append(ctx_menu.insn_addr)
         self._workspace.views_by_category['disassembly'][0].current_graph.viewport().update()
 
     def on_label_rename(self, addr: int, new_name: str):
-        print("Setting label at {:#010x}='{}'".format(addr, new_name))
+        _l.info("Setting label at {:#010x}='{}'".format(addr, new_name))
+
+    def teardown(self):
+        _l.info("Not saving your bookmarks")
+        super().teardown()
+
+    def run(self):
+        while True:
+            _l.info("looping")
+            self.sleep(5)
 
 
 # Uncomment this line to override BasePlugin and see the extras
-PluginManager.register_default('test', TestPlugin)
+PluginManager.register_default('TestPlugin', TestPlugin)

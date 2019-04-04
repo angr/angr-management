@@ -19,6 +19,11 @@ class PluginManager:
             plugin.register_theme_callbacks()
             plugin.register_data_callbacks()
             plugin.register_other()
+            plugin.autostart()
+
+    def teardown(self):
+        for plugin in self._plugins.values():
+            plugin.teardown()
 
     @staticmethod
     def register_default(name, cls):
