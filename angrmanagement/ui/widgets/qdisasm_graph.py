@@ -283,6 +283,11 @@ class QDisasmGraph(QBaseGraph):
             self.disassembly_view.decompile_current_function()
             return True
 
+        elif key == Qt.Key_Semicolon:
+            # add comment
+            self.disassembly_view.popup_comment_dialog()
+            return True
+
         return False
 
     def _on_keyreleased_event(self, key_event):

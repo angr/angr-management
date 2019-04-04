@@ -188,3 +188,9 @@ def get_string_for_display(cfg, insn_addr):
         else: return '"' + filter_string_for_display(str_content) + '"'
     else:
         return '<Unknown>'
+
+def get_comment_for_display(kb, insn_addr):
+    if insn_addr in kb.comments:
+        return filter_string_for_display(kb.comments[insn_addr])
+    else:
+        return None
