@@ -17,6 +17,7 @@ from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
+from functools import partial
 
 
 class MainWindow(QMainWindow):
@@ -182,6 +183,8 @@ class MainWindow(QMainWindow):
             print(d0.widget().caption)
             self.central_widget.tabifyDockWidget(d0, d1)
         self.right_dockable_views[0].raise_()
+        print("TABIFIED - " + str(len(self.right_dockable_views)))
+
 
     def _init_workspace(self):
         self.central_widget_main = QSplitter(Qt.Horizontal)
@@ -230,10 +233,10 @@ class MainWindow(QMainWindow):
     #     print("Current view: " + str(currentTab))
     #     self.defaultWindowFlags = self.right_dockable_views[currentTab].windowFlags()
     #     self.right_dockable_views[currentTab].setWindowFlags(Qt.Window)
-    #     self.right_dockable_views[currentTab].show()
-    #     self.right_dockable_views[currentTab].raise_()
+    #     self.right_dockable_vie.split_view
+    #     self.right_dockable_vie.split_view
 
-    # def _dockCurrentView(self):
+    # def _dockCurrentView(self):.split_view
     #     print("docking current view")
     #     currentTab = self.central_widget.tabPosition(Qt.RightDockWidgetArea)
     #     print("Current view: " + str(currentTab))
@@ -244,15 +247,33 @@ class MainWindow(QMainWindow):
     #     self.right_dockable_views[currentTab].raise_()
 
 
+    def getCurrentTabId(self):
+        print("Getting current tab ID\n")
+        for i in range(1,6):
+            if self.right_dockable_views[i-1].visibleRegion().isEmpty() == False:
+                print(i)
+                return i
+        print("1")
+        return 1
+
+
+    def nextTab(self):
+        self.right_dockable_views[self.getCurrentTabId()].raise_()
+
+    def previousTab(self):
+        self.right_dockable_views[self.getCurrentTabId()-2].raise_()
 
     def _init_shortcuts(self):
 
-        QShortcut(QKeySequence('Ctrl+U'), self, self.workspace.split_view)
-        QShortcut(QKeySequence('Ctrl+D'), self, self.workspace.unsplit_view)
+        #for i in range(1,6):
+        QShortcut(QKeySequence('Ctrl+L'), self, self.getCurrentTabId)
+        QShortcut(QKeySequence('Ctrl+D'), self, self.workspace.split_view)
+        QShortcut(QKeySequence('Ctrl+U'), self, self.workspace.unsplit_view)
+        QShortcut(QKeySequence('Ctrl+Tab'), self, self.nextTab)
+        QShortcut(QKeySequence('Ctrl+Shift+Tab'), self, self.previousTab)
 
-        for i in range(1,6):
+        for i in range(1,len(self.right_dockable_views)):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, self.right_dockable_views[i-1].raise_)
-
 
     #
     # Event

@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from PySide2.QtCore import Qt
 
-from PySide2.QtWidgets import QSplitter
+from PySide2.QtWidgets import QSplitter, QMainWindow
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
@@ -30,6 +30,7 @@ class Workspace:
         self.dockable_views2 = [ ]
         self.view_to_dockable = { }
         self.last_unsplit_view = None
+        self.split_tab_id = None
         self.is_split = 0
 
         #
@@ -101,6 +102,7 @@ class Workspace:
 
 
     def split_view(self):
+        id = self._main_window.getCurrentTabId()
         if self.is_split == 0:
             print("Split view called")
             docking_positions = {
@@ -110,34 +112,28 @@ class Workspace:
                 'bottom': Qt.BottomDockWidgetArea,
             }
 
-            self._main_window.central_widget.removeDockWidget(self.dockable_views[2])
-            if self.last_unsplit_view is not None:
-                self._main_window.central_widget.removeDockWidget(self.last_unsplit_view)
-            dock_area = docking_positions.get(self.default_tabs[2].default_docking_position, Qt.RightDockWidgetArea)
-            dock = QSmartDockWidget(self.default_tabs[2].caption, parent=self.default_tabs[2])
+            self._main_window.central_widget.removeDockWidget(self.dockable_views[id])
+            # print(self._main_window.right_dockable_views)
+            # self._main_window._tabify()
+            #if self.last_unsplit_view is not None:
+            #    self._main_window.central_widget.removeDockWidget(self.last_unsplit_view)
+            dock_area = docking_positions.get(self.default_tabs[id].default_docking_position, Qt.RightDockWidgetArea)
+            dock = QSmartDockWidget(self.default_tabs[id].caption, parent=self.default_tabs[id])
+            # self.dockable_views[id] = dock
             self._main_window.central_widget2.addDockWidget(dock_area, dock)
-            self.dockable_views[2] = dock
-            dock.setWidget(self.default_tabs[2])
+            dock.setWidget(self.default_tabs[id])
             self.is_split = 1
-
-
-    def unsplit_view(self):
-        if self.is_split == 1:
-            print("Unsplit view called")
-            docking_positions = {
-                'left': Qt.LeftDockWidgetArea,
-                'right': Qt.RightDockWidgetArea,
-                'top': Qt.TopDockWidgetArea,
-                'bottom': Qt.BottomDockWidgetArea,
-            }
-
-            self._main_window.central_widget2.removeDockWidget(self.dockable_views[2])
-            dock_area = docking_positions.get(self.default_tabs[2].default_docking_position, Qt.RightDockWidgetArea)
-            dock = QSmartDockWidget(self.default_tabs[2].caption, parent=self.default_tabs[2])
-            self._main_window.central_widget.addDockWidget(dock_area, dock)
+            self.split_tab_id = id
             self.last_unsplit_view = dock
-            dock.setWidget(self.default_tabs[2])
-            self.is_split = 0
+            # print(len(self.dockable_views))
+
+    # def readd_views(self):
+    #     # Remove everything
+    #     self._main_window.central_widget = QMainWindow()
+
+    #     for tab in self.default_tabs:
+    #         self.add_view(self, tab.)
+
 
 
     def add_view(self, view, caption, category):
@@ -163,6 +159,79 @@ class Workspace:
         self.dockable_views.append(dock)
         self.view_to_dockable[view] = dock
 
+
+    # def readd_views(self):
+    #     # Remove everything
+    #     self._main_window.central_widget = QMainWindow()
+    #     self._main_window.central_widget2 = QMainWindow()
+    #     self.views = [ ]
+    #     self.dockable_views = [ ]
+
+    #     for tab in self.default_tabs:
+    #         self.add_view(tab, tab.caption, tab.category)
+        
+    #     #self._main_window._tabify()
+
+
+    def unsplit_view(self):
+        if self.is_split == 1:
+            id = self.split_tab_id
+            print("Unsplit view called")
+            docking_positions = {
+                'left': Qt.LeftDockWidgetArea,
+                'right': Qt.RightDockWidgetArea,
+                'top': Qt.TopDockWidgetArea,
+                'bottom': Qt.BottomDockWidgetArea,
+            }
+
+            # self._main_window.central_widget2.removeDockWidget(self.dockable_views[id])
+            # split_dock_area = docking_positions.get(self.default_tabs[id].default_docking_position, Qt.RightDockWidgetArea)
+            # dock = QSmartDockWidget(self.default_tabs[id].caption, parent=self.default_tabs[id])
+
+        #     self.right_dockable_views = [dock for dock in self.dockable_views 
+        #     if dock.widget() is not None and dock.widget().default_docking_position == 'right']
+
+            #for i in range(1,len(self.dockable_views)):
+            self._main_window.central_widget2.removeDockWidget(self.last_unsplit_view)
+
+            # for i in range(1,len(self.dockable_views)):
+            #     self._main_window.central_widget.removeDockWidget(self.dockable_views[i])
+
+            # k = 0
+            # for tab in self.default_tabs:
+            #     if k != id:
+            #         dock = QSmartDockWidget(tab.caption, parent=tab)
+            #         dock_area = docking_positions.get(tab.default_docking_position, Qt.RightDockWidgetArea)
+            #         if tab.default_docking_position == 'right':
+            #             self._main_window.central_widget.addDockWidget(dock_area, dock)
+            #             dock.setWidget(tab)
+            #             self.dockable_views[k] = dock
+            #     k = k + 1
+
+            # self.is_split = 0
+
+            # for i in range(0, len(self.right_dockable_views)):
+            #     print("Splitting " + self.right_dockable_views[i].caption)
+
+            #for d0, d1 in zip(self.right_dockable_views, self.right_dockable_views[1:]):
+            #    print("Splitting " + d0.widget().caption)
+            #    self._main_window.central_widget.splitDockWidget(d0, d1, Qt.Horizontal)
+
+            dock_area = docking_positions.get(self.default_tabs[id].default_docking_position, Qt.RightDockWidgetArea)
+
+            dock = QSmartDockWidget(self.default_tabs[id].caption, parent=self.default_tabs[id])
+
+            self._main_window.central_widget.addDockWidget(dock_area, dock)
+
+            dock.setWidget(self.default_tabs[id])
+            
+            self.dockable_views[id] = dock
+
+            #self.last_unsplit_view = dock
+            self._main_window._tabify()
+            self.is_split = 0
+            #self._main_window._tabify()
+    
 
     def add_view2(self, view, caption, category):
 
