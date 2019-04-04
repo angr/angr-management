@@ -214,6 +214,9 @@ class MainWindow(QMainWindow):
         pass
         # self._recalculate_view_sizes(event.oldSize())
 
+    def closeEvent(self, event):
+        event.accept()
+
     def event(self, event):
 
         if event.type() == QEvent.User:
