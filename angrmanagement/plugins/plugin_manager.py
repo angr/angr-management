@@ -16,8 +16,7 @@ class PluginManager:
 
     def initialize_all(self):
         for plugin in self._plugins.values():
-            plugin.register_theme_callbacks()
-            plugin.register_data_callbacks()
+            plugin.register_callbacks()
             plugin.register_other()
             plugin.autostart()
 

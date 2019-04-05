@@ -16,6 +16,28 @@ class TestPlugin(BasePlugin):
         self.bookmarks = []
         self._autostart = True
 
+    def register_callbacks(self):
+        super().register_callbacks()  # Reuse BasePlugin's registrations for insn/func backcolors
+
+        self._workspace.set_cb_label_rename(self.on_label_rename)
+        self._workspace.set_comment_callback(self.on_set_comment)
+
+    def register_other(self):
+        self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
+
+    def teardown(self):
+        _l.info("Not saving your bookmarks")
+        super().teardown()
+
+    def run(self):
+        while True:
+            _l.info("looping")
+            self.sleep(5)
+
+    #
+    # Callbacks
+    #
+
     def insn_backcolor(self, addr, selected):
         if not selected:
             if addr in self.bookmarks:
@@ -32,10 +54,6 @@ class TestPlugin(BasePlugin):
         else:
             return 255, 255, 255
 
-    def register_other(self):
-        self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
-        self._workspace.set_cb_label_rename(self.on_label_rename)
-
     def on_ctx_menu_bookmark(self, ctx_menu: DisasmInsnContextMenu):
         _l.info("Bookmarking {:#010x}".format(ctx_menu.insn_addr))
         self.bookmarks.append(ctx_menu.insn_addr)
@@ -44,14 +62,8 @@ class TestPlugin(BasePlugin):
     def on_label_rename(self, addr: int, new_name: str):
         _l.info("Setting label at {:#010x}='{}'".format(addr, new_name))
 
-    def teardown(self):
-        _l.info("Not saving your bookmarks")
-        super().teardown()
-
-    def run(self):
-        while True:
-            _l.info("looping")
-            self.sleep(5)
+    def on_set_comment(self, addr: int, txt: str):
+        _l.info("User set comment at {:#010x}: '{}'".format(addr, txt))
 
 
 # Uncomment this line to override BasePlugin and see the extras

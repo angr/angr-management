@@ -20,21 +20,12 @@ class BasePlugin(QtCore.QThread):
         self._autostart = False
         _l.info("Loaded {}".format(self.__class__.__name__))
 
-    def register_theme_callbacks(self):
+    def register_callbacks(self):
         self._workspace.set_cb_function_backcolor(self.func_back_color)
         self._workspace.set_cb_insn_backcolor(self.insn_backcolor)
 
-    def register_data_callbacks(self):
-        pass
-
     def register_other(self):
         pass
-
-    def insn_backcolor(self, addr, selected):
-        return None, None, None
-
-    def func_back_color(self, func):
-        return None, None, None
 
     def autostart(self):
         if self._autostart:
@@ -45,6 +36,16 @@ class BasePlugin(QtCore.QThread):
 
     def run(self):
         raise NotImplementedError("run() must be implemented in derived class!")
+
+    #
+    # Callbacks
+    #
+
+    def insn_backcolor(self, addr, selected):
+        return None, None, None
+
+    def func_back_color(self, func):
+        return None, None, None
 
 
 PluginManager.register_default('base', BasePlugin)
