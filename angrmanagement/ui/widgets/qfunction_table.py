@@ -134,7 +134,8 @@ class QFunctionTableModel(QAbstractTableModel):
         elif role == Qt.BackgroundColorRole:
             color = QColor(0xff, 0xff, 0xff)
             r, g, b = self._get_function_backcolor(func)
-            color = QColor(r, g, b)
+            if r is not None and g is not None and b is not None:
+                color = QColor(r, g, b)
 
             return QBrush(color)
 

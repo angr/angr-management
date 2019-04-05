@@ -34,7 +34,7 @@ class BasePlugin(QtCore.QThread):
         return None, None, None
 
     def func_back_color(self, func):
-        return 255, 255, 255
+        return None, None, None
 
     def autostart(self):
         if self._autostart:
