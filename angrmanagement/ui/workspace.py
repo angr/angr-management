@@ -214,4 +214,7 @@ class Workspace:
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback)
 
-
+    def set_comment_callback(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.set_comment_callback = callback
