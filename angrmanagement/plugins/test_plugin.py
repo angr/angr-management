@@ -20,7 +20,7 @@ class TestPlugin(BasePlugin):
         super().register_callbacks()  # Reuse BasePlugin's registrations for insn/func backcolors
 
         self._workspace.set_cb_label_rename(self.on_label_rename)
-        self._workspace.set_comment_callback(self.on_set_comment)
+        self._workspace.set_cb_set_comment(self.on_set_comment)
 
     def register_other(self):
         self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
