@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
 
         self.workspace = None
         self.central_widget = None
-        self._plugin_mgr = None # type: PluginManager
+        self._plugin_mgr = None  # type: PluginManager
 
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar

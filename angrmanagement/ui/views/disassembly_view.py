@@ -36,7 +36,7 @@ class DisassemblyView(BaseView):
         self.variable_manager = None  # type: VariableManager
         self._current_function = ObjectContainer(None, 'The currently selected function')
 
-        self._insn_menu: DisasmInsnContextMenu = None
+        self._insn_menu = None  # type: DisasmInsnContextMenu
 
         self._insn_addr_on_context_menu = None
 

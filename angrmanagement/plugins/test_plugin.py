@@ -9,6 +9,7 @@ from ..ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 _l = logging.getLogger(__name__)
 _l.setLevel(logging.DEBUG)
 
+
 class TestPlugin(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

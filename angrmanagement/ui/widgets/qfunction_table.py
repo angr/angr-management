@@ -274,9 +274,9 @@ class QFunctionTable(QWidget):
     def __init__(self, parent, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
 
-        self._view: 'FunctionsView' = parent
-        self._table_view: QFunctionTableView = None
-        self._filter_box: QFunctionTableFilterBox = None
+        self._view = parent  # type: 'FunctionsView'
+        self._table_view = None  # type: QFunctionTableView
+        self._filter_box = None  # type: QFunctionTableFilterBox
 
         self._init_widgets(selection_callback)
 

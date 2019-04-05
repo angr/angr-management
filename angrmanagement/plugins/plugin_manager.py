@@ -2,11 +2,11 @@ from typing import Dict
 
 
 class PluginManager:
-    default_plugins: Dict[str, 'BasePlugin'] = {}
+    default_plugins = {}  # type: Dict[str, 'BasePlugin']
 
     def __init__(self, workspace):
         self._workspace = workspace
-        self._plugins: Dict[str, 'BasePlugin'] = {}
+        self._plugins = {}  # type: Dict[str, 'BasePlugin']
 
         self.load_default_plugins()
 
