@@ -4,7 +4,8 @@ from collections import defaultdict
 
 from PySide2.QtCore import Qt
 
-from PySide2.QtWidgets import QSplitter, QMainWindow
+from PySide2.QtWidgets import QSplitter, QMainWindow, QShortcut
+from PySide2.QtGui import QKeySequence
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
@@ -125,6 +126,7 @@ class Workspace:
             self.is_split = 1
             self.split_tab_id = id
             self.last_unsplit_view = dock
+            self._main_window.central_widget_main.setStretchFactor(1,1)
             # print(len(self.dockable_views))
 
     # def readd_views(self):
@@ -183,7 +185,6 @@ class Workspace:
                 'top': Qt.TopDockWidgetArea,
                 'bottom': Qt.BottomDockWidgetArea,
             }
-
             # self._main_window.central_widget2.removeDockWidget(self.dockable_views[id])
             # split_dock_area = docking_positions.get(self.default_tabs[id].default_docking_position, Qt.RightDockWidgetArea)
             # dock = QSmartDockWidget(self.default_tabs[id].caption, parent=self.default_tabs[id])
@@ -226,9 +227,11 @@ class Workspace:
             dock.setWidget(self.default_tabs[id])
             
             self.dockable_views[id] = dock
-
+            self._main_window.central_widget_main.setStretchFactor(1,0)
             #self.last_unsplit_view = dock
             self._main_window._tabify()
+            # print("UNSPLITTING " + str(id))
+            # QShortcut(QKeySequence('Ctrl+'+str(id)), self, self._main_window.right_dockable_views[id-1].raise_)
             self.is_split = 0
             #self._main_window._tabify()
     

@@ -66,6 +66,11 @@ python start.py
 - Decompile: ```F5```
 - Documentation: ```Alt + H```
 
+- Next Tab: Ctrl+Tab
+- Previous Tab: Ctrl+Shift+Tab
+- Split current active tab: Ctrl+D
+- Unsplit: Ctrl+U
+
 ## Issues
 
 ### 'module' object has noattribute 'MIPS_GRP_CALL'
