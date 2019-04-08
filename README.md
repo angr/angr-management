@@ -68,8 +68,8 @@ python start.py
 
 - Next Tab: Ctrl+Tab
 - Previous Tab: Ctrl+Shift+Tab
-- Split current active tab: Ctrl+D
-- Unsplit: Ctrl+U
+- Split View: Ctrl+D
+- Unsplit View: Ctrl+U
 
 ## Issues
 
