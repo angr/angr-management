@@ -12,6 +12,7 @@ from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
+from .menus.view_menu import ViewMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
@@ -54,11 +55,11 @@ class MainWindow(QMainWindow):
 
         self.defaultWindowFlags = None
 
-        self._init_menus()
         self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
         self._init_shortcuts()
+        self._init_menus()
 
         self.showMaximized()
 
@@ -166,9 +167,11 @@ class MainWindow(QMainWindow):
     def _init_menus(self):
         fileMenu = FileMenu(self)
         analyzeMenu = AnalyzeMenu(self)
+        viewMenu = ViewMenu(self)
         helpMenu = HelpMenu(self)
         self.menuBar().addMenu(fileMenu.qmenu())
         self.menuBar().addMenu(analyzeMenu.qmenu())
+        self.menuBar().addMenu(viewMenu.qmenu())
         self.menuBar().addMenu(helpMenu.qmenu())
 
     #
@@ -266,7 +269,7 @@ class MainWindow(QMainWindow):
     def _init_shortcuts(self):
 
         #for i in range(1,6):
-        QShortcut(QKeySequence('Ctrl+L'), self, self.getCurrentTabId)
+        #QShortcut(QKeySequence('Ctrl+L'), self, self.getCurrentTabId)
         QShortcut(QKeySequence('Ctrl+D'), self, self.workspace.split_view)
         QShortcut(QKeySequence('Ctrl+U'), self, self.workspace.unsplit_view)
         QShortcut(QKeySequence('Ctrl+Tab'), self, self.nextTab)
