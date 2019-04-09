@@ -301,7 +301,7 @@ class MainWindow(QMainWindow):
             cfg_args = {}
 
         proj = angr.Project(file_path, load_options=load_options)
-        self.workspace.instance.set_project(proj)
+        self.workspace.instance.project = proj
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
     def _load_database(self, file_path):
