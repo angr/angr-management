@@ -1,3 +1,4 @@
+from typing import Union, Callable
 
 from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
@@ -36,9 +37,14 @@ class DisassemblyView(BaseView):
         self.variable_manager = None  # type: VariableManager
         self._current_function = ObjectContainer(None, 'The currently selected function')
 
-        self._insn_menu = None
+        self._insn_menu = None  # type: DisasmInsnContextMenu
 
         self._insn_addr_on_context_menu = None
+
+        # Callbacks
+        self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
+        self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
+        self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
         self._init_widgets()
         self._init_menus()
@@ -105,6 +111,35 @@ class DisassemblyView(BaseView):
             return self._linear_viewer
         else:
             return self._flow_graph
+
+    #
+    # Callbacks
+    #
+
+    @property
+    def insn_backcolor_callback(self):
+        return self._insn_backcolor_callback
+
+    @insn_backcolor_callback.setter
+    def insn_backcolor_callback(self, v):
+        self._insn_backcolor_callback = v
+
+    @property
+    def label_rename_callback(self):
+        return self._label_rename_callback
+
+    @label_rename_callback.setter
+    def label_rename_callback(self, v):
+        self._label_rename_callback = v
+
+    @property
+    def set_comment_callback(self):
+        return self._set_comment_callback
+
+    @set_comment_callback.setter
+    def set_comment_callback(self, v):
+        self._set_comment_callback = v
+
 
     #
     # UI
@@ -217,7 +252,7 @@ class DisassemblyView(BaseView):
         """
         Toggle whether addresses are shown on disassembly graph.
 
-        :param bool show_address: Whether the address should be shown or not. 
+        :param bool show_address: Whether the address should be shown or not.
         :return:                  None
         """
 
@@ -313,6 +348,10 @@ class DisassemblyView(BaseView):
                     is_renaming = True
                 kb.labels[addr] = new_name
 
+            # callback first
+            if self._label_rename_callback:
+                self._label_rename_callback(addr, new_name)
+
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
@@ -328,6 +367,10 @@ class DisassemblyView(BaseView):
                 is_updating = addr in kb.comments
 
             kb.comments[addr] = comment_text
+
+            # callback first
+            if self._set_comment_callback:
+                self._set_comment_callback(addr, comment_text)
 
             # redraw the current block
             self._flow_graph.update_comment(addr, comment_text)

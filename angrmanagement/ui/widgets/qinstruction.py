@@ -139,6 +139,21 @@ class QInstruction(QGraphObject):
     # Private methods
     #
 
+    @property
+    def insn_backcolor(self):
+        r, g, b = None, None, None
+
+        # First we'll check for customizations
+        if self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr, self.selected)
+
+        # Fallback to defaults if we get Nones from the callback
+        if r is None or g is None or b is None:
+            if self.selected:
+                r, g, b = 0xef, 0xbf, 0xba
+
+        return r, g, b
+
     def _init_widgets(self):
 
         self._addr = "%08x" % self.insn.addr
@@ -191,13 +206,17 @@ class QInstruction(QGraphObject):
         elif self._string is not None:
             self._width += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
 
+    def _paint_highlight(self, painter):
+        r, g, b = self.insn_backcolor
+
+        if r is not None and b is not None and g is not None:
+            painter.setPen(QColor(r, g, b))
+            painter.setBrush(QColor(r, g, b))
+            painter.drawRect(self.x, self.y, self.width, self.height)
+
     def _paint_graph(self, painter):
 
-        # selection background
-        if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height)
+        self._paint_highlight(painter)
 
         x = self.x
 
@@ -239,11 +258,7 @@ class QInstruction(QGraphObject):
 
     def _paint_linear(self, painter):
 
-        # selection background
-        if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height)
+        self._paint_highlight(painter)
 
         x = self.x
 

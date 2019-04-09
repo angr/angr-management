@@ -185,3 +185,36 @@ class Workspace:
         symexec_view.select_simgr(simgr_container)
 
         self.raise_view(symexec_view)
+
+    #
+    # UI-related Callback Setters & Manipulation
+    #
+
+    from typing import Callable
+    from angr.knowledge_plugins.functions.function import Function as angrFunc
+    from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
+
+    def set_cb_function_backcolor(self, callback: Callable[[angrFunc], None]):
+        fv = self.views_by_category['functions'][0]  # type: FunctionsView
+        if fv:
+            fv.backcolor_callback = callback
+
+    def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
+        dv = self.views_by_category['disassembly'][0]  # type: DisassemblyView
+        if dv:
+            dv.insn_backcolor_callback = callback
+
+    def set_cb_label_rename(self, callback):
+        dv = self.views_by_category['disassembly'][0]  # type: DisassemblyView
+        if dv:
+            dv.label_rename_callback = callback
+
+    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None]):
+        dv = self.views_by_category['disassembly'][0]  # type: DisassemblyView
+        if dv._insn_menu:
+            dv._insn_menu.add_menu_entry(text, callback)
+
+    def set_cb_set_comment(self, callback):
+        dv = self.views_by_category['disassembly'][0]
+        if dv:
+            dv.set_comment_callback = callback
