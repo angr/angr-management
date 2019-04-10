@@ -102,6 +102,7 @@ class Instance(object):
         self.simgrs = ObjectContainer([], name='Global simulation managers list')
         self.states = ObjectContainer([], name='Global states list')
         self._project_container = ObjectContainer(project, "the current angr project")
+        self.cfg_container = ObjectContainer(project, "the current CFG")
 
         self._start_worker()
 
@@ -129,11 +130,12 @@ class Instance(object):
 
     @property
     def cfg(self):
-        return self._cfg
+        return self.cfg_container.am_obj
 
     @cfg.setter
     def cfg(self, v):
-        self._cfg = v
+        self.cfg_container.am_obj = v
+        self.cfg_container.am_event()
 
         # notify the workspace
         if self.workspace is not None:
@@ -152,7 +154,8 @@ class Instance(object):
     #
 
     def async_set_cfg(self, cfg):
-        self._cfg = cfg
+        self.cfg_container.am_obj = cfg
+        self.cfg_container.am_event()
 
     def async_set_cfb(self, cfb):
         self._cfb = cfb

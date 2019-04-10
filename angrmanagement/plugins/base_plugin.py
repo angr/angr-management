@@ -18,6 +18,7 @@ class BasePlugin(QtCore.QThread):
         self._plugin_manager = plugin_manager
         self._workspace = workspace
         self._autostart = False
+        self._should_run = False
         _l.info("Loaded {}".format(self.__class__.__name__))
 
     def register_callbacks(self):
@@ -31,8 +32,8 @@ class BasePlugin(QtCore.QThread):
         if self._autostart:
             self.start()
 
-    def teardown(self):
-        self.exit(0)
+    def sync_stop(self):
+        self._should_run = False
 
     def run(self):
         raise NotImplementedError("run() must be implemented in derived class!")

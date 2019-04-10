@@ -72,9 +72,6 @@ class MainWindow(QMainWindow):
             else:
                 self._open_loadbinary_dialog(file_to_open)
 
-        self.activity_monitor = ChessPlugin(self)
-        self.activity_monitor.start()
-
     #
     # Properties
     #
@@ -215,7 +212,7 @@ class MainWindow(QMainWindow):
         # self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
-        self._plugin_mgr.teardown()
+        self._plugin_mgr.stop_all()
         event.accept()
 
     def event(self, event):

@@ -1,6 +1,4 @@
 import logging
-
-from . import PluginManager
 from .base_plugin import BasePlugin
 
 # For type hints
@@ -15,6 +13,7 @@ class TestPlugin(BasePlugin):
         super().__init__(*args, **kwargs)
         self.bookmarks = []
         self._autostart = True
+        self._should_run = True
 
     def register_callbacks(self):
         super().register_callbacks()  # Reuse BasePlugin's registrations for insn/func backcolors
@@ -25,12 +24,8 @@ class TestPlugin(BasePlugin):
     def register_other(self):
         self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
 
-    def teardown(self):
-        _l.info("Not saving your bookmarks")
-        super().teardown()
-
     def run(self):
-        while True:
+        while self._should_run:
             _l.info("looping")
             self.sleep(5)
 
@@ -66,5 +61,6 @@ class TestPlugin(BasePlugin):
         _l.info("User set comment at {:#010x}: '{}'".format(addr, txt))
 
 
-# Uncomment this line to override BasePlugin and see the extras
-PluginManager.register_default('TestPlugin', TestPlugin)
+# Uncomment these lines to test
+# from . import PluginManager
+# PluginManager.register_default('TestPlugin', TestPlugin)
