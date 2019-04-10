@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
 
         self.workspace = None
         self.central_widget = None
-        self._pm = None # type: PluginManager
+        self._plugin_mgr = None  # type: PluginManager
 
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
@@ -197,8 +197,8 @@ class MainWindow(QMainWindow):
     #
 
     def _init_plugins(self):
-        self._pm = PluginManager(self.workspace)
-        self._pm.initialize_all()
+        self._plugin_mgr = PluginManager(self.workspace)
+        self._plugin_mgr.initialize_all()
 
     #
     # Event
@@ -213,6 +213,10 @@ class MainWindow(QMainWindow):
 
         pass
         # self._recalculate_view_sizes(event.oldSize())
+
+    def closeEvent(self, event):
+        self._plugin_mgr.teardown()
+        event.accept()
 
     def event(self, event):
 

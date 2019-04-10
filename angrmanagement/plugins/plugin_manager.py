@@ -2,11 +2,11 @@ from typing import Dict
 
 
 class PluginManager:
-    default_plugins: Dict[str, 'BasePlugin'] = {}
+    default_plugins = {}  # type: Dict[str, 'BasePlugin']
 
     def __init__(self, workspace):
         self._workspace = workspace
-        self._plugins: Dict[str, 'BasePlugin'] = {}
+        self._plugins = {}  # type: Dict[str, 'BasePlugin']
 
         self.load_default_plugins()
 
@@ -16,9 +16,13 @@ class PluginManager:
 
     def initialize_all(self):
         for plugin in self._plugins.values():
-            plugin.register_theme_callbacks()
-            plugin.register_data_callbacks()
+            plugin.register_callbacks()
             plugin.register_other()
+            plugin.autostart()
+
+    def teardown(self):
+        for plugin in self._plugins.values():
+            plugin.teardown()
 
     @staticmethod
     def register_default(name, cls):

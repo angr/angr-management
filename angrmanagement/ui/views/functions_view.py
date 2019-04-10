@@ -12,7 +12,7 @@ class FunctionsView(BaseView):
         super(FunctionsView, self).__init__('functions', workspace, default_docking_position, *args, **kwargs)
 
         self.caption = 'Functions'
-        self._function_table = None
+        self._function_table = None  # type: QFunctionTable
         self._status_label = None
 
         self.backcolor_callback = None
