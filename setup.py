@@ -7,6 +7,10 @@ except ImportError:
     import os
     packages = [x.strip('./').replace('/','.') for x in os.popen('find -name "__init__.py" | xargs -n1 dirname').read().strip().split('\n')]
 
+import platform
+if platform.python_implementation() != 'CPython':
+    raise Exception("angr-management must be run with CPython. PyPy cannot work right now.")
+
 setup(
     name='angr-management',
     version='8.19.4.5',
