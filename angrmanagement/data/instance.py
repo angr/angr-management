@@ -93,8 +93,6 @@ class ObjectContainer(EventSentinel):
 
 class Instance(object):
     def __init__(self, project=None):
-
-
         self.workspace = None
 
         self.jobs = []
