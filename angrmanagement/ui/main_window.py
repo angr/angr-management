@@ -19,8 +19,6 @@ from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
-from angr_plugins import ChessPlugin
-
 
 class MainWindow(QMainWindow):
     """
