@@ -94,11 +94,9 @@ class Workspace:
     # Public methods
     #
 
-
     def split_view(self):
         id = self._main_window.getCurrentTabId()
         if self.is_split == 0:
-            print("Split view called")
             docking_positions = {
                 'left': Qt.LeftDockWidgetArea,
                 'right': Qt.RightDockWidgetArea,
@@ -139,11 +137,9 @@ class Workspace:
         self.dockable_views.append(dock)
         self.view_to_dockable[view] = dock
 
-
     def unsplit_view(self):
         if self.is_split == 1:
             id = self.split_tab_id
-            print("Unsplit view called")
             docking_positions = {
                 'left': Qt.LeftDockWidgetArea,
                 'right': Qt.RightDockWidgetArea,
@@ -167,30 +163,6 @@ class Workspace:
             self._main_window.central_widget_main.restoreState(self.splitter_state.value("splitterSizes"))
             self._main_window._tabify()
             self.is_split = 0
-    
-
-    def add_view2(self, view, caption, category):
-
-        docking_positions2 = {
-            'left': Qt.LeftDockWidgetArea,
-            'right': Qt.RightDockWidgetArea,
-            'top': Qt.TopDockWidgetArea,
-            'bottom': Qt.BottomDockWidgetArea,
-        }
-
-        dock2 = QSmartDockWidget(caption, parent=view)
-        dock_area2 = docking_positions2.get(view.default_docking_position, Qt.RightDockWidgetArea)
-
-        if view.default_docking_position == 'right':
-            self._main_window.central_widget2.addDockWidget(dock_area2, dock2)
-        else:
-            self._main_window.addDockWidget(dock_area2, dock2)
-            self._main_window.removeDockWidget(dock2)
-        
-        dock2.setWidget(view)
-
-        self.dockable_views2.append(dock2)
-
 
     def raise_view(self, view):
         """

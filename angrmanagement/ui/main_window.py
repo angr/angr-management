@@ -179,12 +179,11 @@ class MainWindow(QMainWindow):
     #
 
     def _tabify(self):
-        self.right_dockable_views = [dock for dock in           self.workspace.dockable_views if dock.widget() is not None and dock.widget().default_docking_position == 'right']
+        self.right_dockable_views = [dock for dock in self.workspace.dockable_views if dock.widget() is not None and dock.widget().default_docking_position == 'right']
 
         for d0, d1 in zip(self.right_dockable_views, self.right_dockable_views[1:]):
             self.central_widget.tabifyDockWidget(d0, d1)
         self.right_dockable_views[0].raise_()
-
 
     def _init_workspace(self):
         self.central_widget_main = QSplitter(Qt.Horizontal)
@@ -210,10 +209,10 @@ class MainWindow(QMainWindow):
     # Tab switching
     #
 
-    def nextTab(self):
+    def next_tab(self):
         self.right_dockable_views[self.getCurrentTabId()].raise_()
 
-    def previousTab(self):
+    def previous_tab(self):
         self.right_dockable_views[self.getCurrentTabId()-2].raise_()
 
     #
@@ -221,11 +220,7 @@ class MainWindow(QMainWindow):
     #
 
     def _init_shortcuts(self):
-        # QShortcut(QKeySequence('Ctrl+D'), self, self.workspace.split_view)
-        # QShortcut(QKeySequence('Ctrl+U'), self, self.workspace.unsplit_view)
-        # QShortcut(QKeySequence('Ctrl+Tab'), self, self.nextTab)
-        # QShortcut(QKeySequence('Ctrl+Shift+Tab'), self, self.previousTab)
-
+        
         for i in range(1,len(self.right_dockable_views)):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, self.right_dockable_views[i-1].raise_)
 

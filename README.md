@@ -40,7 +40,6 @@ git clone git@github.com:angr/angr-management.git
 ```
 cd angr-management
 pip install -e .
-pip install -r requirements.txt
 ```
 
 ## Usage
