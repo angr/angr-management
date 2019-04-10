@@ -210,7 +210,7 @@ class MainWindow(QMainWindow):
         # self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
-        self._plugin_mgr.teardown()
+        self._plugin_mgr.stop_all()
         event.accept()
 
     def event(self, event):
