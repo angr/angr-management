@@ -2,7 +2,7 @@
 import logging
 from collections import defaultdict
 
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QSettings
 
 from PySide2.QtWidgets import QSplitter, QMainWindow, QShortcut
 from PySide2.QtGui import QKeySequence
@@ -33,6 +33,8 @@ class Workspace:
         self.last_unsplit_view = None
         self.split_tab_id = None
         self.is_split = 0
+        self.splitter_state = QSettings()
+        self.splitter_state.setValue("splitterSizes", self._main_window.central_widget_main.saveState())
 
         #
         # Initialize font configurations
@@ -162,6 +164,7 @@ class Workspace:
             
             self.dockable_views[id] = dock
             self._main_window.central_widget_main.setStretchFactor(1,0)
+            self._main_window.central_widget_main.restoreState(self.splitter_state.value("splitterSizes"))
             self._main_window._tabify()
             self.is_split = 0
     

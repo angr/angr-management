@@ -200,7 +200,6 @@ class MainWindow(QMainWindow):
         self._tabify()
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
-
     def getCurrentTabId(self):
         for i in range(1,6):
             if self.right_dockable_views[i-1].visibleRegion().isEmpty() == False:
