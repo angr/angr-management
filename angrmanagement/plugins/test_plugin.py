@@ -31,7 +31,6 @@ class TestPlugin(BasePlugin):
 
     def run(self):
         while True:
-            _l.info("looping")
             self.sleep(5)
 
     #
