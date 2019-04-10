@@ -7,9 +7,13 @@ except ImportError:
     import os
     packages = [x.strip('./').replace('/','.') for x in os.popen('find -name "__init__.py" | xargs -n1 dirname').read().strip().split('\n')]
 
+import platform
+if platform.python_implementation() != 'CPython':
+    raise Exception("angr-management must be run with CPython. PyPy cannot work right now.")
+
 setup(
     name='angr-management',
-    version='8.19.2.4',
+    version='8.19.4.5',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=packages,
@@ -20,13 +24,13 @@ setup(
         ]
     },
     install_requires=[
-        'angr==8.19.2.4',
+        'angr==8.19.4.5',
         'pygments',
         'websocket-client',
         'qtconsole',
         'ipython',
         'pyzmq',
-        'shiboken2<=5.12.0'
+        'shiboken2<=5.12.0',
         'PySide2<=5.12.0',
     ]
 )

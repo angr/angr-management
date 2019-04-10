@@ -4,6 +4,8 @@ from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 from PySide2.QtGui import QPainter, QKeyEvent
 from PySide2.QtCore import Qt, QSize, Signal, QPoint, QEvent
 
+from ...data.instance import ObjectContainer
+
 _l = logging.getLogger('ui.widgets.qgraph')
 
 
@@ -84,7 +86,7 @@ class QBaseGraph(QZoomingGraphicsView):
         self._edge_paths = []
         self.blocks = set()
 
-        self.selected_insns = set()
+        self.selected_insns = ObjectContainer(set(), 'The currently selected instructions')
         self.selected_operands = set()
         self._insn_addr_to_block = {}
         self._allow_dragging = allow_dragging
@@ -133,6 +135,18 @@ class QBaseGraph(QZoomingGraphicsView):
         else:
             self.reload()
 
+    def update_comment(self, comment_addr, comment_text):
+        if comment_addr in self._insn_addr_to_block:
+            block = self._insn_addr_to_block[comment_addr]
+            insn = block.addr_to_insns[comment_addr]
+            if insn:
+                insn.set_comment(comment_text)
+        else:
+            # umm not sure what's going wrong
+            _l.error('Label address %#x is not found in the current function.', comment_addr)
+
+        self.reload()
+
     def select_instruction(self, insn_addr, unique=True):
         block = self._insn_addr_to_block.get(insn_addr, None)
         if block is None:
@@ -143,12 +157,14 @@ class QBaseGraph(QZoomingGraphicsView):
             if unique:
                 # unselect existing ones
                 self.unselect_all_instructions()
-                self.selected_insns = { insn_addr }
+                self.selected_insns.add(insn_addr)
             else:
                 self.selected_insns.add(insn_addr)
 
             block.addr_to_insns[insn_addr].select()
 
+        # Notify subscribers BEFORE we update the viewport so they can make any further changes
+        self.selected_insns.am_event(graph=self, addr=insn_addr, block=block)
         self.viewport().update()
 
     def unselect_instruction(self, insn_addr):

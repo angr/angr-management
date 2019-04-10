@@ -16,10 +16,12 @@ class EventSentinel(object):
         self.am_subscribers = []
 
     def am_subscribe(self, listener):
-        self.am_subscribers.append(listener)
+        if listener is not None:
+            self.am_subscribers.append(listener)
 
     def am_unsubscribe(self, listener):
-        self.am_subscribers.remove(listener)
+        if listener is not None:
+            self.am_subscribers.remove(listener)
 
     def am_event(self, **kwargs):
         for listener in self.am_subscribers:
@@ -159,6 +161,23 @@ class Instance(object):
         self.jobs.append(job)
         self._jobs_queue.put(job)
 
+    def save(self, loc):
+        with open(loc, 'wb') as f:
+            pickled = pickle.dumps(self)
+            store = ana.get_dl()._state_store
+            pickle.dump({'store': store, 'pickled': pickled}, f)
+
+    @staticmethod
+    def from_file(loc):
+        with open(loc, 'rb') as f:
+            saved = pickle.load(f)
+            ana.get_dl()._state_store = saved['store']
+            return pickle.loads(saved['pickled'])
+
+    #
+    # Private methods
+    #
+
     def _start_daemon_thread(self, target, name, args=None):
         t = Thread(target=target, name=name, args=args if args else tuple())
         t.daemon = True
@@ -193,16 +212,3 @@ class Instance(object):
             time.sleep(0.3)
             if cfg_job not in self.jobs:
                 break
-
-    def save(self, loc):
-        with open(loc, 'wb') as f:
-            pickled = pickle.dumps(self)
-            store = ana.get_dl()._state_store
-            pickle.dump({'store': store, 'pickled': pickled}, f)
-
-    @staticmethod
-    def from_file(loc):
-        with open(loc, 'rb') as f:
-            saved = pickle.load(f)
-            ana.get_dl()._state_store = saved['store']
-            return pickle.loads(saved['pickled'])

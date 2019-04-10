@@ -1,13 +1,16 @@
+from typing import Union, Callable
 
 from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
 
+from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearViewer
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
+from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
@@ -32,11 +35,16 @@ class DisassemblyView(BaseView):
         self.infodock = InfoDock()
         self._variable_recovery_flavor = 'fast'
         self.variable_manager = None  # type: VariableManager
-        self._current_function = None
+        self._current_function = ObjectContainer(None, 'The currently selected function')
 
-        self._insn_menu = None
+        self._insn_menu = None  # type: DisasmInsnContextMenu
 
         self._insn_addr_on_context_menu = None
+
+        # Callbacks
+        self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
+        self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
+        self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
         self._init_widgets()
         self._init_menus()
@@ -105,6 +113,35 @@ class DisassemblyView(BaseView):
             return self._flow_graph
 
     #
+    # Callbacks
+    #
+
+    @property
+    def insn_backcolor_callback(self):
+        return self._insn_backcolor_callback
+
+    @insn_backcolor_callback.setter
+    def insn_backcolor_callback(self, v):
+        self._insn_backcolor_callback = v
+
+    @property
+    def label_rename_callback(self):
+        return self._label_rename_callback
+
+    @label_rename_callback.setter
+    def label_rename_callback(self, v):
+        self._label_rename_callback = v
+
+    @property
+    def set_comment_callback(self):
+        return self._set_comment_callback
+
+    @set_comment_callback.setter
+    def set_comment_callback(self, v):
+        self._set_comment_callback = v
+
+
+    #
     # UI
     #
 
@@ -130,6 +167,14 @@ class DisassemblyView(BaseView):
         dialog = RenameLabel(self, label_addr, parent=self)
         dialog.exec_()
 
+    def popup_comment_dialog(self):
+        comment_addr = self._address_in_selection()
+        if comment_addr is None:
+            return
+
+        dialog = SetComment(self, comment_addr, parent=self)
+        dialog.exec_()
+
     def popup_newstate_dialog(self, asynch=True):
         addr = self._address_in_selection()
         if addr is None:
@@ -152,6 +197,18 @@ class DisassemblyView(BaseView):
     #
     # Public methods
     #
+
+    def subscribe_insn_select(self, callback):
+        """
+        Appends the provided function to the list of callbacks to be called when an instruction is selected in the
+        disassembly. The callback's parameters are:
+            'graph': the `QBaseGraph` object
+            'addr': integer address of the selected instruction
+            'block': the `QBlock` containing the instruction
+        :param callback: The callback function to call, which must accept **kwargs
+        """
+        self._linear_viewer.selected_insns.am_subscribe(callback)
+        self._flow_graph.selected_insns.am_subscribe(callback)
 
     def display_disasm_graph(self):
 
@@ -195,7 +252,7 @@ class DisassemblyView(BaseView):
         """
         Toggle whether addresses are shown on disassembly graph.
 
-        :param bool show_address: Whether the address should be shown or not. 
+        :param bool show_address: Whether the address should be shown or not.
         :return:                  None
         """
 
@@ -291,8 +348,32 @@ class DisassemblyView(BaseView):
                     is_renaming = True
                 kb.labels[addr] = new_name
 
+            # callback first
+            if self._label_rename_callback:
+                self._label_rename_callback(addr, new_name)
+
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
+
+    def set_comment(self, addr, comment_text):
+        if self._flow_graph.disasm is not None:
+
+            is_updating = False
+
+            kb = self._flow_graph.disasm.kb
+            if comment_text is None and addr in kb.comments:
+                del kb.comments[addr]
+            else:
+                is_updating = addr in kb.comments
+
+            kb.comments[addr] = comment_text
+
+            # callback first
+            if self._set_comment_callback:
+                self._set_comment_callback(addr, comment_text)
+
+            # redraw the current block
+            self._flow_graph.update_comment(addr, comment_text)
 
     def avoid_addr_in_exec(self, addr):
 

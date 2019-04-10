@@ -6,7 +6,7 @@ from angr.analyses.disassembly import Value
 
 from .qgraph_object import QGraphObject
 from .qoperand import QOperand
-from ...utils import should_display_string_label, get_string_for_display
+from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
 
 
 class QInstruction(QGraphObject):
@@ -14,7 +14,7 @@ class QInstruction(QGraphObject):
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
-    GRAPH_STRING_SPACING = 5
+    GRAPH_COMMENT_STRING_SPACING = 5
 
     LINEAR_INSTRUCTION_OFFSET = 120
 
@@ -43,6 +43,8 @@ class QInstruction(QGraphObject):
         self._operands = [ ]
         self._string = None
         self._string_width = None
+        self._comment = None
+        self._comment_width = None
 
         self._init_widgets()
 
@@ -95,6 +97,11 @@ class QInstruction(QGraphObject):
             return self._operands[operand_idx]
         return None
 
+    def set_comment(self, new_text):
+        self._comment = new_text
+        self._comment_width = self._config.disasm_font_width * len(self._comment)
+        self._update_size()
+
     #
     # Event handlers
     #
@@ -132,6 +139,21 @@ class QInstruction(QGraphObject):
     # Private methods
     #
 
+    @property
+    def insn_backcolor(self):
+        r, g, b = None, None, None
+
+        # First we'll check for customizations
+        if self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr, self.selected)
+
+        # Fallback to defaults if we get Nones from the callback
+        if r is None or g is None or b is None:
+            if self.selected:
+                r, g, b = 0xef, 0xbf, 0xba
+
+        return r, g, b
+
     def _init_widgets(self):
 
         self._addr = "%08x" % self.insn.addr
@@ -160,6 +182,10 @@ class QInstruction(QGraphObject):
             self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr)
             self._string_width = self._config.disasm_font_width * len(self._string)
 
+        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        if self._comment is not None:
+            self._comment_width = self._config.disasm_font_width * len(self._comment)
+
         self._update_size()
 
     def _update_size(self):
@@ -173,16 +199,24 @@ class QInstruction(QGraphObject):
         self._width += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING + \
                        sum([ op.width for op in self._operands ]) + \
                        (len(self._operands) - 1) * (self._config.disasm_font_width + self.GRAPH_OPERAND_SPACING)
-        if self._string is not None:
-            self._width += self.GRAPH_STRING_SPACING + self._string_width
+
+        # we only display string if there's no comment
+        if self._comment is not None:
+            self._width += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
+        elif self._string is not None:
+            self._width += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
+
+    def _paint_highlight(self, painter):
+        r, g, b = self.insn_backcolor
+
+        if r is not None and b is not None and g is not None:
+            painter.setPen(QColor(r, g, b))
+            painter.setBrush(QColor(r, g, b))
+            painter.drawRect(self.x, self.y, self.width, self.height)
 
     def _paint_graph(self, painter):
 
-        # selection background
-        if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height)
+        self._paint_highlight(painter)
 
         x = self.x
 
@@ -214,19 +248,17 @@ class QInstruction(QGraphObject):
 
             x += self.GRAPH_OPERAND_SPACING
 
-        # string
-        if self._string is not None:
-            x += self.GRAPH_STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+        # comment or string - comments have precedence
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.blue)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
 
     def _paint_linear(self, painter):
 
-        # selection background
-        if self.selected:
-            painter.setPen(QColor(0xef, 0xbf, 0xba))
-            painter.setBrush(QColor(0xef, 0xbf, 0xba))
-            painter.drawRect(self.x, self.y, self.width, self.height)
+        self._paint_highlight(painter)
 
         x = self.x
 
@@ -262,8 +294,10 @@ class QInstruction(QGraphObject):
 
             x += self.GRAPH_OPERAND_SPACING
 
-        # string
-        if self._string is not None:
-            x += self.GRAPH_STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+        # comment or string - comments have precedence
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.blue)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING

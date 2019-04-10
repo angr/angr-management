@@ -7,6 +7,7 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 
+from ..plugins import PluginManager
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from .menus.file_menu import FileMenu
@@ -43,6 +44,7 @@ class MainWindow(QMainWindow):
 
         self.workspace = None
         self.central_widget = None
+        self._plugin_mgr = None  # type: PluginManager
 
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
@@ -60,6 +62,7 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_shortcuts()
         self._init_menus()
+        self._init_plugins()
 
         self.showMaximized()
 
@@ -225,6 +228,14 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, self.right_dockable_views[i-1].raise_)
 
     #
+    # PluginManager
+    #
+
+    def _init_plugins(self):
+        self._plugin_mgr = PluginManager(self.workspace)
+        self._plugin_mgr.initialize_all()
+
+    #
     # Event
     #
 
@@ -237,6 +248,10 @@ class MainWindow(QMainWindow):
 
         pass
         # self._recalculate_view_sizes(event.oldSize())
+
+    def closeEvent(self, event):
+        self._plugin_mgr.stop_all()
+        event.accept()
 
     def event(self, event):
 

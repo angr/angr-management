@@ -3,6 +3,7 @@ from PySide2.QtGui import QKeySequence
 from PySide2.QtCore import Qt
 
 from .menu import Menu, MenuEntry, MenuSeparator
+from functools import partial
 
 class DisasmInsnContextMenu(Menu):
     def __init__(self, disasm_view):
@@ -26,3 +27,14 @@ class DisasmInsnContextMenu(Menu):
     def _toggle_instruction_selection(self): self._disasm_view.toggle_instruction_selection(self.insn_addr)
 
     def _avoid_in_execution(self): self._disasm_view.avoid_addr_in_exec(self.insn_addr)
+
+    #
+    # Public Methods
+    #
+
+    from typing import Callable
+
+    def add_menu_entry(self, text, callback: Callable[['DisasmInsnContextMenu'], None], add_separator_first=True):
+        if add_separator_first:
+            self.entries.append(MenuSeparator())
+        self.entries.append(MenuEntry(text, partial(callback, self)))
