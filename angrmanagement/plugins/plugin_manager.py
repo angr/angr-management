@@ -20,9 +20,11 @@ class PluginManager:
             plugin.register_other()
             plugin.autostart()
 
-    def teardown(self):
+    def stop_all(self):
         for plugin in self._plugins.values():
-            plugin.teardown()
+            if plugin.isRunning():
+                plugin.sync_stop()
+                plugin.wait()
 
     @staticmethod
     def register_default(name, cls):
