@@ -5,6 +5,8 @@ from PySide2.QtNetwork import QLocalServer, QLocalSocket
 
 import angr
 
+import socket
+
 from .view import BaseView
 
 import os, contextlib, subprocess
@@ -12,7 +14,7 @@ from threading import Thread
 
 import logging
 _l = logging.getLogger(name=__name__)
-_l.setLevel('INFO')
+_l.setLevel('DEBUG')
 
 class InteractionView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
@@ -51,7 +53,13 @@ class InteractionView(BaseView):
         target = archr.targets.DockerImageTarget(img_name).build()
         with contextlib.suppress(subprocess.TimeoutExpired), target.start():
             bow = archr.arsenal.ContextBow(target)
-            arrowhead = archr.arrowheads.ArrowheadFletcher(self._server_socket.socketDescriptor(), self._client_socket.socketDescriptor())
+            import nclib
+            in_socket = socket.fromfd(self._server_socket.socketDescriptor(), socket.AF_INET, socket.SOCK_STREAM)
+            nc_in_sock = nclib.netcat.Netcat(sock=in_socket)
+            out_socket = socket.fromfd(self._client_socket.socketDescriptor(), socket.AF_INET, socket.SOCK_STREAM)
+            nc_out_sock = nclib.netcat.Netcat(sock=out_socket)
+            # arrowhead = archr.arrowheads.ArrowheadFletcher(self._server_socket.socketDescriptor(), self._client_socket.socketDescriptor())
+            arrowhead = archr.arrowheads.ArrowheadFletcher(nc_in_sock, nc_out_sock)
             flight = bow.fire(testcase=arrowhead)
     
     def _callback(self):
@@ -127,6 +135,7 @@ class InteractionView(BaseView):
 
         self._client_socket = QLocalSocket()
         self._client_socket.connectToServer(self._servername)
+
         QObject.connect(self._client_socket, SIGNAL('readyRead()'), self._callback)
 
     def setFocus(self):
