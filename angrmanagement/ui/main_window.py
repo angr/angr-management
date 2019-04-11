@@ -4,7 +4,6 @@ import os
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
-from angr_plugins import ChessPlugin
 
 import angr
 import cle
@@ -28,6 +27,12 @@ from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
 from .dialogs.load_docker_prompt import LoadDockerPrompt
+
+
+################ CHESS ONLY ################
+from angr_plugins import ChessPlugin
+############################################
+
 
 class MainWindow(QMainWindow):
     """
