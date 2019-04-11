@@ -91,7 +91,7 @@ class InteractionView(BaseView):
         if self._server_socket is not None:
             self._server_socket.write(command.encode())
         else:
-            self._hacrs.append('[ERROR] Connection not established. Did you load the image?')
+            self._hacrs.append('[ERROR] Connection not established. Did you load the image AND hit Interact (F6)?')
     
     def _init_widgets(self):
         self._hacrs = QTextEdit(self)
