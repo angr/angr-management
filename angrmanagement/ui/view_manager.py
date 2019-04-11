@@ -24,10 +24,10 @@ class ViewManager:
         """
         Add a view to this workspace.
 
-        :param view:
-        :param caption:
-        :param category:
-        :return:
+        :param view:            The view to add.
+        :param str caption:     The caption of the view.
+        :param str category:    The category of the view.
+        :return:                None
         """
 
         docking_positions = {
@@ -85,8 +85,9 @@ class ViewManager:
 
     def tabify_right_views(self):
         """
+        Tabify all right-side dockable views.
 
-        :return:
+        :return:    None
         """
 
         right_dockable_views = [dock for dock in self.docks
