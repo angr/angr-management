@@ -6,6 +6,13 @@ from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
+import cle
+try:
+    import archr
+    import keystone
+except ImportError as e:
+    archr = None
+    keystone = None
 
 from ..plugins import PluginManager
 from ..logic import GlobalInfo
@@ -19,6 +26,7 @@ from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
+from .dialogs.load_docker_prompt import LoadDockerPrompt
 
 class MainWindow(QMainWindow):
     """
@@ -64,11 +72,7 @@ class MainWindow(QMainWindow):
         self.status = "Ready."
 
         if file_to_open is not None:
-            # load a binary
-            if file_to_open.endswith(".adb"):
-                self._load_database(file_to_open)
-            else:
-                self._open_loadbinary_dialog(file_to_open)
+            self.load_file(file_to_open)
 
     #
     # Properties
@@ -106,21 +110,32 @@ class MainWindow(QMainWindow):
     # Dialogs
     #
 
-    def _open_loadbinary_dialog(self, file_to_open):
+    def _open_mainfile_dialog(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
+                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
+                                                   )
+        return file_path
+
+    def _pick_image_dialog(self):
+        prompt = LoadDockerPrompt()
+        if prompt.exec_() == 0:
+            return # User canceled
+        return prompt.textValue()
+
+    def _load_options_dialog(self, partial_ld):
         try:
-            self._load_binary_dialog = LoadBinary(file_to_open)
+            self._load_binary_dialog = LoadBinary(partial_ld)
             self._load_binary_dialog.setModal(True)
             self._load_binary_dialog.exec_()
 
-
             if self._load_binary_dialog.cfg_args is not None:
                 # load the binary
-                self._load_binary(file_to_open,
-                                  load_options=self._load_binary_dialog.load_options,
-                                  cfg_args=self._load_binary_dialog.cfg_args
-                                  )
+                return (self._load_binary_dialog.load_options, self._load_binary_dialog.cfg_args)
         except LoadBinaryError:
             pass
+        return None, None
+
+
 
     def open_newstate_dialog(self):
         new_state_dialog = NewState(self.workspace.instance, parent=self)
@@ -235,18 +250,55 @@ class MainWindow(QMainWindow):
     def reload(self):
         self.workspace.reload()
 
-    def load_binary(self):
+    def open_file_button(self):
+        file_path = self._open_mainfile_dialog()
+        self.load_file(file_path)
 
-        # Open File window
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
-                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
-                                                   )
+    def open_docker_button(self):
+        required = {
+            'archr':archr,
+            'keystone (keystone-engine)':keystone
+            }
+        is_missing = [ key for key, value in required.items() if value is None ]
+        if len(is_missing) > 0:
+            req_msg = 'You need to install the following:\n\n\t' + '\n\t'.join(is_missing)
+            req_msg += '\n\nInstall them to enable this functionality.'
+            req_msg += '\nRelaunch angr-management after install.'
+            QMessageBox().critical(self, 'Dependency error', req_msg)
+            return
 
+        img_name = self._pick_image_dialog()
+        if img_name is None:
+            return
+        self.load_image(img_name)
+
+    def load_file(self, file_path):
         if os.path.isfile(file_path):
             if file_path.endswith(".adb"):
-                self._load_database(file_path)
+                self.load_database(file_path)
             else:
-                self._open_loadbinary_dialog(file_path)
+                partial_ld = cle.Loader(file_path, perform_relocations=False)
+                load_options, cfg_args = self._load_options_dialog(partial_ld)
+                partial_ld.close()
+                if cfg_args is None:
+                    return
+
+                proj = angr.Project(file_path, load_options=load_options)
+                self._set_proj(proj, cfg_args)
+
+    def load_image(self, img_name):
+        with archr.targets.DockerImageTarget(img_name, target_path=None).build().start() as t:
+            # this is perhaps the point where we should split out loading of generic targets?
+            dsb = archr.arsenal.DataScoutBow(t)
+            apb = archr.arsenal.angrProjectBow(t, dsb)
+            partial_ld = apb.fire(return_loader=True, perform_relocations=False)
+            load_options, cfg_args = self._load_options_dialog(partial_ld)
+            partial_ld.close()
+            if cfg_args is None:
+                return
+
+            proj = apb.fire(use_sim_procedures=True, load_options=load_options)
+            self._set_proj(proj, cfg_args)
 
     def save_database(self):
         if self.workspace.instance.database_path is None:
@@ -292,14 +344,9 @@ class MainWindow(QMainWindow):
     # Private methods
     #
 
-    def _load_binary(self, file_path, load_options=None, cfg_args=None):
-        if load_options is None:
-            load_options = {}
-
+    def _set_proj(self, proj, cfg_args=None):
         if cfg_args is None:
             cfg_args = {}
-
-        proj = angr.Project(file_path, load_options=load_options)
         self.workspace.instance.set_project(proj)
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
