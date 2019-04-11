@@ -253,8 +253,8 @@ class MainWindow(QMainWindow):
 
     def open_docker_button(self):
         required = {
-            'archr':archr,
-            'keystone (keystone-engine)':keystone
+            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
+            'keystone: pip install --no-binary keystone-engine keystone-engine':keystone
             }
         is_missing = [ key for key, value in required.items() if value is None ]
         if len(is_missing) > 0:
@@ -294,8 +294,10 @@ class MainWindow(QMainWindow):
             if cfg_args is None:
                 return
 
+            # Create the project, load it, then record the image name on success
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
             self._set_proj(proj, cfg_args)
+            self.img_name = img_name
 
     def save_database(self):
         if self.workspace.instance.database_path is None:
