@@ -74,6 +74,9 @@ class MainWindow(QMainWindow):
         if file_to_open is not None:
             self.load_file(file_to_open)
 
+    def sizeHint(self, *args, **kwargs):
+        return QSize(1200, 800)
+
     #
     # Properties
     #
@@ -193,13 +196,6 @@ class MainWindow(QMainWindow):
         wk = Workspace(self, Instance())
         self.workspace = wk
 
-        right_dockable_views = [dock for dock in self.workspace.dockable_views
-                                if dock.widget().default_docking_position == 'right']
-
-        for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
-            self.central_widget.tabifyDockWidget(d0, d1)
-        right_dockable_views[0].raise_()
-
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
     #
@@ -221,8 +217,7 @@ class MainWindow(QMainWindow):
         :return:
         """
 
-        pass
-        # self._recalculate_view_sizes(event.oldSize())
+        self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
         self._plugin_mgr.stop_all()
@@ -323,10 +318,10 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        self.workspace.views_by_category['disassembly'][0].variable_recovery_flavor = 'accurate'
+        self.workspace.view_manager.first_view_in_category('disassembly').variable_recovery_flavor = 'accurate'
 
     def run_induction_variable_analysis(self):
-        self.workspace.views_by_category['disassembly'][0].run_induction_variable_analysis()
+        self.workspace.view_manager.first_view_in_category('disassembly').run_induction_variable_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:
@@ -368,8 +363,8 @@ class MainWindow(QMainWindow):
         print("DATABASE %s SAVED" % file_path)
 
     def _recalculate_view_sizes(self, old_size):
-        adjustable_dockable_views = [dock for dock in self.workspace.dockable_views
-                                     if dock.widget().default_docking_position in ('left', 'bottom', 'right')]
+        adjustable_dockable_views = [dock for dock in self.workspace.view_manager.docks
+                                     if dock.widget().default_docking_position in ('left', 'bottom', )]
 
         if not adjustable_dockable_views:
             return
@@ -386,17 +381,18 @@ class MainWindow(QMainWindow):
 
                 if widget.default_docking_position == 'left':
                     # we want to adjust the width
-                    ratio = dock.old_size.width() * 1.0 / old_size.width()
+                    ratio = widget.old_width * 1.0 / old_size.width()
                     new_width = int(self.width() * ratio)
-                    self._resize_dock_widget(dock, new_width, widget.height())
+                    widget.width_hint = new_width
+                    widget.updateGeometry()
                 elif widget.default_docking_position == 'bottom':
                     # we want to adjust the height
-                    ratio = dock.old_size.height() * 1.0 / old_size.height()
+                    ratio = widget.old_height * 1.0 / old_size.height()
                     new_height = int(self.height() * ratio)
-                    self._resize_dock_widget(dock, widget.width(), new_height)
+                    widget.height_hint = new_height
+                    widget.updateGeometry()
 
                 dock.old_size = widget.size()
-
 
     def _resize_dock_widget(self, dock_widget, new_width, new_height):
 

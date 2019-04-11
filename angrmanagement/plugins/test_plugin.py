@@ -56,7 +56,7 @@ class TestPlugin(BasePlugin):
     def on_ctx_menu_bookmark(self, ctx_menu: DisasmInsnContextMenu):
         _l.info("Bookmarking {:#010x}".format(ctx_menu.insn_addr))
         self.bookmarks.append(ctx_menu.insn_addr)
-        self._workspace.views_by_category['disassembly'][0].current_graph.viewport().update()
+        self._workspace.view_manager.first_view_in_category('disassembly').current_graph.viewport().update()
 
     def on_label_rename(self, addr: int, new_name: str):
         _l.info("Setting label at {:#010x}='{}'".format(addr, new_name))
