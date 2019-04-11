@@ -10,7 +10,7 @@ from angr import StateHierarchy
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
-from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView
+from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView, InteractionView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -38,6 +38,7 @@ class Workspace:
             SymexecView(self, 'right'),
             StatesView(self, 'right'),
             StringsView(self, 'right'),
+            InteractionView(self, 'right'),
             ConsoleView(self, 'bottom'),
         ]
 
@@ -160,6 +161,14 @@ class Workspace:
 
         self.raise_view(view)
 
+    def interact_program(self, img_name, view=None):
+        if view is None or view.category != 'interaction':
+            view = self._get_or_create_interaction_view()
+        view.initialize(img_name)
+
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -195,6 +204,14 @@ class Workspace:
             view = CodeView(self, 'right')
             self.add_view(view, view.caption, view.category)
 
+        return view
+
+    def _get_or_create_interaction_view(self):
+        view = self.view_manager.first_view_in_category("interaction")
+        if view is None:
+            # Create a new interaction view
+            view = Interaction(self, 'right')
+            self.add_view(view, view.caption, view.category)
         return view
 
     #

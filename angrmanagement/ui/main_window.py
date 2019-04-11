@@ -267,6 +267,7 @@ class MainWindow(QMainWindow):
         img_name = self._pick_image_dialog()
         if img_name is None:
             return
+        self.workspace.instance.set_image(img_name)
         self.load_image(img_name)
 
     def load_file(self, file_path):
@@ -297,7 +298,6 @@ class MainWindow(QMainWindow):
             # Create the project, load it, then record the image name on success
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
             self._set_proj(proj, cfg_args)
-            self.img_name = img_name
 
     def save_database(self):
         if self.workspace.instance.database_path is None:
@@ -330,6 +330,10 @@ class MainWindow(QMainWindow):
     def decompile_current_function(self):
         if self.workspace is not None:
             self.workspace.decompile_current_function()
+
+    def interact(self):
+        if self.workspace.instance.img_name is not None:
+            self.workspace.interact_program(self.workspace.instance.img_name)
 
     #
     # Other public methods
