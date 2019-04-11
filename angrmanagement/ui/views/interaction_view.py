@@ -16,6 +16,7 @@ from .view import BaseView
 import os
 import logging
 import time
+from threading import Thread
 _l = logging.getLogger(name=__name__)
 _l.setLevel('INFO')
 
@@ -65,13 +66,32 @@ class InteractionView(BaseView):
     def _connect_to_hacrs(self):
         _l.info('connect_to_hacrs')
         self.hacrs_socket = self.server.nextPendingConnection()
-        QObject.connect(self.hacrs_socket, SIGNAL('readyRead()'), self._hacrs_callback)
+        if hasattr(self.workspace.instance, 'img_name'):
+            img_name = self.workspace.instance.img_name
+        else:
+            img_name = 'cat'
 
+        QObject.connect(self.hacrs_socket, SIGNAL('readyRead()'), self._hacrs_callback)
+       
+
+        thread = Thread(target=self._call_archr, args=(img_name,), daemon=True)
+        thread.start()
+
+    def _call_archr(self, img_name):
+        import archr, contextlib, subprocess
+        _l.info('Calling Archr')
+        target = archr.targets.DockerImageTarget(img_name).build()
+        with contextlib.suppress(subprocess.TimeoutExpired), target.start():
+            bow = archr.arsenal.ContextBow(target)
+            arrowhead = archr.arrowheads.ArrowheadFletcher(self.hacrs_socket, self.client)
+            flight = bow.fire(testcase=arrowhead)
+    
     def _hacrs_callback(self):
         # TODO: MAGIC
-        self.hacrs_socket.read(2048)
+        pass
+        # cmd = self.hacrs_socket.read(2048).data()
         # Call Hacrs with seslf.hacrs_socket
-        self.hacrs_socket.write(b'aa')
+        # self.hacrs_socket.write(b'aa')
 
     def _callback(self):
 	# self.tiffany_mutex.lock() # Make sure this blocking
@@ -147,7 +167,7 @@ class InteractionView(BaseView):
         
         self._hacrs.append(message)
 
-        self.client.write(message.encode())
+        self.hacrs_socket.write(message.encode())
         _l.info('finish writing message %s' % message)
         # self._hacrs.append(message)
         # self._buffer.write(QByteArray(b'send'))

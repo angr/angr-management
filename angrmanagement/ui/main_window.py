@@ -297,7 +297,6 @@ class MainWindow(QMainWindow):
             # Create the project, load it, then record the image name on success
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
             self._set_proj(proj, cfg_args)
-            self.img_name = img_name
 
     def save_database(self):
         if self.workspace.instance.database_path is None:
@@ -343,9 +342,10 @@ class MainWindow(QMainWindow):
     # Private methods
     #
 
-    def _set_proj(self, proj, cfg_args=None):
+    def _set_proj(self, proj, cfg_args=None, img_name=None):
         if cfg_args is None:
             cfg_args = {}
+        self.workspace.instance.img_name = img_name
         self.workspace.instance.set_project(proj)
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
