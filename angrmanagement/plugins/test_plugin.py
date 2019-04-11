@@ -1,3 +1,5 @@
+
+import time
 import logging
 
 from . import PluginManager
@@ -28,6 +30,7 @@ class TestPlugin(BasePlugin):
 
     def run(self):
         while self._should_run:
+            _l.info("looping")
             self.sleep(5)
 
     #
