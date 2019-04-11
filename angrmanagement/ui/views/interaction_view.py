@@ -56,7 +56,7 @@ class InteractionView(BaseView):
         # TODO: This is another hack
         msg = self._client_socket.read(2048)
         _l.debug('Receiving Message %s' % str(msg))
-        self._hacrs.append(self._msg_fmt % ('OUTPUT', command))
+        self._hacrs.append(self._msg_fmt % ('OUTPUT', str(msg.data(), encoding='utf-8')))
         self._mutex.unlock()
 
     #
