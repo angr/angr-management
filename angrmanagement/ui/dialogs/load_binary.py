@@ -16,11 +16,11 @@ class LoadBinaryError(Exception):
 
 
 class LoadBinary(QDialog):
-    def __init__(self, file_path, parent=None):
+    def __init__(self, partial_ld, parent=None):
         super(LoadBinary, self).__init__(parent)
 
         # initialization
-        self.file_path = file_path
+        self.file_path = partial_ld.main_object.binary
         self.option_widgets = { }
 
         # return values
@@ -33,7 +33,7 @@ class LoadBinary(QDialog):
 
         self._init_widgets()
 
-        self._try_loading()
+        self._try_loading(partial_ld)
 
         self.setLayout(self.main_layout)
 
@@ -45,42 +45,25 @@ class LoadBinary(QDialog):
     # Private methods
     #
 
-    def _try_loading(self):
+    def _try_loading(self, partial_ld):
+        deps = [ ]
+        processed_objects = set()
+        for ident, obj in partial_ld._satisfied_deps.items():
+            if obj is partial_ld._kernel_object or \
+                    obj is partial_ld._tls_object or \
+                    obj is partial_ld._extern_object or \
+                    obj is partial_ld.main_object:
+                continue
+            if obj in processed_objects:
+                continue
+            deps.append(ident)
+            processed_objects.add(obj)
 
-        # Make sure that the binary exists
-        if not os.path.isfile(self.file_path):
-            QMessageBox.critical(self, "File not found", "File \"%s\" is not found." % self.file_path, QMessageBox.Ok)
-            raise LoadBinaryError("File not found.")
-
-        try:
-            ld = cle.Loader(self.file_path, perform_relocations=False)
-
-            deps = [ ]
-            processed_objects = set()
-            for ident, obj in ld._satisfied_deps.items():
-                if obj is ld._kernel_object or \
-                        obj is ld._tls_object or \
-                        obj is ld._extern_object or \
-                        obj is ld.main_object:
-                    continue
-                if obj in processed_objects:
-                    continue
-                deps.append(ident)
-                processed_objects.add(obj)
-
-            dep_list = self.option_widgets['dep_list']  # type: QListWidget
-            for dep in deps:
-                dep_item = QListWidgetItem(dep)
-                dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
-                dep_list.addItem(dep_item)
-
-        except Exception as ex:
-            # I guess we will have to load it as a blob?
-            l.warning("Preloading of the binary fails due to an exception.", exc_info=True)
-            QMessageBox.critical(self, "Error preloading the binary",
-                                 "Preloading of the binary fails due to an exception %s." % str(ex),
-                                 QMessageBox.Ok)
-            raise LoadBinaryError("File not found.")
+        dep_list = self.option_widgets['dep_list']  # type: QListWidget
+        for dep in deps:
+            dep_item = QListWidgetItem(dep)
+            dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
+            dep_list.addItem(dep_item)
 
     def _init_widgets(self):
 

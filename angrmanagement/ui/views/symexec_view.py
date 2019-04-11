@@ -51,7 +51,7 @@ class SymexecView(BaseView):
         self._state_viewer.state = state
 
         # push namespace into the console
-        self.workspace.views_by_category['console'][0].push_namespace({
+        self.workspace.view_manager.first_view_in_category('console').push_namespace({
             'state': state,
         })
 
@@ -110,7 +110,7 @@ class SymexecView(BaseView):
     #
 
     def _switch_to_disassembly_view(self, addr):
-        disasm_view = self.workspace.views_by_category['disassembly'][0]
+        disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
         disasm_view.jump_to(addr)
 
         self.workspace.raise_view(disasm_view)
