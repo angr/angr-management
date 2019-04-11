@@ -377,7 +377,7 @@ class DisassemblyView(BaseView):
 
     def avoid_addr_in_exec(self, addr):
 
-        self.workspace.views_by_category['symexec'][0].avoid_addr_in_exec(addr)
+        self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
 
     def sizeHint(self):
         return QSize(800, 800)
@@ -452,7 +452,7 @@ class DisassemblyView(BaseView):
                 self._flow_graph.unselect_all_instructions()
                 self._flow_graph.unselect_all_operands()
 
-            self.workspace.views_by_category['console'][0].push_namespace({
+            self.workspace.view_manager.first_view_in_category('console').push_namespace({
                 'func': the_func,
                 'function_': the_func,
             })
