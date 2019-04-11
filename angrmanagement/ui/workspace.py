@@ -161,6 +161,14 @@ class Workspace:
 
         self.raise_view(view)
 
+    def interact_program(self, img_name, view=None):
+        if view is None or view.category != 'interaction':
+            view = self._get_or_create_interaction_view()
+        view.initialize(img_name)
+
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -196,6 +204,14 @@ class Workspace:
             view = CodeView(self, 'right')
             self.add_view(view, view.caption, view.category)
 
+        return view
+
+    def _get_or_create_interaction_view(self):
+        view = self.view_manager.first_view_in_category("interaction")
+        if view is None:
+            # Create a new interaction view
+            view = Interaction(self, 'right')
+            self.add_view(view, view.caption, view.category)
         return view
 
     #

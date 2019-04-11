@@ -267,6 +267,7 @@ class MainWindow(QMainWindow):
         img_name = self._pick_image_dialog()
         if img_name is None:
             return
+        self.workspace.instance.set_image(img_name)
         self.load_image(img_name)
 
     def load_file(self, file_path):
@@ -330,6 +331,10 @@ class MainWindow(QMainWindow):
         if self.workspace is not None:
             self.workspace.decompile_current_function()
 
+    def interact(self):
+        if self.workspace.instance.img_name is not None:
+            self.workspace.interact_program(self.workspace.instance.img_name)
+
     #
     # Other public methods
     #
@@ -342,10 +347,9 @@ class MainWindow(QMainWindow):
     # Private methods
     #
 
-    def _set_proj(self, proj, cfg_args=None, img_name=None):
+    def _set_proj(self, proj, cfg_args=None):
         if cfg_args is None:
             cfg_args = {}
-        self.workspace.instance.img_name = img_name
         self.workspace.instance.set_project(proj)
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
