@@ -257,7 +257,6 @@ class MainWindow(QMainWindow):
         self.load_file(file_path)
 
     def open_docker_button(self):
-
         required = {
             'archr':archr,
             'keystone (keystone-engine)':keystone,

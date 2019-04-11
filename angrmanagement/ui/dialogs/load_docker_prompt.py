@@ -1,5 +1,3 @@
-import logging
-
 from PySide2.QtWidgets import QInputDialog
 
 import subprocess
