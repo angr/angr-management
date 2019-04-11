@@ -1,93 +1,63 @@
-
-from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel
-from PySide2.QtGui import QTextCursor, QTextDocument
-from PySide2.QtCore import Qt, QBuffer, QIODevice, QTimer, QByteArray, QObject, SIGNAL
-
+from PySide2.QtWidgets import QTextEdit, QVBoxLayout, QLineEdit, QLabel
+from PySide2.QtGui import QFont
+from PySide2.QtCore import Qt, QObject, SIGNAL, QMutex
 from PySide2.QtNetwork import QLocalServer, QLocalSocket
 
 import angr
+import archr
 
-from ..widgets.qccode_edit import QCCodeEdit
-from ..widgets.qccode_highlighter import QCCodeHighlighter
-from ..widgets.qdecomp_options import QDecompilationOptions
-from ..documents import QCodeDocument
 from .view import BaseView
 
-import os
-import logging
-import time
+import os, contextlib, subprocess
 from threading import Thread
+
+import logging
 _l = logging.getLogger(name=__name__)
 _l.setLevel('INFO')
-
 
 class InteractionView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('interaction', workspace, default_docking_position, *args, **kwargs)
 
         self.caption = 'HaCRS'
+        self.img_name = None
+        self._servername = '/tmp/interaction'
+        # TODO: take rid of this hack
+        if os.path.exists(self._servername):
+            os.remove(self._servername)
 
-        # self._function = None
-
-        # self._textedit = QCCodeEdit(self) # type:QCCodeEdit
-        # self._doc = None  # type:QCodeDocument
-        # self._highlighter = None  # type:QCCodeHighlighter
-        
+        self._hacrs = None
+        self._command = None
         self._init_widgets()
 
+        self._server = None
+        self._server_socket = None
+        self._client_socket = None
 
-        self._servername = '/tmp/interaction'
-       
-        # for Connor
-        self.server = QLocalServer(newConnection=self._connect_to_hacrs)
-        # self.server._listener = self._connect_to_hacrs
-        self.server.listen(self._servername)
-        
-        self.client = QLocalSocket()
-        self.client.connectToServer(self._servername)
-        QObject.connect(self.client, SIGNAL('readyRead()'), self._callback)
-        time.sleep(5)
-        self.client.write(b'abc')
+        self._mutex = QMutex()
 
+        self._msg_fmt = '%-10s: %s'
 
-    def _connect_to_hacrs(self):
-        _l.info('connect_to_hacrs')
-        self.hacrs_socket = self.server.nextPendingConnection()
-        if hasattr(self.workspace.instance, 'img_name'):
-            img_name = self.workspace.instance.img_name
-        else:
-            img_name = 'cat'
-
-        thread = Thread(target=self._call_archr, args=(img_name,), daemon=True)
+    def _new_connect(self):
+        self._server_socket = self._server.nextPendingConnection()
+        thread = Thread(target=self._call_archr, args=(self.img_name,), daemon=True)
         thread.start()
 
     def _call_archr(self, img_name):
-        import archr, contextlib, subprocess
-        _l.info('Calling Archr')
+        _l.debug('Calling Archr with image %s' % img_name)
         target = archr.targets.DockerImageTarget(img_name).build()
         with contextlib.suppress(subprocess.TimeoutExpired), target.start():
             bow = archr.arsenal.ContextBow(target)
-            arrowhead = archr.arrowheads.ArrowheadFletcher(self.hacrs_socket, self.client)
+            arrowhead = archr.arrowheads.ArrowheadFletcher(self._server_socket.socketDescriptor(), self._client_socket.socketDescriptor())
             flight = bow.fire(testcase=arrowhead)
     
-    def _hacrs_callback(self):
-        # TODO: MAGIC
-        pass
-        # cmd = self.hacrs_socket.read(2048).data()
-        # Call Hacrs with seslf.hacrs_socket
-        # self.hacrs_socket.write(b'aa')
-
     def _callback(self):
-	# self.tiffany_mutex.lock() # Make sure this blocking
-        _l.info('client read')
-        msg = self.client.read(2048)
-        _l.info(msg)
-        self._hacrs.append(msg.data().decode())
-	# self.tiffany_mutex.unlock()
-
-
-    def setFocus(self):
-        self._textedit.setFocus()
+        self._mutex.lock()
+        # TODO: This is another hack
+        msg = self._client_socket.read(2048)
+        _l.debug('Receiving Message %s' % str(msg))
+        self._hacrs.append(self._msg_fmt % ('OUTPUT', command))
+        self._mutex.unlock()
 
     #
     # Properties
@@ -111,16 +81,23 @@ class InteractionView(BaseView):
 
     def _send_command(self):
         command = self._command.text()
-        _l.info('Sending command %s' % command)
+        _l.debug('Sending command %s' % command)
 
         # GUI
         self._command.clear()
-        self._hacrs.append(command)
 
-        self.hacrs_socket.write(command.encode())
+        self._hacrs.append(self._msg_fmt % ('INPUT', command))
+
+        if self._server_socket is not None:
+            self._server_socket.write(command.encode())
+        else:
+            self._hacrs.append('[ERROR] Connection not established. Did you load the image?')
     
     def _init_widgets(self):
         self._hacrs = QTextEdit(self)
+        # TODO: inherit from a formatted QTextEdit class
+        self._hacrs.setCurrentFont(QFont('Times', 10))
+        self._hacrs.setFontFamily('Source Code Pro')
         self._command = QLineEdit(self)
         self._command.returnPressed.connect(self._send_command)
         
@@ -133,4 +110,21 @@ class InteractionView(BaseView):
         # layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
        
+    def initialize(self, img_name):
+        """
+        This is an initialization for building up a connection between
+        angr-management and archr
+        """
+        _l.debug('Initializing the connection to archr with Image %s' % img_name)
 
+        self.img_name = img_name
+
+        self._server = QLocalServer(newConnection=self._new_connect)
+        self._server.listen(self._servername)
+
+        self._client_socket = QLocalSocket()
+        self._client_socket.connectToServer(self._servername)
+        QObject.connect(self._client_socket, SIGNAL('readyRead()'), self._callback)
+
+    def setFocus(self):
+        self._command.setFocus()
