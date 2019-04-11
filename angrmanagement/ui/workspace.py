@@ -10,7 +10,7 @@ from angr import StateHierarchy
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
-from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView
+from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView, InteractionView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -38,6 +38,7 @@ class Workspace:
             SymexecView(self, 'right'),
             StatesView(self, 'right'),
             StringsView(self, 'right'),
+            InteractionView(self, 'right'),
             ConsoleView(self, 'bottom'),
         ]
 
