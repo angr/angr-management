@@ -19,7 +19,7 @@ class InteractionView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('interaction', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'HaCRS'
+        self.caption = 'Interaction'
         self.img_name = None
         self._servername = '/tmp/interaction'
         # TODO: take rid of this hack
