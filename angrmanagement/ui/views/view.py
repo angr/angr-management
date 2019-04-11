@@ -18,6 +18,9 @@ class BaseView(QFrame):
         self.width_hint = -1
         self.height_hint = -1
 
+    def reload(self):
+        pass
+
     def sizeHint(self, *args, **kwargs):
         return QSize(self.width_hint, self.height_hint)
 

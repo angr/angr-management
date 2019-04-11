@@ -1,10 +1,9 @@
-from PySide2.QtWidgets import QTextEdit, QVBoxLayout, QLineEdit, QLabel
+from PySide2.QtWidgets import QTextEdit, QVBoxLayout, QLineEdit, QLabel, QMessageBox
 from PySide2.QtGui import QFont
 from PySide2.QtCore import Qt, QObject, SIGNAL, QMutex
 from PySide2.QtNetwork import QLocalServer, QLocalSocket
 
 import angr
-import archr
 
 from .view import BaseView
 
@@ -45,6 +44,10 @@ class InteractionView(BaseView):
 
     def _call_archr(self, img_name):
         _l.debug('Calling Archr with image %s' % img_name)
+        try:
+            import archr
+        except ImportError:
+            QMessageBox(self).critical(None, 'Import error', 'Please make sure archr is installed.')
         target = archr.targets.DockerImageTarget(img_name).build()
         with contextlib.suppress(subprocess.TimeoutExpired), target.start():
             bow = archr.arsenal.ContextBow(target)
