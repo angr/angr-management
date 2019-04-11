@@ -10,11 +10,9 @@ import cle
 try:
     import archr
     import keystone
-    import docker
 except ImportError as e:
     archr = None
     keystone = None
-    docker = None
 
 from ..plugins import PluginManager
 from ..logic import GlobalInfo
@@ -259,8 +257,7 @@ class MainWindow(QMainWindow):
     def open_docker_button(self):
         required = {
             'archr':archr,
-            'keystone (keystone-engine)':keystone,
-            'docker':docker
+            'keystone (keystone-engine)':keystone
             }
         is_missing = [ key for key, value in required.items() if value is None ]
         if len(is_missing) > 0:
