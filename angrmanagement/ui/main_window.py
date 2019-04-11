@@ -23,10 +23,9 @@ from .menus.help_menu import HelpMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
+from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
-
-from .dialogs.load_docker_prompt import LoadDockerPrompt
 
 class MainWindow(QMainWindow):
     """
@@ -120,7 +119,10 @@ class MainWindow(QMainWindow):
         return file_path
 
     def _pick_image_dialog(self):
-        prompt = LoadDockerPrompt()
+        try:
+            prompt = LoadDockerPrompt()
+        except LoadDockerPromptError:
+            return
         if prompt.exec_() == 0:
             return # User canceled
         return prompt.textValue()
@@ -259,7 +261,7 @@ class MainWindow(QMainWindow):
             req_msg = 'You need to install the following:\n\n\t' + '\n\t'.join(is_missing)
             req_msg += '\n\nInstall them to enable this functionality.'
             req_msg += '\nRelaunch angr-management after install.'
-            QMessageBox().critical(self, 'Dependency error', req_msg)
+            QMessageBox(self).critical(None, 'Dependency error', req_msg)
             return
 
         img_name = self._pick_image_dialog()
