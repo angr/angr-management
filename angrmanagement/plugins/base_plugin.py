@@ -12,6 +12,7 @@ class BasePlugin(QtCore.QThread):
     _plugin_manager = None
 
     # TODO: defaults should be read from config file... eventually
+    # TODO: Do we need to pass both plugin_mgr and workspace? Each has a ref to the other (for now?)
     def __init__(self, plugin_manager, workspace):
         QtCore.QThread.__init__(self)
 
@@ -49,4 +50,4 @@ class BasePlugin(QtCore.QThread):
         return None, None, None
 
 
-PluginManager.register_default('base', BasePlugin)
+PluginManager.register_default(BasePlugin.__name__, BasePlugin)

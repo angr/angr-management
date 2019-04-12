@@ -1,9 +1,9 @@
 import time
 import logging
-from .base_plugin import BasePlugin
+from angrmanagement.plugins.base_plugin import BasePlugin
 
 # For type hints
-from ..ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
+from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
 _l = logging.getLogger(__name__)
 _l.setLevel(logging.DEBUG)
@@ -13,7 +13,7 @@ class TestPlugin(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bookmarks = []
-        self._autostart = True
+        self._autostart = False
         self._should_run = True
 
     def register_callbacks(self):
@@ -63,5 +63,6 @@ class TestPlugin(BasePlugin):
 
 
 # Uncomment these lines to test
-# from . import PluginManager
-# PluginManager.register_default('TestPlugin', TestPlugin)
+from .. import PluginManager
+PluginManager.register_default(TestPlugin.__name__, TestPlugin)
+#PluginManager.register_external(TestPlugin.__name__, TestPlugin)
