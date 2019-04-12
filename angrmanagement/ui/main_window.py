@@ -332,8 +332,7 @@ class MainWindow(QMainWindow):
             self.workspace.decompile_current_function()
 
     def interact(self):
-        if self.workspace.instance.img_name is not None:
-            self.workspace.interact_program(self.workspace.instance.img_name)
+        self.workspace.interact_program(self.workspace.instance.img_name)
 
     #
     # Other public methods
