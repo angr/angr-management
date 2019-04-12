@@ -4,6 +4,7 @@ from PySide2.QtCore import Qt, QObject, SIGNAL, QMutex
 from PySide2.QtNetwork import QLocalServer, QLocalSocket
 
 import angr
+import archr
 
 import socket
 import nclib
