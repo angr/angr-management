@@ -18,7 +18,7 @@ import logging
 _l = logging.getLogger(name=__name__)
 _l.setLevel('DEBUG')
 
-# TODO: on clicking interact multiple times, clean up after yourself!!!!!!!!!
+# TODO: on clicking interact multiple times, kill old the process, socket, and clean up
 class InteractionView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('interaction', workspace, default_docking_position, *args, **kwargs)
@@ -80,6 +80,7 @@ class InteractionView(BaseView):
         input_wid.setLayout(QVBoxLayout(input_wid))
         self._command = SmartPlainTextEdit(input_wid, self._send_command)
         input_wid.layout().addWidget(QLabel("Command"))
+        input_wid.layout().addWidget(QLabel("Press Enter to send the command. Press Shift + Enter to add a newline."))
         input_wid.layout().addWidget(self._command)
 
         splitter.setOrientation(Qt.Vertical)
