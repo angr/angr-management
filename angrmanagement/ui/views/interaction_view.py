@@ -89,13 +89,16 @@ class InteractionView(BaseView):
         splitter.setSizes([300,100])
 
         send_button = QPushButton(self, text="Send")
+        clear_history_button = QPushButton(self, text="Clear History")
         interact_button = QPushButton(self, text="Interact")
         send_button.clicked.connect(self._send_command)
+        clear_history_button.clicked.connect(self._history_text.clear)
         interact_button.clicked.connect(lambda: self.initialize(self.workspace.instance.img_name))
         buttons = QSplitter(self)
         buttons.addWidget(interact_button)
+        buttons.addWidget(clear_history_button)
         buttons.addWidget(send_button)
-        buttons.setSizes([100,400])
+        buttons.setSizes([100,200,600])
 
         self.setLayout(QVBoxLayout(self))
         self.layout().addWidget(splitter)
