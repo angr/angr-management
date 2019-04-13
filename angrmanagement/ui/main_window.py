@@ -1,5 +1,6 @@
 import pickle
 import os
+from functools import partial
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
@@ -27,7 +28,6 @@ from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
-from functools import partial
 
 class MainWindow(QMainWindow):
     """
@@ -201,14 +201,13 @@ class MainWindow(QMainWindow):
     # Workspace
     #
 
-    # def _tabify(self):
-    #     self.right_dockable_views = [dock for dock in self.workspace.dockable_views if dock.widget() is not None and dock.widget().default_docking_position == 'right']
-
-    #     for d0, d1 in zip(self.right_dockable_views, self.right_dockable_views[1:]):
-    #         self.central_widget.tabifyDockWidget(d0, d1)
-    #     self.right_dockable_views[0].raise_()
-
     def _init_workspace(self):
+        """
+        Initialize workspace
+
+        :return:    None
+        """
+
         self.central_widget_main = QSplitter(Qt.Horizontal)
         self.setCentralWidget(self.central_widget_main)
         self.central_widget = QMainWindow()
@@ -225,6 +224,11 @@ class MainWindow(QMainWindow):
     #
 
     def _init_shortcuts(self):
+        """
+        Initialize shortcuts
+
+        :return:    None
+        """
 
         right_dockable_views = self.workspace.view_manager.get_right_views()
         for i in range(1,7):

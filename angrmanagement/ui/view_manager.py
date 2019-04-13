@@ -99,7 +99,6 @@ class ViewManager:
         """
 
         right_dockable_views = self.get_right_views()
-
         for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
         right_dockable_views[0].raise_()
@@ -112,9 +111,8 @@ class ViewManager:
         """
         
         right_dockable_views = self.get_right_views()
-
         for i in range(1,7):
-            if right_dockable_views[i-1].visibleRegion().isEmpty() == False:
+            if right_dockable_views[i-1].visibleRegion().isEmpty() is False:
                 return i
         return 1
 
@@ -137,4 +135,3 @@ class ViewManager:
 
         right_dockable_views = self.get_right_views()
         right_dockable_views[self.get_current_tab_id()-2].raise_()
-        
