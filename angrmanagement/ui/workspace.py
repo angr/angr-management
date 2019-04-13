@@ -13,8 +13,9 @@ from angr import StateHierarchy
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
-from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView
+from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView, InteractionView
 from .widgets.qsmart_dockwidget import QSmartDockWidget
+from .view_manager import ViewManager
 
 _l = logging.getLogger(__name__)
 
@@ -25,16 +26,8 @@ class Workspace:
         self._main_window = main_window
         self._instance = instance
         instance.workspace = self
-        self.views_by_category = defaultdict(list)
-        self.views = [ ]
-        self.dockable_views = [ ]
-        self.dockable_views2 = [ ]
-        self.view_to_dockable = { }
-        self.last_unsplit_view = None
-        self.split_tab_id = None
-        self.is_split = 0
-        self.splitter_state = QSettings()
-        self.splitter_state.setValue("splitterSizes", self._main_window.central_widget_main.saveState())
+
+        self.view_manager = ViewManager(self)
 
         #
         # Initialize font configurations
@@ -48,6 +41,7 @@ class Workspace:
             SymexecView(self, 'right'),
             StatesView(self, 'right'),
             StringsView(self, 'right'),
+            InteractionView(self, 'right'),
             ConsoleView(self, 'bottom'),
         ]
 
@@ -68,7 +62,7 @@ class Workspace:
 
     def on_function_selected(self, func):
 
-        self.views_by_category['disassembly'][0].display_function(func)
+        self._get_or_create_disassembly_view().display_function(func)
 
     def on_cfg_generated(self):
 
@@ -95,7 +89,7 @@ class Workspace:
     #
 
     def split_view(self):
-        id = self._main_window.getCurrentTabId()
+        id = self._main_window.get_current_tab_id()
         if self.is_split == 0:
             docking_positions = {
                 'left': Qt.LeftDockWidgetArea,
@@ -115,27 +109,7 @@ class Workspace:
             self._main_window.central_widget_main.setStretchFactor(1,1)
 
     def add_view(self, view, caption, category):
-
-        docking_positions = {
-            'left': Qt.LeftDockWidgetArea,
-            'right': Qt.RightDockWidgetArea,
-            'top': Qt.TopDockWidgetArea,
-            'bottom': Qt.BottomDockWidgetArea,
-        }
-
-        self.views_by_category[category].append(view)
-
-        dock = QSmartDockWidget(caption, parent=view)
-        dock_area = docking_positions.get(view.default_docking_position, Qt.RightDockWidgetArea)
-        if view.default_docking_position == 'right':
-            self._main_window.central_widget.addDockWidget(dock_area, dock)
-        else:
-            self._main_window.addDockWidget(dock_area, dock)
-        dock.setWidget(view)
-
-        self.views.append(view)
-        self.dockable_views.append(dock)
-        self.view_to_dockable[view] = dock
+        self.view_manager.add_view(view, caption, category)
 
     def unsplit_view(self):
         if self.is_split == 1:
@@ -146,18 +120,11 @@ class Workspace:
                 'top': Qt.TopDockWidgetArea,
                 'bottom': Qt.BottomDockWidgetArea,
             }
-        
             self._main_window.central_widget2.removeDockWidget(self.last_unsplit_view)
-
-
             dock_area = docking_positions.get(self.default_tabs[id].default_docking_position, Qt.RightDockWidgetArea)
-
             dock = QSmartDockWidget(self.default_tabs[id].caption, parent=self.default_tabs[id])
-
             self._main_window.central_widget.addDockWidget(dock_area, dock)
-
             dock.setWidget(self.default_tabs[id])
-            
             self.dockable_views[id] = dock
             self._main_window.central_widget_main.setStretchFactor(1,0)
             self._main_window.central_widget_main.restoreState(self.splitter_state.value("splitterSizes"))
@@ -172,24 +139,15 @@ class Workspace:
         :return:              None
         """
 
-        # find the dock widget by the view
-        dockable = self.view_to_dockable.get(view, None)
-        if dockable is None:
-            return
-
-        dockable.raise_()
+        self.view_manager.raise_view(view)
 
     def reload(self):
-        # import time
-        # start = time.time()
-        for view in self.views:
+        for view in self.view_manager.views:
             try:
                 view.reload()
             except Exception:
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
                 pass
-        # elapsed = time.time() - start
-        # print("Reloading took %f seconds." % elapsed)
 
     def viz(self, obj):
         """
@@ -209,26 +167,29 @@ class Workspace:
         elif type(obj) is Function:
             self.jump_to(obj.addr)
 
-    def jump_to(self, addr):
-        if self.views_by_category['disassembly']:
-            self.views_by_category['disassembly'][0].jump_to(addr)
-            self.raise_view(self.views_by_category['disassembly'][0])
-            self.views_by_category['disassembly'][0].setFocus()
-        else:
-            tab = DisassemblyView(self, 'right')
-            self.add_view(tab, tab.caption, tab.category)
-            tab.jump_to(addr)
+    def jump_to(self, addr, view=None):
+        if view is None or view.category != "disassembly":
+            view = self._get_or_create_disassembly_view()
 
-    def decompile_current_function(self):
-        self.views_by_category['disassembly'][0].decompile_current_function()
+        view.jump_to(addr)
+        self.raise_view(view)
+        view.setFocus()
 
-    def decompile_function(self, func):
-        pseudocode = self.views_by_category['pseudocode'][0]
-        pseudocode.function = func
-        self.raise_view(pseudocode)
-        pseudocode.setFocus()
+    def decompile_current_function(self, view=None):
+        if view is None or view.category != "disassembly":
+            view = self._get_or_create_disassembly_view()
 
-    def create_simulation_manager(self, state, state_name):
+        view.decompile_current_function()
+
+    def decompile_function(self, func, view=None):
+        if view is None or view.category != "pseudocode":
+            view = self._get_or_create_pseudocode_view()
+
+        view.function = func
+        self.raise_view(view)
+        view.setFocus()
+
+    def create_simulation_manager(self, state, state_name, view=None):
 
         inst = self.instance
         hierarchy = StateHierarchy()
@@ -237,10 +198,64 @@ class Workspace:
         inst.simgrs.append(simgr_container)
         inst.simgrs.am_event(src='new_path')
 
-        symexec_view = self.views_by_category['symexec'][0]
-        symexec_view.select_simgr(simgr_container)
+        if view is None:
+            view = self._get_or_create_symexec_view()
+        view.select_simgr(simgr_container)
 
-        self.raise_view(symexec_view)
+        self.raise_view(view)
+
+    def interact_program(self, img_name, view=None):
+        if view is None or view.category != 'interaction':
+            view = self._get_or_create_interaction_view()
+        view.initialize(img_name)
+
+        self.raise_view(view)
+        view.setFocus()
+
+    #
+    # Private methods
+    #
+
+    def _get_or_create_disassembly_view(self):
+        # Take the first disassembly view
+        view = self.view_manager.first_view_in_category("disassembly")
+
+        if view is None:
+            # Create a new disassembly view
+            view = DisassemblyView(self, 'right')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_pseudocode_view(self):
+        # Take the first pseudo-code view
+        view = self.view_manager.first_view_in_category("pseudocode")
+
+        if view is None:
+            # Create a new pseudo-code view
+            view = CodeView(self, 'right')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_symexec_view(self):
+        # Take the first symexec view
+        view = self.view_manager.first_view_in_category("symexec")
+
+        if view is None:
+            # Create a new symexec view
+            view = CodeView(self, 'right')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_interaction_view(self):
+        view = self.view_manager.first_view_in_category("interaction")
+        if view is None:
+            # Create a new interaction view
+            view = Interaction(self, 'right')
+            self.add_view(view, view.caption, view.category)
+        return view
 
     #
     # UI-related Callback Setters & Manipulation
@@ -251,26 +266,26 @@ class Workspace:
     from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
     def set_cb_function_backcolor(self, callback: Callable[[angrFunc], None]):
-        fv = self.views_by_category['functions'][0]  # type: FunctionsView
+        fv = self.view_manager.first_view_in_category('functions')  # type: FunctionsView
         if fv:
             fv.backcolor_callback = callback
 
     def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
-        dv = self.views_by_category['disassembly'][0]  # type: DisassemblyView
+        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv:
             dv.insn_backcolor_callback = callback
 
     def set_cb_label_rename(self, callback):
-        dv = self.views_by_category['disassembly'][0]  # type: DisassemblyView
+        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv:
             dv.label_rename_callback = callback
 
     def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None]):
-        dv = self.views_by_category['disassembly'][0]  # type: DisassemblyView
+        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback)
 
     def set_cb_set_comment(self, callback):
-        dv = self.views_by_category['disassembly'][0]
+        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv:
             dv.set_comment_callback = callback
