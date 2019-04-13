@@ -225,9 +225,10 @@ class MainWindow(QMainWindow):
     #
 
     def _init_shortcuts(self):
-        pass   
-        # for i in range(1,len(self.right_dockable_views)):
-        #     QShortcut(QKeySequence('Ctrl+'+str(i)), self, self.right_dockable_views[i-1].raise_)
+
+        right_dockable_views = self.workspace.view_manager.get_right_views()
+        for i in range(1,7):
+            QShortcut(QKeySequence('Ctrl+'+str(i)), self, right_dockable_views[i-1].raise_)
 
     #
     # PluginManager

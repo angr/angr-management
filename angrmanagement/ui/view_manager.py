@@ -98,7 +98,7 @@ class ViewManager:
         :return:    None
         """
 
-        right_dockable_views = get_right_views()
+        right_dockable_views = self.get_right_views()
 
         for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
@@ -111,9 +111,9 @@ class ViewManager:
         :return:    Tab ID (int)
         """
         
-        right_dockable_views = get_right_views()
+        right_dockable_views = self.get_right_views()
 
-        for i in range(1,6):
+        for i in range(1,7):
             if right_dockable_views[i-1].visibleRegion().isEmpty() == False:
                 return i
         return 1
@@ -125,8 +125,8 @@ class ViewManager:
         :return:    None
         """
 
-        right_dockable_views = get_right_views()
-        right_dockable_views[get_current_tab_id()].raise_()
+        right_dockable_views = self.get_right_views()
+        right_dockable_views[self.get_current_tab_id()].raise_()
 
     def previous_tab(self):
         """
@@ -135,6 +135,6 @@ class ViewManager:
         :return:    None
         """
 
-        right_dockable_views = get_right_views()
-        right_dockable_views[get_current_tab_id()-2].raise_()
+        right_dockable_views = self.get_right_views()
+        right_dockable_views[self.get_current_tab_id()-2].raise_()
         
