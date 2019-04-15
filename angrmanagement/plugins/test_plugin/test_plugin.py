@@ -10,15 +10,18 @@ _l.setLevel(logging.DEBUG)
 
 
 class TestPlugin(BasePlugin):
+    DISPLAY_NAME = 'Test Plugin'
+    is_autostart = True
+    is_autoenabled = False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bookmarks = []
-        self._autostart = False
-        self._should_run = True
+        self._thread_should_run = True
 
     def register_callbacks(self):
-        super().register_callbacks()  # Reuse BasePlugin's registrations for insn/func backcolors
-
+        self._workspace.set_cb_function_backcolor(self.func_back_color)
+        self._workspace.set_cb_insn_backcolor(self.insn_backcolor)
         self._workspace.set_cb_label_rename(self.on_label_rename)
         self._workspace.set_cb_set_comment(self.on_set_comment)
 
@@ -26,7 +29,7 @@ class TestPlugin(BasePlugin):
         self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
 
     def run(self):
-        while self._should_run:
+        while self._thread_should_run:
             _l.info("looping")
             self.sleep(5)
 
@@ -60,9 +63,3 @@ class TestPlugin(BasePlugin):
 
     def on_set_comment(self, addr: int, txt: str):
         _l.info("User set comment at {:#010x}: '{}'".format(addr, txt))
-
-
-# Uncomment these lines to test
-from .. import PluginManager
-PluginManager.register_default(TestPlugin.__name__, TestPlugin)
-#PluginManager.register_external(TestPlugin.__name__, TestPlugin)
