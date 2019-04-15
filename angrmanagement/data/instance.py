@@ -10,7 +10,6 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..utils.namegen import NameGenerator
 
-
 class EventSentinel(object):
     def __init__(self):
         self.am_subscribers = []
@@ -109,6 +108,9 @@ class Instance(object):
 
         self.database_path = None
 
+        # The image name when loading image
+        self.img_name = None
+
     #
     # Properties
     #
@@ -157,6 +159,12 @@ class Instance(object):
 
     def async_set_cfb(self, cfb):
         self._cfb = cfb
+
+    def set_project(self, project):
+        self.project = project
+
+    def set_image(self, image):
+        self.img_name = image
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:
