@@ -74,6 +74,12 @@ class BasePlugin(QtCore.QThread):
         Gives the plugin a chance to cleanup/save or prompt the user for confirmation
         prior to actually unloading. This should not be called until after any threads
         have been stopped.
+
+        The plugin should remove all callbacks and menus, and disable all functionality
+        when this function is called.
+
+        NOTE: Don't log here. By the time the log message goes through, it's likely the
+              logger will have been destroyed so Python will throw exceptions.
         """
         pass
 

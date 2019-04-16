@@ -242,6 +242,11 @@ class Workspace:
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback)
 
+    def remove_disasm_insn_ctx_menu_entry(self, text):
+        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if dv._insn_menu:
+            dv._insn_menu.remove_menu_entry(text)
+
     def set_cb_set_comment(self, callback):
         dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv:

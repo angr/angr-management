@@ -13,6 +13,7 @@ class TestPlugin(BasePlugin):
     DISPLAY_NAME = 'Test Plugin'
     is_autostart = True
     is_autoenabled = False
+    __ctx_menu_text = '&Bookmark'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -26,7 +27,14 @@ class TestPlugin(BasePlugin):
         self._workspace.set_cb_set_comment(self.on_set_comment)
 
     def register_other(self):
-        self._workspace.add_disasm_insn_ctx_menu_entry('Bookmark', self.on_ctx_menu_bookmark)
+        self._workspace.add_disasm_insn_ctx_menu_entry(self.__ctx_menu_text, self.on_ctx_menu_bookmark)
+
+    def on_disable(self):
+        self._workspace.set_cb_function_backcolor(None)
+        self._workspace.set_cb_insn_backcolor(None)
+        self._workspace.set_cb_label_rename(None)
+        self._workspace.set_cb_set_comment(None)
+        self._workspace.remove_disasm_insn_ctx_menu_entry(self.__ctx_menu_text)
 
     def run(self):
         while self._thread_should_run:

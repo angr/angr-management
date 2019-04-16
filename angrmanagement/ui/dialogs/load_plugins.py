@@ -24,8 +24,6 @@ class QPluginListWidgetItem(QListWidgetItem):
 class LoadPluginsError(Exception):
     pass
 
-# TODO: Implement an unload, which also de-registers callbacks.
-
 # TODO: Add plugin settings, forced reloading, etc.
 
 # TODO: Implement ability to start a loaded plugin that has _autostart=False
