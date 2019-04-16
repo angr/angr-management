@@ -106,11 +106,10 @@ class LoadPlugins(QDialog):
             checked = i.checkState() == Qt.Checked
 
             if checked and i.plugin_class.__name__ not in self._pm.enabled_plugins.keys():
-                _l.info("Loading plugin: {}".format(i.get_display_name()))
+                _l.info("Loading plugin: {}".format(i.plugin_class.get_display_name()))
                 plugin = self._pm.enable_plugin(i.plugin_class.__name__)
-                plugin.autostart()
             elif not checked and i.plugin_class.__name__ in self._pm.enabled_plugins.keys():
-                _l.info("Disabling plugin: {}".format(i.get_display_name()))
+                _l.info("Disabling plugin: {}".format(i.plugin_class.get_display_name()))
                 self._pm.disable_plugin(i.plugin_class.__name__)
 
         self.close()
