@@ -24,11 +24,6 @@ class QPluginListWidgetItem(QListWidgetItem):
 class LoadPluginsError(Exception):
     pass
 
-
-# TODO: Plugins in PluginManager.default_plugins should be able to be unloaded
-#       but only after user confirmation. They may also require a UI reload/refresh
-#       or some other intensive/inconvenient action.
-
 # TODO: Implement an unload, which also de-registers callbacks.
 
 # TODO: Add plugin settings, forced reloading, etc.
@@ -37,6 +32,7 @@ class LoadPluginsError(Exception):
 
 # TODO: Add load order/precedence. If two plugins hook insn_backcolor, etc, only the last
 #       one to get loaded will actually get called.
+
 
 class LoadPlugins(QDialog):
     def __init__(self, plugin_mgr, parent=None):
