@@ -32,6 +32,7 @@ from .dialogs.load_plugins import LoadPlugins, LoadPluginsError
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.sync_config import SyncConfig
+from .dialogs.about import LoadAboutDialog
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
 
@@ -171,18 +172,8 @@ class MainWindow(QMainWindow):
         sync_config = SyncConfig(self.workspace.instance, parent=self)
         sync_config.exec_()
 
-
-    def open_about_dialog(self, icon_location='angr.png'):
-        self.aboutDialog = QMessageBox()
-        self.aboutDialog.setIconPixmap(icon_location)
-        self.aboutDialog.setWindowTitle("about Angr")
-        self.aboutDialog.setText("about Angr")
-        #aboutDialog.setInformativeText(get_version())
-        #creditLabel = QLabel()
-        #creditLabel.setText("<a href=\"http://angr.io/\">Credits</a>")
-        #creditLabel.setTextFormat(Qt.RichText)
-        #creditLabel.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        #creditLabel.setOpenExternalLinks(True)
+    def open_about_dialog(self):
+        LoadAboutDialog()
 
     #
     # Widgets
