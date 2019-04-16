@@ -95,9 +95,7 @@ class PluginManager:
         if plugin.isRunning():
             _l.info("Stopping plugin: {}".format(plugin.get_display_name()))
             plugin.sync_stop_thread()
-            if not plugin.wait(3000):
-                plugin.terminate()
-                plugin.wait(500)
+            plugin.wait(3000)
 
     #
     # Private Methods
