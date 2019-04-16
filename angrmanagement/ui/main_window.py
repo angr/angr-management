@@ -30,9 +30,6 @@ from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
 
-from .dialogs.load_docker_prompt import LoadDockerPrompt
-
-
 class MainWindow(QMainWindow):
     """
     The main window of angr management.
