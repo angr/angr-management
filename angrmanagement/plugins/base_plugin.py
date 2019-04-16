@@ -36,10 +36,6 @@ class BasePlugin(QtCore.QThread):
         self._thread_should_run = False
         _l.info("Loaded {}".format(self.__class__.__name__))
 
-    @property
-    def is_running(self):
-        return self._is_running
-
     def register_callbacks(self):
         pass
 
