@@ -1,9 +1,7 @@
-import time
 import logging
-from angrmanagement.plugins.base_plugin import BasePlugin
 
-# For type hints
-from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
+from ..base_plugin import BasePlugin
+from ...ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu  # For type hints
 
 _l = logging.getLogger(__name__)
 _l.setLevel(logging.DEBUG)

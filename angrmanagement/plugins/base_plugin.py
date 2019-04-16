@@ -2,8 +2,6 @@ import logging
 
 from PySide2 import QtCore
 
-from .plugin_manager import PluginManager
-
 _l = logging.getLogger(__name__)
 _l.setLevel(logging.DEBUG)
 
@@ -92,4 +90,3 @@ class BasePlugin(QtCore.QThread):
 
     def func_back_color(self, func):
         return None, None, None
-
