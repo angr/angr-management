@@ -26,7 +26,6 @@ class PluginManager:
         self._workspace = workspace
         if autoload:
             self.load_plugins()
-            self.initialize_enabled_plugins()
 
     def load_plugins(self, plugin_dir=config.PLUGIN_PATH):
         """
@@ -41,15 +40,6 @@ class PluginManager:
             # TODO: get top-level package from a setting or something. This feels dirty
             mod = importlib.import_module('angrmanagement.plugins.{}'.format(plugin_dir))
             self._load_plugin_from_module(mod, mod.PLUGIN_CLS_NAME)
-
-    def initialize_enabled_plugins(self):
-        """
-        After all the plugins' `__init__()` methods are called, we'll give them a chance to continue
-        initializing by the time the workspace has loaded. Additionally, the `autostart()` method gives
-        the plugin the option to launch a background thread.
-        """
-        for plugin in self.enabled_plugins.values():
-            self._initialize_plugin(plugin)
 
     def enable_plugin(self, plugin_cls_name: _T_PLUGIN_CLS_NAME):
         """
