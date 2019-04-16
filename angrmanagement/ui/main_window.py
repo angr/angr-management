@@ -33,11 +33,6 @@ from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from .dialogs.load_docker_prompt import LoadDockerPrompt
 
 
-################ CHESS ONLY ################
-from angr_plugins import ChessPlugin
-############################################
-
-
 class MainWindow(QMainWindow):
     """
     The main window of angr management.
