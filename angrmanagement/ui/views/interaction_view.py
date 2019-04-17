@@ -4,6 +4,12 @@ from PySide2.QtGui import QFont
 from PySide2.QtCore import Qt
 
 import angr
+try:
+    import archr
+    import keystone
+except ImportError as e:
+    archr = None
+    keystone = None
 
 import socket
 import nclib
@@ -108,11 +114,17 @@ class InteractionView(BaseView):
         This is an initialization for building up a connection between
         angr-management and archr
         """
-
-        try:
-            import archr
-        except ImportError:
-            QMessageBox(self).critical(None, 'archr not found', 'Please make sure archr is installed.')
+        required = {
+            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
+            'keystone: pip install --no-binary keystone-engine keystone-engine':keystone
+            }
+        is_missing = [ key for key, value in required.items() if value is None ]
+        if len(is_missing) > 0:
+            req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
+            req_msg += '\n\nInstall them to enable this functionality.'
+            req_msg += '\nRelaunch angr-management after install.'
+            QMessageBox(self).critical(None, 'Dependency error', req_msg)
+            return
 
         if img_name is not None:
             _l.debug('Initializing the connection to archr with Image %s' % img_name)
