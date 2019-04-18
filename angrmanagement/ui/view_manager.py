@@ -77,7 +77,14 @@ class ViewManager:
         :return:    Right Dockable Views
         """
 
-        return [dock for dock in self.docks if dock.widget().default_docking_position == 'right']
+        docks = []
+        for dock in self.docks:
+            if dock.widget() is not None:
+                if dock.widget().default_docking_position == 'right':
+                    docks.append(dock)
+        return docks
+
+        #return [dock for dock in self.docks if dock.widget().default_docking_position == 'right']
 
     def first_view_in_category(self, category):
         """
