@@ -46,9 +46,6 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
-        self.right_dockable_views = None
-        #self._undockCurrentView = None
-
         self.workspace = None
         self.central_widget = None
         self._plugin_mgr = None  # type: PluginManager
@@ -233,6 +230,9 @@ class MainWindow(QMainWindow):
         right_dockable_views = self.workspace.view_manager.get_right_views()
         for i in range(1,7):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, right_dockable_views[i-1].raise_)
+
+        # Raise the DisassemblyView after everything has initialized
+        right_dockable_views[0].raise_()
 
     #
     # PluginManager

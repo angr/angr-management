@@ -108,7 +108,6 @@ class ViewManager:
         right_dockable_views = self.get_right_views()
         for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
-        right_dockable_views[0].raise_()
 
     def get_current_tab_id(self):
         """
