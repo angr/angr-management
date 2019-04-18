@@ -1,22 +1,27 @@
-from PySide2.QtWidgets import QTextEdit, QVBoxLayout, QLabel, QWidget, QSplitter, QHBoxLayout, QPushButton, QPlainTextEdit
+from PySide2.QtWidgets import QTextEdit, QVBoxLayout, QLabel, QWidget, QSplitter, QPushButton, QPlainTextEdit, \
+    QMessageBox
 from PySide2.QtGui import QFont
-from PySide2.QtCore import Qt, QObject, SIGNAL, QMutex
-from PySide2.QtNetwork import QLocalServer, QLocalSocket
+from PySide2.QtCore import Qt
 
 import angr
-import archr
+try:
+    import archr
+    import keystone
+except ImportError as e:
+    archr = None
+    keystone = None
 
 import socket
 import nclib
 
 from .view import BaseView
 
-import os, contextlib, subprocess
 from threading import Thread
 
 import logging
 _l = logging.getLogger(name=__name__)
 _l.setLevel('DEBUG')
+
 
 # TODO: on clicking interact multiple times, kill old the process, socket, and clean up
 class InteractionView(BaseView):
@@ -109,6 +114,18 @@ class InteractionView(BaseView):
         This is an initialization for building up a connection between
         angr-management and archr
         """
+        required = {
+            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
+            'keystone: pip install --no-binary keystone-engine keystone-engine':keystone
+            }
+        is_missing = [ key for key, value in required.items() if value is None ]
+        if len(is_missing) > 0:
+            req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
+            req_msg += '\n\nInstall them to enable this functionality.'
+            req_msg += '\nRelaunch angr-management after install.'
+            QMessageBox(self).critical(None, 'Dependency error', req_msg)
+            return
+
         if img_name is not None:
             _l.debug('Initializing the connection to archr with Image %s' % img_name)
             Thread(target=self.the_thread, args=(img_name,)).start()
