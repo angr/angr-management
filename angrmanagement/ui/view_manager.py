@@ -119,7 +119,7 @@ class ViewManager:
         right_dockable_views = self.get_right_views()
         for i in range(1,7):
             if right_dockable_views[i-1].visibleRegion().isEmpty() is False:
-                return i
+                return i-1
         return 1
 
     def next_tab(self):
@@ -130,7 +130,12 @@ class ViewManager:
         """
 
         right_dockable_views = self.get_right_views()
-        right_dockable_views[self.get_current_tab_id()].raise_()
+        currentTab = self.get_current_tab_id()
+        if (currentTab + 1) < len(right_dockable_views):
+            right_dockable_views[currentTab + 1].raise_()
+        else:
+            # Start from 1 again to prevent Index Out Of Range error
+            right_dockable_views[(currentTab + 1) % (len(right_dockable_views))].raise_()
 
     def previous_tab(self):
         """
@@ -140,4 +145,4 @@ class ViewManager:
         """
 
         right_dockable_views = self.get_right_views()
-        right_dockable_views[self.get_current_tab_id()-2].raise_()
+        right_dockable_views[self.get_current_tab_id()-1].raise_()
