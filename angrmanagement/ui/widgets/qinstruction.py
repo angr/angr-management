@@ -255,6 +255,8 @@ class QInstruction(QGraphObject):
             painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
         elif self._string is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.gray)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
 
     def _paint_linear(self, painter):
 
@@ -301,3 +303,5 @@ class QInstruction(QGraphObject):
             painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
         elif self._string is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.gray)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
