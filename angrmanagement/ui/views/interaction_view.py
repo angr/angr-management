@@ -7,12 +7,13 @@ import angr
 try:
     import archr
     import keystone
+    import nclib
 except ImportError as e:
     archr = None
     keystone = None
+    nclib = None
 
 import socket
-import nclib
 
 from .view import BaseView
 
