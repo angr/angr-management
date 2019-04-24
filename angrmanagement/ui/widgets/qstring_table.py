@@ -105,10 +105,12 @@ class QStringTable(QTableWidget):
                 if self._function is None:
                     self.items.append(QStringTableItem(f))
                 else:
-                    for irsb_addr, _, _ in f.refs:
-                        if irsb_addr in self._function.block_addrs_set:
-                            self.items.append(QStringTableItem(f))
-                            break
+                    refs = self._cfg.model.references
+                    if f.addr in refs.data_addr_to_ref:
+                        for ref in refs.data_addr_to_ref[f.addr]:
+                            if ref.block_addr in self._function.block_addrs_set:
+                                self.items.append(QStringTableItem(f))
+                                break
 
         items_count = len(self.items)
         self.setRowCount(items_count)
