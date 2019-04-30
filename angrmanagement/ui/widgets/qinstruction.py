@@ -145,7 +145,7 @@ class QInstruction(QGraphObject):
 
         # First we'll check for customizations
         if self.disasm_view.insn_backcolor_callback:
-            r, g, b = self.disasm_view.insn_backcolor_callback(self.insn.addr, self.selected)
+            r, g, b = self.disasm_view.insn_backcolor_callback(addr=self.insn.addr, selected=self.selected)
 
         # Fallback to defaults if we get Nones from the callback
         if r is None or g is None or b is None:
