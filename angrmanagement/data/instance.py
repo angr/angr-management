@@ -4,11 +4,13 @@ from threading import Thread
 from queue import Queue
 
 import ana
+import angr
 
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..utils.namegen import NameGenerator
+
 
 class EventSentinel(object):
     def __init__(self):
@@ -116,11 +118,11 @@ class Instance(object):
     #
 
     @property
-    def project(self):
+    def project(self) -> angr.Project:
         return self._project_container.am_obj
 
     @project.setter
-    def project(self, v):
+    def project(self, v: angr.Project):
         self._project_container.am_obj = v
         self._project_container.am_event()
 
