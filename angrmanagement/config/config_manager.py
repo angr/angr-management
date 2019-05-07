@@ -3,6 +3,9 @@ from PySide2.QtGui import QFont, QFontMetricsF, QColor
 
 from .config_entry import ConfigurationEntry as CE
 import yaml
+import logging
+
+_l = logging.getLogger(__name__)
 
 def color_constructor(loader, node):
     value = loader.construct_scalar(node)
@@ -96,8 +99,13 @@ class ConfigurationManager(object):
         for entry in ENTRIES:
             entry_map[entry.name] = entry.copy()
         for k, v in loaded.items():
-            assert k in entry_map
+            if k not in entry_map:
+                _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
+                continue
             entry = entry_map[k]
-            assert type(v) is entry.type_
+            if type(v) is not entry.type_:
+                _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. Ignoring...',
+                         v, k, type(v), entry.type_)
+                continue
             entry.value = v
         return cls(entry_map)
