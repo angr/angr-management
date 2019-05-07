@@ -25,12 +25,13 @@ setup(
     },
     install_requires=[
         'angr==8.19.4.5',
-        'pygments',
         'websocket-client',
         'qtconsole',
         'ipython',
         'pyzmq',
         'shiboken2<=5.12.0',
         'PySide2<=5.12.0',
+        'pyyaml',
+        'pyxdg',
     ]
 )

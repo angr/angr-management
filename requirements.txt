@@ -1,8 +1,0 @@
-websocket-client
-pygments
-angr
-ipython
-pyzmq
-shiboken2<=5.12.0
-PySide2<=5.12.0
-qtconsole
