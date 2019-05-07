@@ -329,3 +329,11 @@ class QBaseGraph(QZoomingGraphicsView):
 
     def _add_insn_addr_block_mapping(self, insn_addr, block):
         self._insn_addr_to_block[insn_addr] = block
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+
+        self._paintEvent(event)
+
+    def _paintEvent(self, event):
+        raise NotImplementedError
