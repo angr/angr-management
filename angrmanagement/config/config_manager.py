@@ -1,7 +1,15 @@
 
-from PySide2.QtGui import QFont, QFontMetricsF
+from PySide2.QtGui import QFont, QFontMetricsF, QColor
 
 from .config_entry import ConfigurationEntry as CE
+import yaml
+
+def color_constructor(loader, node):
+    value = loader.construct_scalar(node)
+    r, g, b = map(lambda s: int(s, 0), value.split(','))
+    return QColor(r, g, b)
+
+yaml.add_constructor(u'!color', color_constructor)
 
 
 ENTRIES = [
@@ -17,6 +25,12 @@ ENTRIES = [
     CE('code_font_height', int, None),
     CE('code_font_width', int, None),
     CE('code_font_ascent', int, None),
+    CE('disasm_view_operand_highlight_color', QColor, QColor(0x7f, 0xf5, 0)),
+    CE('disasm_view_operand_select_color', QColor, QColor(0xc0, 0xbf, 0x40)),
+    CE('disasm_view_target_addr_color', QColor, QColor(0, 0xff, 0)),
+    CE('disasm_view_antitarget_addr_color', QColor, QColor(0xff, 0, 0)),
+    CE('disasm_view_node_background_color', QColor, QColor(0xfa, 0xfa, 0xfa)),
+    CE('disasm_view_node_border_color', QColor, QColor(0xf0, 0xf0, 0xf0)),
 ]
 
 
@@ -24,12 +38,15 @@ class ConfigurationManager(object):
 
     __slots__ = ['_entries']
 
-    def __init__(self):
+    def __init__(self, entries=None):
 
-        self._entries = { }
+        if entries is None:
+            self._entries = { }
 
-        for entry in ENTRIES:
-            self._entries[entry.name] = entry.copy()
+            for entry in ENTRIES:
+                self._entries[entry.name] = entry.copy()
+        else:
+            self._entries = entries
 
     def init_font_config(self):
         self.disasm_font = QFont("DejaVu Sans Mono", 10)
@@ -71,3 +88,16 @@ class ConfigurationManager(object):
             return
 
         raise KeyError()
+
+    @classmethod
+    def parse(cls, f):
+        loaded = yaml.load(f, Loader=yaml.Loader)
+        entry_map = {}
+        for entry in ENTRIES:
+            entry_map[entry.name] = entry.copy()
+        for k, v in loaded.items():
+            assert k in entry_map
+            entry = entry_map[k]
+            assert type(v) is entry.type_
+            entry.value = v
+        return cls(entry_map)

@@ -2,9 +2,16 @@
 import os
 
 from .config_manager import ConfigurationManager
+from xdg import BaseDirectory
 
 # Global configuration manager instance
-Conf = ConfigurationManager()
+fc = BaseDirectory.load_first_config('angr-management')
+if fc is not None:
+    config_path = os.path.join(fc, 'config')
+    with open(config_path, 'r') as f:
+        Conf = ConfigurationManager.parse(f)
+else:
+    Conf = ConfigurationManager()
 
 APP_LOCATION = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 RES_LOCATION = str(os.path.join(APP_LOCATION, 'resources'))
