@@ -2,17 +2,30 @@
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 
 from .config_entry import ConfigurationEntry as CE
-import yaml
+import toml
 import logging
 
 _l = logging.getLogger(__name__)
 
-def color_constructor(loader, node):
-    value = loader.construct_scalar(node)
-    r, g, b = map(lambda s: int(s, 0), value.split(','))
-    return QColor(r, g, b)
+def color_constructor(config_option, value):
+    if type(value) is str:
+        value = int(value, 0)
 
-yaml.add_constructor(u'!color', color_constructor)
+    if type(value) is int:
+        return QColor(value)
+    elif isinstance(value, dict):
+        keys = set(value.keys())
+        expected_keys = {'r', 'g', 'b'}
+        if keys != expected_keys:
+            _l.warning('Found color type with keys %s for option %s, expecting %s. Skipping...',
+                    config_option, keys, expected_keys)
+        return QColor(value['r'], value['g'], value['b'])
+    else:
+        _l.error('Failed to parse value %s for option %s', value, config_option)
+
+data_constructors = {
+    QColor : color_constructor,
+}
 
 
 ENTRIES = [
@@ -94,18 +107,26 @@ class ConfigurationManager(object):
 
     @classmethod
     def parse(cls, f):
-        loaded = yaml.load(f, Loader=yaml.Loader)
         entry_map = {}
         for entry in ENTRIES:
             entry_map[entry.name] = entry.copy()
-        for k, v in loaded.items():
-            if k not in entry_map:
-                _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
-                continue
-            entry = entry_map[k]
-            if type(v) is not entry.type_:
-                _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. Ignoring...',
-                         v, k, type(v), entry.type_)
-                continue
-            entry.value = v
+
+        try:
+            loaded = toml.load(f)
+
+            for k, v in loaded.items():
+                if entry.type_ in data_constructors:
+                    v = data_constructors[entry.type_](k, v)
+                if k not in entry_map:
+                    _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
+                    continue
+                entry = entry_map[k]
+                if type(v) is not entry.type_:
+                    _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. Ignoring...',
+                             v, k, type(v), entry.type_)
+                    continue
+                entry.value = v
+        except toml.TomlDecodeError as e:
+            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', e.msg)
+
         return cls(entry_map)
