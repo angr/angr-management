@@ -20,12 +20,15 @@ from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
+from .menus.plugin_menu import PluginMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
+from .dialogs.load_plugins import LoadPlugins, LoadPluginsError
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
+
 
 class MainWindow(QMainWindow):
     """
@@ -140,7 +143,14 @@ class MainWindow(QMainWindow):
             pass
         return None, None
 
+    def open_load_plugins_dialog(self):
+        try:
+            dlg = LoadPlugins(self._plugin_mgr)
+            dlg.setModal(True)
+            dlg.exec_()
 
+        except LoadPluginsError:
+            pass
 
     def open_newstate_dialog(self):
         new_state_dialog = NewState(self.workspace.instance, parent=self)
@@ -182,9 +192,11 @@ class MainWindow(QMainWindow):
     def _init_menus(self):
         fileMenu = FileMenu(self)
         analyzeMenu = AnalyzeMenu(self)
+        pluginMenu = PluginMenu(self)
         helpMenu = HelpMenu(self)
         self.menuBar().addMenu(fileMenu.qmenu())
         self.menuBar().addMenu(analyzeMenu.qmenu())
+        self.menuBar().addMenu(pluginMenu.qmenu())
         self.menuBar().addMenu(helpMenu.qmenu())
 
     #
@@ -205,8 +217,8 @@ class MainWindow(QMainWindow):
     #
 
     def _init_plugins(self):
-        self._plugin_mgr = PluginManager(self.workspace)
-        self._plugin_mgr.initialize_all()
+        self._plugin_mgr = PluginManager(self.workspace, autoload=True)
+
 
     #
     # Event
@@ -222,7 +234,7 @@ class MainWindow(QMainWindow):
         self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
-        self._plugin_mgr.stop_all()
+        self._plugin_mgr.stop_all_plugin_threads()
         event.accept()
 
     def event(self, event):
@@ -349,7 +361,7 @@ class MainWindow(QMainWindow):
     def _set_proj(self, proj, cfg_args=None):
         if cfg_args is None:
             cfg_args = {}
-        self.workspace.instance.set_project(proj)
+        self.workspace.instance.project = proj
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
     def _load_database(self, file_path):

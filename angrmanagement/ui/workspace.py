@@ -237,10 +237,15 @@ class Workspace:
         if dv:
             dv.label_rename_callback = callback
 
-    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None]):
+    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True):
         dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv._insn_menu:
-            dv._insn_menu.add_menu_entry(text, callback)
+            dv._insn_menu.add_menu_entry(text, callback, add_separator_first)
+
+    def remove_disasm_insn_ctx_menu_entry(self, text, remove_preceding_separator=True):
+        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if dv._insn_menu:
+            dv._insn_menu.remove_menu_entry(text, remove_preceding_separator)
 
     def set_cb_set_comment(self, callback):
         dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
