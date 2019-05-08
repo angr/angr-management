@@ -4,7 +4,6 @@ from threading import Thread
 from queue import Queue
 
 import ana
-import angr
 
 from .jobs import CFGGenerationJob
 from ..logic import GlobalInfo
