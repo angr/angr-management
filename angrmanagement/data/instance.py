@@ -118,11 +118,11 @@ class Instance(object):
     #
 
     @property
-    def project(self) -> angr.Project:
+    def project(self):
         return self._project_container.am_obj
 
     @project.setter
-    def project(self, v: angr.Project):
+    def project(self, v):
         self._project_container.am_obj = v
         self._project_container.am_event()
 
