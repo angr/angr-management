@@ -38,3 +38,12 @@ class DisasmInsnContextMenu(Menu):
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))
+
+    def remove_menu_entry(self, text, remove_preceding_separator=True):
+        for idx, m in enumerate(self.entries):
+            if not isinstance(m, MenuEntry):
+                continue
+            if m.caption == text:
+                self.entries.remove(m)
+                if remove_preceding_separator:
+                    self.entries.pop(idx-1)

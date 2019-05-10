@@ -7,12 +7,13 @@ import angr
 try:
     import archr
     import keystone
+    import nclib
 except ImportError as e:
     archr = None
     keystone = None
+    nclib = None
 
 import socket
-import nclib
 
 from .view import BaseView
 
@@ -128,7 +129,7 @@ class InteractionView(BaseView):
 
         if img_name is not None:
             _l.debug('Initializing the connection to archr with Image %s' % img_name)
-            Thread(target=self.the_thread, args=(img_name,)).start()
+            Thread(target=self.the_thread, args=(img_name,), daemon=True).start()
 
     def the_thread(self, img_name):
         with archr.targets.DockerImageTarget(img_name).build().start() as target:
