@@ -1,8 +1,9 @@
 
 import os
 
-from .config_manager import ConfigurationManager
 from xdg import BaseDirectory
+
+from .config_manager import ConfigurationManager
 
 # Global configuration manager instance
 fc = BaseDirectory.load_first_config('angr-management')

@@ -1,14 +1,15 @@
 
+import logging
+
+import toml
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 
 from .config_entry import ConfigurationEntry as CE
-import toml
-import logging
 
 _l = logging.getLogger(__name__)
 
 def color_constructor(config_option, value):
-    if type(value) is str:
+    if isinstance(value, str):
         value = int(value, 0)
 
     if type(value) is int:
