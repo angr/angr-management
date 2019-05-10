@@ -350,7 +350,7 @@ class DisassemblyView(BaseView):
 
             # callback first
             if self._label_rename_callback:
-                self._label_rename_callback(addr, new_name)
+                self._label_rename_callback(addr=addr, new_name=new_name)
 
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
@@ -370,7 +370,7 @@ class DisassemblyView(BaseView):
 
             # callback first
             if self._set_comment_callback:
-                self._set_comment_callback(addr, comment_text)
+                self._set_comment_callback(addr=addr, comment_text=comment_text)
 
             # redraw the current block
             self._flow_graph.update_comment(addr, comment_text)

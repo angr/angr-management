@@ -29,8 +29,8 @@ setup(
         'qtconsole',
         'ipython',
         'pyzmq',
-        'shiboken2<=5.12.0',
-        'PySide2<=5.12.0',
+        'shiboken2',
+        'PySide2',
         'toml',
         'pyxdg',
     ]
