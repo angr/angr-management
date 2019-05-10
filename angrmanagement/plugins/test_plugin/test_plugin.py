@@ -19,8 +19,8 @@ class TestPlugin(BasePlugin):
         self._thread_should_run = True
 
     def register_callbacks(self):
-        self._workspace.set_cb_function_backcolor(self.func_back_color)
-        self._workspace.set_cb_insn_backcolor(self.insn_backcolor)
+        self._workspace.set_cb_function_backcolor(self.get_func_backcolor)
+        self._workspace.set_cb_insn_backcolor(self.get_insn_backcolor)
         self._workspace.set_cb_label_rename(self.on_label_rename)
         self._workspace.set_cb_set_comment(self.on_set_comment)
 
@@ -43,14 +43,14 @@ class TestPlugin(BasePlugin):
     # Callbacks
     #
 
-    def insn_backcolor(self, addr, selected):
+    def get_insn_backcolor(self, addr, selected):
         if not selected:
             if addr in self.bookmarks:
                 return 0xd6, 0xff, 0xd6  # light green
 
         return None, None, None
 
-    def func_back_color(self, func):
+    def get_func_backcolor(self, func):
         if func.name is None or func.name is '':
             return 255, 255, 255
         # TODO - Hack for a bug. See: https://github.com/angr/cle/pull/175. Won't need None check when merged.

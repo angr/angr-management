@@ -10,6 +10,7 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..utils.namegen import NameGenerator
 
+
 class EventSentinel(object):
     def __init__(self):
         self.am_subscribers = []
@@ -155,7 +156,9 @@ class Instance(object):
 
     def async_set_cfg(self, cfg):
         self.cfg_container.am_obj = cfg
-        self.cfg_container.am_event()
+        # This should not trigger a signal because the CFG is not yet done. We'll trigger a
+        # signal on cfg.setter only
+        # self.cfg_container.am_event()
 
     def async_set_cfb(self, cfb):
         self._cfb = cfb
