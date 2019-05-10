@@ -41,7 +41,7 @@ def main(filepath=None):
     set_app_user_model_id()
 
     from PySide2.QtWidgets import QApplication
-    from PySide2.QtGui import QFontDatabase
+    from PySide2.QtGui import QFontDatabase, QPixmapCache
 
     from .logic import GlobalInfo
     from .ui.css import CSS

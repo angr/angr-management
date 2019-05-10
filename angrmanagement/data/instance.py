@@ -1,4 +1,4 @@
-import pickle
+
 import time
 from threading import Thread
 from queue import Queue
@@ -9,11 +9,18 @@ from .object_container import ObjectContainer
 from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
+from ..utils.subscriptions import subscribables
 
 
+@subscribables('selected_addr',
+               'selected_operand',
+               'cfg',
+               'cfb',
+               'partial_cfg',
+               'partial_cfb',
+               'selected_function')
 class Instance:
     def __init__(self, project=None):
-
         # delayed import
         from ..ui.views.interaction_view import PlainTextProtocol
 
@@ -33,10 +40,10 @@ class Instance:
 
         self.cfg_args = None
 
+
         self._start_worker()
 
-        self._cfg = None
-        self._cfb = None
+        self._disassembly = {}
 
         self.database_path = None
 
@@ -159,7 +166,7 @@ class Instance:
     def _refresh_cfg(self, cfg_job):
         time.sleep(1.0)
         while True:
-            if self._cfg is not None:
+            if self.cfg is not None:
                 if self.workspace is not None:
                     gui_thread_schedule_async(lambda: self.workspace.reload())
 

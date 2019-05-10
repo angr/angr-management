@@ -1,25 +1,26 @@
 import logging
 
-from PySide2.QtWidgets import QLabel, QHBoxLayout
+from PySide2.QtWidgets import QLabel, QHBoxLayout, QGraphicsItem, QGraphicsSimpleTextItem
 from PySide2.QtGui import QPainter, QColor
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QRectF, Slot
+from PySide2 import shiboken2 as shiboken
 
 from angr.analyses.code_location import CodeLocation
 from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand
 
-from .qgraph_object import QGraphObject
+from .qgraph_object import QCachedGraphicsItem
 
 l = logging.getLogger('ui.widgets.qoperand')
 
 
-class QOperand(QGraphObject):
+class QOperand(QCachedGraphicsItem):
 
     BRANCH_TARGETS_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
-                 is_branch_target, is_indirect_branch, branch_targets, config):
-        super(QOperand, self).__init__()
+                 is_branch_target, is_indirect_branch, branch_targets, config, parent=None):
+        super().__init__(parent=parent)
 
         self.workspace = workspace
         self.func_addr = func_addr
@@ -34,8 +35,12 @@ class QOperand(QGraphObject):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
+        self.workspace.instance.subscribe_to_selected_operand(self.refresh_if_matches_operand)
+
         # the variable involved
         self.variable = None
+
+        self._cachy = None
 
         self._config = config
 
@@ -76,100 +81,25 @@ class QOperand(QGraphObject):
     # Public methods
     #
 
-    def paint(self, painter):
-        """
-
-        :param QPainter painter:
-        :return:
-        """
-
-        if self.selected:
-            painter.setPen(self._config.disasm_view_operand_select_color)
-            painter.setBrush(self._config.disasm_view_operand_select_color)
-            painter.drawRect(self.x, self.y, self.width, self.height)
-        else:
-            # should we highlight ourselves?
-            if self.infodock.should_highlight_operand(self):
-                painter.setPen(self._config.disasm_view_operand_highlight_color)
-                painter.setBrush(self._config.disasm_view_operand_highlight_color)
-                painter.drawRect(self.x, self.y, self.width, self.height)
-
-        x = self.x
-
-        if self._branch_target or self._branch_targets:
-            if self._is_target_func:
-                painter.setPen(self._config.disasm_view_target_addr_color)
-            else:
-                painter.setPen(self._config.disasm_view_antitarget_addr_color)
-        else:
-            if self.disasm_view.show_variable and self.variable is not None:
-                # show-variable is enabled and this operand has a linked variable
-                fallback = True
-                if self.infodock.induction_variable_analysis is not None:
-                    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
-                    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                        painter.setPen(Qt.darkYellow)
-                        fallback = False
-
-                if fallback:
-                    painter.setPen(QColor(0xff, 0x14, 0x93))
-            else:
-                painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._label)
-
-        x += self._label_width
-
-        # draw additional branch targets
-        if self._branch_targets_text:
-            painter.setPen(Qt.darkYellow)
-            x += self.BRANCH_TARGETS_SPACING
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._branch_targets_text, )
-            x += self._branch_targets_text_width
-
-        if self.variable is not None and self.disasm_view.show_variable_identifier:
-            x += self.VARIABLE_IDENT_SPACING
-            painter.setPen(Qt.darkGreen)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_ident)
-            x += self._variable_ident_width
-
-        # restores the color
-        painter.setPen(QColor(0, 0, 0x80))
-
-    def refresh(self):
-        super(QOperand, self).refresh()
-
-        # if self.infodock.induction_variable_analysis is not None:
-        self._init_widgets()
-
-        self._update_size()
-
-    def select(self):
-        if not self.selected:
-            self.toggle_select()
-
-    def unselect(self):
-        if self.selected:
-            self.toggle_select()
-
-    def toggle_select(self):
-        self.selected = not self.selected
-        if self.selected:
-            self.infodock.selected_operand = self
-        else:
-            self.infodock.selected_operand = None
+    #@Slot(object)
+    def refresh_if_matches_operand(self, old_v, new_v):
+        if not shiboken.isValid(self):
+            return True
+        if self.equals_for_highlighting_purposes(old_v) or self.equals_for_highlighting_purposes(new_v):
+            self.update()
 
     #
     # Event handlers
     #
 
-    def on_mouse_pressed(self, button, pos):
-        if button == Qt.LeftButton:
-            self.disasm_view.toggle_operand_selection(self.insn.addr, self.operand_index)
-
-    def on_mouse_doubleclicked(self, button, pos):
-        if button == Qt.LeftButton:
-            if self._branch_target is not None:
-                self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr)
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            if not self.equals_for_highlighting_purposes(self.workspace.instance.selected_operand):
+                self.workspace.instance.selected_operand = self
+            else:
+                self.workspace.instance.selected_operand = None
+        else:
+            super().mousePressEvent(event)
 
     #
     # Private methods
@@ -213,6 +143,19 @@ class QOperand(QGraphObject):
             return [ ]
 
         return list(branch_targets)[ : n]
+
+    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+        if self.equals_for_highlighting_purposes(self.workspace.instance.selected_operand):
+            painter.setBrush(Qt.green)
+            painter.setPen(Qt.green)
+            painter.drawRect(0, 0, self.width, self.height)
+        painter.setBrush(Qt.black)
+        painter.setPen(Qt.black)
+        painter.setRenderHints(
+                QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        painter.setFont(self._config.disasm_font)
+        y = self._config.disasm_font_ascent
+        painter.drawText(0, y, self.text)
 
     def _init_widgets(self):
 
@@ -312,15 +255,12 @@ class QOperand(QGraphObject):
         else:
             self._variable_ident_width = 0
 
-        self._update_size()
-
-    def _update_size(self):
-        self._width = self._label_width
-        if self.disasm_view.show_variable_identifier and self._variable_ident_width:
-            self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
-        if self._branch_targets_text_width:
-            self._width += self.BRANCH_TARGETS_SPACING + self._branch_targets_text_width
+        self._width = self._config.disasm_font_metrics.width(self.text)
         self._height = self._config.disasm_font_height
+        self.recalculate_size()
+
+    def _boundingRect(self):
+        return QRectF(0, 0, self._width, self._height)
 
     def _pick_variable(self, variable_and_offsets):
         """
@@ -401,3 +341,21 @@ class QOperand(QGraphObject):
                 return True
 
         return False
+
+    def equals_for_highlighting_purposes(self, other):
+        if other is None:
+            return False
+        highlight_mode = self.infodock.highlight_mode
+
+        if highlight_mode == OperandHighlightMode.SAME_TEXT or self.variable is None:
+            # when there is no related variable, we highlight as long as they have the same text
+            return other.text == self.text
+        elif highlight_mode == OperandHighlightMode.SAME_IDENT:
+            if self.variable is not None and other.variable is not None:
+                return self.variable.ident == other.variable.ident
+
+        return False
+
+class OperandHighlightMode:
+    SAME_IDENT = 0
+    SAME_TEXT = 1

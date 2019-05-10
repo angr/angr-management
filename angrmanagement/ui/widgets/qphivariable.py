@@ -3,10 +3,11 @@ from PySide2.QtGui import QColor
 from PySide2.QtCore import Qt
 
 from ...utils.block_objects import PhiVariable
-from .qgraph_object import QGraphObject
+from .qgraph_object import QCachedGraphicsItem
+from .qvariable import QVariable
 
 
-class QPhiVariable(QGraphObject):
+class QPhiVariable(QCachedGraphicsItem):
 
     IDENT_LEFT_PADDING = 5
 
@@ -90,22 +91,28 @@ class QPhiVariable(QGraphObject):
     #
 
     def _init_widgets(self):
+        self._lhs_qvariable = QVariable(self.workspace, self.disasm_view, self.phi, self._config)
 
-        # variable name
-        self._variable_name = "{%s}" % ("Unk" if not self.phi.name else self.phi.name)
-        # variable ident
-        self._variable_ident = "<%s>" % ("Unk" if not self.phi.ident else self.phi.ident)
+        self._rhs_qvariables = []
+        for v in self.variables:
+            self._rhs_qvariables.append(QVariable(self.workspace, self.disasm_view, v, self._config))
 
-        # subvariables
-        self._subvar_names = [ ]
-        self._subvar_idents = []
-        for subvar in self.variables:
-            name = "Unk" if not subvar.name else subvar.name
-            self._subvar_names.append(name)
-            ident = "<%s>" % ("Unk" if not subvar.ident else subvar.ident)
-            self._subvar_idents.append(ident)
+#         # variable name
+#         self._variable_name = "{%s}" % ("Unk" if not self.phi.name else self.phi.name)
+#         # variable ident
+#         self._variable_ident = "<%s>" % ("Unk" if not self.phi.ident else self.phi.ident)
 
-        self._update_size()
+#         # subvariables
+#         self._subvar_names = [ ]
+#         self._subvar_idents = []
+#         for subvar in self.variables:
+#             name = "Unk" if not subvar.name else subvar.name
+#             self._subvar_names.append(name)
+#             ident = "<%s>" % ("Unk" if not subvar.ident else subvar.ident)
+#             self._subvar_idents.append(ident)
+
+        self._layout_widgets()
+
 
     def _update_size(self):
 

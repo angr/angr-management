@@ -1,3 +1,4 @@
+import logging
 from typing import Union, Callable
 
 from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
@@ -7,7 +8,7 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearViewer
+from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearDisassembly
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
@@ -16,6 +17,8 @@ from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
 
+_l = logging.getLogger(__name__)
+_l.setLevel(logging.DEBUG)
 
 class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
@@ -28,7 +31,7 @@ class DisassemblyView(BaseView):
         # whether we want to show identifier or not
         self._show_variable_ident = False
 
-        self._linear_viewer = None  # type: QLinearViewer
+        self._linear_viewer = QLinearDisassembly(self.workspace, disasm_view=self, parent=self)
         self._flow_graph = None  # type: QDisasmGraph
         self._statusbar = None
         self._jump_history = JumpHistory()
@@ -55,9 +58,9 @@ class DisassemblyView(BaseView):
 
         # Initialize the linear viewer
         # TODO: Relocate the logic to a better place
-        self._linear_viewer.cfg = self.workspace.instance.cfg
-        self._linear_viewer.cfb = self.workspace.instance.cfb
-        self._linear_viewer.initialize()
+        #self._linear_viewer.cfg = self.workspace.instance.cfg
+        #self._linear_viewer.cfb = self.workspace.instance.cfb
+        #self._linear_viewer.initialize()
 
     def refresh(self):
         self.current_graph.refresh()
@@ -213,8 +216,18 @@ class DisassemblyView(BaseView):
             'block': the `QBlock` containing the instruction
         :param callback: The callback function to call, which must accept **kwargs
         """
-        self._linear_viewer.selected_insns.am_subscribe(callback)
+        #self._linear_viewer.selected_insns.am_subscribe(callback)
         self._flow_graph.selected_insns.am_subscribe(callback)
+
+    def toggle_disasm_view(self):
+        if self._flow_graph.isHidden():
+            self._linear_viewer.hide()
+            self._flow_graph.show()
+            self._flow_graph.setFocus()
+        else:
+            self._linear_viewer.show()
+            self._flow_graph.hide()
+            self._linear_viewer.setFocus()
 
     def display_disasm_graph(self):
 
@@ -226,14 +239,16 @@ class DisassemblyView(BaseView):
 
         self._flow_graph.hide()
         self._linear_viewer.show()
-        self._linear_viewer._linear_view.setFocus()
+        #self._linear_viewer._linear_view.setFocus()
 
-        if self._current_function is not None:
-            self._linear_viewer.navigate_to_addr(self._current_function.addr)
+        # if self._current_function is not None:
+        #     self._linear_viewer.navigate_to_addr(self._current_function.addr)
 
     def display_function(self, function):
 
         self._jump_history.jump_to(function.addr)
+        self.workspace.instance.selected_function = function
+        self.workspace.instance.selected_addr = function.addr
         self._display_function(function)
 
     def decompile_current_function(self):
@@ -252,7 +267,7 @@ class DisassemblyView(BaseView):
         self.infodock.smart_highlighting = enabled
 
         self._flow_graph.refresh()
-        self._linear_viewer.refresh()
+        #self._linear_viewer.refresh()
 
     def toggle_show_address(self, show_address):
         """
@@ -401,8 +416,7 @@ class DisassemblyView(BaseView):
     #
 
     def _init_widgets(self):
-
-        self._linear_viewer = QLinearViewer(self.workspace, self)
+        #self._linear_viewer = QLinearViewer(self.workspace, self)
         self._flow_graph = QDisasmGraph(self.workspace, self)
 
         self._statusbar = QDisasmStatusBar(self, parent=self)
@@ -417,6 +431,45 @@ class DisassemblyView(BaseView):
 
         self.display_disasm_graph()
         # self.display_linear_viewer()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_G:
+            # jump to window
+            self.popup_jumpto_dialog()
+            return
+        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
+            # jump back
+            self.jump_back()
+            return
+        elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
+            # jump forward
+            self.jump_forward()
+            return
+        elif key == Qt.Key_A:
+            # switch between highlight mode
+            self.toggle_smart_highlighting(not self.infodock.smart_highlighting)
+            return
+        elif key == Qt.Key_Tab:
+            # decompile
+            self.decompile_current_function()
+            return
+        elif key == Qt.Key_Semicolon:
+            # add comment
+            self.popup_comment_dialog()
+        super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        key = event.key()
+
+        if key == Qt.Key_Space:
+            # switch to linear view
+            self.toggle_disasm_view()
+            #self.disassembly_view.display_linear_viewer()
+            event.accept()
+            return
+
+        super().keyReleaseEvent(event)
 
     def _init_menus(self):
 
@@ -434,29 +487,24 @@ class DisassemblyView(BaseView):
         self._statusbar.function = the_func
 
         # variable recovery
-        if self.workspace.instance.project.kb.variables.has_function_manager(the_func.addr):
-            variable_manager = self.workspace.instance.project.kb.variables
-        else:
-            # run variable recovery analysis
-            if self._variable_recovery_flavor == 'fast':
-                vr = self.workspace.instance.project.analyses.VariableRecoveryFast(the_func)
-            else:
-                vr = self.workspace.instance.project.analyses.VariableRecovery(the_func)
-            variable_manager = vr.variable_manager
-        self.variable_manager = variable_manager
-        self.infodock.variable_manager = variable_manager
+        # if self.workspace.instance.project.kb.variables.has_function_manager(the_func.addr):
+        #     variable_manager = self.workspace.instance.project.kb.variables
+        # else:
+        #     # run variable recovery analysis
+        #     if self._variable_recovery_flavor == 'fast':
+        #         vr = self.workspace.instance.project.analyses.VariableRecoveryFast(the_func)
+        #     else:
+        #         vr = self.workspace.instance.project.analyses.VariableRecovery(the_func)
+        #     variable_manager = vr.variable_manager
+        # self.variable_manager = variable_manager
+        # self.infodock.variable_manager = variable_manager
 
         if self._flow_graph.isVisible():
+            self.workspace.instance.selected_insn = None
+            self.workspace.instance.selected_operand = None
             if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
-                # clear existing selected instructions and operands
-                self._flow_graph.selected_insns.clear()
-                self._flow_graph.selected_operands.clear()
                 # set function graph of a new function
                 self._flow_graph.function_graph = FunctionGraph(function=the_func)
-            else:
-                # still use the current function. just unselect existing selections.
-                self._flow_graph.unselect_all_instructions()
-                self._flow_graph.unselect_all_operands()
 
             self.workspace.view_manager.first_view_in_category('console').push_namespace({
                 'func': the_func,
@@ -464,13 +512,15 @@ class DisassemblyView(BaseView):
             })
 
         elif self._linear_viewer.isVisible():
-            self._linear_viewer.navigate_to_addr(the_func.addr)
+            pass
+            #self._linear_viewer.navigate_to_addr(the_func.addr)
 
     def _jump_to(self, addr):
         function = locate_function(self.workspace.instance, addr)
         if function is not None:
             self._display_function(function)
-            self.toggle_instruction_selection(addr)
+            self.workspace.instance.selected_addr = addr
+            self.workspace.instance.selected_function = function
             return True
         else:
             return False

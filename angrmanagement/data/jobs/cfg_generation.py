@@ -17,7 +17,7 @@ class CFGGenerationJob(Job):
     }
 
     def __init__(self, on_finish=None, **kwargs):
-        super(CFGGenerationJob, self).__init__(name='CFG generation', on_finish=on_finish)
+        super().__init__(name='CFG generation', on_finish=on_finish)
 
         # TODO: sanitize arguments
 
@@ -77,5 +77,5 @@ class CFGGenerationJob(Job):
             gui_thread_schedule_async(self._refresh, args=(cfg, self._cfb, ))
 
     def _refresh(self, cfg, cfb):
-        GlobalInfo.main_window.workspace.instance.async_set_cfg(cfg)
-        GlobalInfo.main_window.workspace.instance.async_set_cfb(cfb)
+        GlobalInfo.main_window.workspace.instance.partial_cfg = cfg
+        GlobalInfo.main_window.workspace.instance.partial_cfb = cfb

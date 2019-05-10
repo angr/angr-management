@@ -13,6 +13,9 @@ class FunctionsView(BaseView):
         self._function_table = None  # type: QFunctionTable
         self._status_label = None
 
+        self.workspace.instance.subscribe_to_cfg(lambda *args, **kwargs: self.reload())
+        self.workspace.instance.subscribe_to_partial_cfg(lambda *args, **kwargs: self.partial_reload())
+
         self.backcolor_callback = None
 
         self._init_widgets()
@@ -34,6 +37,9 @@ class FunctionsView(BaseView):
     def set_function_count(self, count):
         if self._status_label is not None:
             self._status_label.setText("%d functions" % count)
+
+    def partial_reload(self):
+        self._function_table.function_manager = self.workspace.instance.partial_cfg.functions
 
     def reload(self):
         self._function_table.function_manager = self.workspace.instance.cfg.functions

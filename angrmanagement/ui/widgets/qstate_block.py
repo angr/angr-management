@@ -1,12 +1,16 @@
+import logging
+
+from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtGui import QColor, QPen
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QRectF
 
 from ...config import Conf
 from ...utils import locate_function
-from .qgraph_object import QGraphObject
 
+_l = logging.getLogger(__name__)
+_l.setLevel(logging.DEBUG)
 
-class QStateBlock(QGraphObject):
+class QStateBlock(QGraphicsItem):
 
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
@@ -71,7 +75,29 @@ class QStateBlock(QGraphObject):
                     self._function_str = "%s%+x" % (the_func.name, offset)
         self._function_str = "Function: %s" % self._function_str
 
-    def paint(self, painter):
+    def mousePressEvent(self, event): #pylint: disable=no-self-use
+        _l.debug('QStateBlock received mouse press event')
+        #super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        _l.debug('QStateBlock received mouse release event')
+        if event.button() == Qt.LeftButton:
+            self.selected = not self.selected
+            self.symexec_view.redraw_graph()
+        else:
+            super().mouseReleaseEvent()
+
+    def mouseDoubleClickEvent(self, event):
+        _l.debug('QStateBlock received mouse double click event')
+        if event.button() == Qt.LeftButton:
+            if self.state is not None:
+                self._workspace.viz(self.state.addr)
+            elif self.history is not None:
+                self._workspace.viz(self.history.state.addr)
+        else:
+            super().mouseReleaseEvent()
+
+    def paint(self, painter, option, widget): #pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -79,6 +105,7 @@ class QStateBlock(QGraphObject):
         :return: None
         """
 
+        painter.setFont(Conf.symexec_font)
         normal_background = QColor(0xfa, 0xfa, 0xfa)
         selected_background = QColor(0xcc, 0xcc, 0xcc)
 
@@ -88,10 +115,10 @@ class QStateBlock(QGraphObject):
         else:
             painter.setBrush(normal_background)
         painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
-        painter.drawRect(self.x, self.y, self.width, self.height)
+        painter.drawRect(0, 0, self.width, self.height)
 
-        x = self.x
-        y = self.y
+        x = 0
+        y = 0
 
         # The addr label
         addr_label_x = x + self.HORIZONTAL_PADDING
@@ -100,26 +127,23 @@ class QStateBlock(QGraphObject):
         painter.drawText(addr_label_x, addr_label_y + self._config.symexec_font_ascent, self._label_str)
 
         y += self._config.symexec_font_height + self.LINE_MARGIN
-        x = self.x
+        x = 0
 
         # The function label
         function_label_x = x + self.HORIZONTAL_PADDING
         function_label_y = y + self.VERTICAL_PADDING
         painter.drawText(function_label_x, function_label_y + self._config.symexec_font_ascent, self._function_str)
 
-    #
-    # Events
-    #
+    @property
+    def height(self):
+        return self.boundingRect().height()
 
-    def on_mouse_pressed(self, button, pos):
-        self.selected = not self.selected
-        self.symexec_view.redraw_graph()
+    @property
+    def width(self):
+        return self.boundingRect().width()
 
-    def on_mouse_doubleclicked(self, button, pos):
-        if self.state is not None:
-            self._workspace.viz(self.state.addr)
-        elif self.history is not None:
-            self._workspace.viz(self.history.state.addr)
+    def boundingRect(self):
+        return QRectF(0, 0, self._width, self._height)
 
     #
     # Private methods

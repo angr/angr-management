@@ -30,6 +30,7 @@ class CodeView(BaseView):
         self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
 
+
     def reload(self):
         if self.workspace.instance.project is None:
             return
@@ -48,9 +49,6 @@ class CodeView(BaseView):
         self._doc = QCodeDocument(d.codegen)
         self._textedit.setDocument(self._doc)
         self._highlighter = QCCodeHighlighter(self._doc)
-
-    def setFocus(self):
-        self._textedit.setFocus()
 
     #
     # Properties

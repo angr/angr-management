@@ -7,4 +7,4 @@ from .qdisasm_statusbar import QDisasmStatusBar
 from .qdisasm_graph import QDisasmGraph
 from .qsymexec_graph import QSymExecGraph
 
-from .qlinear_viewer import QLinearViewer
+from .qlinear_viewer import QLinearDisassembly

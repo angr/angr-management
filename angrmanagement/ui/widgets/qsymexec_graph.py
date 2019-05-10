@@ -4,20 +4,19 @@ from PySide2.QtGui import QPainter, QColor, QPen, QBrush
 from PySide2.QtWidgets import QGraphicsView
 from PySide2.QtCore import QPoint, Qt, QPointF, QRectF
 
-from ...config import Conf
 from ...utils.graph_layouter import GraphLayouter
-from .qgraph import QBaseGraph
+from .qgraph import QZoomableDraggableGraphicsView
 
 l = logging.getLogger('ui.widgets.qpg_graph')
 
 
-class QSymExecGraph(QBaseGraph):
+class QSymExecGraph(QZoomableDraggableGraphicsView):
 
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
     def __init__(self, current_state, workspace, symexec_view, parent=None):
-        super(QSymExecGraph, self).__init__(workspace, parent=parent)
+        super(QSymExecGraph, self).__init__(parent=parent)
 
         self.state = current_state
         self._symexec_view = symexec_view
@@ -25,11 +24,7 @@ class QSymExecGraph(QBaseGraph):
         self._graph = None
         self._edges = []
 
-        self.key_pressed.connect(self._on_keypressed_event)
         self.state.am_subscribe(self._watch_state)
-
-    def _init_widgets(self):
-        super(QSymExecGraph, self)._init_widgets()
 
     @property
     def graph(self):
@@ -45,16 +40,17 @@ class QSymExecGraph(QBaseGraph):
         self.request_relayout()
 
     def request_relayout(self):
+        self._reset_scene()
         if self.graph is None:
             return
 
         # remove all edges
-        for p in self._edge_paths:
-            self.scene.removeItem(p)
+        # for p in self._edge_paths:
+        #     self.scene.removeItem(p)
 
         # remove all nodes
         self.blocks.clear()
-        self.remove_all_children()
+        #self.remove_all_children()
         self._edge_paths = []
 
         node_sizes = {}
@@ -67,13 +63,13 @@ class QSymExecGraph(QBaseGraph):
 
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
-        for node, coords in gl.node_coordinates.items():
-            node.x, node.y = coords
-
-            min_x = min(min_x, node.x)
-            max_x = max(max_x, node.x + node.width)
-            min_y = min(min_y, node.y)
-            max_y = max(max_y, node.y + node.height)
+        for node, (x, y) in gl.node_coordinates.items():
+            self.scene().addItem(node)
+            node.setPos(x, y)
+            min_x = min(min_x, node.x())
+            max_x = max(max_x, node.x() + node.width)
+            min_y = min(min_y, node.y())
+            max_y = max(max_y, node.y() + node.height)
 
         min_x -= self.LEFT_PADDING
         max_x += self.LEFT_PADDING
@@ -82,27 +78,7 @@ class QSymExecGraph(QBaseGraph):
         width = (max_x - min_x) + 2 * self.LEFT_PADDING
         height = (max_y - min_y) + 2 * self.TOP_PADDING
 
-        self._update_size()
-
-        # scrollbars
-        self.horizontalScrollBar().setRange(min_x, max_x)
-        self.verticalScrollBar().setRange(min_y, max_y)
-
-        self.setSceneRect(QRectF(min_x, min_y, width, height))
-
-        self.viewport().update()
-
-        self._update_size()
-
-        if self.state.am_none():
-            self.show_any()
-        else:
-            self.show_selected()
-
-    def show_any(self):
-        if self._proxies:
-            proxy = next(iter(self._proxies.values()))
-            self.ensureVisible(proxy)
+        self._reset_view()
 
     def show_selected(self):
         if not self.state.am_none():
@@ -112,90 +88,65 @@ class QSymExecGraph(QBaseGraph):
     # Event handlers
     #
 
-    def mousePressEvent(self, event):
-        """
+    # def mousePressEvent(self, event):
+    #     """
 
-        :param QMouseEvent event:
-        :return:
-        """
-        btn = event.button()
-        if btn == Qt.LeftButton:
-            pos = event.pos()
-            block = self._get_block_by_pos(pos)
-            if block is not None:
-                block.on_mouse_pressed(btn, self._to_graph_pos(pos))
-                if block.selected:
-                    self.state.am_obj = block.get_state()
-                else:
-                    self.state.am_obj = None
-                self.state.am_event(src='qsymexec_graph')
+    #     :param QMouseEvent event:
+    #     :return:
+    #     """
+    #     btn = event.button()
+    #     if btn == Qt.LeftButton:
+    #         pos = event.pos()
+    #         block = self._get_block_by_pos(pos)
+    #         if block is not None:
+    #             block.on_mouse_pressed(btn, self._to_graph_pos(pos))
+    #             if block.selected:
+    #                 self.state.am_obj = block.get_state()
+    #             else:
+    #                 self.state.am_obj = None
+    #             self.state.am_event(src='qsymexec_graph')
 
-                event.accept()
-                return
+    #             event.accept()
+    #             return
 
-        super(QSymExecGraph, self).mousePressEvent(event)
+    #     super(QSymExecGraph, self).mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
-        """
+    # def mouseDoubleClickEvent(self, event):
+    #     """
 
-        :param QMouseEvent event:
-        :return:
-        """
+    #     :param QMouseEvent event:
+    #     :return:
+    #     """
 
-        btn = event.button()
-        if btn == Qt.LeftButton:
-            pos = event.pos()
-            block = self._get_block_by_pos(pos)
-            if block is not None:
-                block.on_mouse_doubleclicked(btn, self._to_graph_pos(pos))
-                event.accept()
-                return
+    #     btn = event.button()
+    #     if btn == Qt.LeftButton:
+    #         pos = event.pos()
+    #         block = self._get_block_by_pos(pos)
+    #         if block is not None:
+    #             block.on_mouse_doubleclicked(btn, self._to_graph_pos(pos))
+    #             event.accept()
+    #             return
 
-        super(QSymExecGraph, self).mouseDoubleClickEvent(event)
+    def _initial_position(self):
+        ibr = self.scene().itemsBoundingRect()
+        return ibr.center()
 
-    def _on_keypressed_event(self, key_event):
+    def keyPressEvent(self, event):
         """
 
         :param QKeyEvent event:
         :return:
         """
 
-        key = key_event.key()
+        key = event.key()
 
         if key == Qt.Key_Tab:
             self._symexec_view.switch_to_disassembly_view()
-            return True
+            return
 
-        return False
-
-    def _paintEvent(self, event):
-        """
-        Paint the graph.
-
-        :param event:
-        :return:
-        """
-
-        painter = QPainter(self.viewport())
-
-        current_x = self.horizontalScrollBar().value()
-        current_y = self.verticalScrollBar().value()
-
-        painter.translate(self.width() // 2 - current_x, self.height() // 2 - current_y)
-
-        painter.setFont(Conf.symexec_font)
-
-        topleft_point = self._to_graph_pos(QPoint(0, 0))
-        bottomright_point = self._to_graph_pos(QPoint(self.width(), self.height()))
-
-        self._draw_edges(painter, topleft_point, bottomright_point)
-        self._draw_nodes(painter, topleft_point, bottomright_point)
+        super().keyPressEvent(event)
 
     def _watch_state(self, **kwargs):
-        # for now we need to run this always to deselect the old block
-        # if kwargs.get('src') == 'qsymexec_graph':
-        #     return
-
         for block in self.blocks:
             if block.get_state() == self.state:
                 block.selected = True
