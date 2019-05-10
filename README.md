@@ -60,14 +60,25 @@ python start.py
 
 ### Shortcuts
 - Load a new binary: ```Ctrl + O```
-- Save angr database... : ```Ctrl+S```
-- Save angr database as... : ```Ctrl+Shift+S```
+- Load a new Docker Imaeg ```CTRL + SHIFT + O```
+- Save angr database... : ```Ctrl + S```
+- Save angr database as... : ```Ctrl + Shift + S```
 - Decompile: ```F5```
 - Documentation: ```Alt + H```
 
-- Next Tab: Ctrl+Tab
-- Previous Tab: Ctrl+Shift+Tab
-- Split / Unsplit View: Ctrl+D
+- Next Tab: ```Ctrl + Tab```
+- Previous Tab: ```Ctrl + Shift + Tab```
+- Split / Unsplit View: ```Ctrl+D```
+
+## Plugins
+
+Plugins may be installed by placing a subdirectory under `plugins`. The directory must contain an `__init__.py` like that in `TestPlugin`:
+```
+from .test_plugin import TestPlugin
+PLUGIN_CLS_NAME = TestPlugin.__name__
+```
+
+This also allows you to import a plugin class from another package entirely. The plugin itself should inherit from `BasePlugin`. Callbacks and events are a work in progress, so the API is subject to change. See `TestPlugin` for an example of a multithreaded plugin sample.
 
 ## Issues
 
