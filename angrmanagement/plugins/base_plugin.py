@@ -85,8 +85,8 @@ class BasePlugin(QtCore.QThread):
     # Callbacks
     #
 
-    def insn_backcolor(self, addr, selected):
+    def get_insn_backcolor(self, addr, selected):
         return None, None, None
 
-    def func_back_color(self, func):
+    def get_func_backcolor(self, func):
         return None, None, None
