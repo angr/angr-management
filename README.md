@@ -59,15 +59,15 @@ python start.py
 ```
 
 ### Shortcuts
-- Load a new binary: ```Ctrl + O```
-- Load a new Docker Imaeg ```CTRL + SHIFT + O```
-- Save angr database... : ```Ctrl + S```
-- Save angr database as... : ```Ctrl + Shift + S```
+- Load a new binary: ```Ctrl+O```
+- Load a new Docker Image ```Ctrl+Shift+O```
+- Save angr database... : ```Ctrl+S```
+- Save angr database as... : ```Ctrl+Shift+S```
 - Decompile: ```F5```
-- Documentation: ```Alt + H```
+- Documentation: ```Alt+H```
 
-- Next Tab: ```Ctrl + Tab```
-- Previous Tab: ```Ctrl + Shift + Tab```
+- Next Tab: ```Ctrl+Tab```
+- Previous Tab: ```Ctrl+Shift+Tab```
 - Split / Unsplit View: ```Ctrl+D```
 
 ## Plugins

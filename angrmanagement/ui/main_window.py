@@ -240,7 +240,7 @@ class MainWindow(QMainWindow):
         """
 
         right_dockable_views = self.workspace.view_manager.get_right_views()
-        for i in range(1,7):
+        for i in range(1, len(right_dockable_views)+1):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, right_dockable_views[i-1].raise_)
 
         # Raise the DisassemblyView after everything has initialized

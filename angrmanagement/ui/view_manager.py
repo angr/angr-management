@@ -84,8 +84,6 @@ class ViewManager:
                     docks.append(dock)
         return docks
 
-        #return [dock for dock in self.docks if dock.widget().default_docking_position == 'right']
-
     def first_view_in_category(self, category):
         """
         Return the first view in a specific category.
@@ -117,7 +115,7 @@ class ViewManager:
         """
         
         right_dockable_views = self.get_right_views()
-        for i in range(1,7):
+        for i in range(1,len(right_dockable_views)+1):
             if right_dockable_views[i-1].visibleRegion().isEmpty() is False:
                 return i-1
         return 1
