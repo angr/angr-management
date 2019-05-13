@@ -186,8 +186,8 @@ class QBlock(QGraphObject):
     def _paint_graph(self, painter):
 
         # background of the node
-        painter.setBrush(QColor(0xfa, 0xfa, 0xfa))
-        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
+        painter.setBrush(self._config.disasm_view_node_background_color)
+        painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
         painter.drawRect(self.x, self.y, self.width, self.height)
 
         # content

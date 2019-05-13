@@ -168,7 +168,7 @@ class QSymExecGraph(QBaseGraph):
 
         return False
 
-    def paintEvent(self, event):
+    def _paintEvent(self, event):
         """
         Paint the graph.
 

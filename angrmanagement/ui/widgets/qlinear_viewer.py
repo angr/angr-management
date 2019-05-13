@@ -153,7 +153,7 @@ class QLinearGraphicsView(QBaseGraph):
 
         self._update_size()
 
-    def paintEvent(self, event):
+    def _paintEvent(self, event):
         """
         Paint the linear view.
 

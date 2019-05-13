@@ -74,23 +74,23 @@ class QOperand(QGraphObject):
         """
 
         if self.selected:
-            painter.setPen(QColor(0xc0, 0xbf, 0x40))
-            painter.setBrush(QColor(0xc0, 0xbf, 0x40))
+            painter.setPen(self._config.disasm_view_operand_select_color)
+            painter.setBrush(self._config.disasm_view_operand_select_color)
             painter.drawRect(self.x, self.y, self.width, self.height)
         else:
             # should we highlight ourselves?
             if self.infodock.should_highlight_operand(self):
-                painter.setPen(QColor(0x7f, 0xf5, 0))
-                painter.setBrush(QColor(0x7f, 0xf5, 0))
+                painter.setPen(self._config.disasm_view_operand_highlight_color)
+                painter.setBrush(self._config.disasm_view_operand_highlight_color)
                 painter.drawRect(self.x, self.y, self.width, self.height)
 
         x = self.x
 
         if self._branch_target or self._branch_targets:
             if self._is_target_func:
-                painter.setPen(Qt.blue)
+                painter.setPen(self._config.disasm_view_target_addr_color)
             else:
-                painter.setPen(Qt.red)
+                painter.setPen(self._config.disasm_view_antitarget_addr_color)
         else:
             if self.variable is not None:
                 # it has a variable
