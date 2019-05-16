@@ -3,7 +3,6 @@ import logging
 from collections import defaultdict
 
 from PySide2.QtCore import Qt, QSettings
-
 from PySide2.QtWidgets import QSplitter, QMainWindow, QShortcut
 from PySide2.QtGui import QKeySequence
 
