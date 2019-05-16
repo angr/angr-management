@@ -1,8 +1,9 @@
 import pickle
 import os
+from functools import partial
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut
+from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
@@ -20,6 +21,7 @@ from ..data.instance import Instance
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
+from .menus.view_menu import ViewMenu
 from .menus.plugin_menu import PluginMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
@@ -60,10 +62,13 @@ class MainWindow(QMainWindow):
         self._status = ""
         self._progress = None
 
-        self._init_menus()
+        self.defaultWindowFlags = None
+
         self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
+        self._init_shortcuts()
+        self._init_menus()
         self._init_plugins()
 
         self.showMaximized()
@@ -192,9 +197,11 @@ class MainWindow(QMainWindow):
     def _init_menus(self):
         fileMenu = FileMenu(self)
         analyzeMenu = AnalyzeMenu(self)
-        pluginMenu = PluginMenu(self)
+        viewMenu = ViewMenu(self)
         helpMenu = HelpMenu(self)
+        pluginMenu = PluginMenu(self)
         self.menuBar().addMenu(fileMenu.qmenu())
+        self.menuBar().addMenu(viewMenu.qmenu())
         self.menuBar().addMenu(analyzeMenu.qmenu())
         self.menuBar().addMenu(pluginMenu.qmenu())
         self.menuBar().addMenu(helpMenu.qmenu())
@@ -204,13 +211,40 @@ class MainWindow(QMainWindow):
     #
 
     def _init_workspace(self):
-        self.central_widget = QMainWindow()
-        self.setCentralWidget(self.central_widget)
+        """
+        Initialize workspace
 
+        :return:    None
+        """
+
+        self.central_widget_main = QSplitter(Qt.Horizontal)
+        self.setCentralWidget(self.central_widget_main)
+        self.central_widget = QMainWindow()
+        self.central_widget2 = QMainWindow()
+        self.central_widget_main.addWidget(self.central_widget)
+        self.central_widget_main.addWidget(self.central_widget2)
         wk = Workspace(self, Instance())
         self.workspace = wk
-
+        self.workspace.view_manager.tabify_right_views()
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
+
+    #
+    # Shortcuts
+    #
+
+    def _init_shortcuts(self):
+        """
+        Initialize shortcuts
+
+        :return:    None
+        """
+
+        right_dockable_views = self.workspace.view_manager.get_right_views()
+        for i in range(1, len(right_dockable_views)+1):
+            QShortcut(QKeySequence('Ctrl+'+str(i)), self, right_dockable_views[i-1].raise_)
+
+        # Raise the DisassemblyView after everything has initialized
+        right_dockable_views[0].raise_()
 
     #
     # PluginManager

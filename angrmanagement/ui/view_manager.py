@@ -1,4 +1,3 @@
-
 from collections import defaultdict
 
 from PySide2.QtCore import Qt
@@ -71,6 +70,20 @@ class ViewManager:
 
         dock.raise_()
 
+    def get_right_views(self):
+        """
+        Get the right dockable views
+
+        :return:    Right Dockable Views
+        """
+
+        docks = []
+        for dock in self.docks:
+            if dock.widget() is not None:
+                if dock.widget().default_docking_position == 'right':
+                    docks.append(dock)
+        return docks
+
     def first_view_in_category(self, category):
         """
         Return the first view in a specific category.
@@ -90,9 +103,44 @@ class ViewManager:
         :return:    None
         """
 
-        right_dockable_views = [dock for dock in self.docks
-                                if dock.widget().default_docking_position == 'right']
-
+        right_dockable_views = self.get_right_views()
         for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
-        right_dockable_views[0].raise_()
+
+    def get_current_tab_id(self):
+        """
+        Get Current Tab ID
+        
+        :return:    Tab ID (int)
+        """
+        
+        right_dockable_views = self.get_right_views()
+        for i in range(1,len(right_dockable_views)+1):
+            if right_dockable_views[i-1].visibleRegion().isEmpty() is False:
+                return i-1
+        return 1
+
+    def next_tab(self):
+        """
+        Shift to the next tab
+
+        :return:    None
+        """
+
+        right_dockable_views = self.get_right_views()
+        currentTab = self.get_current_tab_id()
+        if (currentTab + 1) < len(right_dockable_views):
+            right_dockable_views[currentTab + 1].raise_()
+        else:
+            # Start from 1 again to prevent Index Out Of Range error
+            right_dockable_views[(currentTab + 1) % (len(right_dockable_views))].raise_()
+
+    def previous_tab(self):
+        """
+        Shift to the next tab
+
+        :return:    None
+        """
+
+        right_dockable_views = self.get_right_views()
+        right_dockable_views[self.get_current_tab_id()-1].raise_()

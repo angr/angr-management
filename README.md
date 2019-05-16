@@ -42,7 +42,9 @@ cd angr-management
 pip install -e .
 ```
 
-## How to run
+## Usage
+
+### How to run
 
 To run angr-management:
 
@@ -55,6 +57,18 @@ Or if you have a development install:
 ```
 python start.py
 ```
+
+### Shortcuts
+- Load a new binary: ```Ctrl+O```
+- Load a new Docker Image ```Ctrl+Shift+O```
+- Save angr database... : ```Ctrl+S```
+- Save angr database as... : ```Ctrl+Shift+S```
+- Decompile: ```F5```
+- Documentation: ```Alt+H```
+
+- Next Tab: ```Ctrl+Tab```
+- Previous Tab: ```Ctrl+Shift+Tab```
+- Split / Unsplit View: ```Ctrl+D```
 
 ## Plugins
 
