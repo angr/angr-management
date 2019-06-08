@@ -7,7 +7,9 @@ from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderVie
     QStyledItemDelegate
 from PySide2.QtGui import QBrush, QColor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
+
 from ...data.instance import ObjectContainer
+from ...config import Conf
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -138,6 +140,9 @@ class QFunctionTableModel(QAbstractTableModel):
                 color = QColor(r, g, b)
 
             return QBrush(color)
+
+        elif role == Qt.FontRole:
+            return Conf.ui_default_font
 
     def sort(self, column, order):
         mapping = {

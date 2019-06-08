@@ -5,6 +5,7 @@ from PySide2.QtCore import Qt
 from angr.analyses.cfg.cfg_fast import MemoryData
 
 from ...utils import filter_string_for_display
+from ...config import Conf
 
 
 class QStringTableItem(QTableWidgetItem):
@@ -26,7 +27,6 @@ class QStringTableItem(QTableWidgetItem):
         length = "%d" % str_data.size
         content = filter_string_for_display(str_data.content.decode("utf-8"))
 
-
         widgets = [
             QTableWidgetItem(address),
             QTableWidgetItem(length),
@@ -35,6 +35,7 @@ class QStringTableItem(QTableWidgetItem):
 
         for w in widgets:
             w.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+            w.setFont(Conf.ui_default_font)
 
         return widgets
 

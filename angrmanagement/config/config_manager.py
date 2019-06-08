@@ -2,7 +2,7 @@
 import logging
 
 import toml
-from PySide2.QtGui import QFont, QFontMetricsF, QColor
+from PySide2.QtGui import QFont, QFontMetricsF, QColor, QGuiApplication
 
 from .config_entry import ConfigurationEntry as CE
 
@@ -30,6 +30,7 @@ data_constructors = {
 
 
 ENTRIES = [
+    CE('ui_default_font', QFont, None),
     CE('disasm_font', QFont, None),
     CE('disasm_font_height', int, None),
     CE('disasm_font_width', int, None),
@@ -51,7 +52,7 @@ ENTRIES = [
 ]
 
 
-class ConfigurationManager(object):
+class ConfigurationManager:
 
     __slots__ = ['_entries']
 
@@ -66,6 +67,8 @@ class ConfigurationManager(object):
             self._entries = entries
 
     def init_font_config(self):
+        self.ui_default_font = QGuiApplication.font()
+
         self.disasm_font = QFont("DejaVu Sans Mono", 10)
         font_metrics = QFontMetricsF(self.disasm_font)
         self.disasm_font_height = font_metrics.height()
