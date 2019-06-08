@@ -92,8 +92,8 @@ class QOperand(QGraphObject):
             else:
                 painter.setPen(self._config.disasm_view_antitarget_addr_color)
         else:
-            if self.variable is not None:
-                # it has a variable
+            if self.disasm_view.show_variable and self.variable is not None:
+                # show-variable is enabled and this operand has a linked variable
                 fallback = True
                 if self.infodock.induction_variable_analysis is not None:
                     r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
