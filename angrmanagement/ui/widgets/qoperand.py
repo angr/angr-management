@@ -261,6 +261,13 @@ class QOperand(QGraphObject):
                     if variable is not None:
                         self.variable = variable
                         self._variable_ident = "<%s>" % variable.ident
+                        if offset is None:
+                            # unexpected
+                            # TODO: Figure out why
+                            l.warning("Got an unexpected None for variable offset when variable %s is not None.",
+                                      variable
+                                      )
+                            offset = 0
 
                         if self.disasm_view.show_variable:
                             variable_str = variable.name
