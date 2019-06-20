@@ -50,7 +50,7 @@ class QFunctionTableModel(QAbstractTableModel):
         self.emit(SIGNAL("layoutChanged()"))
 
     def filter(self, keyword):
-        if not keyword:
+        if not keyword or self._raw_func_list is None:
             # remove the filtering
             self._func_list = None
         else:
