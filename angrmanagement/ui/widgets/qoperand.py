@@ -62,6 +62,16 @@ class QOperand(QGraphObject):
     def text(self):
         return self._label
 
+    @property
+    def is_constant(self):
+        return isinstance(self.operand, ConstantOperand)
+
+    @property
+    def constant_value(self):
+        if self.is_constant:
+            return self.operand.cs_operand.imm
+        return None
+
     #
     # Public methods
     #
@@ -176,19 +186,18 @@ class QOperand(QGraphObject):
         # we pick the one that complies with the operand's text
         # my solution is pretty hackish...
 
-        if isinstance(operand, ConstantOperand):
-            imm = operand.cs_operand.imm
-            if imm in branch_targets:
-                # problem solved
-                return imm
-            else:
-                # umm why?
-                pass
+        imm = self.constant_value
+        if imm is not None and imm in branch_targets:
+            # problem solved
+            return imm
+        else:
+            # umm why?
+            pass
 
         # try to render it
         rendered = operand.render()[0]
         for t in branch_targets:
-            if "%x" % t == rendered or "%#x" == rendered:
+            if "%x" % t == rendered or "%#x" % t == rendered:
                 return t
             if t == rendered:
                 return t
