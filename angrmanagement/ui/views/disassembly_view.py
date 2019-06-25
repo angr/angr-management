@@ -186,9 +186,12 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
-    def popup_xref_dialog(self, variable, asynch=True):
+    def popup_xref_dialog(self, variable=None, dst_addr=None, asynch=True):
 
-        dialog = XRef(self.variable_manager, variable, parent=self)
+        if variable is not None:
+            dialog = XRef(variable_manager=self.variable_manager, variable=variable, parent=self)
+        else:
+            dialog = XRef(xrefs_manager=self.workspace.instance.project.kb.xrefs, dst_addr=dst_addr, parent=self)
         if asynch:
             dialog.show()
         else:

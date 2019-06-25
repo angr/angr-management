@@ -261,8 +261,13 @@ class QDisasmGraph(QBaseGraph):
                 block = self._insn_addr_to_block.get(ins_addr, None)
                 if block is not None:
                     operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
-                    if operand is not None and operand.variable is not None:
-                        self.disassembly_view.popup_xref_dialog(operand.variable)
+                    if operand is not None:
+                        if operand.variable is not None:
+                            # Display cross references to this variable
+                            self.disassembly_view.popup_xref_dialog(variable=operand.variable)
+                        elif operand.is_constant:
+                            # Display cross references to an address
+                            self.disassembly_view.popup_xref_dialog(dst_addr=operand.constant_value)
             return True
         elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
             # jump back
