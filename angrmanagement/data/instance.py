@@ -7,6 +7,7 @@ import ana
 
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
+from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
@@ -22,6 +23,7 @@ class Instance:
         self._project_container = ObjectContainer(project, "the current angr project")
         self.cfg_container = ObjectContainer(project, "the current CFG")
         self.interactions = ObjectContainer([], name='Saved program interactions')
+        self.sync = SyncControl(self)
 
         self._start_worker()
 

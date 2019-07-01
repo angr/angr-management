@@ -23,12 +23,14 @@ from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
 from .menus.view_menu import ViewMenu
 from .menus.plugin_menu import PluginMenu
+from .menus.sync_menu import SyncMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_binary import LoadBinary, LoadBinaryError
 from .dialogs.load_plugins import LoadPlugins, LoadPluginsError
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
+from .dialogs.sync_config import SyncConfig
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 
 
@@ -70,6 +72,7 @@ class MainWindow(QMainWindow):
         self._view_menu = None
         self._help_menu = None
         self._plugin_menu = None
+        self._sync_menu = None
 
         self._init_toolbars()
         self._init_statusbar()
@@ -173,6 +176,15 @@ class MainWindow(QMainWindow):
 
     def open_about_dialog(self):
         QMessageBox.about(self, "About angr", "Version 8")
+
+    def open_sync_config_dialog(self):
+        if self.workspace.instance.project is None:
+            # project does not exist yet
+            return
+
+        sync_config = SyncConfig(self.workspace.instance, parent=self)
+        sync_config.exec_()
+
     #
     # Widgets
     #
@@ -207,10 +219,12 @@ class MainWindow(QMainWindow):
         self._view_menu = ViewMenu(self)
         self._help_menu = HelpMenu(self)
         self._plugin_menu = PluginMenu(self)
+        self._sync_menu = SyncMenu(self)
 
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
         self.menuBar().addMenu(self._analyze_menu.qmenu())
+        self.menuBar().addMenu(self._sync_menu.qmenu())
         self.menuBar().addMenu(self._plugin_menu.qmenu())
         self.menuBar().addMenu(self._help_menu.qmenu())
 
@@ -388,6 +402,9 @@ class MainWindow(QMainWindow):
     def interact(self):
         self.workspace.interact_program(self.workspace.instance.img_name)
 
+    def setup_sync(self):
+        self.open_sync_config_dialog()
+
     #
     # Other public methods
     #
@@ -405,6 +422,9 @@ class MainWindow(QMainWindow):
             cfg_args = {}
         self.workspace.instance.project = proj
         self.workspace.instance.initialize(cfg_args=cfg_args)
+
+        # Re-enable a bunch of things
+        self._sync_menu.action_by_key("config").enable()
 
     def _load_database(self, file_path):
         with open(file_path, "rb") as o:
