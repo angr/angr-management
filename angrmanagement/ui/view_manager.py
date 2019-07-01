@@ -8,6 +8,15 @@ class ViewManager:
     """
     Manages views.
     """
+
+    DOCKING_POSITIONS = {
+        # 'center': None,
+        'left': Qt.LeftDockWidgetArea,
+        'right': Qt.RightDockWidgetArea,
+        'top': Qt.TopDockWidgetArea,
+        'bottom': Qt.BottomDockWidgetArea,
+    }
+
     def __init__(self, workspace):
         self.workspace = workspace
         self.views = [ ]
@@ -29,18 +38,11 @@ class ViewManager:
         :return:                None
         """
 
-        docking_positions = {
-            'left': Qt.LeftDockWidgetArea,
-            'right': Qt.RightDockWidgetArea,
-            'top': Qt.TopDockWidgetArea,
-            'bottom': Qt.BottomDockWidgetArea,
-        }
-
         self.views_by_category[category].append(view)
 
         dock = QSmartDockWidget(caption, parent=view)
-        dock_area = docking_positions.get(view.default_docking_position, Qt.RightDockWidgetArea)
-        if view.default_docking_position == 'right':
+        dock_area = self.DOCKING_POSITIONS.get(view.default_docking_position, Qt.RightDockWidgetArea)
+        if view.default_docking_position == 'center':
             self.main_window.central_widget.addDockWidget(dock_area, dock)
             retab = True
         else:
@@ -53,7 +55,7 @@ class ViewManager:
         self.view_to_dock[view] = dock
 
         if retab:
-            self.tabify_right_views()
+            self.tabify_center_views()
 
     def raise_view(self, view):
         """
@@ -70,7 +72,7 @@ class ViewManager:
 
         dock.raise_()
 
-    def get_right_views(self):
+    def get_center_views(self):
         """
         Get the right dockable views
 
@@ -80,7 +82,7 @@ class ViewManager:
         docks = []
         for dock in self.docks:
             if dock.widget() is not None:
-                if dock.widget().default_docking_position == 'right':
+                if dock.widget().default_docking_position == 'center':
                     docks.append(dock)
         return docks
 
@@ -96,15 +98,15 @@ class ViewManager:
             return self.views_by_category[category][0]
         return None
 
-    def tabify_right_views(self):
+    def tabify_center_views(self):
         """
         Tabify all right-side dockable views.
 
         :return:    None
         """
 
-        right_dockable_views = self.get_right_views()
-        for d0, d1 in zip(right_dockable_views, right_dockable_views[1:]):
+        center_dockable_views = self.get_center_views()
+        for d0, d1 in zip(center_dockable_views, center_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
 
     def get_current_tab_id(self):
@@ -114,9 +116,9 @@ class ViewManager:
         :return:    Tab ID (int)
         """
         
-        right_dockable_views = self.get_right_views()
-        for i in range(1,len(right_dockable_views)+1):
-            if right_dockable_views[i-1].visibleRegion().isEmpty() is False:
+        center_dockable_views = self.get_center_views()
+        for i in range(1,len(center_dockable_views)+1):
+            if center_dockable_views[i-1].visibleRegion().isEmpty() is False:
                 return i-1
         return 1
 
@@ -127,13 +129,13 @@ class ViewManager:
         :return:    None
         """
 
-        right_dockable_views = self.get_right_views()
+        center_dockable_views = self.get_center_views()
         currentTab = self.get_current_tab_id()
-        if (currentTab + 1) < len(right_dockable_views):
-            right_dockable_views[currentTab + 1].raise_()
+        if (currentTab + 1) < len(center_dockable_views):
+            center_dockable_views[currentTab + 1].raise_()
         else:
             # Start from 1 again to prevent Index Out Of Range error
-            right_dockable_views[(currentTab + 1) % (len(right_dockable_views))].raise_()
+            center_dockable_views[(currentTab + 1) % (len(center_dockable_views))].raise_()
 
     def previous_tab(self):
         """
@@ -142,5 +144,5 @@ class ViewManager:
         :return:    None
         """
 
-        right_dockable_views = self.get_right_views()
-        right_dockable_views[self.get_current_tab_id()-1].raise_()
+        center_dockable_views = self.get_center_views()
+        center_dockable_views[self.get_current_tab_id()-1].raise_()

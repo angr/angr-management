@@ -38,12 +38,12 @@ class Workspace:
 
         self.default_tabs = [
             FunctionsView(self, 'left'),
-            DisassemblyView(self, 'right'),
-            CodeView(self, 'right'),
-            SymexecView(self, 'right'),
-            StatesView(self, 'right'),
-            StringsView(self, 'right'),
-            InteractionView(self, 'right'),
+            DisassemblyView(self, 'center'),
+            CodeView(self, 'center'),
+            SymexecView(self, 'center'),
+            StatesView(self, 'center'),
+            StringsView(self, 'center'),
+            InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
         ]
 
@@ -107,14 +107,9 @@ class Workspace:
 
         window_id = self.view_manager.get_current_tab_id()
         if self.is_split == 0:
-            docking_positions = {
-                'left': Qt.LeftDockWidgetArea,
-                'right': Qt.RightDockWidgetArea,
-                'top': Qt.TopDockWidgetArea,
-                'bottom': Qt.BottomDockWidgetArea,
-            }
             self._main_window.central_widget.removeDockWidget(self.view_manager.docks[window_id])
-            dock_area = docking_positions.get(self.default_tabs[window_id].default_docking_position, Qt.RightDockWidgetArea)
+            dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
+                                                          Qt.RightDockWidgetArea)
             dock = QSmartDockWidget(self.default_tabs[window_id].caption, parent=self.default_tabs[window_id])
             self._main_window.central_widget2.addDockWidget(dock_area, dock)
             dock.setWidget(self.default_tabs[window_id])
@@ -135,21 +130,16 @@ class Workspace:
 
         if self.is_split == 1:
             window_id = self.split_tab_id
-            docking_positions = {
-                'left': Qt.LeftDockWidgetArea,
-                'right': Qt.RightDockWidgetArea,
-                'top': Qt.TopDockWidgetArea,
-                'bottom': Qt.BottomDockWidgetArea,
-            }
             self._main_window.central_widget2.removeDockWidget(self.last_unsplit_view)
-            dock_area = docking_positions.get(self.default_tabs[window_id].default_docking_position, Qt.RightDockWidgetArea)
+            dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
+                                                          Qt.RightDockWidgetArea)
             dock = QSmartDockWidget(self.default_tabs[window_id].caption, parent=self.default_tabs[window_id])
             self._main_window.central_widget.addDockWidget(dock_area, dock)
             dock.setWidget(self.default_tabs[window_id])
             self.view_manager.docks[window_id] = dock
             self._main_window.central_widget_main.setStretchFactor(1,0)
             self._main_window.central_widget_main.restoreState(self.splitter_state.value("splitterSizes"))
-            self.view_manager.tabify_right_views()
+            self.view_manager.tabify_center_views()
             self.is_split = 0
 
     def toggle_split(self):

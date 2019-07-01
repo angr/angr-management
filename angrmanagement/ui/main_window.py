@@ -225,7 +225,7 @@ class MainWindow(QMainWindow):
         self.central_widget_main.addWidget(self.central_widget2)
         wk = Workspace(self, Instance())
         self.workspace = wk
-        self.workspace.view_manager.tabify_right_views()
+        self.workspace.view_manager.tabify_center_views()
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
 
     #
@@ -239,12 +239,12 @@ class MainWindow(QMainWindow):
         :return:    None
         """
 
-        right_dockable_views = self.workspace.view_manager.get_right_views()
-        for i in range(1, len(right_dockable_views)+1):
-            QShortcut(QKeySequence('Ctrl+'+str(i)), self, right_dockable_views[i-1].raise_)
+        center_dockable_views = self.workspace.view_manager.get_center_views()
+        for i in range(1, len(center_dockable_views)+1):
+            QShortcut(QKeySequence('Ctrl+'+str(i)), self, center_dockable_views[i-1].raise_)
 
         # Raise the DisassemblyView after everything has initialized
-        right_dockable_views[0].raise_()
+        center_dockable_views[0].raise_()
 
     #
     # PluginManager
