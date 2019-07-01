@@ -55,7 +55,7 @@ class QDisasmStatusBar(QFrame):
 
         # Save image button
         saveimage_btn = QPushButton()
-        saveimage_btn.setText('Save image to...')
+        saveimage_btn.setText('Save image...')
         saveimage_btn.clicked.connect(self._on_saveimage_btn_clicked)
 
         layout = QHBoxLayout()
@@ -82,7 +82,7 @@ class QDisasmStatusBar(QFrame):
 
     def _on_saveimage_btn_clicked(self):
 
-        filename, folder = QFileDialog.getSaveFileName(self, 'Save image to...',
+        filename, folder = QFileDialog.getSaveFileName(self, 'Save image...',
                                            '',
                                            'PNG Files (*.png);;Bitmaps (*.bmp)'
                                            )
