@@ -1,15 +1,25 @@
 from PySide2.QtWidgets import QMenu, QAction
 
 
-class MenuEntry(object):
-    def __init__(self, caption, action, shortcut=None, checkable=False, checked=False):
+class MenuEntry:
+    def __init__(self, caption, action, shortcut=None, checkable=False, checked=False, enabled=True, key=None):
         self.caption = caption
         self.action = action
         self.shortcut = shortcut
         self.checkable = checkable
         self.checked_initially = checked
+        self.default_enabled = enabled
+        self.key = key
 
         self._qaction = None
+
+    def enable(self):
+        if self._qaction is not None:
+            self._qaction.setDisabled(False)
+
+    def disable(self):
+        if self._qaction is not None:
+            self._qaction.setDisabled(True)
 
     @property
     def qaction(self):
@@ -26,20 +36,26 @@ class MenuEntry(object):
         return self._qaction.isChecked()
 
 
-class MenuSeparator(object):
+class MenuSeparator:
     def __init__(self):
         pass
 
 
-class Menu(object):
+class Menu:
     def __init__(self, caption, parent=None):
 
         self.parent = parent
         self.caption = caption
 
         self.entries = [ ]
+        self._keyed_entries = None
 
         self._qmenu = None  # cached QMenu object
+
+    def action_by_key(self, key):
+        if not self._keyed_entries:
+            self._keyed_entries = dict((ent.key, ent) for ent in self.entries)
+        return self._keyed_entries.get(key, None)
 
     def qmenu(self):
         if self._qmenu is not None:
@@ -58,6 +74,8 @@ class Menu(object):
                 if entry.checkable:
                     action.setCheckable(True)
                     action.setChecked(entry.checked_initially)
+                if not entry.default_enabled:
+                    action.setDisabled(True)
                 entry.qaction = action
             elif isinstance(entry, MenuSeparator):
                 menu.addSeparator()
