@@ -276,7 +276,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("interaction")
         if view is None:
             # Create a new interaction view
-            view = Interaction(self, 'right')
+            view = InteractionView(self, 'right')
             self.add_view(view, view.caption, view.category)
         return view
 
