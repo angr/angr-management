@@ -298,7 +298,7 @@ class DisassemblyView(BaseView):
         if insn_addr in self.current_graph.selected_insns:
             self.current_graph.unselect_instruction(insn_addr)
         else:
-            self.current_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
+            self.current_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             self.current_graph.show_instruction(insn_addr)
 
     def toggle_operand_selection(self, insn_addr, operand_idx):
@@ -313,7 +313,7 @@ class DisassemblyView(BaseView):
         if (insn_addr, operand_idx) in self.current_graph.selected_operands:
             self.current_graph.unselect_operand(insn_addr, operand_idx)
         else:
-            self.current_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() & Qt.CTRL == 0)
+            self.current_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             self.current_graph.show_instruction(insn_addr)
 
     def jump_to(self, addr, src_ins_addr=None):

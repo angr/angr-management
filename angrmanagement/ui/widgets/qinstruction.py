@@ -14,9 +14,10 @@ class QInstruction(QGraphObject):
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
-    GRAPH_COMMENT_STRING_SPACING = 5
+    GRAPH_COMMENT_STRING_SPACING = 10
 
     LINEAR_INSTRUCTION_OFFSET = 120
+    COMMENT_PREFIX = "// "
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, mode='graph'):
         super(QInstruction, self).__init__()
@@ -184,7 +185,7 @@ class QInstruction(QGraphObject):
 
         self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
         if self._comment is not None:
-            self._comment_width = self._config.disasm_font_width * len(self._comment)
+            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
 
         self._update_size()
 
@@ -251,8 +252,8 @@ class QInstruction(QGraphObject):
         # comment or string - comments have precedence
         if self._comment is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
-            painter.setPen(Qt.blue)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.COMMENT_PREFIX + self._comment)
         elif self._string is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
             painter.setPen(Qt.gray)
@@ -300,7 +301,7 @@ class QInstruction(QGraphObject):
         if self._comment is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
             painter.setPen(Qt.blue)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._comment)
+            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.COMMENT_PREFIX + self._comment)
         elif self._string is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
             painter.setPen(Qt.gray)

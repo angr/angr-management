@@ -269,11 +269,11 @@ class QDisasmGraph(QBaseGraph):
                             # Display cross references to an address
                             self.disassembly_view.popup_xref_dialog(dst_addr=operand.constant_value)
             return True
-        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
+        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() == Qt.AltModifier):
             # jump back
             self.disassembly_view.jump_back()
             return True
-        elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
+        elif key == Qt.Key_Right and QApplication.keyboardModifiers() == Qt.AltModifier:
             # jump forward
             self.disassembly_view.jump_forward()
             return True
