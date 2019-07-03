@@ -67,6 +67,11 @@ class QInstruction(QGraphObject):
     def refresh(self):
         super(QInstruction, self).refresh()
 
+        # are there new comments?
+        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        if self._comment is not None:
+            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
+
         for operand in self._operands:
             operand.refresh()
 

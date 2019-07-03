@@ -58,17 +58,11 @@ class QDisasmStatusBar(QFrame):
         saveimage_btn.setText('Save image...')
         saveimage_btn.clicked.connect(self._on_saveimage_btn_clicked)
 
-        # Sync button
-        sync_button = QPushButton()
-        sync_button.setText('Upstream')
-        sync_button.clicked.connect(self._on_sync_btn_clicked)
-
         layout = QHBoxLayout()
         layout.setContentsMargins(2, 2, 2, 2)
         layout.addWidget(function_label)
 
         layout.addStretch(0)
-        layout.addWidget(sync_button)
         layout.addWidget(saveimage_btn)
         layout.addWidget(option_btn)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -96,9 +90,3 @@ class QDisasmStatusBar(QFrame):
             return
 
         self.disasm_view.save_image_to(os.path.join(folder, filename))
-
-    def _on_sync_btn_clicked(self):
-        self.disasm_view.workspace.instance.project.kb.sync.push_function(self.disasm_view._current_function)
-
-        # Fix this
-        self.disasm_view.workspace.instance.project.kb.sync.commit()
