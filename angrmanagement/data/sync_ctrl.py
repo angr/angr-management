@@ -36,12 +36,18 @@ class SyncControl:
 
         self.project = None
         self.users_container = ObjectContainer([], notes="All users in the current team.")
+        self.tally_container = ObjectContainer({}, notes="Tally information.")
 
         # Subscribe to project creation
         self.instance.project_container.am_subscribe(self._initialize)
 
         # How often do we call the client and update our information?
+        self._refresh_interval = 10
+        # How often do we commit?
         self._update_interval = 10
+
+        self._last_refresh_ts = 0
+        self._last_update_ts = 0
 
     @property
     def status(self):
@@ -62,6 +68,14 @@ class SyncControl:
     def users(self):
         return self.users_container.am_obj
 
+    @property
+    def last_refresh_timestamp(self):
+        return self._last_refresh_ts
+
+    @property
+    def last_update_timestamp(self):
+        return self._last_update_ts
+
     def _initialize(self):
         self.project = self.instance.project
 
@@ -80,8 +94,23 @@ class SyncControl:
     def worker_routine(self):
         while self.status == SyncControlStatus.CONNECTED:
 
-            # update users
-            self.users_container.am_obj = list(self.project.kb.sync.users())
-            self.users_container.am_event()
+            ts = time.time()
 
-            time.sleep(self._update_interval)
+            if ts - self._last_refresh_ts > self._refresh_interval:
+                # update users
+                self.users_container.am_obj = list(self.project.kb.sync.users())
+                self.users_container.am_event()
+
+                # update tally information
+                self.tally_container.am_obj = self.project.kb.sync.tally()
+                self.tally_container.am_event()
+
+                self._last_refresh_ts = ts
+
+            if ts - self._last_update_ts > self._update_interval:
+                # commit stuff
+                self.project.kb.sync.update()
+
+                self._last_update_ts = ts
+
+            time.sleep(0.5)
