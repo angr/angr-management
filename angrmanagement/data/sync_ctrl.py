@@ -65,12 +65,12 @@ class SyncControl:
     def _initialize(self):
         self.project = self.instance.project
 
-    def connect(self, user, repo_path):
+    def connect(self, user, repo_path, init_repo=False, remote_url=None):
 
         if binsync is None:
             raise ImportError("binsync is not installed.")
 
-        client = binsync.Client(user, repo_path)
+        client = binsync.Client(user, repo_path, init_repo=init_repo, remote_url=remote_url)
         self.project.kb.sync.connect(client)
 
         # Spawn the worker thread
