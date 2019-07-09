@@ -64,6 +64,13 @@ class MainWindow(QMainWindow):
 
         self.defaultWindowFlags = None
 
+        # menus
+        self._file_menu = None
+        self._analyze_menu = None
+        self._view_menu = None
+        self._help_menu = None
+        self._plugin_menu = None
+
         self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
@@ -195,16 +202,17 @@ class MainWindow(QMainWindow):
     #
 
     def _init_menus(self):
-        fileMenu = FileMenu(self)
-        analyzeMenu = AnalyzeMenu(self)
-        viewMenu = ViewMenu(self)
-        helpMenu = HelpMenu(self)
-        pluginMenu = PluginMenu(self)
-        self.menuBar().addMenu(fileMenu.qmenu())
-        self.menuBar().addMenu(viewMenu.qmenu())
-        self.menuBar().addMenu(analyzeMenu.qmenu())
-        self.menuBar().addMenu(pluginMenu.qmenu())
-        self.menuBar().addMenu(helpMenu.qmenu())
+        self._file_menu = FileMenu(self)
+        self._analyze_menu = AnalyzeMenu(self)
+        self._view_menu = ViewMenu(self)
+        self._help_menu = HelpMenu(self)
+        self._plugin_menu = PluginMenu(self)
+
+        self.menuBar().addMenu(self._file_menu.qmenu())
+        self.menuBar().addMenu(self._view_menu.qmenu())
+        self.menuBar().addMenu(self._analyze_menu.qmenu())
+        self.menuBar().addMenu(self._plugin_menu.qmenu())
+        self.menuBar().addMenu(self._help_menu.qmenu())
 
     #
     # Workspace
