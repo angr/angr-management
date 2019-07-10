@@ -2,6 +2,11 @@
 
 from angrmanagement.__main__ import main
 
+import warnings
+def shut_up(*args, **kwargs):
+    return
+warnings.simplefilter = shut_up
+
 if __name__ == '__main__':
     import argparse
     import runpy
