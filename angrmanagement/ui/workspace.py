@@ -13,7 +13,7 @@ from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, SyncView, )
+                    InteractionView, SyncView, PatchesView, )
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -44,6 +44,7 @@ class Workspace:
             SymexecView(self, 'center'),
             StatesView(self, 'center'),
             StringsView(self, 'center'),
+            PatchesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
             SyncView(self, 'right'),

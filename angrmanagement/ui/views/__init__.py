@@ -7,3 +7,4 @@ from .console_view import ConsoleView
 from .code_view import CodeView
 from .interaction_view import InteractionView
 from .sync_view import SyncView
+from .patches_view import PatchesView
