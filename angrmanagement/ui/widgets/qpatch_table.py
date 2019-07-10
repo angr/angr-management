@@ -16,8 +16,8 @@ class QPatchTableItem:
         widgets = [
             QTableWidgetItem("%#x" % patch.addr),
             QTableWidgetItem("%d bytes" % len(patch)),
+            QTableWidgetItem(binascii.hexlify(self.old_bytes).decode("ascii") if self.old_bytes else "<unknown>"),
             QTableWidgetItem(binascii.hexlify(patch.new_bytes).decode("ascii")),
-            QTableWidgetItem(binascii.hexlify(self.old_bytes).decode("ascii") if self.old_bytes else "<unknown>")
         ]
 
         for w in widgets:
