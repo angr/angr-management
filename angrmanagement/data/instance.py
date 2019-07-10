@@ -26,6 +26,8 @@ class Instance:
         self.interactions = ObjectContainer([], name='Saved program interactions')
         self.sync = SyncControl(self)
 
+        self.cfg_args = None
+
         self._start_worker()
 
         self._cfg = None
@@ -96,13 +98,22 @@ class Instance:
     def initialize(self, cfg_args=None):
         if cfg_args is None:
             cfg_args = {}
-        cfg_job = CFGGenerationJob(
-                on_finish=self.workspace.on_cfg_generated,
-                **cfg_args
-             )
-        self.add_job(cfg_job)
+        # save cfg_args
+        self.cfg_args = cfg_args
 
+        # generate CFG
+        cfg_job = self.generate_cfg()
+
+        # start daemon
         self._start_daemon_thread(self._refresh_cfg, 'Progressive Refreshing CFG', args=(cfg_job,))
+
+    def generate_cfg(self):
+        cfg_job = CFGGenerationJob(
+            on_finish=self.workspace.on_cfg_generated,
+            **self.cfg_args
+        )
+        self.add_job(cfg_job)
+        return cfg_job
 
     def add_job(self, job):
         self.jobs.append(job)

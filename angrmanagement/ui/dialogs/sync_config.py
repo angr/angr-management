@@ -101,6 +101,7 @@ class SyncConfig(QDialog):
         # buttons
         ok_button = QPushButton(self)
         ok_button.setText("OK")
+        ok_button.setDefault(True)
         ok_button.clicked.connect(self._on_ok_clicked)
 
         cancel_button = QPushButton(self)

@@ -162,12 +162,19 @@ class SyncView(BaseView):
         main_object = self.workspace.instance.project.loader.main_object
         patches = kb.sync.pull_patches(user=u)
 
+        patch_added = False
         for patch in patches:
             addr = main_object.mapped_base + patch.offset
             kb.patches.add_patch(addr, patch.new_bytes)
+            patch_added = True
 
-        # trigger a refresh
-        self.workspace.instance.patches.am_event()
+        if patch_added:
+            # trigger a refresh
+            self.workspace.instance.patches.am_event()
+
+            # re-generate the CFG
+            # TODO: CFG refinement
+            self.workspace.instance.generate_cfg()
 
     def _update_users(self):
         self._team_table.update_users(self.workspace.instance.sync.users)
