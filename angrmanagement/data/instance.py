@@ -20,7 +20,7 @@ class Instance:
         self._jobs_queue = Queue()
         self.simgrs = ObjectContainer([], name='Global simulation managers list')
         self.states = ObjectContainer([], name='Global states list')
-        self.patches = ObjectContainer({}, name='Global patches dict')
+        self.patches = ObjectContainer(None, name='Global patches update notifier')
         self._project_container = ObjectContainer(project, "the current angr project")
         self.cfg_container = ObjectContainer(project, "the current CFG")
         self.interactions = ObjectContainer([], name='Saved program interactions')

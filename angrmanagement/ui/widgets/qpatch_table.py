@@ -1,18 +1,23 @@
 
+import binascii
+
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
 from PySide2.QtCore import Qt
 
 
 class QPatchTableItem:
-    def __init__(self, patch):
+    def __init__(self, patch, old_bytes):
         self.patch = patch
+        self.old_bytes = old_bytes
 
     def widgets(self):
         patch = self.patch
 
         widgets = [
-            QTableWidgetItem(patch.addr),
-            QTableWidgetItem(len(patch)),
+            QTableWidgetItem("%#x" % patch.addr),
+            QTableWidgetItem("%d bytes" % len(patch)),
+            QTableWidgetItem(binascii.hexlify(patch.new_bytes).decode("ascii")),
+            QTableWidgetItem(binascii.hexlify(self.old_bytes).decode("ascii") if self.old_bytes else "<unknown>")
         ]
 
         for w in widgets:
@@ -23,7 +28,7 @@ class QPatchTableItem:
 
 class QPatchTable(QTableWidget):
 
-    HEADER = ['Address', 'Bytes']
+    HEADER = ['Address', 'Size', 'Old Bytes', 'New Bytes']
 
     def __init__(self, instance, parent):
         super(QPatchTable, self).__init__(parent)
@@ -31,6 +36,7 @@ class QPatchTable(QTableWidget):
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.verticalHeader().setVisible(False)
 
         self.items = [ ]
         self.instance = instance
@@ -47,7 +53,9 @@ class QPatchTable(QTableWidget):
         current_row = self.currentRow()
         self.clearContents()
 
-        self.items = [QPatchTableItem(item) for item in self.instance.patches.items()]
+        self.items = [QPatchTableItem(item,
+                                      self._get_bytes(self.instance.project, item.addr, len(item)))
+                      for item in self.instance.project.kb.patches.values()]
         items_count = len(self.items)
         self.setRowCount(items_count)
 
@@ -64,3 +72,10 @@ class QPatchTable(QTableWidget):
 
     def _watch_patches(self, **kwargs):
         self.reload()
+
+    @staticmethod
+    def _get_bytes(proj, addr, size):
+        try:
+            return proj.loader.memory.load(addr, size)
+        except KeyError:
+            return None

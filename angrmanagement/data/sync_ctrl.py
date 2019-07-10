@@ -111,10 +111,6 @@ class SyncControl:
                 # commit stuff
                 self.project.kb.sync.update()
 
-                # Force reload patches
-                # FIXME: This is not always necessary
-                self.instance.patches.am_event()
-
                 self._last_update_ts = ts
 
             time.sleep(0.5)

@@ -52,21 +52,28 @@ class SyncView(BaseView):
 
         # pull function button
         pullfunc_btn = QPushButton(self)
-        pullfunc_btn.setText("Pull function")
+        pullfunc_btn.setText("Pull func")
         pullfunc_btn.setToolTip("Pull current function from the selected user")
         pullfunc_btn.clicked.connect(self._on_pullfunc_clicked)
 
         # push function button
         pushfunc_btn = QPushButton()
-        pushfunc_btn.setText('Push function')
+        pushfunc_btn.setText('Push func')
         pushfunc_btn.setToolTip("Push current function to the repo")
         pushfunc_btn.clicked.connect(self._on_pushfunc_clicked)
+
+        # pull patches button
+        pullpatches_btn = QPushButton(self)
+        pullpatches_btn.setText("Pull patches")
+        pullpatches_btn.setToolTip("Pull all patches from the selected user")
+        pullpatches_btn.clicked.connect(self._on_pullpatches_clicked)
 
         actions_box = QGroupBox(self)
         actions_box.setTitle("Actions")
         actions_layout = QHBoxLayout()
         actions_layout.addWidget(pullfunc_btn)
         actions_layout.addWidget(pushfunc_btn)
+        actions_layout.addWidget(pullpatches_btn)
         actions_box.setLayout(actions_layout)
 
         team_layout = QVBoxLayout()
@@ -139,6 +146,28 @@ class SyncView(BaseView):
 
         # TODO: Fix this
         kb.sync.commit()
+
+    def _on_pullpatches_clicked(self):
+
+        # which user?
+        u = self._team_table.selected_user()
+        if u is None:
+            QMessageBox.critical(None, 'Error',
+                                 "Cannot determine which user to pull from. "
+                                 "Please select a user in the team table first.")
+            return
+
+        kb = self.workspace.instance.project.kb
+        # currently we assume all patches are against the main object
+        main_object = self.workspace.instance.project.loader.main_object
+        patches = kb.sync.pull_patches(user=u)
+
+        for patch in patches:
+            addr = main_object.mapped_base + patch.offset
+            kb.patches.add_patch(addr, patch.new_bytes)
+
+        # trigger a refresh
+        self.workspace.instance.patches.am_event()
 
     def _update_users(self):
         self._team_table.update_users(self.workspace.instance.sync.users)
