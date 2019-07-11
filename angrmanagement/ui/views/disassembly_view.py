@@ -59,6 +59,9 @@ class DisassemblyView(BaseView):
         self._linear_viewer.cfb = self.workspace.instance.cfb
         self._linear_viewer.initialize()
 
+    def refresh(self):
+        self.current_graph.refresh()
+
     def save_image_to(self, path):
         if self._flow_graph is not None:
             self._flow_graph.save_image_to(path)

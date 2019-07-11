@@ -12,9 +12,12 @@ from angr import StateHierarchy
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
-from .views import FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView, InteractionView
+from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
+                    InteractionView, SyncView, PatchesView, )
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
+
+from ..utils import has_binsync
 
 _l = logging.getLogger(__name__)
 
@@ -43,9 +46,14 @@ class Workspace:
             SymexecView(self, 'center'),
             StatesView(self, 'center'),
             StringsView(self, 'center'),
+            PatchesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
         ]
+
+        if has_binsync():
+            self.default_tabs.append(SyncView(self, 'right'))
+
 
         #
         # Save initial splitter state

@@ -38,6 +38,7 @@ class CFGGenerationJob(Job):
         cfg = inst.project.analyses.CFG(progress_callback=self._progress_callback,
                                         low_priority=True,
                                         cfb=temp_cfb,
+                                        use_patches=True,
                                         **self.cfg_args
                                         )
         self._cfb = None
