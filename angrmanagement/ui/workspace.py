@@ -17,6 +17,8 @@ from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, Str
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
+from ..utils import has_binsync
+
 _l = logging.getLogger(__name__)
 
 
@@ -49,11 +51,8 @@ class Workspace:
             ConsoleView(self, 'bottom'),
         ]
 
-        try:
-            import binsync
+        if has_binsync():
             self.default_tabs.append(SyncView(self, 'right'))
-        except ImportError:
-            pass
 
 
         #
