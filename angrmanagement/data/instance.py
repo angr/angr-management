@@ -21,6 +21,7 @@ class Instance:
         self.states = ObjectContainer([], name='Global states list')
         self._project_container = ObjectContainer(project, "the current angr project")
         self.cfg_container = ObjectContainer(project, "the current CFG")
+        self.interactions = ObjectContainer([], name='Saved program interactions')
 
         self._start_worker()
 
