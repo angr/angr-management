@@ -24,6 +24,8 @@ class Instance:
         self._project_container = ObjectContainer(project, "the current angr project")
         self.cfg_container = ObjectContainer(project, "the current CFG")
         self.interactions = ObjectContainer([], name='Saved program interactions')
+        from angrmanagement.ui.views.interaction_view import PlainTextProtocol
+        self.interaction_protocols = ObjectContainer([PlainTextProtocol], name='Available interaction protocols')
         self.sync = SyncControl(self)
 
         self.cfg_args = None

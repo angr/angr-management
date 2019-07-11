@@ -56,17 +56,6 @@ class ProtocolInteractor:
         # render a model from the log into a QWidget
         raise NotImplementedError
 
-
-# CONCRETE TODOS
-# X group controls by state, show/hide entire groups
-# X add more explicit workflow state field
-# X add property for currently rendered protocol class
-# X add group control for saving current log
-# X add instance data groups for interactions
-# X add functionality for saving log
-# - add group control for viewing logs
-# - add functionality for viewing logs
-
 class InteractionState(enum.Enum):
     BEGINNING = 1
     RUNNING = 2
@@ -98,7 +87,6 @@ class InteractionView(BaseView):
 
         self.running_protocol = None  # type: ProtocolInteractor
         self.chosen_protocol = None  # type: type
-        self.protocols = [PlainTextProtocol]
 
         self._init_widgets()
         self._state_transition(InteractionState.BEGINNING)
@@ -113,7 +101,7 @@ class InteractionView(BaseView):
 
     @property
     def selected_protocol(self):
-        return self.protocols[self.widget_combobox_protocol.currentIndex()]
+        return self.workspace.instance.interaction_protocols[self.widget_combobox_protocol.currentIndex()]
 
     # log_add/clear will be called by the base class. it's the subclass' responsibility to call input_show and
     # input_hide depending on whether or not the protocol is accepting input
@@ -172,6 +160,12 @@ class InteractionView(BaseView):
             self.widget_combobox_load.removeItem(0)
         for interaction in self.workspace.instance.interactions:
             self.widget_combobox_load.addItem(interaction.name)
+
+    def _handler_update_protocols(self, **kwargs):
+        while self.widget_combobox_protocol.count():
+            self.widget_combobox_protocol.removeItem(0)
+        for protocol in self.workspace.instance.interaction_protocols:
+            self.widget_combobox_protocol.addItem(protocol.__name__)
 
     # utility for tweaking the control panel
 
@@ -237,12 +231,12 @@ class InteractionView(BaseView):
             req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
             req_msg += '\n\nInstall them to enable this functionality.'
             req_msg += '\nRelaunch angr-management after install.'
-            QtWidgets.QMessageBox(self).critical(None, 'Dependency error', req_msg)
+            QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
             return
 
         img_name = self.workspace.instance.img_name
         if img_name is None:
-            QtWidgets.QMessageBox(self).critical(None, 'Nothing to run', "The project was not loaded from a docker image")
+            QtWidgets.QMessageBox.critical(None, 'Nothing to run', "The project was not loaded from a docker image")
             return
 
         _l.debug('Initializing the connection to archr with image %s' % img_name)
@@ -254,7 +248,7 @@ class InteractionView(BaseView):
             with target.flight_context() as flight:
                 sock = flight.default_channel
                 sock._raise_timeout = True
-                self.chosen_protocol = self.protocols[self.widget_combobox_protocol.currentIndex()]
+                self.chosen_protocol = self.selected_protocol
                 self.running_protocol = self.chosen_protocol(self, sock)
                 _l.debug("Connected to running target")
                 self._signal_start.emit()
@@ -309,10 +303,10 @@ class InteractionView(BaseView):
         leftBox.layout().addStretch(0)
 
         protocolBox = QtWidgets.QComboBox(box_start)
-        for protocol in self.protocols:
-            protocolBox.addItem(protocol.__name__)
         box_start.layout().addWidget(protocolBox)
         self.widget_combobox_protocol = protocolBox
+        self.workspace.instance.interaction_protocols.am_subscribe(self._handler_update_protocols)
+        self._handler_update_protocols()
 
         start_button = QtWidgets.QPushButton(box_start)
         start_button.setText("Connect")
@@ -412,4 +406,3 @@ class PlainTextProtocol(ProtocolInteractor):
         self.sock.send(data_bytes)
         self.view.log_add({"dir": "in", "data": data_bytes})
         self.view.widget_input.setPlainText('')
-
