@@ -219,12 +219,16 @@ class MainWindow(QMainWindow):
         self._view_menu = ViewMenu(self)
         self._help_menu = HelpMenu(self)
         self._plugin_menu = PluginMenu(self)
-        self._sync_menu = SyncMenu(self)
 
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
         self.menuBar().addMenu(self._analyze_menu.qmenu())
-        self.menuBar().addMenu(self._sync_menu.qmenu())
+        try:
+            import binsync
+            self._sync_menu = SyncMenu(self)
+            self.menuBar().addMenu(self._sync_menu.qmenu())
+        except ImportError:
+            pass
         self.menuBar().addMenu(self._plugin_menu.qmenu())
         self.menuBar().addMenu(self._help_menu.qmenu())
 

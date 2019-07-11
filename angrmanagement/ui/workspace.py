@@ -47,8 +47,14 @@ class Workspace:
             PatchesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
-            SyncView(self, 'right'),
         ]
+
+        try:
+            import binsync
+            self.default_tabs.append(SyncView(self, 'right'))
+        except ImportError:
+            pass
+
 
         #
         # Save initial splitter state
