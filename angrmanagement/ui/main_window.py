@@ -426,7 +426,8 @@ class MainWindow(QMainWindow):
         self.workspace.instance.initialize(cfg_args=cfg_args)
 
         # Re-enable a bunch of things
-        self._sync_menu.action_by_key("config").enable()
+        if has_binsync():
+            self._sync_menu.action_by_key("config").enable()
 
     def _load_database(self, file_path):
         with open(file_path, "rb") as o:
