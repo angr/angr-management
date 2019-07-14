@@ -16,9 +16,9 @@ class ExecuteCodeEvent(QEvent):
 
     def execute(self):
         if self.args is None:
-            self.callable()
+            return self.callable()
         else:
-            self.callable(*self.args)
+            return self.callable(*self.args)
 
 
 class GUIObjProxy(object):

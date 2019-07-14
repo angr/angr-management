@@ -76,7 +76,7 @@ class SyncControl:
     def last_update_timestamp(self):
         return self._last_update_ts
 
-    def _initialize(self):
+    def _initialize(self, **kwargs):
         self.project = self.instance.project
 
     def connect(self, user, repo_path, init_repo=False, remote_url=None):

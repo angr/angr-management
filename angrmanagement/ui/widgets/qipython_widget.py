@@ -34,7 +34,7 @@ class QIPythonWidget(RichJupyterWidget):
         self._control.clear()
 
     def print_text(self, text):
-        self._append_plain_text(text)
+        self._append_plain_text(text, True)
 
     def execute_command(self, command):
         self._execute(command, False)

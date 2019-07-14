@@ -243,6 +243,13 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def log(self, msg):
+        console = self.view_manager.first_view_in_category('console')
+        if console is None:
+            print(msg)
+        else:
+            console.print_text(msg)
+
     #
     # Private methods
     #

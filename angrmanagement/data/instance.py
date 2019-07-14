@@ -2,6 +2,7 @@ import pickle
 import time
 from threading import Thread
 from queue import Queue
+import traceback
 
 import ana
 
@@ -22,6 +23,7 @@ class Instance:
         self.states = ObjectContainer([], name='Global states list')
         self.patches = ObjectContainer(None, name='Global patches update notifier')
         self._project_container = ObjectContainer(project, "the current angr project")
+        self._project_container.am_subscribe(self.initialize)
         self.cfg_container = ObjectContainer(project, "the current CFG")
         self.interactions = ObjectContainer([], name='Saved program interactions')
         from angrmanagement.ui.views.interaction_view import PlainTextProtocol
@@ -91,8 +93,9 @@ class Instance:
     def async_set_cfb(self, cfb):
         self._cfb = cfb
 
-    def set_project(self, project):
-        self.project = project
+    def set_project(self, project, cfg_args=None):
+        self._project_container.am_obj = project
+        self._project_container.am_event(cfg_args=cfg_args)
 
     def set_image(self, image):
         self.img_name = image
@@ -144,7 +147,7 @@ class Instance:
         t.start()
 
     def _start_worker(self):
-        self._start_daemon_thread(self._worker, 'angr Management Worker Thread')
+        self._start_daemon_thread(self._worker, 'angr-management Worker Thread')
 
     def _worker(self):
         while True:
@@ -154,10 +157,13 @@ class Instance:
             job = self._jobs_queue.get()
             gui_thread_schedule_async(self._set_status, args=("Working...",))
 
-            result = job.run(self)
-            gui_thread_schedule_async(job.finish, args=(self, result))
-
-            self.jobs.remove(job)
+            try:
+                result = job.run(self)
+            except:
+                self.workspace.log('Exception while running job "%s":\n' % job.name)
+                self.workspace.log(traceback.format_exc())
+            else:
+                gui_thread_schedule_async(job.finish, args=(self, result))
 
     def _set_status(self, status_text):
         GlobalInfo.main_window.status = status_text

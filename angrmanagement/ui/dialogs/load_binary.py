@@ -188,3 +188,17 @@ class LoadBinary(QDialog):
     def _on_cancel_clicked(self):
         self.cfg_args = None
         self.close()
+
+    @staticmethod
+    def run(partial_ld):
+        try:
+            dialog = LoadBinary(partial_ld)
+            dialog.setModal(True)
+            dialog.exec_()
+
+            if dialog.cfg_args is not None:
+                # load the binary
+                return dialog.load_options, dialog.cfg_args
+        except LoadBinaryError:
+            pass
+        return None, None

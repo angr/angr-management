@@ -41,6 +41,12 @@ class ConsoleView(BaseView):
 
         self._ipython_widget.push_namespace(namespace)
 
+    def print_text(self, msg):
+        if self._ipython_widget is None:
+            return
+
+        self._ipython_widget.print_text(msg)
+
     def minimumSizeHint(self, *args, **kwargs):
         return QSize(0, 50)
 
