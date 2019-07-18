@@ -1,10 +1,15 @@
-import archr
+
 import cle
 import angr
+try:
+    import archr
+except ImportError:
+    archr = None
 
 from .job import Job
 from ...logic.threads import gui_thread_schedule
 from ...ui.dialogs import LoadBinary
+
 
 class LoadTargetJob(Job):
     def __init__(self, target, on_finish=None):
@@ -29,6 +34,7 @@ class LoadTargetJob(Job):
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
             self._progress_callback(95)
             inst.set_project(proj, cfg_args=cfg_args)
+
 
 class LoadBinaryJob(Job):
     def __init__(self, fname, on_finish=None):

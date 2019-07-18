@@ -4,8 +4,6 @@ from threading import Thread
 from queue import Queue
 import traceback
 
-import ana
-
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
 from .sync_ctrl import SyncControl
@@ -15,6 +13,10 @@ from ..logic.threads import gui_thread_schedule_async
 
 class Instance:
     def __init__(self, project=None):
+
+        # delayed import
+        from ..ui.views.interaction_view import PlainTextProtocol
+
         self.workspace = None
 
         self.jobs = []
@@ -26,7 +28,6 @@ class Instance:
         self._project_container.am_subscribe(self.initialize)
         self.cfg_container = ObjectContainer(project, "the current CFG")
         self.interactions = ObjectContainer([], name='Saved program interactions')
-        from angrmanagement.ui.views.interaction_view import PlainTextProtocol
         self.interaction_protocols = ObjectContainer([PlainTextProtocol], name='Available interaction protocols')
         self.sync = SyncControl(self)
 
@@ -123,19 +124,6 @@ class Instance:
     def add_job(self, job):
         self.jobs.append(job)
         self._jobs_queue.put(job)
-
-    def save(self, loc):
-        with open(loc, 'wb') as f:
-            pickled = pickle.dumps(self)
-            store = ana.get_dl()._state_store
-            pickle.dump({'store': store, 'pickled': pickled}, f)
-
-    @staticmethod
-    def from_file(loc):
-        with open(loc, 'rb') as f:
-            saved = pickle.load(f)
-            ana.get_dl()._state_store = saved['store']
-            return pickle.loads(saved['pickled'])
 
     #
     # Private methods
