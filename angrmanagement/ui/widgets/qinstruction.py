@@ -80,21 +80,55 @@ class QInstruction(QCachedGraphicsItem):
     def addr(self):
         return self.insn.addr
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
-        if self.addr == self.workspace.instance.selected_addr:
-            painter.setBrush(Qt.red)
-            painter.setPen(Qt.red)
-            painter.drawRect(0, 0, self.width, self.height)
-        painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
-        painter.setFont(self._config.disasm_font)
-        painter.setBrush(Qt.black)
-        painter.setPen(Qt.black)
+    @property
+    def selected(self):
+        return self.workspace.instance.is_instruction_selected(self.addr)
+
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+
+        x = 0
         y = self._config.disasm_font_ascent
-        painter.drawText(0, y, self._mnemonic)
+
+        painter.setRenderHints(
+            QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        painter.setFont(self._config.disasm_font)
+
+        # selection
+        backcolor = self.insn_backcolor
+        if backcolor is not None:
+            painter.setBrush(backcolor)
+            painter.setPen(backcolor)
+            painter.drawRect(0, 0, self.width, self.height)
+
+        # address
+        if self.disasm_view.show_address:
+            painter.setPen(Qt.black)
+            painter.drawText(x, y, self._addr)
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
+
+        # mnemonic
+        painter.setPen(QColor(0, 0, 0x80))
+        painter.drawText(x, y, self._mnemonic)
+        x += self._mnemonic_width
+
+        # all commas
         for operand in self._operands[:-1]:
             endpos = operand.pos().x() + operand.width
             painter.drawText(endpos, y, self.INTERSPERSE_ARGS)
+
+        if self._operands:
+            last_operand = self._operands[-1]
+            x = last_operand.pos().x() + last_operand.width
+
+        # comment or string - comments have precedence
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, y, self.COMMENT_PREFIX + self._comment)
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.gray)
+            painter.drawText(x, y, self._string)
 
     @property
     def insn_backcolor(self):
@@ -109,7 +143,7 @@ class QInstruction(QCachedGraphicsItem):
             if self.selected:
                 r, g, b = 0xef, 0xbf, 0xba
 
-        return r, g, b
+        return QColor(r, g, b) if r is not None else None
 
     def _init_widgets(self):
         self._operands.clear()
@@ -131,8 +165,8 @@ class QInstruction(QCachedGraphicsItem):
                     if len(operand.children) == 1 and type(operand.children[0]) is Value:
                         branch_targets = (operand.children[0].val,)
             qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
-                               self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets, self._config,
-                               parent=self)
+                                self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets,
+                                self._config, parent=self)
             self._operands.append(qoperand)
 
         if should_display_string_label(self.workspace.instance.cfg, self.insn.addr):
@@ -144,20 +178,34 @@ class QInstruction(QCachedGraphicsItem):
         if self._comment is not None:
             self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
 
-        #self._mnemonic_item = QGraphicsSimpleTextItem(self._mnemonic, parent=self)
-        #self._mnemonic_item.setFont(self._config.code_font)
+        self._update_size()
+
+    def _update_size(self):
 
         x = 0
-        #self._mnemonic_item.setPos(0, 0)
-        x = self._config.disasm_font_width * 10
+        # address
+        if self.disasm_view.show_address:
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
+
+        # mnemonic
+        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING
         intersperse_width = self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS)
-        if len(self._operands) > 0:
+
+        # operands
+        if self._operands:
             for operand in self._operands[:-1]:
                 operand.setPos(x, 0)
                 x += operand.boundingRect().width() + intersperse_width
             last_operand = self._operands[-1]
             last_operand.setPos(x, 0)
             x += last_operand.boundingRect().width()
+
+        # comments/string
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
+
         self._width = x
         self._height = self._config.disasm_font_height
 

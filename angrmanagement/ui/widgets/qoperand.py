@@ -145,17 +145,57 @@ class QOperand(QCachedGraphicsItem):
         return list(branch_targets)[ : n]
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
-        if self.equals_for_highlighting_purposes(self.workspace.instance.selected_operand):
-            painter.setBrush(Qt.green)
-            painter.setPen(Qt.green)
+        if self.selected:
+            painter.setPen(self._config.disasm_view_operand_select_color)
+            painter.setBrush(self._config.disasm_view_operand_select_color)
             painter.drawRect(0, 0, self.width, self.height)
-        painter.setBrush(Qt.black)
-        painter.setPen(Qt.black)
+        elif self.equals_for_highlighting_purposes(self.workspace.instance.selected_operand):
+            painter.setBrush(self._config.disasm_view_operand_highlight_color)
+            painter.setPen(self._config.disasm_view_operand_highlight_color)
+            painter.drawRect(0, 0, self.width, self.height)
+
+        if self._branch_target or self._branch_targets:
+            if self._is_target_func:
+                painter.setPen(self._config.disasm_view_target_addr_color)
+            else:
+                painter.setPen(self._config.disasm_view_antitarget_addr_color)
+        else:
+            if self.disasm_view.show_variable and self.variable is not None:
+                # show-variable is enabled and this operand has a linked variable
+                fallback = True
+                if self.infodock.induction_variable_analysis is not None:
+                    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
+                    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                        painter.setPen(Qt.darkYellow)
+                        fallback = False
+
+                if fallback:
+                    painter.setPen(QColor(0xff, 0x14, 0x93))
+            else:
+                painter.setPen(QColor(0, 0, 0x80))
+
         painter.setRenderHints(
                 QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
         painter.setFont(self._config.disasm_font)
         y = self._config.disasm_font_ascent
         painter.drawText(0, y, self.text)
+
+        x = len(self.text) * self._config.disasm_font_width
+        # draw additional branch targets
+        if self._branch_targets_text:
+            painter.setPen(Qt.darkYellow)
+            x += self.BRANCH_TARGETS_SPACING
+            painter.drawText(x, y, self._branch_targets_text, )
+            x += self._branch_targets_text_width
+
+        if self.variable is not None and self.disasm_view.show_variable_identifier:
+            x += self.VARIABLE_IDENT_SPACING
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, y, self._variable_ident)
+            x += self._variable_ident_width
+
+        # restores the color
+        painter.setPen(QColor(0, 0, 0x80))
 
     def _init_widgets(self):
 

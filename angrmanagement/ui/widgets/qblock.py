@@ -1,31 +1,26 @@
 import logging
 
-from PySide2.QtGui import QPainter, QLinearGradient, QColor, QBrush, QPen, QPainterPath
-from PySide2.QtCore import QPointF, Qt, QRectF, Slot, QMarginsF
-from PySide2.QtWidgets import QGraphicsItem
+from PySide2.QtGui import QColor, QPen, QPainterPath
+from PySide2.QtCore import QRectF, Slot, QMarginsF
 
 from angr.analyses.disassembly import Instruction
 from angr.sim_variable import SimRegisterVariable
 
-from ...utils import (
-    get_label_text, get_block_objects, address_to_text, get_out_branches_for_insn,
-    get_string_for_display, should_display_string_label,
-)
+from ...utils import get_block_objects, get_out_branches_for_insn
 from ...utils.block_objects import Variables, PhiVariable, Label
 from ...config import Conf
 from .qinstruction import QInstruction
 from .qblock_label import QBlockLabel
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
-
 from .qgraph_object import QCachedGraphicsItem
 
 _l = logging.getLogger(__name__)
-#_l.setLevel(logging.DEBUG)
+
 
 class QBlock(QCachedGraphicsItem):
-    TOP_PADDING = 0
-    BOTTOM_PADDING = 0
+    TOP_PADDING = 5
+    BOTTOM_PADDING = 5
     LEFT_PADDING = 10
     RIGHT_PADDING = 10
     SPACING = 0
@@ -109,22 +104,19 @@ class QBlock(QCachedGraphicsItem):
                 label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, parent=self)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
-            # elif isinstance(obj, PhiVariable):
-            #     if not isinstance(obj.variable, SimRegisterVariable):
-            #         phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config)
-            #         self.objects.append(phivariable)
-            # elif isinstance(obj, Variables):
-            #     for var in obj.variables:
-            #         variable = QVariable(self.workspace, self.disasm_view, var, self._config)
-            #         self.objects.append(variable)
+            elif isinstance(obj, PhiVariable):
+                if not isinstance(obj.variable, SimRegisterVariable):
+                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config)
+                    self.objects.append(phivariable)
+            elif isinstance(obj, Variables):
+                for var in obj.variables:
+                    variable = QVariable(self.workspace, self.disasm_view, var, self._config)
+                    self.objects.append(variable)
         self.layout_widgets()
 
     def layout_widgets(self):
         raise NotImplementedError
 
-    #
-    # Private methods
-    #
 
 class QGraphBlock(QBlock):
     MINIMUM_DETAIL_LEVEL = 0.4
@@ -139,10 +131,9 @@ class QGraphBlock(QBlock):
             obj.setPos(x, y)
             y += obj.boundingRect().height()
 
-    def paint(self, painter, option, widget):  #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
-
 
         # background of the node
         if should_omit_text:
@@ -154,7 +145,7 @@ class QGraphBlock(QBlock):
 
         # content
 
-        # if we are two far zoomed out, do not draw the text
+        # if we are too far zoomed out, do not draw the text
         if self._objects_are_hidden != should_omit_text:
             for obj in self.objects:
                 obj.setVisible(not should_omit_text)
@@ -165,6 +156,7 @@ class QGraphBlock(QBlock):
         cbr = self.childrenBoundingRect()
         margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING, self.RIGHT_PADDING, self.BOTTOM_PADDING)
         return cbr.marginsAdded(margins)
+
 
 class QLinearBlock(QBlock):
     ADDRESS_PADDING = 10
@@ -192,13 +184,11 @@ class QLinearBlock(QBlock):
         self._width = max_width
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
-        _l.debug('Painting linear block')
         y_offset = 0
         painter.setFont(self._config.disasm_font)
         for obj in self.objects:
-            painter.drawText(0, y_offset+self._config.disasm_font_ascent, '{:08x}'.format(obj.addr))
+            painter.drawText(0, y_offset + self._config.disasm_font_ascent, '{:08x}'.format(obj.addr))
             y_offset += self._config.disasm_font_height + self.SPACING
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
-
