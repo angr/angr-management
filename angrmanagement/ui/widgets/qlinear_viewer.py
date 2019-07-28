@@ -1,7 +1,7 @@
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QGraphicsScene, QGraphicsItem, QAbstractSlider, QWidget, QHBoxLayout, QAbstractScrollArea
+from PySide2.QtWidgets import QGraphicsScene, QGraphicsItem, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
 from PySide2.QtGui import QPainter
 from PySide2.QtCore import Qt, QRectF, QRect, QEvent
 

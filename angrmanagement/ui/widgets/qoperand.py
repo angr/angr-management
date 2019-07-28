@@ -99,6 +99,14 @@ class QOperand(QCachedGraphicsItem):
         else:
             super().mousePressEvent(event)
 
+    def mouseDoubleClickEvent(self, event):
+        button = event.button()
+        if button == Qt.LeftButton:
+            if self._branch_target is not None:
+                self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr)
+        else:
+            super().mouseDoubleClickEvent(event)
+
     #
     # Public methods
     #
