@@ -399,26 +399,6 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         self._offset = offset
         self._start_line_in_object = start_line_in_object
 
-        # # QGraphicsScene does not perform well when not centered around 0
-        # # https://stackoverflow.com/questions/6164543/qgraphicsscene-item-coordinates-affect-performance
-        # totalheight = y
-        # half_maxwidth = maxwidth / 2
-        # half_totalheight = totalheight / 2
-        # self.scene().setSceneRect(- half_maxwidth, - half_totalheight, maxwidth, totalheight)
-        # y = -1 * (totalheight / 2)
-        # for obj in self.objects:
-        #     self.scene().addItem(obj)
-        #     obj.setPos(x, y)
-        #     y += obj.height + self.OBJECT_PADDING
-
-        # margins = QMarginsF(50, 25, 10, 25)
-
-        # itemsBoundingRect = self.scene().itemsBoundingRect()
-        # paddedRect = itemsBoundingRect.marginsAdded(margins)
-        # self.setSceneRect(paddedRect)
-        # self.verticalScrollBar().setValue(self.verticalScrollBar().minimum())
-        # self.horizontalScrollBar().setValue(self.horizontalScrollBar().minimum())
-
     def _obj_to_paintable(self, obj_addr, obj):
         if isinstance(obj, Block):
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
