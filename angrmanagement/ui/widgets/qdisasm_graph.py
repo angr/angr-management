@@ -33,6 +33,9 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
         self.blocks = [ ]
         self._insaddr_to_block = { }
 
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
     #
     # Properties
     #
@@ -89,6 +92,10 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
                 self._insaddr_to_block[insn_addr] = block
 
         self.request_relayout()
+        # Leave some margins
+        scene = self.scene()
+        rect = scene.itemsBoundingRect()  # type: QRectF
+        scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
 
         # determine initial view focus point
         self._reset_view()

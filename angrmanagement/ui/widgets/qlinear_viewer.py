@@ -110,13 +110,16 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
     #
 
     def resizeEvent(self, event):
-        self._viewer._scene = QGraphicsScene(0, 0, event.size().width(), event.size().height())
-        self._viewer.setScene(self._viewer._scene)
-        # clear all saved object references
-        curr_offset = self._offset
-        self.clear_objects()
-        self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
-        self.redraw()
+        old_height = event.oldSize().height()
+        new_height = event.size().height()
+        self._viewer._scene.setSceneRect(QRectF(0, 0, event.size().width(), new_height))
+
+        if new_height > old_height:
+            # we probably need more objects generated
+            curr_offset = self._offset
+            self._offset = None  # force a re-generation of objects
+            self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
+            self.redraw()
 
         super().resizeEvent(event)
 

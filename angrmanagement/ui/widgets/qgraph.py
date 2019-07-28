@@ -85,8 +85,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
     def _reset_scene(self):
         if self.scene() is None:
-            width = 1000000  # a ludicrously large number, to emulate infinite panning
-            scene = QGraphicsScene(- (width / 2), - (width / 2), width, width)
+            scene = QGraphicsScene()
             self.setScene(scene)
         else:
             self.scene().clear()
