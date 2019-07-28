@@ -240,7 +240,6 @@ class QFunctionTableView(QTableView):
         row = model_index.row()
         self._selected_func.am_obj = self._model.func_list[row]
         self._selected_func.am_event(func=self._selected_func.am_obj)
-        self._function_table._view.workspace.instance.selected_function = self._model.func_list[row]
 
     def keyPressEvent(self, key_event):
 

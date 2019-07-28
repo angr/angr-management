@@ -9,16 +9,8 @@ from .object_container import ObjectContainer
 from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
-from ..utils.subscriptions import subscribables
 
 
-@subscribables('selected_addr',
-               'selected_operand',
-               'cfg',
-               'cfb',
-               'partial_cfg',
-               'partial_cfb',
-               'selected_function')
 class Instance:
     def __init__(self, project=None):
         # delayed import

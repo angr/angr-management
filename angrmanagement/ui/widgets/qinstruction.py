@@ -69,14 +69,15 @@ class QInstruction(QCachedGraphicsItem):
         if event.button() == Qt.LeftButton:
             # toggle selection
             self.infodock.toggle_instruction_selection(self.addr,
+                                                       item=self,
                                                        unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             event.accept()
         elif event.button() == Qt.RightButton:
             # display the context menu
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
             event.accept()
-
-        super().mousePressEvent(event)
+        else:
+            super().mousePressEvent(event)
 
     @property
     def addr(self):

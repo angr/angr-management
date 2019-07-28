@@ -77,5 +77,5 @@ class CFGGenerationJob(Job):
             gui_thread_schedule_async(self._refresh, args=(cfg, self._cfb, ))
 
     def _refresh(self, cfg, cfb):
-        GlobalInfo.main_window.workspace.instance.partial_cfg = cfg
-        GlobalInfo.main_window.workspace.instance.partial_cfb = cfb
+        GlobalInfo.main_window.workspace.instance.async_set_cfg(cfg)
+        GlobalInfo.main_window.workspace.instance.async_set_cfb(cfb)

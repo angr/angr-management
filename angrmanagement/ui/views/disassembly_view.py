@@ -180,6 +180,7 @@ class DisassemblyView(BaseView):
         elif key == Qt.Key_Semicolon:
             # add comment
             self.popup_comment_dialog()
+            return
         super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event):
@@ -299,8 +300,6 @@ class DisassemblyView(BaseView):
     def display_function(self, function):
 
         self._jump_history.jump_to(function.addr)
-        self.workspace.instance.selected_function = function
-        self.workspace.instance.selected_addr = function.addr
         self._display_function(function)
 
     def decompile_current_function(self):
@@ -498,19 +497,19 @@ class DisassemblyView(BaseView):
                 # set function graph of a new function
                 self._flow_graph.function_graph = FunctionGraph(function=the_func)
 
-            self.workspace.view_manager.first_view_in_category('console').push_namespace({
-                'func': the_func,
-                'function_': the_func,
-            })
-
         elif self._linear_viewer.isVisible():
             self._linear_viewer.navigate_to_addr(the_func.addr)
+
+        self.workspace.view_manager.first_view_in_category('console').push_namespace({
+            'func': the_func,
+            'function_': the_func,
+        })
 
     def _jump_to(self, addr):
         function = locate_function(self.workspace.instance, addr)
         if function is not None:
             self._display_function(function)
-            self.infodock.toggle_instruction_selection(addr)
+            self.infodock.select_instruction(addr, unique=True)
             return True
         else:
             return False

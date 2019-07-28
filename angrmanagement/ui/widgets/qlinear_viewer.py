@@ -1,10 +1,9 @@
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QAbstractSlider, QWidget, QHBoxLayout, \
-    QAbstractScrollArea
+from PySide2.QtWidgets import QGraphicsScene, QGraphicsItem, QAbstractSlider, QWidget, QHBoxLayout, QAbstractScrollArea
 from PySide2.QtGui import QPainter
-from PySide2.QtCore import Qt, QMarginsF, QRectF
+from PySide2.QtCore import Qt, QRectF, QRect, QEvent
 
 from angr.block import Block
 from angr.analyses.cfg.cfb import Unknown
@@ -25,7 +24,6 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 
         self.area = area  # type: QLinearDisassembly
         self._scene = QGraphicsScene(0, 0, self.width(), self.height())
-        print(self.width(), self.height())
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.setScene(self._scene)
         self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
@@ -34,6 +32,21 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         # Do not use the scrollbars since they are hard-linked to the size of the scene, which is bad for us
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+    def wheelEvent(self, event):
+        self.area.wheelEvent(event)
+        super().wheelEvent(event)
+
+    def event(self, event):
+        """
+        Reimplemented to capture the Tab keypress event.
+        """
+
+        # by default, the tab key moves focus. Hijack the tab key
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
+            self.area.disasm_view.keyPressEvent(event)
+            return True
+        return super().event(event)
 
 
 class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
@@ -132,15 +145,15 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         if delta < 0:
             # scroll down by some lines
             self.prepare_objects(self.offset, start_line=self._start_line_in_object + int(-delta // self._line_height))
+            self.verticalScrollBar().setValue(self.offset * self._line_height)
             event.accept()
             self.viewport().update()
         elif delta > 0:
             # Scroll up by some lines
             self.prepare_objects(self.offset, start_line=self._start_line_in_object - int(delta // self._line_height))
             event.accept()
+            self.verticalScrollBar().setValue(self.offset * self._line_height)
             self.viewport().update()
-
-        super().wheelEvent(event)
 
     def _on_vertical_scroll_bar_triggered(self, action):
 
@@ -211,7 +224,24 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         _l.debug('Going to function at 0x%x by scrolling to %s', func.addr, desired_center_y)
         self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
 
-    def show_instruction(self, insn_addr, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, item=None, centering=False, use_block_pos=False):
+        """
+
+        :param insn_addr:
+        :param QGraphicsItem item:
+        :param centering:
+        :param use_block_pos:
+        :return:
+        """
+
+        if item is not None:
+            # check if item is already visible in the viewport
+            pos = item.scenePos()
+            viewport = self._viewer.viewport()
+            rect = self._viewer.mapToScene(QRect(0, 0, viewport.width(), viewport.height())).boundingRect()
+            if rect.contains(pos):
+                return
+
         self.navigate_to_addr(insn_addr)
 
     def navigate_to_addr(self, addr):
@@ -228,6 +258,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
 
     def navigate_to(self, offset):
         self.verticalScrollBar().setValue(offset * self._line_height)
+        self.prepare_objects(offset, start_line=0)
 
     #
     # Private methods
@@ -346,7 +377,8 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 y = -start_line * self._line_height
             else:
                 if start_line > 0:
-                    _l.debug("First object to paint: %s (size %d). Current offset %d.", obj, obj.size, offset)
+                    _l.debug("First object to paint: %s (size %d). Current offset %d. Start printing from line %d. "
+                             "Y pos %d.", obj, obj.size, offset, start_line, y)
                     # this is the first object to paint
                     start_line_in_object = start_line
                     start_line = 0
@@ -355,8 +387,8 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                     lines += object_lines
                 self.objects.append(qobject)
                 qobject.setPos(x, y)
-                y += qobject.height + self.OBJECT_PADDING
                 scene.addItem(qobject)
+                y += qobject.height + self.OBJECT_PADDING
 
             if lines > viewable_lines:
                 break

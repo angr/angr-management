@@ -134,7 +134,7 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
         # by default, the tab key moves focus. Hijack the tab key
         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
-            self.keyPressEvent(event)
+            self.disasm_view.keyPressEvent(event)
             return True
         return super().event(event)
 
@@ -243,7 +243,7 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))
 
-    def show_instruction(self, insn_addr, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, item=None, centering=False, use_block_pos=False):
         block = self._insaddr_to_block.get(insn_addr, None)  # type: QGraphBlock
         if block is not None:
             if use_block_pos:

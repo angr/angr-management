@@ -94,7 +94,7 @@ class QOperand(QCachedGraphicsItem):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.infodock.toggle_operand_selection(self.insn.addr, self.operand_index,
-                                                   self.operand_descriptor,
+                                                   self.operand_descriptor, item=self,
                                                    unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
         else:
             super().mousePressEvent(event)

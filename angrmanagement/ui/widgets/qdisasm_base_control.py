@@ -18,5 +18,5 @@ class QDisassemblyBaseControl:
         """
         raise NotImplementedError()
 
-    def show_instruction(self, insn_addr, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, item=None, centering=False, use_block_pos=False):
         raise NotImplementedError()
