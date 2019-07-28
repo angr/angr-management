@@ -50,8 +50,8 @@ class CFGGenerationJob(Job):
     def finish(self, inst, result):
         try:
             cfg, cfb = result
-            inst.cfb = cfb
-            inst.cfg = cfg
+            inst.cfb.am_object = cfb
+            inst.cfg.am_object = cfg
             super(CFGGenerationJob, self).finish(inst, result)
         except Exception:
             _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)

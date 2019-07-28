@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QToolBar, QAction
 from PySide2.QtCore import QSize
 
 
-class ToolbarAction(object):
+class ToolbarAction:
     def __init__(self, icon, name, tooltip, triggered):
         self.icon = icon
         self.name = name
@@ -15,7 +15,7 @@ class ToolbarSplitter(ToolbarAction):
         super(ToolbarSplitter, self).__init__(None, None, None, None)
 
 
-class Toolbar(object):
+class Toolbar:
     def __init__(self, window, name):
         self.window = window
         self.name = name
