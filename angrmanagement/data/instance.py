@@ -25,7 +25,8 @@ class Instance:
         self.patches = ObjectContainer(None, name='Global patches update notifier')
         self._project_container = ObjectContainer(project, "the current angr project")
         self._project_container.am_subscribe(self.initialize)
-        self.cfg_container = ObjectContainer(project, "the current CFG")
+        self.cfg_container = ObjectContainer(None, "the current CFG")
+        self.cfb_container = ObjectContainer(None, "the current CFBlanket")
         self.interactions = ObjectContainer([], name='Saved program interactions')
         self.interaction_protocols = ObjectContainer([PlainTextProtocol], name='Available interaction protocols')
         self.sync = SyncControl(self)
@@ -74,11 +75,12 @@ class Instance:
 
     @property
     def cfb(self):
-        return self._cfb
+        return self.cfb_container.am_obj
 
     @cfb.setter
     def cfb(self, v):
-        self._cfb = v
+        self.cfb_container.am_obj = v
+        self.cfb_container.am_event()
 
     #
     # Public methods
@@ -91,7 +93,8 @@ class Instance:
         # self.cfg_container.am_event()
 
     def async_set_cfb(self, cfb):
-        self._cfb = cfb
+        self.cfb_container.am_obj = cfb
+        # should not trigger a signal
 
     def set_project(self, project, cfg_args=None):
         self._project_container.am_obj = project

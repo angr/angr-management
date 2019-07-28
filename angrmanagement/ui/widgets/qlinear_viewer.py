@@ -402,11 +402,17 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         if isinstance(obj, Block):
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             func_addr = cfg_node.function_address
-            func = self.cfg.kb.functions[func_addr]  # FIXME: Resiliency
-            disasm = self._get_disasm(func)
-            qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                   self.disasm_view.infodock, obj.addr, [obj], {},
-                                   )
+            if self.cfg.kb.functions.contains_addr(func_addr):
+                func = self.cfg.kb.functions[func_addr]
+                disasm = self._get_disasm(func)
+                qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                       self.disasm_view.infodock, obj.addr, [obj], {},
+                                       )
+            else:
+                # TODO: Get disassembly even if the function does not exist
+                _l.warning("Function %#x does not exist, and we cannot get disassembly for block %s.",
+                           func_addr, obj)
+                qobject = None
         elif isinstance(obj, Unknown):
             qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
         else:
