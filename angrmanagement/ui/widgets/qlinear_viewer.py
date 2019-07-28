@@ -224,7 +224,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         _l.debug('Going to function at 0x%x by scrolling to %s', func.addr, desired_center_y)
         self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
 
-    def show_instruction(self, insn_addr, item=None, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False):
         """
 
         :param insn_addr:
@@ -234,12 +234,11 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         :return:
         """
 
-        if item is not None:
+        if insn_pos is not None:
             # check if item is already visible in the viewport
-            pos = item.scenePos()
             viewport = self._viewer.viewport()
             rect = self._viewer.mapToScene(QRect(0, 0, viewport.width(), viewport.height())).boundingRect()
-            if rect.contains(pos):
+            if rect.contains(insn_pos):
                 return
 
         self.navigate_to_addr(insn_addr)

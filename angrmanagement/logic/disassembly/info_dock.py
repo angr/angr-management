@@ -50,7 +50,7 @@ class InfoDock:
         self.selected_insns.clear()
         self.selected_operands.clear()
 
-    def select_instruction(self, insn_addr, unique=True):
+    def select_instruction(self, insn_addr, unique=True, insn_pos=None):
         if insn_addr not in self.selected_insns:
             if unique:
                 # unselect existing ones
@@ -58,7 +58,7 @@ class InfoDock:
                 self.selected_insns.add(insn_addr)
             else:
                 self.selected_insns.add(insn_addr)
-            self.disasm_view.current_graph.show_instruction(insn_addr)
+            self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
             self.selected_insns.am_event()
 
     def unselect_instruction(self, insn_addr):
@@ -95,7 +95,7 @@ class InfoDock:
             self.selected_operands.pop((insn_addr, operand_idx))
             self.selected_operands.am_event()
 
-    def toggle_instruction_selection(self, insn_addr, item=None, unique=False):
+    def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique=False):
         """
         Toggle the selection state of an instruction in the disassembly view.
 
@@ -106,10 +106,9 @@ class InfoDock:
         if insn_addr in self.selected_insns:
             self.unselect_instruction(insn_addr)
         else:
-            self.select_instruction(insn_addr, unique=unique)
-            self.disasm_view.current_graph.show_instruction(insn_addr, item=item)
+            self.select_instruction(insn_addr, unique=unique, insn_pos=insn_pos)
 
-    def toggle_operand_selection(self, insn_addr, operand_idx, operand, item=None, unique=False):
+    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique=False):
         """
         Toggle the selection state of an operand of an instruction in the disassembly view.
 
@@ -123,7 +122,7 @@ class InfoDock:
             self.unselect_operand(insn_addr, operand_idx)
         else:
             self.select_operand(insn_addr, operand_idx, operand, unique=unique)
-            self.disasm_view.current_graph.show_instruction(insn_addr, item=item)
+            self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
 
     def clear_selection(self):
         self.selected_insns.clear()

@@ -69,7 +69,7 @@ class QInstruction(QCachedGraphicsItem):
         if event.button() == Qt.LeftButton:
             # toggle selection
             self.infodock.toggle_instruction_selection(self.addr,
-                                                       item=self,
+                                                       insn_pos=self.scenePos(),
                                                        unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             event.accept()
         elif event.button() == Qt.RightButton:
