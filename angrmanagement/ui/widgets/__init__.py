@@ -8,3 +8,6 @@ from .qdisasm_graph import QDisassemblyGraph
 from .qsymexec_graph import QSymExecGraph
 
 from .qlinear_viewer import QLinearDisassembly
+
+# other widgets
+from .qfeature_map import QFeatureMap
