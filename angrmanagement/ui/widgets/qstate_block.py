@@ -8,7 +8,7 @@ from ...config import Conf
 from ...utils import locate_function
 
 _l = logging.getLogger(__name__)
-_l.setLevel(logging.DEBUG)
+
 
 class QStateBlock(QGraphicsItem):
 
@@ -76,26 +76,28 @@ class QStateBlock(QGraphicsItem):
         self._function_str = "Function: %s" % self._function_str
 
     def mousePressEvent(self, event): #pylint: disable=no-self-use
-        _l.debug('QStateBlock received mouse press event')
-        #super().mousePressEvent(event)
+        super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        _l.debug('QStateBlock received mouse release event')
+        # _l.debug('QStateBlock received mouse release event')
         if event.button() == Qt.LeftButton:
             self.selected = not self.selected
             self.symexec_view.redraw_graph()
-        else:
-            super().mouseReleaseEvent()
+            event.accept()
+
+        super().mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event):
-        _l.debug('QStateBlock received mouse double click event')
+        # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
             if self.state is not None:
                 self._workspace.viz(self.state.addr)
+                event.accept()
             elif self.history is not None:
                 self._workspace.viz(self.history.state.addr)
-        else:
-            super().mouseReleaseEvent()
+                event.accept()
+
+        super().mouseDoubleClickEvent(event)
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
         """

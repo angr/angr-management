@@ -8,7 +8,7 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisasmGraph, QDisasmStatusBar, QLinearDisassembly
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
@@ -18,7 +18,7 @@ from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from .view import BaseView
 
 _l = logging.getLogger(__name__)
-_l.setLevel(logging.DEBUG)
+
 
 class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
@@ -31,11 +31,11 @@ class DisassemblyView(BaseView):
         # whether we want to show identifier or not
         self._show_variable_ident = False
 
-        self._linear_viewer = QLinearDisassembly(self.workspace, disasm_view=self, parent=self)
-        self._flow_graph = None  # type: QDisasmGraph
+        self._linear_viewer = None
+        self._flow_graph = None  # type: QDisassemblyGraph
         self._statusbar = None
         self._jump_history = JumpHistory()
-        self.infodock = InfoDock()
+        self.infodock = InfoDock(self)
         self._variable_recovery_flavor = 'fast'
         self.variable_manager = None  # type: VariableManager
         self._current_function = ObjectContainer(None, 'The currently selected function')
@@ -51,6 +51,7 @@ class DisassemblyView(BaseView):
 
         self._init_widgets()
         self._init_menus()
+        self._register_events()
 
     def reload(self):
 
@@ -58,9 +59,7 @@ class DisassemblyView(BaseView):
 
         # Initialize the linear viewer
         # TODO: Relocate the logic to a better place
-        #self._linear_viewer.cfg = self.workspace.instance.cfg
-        #self._linear_viewer.cfb = self.workspace.instance.cfb
-        #self._linear_viewer.initialize()
+        self._linear_viewer.initialize()
 
     def refresh(self):
         self.current_graph.refresh()
@@ -113,6 +112,12 @@ class DisassemblyView(BaseView):
 
     @property
     def current_graph(self):
+        """
+        Return the current disassembly control, either linear viewer or flow graph.
+
+        :return:    Linear viewer or flow graph.
+        :rtype:     QLinearDisassembly or QDisassemblyGraph
+        """
         if self._linear_viewer.isVisible():
             return self._linear_viewer
         else:
@@ -146,6 +151,56 @@ class DisassemblyView(BaseView):
     def set_comment_callback(self, v):
         self._set_comment_callback = v
 
+    #
+    # Events
+    #
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_G:
+            # jump to window
+            self.popup_jumpto_dialog()
+            return
+        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
+            # jump back
+            self.jump_back()
+            return
+        elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
+            # jump forward
+            self.jump_forward()
+            return
+        elif key == Qt.Key_A:
+            # switch between highlight mode
+            self.toggle_smart_highlighting(not self.infodock.smart_highlighting)
+            return
+        elif key == Qt.Key_Tab:
+            # decompile
+            self.decompile_current_function()
+            return
+        elif key == Qt.Key_Semicolon:
+            # add comment
+            self.popup_comment_dialog()
+        super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        key = event.key()
+
+        if key == Qt.Key_Space:
+            # switch to linear view
+            self.toggle_disasm_view()
+            event.accept()
+            return
+
+        super().keyReleaseEvent(event)
+
+    def _update_current_graph(self):
+        """
+        Redraw the graph currently in display.
+
+        :return:    None
+        """
+
+        self.current_graph.redraw()
 
     #
     # UI
@@ -207,42 +262,39 @@ class DisassemblyView(BaseView):
     # Public methods
     #
 
-    def subscribe_insn_select(self, callback):
-        """
-        Appends the provided function to the list of callbacks to be called when an instruction is selected in the
-        disassembly. The callback's parameters are:
-            'graph': the `QBaseGraph` object
-            'addr': integer address of the selected instruction
-            'block': the `QBlock` containing the instruction
-        :param callback: The callback function to call, which must accept **kwargs
-        """
-        #self._linear_viewer.selected_insns.am_subscribe(callback)
-        self._flow_graph.selected_insns.am_subscribe(callback)
-
     def toggle_disasm_view(self):
         if self._flow_graph.isHidden():
-            self._linear_viewer.hide()
-            self._flow_graph.show()
-            self._flow_graph.setFocus()
+            # Show flow graph
+            self.display_disasm_graph()
         else:
-            self._linear_viewer.show()
-            self._flow_graph.hide()
-            self._linear_viewer.setFocus()
+            # Show linear viewer
+            self.display_linear_viewer()
 
     def display_disasm_graph(self):
 
         self._linear_viewer.hide()
         self._flow_graph.show()
+
+        if self.infodock.selected_insns:
+            # display the currently selected instruction
+            self._flow_graph.show_instruction(next(iter(self.infodock.selected_insns)))
+        elif self._current_function.am_obj is not None:
+            self._flow_graph.show_instruction(self._current_function.addr)
+
         self._flow_graph.setFocus()
 
     def display_linear_viewer(self):
 
         self._flow_graph.hide()
         self._linear_viewer.show()
-        #self._linear_viewer._linear_view.setFocus()
 
-        # if self._current_function is not None:
-        #     self._linear_viewer.navigate_to_addr(self._current_function.addr)
+        if self.infodock.selected_insns:
+            # display the currently selected instruction
+            self._linear_viewer.show_instruction(next(iter(self.infodock.selected_insns)))
+        elif self._current_function.am_obj is not None:
+            self._linear_viewer.show_instruction(self._current_function.addr)
+
+        self._linear_viewer.setFocus()
 
     def display_function(self, function):
 
@@ -267,7 +319,7 @@ class DisassemblyView(BaseView):
         self.infodock.smart_highlighting = enabled
 
         self._flow_graph.refresh()
-        #self._linear_viewer.refresh()
+        self._linear_viewer.refresh()
 
     def toggle_show_address(self, show_address):
         """
@@ -304,35 +356,6 @@ class DisassemblyView(BaseView):
         self._show_variable_ident = show_ident
 
         self.current_graph.refresh()
-
-    def toggle_instruction_selection(self, insn_addr):
-        """
-        Toggle the selection state of an instruction in the disassembly view.
-
-        :param int insn_addr: Address of the instruction to toggle.
-        :return:              None
-        """
-
-        if insn_addr in self.current_graph.selected_insns:
-            self.current_graph.unselect_instruction(insn_addr)
-        else:
-            self.current_graph.select_instruction(insn_addr, unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
-            self.current_graph.show_instruction(insn_addr)
-
-    def toggle_operand_selection(self, insn_addr, operand_idx):
-        """
-        Toggle the selection state of an operand of an instruction in the disassembly view.
-
-        :param int insn_addr:   Address of the instruction to toggle.
-        :param int operand_idx: The operand to toggle.
-        :return:                None
-        """
-
-        if (insn_addr, operand_idx) in self.current_graph.selected_operands:
-            self.current_graph.unselect_operand(insn_addr, operand_idx)
-        else:
-            self.current_graph.select_operand(insn_addr, operand_idx, unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
-            self.current_graph.show_instruction(insn_addr)
 
     def jump_to(self, addr, src_ins_addr=None):
 
@@ -393,8 +416,8 @@ class DisassemblyView(BaseView):
             if self._set_comment_callback:
                 self._set_comment_callback(addr=addr, comment_text=comment_text)
 
-            # redraw the current block
-            self._flow_graph.update_comment(addr, comment_text)
+            # redraw
+            self.current_graph.refresh()
 
     def avoid_addr_in_exec(self, addr):
 
@@ -416,8 +439,8 @@ class DisassemblyView(BaseView):
     #
 
     def _init_widgets(self):
-        #self._linear_viewer = QLinearViewer(self.workspace, self)
-        self._flow_graph = QDisasmGraph(self.workspace, self)
+        self._linear_viewer =  QLinearDisassembly(self.workspace, self, parent=self)
+        self._flow_graph = QDisassemblyGraph(self.workspace, self, parent=self)
 
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
@@ -432,48 +455,15 @@ class DisassemblyView(BaseView):
         self.display_disasm_graph()
         # self.display_linear_viewer()
 
-    def keyPressEvent(self, event):
-        key = event.key()
-        if key == Qt.Key_G:
-            # jump to window
-            self.popup_jumpto_dialog()
-            return
-        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
-            # jump back
-            self.jump_back()
-            return
-        elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
-            # jump forward
-            self.jump_forward()
-            return
-        elif key == Qt.Key_A:
-            # switch between highlight mode
-            self.toggle_smart_highlighting(not self.infodock.smart_highlighting)
-            return
-        elif key == Qt.Key_Tab:
-            # decompile
-            self.decompile_current_function()
-            return
-        elif key == Qt.Key_Semicolon:
-            # add comment
-            self.popup_comment_dialog()
-        super().keyPressEvent(event)
-
-    def keyReleaseEvent(self, event):
-        key = event.key()
-
-        if key == Qt.Key_Space:
-            # switch to linear view
-            self.toggle_disasm_view()
-            #self.disassembly_view.display_linear_viewer()
-            event.accept()
-            return
-
-        super().keyReleaseEvent(event)
-
     def _init_menus(self):
 
         self._insn_menu = DisasmInsnContextMenu(self)
+
+    def _register_events(self):
+
+        # redraw the current graph if instruction/operand selection changes
+        self.infodock.selected_insns.am_subscribe(self._update_current_graph)
+        self.infodock.selected_operands.am_subscribe(self._update_current_graph)
 
     #
     # Private methods
@@ -481,27 +471,29 @@ class DisassemblyView(BaseView):
 
     def _display_function(self, the_func):
 
-        self._current_function = the_func
+        self._current_function.am_obj = the_func
+        self._current_function.am_event()
 
         # set status bar
         self._statusbar.function = the_func
 
         # variable recovery
-        # if self.workspace.instance.project.kb.variables.has_function_manager(the_func.addr):
-        #     variable_manager = self.workspace.instance.project.kb.variables
-        # else:
-        #     # run variable recovery analysis
-        #     if self._variable_recovery_flavor == 'fast':
-        #         vr = self.workspace.instance.project.analyses.VariableRecoveryFast(the_func)
-        #     else:
-        #         vr = self.workspace.instance.project.analyses.VariableRecovery(the_func)
-        #     variable_manager = vr.variable_manager
-        # self.variable_manager = variable_manager
-        # self.infodock.variable_manager = variable_manager
+        if self.workspace.instance.project.kb.variables.has_function_manager(the_func.addr):
+            variable_manager = self.workspace.instance.project.kb.variables
+        else:
+            # run variable recovery analysis
+            if self._variable_recovery_flavor == 'fast':
+                vr = self.workspace.instance.project.analyses.VariableRecoveryFast(the_func)
+            else:
+                vr = self.workspace.instance.project.analyses.VariableRecovery(the_func)
+            variable_manager = vr.variable_manager
+        self.variable_manager = variable_manager
+        self.infodock.variable_manager = variable_manager
+
+        # clear existing selected instructions and operands
+        self.infodock.clear_selection()
 
         if self._flow_graph.isVisible():
-            self.workspace.instance.selected_insn = None
-            self.workspace.instance.selected_operand = None
             if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
                 # set function graph of a new function
                 self._flow_graph.function_graph = FunctionGraph(function=the_func)
@@ -512,15 +504,13 @@ class DisassemblyView(BaseView):
             })
 
         elif self._linear_viewer.isVisible():
-            pass
-            #self._linear_viewer.navigate_to_addr(the_func.addr)
+            self._linear_viewer.navigate_to_addr(the_func.addr)
 
     def _jump_to(self, addr):
         function = locate_function(self.workspace.instance, addr)
         if function is not None:
             self._display_function(function)
-            self.workspace.instance.selected_addr = addr
-            self.workspace.instance.selected_function = function
+            self.infodock.toggle_instruction_selection(addr)
             return True
         else:
             return False
@@ -532,7 +522,7 @@ class DisassemblyView(BaseView):
     def _address_in_selection(self):
         if self._insn_addr_on_context_menu is not None:
             return self._insn_addr_on_context_menu
-        elif len(self._flow_graph.selected_insns) == 1:
-            return next(iter(self._flow_graph.selected_insns))
+        elif len(self.infodock.selected_insns) == 1:
+            return next(iter(self.infodock.selected_insns))
         else:
             return None

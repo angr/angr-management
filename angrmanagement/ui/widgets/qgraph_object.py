@@ -1,10 +1,14 @@
 from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtGui import QPainter
 
+
 class QCachedGraphicsItem(QGraphicsItem):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._cached_bounding_rect = None
+
+    def refresh(self):
+        pass
 
     @property
     def width(self):

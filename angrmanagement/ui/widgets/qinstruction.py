@@ -1,8 +1,8 @@
 import logging
 
-from PySide2.QtWidgets import QLabel, QHBoxLayout, QSizePolicy, QGraphicsItem, QGraphicsSimpleTextItem
-from PySide2.QtGui import QCursor, QPainter, QColor
-from PySide2.QtCore import Qt, SIGNAL, QRectF, Slot
+from PySide2.QtGui import QPainter, QColor, QCursor
+from PySide2.QtCore import Qt, QRectF
+from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
 from PySide2 import shiboken2 as shiboken
 
 from angr.analyses.disassembly import Value
@@ -40,9 +40,6 @@ class QInstruction(QCachedGraphicsItem):
         self.out_branch = out_branch
         self._config = config
 
-        # TODO: Reimplement me
-        # self.workspace.instance.subscribe_to_selected_addr(self.update_if_at_addr)
-
         # all "widgets"
         self._addr = None
         self._addr_width = None
@@ -63,26 +60,70 @@ class QInstruction(QCachedGraphicsItem):
             self.update()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            _l.debug('Received click of instruction at address 0x%x', self.addr)
-            if self.workspace.instance.selected_addr != self.addr:
-                self.workspace.instance.selected_addr = self.addr
-            else:
-                self.workspace.instance.selected_addr = None
-        else:
-            super().mousePressEvent(event)
+        """
 
-    #
-    # Private methods
-    #
+        :param QGraphicsSceneMouseEvent event:
+        :return:
+        """
+
+        if event.button() == Qt.LeftButton:
+            # toggle selection
+            self.infodock.toggle_instruction_selection(self.addr,
+                                                       unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
+            event.accept()
+        elif event.button() == Qt.RightButton:
+            # display the context menu
+            self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
+            event.accept()
+
+        super().mousePressEvent(event)
 
     @property
     def addr(self):
         return self.insn.addr
 
     @property
+    def insn_backcolor(self):
+        r, g, b = None, None, None
+
+        # First we'll check for customizations
+        if self.disasm_view.insn_backcolor_callback:
+            r, g, b = self.disasm_view.insn_backcolor_callback(addr=self.insn.addr, selected=self.selected)
+
+        # Fallback to defaults if we get Nones from the callback
+        if r is None or g is None or b is None:
+            if self.selected:
+                r, g, b = 0xef, 0xbf, 0xba
+
+        return QColor(r, g, b) if r is not None else None
+
+    @property
     def selected(self):
-        return self.workspace.instance.is_instruction_selected(self.addr)
+        """
+        If this instruction is selected or not.
+
+        :return:    True if it is selected, False otherwise.
+        :rtype:     bool
+        """
+
+        return self.infodock.is_instruction_selected(self.addr)
+
+    def refresh(self):
+        self.load_comment()
+        for operand in self._operands:
+            operand.refresh()
+        self._update_size()
+        self.recalculate_size()
+
+    def get_operand(self, operand_idx):
+        if operand_idx < len(self._operands):
+            return self._operands[operand_idx]
+        return None
+
+    def load_comment(self):
+        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        if self._comment is not None:
+            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
@@ -130,20 +171,9 @@ class QInstruction(QCachedGraphicsItem):
             painter.setPen(Qt.gray)
             painter.drawText(x, y, self._string)
 
-    @property
-    def insn_backcolor(self):
-        r, g, b = None, None, None
-
-        # First we'll check for customizations
-        if self.disasm_view.insn_backcolor_callback:
-            r, g, b = self.disasm_view.insn_backcolor_callback(addr=self.insn.addr, selected=self.selected)
-
-        # Fallback to defaults if we get Nones from the callback
-        if r is None or g is None or b is None:
-            if self.selected:
-                r, g, b = 0xef, 0xbf, 0xba
-
-        return QColor(r, g, b) if r is not None else None
+    #
+    # Private methods
+    #
 
     def _init_widgets(self):
         self._operands.clear()
@@ -174,9 +204,7 @@ class QInstruction(QCachedGraphicsItem):
             self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr)
             self._string_width = self._config.disasm_font_width * len(self._string)
 
-        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
-        if self._comment is not None:
-            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
+        self.load_comment()
 
         self._update_size()
 

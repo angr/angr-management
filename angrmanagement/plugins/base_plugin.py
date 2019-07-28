@@ -3,7 +3,6 @@ import logging
 from PySide2 import QtCore
 
 _l = logging.getLogger(__name__)
-_l.setLevel(logging.DEBUG)
 
 
 class BasePlugin(QtCore.QThread):

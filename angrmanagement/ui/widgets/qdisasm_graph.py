@@ -1,7 +1,7 @@
 
 import logging
 
-from PySide2.QtCore import QPointF, Qt, QSize, QEvent
+from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF
 
 from ...utils import get_out_branches
 from ...utils.graph_layouter import GraphLayouter
@@ -9,26 +9,29 @@ from ...utils.cfg import categorize_edges
 from .qblock import QGraphBlock
 from .qgraph_arrow import QGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
+from .qdisasm_base_control import QDisassemblyBaseControl
 
 _l = logging.getLogger(__name__)
 
 
-class QDisasmGraph(QZoomableDraggableGraphicsView):
+class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl):
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace, disasm_view, parent=None):
         super().__init__(parent=parent)
+        QDisassemblyBaseControl.__init__(self, workspace, disasm_view)
 
         self.workspace = workspace
 
-        self.disassembly_view = parent
         self.disasm = None
         self.variable_manager = None
 
         self._function_graph = None
 
         self._edges = None
+        self._arrows = [ ]  # A list of references to QGraphArrow objects
 
-        self.blocks = []
+        self.blocks = [ ]
+        self._insaddr_to_block = { }
 
     #
     # Properties
@@ -48,7 +51,7 @@ class QDisasmGraph(QZoomableDraggableGraphicsView):
 
     @property
     def infodock(self):
-        return self.disassembly_view.infodock
+        return self.disasm_view.infodock
 
     @property
     def induction_variable_analysis(self):
@@ -62,29 +65,28 @@ class QDisasmGraph(QZoomableDraggableGraphicsView):
     # Public methods
     #
 
-    def redraw(self):
-        self.scene().update(self.sceneRect())
-
     def reload(self):
-        #prof = cProfile.Profile()
-        #prof.enable()
-        _l.debug('Reloading disassembly graph')
         self._reset_scene()
+        self._arrows.clear()
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
         self.workspace.view_manager.first_view_in_category('console').push_namespace({
             'disasm': self.disasm,
         })
 
         self.blocks.clear()
+        self._insaddr_to_block.clear()
 
         supergraph = self._function_graph.supergraph
         for n in supergraph.nodes():
-            block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disassembly_view, self.disasm,
+            block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disasm_view, self.disasm,
                            self.infodock, n.addr, n.cfg_nodes, get_out_branches(n))
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block
             self.scene().addItem(block)
             self.blocks.append(block)
+
+            for insn_addr in block.addr_to_insns.keys():
+                self._insaddr_to_block[insn_addr] = block
 
         self.request_relayout()
 
@@ -93,14 +95,13 @@ class QDisasmGraph(QZoomableDraggableGraphicsView):
 
         # show the graph
         self.show()
-        #prof.disable()
-        #prof.dump_stats('out.log')
 
     def refresh(self):
         if not self.blocks:
             return
 
         for b in self.blocks:
+            b.layout_widgets()
             b.refresh()
 
         self.request_relayout()
@@ -130,20 +131,17 @@ class QDisasmGraph(QZoomableDraggableGraphicsView):
             return True
         return super().event(event)
 
-
     def mousePressEvent(self, event):
         btn = event.button()
         if btn == Qt.ForwardButton:
-            self.disassembly_view.jump_forward()
+            self.disasm_view.jump_forward()
         elif btn == Qt.BackButton:
-            self.disassembly_view.jump_back()
+            self.disasm_view.jump_back()
         else:
             super().mousePressEvent(event)
 
     def on_background_click(self):
-        _l.debug('Clearing because of background click')
-        self.workspace.instance.selected_addr = None
-        self.workspace.instance.selected_operand = None
+        pass
 
     def keyPressEvent(self, event):
 
@@ -151,28 +149,27 @@ class QDisasmGraph(QZoomableDraggableGraphicsView):
 
         if key == Qt.Key_N:
             # rename a label
-            self.disassembly_view.popup_rename_label_dialog()
+            self.disasm_view.popup_rename_label_dialog()
             return
         elif key == Qt.Key_X:
             # XRef
 
             # get the variable
-            if self.selected_operands:
-                ins_addr, operand_idx = next(iter(self.selected_operands))
-                block = self._insn_addr_to_block.get(ins_addr, None)
+            if self.infodock.selected_operands:
+                ins_addr, operand_idx = next(iter(self.infodock.selected_operands))
+                block = self._insaddr_to_block.get(ins_addr, None)
                 if block is not None:
                     operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
                     if operand is not None:
                         if operand.variable is not None:
                             # Display cross references to this variable
-                            self.disassembly_view.popup_xref_dialog(variable=operand.variable)
+                            self.disasm_view.popup_xref_dialog(variable=operand.variable)
                         elif operand.is_constant:
                             # Display cross references to an address
-                            self.disassembly_view.popup_xref_dialog(dst_addr=operand.constant_value)
+                            self.disasm_view.popup_xref_dialog(dst_addr=operand.constant_value)
             return
 
         super().keyPressEvent(event)
-
 
     #
     # Layout
@@ -221,17 +218,41 @@ class QDisasmGraph(QZoomableDraggableGraphicsView):
             print("Failed to get node_coords")
             return
 
-        min_x, max_x, min_y, max_y = 0, 0, 0, 0
-
         # layout nodes
         for block in self.blocks:
             x, y = node_coords[block.addr]
             block.setPos(x, y)
 
+        scene = self.scene()
+
+        # remove exiting arrows
+        for arrow in self._arrows:
+            scene.removeItem(arrow)
+        self._arrows.clear()
+
         for edge in self._edges:
             arrow = QGraphArrow(edge)
-            self.scene().addItem(arrow)
+            self._arrows.append(arrow)
+            scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))
 
     def show_instruction(self, insn_addr, centering=False, use_block_pos=False):
-        pass
+        block = self._insaddr_to_block.get(insn_addr, None)  # type: QGraphBlock
+        if block is not None:
+            if use_block_pos:
+                x, y = block.mapToScene(block.x(), block.y())
+            else:
+                pos = block.mapToScene(*block.instruction_position(insn_addr))
+                x, y = pos.x(), pos.y()
+
+            if not centering:
+                # is it visible?
+                viewport = self.viewport()
+                visible_area = self.mapToScene(QRect(0, 0, viewport.width(), viewport.height())).boundingRect()
+                topx = visible_area.x()
+                topy = visible_area.y()
+                if topx <= x < topx + visible_area.width() and topy <= y < topy + visible_area.height():
+                    return
+
+            # make it visible in the center
+            self.centerOn(x, y)

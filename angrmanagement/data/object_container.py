@@ -27,7 +27,7 @@ class ObjectContainer(EventSentinel):
         self.am_name = name if name is not None else NameGenerator.random_name()
         self.am_notes = notes
 
-    # cause events to propogate upward through nested objectcontainers
+    # cause events to propagate upward through nested objectcontainers
     @property
     def am_obj(self):
         return self._am_obj

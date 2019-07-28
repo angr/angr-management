@@ -2,7 +2,7 @@ import logging
 from weakref import WeakKeyDictionary
 
 _l = logging.getLogger(__name__)
-_l.setLevel(logging.DEBUG)
+
 
 class SetOnlyDescriptor:
     def __init__(self, backer=None):

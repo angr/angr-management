@@ -22,6 +22,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
         self._symexec_view = symexec_view
 
         self._graph = None
+        self.blocks = set()
         self._edges = []
 
         self.state.am_subscribe(self._watch_state)
@@ -45,8 +46,9 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
             return
 
         # remove all edges
-        # for p in self._edge_paths:
-        #     self.scene.removeItem(p)
+        scene = self.scene()
+        for p in self._edge_paths:
+            scene.removeItem(p)
 
         # remove all nodes
         self.blocks.clear()
@@ -63,8 +65,9 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
+        scene = self.scene()
         for node, (x, y) in gl.node_coordinates.items():
-            self.scene().addItem(node)
+            scene.addItem(node)
             node.setPos(x, y)
             min_x = min(min_x, node.x())
             max_x = max(max_x, node.x() + node.width)
@@ -80,56 +83,9 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         self._reset_view()
 
-    def show_selected(self):
-        if not self.state.am_none():
-            print("show_selected(): TODO")
-
     #
     # Event handlers
     #
-
-    # def mousePressEvent(self, event):
-    #     """
-
-    #     :param QMouseEvent event:
-    #     :return:
-    #     """
-    #     btn = event.button()
-    #     if btn == Qt.LeftButton:
-    #         pos = event.pos()
-    #         block = self._get_block_by_pos(pos)
-    #         if block is not None:
-    #             block.on_mouse_pressed(btn, self._to_graph_pos(pos))
-    #             if block.selected:
-    #                 self.state.am_obj = block.get_state()
-    #             else:
-    #                 self.state.am_obj = None
-    #             self.state.am_event(src='qsymexec_graph')
-
-    #             event.accept()
-    #             return
-
-    #     super(QSymExecGraph, self).mousePressEvent(event)
-
-    # def mouseDoubleClickEvent(self, event):
-    #     """
-
-    #     :param QMouseEvent event:
-    #     :return:
-    #     """
-
-    #     btn = event.button()
-    #     if btn == Qt.LeftButton:
-    #         pos = event.pos()
-    #         block = self._get_block_by_pos(pos)
-    #         if block is not None:
-    #             block.on_mouse_doubleclicked(btn, self._to_graph_pos(pos))
-    #             event.accept()
-    #             return
-
-    def _initial_position(self):
-        ibr = self.scene().itemsBoundingRect()
-        return ibr.center()
 
     def keyPressEvent(self, event):
         """
@@ -142,7 +98,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         if key == Qt.Key_Tab:
             self._symexec_view.switch_to_disassembly_view()
-            return
+            event.accept()
 
         super().keyPressEvent(event)
 
@@ -158,6 +114,10 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
     #
     # Private methods
     #
+
+    def _initial_position(self):
+        ibr = self.scene().itemsBoundingRect()
+        return ibr.center()
 
     def _block_from_state(self, state):
         for block in self.blocks:
@@ -194,9 +154,3 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
             brush = QBrush(color)
             painter.setBrush(brush)
             painter.drawPolygon(arrow)
-
-    def _draw_nodes(self, painter, topleft_point, bottomright_point):
-        if self.graph is None:
-            return
-        for node in self.graph.nodes():
-            node.paint(painter)

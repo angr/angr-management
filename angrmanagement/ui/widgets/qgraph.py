@@ -1,13 +1,31 @@
 import logging
 
-from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication, QGraphicsSceneMouseEvent
+from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
+    QGraphicsSceneMouseEvent
 from PySide2.QtGui import QPainter, QMouseEvent, QImage, QVector2D
 from PySide2.QtCore import Qt, QSize, QEvent, QMarginsF
 
 _l = logging.getLogger(__name__)
 
 
-class QSaveableGraphicsView(QGraphicsView):
+class QBaseGraphicsView(QGraphicsView):
+
+    #
+    # Public methods
+    #
+
+    def redraw(self):
+        """
+        Redraw the scene. Do not recompute any items in the view.
+
+        :return:    None
+        """
+        scene = self.scene()
+        if scene is not None:
+            scene.update(self.sceneRect())
+
+
+class QSaveableGraphicsView(QBaseGraphicsView):
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 
@@ -35,16 +53,6 @@ class QSaveableGraphicsView(QGraphicsView):
 
         # restore the old scene rect
         self.scene().setSceneRect(oldRect)
-
-
-class CustomizableGraphicsScene(QGraphicsScene):
-    def __init__(self, *args, **kwargs):
-        self._onMousePress = kwargs.pop('onMousePress', None)
-        super().__init__(*args, **kwargs)
-
-    def mousePressEvent(self, event):
-        if self._onMousePress is not None and not self._onMousePress(event):
-            super().mousePressEvent(event)
 
 
 class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
@@ -77,15 +85,14 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
     def _reset_scene(self):
         if self.scene() is None:
-            width = 1000000 # a ludicrously large number, to emulate infinite panning
+            width = 1000000  # a ludicrously large number, to emulate infinite panning
             scene = QGraphicsScene(- (width / 2), - (width / 2), width, width)
             self.setScene(scene)
         else:
             self.scene().clear()
 
-    def sizeHint(self): #pylint: disable=no-self-use
+    def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
-
 
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
@@ -130,7 +137,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             super().keyPressEvent(event)
 
     def mousePressEvent(self, event):
-        _l.debug('Received press')
+        # _l.debug('Received press')
         if event.button() == Qt.LeftButton:
 
             self._is_mouse_pressed = True
@@ -138,6 +145,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
             self._save_last_coords(event)
             event.accept()
+
+        super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         """
@@ -160,6 +169,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
             self._save_last_coords(event)
             event.accept()
+
+        super().mouseMoveEvent(event)
 
     def dispatchMouseEventToScene(self, event):
         if event.type() == QEvent.MouseButtonPress:
@@ -205,18 +216,30 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             if self._is_dragging:
                 self.viewport().setCursor(Qt.ArrowCursor)
                 event.accept()
-            else:
-                pressy = QMouseEvent(QEvent.MouseButtonPress,
-                                     event.pos(),
-                                     event.globalPos(),
-                                     event.button(),
-                                     event.buttons(),
-                                     event.modifiers())
 
-                pressEvent = self.dispatchMouseEventToScene(pressy)
-                releaseEvent = self.dispatchMouseEventToScene(event)
-                if not pressEvent.isAccepted():
-                    self.on_background_click()
-                    pressEvent.accept()
+        if not event.isAccepted():
+            # create a new event and dispatch it to the scene
+            pressy = QMouseEvent(QEvent.MouseButtonPress,
+                                 event.pos(),
+                                 event.globalPos(),
+                                 event.button(),
+                                 event.buttons(),
+                                 event.modifiers())
+
+            press_event = self.dispatchMouseEventToScene(pressy)
+
+            releasy = QMouseEvent(QEvent.MouseButtonRelease,
+                                  event.pos(),
+                                  event.globalPos(),
+                                  event.buton(),
+                                  event.buttons(),
+                                  event.modifiers())
+            release_event = self.dispatchMouseEventToScene(releasy)
+
+            if not release_event.isAccepted():
+                self.on_background_click()
+                release_event.accept()
             self._is_mouse_pressed = False
             self._is_dragging = False
+
+        super().mouseReleaseEvent(event)
