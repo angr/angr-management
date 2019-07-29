@@ -1,16 +1,17 @@
 
 from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QRectF
 
 from ...utils.block_objects import PhiVariable
-from .qgraph_object import QGraphObject
+from .qgraph_object import QCachedGraphicsItem
+from .qvariable import QVariable
 
 
-class QPhiVariable(QGraphObject):
+class QPhiVariable(QCachedGraphicsItem):
 
     IDENT_LEFT_PADDING = 5
 
-    def __init__(self, workspace, disasm_view, phi_variable, config):
+    def __init__(self, workspace, disasm_view, phi_variable, config, parent=None):
         """
 
         :param workspace:
@@ -19,7 +20,7 @@ class QPhiVariable(QGraphObject):
         :param config:
         """
 
-        super().__init__()
+        super().__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -38,47 +39,52 @@ class QPhiVariable(QGraphObject):
         self._subvar_idents = None
         self._subvar_ident_widths = None
 
+        self._width = 0
+        self._height = 0
+
         self._init_widgets()
 
     #
     # Public methods
     #
 
-    def paint(self, painter):
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
-        x = self.x
+        x = 0
+
+        painter.setFont(self._config.disasm_font)
 
         # variable name
         painter.setPen(Qt.darkGreen)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_name)
+        painter.drawText(x, self._config.disasm_font_ascent, self._variable_name)
         x += self._variable_name_width
 
         # variable ident
         if self.disasm_view.show_variable_identifier:
             x += self.IDENT_LEFT_PADDING
             painter.setPen(Qt.blue)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_ident)
+            painter.drawText(x, self._config.disasm_font_ascent, self._variable_ident)
             x += self._variable_ident_width
 
         # The equal sign
         painter.setPen(Qt.black)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, " = ")
+        painter.drawText(x, self._config.disasm_font_ascent, " = ")
         x += self._config.disasm_font_width * 3
         painter.setPen(Qt.darkGreen)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, u'\u0278(')
+        painter.drawText(x, self._config.disasm_font_ascent, u'\u0278(')
         x += self._config.disasm_font_width * 2
 
         for i, (subvar_ident, ident_width) in enumerate(zip(self._subvar_idents, self._subvar_ident_widths)):
             painter.setPen(Qt.darkGreen)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, subvar_ident)
+            painter.drawText(x, self._config.disasm_font_ascent, subvar_ident)
             x += ident_width
             if i != len(self._subvar_idents) - 1:
                 painter.setPen(Qt.black)
-                painter.drawText(x, self.y + self._config.disasm_font_ascent, ", ")
+                painter.drawText(x, self._config.disasm_font_ascent, ", ")
                 x += 2 + self._config.disasm_font_width
 
         painter.setPen(Qt.darkGreen)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, ')')
+        painter.drawText(x, self._config.disasm_font_ascent, ')')
 
     def refresh(self):
         super().refresh()
@@ -90,7 +96,6 @@ class QPhiVariable(QGraphObject):
     #
 
     def _init_widgets(self):
-
         # variable name
         self._variable_name = "{%s}" % ("Unk" if not self.phi.name else self.phi.name)
         # variable ident
@@ -130,3 +135,6 @@ class QPhiVariable(QGraphObject):
             self._width += self.IDENT_LEFT_PADDING + self._variable_ident_width
 
         self._height = self._config.disasm_font_height
+
+    def _boundingRect(self):
+        return QRectF(0, 0, self._width, self._height)

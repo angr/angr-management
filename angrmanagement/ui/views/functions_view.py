@@ -13,6 +13,8 @@ class FunctionsView(BaseView):
         self._function_table = None  # type: QFunctionTable
         self._status_label = None
 
+        self.workspace.instance.cfg_container.am_subscribe(self.reload)
+
         self.backcolor_callback = None
 
         self._init_widgets()

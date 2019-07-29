@@ -20,7 +20,6 @@ except ImportError:
 
 
 _l = logging.getLogger(name=__name__)
-_l.setLevel('DEBUG')
 
 
 # not a namedtuple so it can be mutable. I think this is not a terrible idea.

@@ -1,4 +1,30 @@
+from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtGui import QPainter
+
+
+class QCachedGraphicsItem(QGraphicsItem):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self._cached_bounding_rect = None
+
+    def refresh(self):
+        pass
+
+    @property
+    def width(self):
+        return self.boundingRect().width()
+
+    @property
+    def height(self):
+        return self.boundingRect().height()
+
+    def recalculate_size(self):
+        self._cached_bounding_rect = self._boundingRect()
+
+    def boundingRect(self):
+        if self._cached_bounding_rect is None:
+            self._cached_bounding_rect = self._boundingRect()
+        return self._cached_bounding_rect
 
 
 class QGraphObject:

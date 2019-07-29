@@ -1,26 +1,33 @@
-from PySide2.QtWidgets import QLabel, QHBoxLayout, QSizePolicy
-from PySide2.QtGui import QCursor, QPainter, QColor
-from PySide2.QtCore import Qt, SIGNAL
+import logging
+
+from PySide2.QtGui import QPainter, QColor, QCursor
+from PySide2.QtCore import Qt, QRectF
+from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
+from PySide2 import shiboken2 as shiboken
 
 from angr.analyses.disassembly import Value
 
-from .qgraph_object import QGraphObject
+from .qgraph_object import QCachedGraphicsItem
 from .qoperand import QOperand
 from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
 
+_l = logging.getLogger(__name__)
 
-class QInstruction(QGraphObject):
+
+class QInstruction(QCachedGraphicsItem):
 
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
     GRAPH_COMMENT_STRING_SPACING = 10
 
+    INTERSPERSE_ARGS = ', '
+
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, mode='graph'):
-        super(QInstruction, self).__init__()
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
+        super().__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -32,9 +39,6 @@ class QInstruction(QGraphObject):
         self.insn = insn
         self.out_branch = out_branch
         self._config = config
-        self.mode = mode
-
-        self.selected = False
 
         # all "widgets"
         self._addr = None
@@ -49,101 +53,35 @@ class QInstruction(QGraphObject):
 
         self._init_widgets()
 
-        #self.setContextMenuPolicy(Qt.CustomContextMenu)
-        #self.connect(self, SIGNAL('customContextMenuRequested(QPoint)'), self._on_context_menu)
+    def update_if_at_addr(self, old_addr, new_addr):
+        if not shiboken.isValid(self):
+            return True
+        if old_addr == self.addr or new_addr == self.addr:
+            self.update()
 
-    def paint(self, painter):
+    def mousePressEvent(self, event):
         """
 
-        :param QPainter painter:
+        :param QGraphicsSceneMouseEvent event:
         :return:
         """
 
-        if self.mode == "linear":
-            self._paint_linear(painter)
-        else:
-            self._paint_graph(painter)
-
-    def refresh(self):
-        super(QInstruction, self).refresh()
-
-        # are there new comments?
-        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
-        if self._comment is not None:
-            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
-
-        for operand in self._operands:
-            operand.refresh()
-
-        self._update_size()
-
-    def select(self):
-        if not self.selected:
-            self.toggle_select()
-
-    def unselect(self):
-        if self.selected:
-            self.toggle_select()
-
-    def toggle_select(self):
-        self.selected = not self.selected
-
-    def select_operand(self, operand_idx):
-
-        if operand_idx < len(self._operands):
-            self._operands[operand_idx].select()
-
-    def unselect_operand(self, operand_idx):
-
-        if operand_idx < len(self._operands):
-            self._operands[operand_idx].unselect()
-
-    def get_operand(self, operand_idx):
-        if operand_idx < len(self._operands):
-            return self._operands[operand_idx]
-        return None
-
-    def set_comment(self, new_text):
-        self._comment = new_text
-        self._comment_width = self._config.disasm_font_width * len(self._comment)
-        self._update_size()
-
-    #
-    # Event handlers
-    #
-
-    def on_mouse_pressed(self, button, pos):
-        if button == Qt.LeftButton:
-            # left click
-
-            # is it on one of the operands?
-            for op in self._operands:
-                if op.x <= pos.x() < op.x + op.width:
-                    op.on_mouse_pressed(button, pos)
-                    return
-
-            self.disasm_view.toggle_instruction_selection(self.insn.addr)
-
-    def on_mouse_released(self, button, pos):
-        if button == Qt.RightButton:
-            # right click
+        if event.button() == Qt.LeftButton:
+            # toggle selection
+            self.infodock.toggle_instruction_selection(self.addr,
+                                                       insn_pos=self.scenePos(),
+                                                       unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
+            event.accept()
+        elif event.button() == Qt.RightButton:
             # display the context menu
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
+            event.accept()
+        else:
+            super().mousePressEvent(event)
 
-    def on_mouse_doubleclicked(self, button, pos):
-
-        if button == Qt.LeftButton:
-            # left double click
-
-            # is it on one of the operands?
-            for op in self._operands:
-                if op.x <= pos.x() < op.x + op.width:
-                    op.on_mouse_doubleclicked(button, pos)
-                    return
-
-    #
-    # Private methods
-    #
+    @property
+    def addr(self):
+        return self.insn.addr
 
     @property
     def insn_backcolor(self):
@@ -158,9 +96,88 @@ class QInstruction(QGraphObject):
             if self.selected:
                 r, g, b = 0xef, 0xbf, 0xba
 
-        return r, g, b
+        return QColor(r, g, b) if r is not None else None
+
+    @property
+    def selected(self):
+        """
+        If this instruction is selected or not.
+
+        :return:    True if it is selected, False otherwise.
+        :rtype:     bool
+        """
+
+        return self.infodock.is_instruction_selected(self.addr)
+
+    def refresh(self):
+        self.load_comment()
+        for operand in self._operands:
+            operand.refresh()
+        self._update_size()
+        self.recalculate_size()
+
+    def get_operand(self, operand_idx):
+        if operand_idx < len(self._operands):
+            return self._operands[operand_idx]
+        return None
+
+    def load_comment(self):
+        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        if self._comment is not None:
+            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
+
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+
+        x = 0
+        y = self._config.disasm_font_ascent
+
+        painter.setRenderHints(
+            QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        painter.setFont(self._config.disasm_font)
+
+        # selection
+        backcolor = self.insn_backcolor
+        if backcolor is not None:
+            painter.setBrush(backcolor)
+            painter.setPen(backcolor)
+            painter.drawRect(0, 0, self.width, self.height)
+
+        # address
+        if self.disasm_view.show_address:
+            painter.setPen(Qt.black)
+            painter.drawText(x, y, self._addr)
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
+
+        # mnemonic
+        painter.setPen(QColor(0, 0, 0x80))
+        painter.drawText(x, y, self._mnemonic)
+        x += self._mnemonic_width
+
+        # all commas
+        for operand in self._operands[:-1]:
+            endpos = operand.pos().x() + operand.width
+            painter.drawText(endpos, y, self.INTERSPERSE_ARGS)
+
+        if self._operands:
+            last_operand = self._operands[-1]
+            x = last_operand.pos().x() + last_operand.width
+
+        # comment or string - comments have precedence
+        if self._comment is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.darkGreen)
+            painter.drawText(x, y, self.COMMENT_PREFIX + self._comment)
+        elif self._string is not None:
+            x += self.GRAPH_COMMENT_STRING_SPACING
+            painter.setPen(Qt.gray)
+            painter.drawText(x, y, self._string)
+
+    #
+    # Private methods
+    #
 
     def _init_widgets(self):
+        self._operands.clear()
 
         self._addr = "%08x" % self.insn.addr
         self._addr_width = self._config.disasm_font_width * len(self._addr)
@@ -179,8 +196,8 @@ class QInstruction(QGraphObject):
                     if len(operand.children) == 1 and type(operand.children[0]) is Value:
                         branch_targets = (operand.children[0].val,)
             qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
-                               self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets, self._config
-                               )
+                                self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets,
+                                self._config, parent=self)
             self._operands.append(qoperand)
 
         if should_display_string_label(self.workspace.instance.cfg, self.insn.addr):
@@ -188,126 +205,38 @@ class QInstruction(QGraphObject):
             self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr)
             self._string_width = self._config.disasm_font_width * len(self._string)
 
-        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
-        if self._comment is not None:
-            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
+        self.load_comment()
 
         self._update_size()
 
     def _update_size(self):
 
-        self._height = self._config.disasm_font_height
-        self._width = 0
-
-        if self.disasm_view.show_address:
-            self._width += self._addr_width + self.GRAPH_ADDR_SPACING
-
-        self._width += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING + \
-                       sum([ op.width for op in self._operands ]) + \
-                       (len(self._operands) - 1) * (self._config.disasm_font_width + self.GRAPH_OPERAND_SPACING)
-
-        # we only display string if there's no comment
-        if self._comment is not None:
-            self._width += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
-        elif self._string is not None:
-            self._width += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
-
-    def _paint_highlight(self, painter):
-        r, g, b = self.insn_backcolor
-
-        if r is not None and b is not None and g is not None:
-            painter.setPen(QColor(r, g, b))
-            painter.setBrush(QColor(r, g, b))
-            painter.drawRect(self.x, self.y, self.width, self.height)
-
-    def _paint_graph(self, painter):
-
-        self._paint_highlight(painter)
-
-        x = self.x
-
+        x = 0
         # address
         if self.disasm_view.show_address:
-            painter.setPen(Qt.black)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
-
             x += self._addr_width + self.GRAPH_ADDR_SPACING
 
         # mnemonic
-        painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
-
         x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING
+        intersperse_width = self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS)
 
         # operands
-        for i, op in enumerate(self._operands):
-            op.x = x
-            op.y = self.y
-            op.paint(painter)
+        if self._operands:
+            for operand in self._operands[:-1]:
+                operand.setPos(x, 0)
+                x += operand.boundingRect().width() + intersperse_width
+            last_operand = self._operands[-1]
+            last_operand.setPos(x, 0)
+            x += last_operand.boundingRect().width()
 
-            x += op.width
-
-            if i != len(self._operands) - 1:
-                # draw the comma
-                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
-                x += self._config.disasm_font_width * 1
-
-            x += self.GRAPH_OPERAND_SPACING
-
-        # comment or string - comments have precedence
+        # comments/string
         if self._comment is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING
-            painter.setPen(Qt.darkGreen)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.COMMENT_PREFIX + self._comment)
+            x += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
         elif self._string is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+            x += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
 
-    def _paint_linear(self, painter):
+        self._width = x
+        self._height = self._config.disasm_font_height
 
-        self._paint_highlight(painter)
-
-        x = self.x
-
-        # address
-        if self.disasm_view.show_address:
-            painter.setPen(Qt.black)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._addr)
-
-            x += self._addr_width + self.LINEAR_INSTRUCTION_OFFSET
-
-        # TODO: splitter
-        #painter.setPen(Qt.black)
-        #painter.drawLine()
-
-        # mnemonic
-        painter.setPen(QColor(0, 0, 0x80))
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._mnemonic)
-
-        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING
-
-        # operands
-        for i, op in enumerate(self._operands):
-            op.x = x
-            op.y = self.y
-            op.paint(painter)
-
-            x += op.width
-
-            if i != len(self._operands) - 1:
-                # draw the comma
-                painter.drawText(x, self.y + self._config.disasm_font_ascent, ",")
-                x += self._config.disasm_font_width * 1
-
-            x += self.GRAPH_OPERAND_SPACING
-
-        # comment or string - comments have precedence
-        if self._comment is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING
-            painter.setPen(Qt.blue)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self.COMMENT_PREFIX + self._comment)
-        elif self._string is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING
-            painter.setPen(Qt.gray)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._string)
+    def _boundingRect(self):
+        return QRectF(0, 0, self._width, self._height)

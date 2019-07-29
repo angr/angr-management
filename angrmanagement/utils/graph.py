@@ -173,7 +173,7 @@ def to_supergraph(transition_graph):
     return super_graph
 
 
-class OutBranch(object):
+class OutBranch:
     def __init__(self, ins_addr, stmt_idx, branch_type):
         self.ins_addr = ins_addr
         self.stmt_idx = stmt_idx

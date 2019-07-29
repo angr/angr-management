@@ -1,9 +1,12 @@
 import os
+import logging
 
 from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog
+from PySide2.QtCore import Qt
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
 
+_l = logging.getLogger(__name__)
 
 class QDisasmStatusBar(QFrame):
     def __init__(self, disasm_view, parent=None):

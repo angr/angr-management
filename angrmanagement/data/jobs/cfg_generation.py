@@ -17,7 +17,7 @@ class CFGGenerationJob(Job):
     }
 
     def __init__(self, on_finish=None, **kwargs):
-        super(CFGGenerationJob, self).__init__(name='CFG generation', on_finish=on_finish)
+        super().__init__(name='CFG generation', on_finish=on_finish)
 
         # TODO: sanitize arguments
 

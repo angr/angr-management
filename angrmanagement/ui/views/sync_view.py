@@ -142,7 +142,6 @@ class SyncView(BaseView):
                 if ins_addr in kb.comments:
                     comments[ins_addr] = kb.comments[ins_addr]
         kb.sync.push_comments(comments)
-        print(comments)
 
         # TODO: Fix this
         kb.sync.commit()

@@ -1,17 +1,16 @@
 
-from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QRectF
 
-from .qgraph_object import QGraphObject
+from .qgraph_object import QCachedGraphicsItem
 
 
-class QVariable(QGraphObject):
+class QVariable(QCachedGraphicsItem):
 
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
-    def __init__(self, workspace, disasm_view, variable, config):
-        super(QVariable, self).__init__()
+    def __init__(self, workspace, disasm_view, variable, config, parent=None):
+        super(QVariable, self).__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -32,13 +31,15 @@ class QVariable(QGraphObject):
     # Public methods
     #
 
-    def paint(self, painter):
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
-        x = self.x
+        x = 0
+
+        painter.setFont(self._config.disasm_font)
 
         # variable name
         painter.setPen(Qt.darkGreen)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_name)
+        painter.drawText(x, self._config.disasm_font_ascent, self._variable_name)
         x += self._variable_name_width
         x += self.IDENT_LEFT_PADDING
 
@@ -46,13 +47,13 @@ class QVariable(QGraphObject):
         # variable ident
         if self.disasm_view.show_variable_identifier:
             painter.setPen(Qt.blue)
-            painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_ident)
+            painter.drawText(x, self._config.disasm_font_ascent, self._variable_ident)
             x += self._variable_ident_width
             x += self.OFFSET_LEFT_PADDING
 
         # variable offset
         painter.setPen(Qt.darkYellow)
-        painter.drawText(x, self.y + self._config.disasm_font_ascent, self._variable_offset)
+        painter.drawText(x, self._config.disasm_font_ascent, self._variable_offset)
         x += self._variable_offset_width
 
     def refresh(self):
@@ -87,3 +88,8 @@ class QVariable(QGraphObject):
             self._width += self.IDENT_LEFT_PADDING + self._variable_ident_width
 
         self._height = self._config.disasm_font_height
+
+        self.recalculate_size()
+
+    def _boundingRect(self):
+        return QRectF(0, 0, self._width, self._height)

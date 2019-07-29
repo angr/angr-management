@@ -5,7 +5,6 @@ import logging
 
 
 _l = logging.getLogger(__name__)
-_l.setLevel(logging.DEBUG)
 
 
 class LoadDockerPromptError(Exception):

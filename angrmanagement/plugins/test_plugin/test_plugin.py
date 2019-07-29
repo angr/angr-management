@@ -4,7 +4,6 @@ from ..base_plugin import BasePlugin
 from ...ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu  # For type hints
 
 _l = logging.getLogger(__name__)
-_l.setLevel(logging.DEBUG)
 
 
 class TestPlugin(BasePlugin):
