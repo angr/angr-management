@@ -3,7 +3,7 @@ import logging
 from PySide2.QtGui import QPainter, QColor, QCursor
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
-from PySide2 import shiboken2 as shiboken
+#from PySide2 import shiboken2 as shiboken
 
 from angr.analyses.disassembly import Value
 
