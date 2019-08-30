@@ -29,9 +29,7 @@ Please consider having a development install if you plan to use latest features/
 
 ### Development Install
 
-- Create a virtual environment using virtualenv
-
-Make sure that virtualenv creates a Python 3 environment for you!
+- Create a virtual environment using virtualenv. Make sure that virtualenv creates a Python 3 environment for you!
 
 ```
 virtualenv angr-env
