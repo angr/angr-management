@@ -29,26 +29,7 @@ Please consider having a development install if you plan to use latest features/
 
 ### Development Install
 
-- Create a virtual environment using virtualenv. Make sure that virtualenv creates a Python 3 environment for you!
-
-```
-virtualenv angr-env
-cd angr-env
-source bin/activate
-```
-
-- Clone the Git repository
-
-```
-git clone git@github.com:angr/angr-management.git
-```
-
-- Install angr Management
-
-```
-cd angr-management
-pip install -e .
-```
+See [angr-dev](https://github.com/angr/angr-dev) for how to set up a development enviroment for the angr suite.
 
 ## Usage
 
