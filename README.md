@@ -43,6 +43,13 @@ source bin/activate
 git clone git@github.com:angr/angr-management.git
 ```
 
+- (Only for MacOS!) Install Unicorn Engine
+
+```
+chmod +x install-unicorn-macos.sh
+./install-unicorn-macos.sh
+```
+
 - Install angr Management
 
 ```
