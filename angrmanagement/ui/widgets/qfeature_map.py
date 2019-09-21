@@ -8,6 +8,7 @@ from PySide2.QtCore import Qt, QRectF, QSize, QPointF
 from angr.block import Block
 from angr.analyses.cfg.cfb import Unknown
 
+from ...config import Conf
 from .qgraph import QZoomableDraggableGraphicsView
 
 
@@ -87,10 +88,15 @@ class QFeatureMap(QWidget):
 
     def _paint_regions(self):
 
-        cfb = self.instance.cfb.am_object
+        cfb = self.instance.cfb_container.am_obj
 
         if cfb is None:
             return
+
+        # colors
+        func_color = Conf.feature_map_color_regular_function
+        data_color = Conf.feature_map_color_data
+        unknown_color = Conf.feature_map_color_unknown
 
         if self._total_size is None:
             # calculate the total number of bytes
@@ -103,6 +109,7 @@ class QFeatureMap(QWidget):
                 b += mr.size
             self._total_size = b
 
+        # iterate through all items and draw the image
         offset = 0
         total_width = self.width()
         for _, obj in cfb.ceiling_items():
@@ -112,14 +119,15 @@ class QFeatureMap(QWidget):
 
             # draw a rectangle
             if isinstance(obj, Unknown):
-                pen = QPen(Qt.gray)
-                brush = QBrush(Qt.gray)
+                pen = QPen(data_color)
+                brush = QBrush(data_color)
             elif isinstance(obj, Block):
-                pen = QPen(Qt.blue)
-                brush = QBrush(Qt.blue)
+                # TODO: Check if it belongs to a function or not
+                pen = QPen(func_color)
+                brush = QBrush(func_color)
             else:
-                pen = QPen(Qt.green)
-                brush = QBrush(Qt.green)
+                pen = QPen(unknown_color)
+                brush = QBrush(unknown_color)
             rect = QRectF(pos, 0, length, self.height())
             self.view._scene.addRect(rect, pen, brush)
 
