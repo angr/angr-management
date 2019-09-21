@@ -213,6 +213,14 @@ class Workspace:
         view.decompile_current_function()
 
     def decompile_function(self, func, view=None):
+        """
+        Decompile a function and switch to the pseudocode view.
+
+        :param Function func:   The function to decompile.
+        :param view:    The pseudocode view to raise.
+        :return:        None
+        """
+
         if view is None or view.category != "pseudocode":
             view = self._get_or_create_pseudocode_view()
 
