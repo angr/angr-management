@@ -156,6 +156,9 @@ class QFeatureMap(QWidget):
             pos = self._get_pos_from_addr(selected_insn_addr)
             if pos is None:
                 continue
+
+            pos -= 1  # this is the top-left x coordinate of our arrow body (the rectangle)
+
             pen = QPen(Qt.yellow)
             brush = QBrush(Qt.yellow)
             rect = QRectF(pos, 0, 2, 5)
