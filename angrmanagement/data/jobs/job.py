@@ -21,15 +21,18 @@ class Job:
         if self._on_finish:
             gui_thread_schedule_async(self._on_finish)
 
-    def _progress_callback(self, percentage):
+    def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
 
         if delta > 1.0:
             self.progress_percentage = percentage
-            gui_thread_schedule_async(self._set_progress)
+            gui_thread_schedule_async(self._set_progress, args=(text,))
 
-    def _set_progress(self):
-        GlobalInfo.main_window.status = "Working... job %s" % self.name
+    def _set_progress(self, text=None):
+        if text:
+            GlobalInfo.main_window.status = "Working... %s: %s" % (self.name, text)
+        else:
+            GlobalInfo.main_window.status = "Working... %s" % self.name
         GlobalInfo.main_window.progress = self.progress_percentage
 
     def _finish_progress(self):
