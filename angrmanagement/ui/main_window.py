@@ -16,7 +16,6 @@ except ImportError as e:
 
 from ..plugins import PluginManager
 from angr.misc.bug_report import get_version
-
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
@@ -173,7 +172,8 @@ class MainWindow(QMainWindow):
         sync_config.exec_()
 
     def open_about_dialog(self):
-        LoadAboutDialog()
+        dlg = LoadAboutDialog()
+        dlg.exec_()
 
     #
     # Widgets

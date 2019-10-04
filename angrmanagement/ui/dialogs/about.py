@@ -1,32 +1,40 @@
 import angr
 
-from PySide2.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QPushButton
-from PySide2.QtGui import QIcon, QDesktopServices, QPixmap
-from PySide2.QtCore import Qt, QSize, QEvent, QUrl
+import os
 
-from angr.misc.bug_report import get_version
+from PySide2.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QPushButton, QApplication
+from PySide2.QtGui import QIcon, QDesktopServices, QPixmap, QFont
+from PySide2.QtCore import Qt, QSize, QEvent, QUrl
+from ...config import IMG_LOCATION
+
+
 
 
 class LoadAboutDialog(QDialog):
     def __init__(self):
         super(LoadAboutDialog, self).__init__()
-
-        self.setWindowTitle('about Angr')
-
+        self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+        self.setWindowTitle('About')
+        #mdiIcon
+        angr_icon_location = os.path.join(IMG_LOCATION, 'angr.png')
+        self.setWindowIcon(QIcon(angr_icon_location))
         self._init_widgets()
-
-    def sizeHint(self, *args, **kwargs):
-        return QSize(600, 400)
 
     def _init_widgets(self):
         # icon
         icon_label = QLabel(self)
-        angr_icon = QPixmap('angr.png')
+        icon_location = os.path.join(IMG_LOCATION, 'angr-ds.png')
+        angr_icon = QPixmap(icon_location)
         icon_label.setPixmap(angr_icon)
         # textbox
-        about_text = QLabel("About Angr")
-        version_text = QLabel("Angr version " + get_version())
+        angr_text = QLabel("angr")
+        angr_text.setFont(QFont("Consolas", 24, weight=QFont.Bold))
+        version_text_tup = "Version: " + ".".join(str(x) for x in angr.__version__[0:4])
+        version_text = QLabel(version_text_tup)
+        version_text.setFont(QFont("Consolas", weight=QFont.Bold))
+        version_text.setAlignment(Qt.AlignCenter)
         credits_text = QLabel("<a href=\"http://angr.io/\">Credits</a>")
+        credits_text.setFont(QFont("Consolas", weight=QFont.Bold))
         credits_text.setTextFormat(Qt.RichText)
         credits_text.setTextInteractionFlags(Qt.TextBrowserInteraction)
         credits_text.setOpenExternalLinks(True)
@@ -37,11 +45,15 @@ class LoadAboutDialog(QDialog):
         buttons_layout = QHBoxLayout()
         buttons_layout.addWidget(btn_ok)
 
-        layout = QVBoxLayout()
+        structure = QVBoxLayout()
+        structure.addWidget(angr_text)
+        structure.addWidget(version_text)
+        structure.addWidget(credits_text)
+        structure.addLayout(buttons_layout)
+
+        layout = QHBoxLayout()
         layout.addWidget(icon_label)
-        layout.addWidget(about_text)
-        layout.addWidget(version_text)
-        layout.addLayout(buttons_layout)
+        layout.addLayout(structure)
 
         self.setLayout(layout)
 
