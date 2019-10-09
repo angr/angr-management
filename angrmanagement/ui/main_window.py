@@ -15,7 +15,6 @@ except ImportError as e:
     keystone = None
 
 from ..plugins import PluginManager
-from angr.misc.bug_report import get_version
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
