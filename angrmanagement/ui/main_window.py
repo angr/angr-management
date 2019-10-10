@@ -1,7 +1,7 @@
 import pickle
 import os
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut, QLabel
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -30,6 +30,7 @@ from .dialogs.load_plugins import LoadPlugins, LoadPluginsError
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.sync_config import SyncConfig
+from .dialogs.about import LoadAboutDialog
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
 
@@ -161,9 +162,6 @@ class MainWindow(QMainWindow):
     def open_doc_link(self):
         QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
 
-    def open_about_dialog(self):
-        QMessageBox.about(self, "About angr", "Version 8")
-
     def open_sync_config_dialog(self):
         if self.workspace.instance.project is None:
             # project does not exist yet
@@ -171,6 +169,10 @@ class MainWindow(QMainWindow):
 
         sync_config = SyncConfig(self.workspace.instance, parent=self)
         sync_config.exec_()
+
+    def open_about_dialog(self):
+        dlg = LoadAboutDialog()
+        dlg.exec_()
 
     #
     # Widgets
