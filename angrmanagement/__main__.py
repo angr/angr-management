@@ -40,15 +40,29 @@ def main(filepath=None):
 
     set_app_user_model_id()
 
-    from PySide2.QtWidgets import QApplication
-    from PySide2.QtGui import QFontDatabase
+    from PySide2.QtWidgets import QApplication, QSplashScreen
+    from PySide2.QtGui import QFontDatabase, QPixmap
+    from PySide2.QtCore import Qt, QElapsedTimer
+
+    from .config import FONT_LOCATION, IMG_LOCATION
+
+    app = QApplication(sys.argv)
+
+    # Make + display splash screen
+    splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
+    splash_pixmap = QPixmap(splashscreen_location)
+    splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
+    splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+    splash.setEnabled(False)
+
+    splash.show()
+    #splash.showMessage("angr management", Qt.AlignTop | Qt.AlignCenter)
+    timer = QElapsedTimer()
+    timer.start()
 
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
-    from .config import FONT_LOCATION
-
-    app = QApplication(sys.argv)
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
@@ -59,6 +73,11 @@ def main(filepath=None):
     app.setStyleSheet(CSS.global_css())
 
     MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
+
+    while timer.elapsed() < 2000 :
+        app.processEvents()
+    splash.close()
+    #splash finish
 
     app.exec_()
 
