@@ -41,7 +41,7 @@ def main(filepath=None):
     set_app_user_model_id()
 
     from PySide2.QtWidgets import QApplication, QSplashScreen
-    from PySide2.QtGui import QFontDatabase, QPixmap
+    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
     from PySide2.QtCore import Qt
 
     from .config import FONT_LOCATION, IMG_LOCATION
@@ -52,9 +52,12 @@ def main(filepath=None):
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
     splash_pixmap = QPixmap(splashscreen_location)
     splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
+    icon_location = os.path.join(IMG_LOCATION, 'angr.png')
+    splash.setWindowIcon(QIcon(icon_location))
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
     splash.setEnabled(False)
     splash.show()
+    app.processEvents()
 
     from .logic import GlobalInfo
     from .ui.css import CSS
