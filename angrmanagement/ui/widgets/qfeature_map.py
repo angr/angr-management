@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QSizePolicy
 from PySide2.QtGui import QPaintEvent, QPainter, QBrush, QPen, QPolygonF
 from PySide2.QtCore import Qt, QRectF, QSize, QPointF
 
+import cle
 from angr.block import Block
 from angr.analyses.cfg.cfb import Unknown
 
@@ -97,7 +98,7 @@ class QFeatureMap(QWidget):
         func_color = Conf.feature_map_color_regular_function
         data_color = Conf.feature_map_color_data
         unknown_color = Conf.feature_map_color_unknown
-
+        delimiter_color = Conf.feature_map_color_delimiter
         if self._total_size is None:
             # calculate the total number of bytes
             b = 0
@@ -106,16 +107,33 @@ class QFeatureMap(QWidget):
             for mr in cfb.regions:
                 self._addr_to_region[mr.addr] = mr
                 self._regionaddr_to_offset[mr.addr] = b
-                b += mr.size
+                b += self._adjust_region_size(mr)
             self._total_size = b
 
         # iterate through all items and draw the image
         offset = 0
         total_width = self.width()
-        for _, obj in cfb.ceiling_items():
+        current_region = None
+        height = self.height()
+        print(total_width)
+        for addr, obj in cfb.ceiling_items():
+
+            # are we in a new region?
+            new_region = False
+            if current_region is None or not (current_region.addr <= addr < current_region.addr + current_region.size):
+                current_region_addr = next(self._addr_to_region.irange(maximum=addr, reverse=True))
+                current_region = self._addr_to_region[current_region_addr]
+                new_region = True
+
+            # adjust size
+            adjusted_region_size = self._adjust_region_size(current_region)
+            adjusted_size = min(obj.size, current_region.addr + adjusted_region_size - addr)
+            if adjusted_size <= 0:
+                continue
+
             pos = offset * total_width // self._total_size
-            length = obj.size * total_width // self._total_size
-            offset += obj.size
+            length = adjusted_size * total_width // self._total_size
+            offset += adjusted_size
 
             # draw a rectangle
             if isinstance(obj, Unknown):
@@ -128,8 +146,22 @@ class QFeatureMap(QWidget):
             else:
                 pen = QPen(unknown_color)
                 brush = QBrush(unknown_color)
-            rect = QRectF(pos, 0, length, self.height())
+            rect = QRectF(pos, 0, length, height)
             self.view._scene.addRect(rect, pen, brush)
+
+            # if at the beginning of a new region, draw a line
+            if new_region:
+                pen = QPen(delimiter_color)
+                self.view._scene.addLine(pos, 0, pos, height, pen)
+
+    def _adjust_region_size(self, memory_region):
+
+        if isinstance(memory_region.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject)):
+            # Draw unnecessary objects smaller
+            return 80
+        else:
+            print(memory_region.size, memory_region.object)
+            return memory_region.size
 
     def _get_pos_from_addr(self, addr):
 
