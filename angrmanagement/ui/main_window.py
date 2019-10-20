@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-    def __init__(self, file_to_open=None, parent=None):
+    def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
@@ -88,9 +88,6 @@ class MainWindow(QMainWindow):
         self.show()
 
         self.status = "Ready."
-
-        if file_to_open is not None:
-            self.load_file(file_to_open)
 
     def sizeHint(self, *args, **kwargs):
         return QSize(1200, 800)

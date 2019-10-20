@@ -71,8 +71,13 @@ def main(filepath=None):
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
 
-    main_window = MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
+    file_to_open = filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None
+    main_window = MainWindow()
     splash.finish(main_window)
+
+    if file_to_open is not None:
+        main_window.load_file(file_to_open)
+
     app.exec_()
 
 if __name__ == '__main__':
