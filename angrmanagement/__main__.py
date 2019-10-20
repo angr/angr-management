@@ -42,7 +42,7 @@ def main(filepath=None):
 
     from PySide2.QtWidgets import QApplication, QSplashScreen
     from PySide2.QtGui import QFontDatabase, QPixmap
-    from PySide2.QtCore import Qt, QElapsedTimer
+    from PySide2.QtCore import Qt
 
     from .config import FONT_LOCATION, IMG_LOCATION
 
