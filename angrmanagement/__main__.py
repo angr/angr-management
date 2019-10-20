@@ -54,11 +54,7 @@ def main(filepath=None):
     splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
     splash.setEnabled(False)
-
     splash.show()
-    #splash.showMessage("angr management", Qt.AlignTop | Qt.AlignCenter)
-    timer = QElapsedTimer()
-    timer.start()
 
     from .logic import GlobalInfo
     from .ui.css import CSS
@@ -72,14 +68,8 @@ def main(filepath=None):
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
 
-    MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
-
-    while timer.elapsed() < 2000 :
-        app.processEvents()
-    splash.close()
-    #splash finish
-
+    main_window = MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
+    splash.finish(main_window)
     app.exec_()
-
 if __name__ == '__main__':
     main()
