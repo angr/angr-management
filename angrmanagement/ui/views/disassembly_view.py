@@ -474,6 +474,8 @@ class DisassemblyView(BaseView):
         self.infodock.selected_insns.am_subscribe(self._update_current_graph)
         self.infodock.selected_operands.am_subscribe(self._update_current_graph)
 
+        self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
+
     #
     # Private methods
     #
@@ -519,7 +521,10 @@ class DisassemblyView(BaseView):
         function = locate_function(self.workspace.instance, addr)
         if function is not None:
             self._display_function(function)
-            self.infodock.select_instruction(addr, unique=True)
+            instr_addr = function.addr_to_instruction_addr(addr)
+            if instr_addr is None:
+                instr_addr = addr
+            self.infodock.select_instruction(instr_addr, unique=True)
             return True
         else:
             return False

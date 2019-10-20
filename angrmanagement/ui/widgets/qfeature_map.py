@@ -1,7 +1,7 @@
 
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QSizePolicy
+from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QSizePolicy, QGraphicsSceneMouseEvent
 from PySide2.QtGui import QPaintEvent, QPainter, QBrush, QPen, QPolygonF
 from PySide2.QtCore import Qt, QRectF, QSize, QPointF
 
@@ -10,6 +10,7 @@ from angr.block import Block
 from angr.analyses.cfg.cfb import Unknown
 
 from ...config import Conf
+from ...data.object_container import ObjectContainer
 from .qgraph import QZoomableDraggableGraphicsView
 
 
@@ -18,11 +19,35 @@ class Orientation:
     Horizontal = 1
 
 
+class QClickableGraphicsScene(QGraphicsScene):
+
+    def __init__(self, feature_map):
+        """
+
+        :param QFeatureMap feature_map:
+        """
+        super().__init__()
+
+        self._feature_map = feature_map
+
+    def mousePressEvent(self, mouseEvent):
+        """
+
+        :param QGraphicsSceneMouseEvent mouseEvent:
+        :return:
+        """
+
+        if mouseEvent.button() == Qt.LeftButton:
+            pos = mouseEvent.scenePos()
+            offset = pos.x()
+            self._feature_map.select_offset(offset)
+
+
 class QFeatureMapView(QZoomableDraggableGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._scene = QGraphicsScene()
+        self._scene = QClickableGraphicsScene(parent)
         self.setScene(self._scene)
 
 
@@ -45,9 +70,13 @@ class QFeatureMap(QWidget):
         # items
         self._insn_indicators = [ ]
 
+        # data instance
+        self.addr = ObjectContainer(None, name='The current address of the Feature Map.')
+
         # cached values
         self._addr_to_region = SortedDict()
         self._regionaddr_to_offset = SortedDict()
+        self._offset_to_regionaddr = SortedDict()
         self._total_size = None
         self._regions_painted = False
 
@@ -69,6 +98,14 @@ class QFeatureMap(QWidget):
         if not self._regions_painted:
             self._regions_painted = True
             self._paint_regions()
+
+    def select_offset(self, offset):
+
+        addr = self._get_addr_from_pos(offset)
+        if addr is None:
+            return
+        self.addr.am_obj = addr
+        self.addr.am_event()
 
     #
     # Private methods
@@ -107,6 +144,7 @@ class QFeatureMap(QWidget):
             for mr in cfb.regions:
                 self._addr_to_region[mr.addr] = mr
                 self._regionaddr_to_offset[mr.addr] = b
+                self._offset_to_regionaddr[b] = mr.addr
                 b += self._adjust_region_size(mr)
             self._total_size = b
 
@@ -176,6 +214,18 @@ class QFeatureMap(QWidget):
 
         offset = base_offset + addr - mr_base
         return offset * self.width() // self._total_size
+
+    def _get_addr_from_pos(self, pos):
+
+        offset = int(pos * self._total_size // self.width())
+
+        try:
+            base_offset = next(self._offset_to_regionaddr.irange(maximum=offset, reverse=True))
+        except StopIteration:
+            return None
+
+        region_addr = self._offset_to_regionaddr[base_offset]
+        return region_addr + offset - base_offset
 
     def _paint_insn_indicators(self):
 
