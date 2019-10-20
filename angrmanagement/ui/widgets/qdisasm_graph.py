@@ -113,16 +113,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
         self.request_relayout()
 
-    def _initial_position(self):
-        entry_block_rect = self.entry_block.mapRectToScene(self.entry_block.boundingRect())
-        viewport_height = self.viewport().rect().height()
-        min_rect = self.scene().itemsBoundingRect()
-        if min_rect.height() < (viewport_height // 1.5):
-            return min_rect.center()
-        else:
-            focus_point = (entry_block_rect.center().x(), entry_block_rect.top() + (viewport_height // 4))
-            return QPointF(*focus_point)
-
     #
     # Event handlers
     #
@@ -263,3 +253,17 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
             # make it visible in the center
             self.centerOn(x, y)
+
+    #
+    # Private methods
+    #
+
+    def _initial_position(self):
+        entry_block_rect = self.entry_block.mapRectToScene(self.entry_block.boundingRect())
+        viewport_height = self.viewport().rect().height()
+        min_rect = self.scene().itemsBoundingRect()
+        if min_rect.height() < (viewport_height // 1.5):
+            return min_rect.center()
+        else:
+            focus_point = (entry_block_rect.center().x(), entry_block_rect.top() + (viewport_height // 4))
+            return QPointF(*focus_point)

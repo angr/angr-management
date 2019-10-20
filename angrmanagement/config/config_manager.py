@@ -52,6 +52,11 @@ ENTRIES = [
     CE('disasm_view_antitarget_addr_color', QColor, QColor(0xff, 0, 0)),
     CE('disasm_view_node_background_color', QColor, QColor(0xfa, 0xfa, 0xfa)),
     CE('disasm_view_node_border_color', QColor, QColor(0xf0, 0xf0, 0xf0)),
+    # feature map
+    CE('feature_map_color_regular_function', QColor, QColor(0, 0xa0, 0xe8)),
+    CE('feature_map_color_unknown', QColor, QColor(0xa, 0xa, 0xa)),
+    CE('feature_map_color_delimiter', QColor, QColor(0, 0, 0)),
+    CE('feature_map_color_data', QColor, QColor(0xc0, 0xc0, 0xc0)),
 ]
 
 

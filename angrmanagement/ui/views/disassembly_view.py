@@ -8,7 +8,7 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
@@ -56,6 +56,7 @@ class DisassemblyView(BaseView):
     def reload(self):
 
         self.infodock.initialize()
+        self._feature_map.refresh()
 
         # Initialize the linear viewer
         # TODO: Relocate the logic to a better place
@@ -63,6 +64,7 @@ class DisassemblyView(BaseView):
 
     def refresh(self):
         self.current_graph.refresh()
+        self._feature_map.refresh()
 
     def save_image_to(self, path):
         if self._flow_graph is not None:
@@ -440,14 +442,22 @@ class DisassemblyView(BaseView):
     def _init_widgets(self):
         self._linear_viewer =  QLinearDisassembly(self.workspace, self, parent=self)
         self._flow_graph = QDisassemblyGraph(self.workspace, self, parent=self)
+        self._feature_map = QFeatureMap(self, parent=self)
 
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
         hlayout = QVBoxLayout()
+        hlayout.addWidget(self._feature_map)
         hlayout.addWidget(self._flow_graph)
         hlayout.addWidget(self._linear_viewer)
         hlayout.addWidget(self._statusbar)
         hlayout.setContentsMargins(0, 0, 0, 0)
+
+        self._feature_map.setMaximumHeight(25)
+        hlayout.setStretchFactor(self._feature_map, 0)
+        hlayout.setStretchFactor(self._flow_graph, 1)
+        hlayout.setStretchFactor(self._linear_viewer, 1)
+        hlayout.setStretchFactor(self._statusbar, 0)
 
         self.setLayout(hlayout)
 
@@ -463,6 +473,8 @@ class DisassemblyView(BaseView):
         # redraw the current graph if instruction/operand selection changes
         self.infodock.selected_insns.am_subscribe(self._update_current_graph)
         self.infodock.selected_operands.am_subscribe(self._update_current_graph)
+
+        self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
 
     #
     # Private methods
@@ -509,7 +521,10 @@ class DisassemblyView(BaseView):
         function = locate_function(self.workspace.instance, addr)
         if function is not None:
             self._display_function(function)
-            self.infodock.select_instruction(addr, unique=True)
+            instr_addr = function.addr_to_instruction_addr(addr)
+            if instr_addr is None:
+                instr_addr = addr
+            self.infodock.select_instruction(instr_addr, unique=True)
             return True
         else:
             return False
