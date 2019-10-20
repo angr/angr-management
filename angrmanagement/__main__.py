@@ -40,15 +40,28 @@ def main(filepath=None):
 
     set_app_user_model_id()
 
-    from PySide2.QtWidgets import QApplication
-    from PySide2.QtGui import QFontDatabase
+    from PySide2.QtWidgets import QApplication, QSplashScreen
+    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
+    from PySide2.QtCore import Qt
+
+    from .config import FONT_LOCATION, IMG_LOCATION
+
+    app = QApplication(sys.argv)
+
+    # Make + display splash screen
+    splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
+    splash_pixmap = QPixmap(splashscreen_location)
+    splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
+    icon_location = os.path.join(IMG_LOCATION, 'angr.png')
+    splash.setWindowIcon(QIcon(icon_location))
+    splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+    splash.setEnabled(False)
+    splash.show()
+    app.processEvents()
 
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
-    from .config import FONT_LOCATION
-
-    app = QApplication(sys.argv)
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
@@ -58,7 +71,12 @@ def main(filepath=None):
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
 
-    MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
+    file_to_open = filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None
+    main_window = MainWindow()
+    splash.finish(main_window)
+
+    if file_to_open is not None:
+        main_window.load_file(file_to_open)
 
     app.exec_()
 
