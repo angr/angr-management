@@ -7,7 +7,6 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 import cle
-
 try:
     import archr
     import keystone
@@ -34,6 +33,7 @@ from .dialogs.sync_config import SyncConfig
 from .dialogs.about import LoadAboutDialog
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
+
 
 class MainWindow(QMainWindow):
     """
@@ -91,7 +91,6 @@ class MainWindow(QMainWindow):
 
         if file_to_open is not None:
             self.load_file(file_to_open)
-
 
     def sizeHint(self, *args, **kwargs):
         return QSize(1200, 800)

@@ -71,5 +71,6 @@ def main(filepath=None):
     main_window = MainWindow(file_to_open=filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None)
     splash.finish(main_window)
     app.exec_()
+
 if __name__ == '__main__':
     main()
