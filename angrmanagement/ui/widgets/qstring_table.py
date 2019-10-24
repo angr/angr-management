@@ -57,6 +57,7 @@ class QStringTable(QTableWidget):
         self.setHorizontalScrollMode(self.ScrollPerPixel)
 
         self._cfg = None
+        self._xrefs = None
         self._function = None
         self.items = [ ]
 
@@ -75,6 +76,14 @@ class QStringTable(QTableWidget):
     def cfg(self, v):
         self._cfg = v
         self.reload()
+
+    @property
+    def xrefs(self):
+        return self._xrefs
+
+    @xrefs.setter
+    def xrefs(self, v):
+        self._xrefs = v
 
     @property
     def function(self):
@@ -106,10 +115,10 @@ class QStringTable(QTableWidget):
                 if self._function is None:
                     self.items.append(QStringTableItem(f))
                 else:
-                    refs = self._cfg.model.references
-                    if f.addr in refs.data_addr_to_ref:
-                        for ref in refs.data_addr_to_ref[f.addr]:
-                            if ref.block_addr in self._function.block_addrs_set:
+                    xrefs = self._xrefs
+                    if f.addr in xrefs.xrefs_by_dst:
+                        for xref in xrefs.xrefs_by_dst[f.addr]:
+                            if xref.block_addr in self._function.block_addrs_set:
                                 self.items.append(QStringTableItem(f))
                                 break
 

@@ -24,6 +24,7 @@ class StringsView(BaseView):
     def reload(self):
         self._function_list.functions = self.workspace.instance.cfg.functions
         self._string_table.cfg = self.workspace.instance.cfg
+        self._string_table.xrefs = self.workspace.instance.project.kb.xrefs
         self._string_table.function = self._selected_function
 
     def sizeHint(self):
