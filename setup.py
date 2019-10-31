@@ -13,7 +13,7 @@ if platform.python_implementation() != 'CPython':
 
 setup(
     name='angr-management',
-    version='8.19.7.25',
+    version='8.19.10.30',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=packages,
@@ -24,7 +24,7 @@ setup(
         ]
     },
     install_requires=[
-        'angr==8.19.7.25',
+        'angr==8.19.10.30',
         'websocket-client',
         'qtconsole',
         'ipython',
