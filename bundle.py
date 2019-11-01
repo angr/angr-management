@@ -20,6 +20,9 @@ def make_common_options():
     # any dynamically-loaded modules have to be explicitly added
     included_data = [
         ( os.path.join(os.path.dirname(angrmanagement.__file__), "resources"), "angrmanagement/resources" ),
+        ( os.path.join(os.path.dirname(angrmanagement.__file__), "resources/images"), "angrmanagement/resources/images" ),
+        ( os.path.join(os.path.dirname(angrmanagement.__file__), "plugins"), "angrmanagement/plugins" ),
+        ( os.path.join(os.path.dirname(angrmanagement.__file__), "config"), "angrmanagement/config" ),
         ( os.path.join(os.path.dirname(cle.__file__), "backends/pe/relocation"), "cle/backends/pe/relocation" ),
         ( os.path.join(os.path.dirname(cle.__file__), "backends/elf/relocation"), "cle/backends/elf/relocation" ),
         ( os.path.join(os.path.dirname(angr.__file__), "analyses/identifier/functions"), "angr/analyses/identifier/functions" ),
