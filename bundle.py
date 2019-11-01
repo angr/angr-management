@@ -36,7 +36,7 @@ def make_common_options():
         ( capstone._path, "capstone/lib" ),
         ( os.path.join(os.path.dirname(z3.__file__), "lib"), "z3/lib" ),
     ]
-    
+
     all_mappings = [ (';' if sys.platform.startswith('win') else ':').join(mapping) for mapping in (included_data + included_libs) ]
 
     # we add onefile to make a single-executable bundle, and include ipython because it's not autodetected for some reason
