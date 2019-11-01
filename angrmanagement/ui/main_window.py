@@ -54,6 +54,7 @@ class MainWindow(QMainWindow):
 
         self.workspace = None
         self.central_widget = None
+        self.central_widget2 = None
         self._plugin_mgr = None  # type: PluginManager
 
         self._file_toolbar = None  # type: FileToolbar
@@ -239,6 +240,7 @@ class MainWindow(QMainWindow):
         self.workspace = wk
         self.workspace.view_manager.tabify_center_views()
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
+        self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
 
     #
     # Shortcuts

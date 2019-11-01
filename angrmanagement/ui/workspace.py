@@ -27,7 +27,7 @@ class Workspace:
 
         self._main_window = main_window
         self._instance = instance
-        self.is_split = 0
+        self.is_split = False
         self.split_tab_id = 0
         instance.workspace = self
 
@@ -114,14 +114,15 @@ class Workspace:
         """
 
         window_id = self.view_manager.get_current_tab_id()
-        if self.is_split == 0:
+        if self.is_split is False:
             self._main_window.central_widget.removeDockWidget(self.view_manager.docks[window_id])
             dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
                                                           Qt.RightDockWidgetArea)
             dock = QSmartDockWidget(self.default_tabs[window_id].caption, parent=self.default_tabs[window_id])
+            self._main_window.central_widget2.show()
             self._main_window.central_widget2.addDockWidget(dock_area, dock)
             dock.setWidget(self.default_tabs[window_id])
-            self.is_split = 1
+            self.is_split = True
             self.split_tab_id = window_id
             self.last_unsplit_view = dock
             self._main_window.central_widget_main.setStretchFactor(1,1)
@@ -136,8 +137,9 @@ class Workspace:
         :return:    None
         """
 
-        if self.is_split == 1:
+        if self.is_split is True:
             window_id = self.split_tab_id
+            self._main_window.central_widget2.hide()
             self._main_window.central_widget2.removeDockWidget(self.last_unsplit_view)
             dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
                                                           Qt.RightDockWidgetArea)
@@ -148,7 +150,7 @@ class Workspace:
             self._main_window.central_widget_main.setStretchFactor(1,0)
             self._main_window.central_widget_main.restoreState(self.splitter_state.value("splitterSizes"))
             self.view_manager.tabify_center_views()
-            self.is_split = 0
+            self.is_split = False
 
     def toggle_split(self):
         """
@@ -157,7 +159,7 @@ class Workspace:
         :return:    None
         """
 
-        if self.is_split == 0:
+        if self.is_split is False:
             self.split_view()
         else:
             self.unsplit_view()
