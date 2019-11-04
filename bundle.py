@@ -40,7 +40,7 @@ def make_common_options():
     all_mappings = [ (';' if sys.platform.startswith('win') else ':').join(mapping) for mapping in (included_data + included_libs) ]
 
     # we add onefile to make a single-executable bundle, and include ipython because it's not autodetected for some reason
-    args = [ "--onefile", "--hidden-import=ipykernel.datapub" ]
+    args = [ "--name=angr-management", "--onefile", "--hidden-import=ipykernel.datapub" ]
     for mapping in all_mappings:
         args.append("--add-data")
         args.append(mapping)

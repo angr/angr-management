@@ -1,0 +1,100 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+trigger: none
+pr: none
+schedules:
+- cron: "0 0 * * *"
+  displayName: Daily midnight build
+  branches:
+    include:
+    - master
+
+stages:
+- stage: Build
+  jobs:
+  - job:
+    strategy:
+      matrix:
+        Ubuntu:
+          IMAGE_NAME: ubuntu-18.04
+          SCRIPT: build.sh
+        macOS:
+          IMAGE_NAME: macOS-10.14
+          SCRIPT: build.sh
+        Windows:
+          IMAGE_NAME: windows-2019
+          SCRIPT: build.bat
+    pool:
+      vmImage: $(IMAGE_NAME)
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.6
+      - script: .azure-pipelines/$(SCRIPT)
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: dist/
+          artifactName: angr-management-$(IMAGE_NAME)
+
+- stage: Deploy
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: Release
+    pool:
+      vmImage: ubuntu-18.04
+    variables:
+    - name: old_release
+      value: ''
+    steps:
+    # Needed for the oldest_release script
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.6
+    - bash: pip install pygithub
+
+    # Download artifacts and create release
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        path: $(Build.SourcesDirectory)/dist/
+    - task: GitHubRelease@0
+      displayName: Create Github Release
+      inputs:
+        gitHubConnection: angr-management
+        repositoryName: $(Build.Repository.Name)
+        target: $(Build.SourceVersion)
+        tagSource: manual
+        tag: nightly-$(Build.BuildNumber)
+        title: angr-management nightly preview $(Build.BuildNumber)
+        releaseNotesSource: input
+        releaseNotes: >
+          This release is an automatically generate pre-release. We do our best
+          to make sure everything works, but be advised that features could
+          break or change without notice.
+        isPreRelease: true
+        addChangelog: true
+        compareWith: 'lastRelease'
+        assets: |
+          dist/angr-management-windows-2019/*
+          dist/angr-management-macOS-10.14/*
+          dist/angr-management-ubuntu-18.04/*
+
+    # Delete oldest nightly release
+    - task: PythonScript@0
+      inputs:
+        scriptPath: $(Build.SourcesDirectory)/.azure-pipelines/get_oldest_nightly.py
+        arguments: $(Build.Repository.Name)
+    - task: GitHubRelease@0
+      displayName: Delete old nightlies
+      condition: |
+        and(
+          ne(variables['old_release'], ''),
+          startsWith(variables['old_release'], 'nightly-'),
+          not(endsWith(variables['old_release'], variables['Build.BuildNumber']))
+          )
+      inputs:
+        gitHubConnection: angr-management
+        action: delete
+        repositoryName: $(Build.Repository.Name)
+        target: $(Build.SourceVersion)
+        tagSource: manual
+        tag: $(old_release)
