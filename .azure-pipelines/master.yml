@@ -1,0 +1,15 @@
+name: $(BuildDefinitionName)-$(Rev:.rr)
+trigger:
+ - master
+pr: none
+
+jobs:
+- job: Build Ubuntu
+  pool:
+    vmImage: ubuntu-18.04
+  steps:
+    - script: .azure-pipelines/build.sh
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: dist/start
+        artifactName: angr-management-linux
