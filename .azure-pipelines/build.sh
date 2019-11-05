@@ -11,6 +11,11 @@ python3 -m venv venv && source venv/bin/activate
 pip install --upgrade pip
 
 # Install dependencies
+
+# Install unicorn from git only on macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    pip install git+git://github.com/unicorn-engine/unicorn.git#subdirectory=bindings/python
+fi
 pip install pyinstaller
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
