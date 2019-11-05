@@ -8,7 +8,7 @@ jobs:
   pool:
     vmImage: ubuntu-18.04
   steps:
-    - script: .azure-pipelines/build.sh
+    - bash: .azure-pipelines/build.sh
     - task: PublishBuildArtifacts@1
       inputs:
         pathtoPublish: dist/start
@@ -18,8 +18,18 @@ jobs:
   pool:
     vmImage: macOS-10.14
   steps:
-    - script: .azure-pipelines/build.sh
+    - bash: .azure-pipelines/build.sh
     - task: PublishBuildArtifacts@1
       inputs:
         pathtoPublish: dist/start
         artifactName: angr-management-macos
+
+- job: build_windows
+  pool:
+    vmImage: windows-2019
+  steps:
+    - bash: .azure-pipelines/build.sh
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: dist/start
+        artifactName: angr-management-windows
