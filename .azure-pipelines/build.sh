@@ -1,15 +1,5 @@
 #!/bin/bash -e
 
-# Install system dependencies
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    sudo apt-get update
-    sudo apt-get install python3-venv
-fi
-
-# Create virtualenv
-python3 -m venv venv && source venv/bin/activate
-pip install --upgrade pip
-
 # Install dependencies
 
 # Install unicorn from git only on macOS
