@@ -4,7 +4,7 @@
 
 # Install unicorn from git only on macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    pip install git+git://github.com/unicorn-engine/unicorn.git#subdirectory=bindings/python&egg=unicorn
+    pip install git+git://github.com/twizmwazin/unicorn.git@msbuild-windows-only#subdirectory=bindings/python&egg=unicorn
 fi
 pip install pyinstaller
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
