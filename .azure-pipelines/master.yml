@@ -13,3 +13,13 @@ jobs:
       inputs:
         pathtoPublish: dist/start
         artifactName: angr-management-linux
+
+- job: build_macos
+  pool:
+    vmImage: macOS-10.14
+  steps:
+    - script: .azure-pipelines/build.sh
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: dist/start
+        artifactName: angr-management-macos
