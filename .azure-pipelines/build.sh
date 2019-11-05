@@ -8,7 +8,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 pip install pyinstaller
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
-pip install git+https://github.com/angr/pyvex.git#egg=pyvex
+pip install git+https://github.com/angr/pyvex.git@platform-specific-build#egg=pyvex
 pip install git+https://github.com/angr/cle.git#egg=cle
 pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
