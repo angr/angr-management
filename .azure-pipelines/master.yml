@@ -9,10 +9,13 @@ jobs:
     matrix:
       Ubuntu:
         IMAGE_NAME: 'ubuntu-18.04'
+        BIN_EXT: ''
       macOS:
         IMAGE_NAME: 'macOS-10.14'
+        BIN_EXT: '.app'
       Windows:
         IMAGE_NAME: 'windows-2019'
+        BIN_EXT: '.exe'
   pool:
     vmImage: $(IMAGE_NAME)
   steps:
@@ -22,5 +25,5 @@ jobs:
     - bash: .azure-pipelines/build.sh
     - task: PublishBuildArtifacts@1
       inputs:
-        pathtoPublish: dist/start*
+        pathtoPublish: dist/start$(BIN_EXT)
         artifactName: angr-management-$(IMAGE_NAME)
