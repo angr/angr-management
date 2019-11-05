@@ -4,32 +4,20 @@ trigger:
 pr: none
 
 jobs:
-- job: build_ubuntu
+- job: Build
+  strategy:
+    matrix:
+      Ubuntu:
+        IMAGE_NAME: 'ubuntu-18.04'
+      macOS:
+        IMAGE_NAME: 'macOS-10.14'
+      Windows:
+        IMAGE_NAME: 'windows-2019'
   pool:
-    vmImage: ubuntu-18.04
+    vmImage: $(IMAGE_NAME)
   steps:
     - bash: .azure-pipelines/build.sh
     - task: PublishBuildArtifacts@1
       inputs:
-        pathtoPublish: dist/start
-        artifactName: angr-management-linux
-
-- job: build_macos
-  pool:
-    vmImage: macOS-10.14
-  steps:
-    - bash: .azure-pipelines/build.sh
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathtoPublish: dist/start
-        artifactName: angr-management-macos
-
-- job: build_windows
-  pool:
-    vmImage: windows-2019
-  steps:
-    - bash: .azure-pipelines/build.sh
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathtoPublish: dist/start
-        artifactName: angr-management-windows
+        pathtoPublish: dist/start*
+        artifactName: angr-management-$(IMAGE_NAME)
