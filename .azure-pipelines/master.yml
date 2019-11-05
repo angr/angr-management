@@ -4,7 +4,7 @@ trigger:
 pr: none
 
 jobs:
-- job: Build Ubuntu
+- job: build_ubuntu
   pool:
     vmImage: ubuntu-18.04
   steps:
