@@ -10,6 +10,7 @@ from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
+from .trace_statistics import TraceStatistics
 
 class Instance:
     def __init__(self, project=None):
@@ -37,6 +38,8 @@ class Instance:
         self._start_worker()
 
         self._disassembly = {}
+
+        self.trace = None
 
         self.database_path = None
 
@@ -102,6 +105,9 @@ class Instance:
 
     def set_image(self, image):
         self.img_name = image
+
+    def set_trace(self, trace):
+        self.trace = TraceStatistics(self.workspace, trace)
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:

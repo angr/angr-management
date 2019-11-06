@@ -12,18 +12,20 @@ from ...utils import should_display_string_label, get_string_for_display, get_co
 
 _l = logging.getLogger(__name__)
 
-
 class QInstruction(QCachedGraphicsItem):
 
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
     GRAPH_COMMENT_STRING_SPACING = 10
+    GRAPH_TRACE_LEGEND_WIDTH = 30
+    GRAPH_TRACE_LEGEND_SPACING = 20
 
     INTERSPERSE_ARGS = ', '
 
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
+
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
         super().__init__(parent=parent)
@@ -49,6 +51,7 @@ class QInstruction(QCachedGraphicsItem):
         self._string_width = None
         self._comment = None
         self._comment_width = None
+        self._legend = None
 
         self._init_widgets()
 
@@ -109,9 +112,11 @@ class QInstruction(QCachedGraphicsItem):
         return self.infodock.is_instruction_selected(self.addr)
 
     def refresh(self):
+        _l.debug('refreshing')
         self.load_comment()
         for operand in self._operands:
             operand.refresh()
+        self.update_trace()
         self._update_size()
         self.recalculate_size()
 
@@ -124,6 +129,25 @@ class QInstruction(QCachedGraphicsItem):
         self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
         if self._comment is not None:
             self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
+
+    def update_trace(self):
+        _l.debug('updating trace')
+        if self.workspace.instance.trace is not None:
+            trace = self.workspace.instance.trace
+            # count is cached in trace.
+            count = trace.get_count(self.insn.addr)
+            _l.debug('counting trace')
+
+            if count > 0:
+                if count > self.GRAPH_TRACE_LEGEND_WIDTH:
+                    jump = count / self.GRAPH_TRACE_LEGEND_WIDTH
+                    self._legend = [(jump * i, 1) for i in
+                               range(self.GRAPH_TRACE_LEGEND_WIDTH)]
+                else:
+                    width = self.GRAPH_TRACE_LEGEND_WIDTH // count
+                    remainder = self.GRAPH_TRACE_LEGEND_WIDTH % count
+                    self._legend = [(i, width + 1) for i in range(remainder)] + \
+                              [(i, width) for i in range(remainder, count)]
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
@@ -170,6 +194,19 @@ class QInstruction(QCachedGraphicsItem):
             x += self.GRAPH_COMMENT_STRING_SPACING
             painter.setPen(Qt.gray)
             painter.drawText(x, y, self._string)
+
+        _l.debug('drawing legend')
+        # legend
+        self.update_trace()
+        if self._legend is not None:
+            _l.debug('legend is not None')
+            legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
+            for (i, w) in self._legend:
+                color = self.workspace.instance.trace.get_mark_color(self.insn.addr, i)
+                painter.setPen(color)
+                painter.setBrush(color)
+                painter.drawRect(legend_x, 0, w, self.height)
+                legend_x += w
 
     #
     # Private methods

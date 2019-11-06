@@ -59,6 +59,7 @@ class InfoDock:
             else:
                 self.selected_insns.add(insn_addr)
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
+            self.disasm_view.set_trace_mark(insn_addr)
             self.selected_insns.am_event()
 
     def unselect_instruction(self, insn_addr):

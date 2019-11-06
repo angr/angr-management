@@ -1,3 +1,4 @@
+import json
 import pickle
 import os
 
@@ -132,6 +133,12 @@ class MainWindow(QMainWindow):
     def _open_mainfile_dialog(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
                                                    "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
+                                                   )
+        return file_path
+
+    def _open_trace_dialog(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace", ".",
+                                                   "json (*.json)",
                                                    )
         return file_path
 
@@ -331,12 +338,27 @@ class MainWindow(QMainWindow):
         self.workspace.instance.add_job(LoadTargetJob(target))
         self.workspace.instance.set_image(img_name)
 
+    def open_trace(self):
+        trace_path = self._open_trace_dialog()
+        self.load_trace(trace_path)
+
     def load_file(self, file_path):
         if os.path.isfile(file_path):
             if file_path.endswith(".adb"):
                 self.load_database(file_path)
             else:
                 self.workspace.instance.add_job(LoadBinaryJob(file_path))
+            self._file_menu.action_by_key('load_trace').enable()
+
+    def load_trace(self, trace_path):
+        if os.path.isfile(trace_path):
+            with open(trace_path, 'r') as f:
+                trace = json.load(f)
+                self._set_trace(trace)
+
+    def _set_trace(self, trace):
+        self.workspace.instance.set_trace(trace)
+        self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
 
     def save_database(self):
         if self.workspace.instance.database_path is None:

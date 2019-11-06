@@ -1,14 +1,14 @@
 import logging
 from typing import Union, Callable
 
-from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
 
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QTraceViewer
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
@@ -33,6 +33,7 @@ class DisassemblyView(BaseView):
 
         self._linear_viewer = None
         self._flow_graph = None  # type: QDisassemblyGraph
+        self._trace_viewer = None # type: QTraceViewer
         self._statusbar = None
         self._jump_history = JumpHistory()
         self.infodock = InfoDock(self)
@@ -358,6 +359,22 @@ class DisassemblyView(BaseView):
 
         self.current_graph.refresh()
 
+    def set_trace_mark(self, insn_addr):
+        """
+        Show the appearance of the instruction in trace viewer, if trace viewer is being shown.
+        :param addr: instruction address
+        :return:
+        """
+
+        if self._trace_viewer is not None:
+            self._trace_viewer.selected_ins = insn_addr
+            self._trace_viewer.set_trace_mark(insn_addr)
+
+    def show_trace_view(self):
+        self._trace_viewer.set_trace(self.workspace.instance.trace)
+        self._trace_viewer.show()
+        self.current_graph.refresh()
+
     def jump_to(self, addr, src_ins_addr=None):
 
         # Record the current instruction address first
@@ -440,9 +457,10 @@ class DisassemblyView(BaseView):
     #
 
     def _init_widgets(self):
-        self._linear_viewer =  QLinearDisassembly(self.workspace, self, parent=self)
+        self._linear_viewer = QLinearDisassembly(self.workspace, self, parent=self)
         self._flow_graph = QDisassemblyGraph(self.workspace, self, parent=self)
         self._feature_map = QFeatureMap(self, parent=self)
+        self._trace_viewer = QTraceViewer(self.workspace, self, parent=self)
 
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
@@ -458,6 +476,15 @@ class DisassemblyView(BaseView):
         hlayout.setStretchFactor(self._flow_graph, 1)
         hlayout.setStretchFactor(self._linear_viewer, 1)
         hlayout.setStretchFactor(self._statusbar, 0)
+        hlayout.setStretchFactor(self._trace_viewer, 1)
+
+        vlayout = QHBoxLayout()
+        vlayout.addLayout(hlayout)
+        vlayout.addWidget(self._trace_viewer)
+        self._trace_viewer.hide()
+
+        self.setLayout(vlayout)
+
 
         self.setLayout(hlayout)
 
