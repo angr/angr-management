@@ -33,7 +33,7 @@ class DisassemblyView(BaseView):
 
         self._linear_viewer = None
         self._flow_graph = None  # type: QDisassemblyGraph
-        self._trace_viewer = None # type: QTraceViewer
+        self._trace_viewer = None  # type: QTraceViewer
         self._statusbar = None
         self._jump_history = JumpHistory()
         self.infodock = InfoDock(self)
@@ -362,8 +362,8 @@ class DisassemblyView(BaseView):
     def set_trace_mark(self, insn_addr):
         """
         Show the appearance of the instruction in trace viewer, if trace viewer is being shown.
-        :param addr: instruction address
-        :return:
+        :param insn_addr: instruction address
+        :return:              None
         """
 
         if self._trace_viewer is not None:

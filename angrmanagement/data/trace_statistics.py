@@ -18,16 +18,16 @@ class TraceFunc:
 
 class TraceStatistics:
 
-    BBL_FILL_COLOR = QColor(00, 0xf0, 0xf0, 15)
-    BBL_BORDER_COLOR = QColor(00, 0xf0, 0xf0)
+    BBL_FILL_COLOR = QColor(0, 0xf0, 0xf0, 0xf)
+    BBL_BORDER_COLOR = QColor(0, 0xf0, 0xf0)
 
     def __init__(self, workspace, trace):
         self.workspace = workspace
         self.trace = trace
-        self.trace_func = list()
-        self._func_color = dict()
+        self.trace_func = []
+        self._func_color = {}
         self.count = None
-        self._mark_color = dict()
+        self._mark_color = {}
         self._positions = defaultdict(list)
 
         self._statistics(trace)
@@ -60,7 +60,7 @@ class TraceStatistics:
 
     def _statistics(self, trace):
         """
-        trace: bbl address list
+        :param trace: basic block address list
         """
         bbls = filter(self._get_bbl, trace)
 
