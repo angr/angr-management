@@ -9,17 +9,20 @@ jobs:
     matrix:
       Ubuntu:
         IMAGE_NAME: 'ubuntu-18.04'
+        SCRIPT: 'build.sh'
       macOS:
         IMAGE_NAME: 'macOS-10.14'
+        SCRIPT: 'build.sh'
       Windows:
-        IMAGE_NAME: 'vs2017-win2016'
+        IMAGE_NAME: 'windows-2019'
+        SCRIPT: 'build.bat'
   pool:
     vmImage: $(IMAGE_NAME)
   steps:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '3.6'
-    - bash: .azure-pipelines/build.sh
+    - script: .azure-pipelines/$(SCRIPT)
     - task: PublishBuildArtifacts@1
       inputs:
         pathtoPublish: dist/
