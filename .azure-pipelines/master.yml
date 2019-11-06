@@ -14,7 +14,7 @@ jobs:
         IMAGE_NAME: 'macOS-10.14'
         BIN_EXT: '.app'
       Windows:
-        IMAGE_NAME: 'windows-2019'
+        IMAGE_NAME: 'vs2017-win2016'
         BIN_EXT: '.exe'
   pool:
     vmImage: $(IMAGE_NAME)
