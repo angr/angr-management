@@ -1,4 +1,4 @@
-name: $(BuildDefinitionName)-$(Rev:.rr)
+name: $(BuildDefinitionName)-$(Rev:rrr)
 trigger:
  - master
 pr: none
@@ -23,7 +23,19 @@ jobs:
       inputs:
         versionSpec: '3.6'
     - script: .azure-pipelines/$(SCRIPT)
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       inputs:
-        pathtoPublish: dist/
+        targetPath: dist/
         artifactName: angr-management-$(IMAGE_NAME)
+
+- job: Publish
+  pool:
+    vmImage: ubuntu-18.04
+  steps:
+    - task: DownloadPipelineArtifact@0
+      inputs:
+        targetPath: dist/
+    - script: ./azure-pipelines/release.py
+      env:
+        AM_BUILD_NUMBER: $(Rev:rrr)
+        GIT_HASH: $(Build.SourceVersion)
