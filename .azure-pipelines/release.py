@@ -16,7 +16,7 @@ def create_release_tag(repo):
     author = github.InputGitAuthor(
         "angr-release-bot", "angr@lists.cs.ucsb.edu")
     commit = repo.get_commit(GIT_HASH)
-    return repo.create_git_tag(tag_name, tag_name, commit, "commit", tagger=NotSet)
+    return repo.create_git_tag(tag_name, tag_name, commit, "commit", tagger=author)
 
 
 def create_release(repo, tag):
