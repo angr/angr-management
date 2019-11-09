@@ -37,7 +37,15 @@ jobs:
     - task: DownloadPipelineArtifact@0
       inputs:
         targetPath: $(Build.SourcesDirectory)/dist/
-        itemPatern: angr-management-*
+        artifactName: angr-management-ubuntu-18.04
+    - task: DownloadPipelineArtifact@0
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/dist/
+        artifactName: angr-management-macOS-10.14
+    - task: DownloadPipelineArtifact@0
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/dist/
+        artifactName: angr-management-windows-2019
     - script: pip3 install PyGithub
     - script: python3 ./azure-pipelines/release.py
       env:
