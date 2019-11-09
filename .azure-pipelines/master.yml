@@ -31,6 +31,8 @@ jobs:
 - job: Publish
   pool:
     vmImage: ubuntu-18.04
+  dependsOn: Build
+  condition: succeeded()
   steps:
     - task: DownloadPipelineArtifact@0
       inputs:
