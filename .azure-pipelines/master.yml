@@ -36,7 +36,8 @@ jobs:
   steps:
     - task: DownloadPipelineArtifact@0
       inputs:
-        targetPath: dist/
+        targetPath: $(Build.SourcesDirectory)/dist/
+        itemPatern: angr-management-*
     - script: pip3 install PyGithub
     - script: python3 ./azure-pipelines/release.py
       env:
