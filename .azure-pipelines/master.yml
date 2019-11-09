@@ -37,7 +37,8 @@ jobs:
     - task: DownloadPipelineArtifact@0
       inputs:
         targetPath: dist/
-    - script: ./azure-pipelines/release.py
+    - script: pip3 install PyGithub
+    - script: python3 ./azure-pipelines/release.py
       env:
         AM_BUILD_NUMBER: $(Rev:rrr)
         GIT_HASH: $(Build.SourceVersion)

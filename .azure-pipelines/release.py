@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from git import Repo
 import github
 import glob
 import os
@@ -29,7 +28,7 @@ def publish_release_artifacts(release):
         # Need to zip up macOS .apps
         if os.path.isdir(artifact):
             out_name = f"{artifact}.zip"
-            shutil.make_archive(out_name, 'zip', artifact)
+            shutil.make_archive(out_name, "zip", artifact)
             artifact = out_name
         release.upload_asset(artifact)
 
