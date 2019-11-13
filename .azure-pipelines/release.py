@@ -15,6 +15,7 @@ def create_release_tag(repo):
     tag_name = f"nightly-{AM_BUILD_NUMBER}"
     author = github.InputGitAuthor(
         "angr-release-bot", "angr@lists.cs.ucsb.edu")
+    repo.create_git_ref(tag_name, GIT_HASH)
     return repo.create_git_tag(tag_name, tag_name, GIT_HASH, "commit", tagger=author)
 
 
