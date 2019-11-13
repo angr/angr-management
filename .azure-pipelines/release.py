@@ -21,7 +21,7 @@ def create_release_tag(repo):
 
 def create_release(repo, tag):
     message = f"This is an automated release based on commit {GIT_HASH}. It has not recieved any testing or validation, but may be useful to users looking to test the latest and greatest features of angr-management."
-    repo.create_git_release(tag.tag, tag.tag, message, prerelease=True)
+    return repo.create_git_release(tag.tag, tag.tag, message, prerelease=True)
 
 
 def publish_release_artifacts(release):
