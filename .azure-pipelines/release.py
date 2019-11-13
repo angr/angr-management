@@ -45,7 +45,7 @@ def publish_release_artifacts(release):
             artifact = f"{artifact}.zip"
         asset = release.upload_asset(artifact)
         if asset is not None:
-            l.info("Successfully uploaded asset %s". artifact)
+            l.info("Successfully uploaded asset %s", artifact)
         else:
             l.warning("Failed to upload asset %s", artifact)
 
