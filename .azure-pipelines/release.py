@@ -28,9 +28,8 @@ def publish_release_artifacts(release):
     for artifact in glob.glob("dist/*"):
         # Need to zip up macOS .apps
         if os.path.isdir(artifact):
-            out_name = f"{artifact}.zip"
-            shutil.make_archive(out_name, "zip", artifact)
-            artifact = out_name
+            shutil.make_archive(artifact, "zip", artifact)
+            artifact = f"{artifact}.zip"
         release.upload_asset(artifact)
 
 
