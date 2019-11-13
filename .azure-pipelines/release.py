@@ -12,7 +12,7 @@ GIT_HASH = os.environ["GIT_HASH"]
 
 
 def create_release_tag(repo):
-    tag_name = f"nightly-{AM_BUILD_NUMBER}"
+    tag_name = f"refs/tags/nightly-{AM_BUILD_NUMBER}"
     author = github.InputGitAuthor(
         "angr-release-bot", "angr@lists.cs.ucsb.edu")
     repo.create_git_ref(tag_name, GIT_HASH)
