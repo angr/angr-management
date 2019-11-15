@@ -1,9 +1,8 @@
-from PySide2.QtGui import QColor
-
 import logging
 import random
 from collections import defaultdict
 
+from PySide2.QtGui import QColor
 from angr.errors import SimEngineError
 
 l = logging.getLogger(name=__name__)
