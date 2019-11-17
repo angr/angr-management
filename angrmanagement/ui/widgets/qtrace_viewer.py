@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide2.QtGui import QPen, QBrush, QLinearGradient, QPixmap, QColor, QPainter, QFont
+from PySide2.QtGui import QPen, QBrush, QLinearGradient, QPixmap, QColor, QPainter, QFont, QImage
 from PySide2.QtCore import Qt, QRectF, QSize, QPoint
 
 from ...config import Conf
@@ -63,6 +63,7 @@ class QTraceViewer(QWidget):
         else:
             self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self._trace.count
             show_func_tag = True
+
         self.legend_height = self._trace.count * self.trace_func_unit_height
 
         self._show_trace_func(show_func_tag)
@@ -101,23 +102,12 @@ class QTraceViewer(QWidget):
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
 
     def _get_mark_color(self, i, total):
+        relative_gradient_pos = i * 1000 // total
         return self.legend_img.pixelColor(self.LEGEND_WIDTH // 2,
-                                          self.legend_height * i // total + 1)
+                                          relative_gradient_pos)
 
     def _get_mark_y(self, i, total):
         return self.TRACE_FUNC_Y + self.trace_func_unit_height * i
-
-    def _graphicsitem_to_pixmap(self, graph):
-        if graph.scene() is not None:
-            r = graph.boundingRect()
-            pixmap = QPixmap(r.width(), r.height())
-            pixmap.fill(QColor(0, 0, 0, 0));
-            painter = QPainter(pixmap)
-            painter.drawRect(r)
-            graph.scene().render(painter, QRectF(), graph.sceneBoundingRect())
-            return pixmap
-        else:
-            return None
 
     def _show_trace_func(self, show_func_tag):
         x = self.TRACE_FUNC_X
@@ -145,23 +135,32 @@ class QTraceViewer(QWidget):
                 prev_name = func_name
             y += self.trace_func_unit_height
 
-    def _show_legend(self):
-        pen = QPen(Qt.transparent)
-
-        gradient = QLinearGradient(self.LEGEND_X, self.LEGEND_Y,
-                                   self.LEGEND_X, self.LEGEND_Y + self.legend_height)
+    def _make_legend_gradient(self, x1, y1, x2, y2):
+        gradient = QLinearGradient(x1, y1, x2, y2)
         gradient.setColorAt(0.0, Qt.red)
         gradient.setColorAt(0.4, Qt.yellow)
         gradient.setColorAt(0.6, Qt.green)
         gradient.setColorAt(0.8, Qt.blue)
-        brush = QBrush(gradient)
+        gradient.setColorAt(1.0, Qt.darkBlue)
+        return gradient
 
+
+    def _show_legend(self):
+        pen = QPen(Qt.transparent)
+
+        gradient = self._make_legend_gradient(self.LEGEND_X, self.LEGEND_Y,
+                                   self.LEGEND_X, self.LEGEND_Y + self.legend_height)
+        brush = QBrush(gradient)
         self.legend = self.scene.addRect(self.LEGEND_X, self.LEGEND_Y,
                                          self.LEGEND_WIDTH, self.legend_height, pen, brush)
 
+        reference_gradient = self._make_legend_gradient(0, 0, self.LEGEND_WIDTH, 1000)
+        base_img = QImage(self.LEGEND_WIDTH, 1000, QImage.Format.Format_ARGB32)
+        p = QPainter(base_img)
+        p.fillRect(base_img.rect(),reference_gradient);
+        self.legend_img = base_img #reference shade
+
     def _set_mark_color(self):
-        pixmap = self._graphicsitem_to_pixmap(self.legend)
-        self.legend_img = pixmap.toImage()
         for p in range(self._trace.count):
             color = self._get_mark_color(p, self._trace.count)
             self._trace.set_mark_color(p, color)
