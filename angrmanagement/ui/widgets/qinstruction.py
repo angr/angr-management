@@ -141,7 +141,7 @@ class QInstruction(QCachedGraphicsItem):
             if count > 0:
                 if count > self.GRAPH_TRACE_LEGEND_WIDTH:
                     jump = count / self.GRAPH_TRACE_LEGEND_WIDTH
-                    self._legend = [(jump * i, 1) for i in
+                    self._legend = [(int(jump * i), 1) for i in
                                range(self.GRAPH_TRACE_LEGEND_WIDTH)]
                 else:
                     width = self.GRAPH_TRACE_LEGEND_WIDTH // count

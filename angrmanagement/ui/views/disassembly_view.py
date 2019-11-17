@@ -367,8 +367,9 @@ class DisassemblyView(BaseView):
         """
 
         if self._trace_viewer is not None:
-            self._trace_viewer.selected_ins = insn_addr
-            self._trace_viewer.set_trace_mark(insn_addr)
+            if(self._trace_viewer._trace is not None):
+                self._trace_viewer.selected_ins = insn_addr
+                self._trace_viewer.set_trace_mark(insn_addr)
 
     def show_trace_view(self):
         self._trace_viewer.set_trace(self.workspace.instance.trace)

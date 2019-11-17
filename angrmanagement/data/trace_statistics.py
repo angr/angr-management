@@ -1,9 +1,8 @@
-from PySide2.QtGui import QColor
-
 import logging
 import random
 from collections import defaultdict
 
+from PySide2.QtGui import QColor
 from angr.errors import SimEngineError
 
 l = logging.getLogger(name=__name__)
@@ -69,7 +68,11 @@ class TraceStatistics:
             for addr in block.instruction_addrs:
                 self._positions[addr].append(p)
 
-            func_addr = self.workspace.instance.cfg.get_any_node(bbl_addr).function_address
+            node = self.workspace.instance.cfg.get_any_node(bbl_addr)
+            if(node == None):
+                l.debug("Node at %x is None, skipping", bbl_addr)
+                continue
+            func_addr = node.function_address
             func_name = self.workspace.instance.project.kb.functions[func_addr].name
             self.trace_func.append(TraceFunc(bbl_addr, func_name))
 
