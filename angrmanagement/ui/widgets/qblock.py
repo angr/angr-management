@@ -155,11 +155,16 @@ class QGraphBlock(QBlock):
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
 
         # background of the node
-        if should_omit_text:
-            painter.setBrush(QColor(0xda, 0xda, 0xda))
+
+        if self.workspace.instance.multi_trace is not None:
+            color = self.workspace.instance.multi_trace.get_hit_miss_color(self.addr)
+            painter.setBrush(color)
         else:
-            painter.setBrush(self._config.disasm_view_node_background_color)
-        painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
+            if should_omit_text:
+                painter.setBrush(QColor(0xda, 0xda, 0xda))
+            else:
+                painter.setBrush(self._config.disasm_view_node_background_color)
+
         painter.drawPath(self._block_item)
 
         # content

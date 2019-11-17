@@ -349,6 +349,7 @@ class MainWindow(QMainWindow):
             else:
                 self.workspace.instance.add_job(LoadBinaryJob(file_path))
             self._file_menu.action_by_key('load_trace').enable()
+            self._file_menu.action_by_key('load_multi_trace').enable()
 
     def load_trace(self, trace_path):
         if os.path.isfile(trace_path):
@@ -359,6 +360,21 @@ class MainWindow(QMainWindow):
     def _set_trace(self, trace):
         self.workspace.instance.set_trace(trace)
         self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
+
+    def open_multi_trace(self):
+        multi_trace_path = self._open_trace_dialog()
+        self.load_multi_trace(multi_trace_path)
+
+    def load_multi_trace(self, trace_path):
+        if os.path.isfile(trace_path):
+            with open(trace_path, 'r') as f:
+                trace = json.load(f)
+                self._set_multi_trace(trace)
+
+    def _set_multi_trace(self, trace):
+        self.workspace.instance.set_multi_trace(trace)
+
+
 
     def save_database(self):
         if self.workspace.instance.database_path is None:
