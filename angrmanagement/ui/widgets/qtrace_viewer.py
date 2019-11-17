@@ -20,7 +20,7 @@ class QTraceViewer(QWidget):
 
     MARK_X = LEGEND_X
     MARK_WIDTH = TRACE_FUNC_X - LEGEND_X + TRACE_FUNC_WIDTH
-    MARK_HEIGHT = 5
+    MARK_HEIGHT = 1
 
     def __init__(self, workspace, disasm_view, parent=None):
         super().__init__(parent=parent)
@@ -171,7 +171,7 @@ class QTraceViewer(QWidget):
         x = pos.x()
         y = pos.y()
         if x > self.TRACE_FUNC_X + self.LEGEND_X and \
-                x < self.TRACE_FUNC_X + self.TRACE_FUNC_WIDTH + self.TAG_SPACING and \
+                x < self.view.width() and \
                 y > self.TRACE_FUNC_Y and \
                 y < self.TRACE_FUNC_Y + self.legend_height:
             return True
