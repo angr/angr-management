@@ -28,6 +28,12 @@ class FunctionsView(BaseView):
     #
 
     def get_function_backcolor(self, func):
+        if self.workspace.instance.trace is not None:
+            for itr_func in self.workspace.instance.trace.trace_func:
+                if itr_func.bbl_addr == func.addr:
+                    return 0xf0, 0xe7, 0xda
+            return 0xee, 0xee, 0xee
+
         if self.backcolor_callback:
             return self.backcolor_callback(func)
         else:
