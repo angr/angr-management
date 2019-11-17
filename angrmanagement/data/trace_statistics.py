@@ -20,7 +20,7 @@ class TraceStatistics:
     BBL_FILL_COLOR = QColor(0, 0xf0, 0xf0, 0xf)
     BBL_BORDER_COLOR = QColor(0, 0xf0, 0xf0)
 
-    def __init__(self, workspace, trace):
+    def __init__(self, workspace, trace, baddr):
         self.workspace = workspace
         self.trace = trace
         self.trace_func = []
@@ -28,6 +28,16 @@ class TraceStatistics:
         self.count = None
         self._mark_color = {}
         self._positions = defaultdict(list)
+
+        project = self.workspace.instance.project
+        self.project_baddr = project.loader.main_object.mapped_base
+        self.runtime_baddr = self.project_baddr
+
+        try:
+            self.runtime_baddr = int(baddr, 16)
+        except:
+            l.warn("Error using Base Address Value %s, using default value of %x", baddr, self.project_baddr)
+            self.runtime_baddr = self.project_baddr
 
         self._statistics(trace)
 
@@ -57,11 +67,16 @@ class TraceStatistics:
     def get_func_name_from_position(self, position):
         return self.trace_func[position].func_name
 
+    def _apply_trace_offset(self, addr):
+        offset = self.project_baddr - self.runtime_baddr
+        return addr + offset
+
     def _statistics(self, trace):
         """
         :param trace: basic block address list
         """
-        bbls = filter(self._get_bbl, trace)
+        mapped_trace = [self._apply_trace_offset(addr) for addr in trace]
+        bbls = filter(self._get_bbl, mapped_trace)
 
         for p, bbl_addr in enumerate(bbls):
             block = self.workspace.instance.project.factory.block(bbl_addr)

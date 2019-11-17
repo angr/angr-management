@@ -66,7 +66,7 @@ class QTraceViewer(QWidget):
             self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self._trace.count
             show_func_tag = True
 
-        self.legend_height = self._trace.count * self.trace_func_unit_height
+        self.legend_height = int(self._trace.count * self.trace_func_unit_height)
 
         self._show_trace_func(show_func_tag)
         self._show_legend()
@@ -181,11 +181,13 @@ class QTraceViewer(QWidget):
     def _to_logical_pos(self, pos):
         x_offset = self.view.horizontalScrollBar().value()
         y_offset = self.view.verticalScrollBar().value()
+        qpos = QPoint(pos.x() + x_offset, pos.y() + y_offset)
         return QPoint(pos.x() + x_offset, pos.y() + y_offset)
 
     def _get_position(self, y):
         y_relative = y - self.legend_height
-        return y_relative // self.trace_func_unit_height
+
+        return int(y_relative // self.trace_func_unit_height)
 
     def _get_bbl_from_y(self, y):
         position = self._get_position(y)

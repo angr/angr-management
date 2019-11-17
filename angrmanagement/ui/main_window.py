@@ -2,7 +2,8 @@ import json
 import pickle
 import os
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut, QLabel
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
+from PySide2.QtWidgets import QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut, QLabel, QLineEdit
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -68,6 +69,8 @@ class MainWindow(QMainWindow):
         self._progress = None
 
         self.defaultWindowFlags = None
+
+        self.default_trace_base_addr = ""
 
         # menus
         self._file_menu = None
@@ -137,10 +140,17 @@ class MainWindow(QMainWindow):
         return file_path
 
     def _open_trace_dialog(self):
+        file_path = ""
         file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace", ".",
                                                    "json (*.json)",
                                                    )
-        return file_path
+        project = self.workspace.instance.project
+        self.default_trace_base_addr = hex(project.loader.main_object.mapped_base)
+        if(len(file_path) > 0):
+            baddr, _ = QInputDialog.getText(self, "Input Trace Base Address",
+                                         "Base Address:", QLineEdit.Normal,
+                                         self.default_trace_base_addr)
+        return file_path, baddr
 
     def _pick_image_dialog(self):
         try:
@@ -339,8 +349,8 @@ class MainWindow(QMainWindow):
         self.workspace.instance.set_image(img_name)
 
     def open_trace(self):
-        trace_path = self._open_trace_dialog()
-        self.load_trace(trace_path)
+        trace_path, baddr = self._open_trace_dialog()
+        self.load_trace(trace_path, baddr)
 
     def load_file(self, file_path):
         if os.path.isfile(file_path):
@@ -350,14 +360,14 @@ class MainWindow(QMainWindow):
                 self.workspace.instance.add_job(LoadBinaryJob(file_path))
             self._file_menu.action_by_key('load_trace').enable()
 
-    def load_trace(self, trace_path):
+    def load_trace(self, trace_path, baddr):
         if os.path.isfile(trace_path):
             with open(trace_path, 'r') as f:
                 trace = json.load(f)
-                self._set_trace(trace)
+                self._set_trace(trace, baddr)
 
-    def _set_trace(self, trace):
-        self.workspace.instance.set_trace(trace)
+    def _set_trace(self, trace, baddr):
+        self.workspace.instance.set_trace(trace, baddr)
         self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
 
     def save_database(self):

@@ -106,8 +106,8 @@ class Instance:
     def set_image(self, image):
         self.img_name = image
 
-    def set_trace(self, trace):
-        self.trace = TraceStatistics(self.workspace, trace)
+    def set_trace(self, trace, baddr):
+        self.trace = TraceStatistics(self.workspace, trace, baddr)
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:
