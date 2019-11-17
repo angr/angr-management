@@ -50,8 +50,10 @@ class QTraceViewer(QWidget):
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        layout.setAlignment(self.view, Qt.AlignLeft)
+
         self.setLayout(layout)
-        self.setFixedWidth(500)
+        #self.setFixedWidth(400)
 
     def set_trace(self, trace):
         self._trace = trace
@@ -168,8 +170,8 @@ class QTraceViewer(QWidget):
     def _at_legend(self, pos):
         x = pos.x()
         y = pos.y()
-        if x > self.TRACE_FUNC_X and \
-                x < self.TRACE_FUNC_X + self.TRACE_FUNC_WIDTH and \
+        if x > self.TRACE_FUNC_X + self.LEGEND_X and \
+                x < self.TRACE_FUNC_X + self.TRACE_FUNC_WIDTH + self.TAG_SPACING and \
                 y > self.TRACE_FUNC_Y and \
                 y < self.TRACE_FUNC_Y + self.legend_height:
             return True
