@@ -14,21 +14,23 @@ from ...config import Conf
 
 class QFunctionTableModel(QAbstractTableModel):
 
-    Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
+    Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks', 'Coverage']
     NAME_COL = 0
     TAGS_COL = 1
     ADDRESS_COL = 2
     BINARY_COL = 3
     SIZE_COL = 4
     BLOCKS_COL = 5
+    COVERAGE_COL = 6
 
-    def __init__(self, backcolor_callback=None, func_list=None):
+    def __init__(self, backcolor_callback=None, func_list=None, func_coverage=None):
 
         super(QFunctionTableModel, self).__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
         self._backcolor_callback = backcolor_callback
+        self._func_coverage = func_coverage
 
     def __len__(self):
         if self._func_list is not None:
@@ -73,8 +75,13 @@ class QFunctionTableModel(QAbstractTableModel):
 
         return self.Headers[section]
 
-    def _get_function_backcolor(self, func) -> (int, int, int):
+    def _get_function_backcolor(self, func) -> QColor:
         return self._backcolor_callback(func)
+
+    def _get_function_coverage(self, func):
+        cov_val = self._func_coverage(func)
+        res = "%.2f%%" % cov_val if cov_val >= 0 else ""
+        return res
 
     def data(self, index, role):
 
@@ -112,6 +119,8 @@ class QFunctionTableModel(QAbstractTableModel):
                     lambda f: "%d" % f.size,
                 self.BLOCKS_COL:
                     lambda f: "%d" % len(f.block_addrs_set),
+                self.COVERAGE_COL:
+                    lambda f: self._get_function_coverage(f),
             }
 
             return mapping[col](func)
@@ -135,9 +144,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = QColor(0xff, 0xff, 0xff)
-            r, g, b = self._get_function_backcolor(func)
-            if r is not None and g is not None and b is not None:
-                color = QColor(r, g, b)
+            color = self._get_function_backcolor(func)
 
             return QBrush(color)
 
@@ -158,6 +165,8 @@ class QFunctionTableModel(QAbstractTableModel):
                 lambda: sorted(self.func_list, key=lambda f: f.size, reverse=order==Qt.DescendingOrder),
             self.BLOCKS_COL:
                 lambda: sorted(self.func_list, key=lambda f: len(f.block_addrs_set), reverse=order==Qt.DescendingOrder),
+            self.COVERAGE_COL:
+                lambda: sorted(self.func_list, key=lambda f: self._func_coverage(f),reverse=order == Qt.DescendingOrder),
         }
 
         self.func_list = mapping[column]()
@@ -214,7 +223,8 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._functions = None
-        self._model = QFunctionTableModel(self._function_table.get_function_backcolor)
+        self._model = QFunctionTableModel(self._function_table.get_function_backcolor,
+                                          func_coverage=self._function_table.get_function_coverage)
         self.setModel(self._model)
 
         # slots
@@ -304,6 +314,8 @@ class QFunctionTable(QWidget):
     def get_function_backcolor(self, func):
         return self._view.get_function_backcolor(func)
 
+    def get_function_coverage(self, func):
+        return self._view.get_function_coverage(func)
     #
     # Public methods
     #

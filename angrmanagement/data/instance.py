@@ -11,6 +11,7 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
 from .trace_statistics import TraceStatistics
+from .multi_trace import MultiTrace
 
 class Instance:
     def __init__(self, project=None):
@@ -40,6 +41,7 @@ class Instance:
         self._disassembly = {}
 
         self.trace = None
+        self.multi_trace = None
 
         self.database_path = None
 
@@ -108,6 +110,9 @@ class Instance:
 
     def set_trace(self, trace, baddr):
         self.trace = TraceStatistics(self.workspace, trace, baddr)
+
+    def set_multi_trace(self, trace):
+        self.multi_trace = MultiTrace(self.workspace, trace)
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:

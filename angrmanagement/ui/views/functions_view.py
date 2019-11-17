@@ -1,5 +1,6 @@
 from PySide2.QtWidgets import QVBoxLayout, QLabel
 from PySide2.QtCore import QSize
+from PySide2.QtGui import QColor
 
 from .view import BaseView
 from ..widgets.qfunction_table import QFunctionTable
@@ -15,8 +16,6 @@ class FunctionsView(BaseView):
 
         self.workspace.instance.cfg_container.am_subscribe(self.reload)
 
-        self.backcolor_callback = None
-
         self._init_widgets()
 
         self.width_hint = 100
@@ -31,13 +30,19 @@ class FunctionsView(BaseView):
         if self.workspace.instance.trace is not None:
             for itr_func in self.workspace.instance.trace.trace_func:
                 if itr_func.bbl_addr == func.addr:
-                    return 0xf0, 0xe7, 0xda
-            return 0xee, 0xee, 0xee
+                    return QColor(0xf0, 0xe7, 0xda)
+            return QColor(0xee, 0xee, 0xee)
 
-        if self.backcolor_callback:
-            return self.backcolor_callback(func)
+        if self.workspace.instance.multi_trace is not None:
+            return self.workspace.instance.multi_trace.get_percent_color(func)
+
+        return QColor(255, 255, 255)
+
+    def get_function_coverage(self, func):
+        if self.workspace.instance.multi_trace is not None:
+            return self.workspace.instance.multi_trace.get_coverage(func)
         else:
-            return 255, 255, 255
+            return -1
 
     def set_function_count(self, count):
         if self._status_label is not None:
