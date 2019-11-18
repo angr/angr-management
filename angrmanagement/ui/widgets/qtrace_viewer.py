@@ -59,6 +59,9 @@ class QTraceViewer(QWidget):
         self._trace = trace
         l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
                 self._trace.count)
+        if(self._trace.count <= 0):
+            l.warn("No valid addresses found in trace to show. Check base address offsets?")
+            return
         if self.TRACE_FUNC_MINHEIGHT < self._trace.count * 15:
             self.trace_func_unit_height = 15
             show_func_tag = True
