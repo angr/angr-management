@@ -31,7 +31,7 @@ class QTraceViewer(QWidget):
         self.scene = None
         self.mark = None
 
-        self._trace = None
+        self.trace = None
         self.selected_ins = None
 
         self._init_widgets()
@@ -55,25 +55,36 @@ class QTraceViewer(QWidget):
         self.setLayout(layout)
         #self.setFixedWidth(400)
 
+    def clear_trace(self):
+        self.scene.clear() #clear items
+        self.mark = None
+        self.trace = None
+
+        self.trace_func = QGraphicsItemGroup()
+        self.scene.addItem(self.trace_func)
+
+
     def set_trace(self, trace):
-        self._trace = trace
+        self.trace = trace
         l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
-                self._trace.count)
-        if(self._trace.count <= 0):
+                self.trace.count)
+        if(self.trace.count <= 0):
             l.warn("No valid addresses found in trace to show. Check base address offsets?")
             return
-        if self.TRACE_FUNC_MINHEIGHT < self._trace.count * 15:
+        if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
             self.trace_func_unit_height = 15
             show_func_tag = True
         else:
-            self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self._trace.count
+            self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
             show_func_tag = True
 
-        self.legend_height = int(self._trace.count * self.trace_func_unit_height)
+        self.legend_height = int(self.trace.count * self.trace_func_unit_height)
 
         self._show_trace_func(show_func_tag)
         self._show_legend()
         self._set_mark_color()
+
+        self.scene.setSceneRect(self.scene.itemsBoundingRect()) #resize
 
         # if self.selected_ins is not None:
         #     self.set_trace_mark(self.selected_ins)
@@ -87,14 +98,14 @@ class QTraceViewer(QWidget):
         else:
             self.mark = QGraphicsItemGroup()
             self.scene.addItem(self.mark)
-        positions = self._trace.get_positions(addr)
+        positions = self.trace.get_positions(addr)
         for p in positions:
-            color = self._get_mark_color(p, self._trace.count)
-            y = self._get_mark_y(p, self._trace.count)
+            color = self._get_mark_color(p, self.trace.count)
+            y = self._get_mark_y(p, self.trace.count)
             self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
                                                     self.MARK_HEIGHT, QPen(color), QBrush(color)))
 
-        y = self._get_mark_y(positions[0], self._trace.count)
+        y = self._get_mark_y(positions[0], self.trace.count)
         self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
 
     def mousePressEvent(self, event):
@@ -118,11 +129,11 @@ class QTraceViewer(QWidget):
         x = self.TRACE_FUNC_X
         y = self.TRACE_FUNC_Y
         prev_name = None
-        for position in self._trace.trace_func:
+        for position in self.trace.trace_func:
             bbl_addr = position.bbl_addr
             func_name = position.func_name
             l.debug('Draw function %x, %s', bbl_addr, func_name)
-            color = self._trace.get_func_color(func_name)
+            color = self.trace.get_func_color(func_name)
             self.trace_func.addToGroup(self.scene.addRect(x, y,
                                                           self.TRACE_FUNC_WIDTH, self.trace_func_unit_height,
                                                           QPen(color), QBrush(color)))
@@ -166,9 +177,9 @@ class QTraceViewer(QWidget):
         self.legend_img = base_img #reference shade
 
     def _set_mark_color(self):
-        for p in range(self._trace.count):
-            color = self._get_mark_color(p, self._trace.count)
-            self._trace.set_mark_color(p, color)
+        for p in range(self.trace.count):
+            color = self._get_mark_color(p, self.trace.count)
+            self.trace.set_mark_color(p, color)
 
     def _at_legend(self, pos):
         x = pos.x()
@@ -194,9 +205,9 @@ class QTraceViewer(QWidget):
 
     def _get_bbl_from_y(self, y):
         position = self._get_position(y)
-        return self._trace.get_bbl_from_position(position)
+        return self.trace.get_bbl_from_position(position)
 
     def _get_func_from_y(self, y):
         position = self._get_position(y)
-        func_name = self._trace.get_func_name_from_position(position)
+        func_name = self.trace.get_func_name_from_position(position)
         return self.workspace.instance.cfg.kb.functions.function(name=func_name)
