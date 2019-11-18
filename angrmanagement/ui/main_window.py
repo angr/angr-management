@@ -134,14 +134,14 @@ class MainWindow(QMainWindow):
     #
 
     def _open_mainfile_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", "",
                                                    "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
                                                    )
         return file_path
 
     def _open_trace_dialog(self):
         file_path = ""
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace", ".",
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace", "",
                                                    "json (*.json)",
                                                    )
         project = self.workspace.instance.project
