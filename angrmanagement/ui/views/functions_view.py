@@ -27,14 +27,14 @@ class FunctionsView(BaseView):
     #
 
     def get_function_backcolor(self, func):
+        if self.workspace.instance.multi_trace is not None:
+            return self.workspace.instance.multi_trace.get_percent_color(func)
+
         if self.workspace.instance.trace is not None:
             for itr_func in self.workspace.instance.trace.trace_func:
                 if itr_func.bbl_addr == func.addr:
                     return QColor(0xf0, 0xe7, 0xda)
             return QColor(0xee, 0xee, 0xee)
-
-        if self.workspace.instance.multi_trace is not None:
-            return self.workspace.instance.multi_trace.get_percent_color(func)
 
         return QColor(255, 255, 255)
 

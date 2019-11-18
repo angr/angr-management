@@ -1,7 +1,7 @@
 import logging
 
 from PySide2.QtGui import QColor, QPen, QPainterPath
-from PySide2.QtCore import QRectF, QMarginsF
+from PySide2.QtCore import QRectF, QMarginsF, Qt
 
 from angr.analyses.disassembly import Instruction
 from angr.sim_variable import SimRegisterVariable
@@ -149,6 +149,14 @@ class QGraphBlock(QBlock):
         for obj in self.objects:
             obj.setPos(x, y)
             y += obj.boundingRect().height()
+
+    def mousePressEvent(self, event):
+        btn = event.button()
+
+        if QCachedGraphicsItem.ctrl_held and btn == Qt.RightButton:
+            if self.workspace.instance.multi_trace is not None:
+                self.workspace.instance.multi_trace.get_trace(self.addr)
+                event.accept()
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         lod = option.levelOfDetailFromTransform(painter.worldTransform())

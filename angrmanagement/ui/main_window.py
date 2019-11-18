@@ -377,17 +377,17 @@ class MainWindow(QMainWindow):
         self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
 
     def open_multi_trace(self):
-        multi_trace_path = self._open_trace_dialog()
-        self.load_multi_trace(multi_trace_path)
+        multi_trace_path, base_addr = self._open_trace_dialog()
+        self.load_multi_trace(multi_trace_path, base_addr)
 
-    def load_multi_trace(self, trace_path):
+    def load_multi_trace(self, trace_path, base_addr):
         if os.path.isfile(trace_path):
             with open(trace_path, 'r') as f:
                 trace = json.load(f)
-                self._set_multi_trace(trace)
+                self._set_multi_trace(trace, base_addr)
 
-    def _set_multi_trace(self, trace):
-        self.workspace.instance.set_multi_trace(trace)
+    def _set_multi_trace(self, trace, base_addr):
+        self.workspace.instance.set_multi_trace(trace, base_addr)
 
 
 

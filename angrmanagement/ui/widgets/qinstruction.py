@@ -5,12 +5,12 @@ from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
 
 from angr.analyses.disassembly import Value
-
 from .qgraph_object import QCachedGraphicsItem
 from .qoperand import QOperand
 from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
 
 _l = logging.getLogger(__name__)
+
 
 class QInstruction(QCachedGraphicsItem):
 
@@ -25,7 +25,6 @@ class QInstruction(QCachedGraphicsItem):
 
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
-
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
         super().__init__(parent=parent)
@@ -75,9 +74,12 @@ class QInstruction(QCachedGraphicsItem):
                                                        unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             event.accept()
         elif event.button() == Qt.RightButton:
-            # display the context menu
-            self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
-            event.accept()
+            if QCachedGraphicsItem.ctrl_held:
+                # continue on for trace load
+                super().mousePressEvent(event)
+            else:
+                # display the context menu
+                self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
         else:
             super().mousePressEvent(event)
 

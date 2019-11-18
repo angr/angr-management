@@ -11,15 +11,17 @@ class MultiTrace:
     BUCKET_COLORS = [QColor(0xef, 0x65, 0x48, 0x20), QColor(0xfc, 0x8d, 0x59, 0x60),
                      QColor(0xfd, 0xbb, 0x84, 0x60), QColor(0xfd, 0xd4, 0x9e, 0x60)]
 
-    def __init__(self, workspace, multi_trace):
+    def __init__(self, workspace, multi_trace, base_addr):
         self.workspace = workspace
-        self._multi_trace = multi_trace
+        self._traces_summary = multi_trace["summary"]
+        self._traces = multi_trace["traces"]
         self.function_info = {}
+        self.base_addr = base_addr
 
     def get_hit_miss_color(self, addr):
 
         hexstr_addr = hex(addr)
-        if hexstr_addr not in self._multi_trace:
+        if hexstr_addr not in self._traces_summary:
             return MultiTrace.MISS_COLOR
         else:
             return MultiTrace.HIT_COLOR
@@ -35,13 +37,22 @@ class MultiTrace:
             self._calc_function_info(func)
         return self.function_info[func.addr]["coverage"]
 
+    def get_trace(self, addr):
+        for trace in self._traces.values():
+            print(addr)
+            print(trace)
+            if addr in trace["trace"]:
+                self.workspace.instance.set_trace(trace["trace"], self.base_addr)
+                self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
+                break
+
     def _calc_function_info(self, func):
         blocks = list(func.block_addrs)
         hit_count = 0
 
         for block in blocks:
             hexstr_addr = hex(block)
-            if hexstr_addr in self._multi_trace:
+            if hexstr_addr in self._traces_summary:
                 hit_count += 1
 
         if hit_count == 0:

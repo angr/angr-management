@@ -111,8 +111,8 @@ class Instance:
     def set_trace(self, trace, baddr):
         self.trace = TraceStatistics(self.workspace, trace, baddr)
 
-    def set_multi_trace(self, trace):
-        self.multi_trace = MultiTrace(self.workspace, trace)
+    def set_multi_trace(self, trace, base_addr):
+        self.multi_trace = MultiTrace(self.workspace, trace, base_addr)
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:
