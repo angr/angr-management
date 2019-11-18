@@ -146,10 +146,14 @@ class MainWindow(QMainWindow):
                                                    )
         project = self.workspace.instance.project
         self.default_trace_base_addr = hex(project.loader.main_object.mapped_base)
+
+        baddr = self.default_trace_base_addr
         if(len(file_path) > 0):
             baddr, _ = QInputDialog.getText(self, "Input Trace Base Address",
                                          "Base Address:", QLineEdit.Normal,
                                          self.default_trace_base_addr)
+        else:
+            return None, None
         return file_path, baddr
 
     def _pick_image_dialog(self):
@@ -350,7 +354,8 @@ class MainWindow(QMainWindow):
 
     def open_trace(self):
         trace_path, baddr = self._open_trace_dialog()
-        self.load_trace(trace_path, baddr)
+        if(trace_path != None and baddr != None):
+            self.load_trace(trace_path, baddr)
 
     def load_file(self, file_path):
         if os.path.isfile(file_path):
