@@ -53,9 +53,13 @@ class TraceStatistics:
         self._mark_color[p] = color
 
     def get_mark_color(self, addr, i):
-        return self._mark_color[self._get_position(addr, i)]
+        mark_index = self._get_position(addr, i)
+        mark_color = self._mark_color[mark_index]
+        return mark_color
 
     def get_positions(self, addr):
+        if(addr not in self._positions.keys()):
+            return []
         return self._positions[addr]
 
     def get_count(self, ins):
@@ -83,12 +87,16 @@ class TraceStatistics:
             for addr in block.instruction_addrs:
                 self._positions[addr].append(p)
 
-            node = self.workspace.instance.cfg.get_any_node(bbl_addr)
-            if(node == None):
-                l.debug("Node at %x is None, skipping", bbl_addr)
-                continue
-            func_addr = node.function_address
-            func_name = self.workspace.instance.project.kb.functions[func_addr].name
+            node = self.workspace.instance.cfg.model.get_any_node(bbl_addr)
+            if(node == None): #try again without asssuming node is start of a basic block
+                node = self.workspace.instance.cfg.model.get_any_node(bbl_addr, anyaddr=True)
+
+            func_name = hex(bbl_addr) #default to using bbl_addr as name if none is not found
+            if(node != None):
+                func_addr = node.function_address
+                func_name = self.workspace.instance.project.kb.functions[func_addr].name
+            else:
+                l.warn("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name))
 
         self.count = len(self.trace_func)

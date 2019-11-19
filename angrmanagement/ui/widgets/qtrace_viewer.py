@@ -99,14 +99,15 @@ class QTraceViewer(QWidget):
             self.mark = QGraphicsItemGroup()
             self.scene.addItem(self.mark)
         positions = self.trace.get_positions(addr)
-        for p in positions:
-            color = self._get_mark_color(p, self.trace.count)
-            y = self._get_mark_y(p, self.trace.count)
-            self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                    self.MARK_HEIGHT, QPen(color), QBrush(color)))
+        if(positions): #if addr is in list of positions
+            for p in positions:
+                color = self._get_mark_color(p, self.trace.count)
+                y = self._get_mark_y(p, self.trace.count)
+                self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                                                        self.MARK_HEIGHT, QPen(color), QBrush(color)))
 
-        y = self._get_mark_y(positions[0], self.trace.count)
-        self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
+            y = self._get_mark_y(positions[0], self.trace.count)
+            self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
 
     def mousePressEvent(self, event):
         button = event.button()
