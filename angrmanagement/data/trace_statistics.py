@@ -19,6 +19,7 @@ class TraceStatistics:
 
     BBL_FILL_COLOR = QColor(0, 0xf0, 0xf0, 0xf)
     BBL_BORDER_COLOR = QColor(0, 0xf0, 0xf0)
+    BBL_EMPTY_COLOR = QColor("white")
 
     def __init__(self, workspace, trace, baddr):
         self.workspace = workspace
@@ -53,8 +54,12 @@ class TraceStatistics:
         self._mark_color[p] = color
 
     def get_mark_color(self, addr, i):
-        mark_index = self._get_position(addr, i)
-        mark_color = self._mark_color[mark_index]
+        try:
+            mark_index = self._get_position(addr, i)
+            mark_color = self._mark_color[mark_index]
+        except IndexError as e:
+            l.error(e)
+            return self.BBL_EMPTY_COLOR
         return mark_color
 
     def get_positions(self, addr):

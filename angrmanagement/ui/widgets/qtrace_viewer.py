@@ -45,20 +45,22 @@ class QTraceViewer(QWidget):
         self.scene.addItem(self.trace_func)
 
         self.legend = None
+        self.legend_height = 0
 
         layout = QHBoxLayout()
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
-
         layout.setAlignment(self.view, Qt.AlignLeft)
 
         self.setLayout(layout)
-        #self.setFixedWidth(400)
 
     def clear_trace(self):
         self.scene.clear() #clear items
         self.mark = None
         self.trace = None
+
+        self.legend = None
+        self.legend_height = 0
 
         self.trace_func = QGraphicsItemGroup()
         self.scene.addItem(self.trace_func)
@@ -70,6 +72,7 @@ class QTraceViewer(QWidget):
                 self.trace.count)
         if(self.trace.count <= 0):
             l.warn("No valid addresses found in trace to show. Check base address offsets?")
+            self.trace = None
             return
         if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
             self.trace_func_unit_height = 15
@@ -85,6 +88,8 @@ class QTraceViewer(QWidget):
         self._set_mark_color()
 
         self.scene.setSceneRect(self.scene.itemsBoundingRect()) #resize
+        self.setFixedWidth(self.scene.itemsBoundingRect().width())
+        self.view.setFixedWidth(self.scene.itemsBoundingRect().width())
 
         # if self.selected_ins is not None:
         #     self.set_trace_mark(self.selected_ins)

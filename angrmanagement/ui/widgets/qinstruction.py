@@ -150,6 +150,8 @@ class QInstruction(QCachedGraphicsItem):
                     remainder = self.GRAPH_TRACE_LEGEND_WIDTH % count
                     self._legend = [(i, width + 1) for i in range(remainder)] + \
                               [(i, width) for i in range(remainder, count)]
+        else:
+            self._legend = None
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
