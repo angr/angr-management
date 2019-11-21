@@ -37,6 +37,7 @@ class QTraceViewer(QWidget):
         self.curr_position = 0
         self._use_precise_position = False
 
+        self.workspace.instance.cfg_container.am_subscribe(self.hide_trace_view)
         self._init_widgets()
 
     def _init_widgets(self):
@@ -65,6 +66,11 @@ class QTraceViewer(QWidget):
         self.show()
         #self.current_graph.refresh()
 
+
+    def hide_trace_view(self):
+        self.clear_trace()
+        self.hide()
+
     def clear_trace(self):
         self.scene.clear() #clear items
         self.mark = None
@@ -76,6 +82,10 @@ class QTraceViewer(QWidget):
         self.trace_func = QGraphicsItemGroup()
         self.scene.addItem(self.trace_func)
 
+        #remove the callback
+        if(self.set_trace_mark_callback in self.disasm_view.infodock.selected_insns.am_subscribers):
+            self.disasm_view.infodock.selected_insns.am_unsubscribe(self.set_trace_mark_callback)
+
 
     def set_trace(self, trace):
         self.trace = trace
@@ -84,10 +94,6 @@ class QTraceViewer(QWidget):
         if(self.trace.count <= 0):
             l.warn("No valid addresses found in trace to show. Check base address offsets?")
             self.trace = None
-
-            #remove the callback
-            if(self.set_trace_mark_callback in self.disasm_view.infodock.selected_insns.am_subscribers):
-                self.disasm_view.infodock.selected_insns.am_unsubscribe(self.set_trace_mark_callback)
             return
 
         if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
