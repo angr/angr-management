@@ -133,8 +133,12 @@ class QTraceViewer(QWidget):
             for p in positions:
                 color = self._get_mark_color(p, self.trace.count)
                 y = self._get_mark_y(p, self.trace.count)
-                self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                        self.MARK_HEIGHT, QPen(color), QBrush(color)))
+                if(p == self.trace.count + self.curr_position): #add thicker line for 'current' mark
+                    self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                                        self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
+                else:
+                    self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                                                            self.MARK_HEIGHT, QPen(color), QBrush(color)))
 
             #y = self._get_mark_y(positions[0], self.trace.count)
             #self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
@@ -142,8 +146,13 @@ class QTraceViewer(QWidget):
 
     def scroll_to_position(self, position):
         relative_pos = self.trace.count + position
-        y_offset = relative_pos * self.view.verticalScrollBar().maximum() / self.trace.count
-        self.view.verticalScrollBar().setValue(y_offset + 0.5 * self.view.size().height())
+        y_offset = self._get_mark_y(relative_pos, self.trace.count)
+
+        scrollValue = 0
+        if(y_offset > 0.5 * self.view.size().height()):
+            scrollValue = y_offset - 0.5 * self.view.size().height()
+        scrollValue = min(scrollValue, self.view.verticalScrollBar().maximum())
+        self.view.verticalScrollBar().setValue(scrollValue)
 
     def jump_next_insn(self):
         if(self.trace == None):
