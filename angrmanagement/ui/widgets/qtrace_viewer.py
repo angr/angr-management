@@ -36,7 +36,6 @@ class QTraceViewer(QWidget):
 
         self.curr_position = 0
 
-        self.disasm_view.infodock.selected_insns.am_subscribe(self.set_trace_mark_callback)
         self._init_widgets()
 
     def _init_widgets(self):
@@ -84,7 +83,12 @@ class QTraceViewer(QWidget):
         if(self.trace.count <= 0):
             l.warn("No valid addresses found in trace to show. Check base address offsets?")
             self.trace = None
+
+            #remove the callback
+            if(self.set_trace_mark_callback in self.disasm_view.infodock.selected_insns.am_subscribers):
+                self.disasm_view.infodock.selected_insns.am_unsubscribe(self.set_trace_mark_callback)
             return
+
         if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
             self.trace_func_unit_height = 15
             show_func_tag = True
@@ -101,6 +105,10 @@ class QTraceViewer(QWidget):
         self.scene.setSceneRect(self.scene.itemsBoundingRect()) #resize
         self.setFixedWidth(self.scene.itemsBoundingRect().width())
         self.view.setFixedWidth(self.scene.itemsBoundingRect().width())
+
+        #register callback
+        if(self.set_trace_mark_callback not in self.disasm_view.infodock.selected_insns.am_subscribers):
+            self.disasm_view.infodock.selected_insns.am_subscribe(self.set_trace_mark_callback)
 
         # if self.selected_ins is not None:
         #     self.set_trace_mark(self.selected_ins)
@@ -133,6 +141,8 @@ class QTraceViewer(QWidget):
         self.scene.update() #force redraw of the scene
 
     def jump_next_insn(self):
+        if(self.trace == None):
+            return
         if(self.curr_position < self.trace.count - 1): #for some reason indexing is done backwards
             self.curr_position += 1
             func_name = self.trace.trace_func[self.curr_position].func_name
@@ -142,6 +152,8 @@ class QTraceViewer(QWidget):
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
 
     def jump_prev_insn(self):
+        if(self.trace == None):
+            return
         if(self.curr_position > 0):
             self.curr_position -= 1
             func_name = self.trace.trace_func[self.curr_position].func_name

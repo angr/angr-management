@@ -54,13 +54,16 @@ class TraceStatistics:
         self._mark_color[p] = color
 
     def get_mark_color(self, addr, i):
-        try:
-            mark_index = self._get_position(addr, i)
-            mark_color = self._mark_color[mark_index]
-        except IndexError as e:
-            l.error(e)
+        if(self._mark_color): #check if empty trace
+            try:
+                mark_index = self._get_position(addr, i)
+                mark_color = self._mark_color[mark_index]
+            except IndexError as e:
+                l.error(e)
+                return self.BBL_EMPTY_COLOR
+            return mark_color
+        else:
             return self.BBL_EMPTY_COLOR
-        return mark_color
 
     def get_positions(self, addr):
         if(addr not in self._positions.keys()):
