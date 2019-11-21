@@ -374,7 +374,7 @@ class MainWindow(QMainWindow):
 
     def _set_trace(self, trace, baddr):
         self.workspace.instance.set_trace(trace, baddr)
-        self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
+        self.workspace.view_manager.first_view_in_category('disassembly')._trace_viewer.show_trace_view()
 
     def open_multi_trace(self):
         multi_trace_path, base_addr = self._open_trace_dialog()

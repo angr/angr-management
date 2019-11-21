@@ -34,6 +34,9 @@ class QTraceViewer(QWidget):
         self.trace = None
         self.selected_ins = None
 
+        self.curr_position = 0
+
+        self.disasm_view.infodock.selected_insns.am_subscribe(self.set_trace_mark_callback)
         self._init_widgets()
 
     def _init_widgets(self):
@@ -53,6 +56,13 @@ class QTraceViewer(QWidget):
         layout.setAlignment(self.view, Qt.AlignLeft)
 
         self.setLayout(layout)
+
+    def show_trace_view(self):
+        if(self.trace != None):
+            self.clear_trace()
+        self.set_trace(self.workspace.instance.trace)
+        self.show()
+        #self.current_graph.refresh()
 
     def clear_trace(self):
         self.scene.clear() #clear items
@@ -93,6 +103,12 @@ class QTraceViewer(QWidget):
 
         # if self.selected_ins is not None:
         #     self.set_trace_mark(self.selected_ins)
+
+    def set_trace_mark_callback(self):
+        selected_insn = self.disasm_view.infodock.selected_insns
+        if(len(selected_insn) > 0):
+            addr = next(iter(selected_insn))
+            self.set_trace_mark(addr)
 
     def set_trace_mark(self, addr):
         self.selected_ins = addr

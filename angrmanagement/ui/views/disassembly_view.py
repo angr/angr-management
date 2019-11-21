@@ -359,25 +359,6 @@ class DisassemblyView(BaseView):
 
         self.current_graph.refresh()
 
-    def set_trace_mark(self, insn_addr):
-        """
-        Show the appearance of the instruction in trace viewer, if trace viewer is being shown.
-        :param insn_addr: instruction address
-        :return:              None
-        """
-
-        if self._trace_viewer is not None:
-            if(self._trace_viewer.trace is not None):
-                self._trace_viewer.selected_ins = insn_addr
-                self._trace_viewer.set_trace_mark(insn_addr)
-
-    def show_trace_view(self):
-        if(self._trace_viewer.trace != None):
-            self._trace_viewer.clear_trace()
-        self._trace_viewer.set_trace(self.workspace.instance.trace)
-        self._trace_viewer.show()
-        self.current_graph.refresh()
-
     def jump_to(self, addr, src_ins_addr=None):
 
         # Record the current instruction address first

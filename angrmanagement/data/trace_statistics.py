@@ -26,7 +26,7 @@ class TraceStatistics:
         self.trace = trace
         self.trace_func = []
         self._func_color = {}
-        self.count = None
+        self.count = 0
         self._mark_color = {}
         self._positions = defaultdict(list)
 
