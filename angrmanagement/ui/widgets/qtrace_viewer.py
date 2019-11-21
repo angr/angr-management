@@ -35,6 +35,7 @@ class QTraceViewer(QWidget):
         self.selected_ins = None
 
         self.curr_position = 0
+        self._use_precise_position = False
 
         self._init_widgets()
 
@@ -130,6 +131,8 @@ class QTraceViewer(QWidget):
             self.scene.addItem(self.mark)
         positions = self.trace.get_positions(addr)
         if(positions): #if addr is in list of positions
+            if(not self._use_precise_position): #handle case where insn was selected from disas view
+                self.curr_position = positions[0] - self.trace.count
             for p in positions:
                 color = self._get_mark_color(p, self.trace.count)
                 y = self._get_mark_y(p, self.trace.count)
@@ -143,6 +146,7 @@ class QTraceViewer(QWidget):
             #y = self._get_mark_y(positions[0], self.trace.count)
             #self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
         self.scene.update() #force redraw of the scene
+        self.scroll_to_position(self.curr_position)
 
     def scroll_to_position(self, position):
         relative_pos = self.trace.count + position
@@ -153,30 +157,31 @@ class QTraceViewer(QWidget):
             scrollValue = y_offset - 0.5 * self.view.size().height()
         scrollValue = min(scrollValue, self.view.verticalScrollBar().maximum())
         self.view.verticalScrollBar().setValue(scrollValue)
+        self._use_precise_position = False
 
     def jump_next_insn(self):
         if(self.trace == None):
             return
         if((self.curr_position + self.trace.count) < self.trace.count - 1): #for some reason indexing is done backwards
             self.curr_position += 1
+            self._use_precise_position = True
             func_name = self.trace.trace_func[self.curr_position].func_name
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
             self.workspace.on_function_selected(func)
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
-            self.scroll_to_position(self.curr_position)
 
     def jump_prev_insn(self):
         if(self.trace == None):
             return
         if((self.curr_position + self.trace.count) > 0):
             self.curr_position -= 1
+            self._use_precise_position = True
             func_name = self.trace.trace_func[self.curr_position].func_name
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
             self.workspace.on_function_selected(func)
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
-            self.scroll_to_position(self.curr_position)
 
     def eventFilter(self, object, event): #specifically to catch arrow keys
         #more elegant solution to link w/ self.view's scroll bar keypressevent?
@@ -196,12 +201,12 @@ class QTraceViewer(QWidget):
         button = event.button()
         pos = self._to_logical_pos(event.pos())
         if button == Qt.LeftButton and self._at_legend(pos):
+            self._use_precise_position = True
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
             self.curr_position = self._get_position(pos.y())
             self.workspace.on_function_selected(func)
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
-            self.scroll_to_position(self.curr_position)
 
     def _get_mark_color(self, i, total):
         relative_gradient_pos = i * 1000 // total
