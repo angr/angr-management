@@ -154,7 +154,7 @@ class QTraceViewer(QWidget):
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
             self.workspace.on_function_selected(func)
-            self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
+            self.disasm_view.current_graph.show_instruction(bbl_addr, insn_pos=insn_pos)
 
     def jump_prev_insn(self):
         if(self.trace == None):
@@ -166,7 +166,7 @@ class QTraceViewer(QWidget):
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
             self.workspace.on_function_selected(func)
-            self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
+            self.disasm_view.current_graph.show_instruction(bbl_addr, insn_pos=insn_pos)
 
     def eventFilter(self, object, event): #specifically to catch arrow keys
         #more elegant solution to link w/ self.view's scroll bar keypressevent?
@@ -188,10 +188,15 @@ class QTraceViewer(QWidget):
         if button == Qt.LeftButton and self._at_legend(pos):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
-            # TODO: replace these with am_events perhaps?
+            all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
             self.curr_position = self._get_position(pos.y())
+            # TODO: replace this with am_events perhaps?
             self.workspace.on_function_selected(func)
-            self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
+            self.selected_ins.clear()
+            self.selected_ins.update(all_insn_addrs)
+            self.selected_ins.am_event()
+            # TODO: this ought to happen automatically as a result of the am_event
+            self.disasm_view.current_graph.show_instruction(bbl_addr, insn_pos=insn_pos)
 
     def _get_mark_color(self, i, total):
         relative_gradient_pos = i * 1000 // total
