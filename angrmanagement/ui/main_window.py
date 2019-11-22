@@ -1,14 +1,18 @@
 import json
 import pickle
 import os
+import itertools
+import functools
+from typing import Optional, List
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
-from PySide2.QtWidgets import QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut, QLabel, QLineEdit
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
+from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
+from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QColor
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
-import angr
-import cle
+from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
+from angrmanagement.ui.toolbars.toolbar import ToolbarAction
+
 try:
     import archr
     import keystone
@@ -16,7 +20,7 @@ except ImportError as e:
     archr = None
     keystone = None
 
-from ..plugins import PluginManager
+from ..plugins import autoload_plugins, BasePlugin
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
@@ -57,7 +61,6 @@ class MainWindow(QMainWindow):
         self.workspace = None
         self.central_widget = None
         self.central_widget2 = None
-        self._plugin_mgr = None  # type: PluginManager
 
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
@@ -67,10 +70,9 @@ class MainWindow(QMainWindow):
 
         self._status = ""
         self._progress = None
+        self._plugins = []  # type: List[BasePlugin]
 
         self.defaultWindowFlags = None
-
-        self.default_trace_base_addr = ""
 
         # menus
         self._file_menu = None
@@ -85,7 +87,7 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_shortcuts()
         self._init_menus()
-        self._init_plugins()
+        autoload_plugins(self.workspace)
 
         self.showMaximized()
 
@@ -138,23 +140,6 @@ class MainWindow(QMainWindow):
                                                    "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
                                                    )
         return file_path
-
-    def _open_trace_dialog(self):
-        file_path = ""
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace", "",
-                                                   "json (*.json)",
-                                                   )
-        project = self.workspace.instance.project
-        self.default_trace_base_addr = hex(project.loader.main_object.mapped_base)
-
-        baddr = self.default_trace_base_addr
-        if(len(file_path) > 0):
-            baddr, _ = QInputDialog.getText(self, "Input Trace Base Address",
-                                         "Base Address:", QLineEdit.Normal,
-                                         self.default_trace_base_addr)
-        else:
-            return None, None
-        return file_path, baddr
 
     def _pick_image_dialog(self):
         try:
@@ -285,8 +270,109 @@ class MainWindow(QMainWindow):
     # PluginManager
     #
 
-    def _init_plugins(self):
-        self._plugin_mgr = PluginManager(self.workspace, autoload=True)
+    def plugin_add(self, plugin_cls):
+        plugin = plugin_cls(self.workspace)
+        self._plugins.append(plugin)
+        plugin.__cached_toolbar_actions = []  # hack lol
+        plugin.__cached_menu_actions = []  # hack lol
+
+        for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
+            action = ToolbarAction(icon, 'plugin %s toolbar %d' % (plugin_cls, idx), tooltip, functools.partial(plugin.handle_click_toolbar, idx))
+            plugin.__cached_toolbar_actions.append(action)
+            self._file_toolbar.add(action)
+
+        if plugin_cls.MENU_BUTTONS:
+            self._plugin_menu.add(MenuSeparator())
+        for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
+            action = MenuEntry(text, functools.partial(plugin.handle_click_menu, idx))
+            plugin.__cached_menu_actions.append(action)
+            self._plugin_menu.add(action)
+
+        for dview in self.workspace.view_manager.views_by_category['disassembly']:
+            plugin.instrument_disassembly_view(dview)
+
+    def plugin_remove(self, plugin):
+        for action in plugin.__cached_toolbar_actions:
+            self._file_toolbar.remove(action)
+        for action in plugin.__cached_menu_actions:
+            self._plugin_menu.remove(action)
+
+        plugin.teardown()
+        self._plugins.remove(plugin)
+
+    def plugins_color_insn(self, addr, selected) -> Optional[QColor]:
+        for plugin in self._plugins:
+            if plugin.color_insn.__func__ is not BasePlugin.color_insn:
+                res = plugin.color_insn(addr, selected)
+                if res is not None:
+                    return res
+        return None
+
+    def plugins_color_block(self, addr) -> Optional[QColor]:
+        for plugin in self._plugins:
+            if plugin.color_block.__func__ is not BasePlugin.color_block:
+                res = plugin.color_block(addr)
+                if res is not None:
+                    return res
+        return None
+
+    def plugins_color_func(self, func) -> Optional[QColor]:
+        for plugin in self._plugins:
+            if plugin.color_func.__func__ is not BasePlugin.color_func:
+                res = plugin.color_func(func)
+                if res is not None:
+                    return res
+        return None
+
+    def plugins_draw_insn(self, qinsn, painter):
+        for plugin in self._plugins:
+            if plugin.draw_insn.__func__ is not BasePlugin.draw_insn:
+                plugin.draw_insn(qinsn, painter)
+
+    def plugins_draw_block(self, qblock, painter):
+        for plugin in self._plugins:
+            if plugin.draw_block.__func__ is not BasePlugin.draw_block:
+                plugin.draw_block(qblock, painter)
+
+    def plugins_instrument_disassembly_view(self, dview):
+        for plugin in self._plugins:
+            plugin.instrument_disassembly_view(dview)
+
+    def plugins_handle_click_insn(self, qinsn, event):
+        for plugin in self._plugins:
+            if plugin.handle_click_insn.__func__ is not BasePlugin.handle_click_insn:
+                if plugin.handle_click_insn(qinsn, event):
+                    return True
+        return False
+
+    def plugins_handle_click_block(self, qblock, event):
+        for plugin in self._plugins:
+            if plugin.handle_click_block.__func__ is not BasePlugin.handle_click_block:
+                if plugin.handle_click_block(qblock, event):
+                    return True
+        return False
+
+    def plugins_get_func_column(self, idx):
+        for plugin in self._plugins:
+            if idx > len(plugin.FUNC_COLUMNS):
+                idx -= len(plugin.FUNC_COLUMNS)
+            else:
+                return plugin.FUNC_COLUMNS[idx]
+        raise IndexError("Not enough columns")
+
+    def plugins_count_func_columns(self):
+        return sum((len(plugin.FUNC_COLUMNS) for plugin in self._plugins))
+
+    def plugins_extract_func_column(self, func, idx):
+        for plugin in self._plugins:
+            if idx > len(plugin.FUNC_COLUMNS):
+                idx -= len(plugin.FUNC_COLUMNS)
+            else:
+                return plugin.extract_func_column(func, idx)
+        raise IndexError("Not enough columns")
+
+    def plugins_build_context_menu_insn(self, insn):
+        return itertools.chain(*(plugin.build_context_menu_insn(insn) for plugin in self._plugins))
 
 
     #
@@ -303,7 +389,8 @@ class MainWindow(QMainWindow):
         self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
-        self._plugin_mgr.stop_all_plugin_threads()
+        for plugin in list(self._plugins):
+            self.plugin_remove(plugin)
         event.accept()
 
     def event(self, event):
@@ -352,44 +439,12 @@ class MainWindow(QMainWindow):
         self.workspace.instance.add_job(LoadTargetJob(target))
         self.workspace.instance.set_image(img_name)
 
-    def open_trace(self):
-        trace_path, baddr = self._open_trace_dialog()
-        if(trace_path != None and baddr != None):
-            self.load_trace(trace_path, baddr)
-
     def load_file(self, file_path):
         if os.path.isfile(file_path):
             if file_path.endswith(".adb"):
                 self.load_database(file_path)
             else:
                 self.workspace.instance.add_job(LoadBinaryJob(file_path))
-            self._file_menu.action_by_key('load_trace').enable()
-            self._file_menu.action_by_key('load_multi_trace').enable()
-
-    def load_trace(self, trace_path, baddr):
-        if os.path.isfile(trace_path):
-            with open(trace_path, 'r') as f:
-                trace = json.load(f)
-                self._set_trace(trace, baddr)
-
-    def _set_trace(self, trace, baddr):
-        self.workspace.instance.set_trace(trace, baddr)
-        self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
-
-    def open_multi_trace(self):
-        multi_trace_path, base_addr = self._open_trace_dialog()
-        self.load_multi_trace(multi_trace_path, base_addr)
-
-    def load_multi_trace(self, trace_path, base_addr):
-        if os.path.isfile(trace_path):
-            with open(trace_path, 'r') as f:
-                trace = json.load(f)
-                self._set_multi_trace(trace, base_addr)
-
-    def _set_multi_trace(self, trace, base_addr):
-        self.workspace.instance.set_multi_trace(trace, base_addr)
-
-
 
     def save_database(self):
         if self.workspace.instance.database_path is None:

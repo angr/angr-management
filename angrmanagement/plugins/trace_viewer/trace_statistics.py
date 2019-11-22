@@ -37,7 +37,7 @@ class TraceStatistics:
         try:
             self.runtime_baddr = int(baddr, 16)
         except:
-            l.warn("Error using Base Address Value %s, using default value of %x", baddr, self.project_baddr)
+            l.warning("Error using Base Address Value %s, using default value of %x", baddr, self.project_baddr)
             self.runtime_baddr = self.project_baddr
 
         self._statistics(trace)
@@ -63,8 +63,6 @@ class TraceStatistics:
         return mark_color
 
     def get_positions(self, addr):
-        if(addr not in self._positions.keys()):
-            return []
         return self._positions[addr]
 
     def get_count(self, ins):
@@ -93,15 +91,15 @@ class TraceStatistics:
                 self._positions[addr].append(p)
 
             node = self.workspace.instance.cfg.model.get_any_node(bbl_addr)
-            if(node == None): #try again without asssuming node is start of a basic block
+            if node is None: #try again without asssuming node is start of a basic block
                 node = self.workspace.instance.cfg.model.get_any_node(bbl_addr, anyaddr=True)
 
             func_name = hex(bbl_addr) #default to using bbl_addr as name if none is not found
-            if(node != None):
+            if node is not None:
                 func_addr = node.function_address
                 func_name = self.workspace.instance.project.kb.functions[func_addr].name
             else:
-                l.warn("Node at %x is None, using bbl_addr as function name", bbl_addr)
+                l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name))
 
         self.count = len(self.trace_func)

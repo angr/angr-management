@@ -50,7 +50,7 @@ class Menu:
         self.entries = [ ]
         self._keyed_entries = None
 
-        self._qmenu = None  # cached QMenu object
+        self._qmenu = None  # type: QMenu
 
     def action_by_key(self, key):
         if not self._keyed_entries:
@@ -58,8 +58,14 @@ class Menu:
                     self.entries if isinstance(ent, MenuEntry))
         return self._keyed_entries.get(key, None)
 
-    def qmenu(self):
-        if self._qmenu is not None:
+    def qmenu(self, extra_entries=None):
+        if extra_entries is None:
+            extra_entries = []
+        else:
+            extra_entries = [MenuEntry(*entry) for entry in extra_entries]
+
+        if not extra_entries and self._qmenu is not None:
+            # in order to use the cached result, must not have extra entries
             return self._qmenu
 
         if self.parent is not None:
@@ -67,22 +73,37 @@ class Menu:
         else:
             menu = QMenu(self.caption)
 
-        for entry in self.entries:
-            if isinstance(entry, MenuEntry):
-                action = menu.addAction(entry.caption, entry.action)  # type: QAction
-                if entry.shortcut is not None:
-                    action.setShortcut(entry.shortcut)
-                if entry.checkable:
-                    action.setCheckable(True)
-                    action.setChecked(entry.checked_initially)
-                if not entry.default_enabled:
-                    action.setDisabled(True)
-                entry.qaction = action
-            elif isinstance(entry, MenuSeparator):
-                menu.addSeparator()
-            else:
-                raise Exception('Unsupported type %s' % type(entry))
+        for entry in self.entries + extra_entries:
+            self._translate_element(menu, entry)
 
-        self._qmenu = menu
+        # in order to cache the result, must not have extra entries
+        if not extra_entries:
+            self._qmenu = menu
 
         return menu
+
+    def _translate_element(self, menu, entry):
+        if isinstance(entry, MenuEntry):
+            action = menu.addAction(entry.caption, entry.action)  # type: QAction
+            if entry.shortcut is not None:
+                action.setShortcut(entry.shortcut)
+            if entry.checkable:
+                action.setCheckable(True)
+                action.setChecked(entry.checked_initially)
+            if not entry.default_enabled:
+                action.setDisabled(True)
+            entry.qaction = action
+        elif isinstance(entry, MenuSeparator):
+            menu.addSeparator()
+        else:
+            raise TypeError('Unsupported type', type(entry))
+
+    def add(self, action):
+        self.entries.append(action)
+        if self._qmenu is not None:
+            self._translate_element(self._qmenu, action)
+
+    def remove(self, action):
+        self.entries.remove(action)
+        if self._qmenu is not None and type(action) is MenuEntry:
+            self._qmenu.removeAction(action._qaction)

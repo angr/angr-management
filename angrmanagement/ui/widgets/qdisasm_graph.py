@@ -70,7 +70,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
     #
 
     def reload(self):
-        QCachedGraphicsItem.ctrl_held = False
         self._reset_scene()
         self._arrows.clear()
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
@@ -143,12 +142,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
     def on_background_click(self):
         pass
 
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Control:
-            QCachedGraphicsItem.ctrl_held = False
-
-        super().keyReleaseEvent(event)
-
     def keyPressEvent(self, event):
 
         key = event.key()
@@ -174,9 +167,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
                             # Display cross references to an address
                             self.disasm_view.popup_xref_dialog(dst_addr=operand.constant_value)
             return
-
-        elif event.key() == Qt.Key_Control:
-            QCachedGraphicsItem.ctrl_held = True
 
         super().keyPressEvent(event)
 

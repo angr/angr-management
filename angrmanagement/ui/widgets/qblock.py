@@ -2,6 +2,7 @@ import logging
 
 from PySide2.QtGui import QColor, QPen, QPainterPath
 from PySide2.QtCore import QRectF, QMarginsF, Qt
+from PySide2.QtWidgets import QApplication
 
 from angr.analyses.disassembly import Instruction
 from angr.sim_variable import SimRegisterVariable
@@ -151,31 +152,30 @@ class QGraphBlock(QBlock):
             y += obj.boundingRect().height()
 
     def mousePressEvent(self, event):
-        btn = event.button()
+        if self.workspace._main_window.plugins_handle_click_block(self, event):
+            event.accept()
+        else:
+            super().mousePressEvent(event)
 
-        if QCachedGraphicsItem.ctrl_held and btn == Qt.RightButton:
-            if self.workspace.instance.multi_trace is not None:
-                self.workspace.instance.multi_trace.get_trace(self.addr)
-                event.accept()
+    def _calc_backcolor(self, should_omit_text):
+        color = self.workspace._main_window.plugins_color_block(self.addr)
+        if color is not None:
+            return color
+
+        if should_omit_text:
+            return QColor(0xda, 0xda, 0xda)
+
+        return self._config.disasm_view_node_background_color
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
 
         # background of the node
-
-        if self.workspace.instance.multi_trace is not None:
-            color = self.workspace.instance.multi_trace.get_hit_miss_color(self.addr)
-            painter.setBrush(color)
-        else:
-            if should_omit_text:
-                painter.setBrush(QColor(0xda, 0xda, 0xda))
-            else:
-                painter.setBrush(self._config.disasm_view_node_background_color)
-
+        painter.setBrush(self._calc_backcolor(should_omit_text))
         painter.drawPath(self._block_item)
 
-        # content
+        # content drawing is handled by qt since children are actual child widgets
 
         # if we are too far zoomed out, do not draw the text
         if self._objects_are_hidden != should_omit_text:
@@ -183,6 +183,9 @@ class QGraphBlock(QBlock):
                 obj.setVisible(not should_omit_text)
                 obj.setEnabled(not should_omit_text)
             self._objects_are_hidden = should_omit_text
+
+        # extra content
+        self.workspace._main_window.plugins_draw_block(self, painter)
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()

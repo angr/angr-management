@@ -8,7 +8,7 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QTraceViewer
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
@@ -33,7 +33,6 @@ class DisassemblyView(BaseView):
 
         self._linear_viewer = None
         self._flow_graph = None  # type: QDisassemblyGraph
-        self._trace_viewer = None  # type: QTraceViewer
         self._statusbar = None
         self._jump_history = JumpHistory()
         self.infodock = InfoDock(self)
@@ -217,7 +216,7 @@ class DisassemblyView(BaseView):
         # pass in the instruction address
         self._insn_menu.insn_addr = insn.addr
         # pop up the menu
-        self._insn_menu.qmenu().exec_(pos)
+        self._insn_menu.qmenu(extra_entries=list(self.workspace._main_window.plugins_build_context_menu_insn(insn))).exec_(pos)
 
         self._insn_addr_on_context_menu = None
 
@@ -359,25 +358,6 @@ class DisassemblyView(BaseView):
 
         self.current_graph.refresh()
 
-    def set_trace_mark(self, insn_addr):
-        """
-        Show the appearance of the instruction in trace viewer, if trace viewer is being shown.
-        :param insn_addr: instruction address
-        :return:              None
-        """
-
-        if self._trace_viewer is not None:
-            if(self._trace_viewer.trace is not None):
-                self._trace_viewer.selected_ins = insn_addr
-                self._trace_viewer.set_trace_mark(insn_addr)
-
-    def show_trace_view(self):
-        if(self._trace_viewer.trace != None):
-            self._trace_viewer.clear_trace()
-        self._trace_viewer.set_trace(self.workspace.instance.trace)
-        self._trace_viewer.show()
-        self.current_graph.refresh()
-
     def jump_to(self, addr, src_ins_addr=None):
 
         # Record the current instruction address first
@@ -463,43 +443,32 @@ class DisassemblyView(BaseView):
         self._linear_viewer = QLinearDisassembly(self.workspace, self, parent=self)
         self._flow_graph = QDisassemblyGraph(self.workspace, self, parent=self)
         self._feature_map = QFeatureMap(self, parent=self)
-        self._trace_viewer = QTraceViewer(self.workspace, self, parent=self)
-
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
-        hlayout = QVBoxLayout()
-        hlayout.addWidget(self._feature_map)
-        hlayout.addWidget(self._flow_graph)
-        hlayout.addWidget(self._linear_viewer)
-        hlayout.addWidget(self._statusbar)
-        hlayout.setContentsMargins(0, 0, 0, 0)
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self._feature_map)
+        vlayout.addWidget(self._flow_graph)
+        vlayout.addWidget(self._linear_viewer)
+        vlayout.addWidget(self._statusbar)
+        vlayout.setContentsMargins(0, 0, 0, 0)
 
         self._feature_map.setMaximumHeight(25)
-        hlayout.setStretchFactor(self._feature_map, 0)
-        hlayout.setStretchFactor(self._flow_graph, 1)
-        hlayout.setStretchFactor(self._linear_viewer, 1)
-        hlayout.setStretchFactor(self._statusbar, 0)
-        hlayout.setStretchFactor(self._trace_viewer, 1)
-
-        vlayout = QHBoxLayout()
-        vlayout.addLayout(hlayout)
-        vlayout.addWidget(self._trace_viewer)
-        self._trace_viewer.hide()
+        vlayout.setStretchFactor(self._feature_map, 0)
+        vlayout.setStretchFactor(self._flow_graph, 1)
+        vlayout.setStretchFactor(self._linear_viewer, 1)
+        vlayout.setStretchFactor(self._statusbar, 0)
 
         self.setLayout(vlayout)
-
-
-        self.setLayout(hlayout)
 
         self.display_disasm_graph()
         # self.display_linear_viewer()
 
-    def _init_menus(self):
+        self.workspace._main_window.plugins_instrument_disassembly_view(self)
 
+    def _init_menus(self):
         self._insn_menu = DisasmInsnContextMenu(self)
 
     def _register_events(self):
-
         # redraw the current graph if instruction/operand selection changes
         self.infodock.selected_insns.am_subscribe(self._update_current_graph)
         self.infodock.selected_operands.am_subscribe(self._update_current_graph)
@@ -511,7 +480,6 @@ class DisassemblyView(BaseView):
     #
 
     def _display_function(self, the_func):
-
         self._current_function.am_obj = the_func
         self._current_function.am_event()
 

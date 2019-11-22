@@ -26,24 +26,6 @@ class FunctionsView(BaseView):
     # Public methods
     #
 
-    def get_function_backcolor(self, func):
-        if self.workspace.instance.multi_trace is not None:
-            return self.workspace.instance.multi_trace.get_percent_color(func)
-
-        if self.workspace.instance.trace is not None:
-            for itr_func in self.workspace.instance.trace.trace_func:
-                if itr_func.bbl_addr == func.addr:
-                    return QColor(0xf0, 0xe7, 0xda)
-            return QColor(0xee, 0xee, 0xee)
-
-        return QColor(255, 255, 255)
-
-    def get_function_coverage(self, func):
-        if self.workspace.instance.multi_trace is not None:
-            return self.workspace.instance.multi_trace.get_coverage(func)
-        else:
-            return -1
-
     def set_function_count(self, count):
         if self._status_label is not None:
             self._status_label.setText("%d functions" % count)
@@ -67,8 +49,7 @@ class FunctionsView(BaseView):
     #
 
     def _init_widgets(self):
-
-        self._function_table = QFunctionTable(self, selection_callback=self._on_function_selected)
+        self._function_table = QFunctionTable(self, self.workspace, selection_callback=self._on_function_selected)
         self._status_label = QLabel()
 
         vlayout = QVBoxLayout()

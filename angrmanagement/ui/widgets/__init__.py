@@ -11,4 +11,3 @@ from .qlinear_viewer import QLinearDisassembly
 
 # other widgets
 from .qfeature_map import QFeatureMap
-from .qtrace_viewer import QTraceViewer

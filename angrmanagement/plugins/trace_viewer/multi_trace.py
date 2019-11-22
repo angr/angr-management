@@ -37,14 +37,12 @@ class MultiTrace:
             self._calc_function_info(func)
         return self.function_info[func.addr]["coverage"]
 
-    def get_trace(self, addr):
+    def get_any_trace(self, addr):
         for trace in self._traces.values():
-            print(addr)
-            print(trace)
             if addr in trace["trace"]:
-                self.workspace.instance.set_trace(trace["trace"], self.base_addr)
-                self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
-                break
+                return trace["trace"]
+
+        return None
 
     def _calc_function_info(self, func):
         blocks = list(func.block_addrs)

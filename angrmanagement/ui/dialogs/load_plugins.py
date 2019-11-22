@@ -1,11 +1,10 @@
-import os
 import logging
 from typing import Union, Type
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, QListWidget
 from PySide2.QtCore import Qt
 
-from ...plugins import PluginManager, BasePlugin
+#from ...plugins import BasePlugin
 
 _l = logging.getLogger(__name__)
 

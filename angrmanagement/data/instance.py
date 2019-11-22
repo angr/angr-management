@@ -10,9 +10,6 @@ from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
-from .trace_statistics import TraceStatistics
-from .multi_trace import MultiTrace
-
 class Instance:
     def __init__(self, project=None):
         # delayed import
@@ -33,15 +30,15 @@ class Instance:
         self.interaction_protocols = ObjectContainer([PlainTextProtocol], name='Available interaction protocols')
         self.sync = SyncControl(self)
 
+        self.extra_containers = {}
+        self._container_defaults = {}
+
         self.cfg_args = None
 
 
         self._start_worker()
 
         self._disassembly = {}
-
-        self.trace = None
-        self.multi_trace = None
 
         self.database_path = None
 
@@ -87,9 +84,28 @@ class Instance:
         self.cfb_container.am_obj = v
         self.cfb_container.am_event()
 
+    def __getattr__(self, k):
+        try:
+            return self.extra_containers[k]
+        except KeyError as e:
+            raise AttributeError(k) from e
+
+    def __dir__(self):
+        return list(super().__dir__()) + list(self.extra_containers)
+
     #
     # Public methods
     #
+
+    def register_container(self, name, default_val, ty, description):
+        if name in self.extra_containers:
+            cur_ty = self._container_defaults[name][1]
+            if ty != cur_ty:
+                raise Exception("Container %s already registered with different type: %s != %s" % (name, ty, cur_ty))
+
+        else:
+            self._container_defaults[name] = (default_val, ty)
+            self.extra_containers[name] = ObjectContainer(default_val, description)
 
     def async_set_cfg(self, cfg):
         self.cfg_container.am_obj = cfg
@@ -107,12 +123,6 @@ class Instance:
 
     def set_image(self, image):
         self.img_name = image
-
-    def set_trace(self, trace, baddr):
-        self.trace = TraceStatistics(self.workspace, trace, baddr)
-
-    def set_multi_trace(self, trace, base_addr):
-        self.multi_trace = MultiTrace(self.workspace, trace, base_addr)
 
     def initialize(self, cfg_args=None):
         if cfg_args is None:

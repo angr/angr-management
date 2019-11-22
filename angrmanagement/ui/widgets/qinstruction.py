@@ -18,8 +18,6 @@ class QInstruction(QCachedGraphicsItem):
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
     GRAPH_COMMENT_STRING_SPACING = 10
-    GRAPH_TRACE_LEGEND_WIDTH = 30
-    GRAPH_TRACE_LEGEND_SPACING = 20
 
     INTERSPERSE_ARGS = ', '
 
@@ -54,32 +52,21 @@ class QInstruction(QCachedGraphicsItem):
 
         self._init_widgets()
 
-    def update_if_at_addr(self, old_addr, new_addr):
-        if not shiboken.isValid(self):
-            return True
-        if old_addr == self.addr or new_addr == self.addr:
-            self.update()
-
-    def mousePressEvent(self, event):
-        """
-
-        :param QGraphicsSceneMouseEvent event:
-        :return:
-        """
-
-        if event.button() == Qt.LeftButton:
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+        if event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (Qt.NoModifier, Qt.ControlModifier):
             # toggle selection
-            self.infodock.toggle_instruction_selection(self.addr,
-                                                       insn_pos=self.scenePos(),
-                                                       unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
+            self.infodock.toggle_instruction_selection(
+                self.addr,
+                insn_pos=self.scenePos(),
+                unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             event.accept()
-        elif event.button() == Qt.RightButton:
-            if QCachedGraphicsItem.ctrl_held:
-                # continue on for trace load
-                super().mousePressEvent(event)
-            else:
-                # display the context menu
-                self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
+        elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
+            if self.addr not in self.infodock.selected_insns:
+                self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
+            self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
+            event.accept()
+        elif self.workspace._main_window.plugins_handle_insn_click(self, event):
+            event.accept()
         else:
             super().mousePressEvent(event)
 
@@ -87,20 +74,16 @@ class QInstruction(QCachedGraphicsItem):
     def addr(self):
         return self.insn.addr
 
-    @property
-    def insn_backcolor(self):
-        r, g, b = None, None, None
-
+    def _calc_backcolor(self):
         # First we'll check for customizations
-        if self.disasm_view.insn_backcolor_callback:
-            r, g, b = self.disasm_view.insn_backcolor_callback(addr=self.insn.addr, selected=self.selected)
+        color = self.workspace._main_window.plugins_color_insn(self.insn.addr, self.selected)
+        if color is not None:
+            return color
 
-        # Fallback to defaults if we get Nones from the callback
-        if r is None or g is None or b is None:
-            if self.selected:
-                r, g, b = 0xef, 0xbf, 0xba
+        if self.selected:
+            return QColor(0xef, 0xbf, 0xba)
 
-        return QColor(r, g, b) if r is not None else None
+        return None  # None here means transparent, reusing the block color
 
     @property
     def selected(self):
@@ -118,7 +101,6 @@ class QInstruction(QCachedGraphicsItem):
         self.load_comment()
         for operand in self._operands:
             operand.refresh()
-        self.update_trace()
         self._update_size()
         self.recalculate_size()
 
@@ -132,27 +114,6 @@ class QInstruction(QCachedGraphicsItem):
         if self._comment is not None:
             self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
 
-    def update_trace(self):
-        _l.debug('updating trace')
-        if self.workspace.instance.trace is not None:
-            trace = self.workspace.instance.trace
-            # count is cached in trace.
-            count = trace.get_count(self.insn.addr)
-            _l.debug('counting trace')
-
-            if count > 0:
-                if count > self.GRAPH_TRACE_LEGEND_WIDTH:
-                    jump = count / self.GRAPH_TRACE_LEGEND_WIDTH
-                    self._legend = [(int(jump * i), 1) for i in
-                               range(self.GRAPH_TRACE_LEGEND_WIDTH)]
-                else:
-                    width = self.GRAPH_TRACE_LEGEND_WIDTH // count
-                    remainder = self.GRAPH_TRACE_LEGEND_WIDTH % count
-                    self._legend = [(i, width + 1) for i in range(remainder)] + \
-                              [(i, width) for i in range(remainder, count)]
-        else:
-            self._legend = None
-
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
         x = 0
@@ -162,8 +123,8 @@ class QInstruction(QCachedGraphicsItem):
             QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
         painter.setFont(self._config.disasm_font)
 
-        # selection
-        backcolor = self.insn_backcolor
+        # background color
+        backcolor = self._calc_backcolor()
         if backcolor is not None:
             painter.setBrush(backcolor)
             painter.setPen(backcolor)
@@ -199,18 +160,8 @@ class QInstruction(QCachedGraphicsItem):
             painter.setPen(Qt.gray)
             painter.drawText(x, y, self._string)
 
-        _l.debug('drawing legend')
-        # legend
-        self.update_trace()
-        if self._legend is not None:
-            _l.debug('legend is not None')
-            legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
-            for (i, w) in self._legend:
-                color = self.workspace.instance.trace.get_mark_color(self.insn.addr, i)
-                painter.setPen(color)
-                painter.setBrush(color)
-                painter.drawRect(legend_x, 0, w, self.height)
-                legend_x += w
+        # any plugin instruction rendering passes
+        self.workspace._main_window.plugins_draw_insn(self, painter)
 
     #
     # Private methods

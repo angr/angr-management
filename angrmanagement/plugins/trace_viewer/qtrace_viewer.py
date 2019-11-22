@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsVie
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QPixmap, QColor, QPainter, QFont, QImage
 from PySide2.QtCore import Qt, QRectF, QSize, QPoint
 
-from ...config import Conf
+from angrmanagement.config import Conf
 
 import logging
 l = logging.getLogger(name=__name__)
@@ -31,21 +31,29 @@ class QTraceViewer(QWidget):
         self.scene = None
         self.mark = None
 
-        self.trace = None
-        self.selected_ins = None
-
         self._init_widgets()
+
+        self.trace.am_subscribe(self._on_set_trace)
+        self.selected_ins.am_subscribe(self._on_select_ins)
+
+    #
+    # Forwarding properties
+    #
+
+    @property
+    def trace(self):
+        return self.workspace.instance.trace
+
+    @property
+    def selected_ins(self):
+        return self.disasm_view.infodock.selected_insns
 
     def _init_widgets(self):
         self.view = QGraphicsView()
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
 
-        self.trace_func = QGraphicsItemGroup()
-        self.scene.addItem(self.trace_func)
-
-        self.legend = None
-        self.legend_height = 0
+        self._reset()
 
         layout = QHBoxLayout()
         layout.addWidget(self.view)
@@ -54,65 +62,70 @@ class QTraceViewer(QWidget):
 
         self.setLayout(layout)
 
-    def clear_trace(self):
+    def _reset(self):
         self.scene.clear() #clear items
         self.mark = None
-        self.trace = None
 
         self.legend = None
         self.legend_height = 0
 
         self.trace_func = QGraphicsItemGroup()
         self.scene.addItem(self.trace_func)
+        self.hide()
 
+    def _on_set_trace(self, **kwargs):
+        self._reset()
 
-    def set_trace(self, trace):
-        self.trace = trace
-        l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
-                self.trace.count)
-        if(self.trace.count <= 0):
-            l.warn("No valid addresses found in trace to show. Check base address offsets?")
-            self.trace = None
-            return
-        if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
-            self.trace_func_unit_height = 15
-            show_func_tag = True
-        else:
-            self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
-            show_func_tag = True
+        if self.trace != None:
+            l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
+                    self.trace.count)
+            if self.trace.count <= 0:
+                l.warning("No valid addresses found in trace to show. Check base address offsets?")
+                self.trace.am_obj = None
+                self.trace.am_event()
+                return
+            if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
+                self.trace_func_unit_height = 15
+                show_func_tag = True
+            else:
+                self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
+                show_func_tag = True
 
-        self.legend_height = int(self.trace.count * self.trace_func_unit_height)
+            self.legend_height = int(self.trace.count * self.trace_func_unit_height)
 
-        self._show_trace_func(show_func_tag)
-        self._show_legend()
-        self._set_mark_color()
+            self._show_trace_func(show_func_tag)
+            self._show_legend()
+            self._set_mark_color()
 
-        self.scene.setSceneRect(self.scene.itemsBoundingRect()) #resize
-        self.setFixedWidth(self.scene.itemsBoundingRect().width())
-        self.view.setFixedWidth(self.scene.itemsBoundingRect().width())
+            self.scene.setSceneRect(self.scene.itemsBoundingRect()) #resize
+            self.setFixedWidth(self.scene.itemsBoundingRect().width())
+            self.view.setFixedWidth(self.scene.itemsBoundingRect().width())
 
-        # if self.selected_ins is not None:
-        #     self.set_trace_mark(self.selected_ins)
+            self.show()
 
-    def set_trace_mark(self, addr):
-        self.selected_ins = addr
+            # if self.selected_ins is not None:
+            #     self.set_trace_mark(self.selected_ins)
+
+    def _on_select_ins(self, **kwargs):
         if self.mark is not None:
             for i in self.mark.childItems():
                 self.mark.removeFromGroup(i)
                 self.scene.removeItem(i)
-        else:
-            self.mark = QGraphicsItemGroup()
-            self.scene.addItem(self.mark)
-        positions = self.trace.get_positions(addr)
-        if(positions): #if addr is in list of positions
-            for p in positions:
-                color = self._get_mark_color(p, self.trace.count)
-                y = self._get_mark_y(p, self.trace.count)
-                self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                        self.MARK_HEIGHT, QPen(color), QBrush(color)))
 
-            y = self._get_mark_y(positions[0], self.trace.count)
-            self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
+        self.mark = QGraphicsItemGroup()
+        self.scene.addItem(self.mark)
+
+        for addr in self.selected_ins:
+            positions = self.trace.get_positions(addr)
+            if positions: #if addr is in list of positions
+                for p in positions:
+                    color = self._get_mark_color(p, self.trace.count)
+                    y = self._get_mark_y(p, self.trace.count)
+                    self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                                                            self.MARK_HEIGHT, QPen(color), QBrush(color)))
+
+                y = self._get_mark_y(positions[0], self.trace.count)
+                self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
 
     def mousePressEvent(self, event):
         button = event.button()
@@ -120,6 +133,7 @@ class QTraceViewer(QWidget):
         if button == Qt.LeftButton and self._at_legend(pos):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
+            # TODO: replace these with am_events perhaps?
             self.workspace.on_function_selected(func)
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
 
@@ -179,8 +193,9 @@ class QTraceViewer(QWidget):
         reference_gradient = self._make_legend_gradient(0, 0, self.LEGEND_WIDTH, 1000)
         base_img = QImage(self.LEGEND_WIDTH, 1000, QImage.Format.Format_ARGB32)
         p = QPainter(base_img)
-        p.fillRect(base_img.rect(),reference_gradient);
+        p.fillRect(base_img.rect(),reference_gradient)
         self.legend_img = base_img #reference shade
+
 
     def _set_mark_color(self):
         for p in range(self.trace.count):
@@ -190,10 +205,8 @@ class QTraceViewer(QWidget):
     def _at_legend(self, pos):
         x = pos.x()
         y = pos.y()
-        if x > self.TRACE_FUNC_X + self.LEGEND_X and \
-                x < self.view.width() and \
-                y > self.TRACE_FUNC_Y and \
-                y < self.TRACE_FUNC_Y + self.legend_height:
+        if self.TRACE_FUNC_X + self.LEGEND_X < x < self.view.width() and \
+           self.TRACE_FUNC_Y < y < self.TRACE_FUNC_Y + self.legend_height:
             return True
         else:
             return False
