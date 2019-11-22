@@ -29,6 +29,7 @@ class QTraceViewer(QWidget):
         self.scene = None
         self.mark = None
         self.curr_position = 0
+        self._use_precise_position = False
 
         self._init_widgets()
 
@@ -148,7 +149,7 @@ class QTraceViewer(QWidget):
     def jump_next_insn(self):
         if self.curr_position + self.trace.count < self.trace.count - 1: #for some reason indexing is done backwards
             self.curr_position += 1
-            #self._use_precise_position = True
+            self._use_precise_position = True
             func_name = self.trace.trace_func[self.curr_position].func_name
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
@@ -157,7 +158,7 @@ class QTraceViewer(QWidget):
     def jump_prev_insn(self):
         if self.curr_position + self.trace.count > 0:
             self.curr_position -= 1
-            #self._use_precise_position = True
+            self._use_precise_position = True
             func_name = self.trace.trace_func[self.curr_position].func_name
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
@@ -183,8 +184,9 @@ class QTraceViewer(QWidget):
         if button == Qt.LeftButton and self._at_legend(pos):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
-            self._jump_bbl(func, bbl_addr)
+            self._use_precise_position = True
             self.curr_position = self._get_position(pos.y())
+            self._jump_bbl(func, bbl_addr)
 
     def _jump_bbl(self, func, bbl_addr):
         all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
