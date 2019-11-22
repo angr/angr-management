@@ -1,8 +1,6 @@
 from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide2.QtGui import QPen, QBrush, QLinearGradient, QPixmap, QColor, QPainter, QFont, QImage
-from PySide2.QtCore import Qt, QRectF, QSize, QPoint, QEvent
-
-from angrmanagement.config import Conf
+from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
+from PySide2.QtCore import Qt, QPoint, QEvent
 
 import logging
 l = logging.getLogger(name=__name__)
@@ -219,8 +217,7 @@ class QTraceViewer(QWidget):
                                                           self.TRACE_FUNC_WIDTH, self.trace_func_unit_height,
                                                           QPen(color), QBrush(color)))
             if show_func_tag is True and func_name != prev_name:
-                tag = self.scene.addText(func_name,
-                                         Conf.trace_func_font)
+                tag = self.scene.addText(func_name, QFont("Source Code Pro", 7))
                 tag.setPos(x + self.TRACE_FUNC_WIDTH +
                            self.TAG_SPACING, y -
                            tag.boundingRect().height() // 2)
@@ -275,7 +272,6 @@ class QTraceViewer(QWidget):
     def _to_logical_pos(self, pos):
         x_offset = self.view.horizontalScrollBar().value()
         y_offset = self.view.verticalScrollBar().value()
-        qpos = QPoint(pos.x() + x_offset, pos.y() + y_offset)
         return QPoint(pos.x() + x_offset, pos.y() + y_offset)
 
     def _get_position(self, y):

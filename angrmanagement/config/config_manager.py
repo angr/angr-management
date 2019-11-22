@@ -57,7 +57,6 @@ ENTRIES = [
     CE('feature_map_color_unknown', QColor, QColor(0xa, 0xa, 0xa)),
     CE('feature_map_color_delimiter', QColor, QColor(0, 0, 0)),
     CE('feature_map_color_data', QColor, QColor(0xc0, 0xc0, 0xc0)),
-    CE('trace_func_font', QFont, None)
 ]
 
 
@@ -95,8 +94,6 @@ class ConfigurationManager:
         self.code_font_height = self.code_font_metrics.height()
         self.code_font_width = self.code_font_metrics.width('A')
         self.code_font_ascent = self.code_font_metrics.ascent()
-
-        self.trace_func_font = QFont("Source Code Pro", 7)
 
     def __getattr__(self, item):
 

@@ -49,9 +49,6 @@ class BasePlugin:
     def draw_block(self, qblock: QBlock, painter: QPainter):
         pass
 
-    def draw_graph(self, func):
-        pass
-
     def instrument_disassembly_view(self, dview: 'disassembly_view.DisassemblyView'):
         pass
 
