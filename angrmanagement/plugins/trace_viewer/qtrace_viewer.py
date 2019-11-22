@@ -121,13 +121,13 @@ class QTraceViewer(QWidget):
             addr = next(iter(self.selected_ins))
             positions = self.trace.get_positions(addr)
             if positions: #if addr is in list of positions
-                if(not self._use_precise_position): #handle case where insn was selected from disas view
+                if not self._use_precise_position: #handle case where insn was selected from disas view
                     self.curr_position = positions[0] - self.trace.count
                 for p in positions:
                     color = self._get_mark_color(p, self.trace.count)
                     y = self._get_mark_y(p, self.trace.count)
 
-                    if(p == self.trace.count + self.curr_position): #add thicker line for 'current' mark
+                    if p == self.trace.count + self.curr_position: #add thicker line for 'current' mark
                         self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
                                             self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
                     else:
