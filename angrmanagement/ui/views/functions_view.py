@@ -31,7 +31,9 @@ class FunctionsView(BaseView):
             self._status_label.setText("%d functions" % count)
 
     def reload(self):
-        self._function_table.function_manager = self.workspace.instance.cfg.functions
+        # TODO: this is such a shitshow. all the sub-elements should sync on the cfg directly.
+        if self.workspace.instance.cfg is not None:
+            self._function_table.function_manager = self.workspace.instance.cfg.functions
 
     def minimumSizeHint(self, *args, **kwargs):
         return QSize(100, 0)

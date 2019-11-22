@@ -106,6 +106,9 @@ class QTraceViewer(QWidget):
             self.show()
 
     def _on_select_ins(self, **kwargs):
+        if self.trace == None:
+            return
+
         if self.mark is not None:
             for i in self.mark.childItems():
                 self.mark.removeFromGroup(i)
@@ -138,49 +141,43 @@ class QTraceViewer(QWidget):
         y_offset = self._get_mark_y(relative_pos, self.trace.count)
 
         scrollValue = 0
-        if(y_offset > 0.5 * self.view.size().height()):
+        if y_offset > 0.5 * self.view.size().height():
             scrollValue = y_offset - 0.5 * self.view.size().height()
         scrollValue = min(scrollValue, self.view.verticalScrollBar().maximum())
         self.view.verticalScrollBar().setValue(scrollValue)
         self._use_precise_position = False
 
     def jump_next_insn(self):
-        if(self.trace == None):
-            return
-        if((self.curr_position + self.trace.count) < self.trace.count - 1): #for some reason indexing is done backwards
+        if self.curr_position + self.trace.count < self.trace.count - 1: #for some reason indexing is done backwards
             self.curr_position += 1
             #self._use_precise_position = True
             func_name = self.trace.trace_func[self.curr_position].func_name
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
-            self.workspace.on_function_selected(func)
-            self.disasm_view.current_graph.show_instruction(bbl_addr, insn_pos=insn_pos)
+            self._jump_bbl(func, bbl_addr)
 
     def jump_prev_insn(self):
-        if(self.trace == None):
-            return
-        if((self.curr_position + self.trace.count) > 0):
+        if self.curr_position + self.trace.count > 0:
             self.curr_position -= 1
             #self._use_precise_position = True
             func_name = self.trace.trace_func[self.curr_position].func_name
             func = self._get_func_from_func_name(func_name)
             bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
-            self.workspace.on_function_selected(func)
-            self.disasm_view.current_graph.show_instruction(bbl_addr, insn_pos=insn_pos)
+            self._jump_bbl(func, bbl_addr)
 
     def eventFilter(self, object, event): #specifically to catch arrow keys
-        #more elegant solution to link w/ self.view's scroll bar keypressevent?
-        if(event.type() == QEvent.Type.KeyPress):
-            if(not (event.modifiers() & Qt.ShiftModifier)): #shift + arrowkeys
+        # more elegant solution to link w/ self.view's scroll bar keypressevent?
+        if event.type() == QEvent.Type.KeyPress:
+            if not (event.modifiers() & Qt.ShiftModifier): #shift + arrowkeys
                 return False
             key = event.key()
-            if(key == Qt.Key_Up or key == Qt.Key_Left):
+            if key == Qt.Key_Up or key == Qt.Key_Left:
                 self.jump_prev_insn()
-            elif(key == Qt.Key_Down or key == Qt.Key_Right):
+            elif key == Qt.Key_Down or key == Qt.Key_Right:
                 self.jump_next_insn()
             return True
 
-        return False #pass through all other events
+        return False  # pass through all other events
 
     def mousePressEvent(self, event):
         button = event.button()
@@ -188,15 +185,18 @@ class QTraceViewer(QWidget):
         if button == Qt.LeftButton and self._at_legend(pos):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
-            all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
+            self._jump_bbl(func, bbl_addr)
             self.curr_position = self._get_position(pos.y())
-            # TODO: replace this with am_events perhaps?
-            self.workspace.on_function_selected(func)
-            self.selected_ins.clear()
-            self.selected_ins.update(all_insn_addrs)
-            self.selected_ins.am_event()
-            # TODO: this ought to happen automatically as a result of the am_event
-            self.disasm_view.current_graph.show_instruction(bbl_addr, insn_pos=insn_pos)
+
+    def _jump_bbl(self, func, bbl_addr):
+        all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
+        # TODO: replace this with am_events perhaps?
+        self.workspace.on_function_selected(func)
+        self.selected_ins.clear()
+        self.selected_ins.update(all_insn_addrs)
+        self.selected_ins.am_event()
+        # TODO: this ought to happen automatically as a result of the am_event
+        self.disasm_view.current_graph.show_instruction(bbl_addr)
 
     def _get_mark_color(self, i, total):
         relative_gradient_pos = i * 1000 // total

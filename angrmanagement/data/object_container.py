@@ -79,5 +79,5 @@ class ObjectContainer(EventSentinel):
         return not (self == other)
 
     def __repr__(self):
-        return '(container %s)%s' % (self.am_name, repr(self._am_obj))
+        return '(container: %s)%s' % (self.am_name, repr(self._am_obj))
 

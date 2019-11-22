@@ -15,8 +15,8 @@ class TraceViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace.instance.register_container('trace', None, Optional[TraceStatistics], 'The current trace')
-        self.workspace.instance.register_container('multi_trace', None, Optional[MultiTrace], 'The current set of multiple traces')
+        self.workspace.instance.register_container('trace', lambda: None, Optional[TraceStatistics], 'The current trace')
+        self.workspace.instance.register_container('multi_trace', lambda: None, Optional[MultiTrace], 'The current set of multiple traces')
 
         self._viewers = []
 
