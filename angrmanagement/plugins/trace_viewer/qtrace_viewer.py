@@ -112,11 +112,13 @@ class QTraceViewer(QWidget):
             for i in self.mark.childItems():
                 self.mark.removeFromGroup(i)
                 self.scene.removeItem(i)
+            self.scene.removeItem(self.mark)
 
         self.mark = QGraphicsItemGroup()
         self.scene.addItem(self.mark)
 
-        for addr in self.selected_ins:
+        if self.selected_ins:
+            addr = next(iter(self.selected_ins))
             positions = self.trace.get_positions(addr)
             if positions: #if addr is in list of positions
                 for p in positions:
