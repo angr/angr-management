@@ -49,11 +49,8 @@ class TraceViewer(BasePlugin):
         trace_viewer = QTraceViewer(self.workspace, dview, parent=dview)
         self._viewers.append(trace_viewer)
 
-        hlayout = QHBoxLayout()
-        hlayout.addLayout(dview.layout())
-        hlayout.addWidget(trace_viewer)
+        dview.layout().addWidget(trace_viewer)
         trace_viewer.hide()
-        dview.setLayout(hlayout)
 
 
     def color_block(self, addr):
@@ -68,7 +65,8 @@ class TraceViewer(BasePlugin):
             if self.workspace.instance.multi_trace is not None:
                 the_trace = self.multi_trace.get_any_trace(qblock.addr)
                 if the_trace is not None:
-                    self.set_trace_raw(the_trace, self.multi_trace.base_addr)
+                    self.trace.am_obj = TraceStatistics(self.workspace, the_trace, self.multi_trace.base_addr)
+                    self.trace.am_event()
                     self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
                     return True
 

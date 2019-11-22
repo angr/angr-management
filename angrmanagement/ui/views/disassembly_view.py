@@ -458,7 +458,10 @@ class DisassemblyView(BaseView):
         vlayout.setStretchFactor(self._linear_viewer, 1)
         vlayout.setStretchFactor(self._statusbar, 0)
 
-        self.setLayout(vlayout)
+        hlayout = QHBoxLayout()
+        hlayout.addLayout(vlayout)
+
+        self.setLayout(hlayout)
 
         self.display_disasm_graph()
         # self.display_linear_viewer()

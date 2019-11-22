@@ -32,13 +32,7 @@ class TraceStatistics:
 
         project = self.workspace.instance.project
         self.project_baddr = project.loader.main_object.mapped_base
-        self.runtime_baddr = self.project_baddr
-
-        try:
-            self.runtime_baddr = int(baddr, 16)
-        except:
-            l.warning("Error using Base Address Value %s, using default value of %x", baddr, self.project_baddr)
-            self.runtime_baddr = self.project_baddr
+        self.runtime_baddr = baddr
 
         self._statistics(trace)
 
