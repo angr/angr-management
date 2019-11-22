@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QPixmap, QColor, QPainter, QFont, QImage
-from PySide2.QtCore import Qt, QRectF, QSize, QPoint
+from PySide2.QtCore import Qt, QRectF, QSize, QPoint, QEvent
 
 from angrmanagement.config import Conf
 
@@ -30,11 +30,13 @@ class QTraceViewer(QWidget):
         self.view = None
         self.scene = None
         self.mark = None
+        self.curr_position = 0
 
         self._init_widgets()
 
         self.trace.am_subscribe(self._on_set_trace)
         self.selected_ins.am_subscribe(self._on_select_ins)
+        self.view.installEventFilter(self)
 
     #
     # Forwarding properties
@@ -103,9 +105,6 @@ class QTraceViewer(QWidget):
 
             self.show()
 
-            # if self.selected_ins is not None:
-            #     self.set_trace_mark(self.selected_ins)
-
     def _on_select_ins(self, **kwargs):
         if self.mark is not None:
             for i in self.mark.childItems():
@@ -121,11 +120,67 @@ class QTraceViewer(QWidget):
                 for p in positions:
                     color = self._get_mark_color(p, self.trace.count)
                     y = self._get_mark_y(p, self.trace.count)
-                    self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                            self.MARK_HEIGHT, QPen(color), QBrush(color)))
 
-                y = self._get_mark_y(positions[0], self.trace.count)
-                self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
+                    if(p == self.trace.count + self.curr_position): #add thicker line for 'current' mark
+                        self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                                            self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
+                    else:
+                        self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                                                                self.MARK_HEIGHT, QPen(color), QBrush(color)))
+                #y = self._get_mark_y(positions[0], self.trace.count)
+                #self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
+
+                self.scene.update() #force redraw of the scene
+                self.scroll_to_position(self.curr_position)
+
+    def scroll_to_position(self, position):
+        relative_pos = self.trace.count + position
+        y_offset = self._get_mark_y(relative_pos, self.trace.count)
+
+        scrollValue = 0
+        if(y_offset > 0.5 * self.view.size().height()):
+            scrollValue = y_offset - 0.5 * self.view.size().height()
+        scrollValue = min(scrollValue, self.view.verticalScrollBar().maximum())
+        self.view.verticalScrollBar().setValue(scrollValue)
+        self._use_precise_position = False
+
+    def jump_next_insn(self):
+        if(self.trace == None):
+            return
+        if((self.curr_position + self.trace.count) < self.trace.count - 1): #for some reason indexing is done backwards
+            self.curr_position += 1
+            #self._use_precise_position = True
+            func_name = self.trace.trace_func[self.curr_position].func_name
+            func = self._get_func_from_func_name(func_name)
+            bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
+            self.workspace.on_function_selected(func)
+            self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
+
+    def jump_prev_insn(self):
+        if(self.trace == None):
+            return
+        if((self.curr_position + self.trace.count) > 0):
+            self.curr_position -= 1
+            #self._use_precise_position = True
+            func_name = self.trace.trace_func[self.curr_position].func_name
+            func = self._get_func_from_func_name(func_name)
+            bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
+            self.workspace.on_function_selected(func)
+            self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
+
+    def eventFilter(self, object, event): #specifically to catch arrow keys
+        #more elegant solution to link w/ self.view's scroll bar keypressevent?
+        if(event.type() == QEvent.Type.KeyPress):
+            if(not (event.modifiers() & Qt.ShiftModifier)): #shift + arrowkeys
+                return False
+            key = event.key()
+            if(key == Qt.Key_Up or key == Qt.Key_Left):
+                self.jump_prev_insn()
+            elif(key == Qt.Key_Down or key == Qt.Key_Right):
+                self.jump_next_insn()
+            return True
+
+        return False #pass through all other events
 
     def mousePressEvent(self, event):
         button = event.button()
@@ -134,6 +189,7 @@ class QTraceViewer(QWidget):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
             # TODO: replace these with am_events perhaps?
+            self.curr_position = self._get_position(pos.y())
             self.workspace.on_function_selected(func)
             self.disasm_view.infodock.toggle_instruction_selection(bbl_addr)
 
@@ -226,7 +282,10 @@ class QTraceViewer(QWidget):
         position = self._get_position(y)
         return self.trace.get_bbl_from_position(position)
 
+    def _get_func_from_func_name(self, func_name):
+        return self.workspace.instance.cfg.kb.functions.function(name=func_name)
+
     def _get_func_from_y(self, y):
         position = self._get_position(y)
         func_name = self.trace.get_func_name_from_position(position)
-        return self.workspace.instance.cfg.kb.functions.function(name=func_name)
+        return self._get_func_from_func_name(func_name)
