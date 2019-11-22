@@ -67,7 +67,6 @@ class TraceViewer(BasePlugin):
                 if the_trace is not None:
                     self.trace.am_obj = TraceStatistics(self.workspace, the_trace, self.multi_trace.base_addr)
                     self.trace.am_event()
-                    self.workspace.view_manager.first_view_in_category('disassembly').show_trace_view()
                     return True
 
         return False

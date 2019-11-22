@@ -19,7 +19,6 @@ class MultiTrace:
         self.base_addr = base_addr
 
     def get_hit_miss_color(self, addr):
-
         hexstr_addr = hex(addr)
         if hexstr_addr not in self._traces_summary:
             return MultiTrace.MISS_COLOR

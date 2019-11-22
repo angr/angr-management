@@ -142,6 +142,8 @@ class QFunctionTableModel(QAbstractTableModel):
             data = self._get_column_data(func, idx)
             if idx == self.ADDRESS_COL:
                 return hex(data)
+            elif idx == self.TAGS_COL:
+                return self._get_tags_display_string(data)
             else:
                 return str(data)
 
