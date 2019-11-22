@@ -121,6 +121,8 @@ class QTraceViewer(QWidget):
             addr = next(iter(self.selected_ins))
             positions = self.trace.get_positions(addr)
             if positions: #if addr is in list of positions
+                if(not self._use_precise_position): #handle case where insn was selected from disas view
+                    self.curr_position = positions[0] - self.trace.count
                 for p in positions:
                     color = self._get_mark_color(p, self.trace.count)
                     y = self._get_mark_y(p, self.trace.count)
