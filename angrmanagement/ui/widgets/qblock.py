@@ -152,13 +152,13 @@ class QGraphBlock(QBlock):
             y += obj.boundingRect().height()
 
     def mousePressEvent(self, event):
-        if self.workspace._main_window.plugins_handle_click_block(self, event):
+        if self.workspace.plugins.handle_click_block(self, event):
             event.accept()
         else:
             super().mousePressEvent(event)
 
     def _calc_backcolor(self, should_omit_text):
-        color = self.workspace._main_window.plugins_color_block(self.addr)
+        color = self.workspace.plugins.color_block(self.addr)
         if color is not None:
             return color
 
@@ -185,7 +185,7 @@ class QGraphBlock(QBlock):
             self._objects_are_hidden = should_omit_text
 
         # extra content
-        self.workspace._main_window.plugins_draw_block(self, painter)
+        self.workspace.plugins.draw_block(self, painter)
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()

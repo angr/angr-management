@@ -31,7 +31,9 @@ class Toolbar:
         toolbar = QToolBar(self.name, self.window)
 
         for action in self.actions:
-            self._translate_element(toolbar, action)
+            act = self._translate_element(toolbar, action)
+            if act is not None:
+                self._cached_actions.append(act)
 
         toolbar.setIconSize(QSize(16, 16))
 

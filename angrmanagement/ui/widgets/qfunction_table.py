@@ -64,7 +64,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return len(self.func_list)
 
     def columnCount(self, *args, **kwargs):
-        return len(self.Headers) + self.workspace._main_window.plugins_count_func_columns()
+        return len(self.Headers) + self.workspace.plugins.count_func_columns()
 
     def headerData(self, section, orientation, role):
         if role != Qt.DisplayRole:
@@ -73,7 +73,7 @@ class QFunctionTableModel(QAbstractTableModel):
         if section < len(self.Headers):
             return self.Headers[section]
         else:
-            return self.workspace._main_window.plugins_get_func_column(section - len(self.Headers))
+            return self.workspace.plugins.get_func_column(section - len(self.Headers))
 
     def data(self, index, role):
         if not index.isValid():
@@ -105,7 +105,7 @@ class QFunctionTableModel(QAbstractTableModel):
             return QBrush(color)
 
         elif role == Qt.BackgroundColorRole:
-            color = self.workspace._main_window.plugins_color_func(func)
+            color = self.workspace.plugins.color_func(func)
             if color is None:
                 color = QColor(0xff, 0xff, 0xff)
 
@@ -135,7 +135,7 @@ class QFunctionTableModel(QAbstractTableModel):
         elif idx == self.BLOCKS_COL:
             return len(func.block_addrs_set)
         else:
-            return self.workspace._main_window.plugins_extract_func_column(func, idx - len(self.Headers))[0]
+            return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
 
     def _get_column_text(self, func, idx):
         if idx < len(self.Headers):
@@ -147,7 +147,7 @@ class QFunctionTableModel(QAbstractTableModel):
             else:
                 return str(data)
 
-        return self.workspace._main_window.plugins_extract_func_column(func, idx - len(self.Headers))[1]
+        return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
 
     def _get_binary_name(self, func):
         return os.path.basename(func.binary.binary) if func.binary is not None else ""

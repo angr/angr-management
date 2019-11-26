@@ -57,6 +57,9 @@ ENTRIES = [
     CE('feature_map_color_unknown', QColor, QColor(0xa, 0xa, 0xa)),
     CE('feature_map_color_delimiter', QColor, QColor(0, 0, 0)),
     CE('feature_map_color_data', QColor, QColor(0xc0, 0xc0, 0xc0)),
+    # plugins
+    CE('plugin_search_path', str, '$BUILTIN_PLUGINS:~/.local/share/angr-management/plugins'),
+    CE('plugin_blacklist', str, 'sample_plugin'),
 ]
 
 
@@ -103,7 +106,7 @@ class ConfigurationManager:
         if item in self._entries:
             return self._entries[item].value
 
-        raise AttributeError()
+        raise AttributeError(item)
 
     def __setattr__(self, key, value):
 
@@ -115,7 +118,10 @@ class ConfigurationManager:
             self._entries[key].value = value
             return
 
-        raise KeyError()
+        raise AttributeError(key)
+
+    def __dir__(self):
+        return list(super().__dir__()) + list(self._entries)
 
     @classmethod
     def parse(cls, f):

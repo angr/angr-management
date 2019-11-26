@@ -1,7 +1,6 @@
 import time
 from threading import Thread
 from queue import Queue
-import traceback
 from typing import List, Optional, Type
 import angr
 
@@ -175,9 +174,9 @@ class Instance:
 
             try:
                 result = job.run(self)
-            except:
-                self.workspace.log('Exception while running job "%s":\n' % job.name)
-                self.workspace.log(traceback.format_exc())
+            except Exception as e:
+                self.workspace.log('Exception while running job "%s":' % job.name)
+                self.workspace.log(e)
             else:
                 gui_thread_schedule_async(job.finish, args=(self, result))
 

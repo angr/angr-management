@@ -65,7 +65,7 @@ class QInstruction(QCachedGraphicsItem):
                 self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
             event.accept()
-        elif self.workspace._main_window.plugins_handle_insn_click(self, event):
+        elif self.workspace.plugins.handle_insn_click(self, event):
             event.accept()
         else:
             super().mousePressEvent(event)
@@ -76,7 +76,7 @@ class QInstruction(QCachedGraphicsItem):
 
     def _calc_backcolor(self):
         # First we'll check for customizations
-        color = self.workspace._main_window.plugins_color_insn(self.insn.addr, self.selected)
+        color = self.workspace.plugins.color_insn(self.insn.addr, self.selected)
         if color is not None:
             return color
 
@@ -161,7 +161,7 @@ class QInstruction(QCachedGraphicsItem):
             painter.drawText(x, y, self._string)
 
         # any plugin instruction rendering passes
-        self.workspace._main_window.plugins_draw_insn(self, painter)
+        self.workspace.plugins.draw_insn(self, painter)
 
     #
     # Private methods

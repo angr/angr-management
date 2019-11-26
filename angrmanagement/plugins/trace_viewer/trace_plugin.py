@@ -1,9 +1,8 @@
-import os
 import json
 from typing import Optional
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QFileDialog, QInputDialog, QLineEdit
+from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
 
 from angrmanagement.plugins.trace_viewer.qtrace_viewer import QTraceViewer
 
@@ -30,11 +29,11 @@ class TraceViewer(BasePlugin):
     #
 
     @property
-    def trace(self):
+    def trace(self) -> Optional[TraceStatistics]:
         return self.workspace.instance.trace
 
     @property
-    def multi_trace(self):
+    def multi_trace(self) -> Optional[MultiTrace]:
         return self.workspace.instance.multi_trace
 
 
@@ -62,7 +61,7 @@ class TraceViewer(BasePlugin):
         btn = event.button()
 
         if QApplication.keyboardModifiers() == Qt.ControlModifier and btn == Qt.RightButton:
-            if self.workspace.instance.multi_trace is not None:
+            if self.multi_trace is not None:
                 the_trace = self.multi_trace.get_any_trace(qblock.addr)
                 if the_trace is not None:
                     self.trace.am_obj = TraceStatistics(self.workspace, the_trace, self.multi_trace.base_addr)
@@ -106,7 +105,7 @@ class TraceViewer(BasePlugin):
 
     def color_func(self, func):
         if self.multi_trace != None:
-            return self.workspace.instance.multi_trace.get_percent_color(func)
+            return self.multi_trace.get_percent_color(func)
 
         if self.trace != None:
             for itr_func in self.trace.trace_func:

@@ -1,10 +1,11 @@
 import logging
-from typing import Union, Type
+from typing import Type, List
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, QListWidget
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
+    QListWidget, QFileDialog, QMessageBox
 from PySide2.QtCore import Qt
 
-#from ...plugins import BasePlugin
+from angrmanagement.plugins import load_plugins_from_file
 
 _l = logging.getLogger(__name__)
 
@@ -12,31 +13,18 @@ _l = logging.getLogger(__name__)
 class QPluginListWidgetItem(QListWidgetItem):
     def __init__(self, plugin_cls, **kwargs):
         super().__init__(**kwargs)
-        self._plugin_cls = plugin_cls  # type: Type[BasePlugin]
+        self.plugin_class = plugin_cls  # type: Type[BasePlugin]
         self.setText(plugin_cls.get_display_name())
 
-    @property
-    def plugin_class(self):
-        return self._plugin_cls
 
-
-class LoadPluginsError(Exception):
-    pass
-
-# TODO: Add plugin settings, forced reloading, etc.
-
-# TODO: Implement ability to start a loaded plugin that has _autostart=False
-
-# TODO: Add load order/precedence. If two plugins hook insn_backcolor, etc, only the last
-#       one to get loaded will actually get called.
-
+# TODO: Add plugin settings, reloading, etc.
 
 class LoadPlugins(QDialog):
     def __init__(self, plugin_mgr, parent=None):
         super(LoadPlugins, self).__init__(parent)
 
-        self._pm = plugin_mgr
-        self._installed_plugin_list = None  # type: Union[None, QListWidget]
+        self._pm = plugin_mgr  # type: PluginManager
+        self._installed_plugin_list = None  # type: QListWidget
 
         self.setWindowTitle('Installed Plugins')
         self.main_layout = QVBoxLayout()
@@ -68,13 +56,20 @@ class LoadPlugins(QDialog):
         self.main_layout.addWidget(frame)
 
     def _populate_installed_plugin_list(self):
-        for name, cls in self._pm.installed_plugins.items():
+        for cls in self._pm.loaded_plugins:
             plugin_item = QPluginListWidgetItem(plugin_cls=cls)
-            checked = Qt.Checked if name in self._pm.enabled_plugins.keys() else Qt.Unchecked
-            plugin_item.setCheckState(checked)
+            if self._pm.get_plugin_instance(cls) is not None:
+                plugin_item.setCheckState(Qt.Checked)
+            else:
+                plugin_item.setCheckState(Qt.Unchecked)
             self._installed_plugin_list.addItem(plugin_item)
 
     def _init_widgets(self):
+        load_button = QPushButton(self)
+        load_button.setText("Load Plugin")
+        load_button.clicked.connect(self._on_load_clicked)
+        self.main_layout.addWidget(load_button)
+
         self._init_plugin_list()
 
         # buttons
@@ -97,19 +92,37 @@ class LoadPlugins(QDialog):
     #
 
     def _on_ok_clicked(self):
-        # TODO: Unload unchecked plugins. Load checked ones.
         list_items = self._installed_plugin_list.findItems('*', Qt.MatchWildcard)  # type: List[QPluginListWidgetItem]
         for i in list_items:
             checked = i.checkState() == Qt.Checked
 
-            if checked and i.plugin_class.__name__ not in self._pm.enabled_plugins.keys():
-                _l.info("Loading plugin: {}".format(i.plugin_class.get_display_name()))
-                plugin = self._pm.enable_plugin(i.plugin_class.__name__)
-            elif not checked and i.plugin_class.__name__ in self._pm.enabled_plugins.keys():
-                _l.info("Disabling plugin: {}".format(i.plugin_class.get_display_name()))
-                self._pm.disable_plugin(i.plugin_class.__name__)
+            if checked and self._pm.get_plugin_instance(i.plugin_class) is None:
+                self._pm.activate_plugin(i.plugin_class)
+            elif not checked and self._pm.get_plugin_instance(i.plugin_class) is not None:
+                self._pm.deactivate_plugin(i.plugin_class)
+            else:
+                self._pm.load_plugin(i.plugin_class)
 
         self.close()
 
     def _on_cancel_clicked(self):
         self.close()
+
+    def _on_load_clicked(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Open a plugin (select __init__.py for packages)", "", "Python files (*.py)")
+        plugins = load_plugins_from_file(file_path)
+
+        if not plugins:
+            QMessageBox.warning(self, "Error", "File contained no plugins")
+            return
+
+        errors = [x for x in plugins if isinstance(x, Exception)]
+        if errors:
+            QMessageBox.warning(self, "Error", "Loading errored with %s" % errors[0])
+            return
+
+        for plugin in plugins:
+            plugin_item = QPluginListWidgetItem(plugin_cls=plugin)
+            plugin_item.setCheckState(Qt.Unchecked)
+            self._installed_plugin_list.addItem(plugin_item)

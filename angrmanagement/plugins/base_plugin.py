@@ -69,7 +69,7 @@ class BasePlugin:
         pass
 
     # Iterable of column names
-    FUNC_COLUMNS = ()  # type: List[str]
+    FUNC_COLUMNS = []  # type: List[str]
     def extract_func_column(self, func, idx) -> Tuple[Any, str]:
         # should return a tuple of the sortable column data and the rendered string
         return 0, ''

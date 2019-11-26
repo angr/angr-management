@@ -216,7 +216,7 @@ class DisassemblyView(BaseView):
         # pass in the instruction address
         self._insn_menu.insn_addr = insn.addr
         # pop up the menu
-        self._insn_menu.qmenu(extra_entries=list(self.workspace._main_window.plugins_build_context_menu_insn(insn))).exec_(pos)
+        self._insn_menu.qmenu(extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn))).exec_(pos)
 
         self._insn_addr_on_context_menu = None
 
@@ -466,7 +466,7 @@ class DisassemblyView(BaseView):
         self.display_disasm_graph()
         # self.display_linear_viewer()
 
-        self.workspace._main_window.plugins_instrument_disassembly_view(self)
+        self.workspace.plugins.instrument_disassembly_view(self)
 
     def _init_menus(self):
         self._insn_menu = DisasmInsnContextMenu(self)

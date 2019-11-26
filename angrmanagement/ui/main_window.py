@@ -1,17 +1,12 @@
-import json
 import pickle
 import os
-import itertools
-import functools
-from typing import Optional, List
+import traceback
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QColor
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
-from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
-from angrmanagement.ui.toolbars.toolbar import ToolbarAction
 
 try:
     import archr
@@ -20,7 +15,6 @@ except ImportError as e:
     archr = None
     keystone = None
 
-from ..plugins import autoload_plugins, BasePlugin
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
@@ -32,13 +26,15 @@ from .menus.plugin_menu import PluginMenu
 from .menus.sync_menu import SyncMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
-from .dialogs.load_plugins import LoadPlugins, LoadPluginsError
+from .dialogs.load_plugins import LoadPlugins
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.sync_config import SyncConfig
 from .dialogs.about import LoadAboutDialog
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
+from ..config import Conf
+from .. import plugins
 
 
 class MainWindow(QMainWindow):
@@ -70,7 +66,6 @@ class MainWindow(QMainWindow):
 
         self._status = ""
         self._progress = None
-        self._plugins = []  # type: List[BasePlugin]
 
         self.defaultWindowFlags = None
 
@@ -87,7 +82,7 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_shortcuts()
         self._init_menus()
-        autoload_plugins(self.workspace)
+        self._init_plugins()
 
         self.showMaximized()
 
@@ -151,13 +146,9 @@ class MainWindow(QMainWindow):
         return prompt.textValue()
 
     def open_load_plugins_dialog(self):
-        try:
-            dlg = LoadPlugins(self._plugin_mgr)
-            dlg.setModal(True)
-            dlg.exec_()
-
-        except LoadPluginsError:
-            pass
+        dlg = LoadPlugins(self.workspace.plugins)
+        dlg.setModal(True)
+        dlg.exec_()
 
     def open_newstate_dialog(self):
         new_state_dialog = NewState(self.workspace.instance, parent=self)
@@ -267,113 +258,23 @@ class MainWindow(QMainWindow):
         center_dockable_views[0].raise_()
 
     #
-    # PluginManager
+    # Plugins
     #
 
-    def plugin_add(self, plugin_cls):
-        plugin = plugin_cls(self.workspace)
-        self._plugins.append(plugin)
-        plugin.__cached_toolbar_actions = []  # hack lol
-        plugin.__cached_menu_actions = []  # hack lol
-
-        for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
-            action = ToolbarAction(icon, 'plugin %s toolbar %d' % (plugin_cls, idx), tooltip, functools.partial(plugin.handle_click_toolbar, idx))
-            plugin.__cached_toolbar_actions.append(action)
-            self._file_toolbar.add(action)
-
-        if plugin_cls.MENU_BUTTONS:
-            self._plugin_menu.add(MenuSeparator())
-        for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
-            action = MenuEntry(text, functools.partial(plugin.handle_click_menu, idx))
-            plugin.__cached_menu_actions.append(action)
-            self._plugin_menu.add(action)
-
-        for dview in self.workspace.view_manager.views_by_category['disassembly']:
-            plugin.instrument_disassembly_view(dview)
-
-    def plugin_remove(self, plugin):
-        for action in plugin.__cached_toolbar_actions:
-            self._file_toolbar.remove(action)
-        for action in plugin.__cached_menu_actions:
-            self._plugin_menu.remove(action)
-
-        plugin.teardown()
-        self._plugins.remove(plugin)
-
-    def plugins_color_insn(self, addr, selected) -> Optional[QColor]:
-        for plugin in self._plugins:
-            if plugin.color_insn.__func__ is not BasePlugin.color_insn:
-                res = plugin.color_insn(addr, selected)
-                if res is not None:
-                    return res
-        return None
-
-    def plugins_color_block(self, addr) -> Optional[QColor]:
-        for plugin in self._plugins:
-            if plugin.color_block.__func__ is not BasePlugin.color_block:
-                res = plugin.color_block(addr)
-                if res is not None:
-                    return res
-        return None
-
-    def plugins_color_func(self, func) -> Optional[QColor]:
-        for plugin in self._plugins:
-            if plugin.color_func.__func__ is not BasePlugin.color_func:
-                res = plugin.color_func(func)
-                if res is not None:
-                    return res
-        return None
-
-    def plugins_draw_insn(self, qinsn, painter):
-        for plugin in self._plugins:
-            if plugin.draw_insn.__func__ is not BasePlugin.draw_insn:
-                plugin.draw_insn(qinsn, painter)
-
-    def plugins_draw_block(self, qblock, painter):
-        for plugin in self._plugins:
-            if plugin.draw_block.__func__ is not BasePlugin.draw_block:
-                plugin.draw_block(qblock, painter)
-
-    def plugins_instrument_disassembly_view(self, dview):
-        for plugin in self._plugins:
-            plugin.instrument_disassembly_view(dview)
-
-    def plugins_handle_click_insn(self, qinsn, event):
-        for plugin in self._plugins:
-            if plugin.handle_click_insn.__func__ is not BasePlugin.handle_click_insn:
-                if plugin.handle_click_insn(qinsn, event):
-                    return True
-        return False
-
-    def plugins_handle_click_block(self, qblock, event):
-        for plugin in self._plugins:
-            if plugin.handle_click_block.__func__ is not BasePlugin.handle_click_block:
-                if plugin.handle_click_block(qblock, event):
-                    return True
-        return False
-
-    def plugins_get_func_column(self, idx):
-        for plugin in self._plugins:
-            if idx > len(plugin.FUNC_COLUMNS):
-                idx -= len(plugin.FUNC_COLUMNS)
-            else:
-                return plugin.FUNC_COLUMNS[idx]
-        raise IndexError("Not enough columns")
-
-    def plugins_count_func_columns(self):
-        return sum((len(plugin.FUNC_COLUMNS) for plugin in self._plugins))
-
-    def plugins_extract_func_column(self, func, idx):
-        for plugin in self._plugins:
-            if idx > len(plugin.FUNC_COLUMNS):
-                idx -= len(plugin.FUNC_COLUMNS)
-            else:
-                return plugin.extract_func_column(func, idx)
-        raise IndexError("Not enough columns")
-
-    def plugins_build_context_menu_insn(self, insn):
-        return itertools.chain(*(plugin.build_context_menu_insn(insn) for plugin in self._plugins))
-
+    def _init_plugins(self):
+        os.environ['BUILTIN_PLUGINS'] = os.path.dirname(plugins.__file__)
+        blacklist = Conf.plugin_blacklist.split(',')
+        for search_dir in Conf.plugin_search_path.split(':'):
+            search_dir = os.path.expanduser(search_dir)
+            search_dir = os.path.expandvars(search_dir)
+            for plugin_or_exception in plugins.load_plugins_from_dir(search_dir):
+                if isinstance(plugin_or_exception, Exception):
+                    self.workspace.log(plugin_or_exception)
+                elif not any(dont in repr(plugin_or_exception) for dont in blacklist):
+                    self.workspace.plugins.activate_plugin(plugin_or_exception)
+                else:
+                    self.workspace.plugins.load_plugin(plugin_or_exception)
+                    self.workspace.log("Blacklisted plugin %s" % plugin_or_exception.get_display_name())
 
     #
     # Event
@@ -389,8 +290,8 @@ class MainWindow(QMainWindow):
         self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
-        for plugin in list(self._plugins):
-            self.plugin_remove(plugin)
+        for plugin in list(self.workspace.plugins.active_plugins):
+            self.workspace.plugins.deactivate_plugin(plugin)
         event.accept()
 
     def event(self, event):
