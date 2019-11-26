@@ -2,6 +2,7 @@ import sys
 import os
 import ctypes
 import threading
+import time
 
 
 def check_dependencies():
@@ -57,6 +58,7 @@ def main(filepath=None):
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
     splash.setEnabled(False)
     splash.show()
+    time.sleep(0.05)
     app.processEvents()
 
     from .logic import GlobalInfo
