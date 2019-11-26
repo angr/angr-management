@@ -48,6 +48,8 @@ def main(filepath=None):
     from .config import FONT_LOCATION, IMG_LOCATION
 
     app = QApplication(sys.argv)
+    app.setApplicationDisplayName("angr management")
+    app.setApplicationName("angr management")
 
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')

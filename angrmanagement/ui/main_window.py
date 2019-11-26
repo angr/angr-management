@@ -50,7 +50,6 @@ class MainWindow(QMainWindow):
         GlobalInfo.main_window = self
 
         # initialization
-        self.caption = "angr Management"
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
@@ -238,6 +237,13 @@ class MainWindow(QMainWindow):
         self.workspace.view_manager.tabify_center_views()
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
         self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
+
+        def set_caption(**kwargs):
+            if self.workspace.instance.project == None:
+                self.caption = ''
+            else:
+                self.caption = os.path.basename(self.workspace.instance.project.filename)
+        self.workspace.instance.project_container.am_subscribe(set_caption)
 
     #
     # Shortcuts
