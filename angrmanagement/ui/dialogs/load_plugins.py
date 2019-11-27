@@ -111,6 +111,8 @@ class LoadPlugins(QDialog):
     def _on_load_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Open a plugin (select __init__.py for packages)", "", "Python files (*.py)")
+        if not file_path:
+            return
         plugins = load_plugins_from_file(file_path)
 
         if not plugins:
