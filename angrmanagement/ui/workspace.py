@@ -1,10 +1,7 @@
-
 import logging
-from collections import defaultdict
+import traceback
 
 from PySide2.QtCore import Qt, QSettings
-from PySide2.QtWidgets import QSplitter, QMainWindow, QShortcut
-from PySide2.QtGui import QKeySequence
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
@@ -18,6 +15,7 @@ from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
 from ..utils import has_binsync
+from ..plugins import PluginManager
 
 _l = logging.getLogger(__name__)
 
@@ -32,6 +30,7 @@ class Workspace:
         instance.workspace = self
 
         self.view_manager = ViewManager(self)
+        self.plugins = PluginManager(self)
 
         #
         # Initialize font configurations
@@ -254,11 +253,15 @@ class Workspace:
         view.setFocus()
 
     def log(self, msg):
+        if isinstance(msg, Exception):
+            msg = ''.join(traceback.format_exception(type(msg), msg, msg.__traceback__))
+
         console = self.view_manager.first_view_in_category('console')
         if console is None:
             print(msg)
         else:
             console.print_text(msg)
+            console.print_text('\n')
 
     #
     # Private methods

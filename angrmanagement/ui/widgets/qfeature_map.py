@@ -13,6 +13,8 @@ from ...config import Conf
 from ...data.object_container import ObjectContainer
 from .qgraph import QZoomableDraggableGraphicsView
 
+import logging
+l = logging.getLogger(name=__name__)
 
 class Orientation:
     Vertical = 0
@@ -153,7 +155,7 @@ class QFeatureMap(QWidget):
         total_width = self.width()
         current_region = None
         height = self.height()
-        print(total_width)
+        l.debug("total width %d", total_width)
         for addr, obj in cfb.ceiling_items():
 
             # are we in a new region?
@@ -198,7 +200,7 @@ class QFeatureMap(QWidget):
             # Draw unnecessary objects smaller
             return 80
         else:
-            print(memory_region.size, memory_region.object)
+            l.debug("memory_region.size: %x memory_region.object: %s", memory_region.size, memory_region.object)
             return memory_region.size
 
     def _get_pos_from_addr(self, addr):

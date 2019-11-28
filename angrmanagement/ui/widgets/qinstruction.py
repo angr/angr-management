@@ -5,7 +5,6 @@ from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
 
 from angr.analyses.disassembly import Value
-
 from .qgraph_object import QCachedGraphicsItem
 from .qoperand import QOperand
 from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
@@ -49,31 +48,24 @@ class QInstruction(QCachedGraphicsItem):
         self._string_width = None
         self._comment = None
         self._comment_width = None
+        self._legend = None
 
         self._init_widgets()
 
-    def update_if_at_addr(self, old_addr, new_addr):
-        if not shiboken.isValid(self):
-            return True
-        if old_addr == self.addr or new_addr == self.addr:
-            self.update()
-
-    def mousePressEvent(self, event):
-        """
-
-        :param QGraphicsSceneMouseEvent event:
-        :return:
-        """
-
-        if event.button() == Qt.LeftButton:
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+        if event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (Qt.NoModifier, Qt.ControlModifier):
             # toggle selection
-            self.infodock.toggle_instruction_selection(self.addr,
-                                                       insn_pos=self.scenePos(),
-                                                       unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
+            self.infodock.toggle_instruction_selection(
+                self.addr,
+                insn_pos=self.scenePos(),
+                unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
             event.accept()
-        elif event.button() == Qt.RightButton:
-            # display the context menu
+        elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
+            if self.addr not in self.infodock.selected_insns:
+                self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
+            event.accept()
+        elif self.workspace.plugins.handle_insn_click(self, event):
             event.accept()
         else:
             super().mousePressEvent(event)
@@ -82,20 +74,16 @@ class QInstruction(QCachedGraphicsItem):
     def addr(self):
         return self.insn.addr
 
-    @property
-    def insn_backcolor(self):
-        r, g, b = None, None, None
-
+    def _calc_backcolor(self):
         # First we'll check for customizations
-        if self.disasm_view.insn_backcolor_callback:
-            r, g, b = self.disasm_view.insn_backcolor_callback(addr=self.insn.addr, selected=self.selected)
+        color = self.workspace.plugins.color_insn(self.insn.addr, self.selected)
+        if color is not None:
+            return color
 
-        # Fallback to defaults if we get Nones from the callback
-        if r is None or g is None or b is None:
-            if self.selected:
-                r, g, b = 0xef, 0xbf, 0xba
+        if self.selected:
+            return QColor(0xef, 0xbf, 0xba)
 
-        return QColor(r, g, b) if r is not None else None
+        return None  # None here means transparent, reusing the block color
 
     @property
     def selected(self):
@@ -109,6 +97,7 @@ class QInstruction(QCachedGraphicsItem):
         return self.infodock.is_instruction_selected(self.addr)
 
     def refresh(self):
+        _l.debug('refreshing')
         self.load_comment()
         for operand in self._operands:
             operand.refresh()
@@ -134,8 +123,8 @@ class QInstruction(QCachedGraphicsItem):
             QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
         painter.setFont(self._config.disasm_font)
 
-        # selection
-        backcolor = self.insn_backcolor
+        # background color
+        backcolor = self._calc_backcolor()
         if backcolor is not None:
             painter.setBrush(backcolor)
             painter.setPen(backcolor)
@@ -170,6 +159,9 @@ class QInstruction(QCachedGraphicsItem):
             x += self.GRAPH_COMMENT_STRING_SPACING
             painter.setPen(Qt.gray)
             painter.drawText(x, y, self._string)
+
+        # any plugin instruction rendering passes
+        self.workspace.plugins.draw_insn(self, painter)
 
     #
     # Private methods

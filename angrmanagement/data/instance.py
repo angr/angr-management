@@ -1,8 +1,8 @@
-
 import time
 from threading import Thread
 from queue import Queue
-import traceback
+from typing import List, Optional, Type
+import angr
 
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
@@ -10,33 +10,35 @@ from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
-
 class Instance:
     def __init__(self, project=None):
         # delayed import
-        from ..ui.views.interaction_view import PlainTextProtocol
+        from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
 
         self.workspace = None
 
         self.jobs = []
         self._jobs_queue = Queue()
-        self.simgrs = ObjectContainer([], name='Global simulation managers list')
-        self.states = ObjectContainer([], name='Global states list')
-        self.patches = ObjectContainer(None, name='Global patches update notifier')
-        self._project_container = ObjectContainer(project, "the current angr project")
+
+        self._project_container = ObjectContainer(project, "The current angr project")
         self._project_container.am_subscribe(self.initialize)
-        self.cfg_container = ObjectContainer(None, "the current CFG")
-        self.cfb_container = ObjectContainer(None, "the current CFBlanket")
-        self.interactions = ObjectContainer([], name='Saved program interactions')
-        self.interaction_protocols = ObjectContainer([PlainTextProtocol], name='Available interaction protocols')
+        self.extra_containers = {}
+        self._container_defaults = {}
+
+        self.register_container('simgrs', lambda: [], List[angr.SimulationManager], 'Global simulation managers list')
+        self.register_container('states', lambda: [], List[angr.SimState], 'Global states list')
+        self.register_container('patches', lambda: None, None, 'Global patches update notifier') # dummy
+        self.register_container('cfg_container', lambda: None, Optional[angr.analyses.cfg.CFGBase], "The current CFG")
+        self.register_container('cfb_container', lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
+        self.register_container('interactions', lambda: [], List[SavedInteraction], 'Saved program interactions')
+        # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
+        self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]], 'Available interaction protocols')
+
         self.sync = SyncControl(self)
-
         self.cfg_args = None
-
+        self._disassembly = {}
 
         self._start_worker()
-
-        self._disassembly = {}
 
         self.database_path = None
 
@@ -82,9 +84,28 @@ class Instance:
         self.cfb_container.am_obj = v
         self.cfb_container.am_event()
 
+    def __getattr__(self, k):
+        try:
+            return self.extra_containers[k]
+        except KeyError as e:
+            raise AttributeError(k) from e
+
+    def __dir__(self):
+        return list(super().__dir__()) + list(self.extra_containers)
+
     #
     # Public methods
     #
+
+    def register_container(self, name, default_val_func, ty, description):
+        if name in self.extra_containers:
+            cur_ty = self._container_defaults[name][1]
+            if ty != cur_ty:
+                raise Exception("Container %s already registered with different type: %s != %s" % (name, ty, cur_ty))
+
+        else:
+            self._container_defaults[name] = (default_val_func, ty)
+            self.extra_containers[name] = ObjectContainer(default_val_func(), description)
 
     def async_set_cfg(self, cfg):
         self.cfg_container.am_obj = cfg
@@ -104,6 +125,10 @@ class Instance:
         self.img_name = image
 
     def initialize(self, cfg_args=None):
+        for name in self.extra_containers:
+            self.extra_containers[name].am_obj = self._container_defaults[name][0]()
+            self.extra_containers[name].am_event()
+
         if cfg_args is None:
             cfg_args = {}
         # save cfg_args
@@ -149,9 +174,9 @@ class Instance:
 
             try:
                 result = job.run(self)
-            except:
-                self.workspace.log('Exception while running job "%s":\n' % job.name)
-                self.workspace.log(traceback.format_exc())
+            except Exception as e:
+                self.workspace.log('Exception while running job "%s":' % job.name)
+                self.workspace.log(e)
             else:
                 gui_thread_schedule_async(job.finish, args=(self, result))
 

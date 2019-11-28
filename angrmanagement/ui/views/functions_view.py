@@ -15,8 +15,6 @@ class FunctionsView(BaseView):
 
         self.workspace.instance.cfg_container.am_subscribe(self.reload)
 
-        self.backcolor_callback = None
-
         self._init_widgets()
 
         self.width_hint = 100
@@ -27,18 +25,14 @@ class FunctionsView(BaseView):
     # Public methods
     #
 
-    def get_function_backcolor(self, func):
-        if self.backcolor_callback:
-            return self.backcolor_callback(func)
-        else:
-            return 255, 255, 255
-
     def set_function_count(self, count):
         if self._status_label is not None:
             self._status_label.setText("%d functions" % count)
 
     def reload(self):
-        self._function_table.function_manager = self.workspace.instance.cfg.functions
+        # TODO: this is such a shitshow. all the sub-elements should sync on the cfg directly.
+        if self.workspace.instance.cfg is not None:
+            self._function_table.function_manager = self.workspace.instance.cfg.functions
 
     def minimumSizeHint(self, *args, **kwargs):
         return QSize(100, 0)
@@ -56,8 +50,7 @@ class FunctionsView(BaseView):
     #
 
     def _init_widgets(self):
-
-        self._function_table = QFunctionTable(self, selection_callback=self._on_function_selected)
+        self._function_table = QFunctionTable(self, self.workspace, selection_callback=self._on_function_selected)
         self._status_label = QLabel()
 
         vlayout = QVBoxLayout()

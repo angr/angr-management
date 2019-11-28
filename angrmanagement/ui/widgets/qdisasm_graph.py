@@ -10,6 +10,7 @@ from .qblock import QGraphBlock
 from .qgraph_arrow import QGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
+from .qgraph_object import QCachedGraphicsItem
 
 _l = logging.getLogger(__name__)
 
@@ -130,6 +131,7 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
     def mousePressEvent(self, event):
         btn = event.button()
+
         if btn == Qt.ForwardButton:
             self.disasm_view.jump_forward()
         elif btn == Qt.BackButton:

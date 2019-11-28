@@ -22,13 +22,13 @@ class QFunctionTableModel(QAbstractTableModel):
     SIZE_COL = 4
     BLOCKS_COL = 5
 
-    def __init__(self, backcolor_callback=None, func_list=None):
+    def __init__(self, workspace, func_list):
 
         super(QFunctionTableModel, self).__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
-        self._backcolor_callback = backcolor_callback
+        self.workspace = workspace
 
     def __len__(self):
         if self._func_list is not None:
@@ -64,29 +64,18 @@ class QFunctionTableModel(QAbstractTableModel):
         return len(self.func_list)
 
     def columnCount(self, *args, **kwargs):
-        return len(self.Headers)
+        return len(self.Headers) + self.workspace.plugins.count_func_columns()
 
     def headerData(self, section, orientation, role):
-
         if role != Qt.DisplayRole:
             return None
 
-        return self.Headers[section]
-
-    def _get_function_backcolor(self, func) -> (int, int, int):
-        return self._backcolor_callback(func)
+        if section < len(self.Headers):
+            return self.Headers[section]
+        else:
+            return self.workspace.plugins.get_func_column(section - len(self.Headers))
 
     def data(self, index, role):
-
-        TAG_STRS = {
-            CodeTags.HAS_XOR: "Xor",
-            CodeTags.HAS_BITSHIFTS: "Shift",
-        }
-
-        def _get_tags_display_string(tags):
-
-            return ", ".join(TAG_STRS.get(t, t) for t in tags)
-
         if not index.isValid():
             return None
 
@@ -98,27 +87,9 @@ class QFunctionTableModel(QAbstractTableModel):
         func = self.func_list[row]
 
         if role == Qt.DisplayRole:
-
-            mapping = {
-                self.NAME_COL:
-                    lambda f: f.name,
-                self.TAGS_COL:
-                    lambda f: _get_tags_display_string(f.tags),
-                self.ADDRESS_COL:
-                    lambda f: "%x" % f.addr,
-                self.BINARY_COL:
-                    lambda f: self._get_binary_name(f),
-                self.SIZE_COL:
-                    lambda f: "%d" % f.size,
-                self.BLOCKS_COL:
-                    lambda f: "%d" % len(f.block_addrs_set),
-            }
-
-            return mapping[col](func)
+            return self._get_column_text(func, col)
 
         elif role == Qt.ForegroundRole:
-            # calculate the foreground color
-
             color = QColor(0, 0, 0)
             if func.is_syscall:
                 color = QColor(0, 0, 0x80)
@@ -134,10 +105,9 @@ class QFunctionTableModel(QAbstractTableModel):
             return QBrush(color)
 
         elif role == Qt.BackgroundColorRole:
-            color = QColor(0xff, 0xff, 0xff)
-            r, g, b = self._get_function_backcolor(func)
-            if r is not None and g is not None and b is not None:
-                color = QColor(r, g, b)
+            color = self.workspace.plugins.color_func(func)
+            if color is None:
+                color = QColor(0xff, 0xff, 0xff)
 
             return QBrush(color)
 
@@ -145,29 +115,54 @@ class QFunctionTableModel(QAbstractTableModel):
             return Conf.ui_default_font
 
     def sort(self, column, order):
-        mapping = {
-            self.NAME_COL:
-                lambda: sorted(self.func_list, key=lambda f: f.name, reverse=order==Qt.DescendingOrder),
-            self.TAGS_COL:
-                lambda: sorted(self.func_list, key=lambda f: f.tags, reverse=order==Qt.DescendingOrder),
-            self.ADDRESS_COL:
-                lambda: sorted(self.func_list, key=lambda f: f.addr, reverse=order==Qt.DescendingOrder),
-            self.BINARY_COL:
-                lambda: sorted(self.func_list, key=lambda f: self._get_binary_name(f), reverse=order==Qt.DescendingOrder),
-            self.SIZE_COL:
-                lambda: sorted(self.func_list, key=lambda f: f.size, reverse=order==Qt.DescendingOrder),
-            self.BLOCKS_COL:
-                lambda: sorted(self.func_list, key=lambda f: len(f.block_addrs_set), reverse=order==Qt.DescendingOrder),
-        }
-
-        self.func_list = mapping[column]()
+        self.func_list = sorted(self.func_list, key=lambda f: self._get_column_data(f, column), reverse=order==Qt.DescendingOrder)
 
     #
     # Private methods
     #
 
+    def _get_column_data(self, func, idx):
+        if idx == self.NAME_COL:
+            return func.name
+        elif idx == self.TAGS_COL:
+            return func.tags
+        elif idx == self.ADDRESS_COL:
+            return func.addr
+        elif idx == self.BINARY_COL:
+            return self._get_binary_name(func)
+        elif idx == self.SIZE_COL:
+            return func.size
+        elif idx == self.BLOCKS_COL:
+            return len(func.block_addrs_set)
+        else:
+            return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
+
+    def _get_column_text(self, func, idx):
+        if idx < len(self.Headers):
+            data = self._get_column_data(func, idx)
+            if idx == self.ADDRESS_COL:
+                return hex(data)
+            elif idx == self.TAGS_COL:
+                return self._get_tags_display_string(data)
+            else:
+                return str(data)
+
+        return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
+
     def _get_binary_name(self, func):
         return os.path.basename(func.binary.binary) if func.binary is not None else ""
+
+    def _get_function_backcolor(self, func) -> QColor:
+        return self._backcolor_callback(func)
+
+    TAG_STRS = {
+        CodeTags.HAS_XOR: "Xor",
+        CodeTags.HAS_BITSHIFTS: "Shift",
+    }
+
+    @classmethod
+    def _get_tags_display_string(cls, tags):
+        return ", ".join(cls.TAG_STRS.get(t, t) for t in tags)
 
     def _func_match_keyword(self, func, keyword):
         """
@@ -194,8 +189,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
 
 class QFunctionTableView(QTableView):
-    def __init__(self, parent, selection_callback=None):
+    def __init__(self, parent, workspace, selection_callback=None):
         super(QFunctionTableView, self).__init__(parent)
+        self.workspace = workspace
 
         self._function_table = parent  # type: QFunctionTable
         self._selected_func = ObjectContainer(None, 'Currently selected function')
@@ -214,7 +210,8 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._functions = None
-        self._model = QFunctionTableModel(self._function_table.get_function_backcolor)
+        self._model = QFunctionTableModel(self.workspace, [])
+
         self.setModel(self._model)
 
         # slots
@@ -277,8 +274,9 @@ class QFunctionTableFilterBox(QLineEdit):
 
 class QFunctionTable(QWidget):
 
-    def __init__(self, parent, selection_callback=None):
+    def __init__(self, parent, workspace, selection_callback=None):
         super(QFunctionTable, self).__init__(parent)
+        self.workspace = workspace
 
         self._view = parent  # type: 'FunctionsView'
         self._table_view = None  # type: QFunctionTableView
@@ -300,9 +298,6 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
-
-    def get_function_backcolor(self, func):
-        return self._view.get_function_backcolor(func)
 
     #
     # Public methods
@@ -328,7 +323,7 @@ class QFunctionTable(QWidget):
     def _init_widgets(self, selection_callback=None):
 
         # function table view
-        self._table_view = QFunctionTableView(self, selection_callback)
+        self._table_view = QFunctionTableView(self, self.workspace, selection_callback)
 
         # filter text box
         self._filter_box = QFunctionTableFilterBox(self)

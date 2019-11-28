@@ -1,7 +1,7 @@
 import logging
 from typing import Union, Callable
 
-from PySide2.QtWidgets import QVBoxLayout, QMenu, QApplication
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
 
 from ...data.instance import ObjectContainer
@@ -216,7 +216,7 @@ class DisassemblyView(BaseView):
         # pass in the instruction address
         self._insn_menu.insn_addr = insn.addr
         # pop up the menu
-        self._insn_menu.qmenu().exec_(pos)
+        self._insn_menu.qmenu(extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn))).exec_(pos)
 
         self._insn_addr_on_context_menu = None
 
@@ -440,36 +440,38 @@ class DisassemblyView(BaseView):
     #
 
     def _init_widgets(self):
-        self._linear_viewer =  QLinearDisassembly(self.workspace, self, parent=self)
+        self._linear_viewer = QLinearDisassembly(self.workspace, self, parent=self)
         self._flow_graph = QDisassemblyGraph(self.workspace, self, parent=self)
         self._feature_map = QFeatureMap(self, parent=self)
-
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
-        hlayout = QVBoxLayout()
-        hlayout.addWidget(self._feature_map)
-        hlayout.addWidget(self._flow_graph)
-        hlayout.addWidget(self._linear_viewer)
-        hlayout.addWidget(self._statusbar)
-        hlayout.setContentsMargins(0, 0, 0, 0)
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(self._feature_map)
+        vlayout.addWidget(self._flow_graph)
+        vlayout.addWidget(self._linear_viewer)
+        vlayout.addWidget(self._statusbar)
+        vlayout.setContentsMargins(0, 0, 0, 0)
 
         self._feature_map.setMaximumHeight(25)
-        hlayout.setStretchFactor(self._feature_map, 0)
-        hlayout.setStretchFactor(self._flow_graph, 1)
-        hlayout.setStretchFactor(self._linear_viewer, 1)
-        hlayout.setStretchFactor(self._statusbar, 0)
+        vlayout.setStretchFactor(self._feature_map, 0)
+        vlayout.setStretchFactor(self._flow_graph, 1)
+        vlayout.setStretchFactor(self._linear_viewer, 1)
+        vlayout.setStretchFactor(self._statusbar, 0)
+
+        hlayout = QHBoxLayout()
+        hlayout.addLayout(vlayout)
 
         self.setLayout(hlayout)
 
         self.display_disasm_graph()
         # self.display_linear_viewer()
 
-    def _init_menus(self):
+        self.workspace.plugins.instrument_disassembly_view(self)
 
+    def _init_menus(self):
         self._insn_menu = DisasmInsnContextMenu(self)
 
     def _register_events(self):
-
         # redraw the current graph if instruction/operand selection changes
         self.infodock.selected_insns.am_subscribe(self._update_current_graph)
         self.infodock.selected_operands.am_subscribe(self._update_current_graph)
@@ -481,7 +483,6 @@ class DisassemblyView(BaseView):
     #
 
     def _display_function(self, the_func):
-
         self._current_function.am_obj = the_func
         self._current_function.am_event()
 

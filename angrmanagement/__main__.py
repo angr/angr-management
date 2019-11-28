@@ -2,6 +2,7 @@ import sys
 import os
 import ctypes
 import threading
+import time
 
 
 def check_dependencies():
@@ -47,6 +48,8 @@ def main(filepath=None):
     from .config import FONT_LOCATION, IMG_LOCATION
 
     app = QApplication(sys.argv)
+    app.setApplicationDisplayName("angr management")
+    app.setApplicationName("angr management")
 
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
@@ -57,6 +60,7 @@ def main(filepath=None):
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
     splash.setEnabled(False)
     splash.show()
+    time.sleep(0.05)
     app.processEvents()
 
     from .logic import GlobalInfo

@@ -1,12 +1,13 @@
 import pickle
 import os
+import traceback
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QMessageBox, QSplitter, QHBoxLayout, QWidget, QShortcut, QLabel
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
+from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
+from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QColor
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
-import angr
-import cle
+
 try:
     import archr
     import keystone
@@ -14,7 +15,6 @@ except ImportError as e:
     archr = None
     keystone = None
 
-from ..plugins import PluginManager
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
@@ -26,13 +26,15 @@ from .menus.plugin_menu import PluginMenu
 from .menus.sync_menu import SyncMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
-from .dialogs.load_plugins import LoadPlugins, LoadPluginsError
+from .dialogs.load_plugins import LoadPlugins
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.sync_config import SyncConfig
 from .dialogs.about import LoadAboutDialog
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
+from ..config import Conf
+from .. import plugins
 
 
 class MainWindow(QMainWindow):
@@ -48,14 +50,12 @@ class MainWindow(QMainWindow):
         GlobalInfo.main_window = self
 
         # initialization
-        self.caption = "angr Management"
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
         self.workspace = None
         self.central_widget = None
         self.central_widget2 = None
-        self._plugin_mgr = None  # type: PluginManager
 
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
     #
 
     def _open_mainfile_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", ".",
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", "",
                                                    "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
                                                    )
         return file_path
@@ -145,13 +145,9 @@ class MainWindow(QMainWindow):
         return prompt.textValue()
 
     def open_load_plugins_dialog(self):
-        try:
-            dlg = LoadPlugins(self._plugin_mgr)
-            dlg.setModal(True)
-            dlg.exec_()
-
-        except LoadPluginsError:
-            pass
+        dlg = LoadPlugins(self.workspace.plugins)
+        dlg.setModal(True)
+        dlg.exec_()
 
     def open_newstate_dialog(self):
         new_state_dialog = NewState(self.workspace.instance, parent=self)
@@ -242,6 +238,13 @@ class MainWindow(QMainWindow):
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
         self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
 
+        def set_caption(**kwargs):
+            if self.workspace.instance.project == None:
+                self.caption = ''
+            else:
+                self.caption = os.path.basename(self.workspace.instance.project.filename)
+        self.workspace.instance.project_container.am_subscribe(set_caption)
+
     #
     # Shortcuts
     #
@@ -261,12 +264,23 @@ class MainWindow(QMainWindow):
         center_dockable_views[0].raise_()
 
     #
-    # PluginManager
+    # Plugins
     #
 
     def _init_plugins(self):
-        self._plugin_mgr = PluginManager(self.workspace, autoload=True)
-
+        os.environ['AM_BUILTIN_PLUGINS'] = os.path.dirname(plugins.__file__)
+        blacklist = Conf.plugin_blacklist.split(',')
+        for search_dir in Conf.plugin_search_path.split(':'):
+            search_dir = os.path.expanduser(search_dir)
+            search_dir = os.path.expandvars(search_dir)
+            for plugin_or_exception in plugins.load_plugins_from_dir(search_dir):
+                if isinstance(plugin_or_exception, Exception):
+                    self.workspace.log(plugin_or_exception)
+                elif not any(dont in repr(plugin_or_exception) for dont in blacklist):
+                    self.workspace.plugins.activate_plugin(plugin_or_exception)
+                else:
+                    self.workspace.plugins.load_plugin(plugin_or_exception)
+                    self.workspace.log("Blacklisted plugin %s" % plugin_or_exception.get_display_name())
 
     #
     # Event
@@ -282,7 +296,8 @@ class MainWindow(QMainWindow):
         self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
-        self._plugin_mgr.stop_all_plugin_threads()
+        for plugin in list(self.workspace.plugins.active_plugins):
+            self.workspace.plugins.deactivate_plugin(plugin)
         event.accept()
 
     def event(self, event):
