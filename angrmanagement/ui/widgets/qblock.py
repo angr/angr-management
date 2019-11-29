@@ -173,6 +173,7 @@ class QGraphBlock(QBlock):
 
         # background of the node
         painter.setBrush(self._calc_backcolor(should_omit_text))
+        painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
         painter.drawPath(self._block_item)
 
         # content drawing is handled by qt since children are actual child widgets
