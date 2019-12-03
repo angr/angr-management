@@ -65,7 +65,7 @@ class QInstruction(QCachedGraphicsItem):
                 self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
             event.accept()
-        elif self.workspace.plugins.handle_insn_click(self, event):
+        elif self.workspace.plugins.handle_click_insn(self, event):
             event.accept()
         else:
             super().mousePressEvent(event)
