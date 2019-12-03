@@ -59,7 +59,7 @@ class InfoDock:
             else:
                 self.selected_insns.add(insn_addr)
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
-            self.selected_insns.am_event()
+            self.selected_insns.am_event(insn_addr=insn_addr)
 
     def unselect_instruction(self, insn_addr):
         if insn_addr in self.selected_insns:
