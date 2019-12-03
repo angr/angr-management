@@ -181,7 +181,7 @@ class PluginManager:
 
     def get_func_column(self, idx):
         for plugin in self.active_plugins:
-            if idx > len(plugin.FUNC_COLUMNS):
+            if idx >= len(plugin.FUNC_COLUMNS):
                 idx -= len(plugin.FUNC_COLUMNS)
             else:
                 return plugin.FUNC_COLUMNS[idx]
