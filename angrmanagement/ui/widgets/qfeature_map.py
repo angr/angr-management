@@ -229,7 +229,7 @@ class QFeatureMap(QWidget):
         region_addr = self._offset_to_regionaddr[base_offset]
         return region_addr + offset - base_offset
 
-    def _paint_insn_indicators(self):
+    def _paint_insn_indicators(self, **kwargs):
 
         scene = self.view.scene()  # type: QGraphicsScene
         for item in self._insn_indicators:

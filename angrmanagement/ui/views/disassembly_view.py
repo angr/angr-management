@@ -196,7 +196,7 @@ class DisassemblyView(BaseView):
 
         super().keyReleaseEvent(event)
 
-    def _update_current_graph(self):
+    def _update_current_graph(self, **kwargs):
         """
         Redraw the graph currently in display.
 
