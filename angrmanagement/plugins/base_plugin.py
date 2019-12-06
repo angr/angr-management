@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple, Callable, Iterator, List, Any
+from typing import Optional, Tuple, Callable, Iterator, List, Any, Union
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
@@ -74,8 +74,14 @@ class BasePlugin:
         # should return a tuple of the sortable column data and the rendered string
         return 0, ''
 
-    def build_context_menu_insn(self, item) -> Iterator[Tuple[str, Callable]]:
+    def build_context_menu_insn(self, item) -> Iterator[Union[None, Tuple[str, Callable]]]:
+        """
+        Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
+        """
         return []
 
-    def build_context_menu_block(self, item) -> Iterator[Tuple[str, Callable]]:
+    def build_context_menu_block(self, item) -> Iterator[Union[None, Tuple[str, Callable]]]:
+        """
+        Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
+        """
         return []
