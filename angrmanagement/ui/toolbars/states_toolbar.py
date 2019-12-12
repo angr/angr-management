@@ -1,6 +1,7 @@
 
 from .toolbar import Toolbar, ToolbarAction
 
+
 class StatesToolbar(Toolbar):
     def __init__(self, main_window):
         super(StatesToolbar, self).__init__(main_window, 'States')
