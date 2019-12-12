@@ -98,6 +98,8 @@ class QFunctionTableModel(QAbstractTableModel):
                 color = QColor(0, 0x80, 0)
             elif func.is_simprocedure:
                 color = QColor(0x80, 0, 0)
+            elif func.alignment:
+                color = Qt.darkMagenta
 
             #for w in widgets:
             #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
