@@ -3,11 +3,18 @@ from PySide2.QtCore import QSize
 
 
 class ToolbarAction:
-    def __init__(self, icon, name, tooltip, triggered):
+    def __init__(self, icon, name, tooltip, triggered, checkable=False):
         self.icon = icon
         self.name = name
         self.tooltip = tooltip
         self.triggered = triggered
+        self.checkable = checkable
+
+    def __hash__(self):
+        return hash((ToolbarAction, self.name))
+
+    def __eq__(self, other):
+        return isinstance(other, ToolbarAction) and self.name == other.name
 
 
 class ToolbarSplitter(ToolbarAction):
@@ -22,7 +29,7 @@ class Toolbar:
 
         self.actions = []
         self._cached = None  # type: QToolBar
-        self._cached_actions = []
+        self._cached_actions = { }
 
     def qtoolbar(self):
         if self._cached is not None:
@@ -31,9 +38,12 @@ class Toolbar:
         toolbar = QToolBar(self.name, self.window)
 
         for action in self.actions:
-            act = self._translate_element(toolbar, action)
-            if act is not None:
-                self._cached_actions.append(act)
+            if action in self._cached_actions:
+                act = self._cached_actions[action]
+            else:
+                act = self._translate_element(toolbar, action)
+                if act is not None:
+                    self._cached_actions[action] = act
 
         toolbar.setIconSize(QSize(16, 16))
 
@@ -54,6 +64,7 @@ class Toolbar:
                 act.triggered.connect(action.triggered)
             if action.tooltip:
                 act.setToolTip(action.tooltip)
+            act.setCheckable(action.checkable)
             toolbar.addAction(act)
             return act
         else:
@@ -63,22 +74,18 @@ class Toolbar:
         if self._cached is not None:
             act = self._translate_element(self._cached, element)
             if act is not None:
-                self._cached_actions.append(act)
+                self._cached_actions[element] = act
 
         self.actions.append(element)
 
     def remove(self, element):
         # REQUIRES object identity
-        idx = 0
-        for action in self.actions:
-            if action is element:
-                break
-            if type(action) is ToolbarAction:
-                idx += 1
-        else:
-            raise ValueError("Element not found", element)
+        try:
+            act = self._cached_actions[element]
+        except KeyError:
+            raise ValueError("Element %s not found" % element)
 
         self.actions.remove(element)
         if self._cached is not None:
-            self._cached.removeAction(self._cached_actions[idx])
-            self._cached_actions.pop(idx)
+            self._cached.removeAction(act)
+            del self._cached_actions[element]

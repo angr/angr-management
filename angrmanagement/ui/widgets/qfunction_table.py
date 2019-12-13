@@ -10,6 +10,7 @@ from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
 from ...data.instance import ObjectContainer
 from ...config import Conf
+from ..toolbars import FunctionTableToolbar
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -97,6 +98,8 @@ class QFunctionTableModel(QAbstractTableModel):
                 color = QColor(0, 0x80, 0)
             elif func.is_simprocedure:
                 color = QColor(0x80, 0, 0)
+            elif func.alignment:
+                color = Qt.darkMagenta
 
             #for w in widgets:
             #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
@@ -209,6 +212,7 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
 
+        self.show_alignment_functions = False
         self._functions = None
         self._model = QFunctionTableModel(self.workspace, [])
 
@@ -225,13 +229,19 @@ class QFunctionTableView(QTableView):
     @function_manager.setter
     def function_manager(self, functions):
         self._functions = functions
-        self._model.func_list = list(self._functions.values())
+        self.load_functions()
 
     def subscribe_func_select(self, callback):
         self._selected_func.am_subscribe(callback)
 
     def filter(self, keyword):
         self._model.filter(keyword)
+
+    def load_functions(self):
+        if not self.show_alignment_functions:
+            self._model.func_list = [ v for v in self._functions.values() if not v.alignment ]
+        else:
+            self._model.func_list = list(self._functions.values())
 
     def _on_function_selected(self, model_index):
         row = model_index.row()
@@ -281,8 +291,13 @@ class QFunctionTable(QWidget):
         self._view = parent  # type: 'FunctionsView'
         self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
+        self._toolbar = None  # type: FunctionTableToolbar
 
         self._init_widgets(selection_callback)
+
+    @property
+    def show_alignment_functions(self):
+        return self._table_view.show_alignment_functions
 
     @property
     def function_manager(self):
@@ -298,6 +313,7 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+        self.update_displayed_function_count()
 
     #
     # Public methods
@@ -313,8 +329,20 @@ class QFunctionTable(QWidget):
         self._filter_box.hide()
         self._table_view.setFocus()
 
+    def toggle_show_alignment_functions(self):
+        self._table_view.show_alignment_functions = not self._table_view.show_alignment_functions
+        self._table_view.load_functions()
+        self.update_displayed_function_count()
+
     def subscribe_func_select(self, callback):
         self._table_view.subscribe_func_select(callback)
+
+    def update_displayed_function_count(self):
+        cnt = self._table_view.model().rowCount()
+        if cnt == len(self.function_manager):
+            self._view.set_displayed_function_count(None)  # no filtering
+        else:
+            self._view.set_displayed_function_count(cnt)
 
     #
     # Private methods
@@ -331,8 +359,12 @@ class QFunctionTable(QWidget):
         self._filter_box.textChanged.connect(self._on_filter_box_text_changed)
         self._filter_box.returnPressed.connect(self._on_filter_box_return_pressed)
 
+        # toolbar
+        self._toolbar = FunctionTableToolbar(self)
+
         # layout
         layout = QVBoxLayout()
+        layout.addWidget(self._toolbar.qtoolbar())
         layout.addWidget(self._filter_box)
         layout.addWidget(self._table_view)
 
@@ -346,6 +378,10 @@ class QFunctionTable(QWidget):
 
     def _on_filter_box_text_changed(self, text):
         self._table_view.filter(text)
+        if not text:
+            self._view.set_displayed_function_count(None)
+        else:
+            self.update_displayed_function_count()
 
     def _on_filter_box_return_pressed(self):
         # Clear the filter
