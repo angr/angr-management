@@ -296,6 +296,10 @@ class QFunctionTable(QWidget):
         self._init_widgets(selection_callback)
 
     @property
+    def show_alignment_functions(self):
+        return self._table_view.show_alignment_functions
+
+    @property
     def function_manager(self):
         if self._table_view is not None:
             return self._table_view.function_manager
@@ -309,6 +313,7 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+        self.update_displayed_function_count()
 
     #
     # Public methods
@@ -327,18 +332,17 @@ class QFunctionTable(QWidget):
     def toggle_show_alignment_functions(self):
         self._table_view.show_alignment_functions = not self._table_view.show_alignment_functions
         self._table_view.load_functions()
+        self.update_displayed_function_count()
+
+    def subscribe_func_select(self, callback):
+        self._table_view.subscribe_func_select(callback)
+
+    def update_displayed_function_count(self):
         cnt = self._table_view.model().rowCount()
         if cnt == len(self.function_manager):
             self._view.set_displayed_function_count(None)  # no filtering
         else:
             self._view.set_displayed_function_count(cnt)
-
-    def subscribe_func_select(self, callback):
-        self._table_view.subscribe_func_select(callback)
-
-    @property
-    def show_alignment_functions(self):
-        return self._table_view.show_alignment_functions
 
     #
     # Private methods
@@ -377,7 +381,7 @@ class QFunctionTable(QWidget):
         if not text:
             self._view.set_displayed_function_count(None)
         else:
-            self._view.set_displayed_function_count(self._table_view.model().rowCount())
+            self.update_displayed_function_count()
 
     def _on_filter_box_return_pressed(self):
         # Clear the filter
