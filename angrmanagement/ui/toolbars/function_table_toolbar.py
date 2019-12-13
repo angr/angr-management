@@ -1,4 +1,9 @@
 
+import os
+
+from PySide2.QtGui import QIcon
+
+from ...config import IMG_LOCATION
 from .toolbar import Toolbar, ToolbarAction
 
 
@@ -7,7 +12,8 @@ class FunctionTableToolbar(Toolbar):
         super().__init__(function_table, 'Function table options')
 
         # TODO: An icon would be great
-        self._alignment_action = ToolbarAction(None, "A",
+        self._alignment_action = ToolbarAction(QIcon(os.path.join(IMG_LOCATION, 'toolbar-show-alignment.png')),
+                                               "Show alignment functions",
                                                "Display alignment function stubs.",
                                                function_table.toggle_show_alignment_functions,
                                                checkable=True)
