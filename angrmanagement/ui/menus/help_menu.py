@@ -1,8 +1,6 @@
 
-from PySide2.QtGui import QKeySequence, QDesktopServices
-from PySide2.QtCore import Qt, QUrl
-from pyside2uic.properties import QtCore
-from pyside2uic.uiparser import QtGui
+from PySide2.QtGui import QKeySequence
+from PySide2.QtCore import Qt
 
 from .menu import Menu, MenuEntry, MenuSeparator
 
