@@ -24,7 +24,7 @@ class Job:
     def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
 
-        if delta > 1.0:
+        if delta > 0.01:
             self.progress_percentage = percentage
             gui_thread_schedule_async(self._set_progress, args=(text,))
 
