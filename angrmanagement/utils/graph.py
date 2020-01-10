@@ -88,7 +88,7 @@ def to_supergraph(transition_graph):
             src_supernode = SuperCFGNode.from_cfgnode(node)
             supernodes_map[node] = src_supernode
             # insert it into the graph
-            super_graph.add_node(src_supernode)
+        super_graph.add_node(src_supernode)
 
         if not dests_and_data:
             # might be an isolated node
