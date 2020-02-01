@@ -1,12 +1,25 @@
 
 import logging
-import sys
 from PySide2.QtWidgets import QHBoxLayout, QPlainTextEdit, QDialog, QPushButton, QVBoxLayout
 from PySide2.QtCore import QSize
 import angr
+
 from .view import BaseView
 
 _l = logging.getLogger(name=__name__)
+
+
+class TextEditLogger(logging.StreamHandler):
+    def __init__(self, parent):
+        super().__init__()
+        self.widget = QPlainTextEdit(parent)
+        self.widget.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
+
+        super().emit(record)
 
 
 class LoggingView(BaseView):
@@ -15,21 +28,13 @@ class LoggingView(BaseView):
 
         self.caption = 'Logging'
 
+        self.logger = TextEditLogger(self)
+
         self._init_widgets()
 
 
     def minimumSizeHint(self, *args, **kwargs):
         return QSize(0, 50)
-
-    def textEditLogger(self):
-        def __init__(self, parent):
-            super().__init__()
-            self.widget = QPlainTextEdit(parent)
-            self.widget.setReadOnly(True)
-
-        def emit(self,record):
-            msg = self.format(record)
-            self.widget.appendPlainText(msg)
 
     def dialogGenerator(self, parent=None):
         super().__init__(parent)
@@ -45,9 +50,7 @@ class LoggingView(BaseView):
         #layout
         layout = QVBoxLayout()
         layout.addWidget(logTextBox.widget)
-        layout.addWidget(self._button)
         self.setLayout(layout)
-        self._button.clicked.connect(self.test)
 
     def test(self):
         logging.debug('DEBUG: ')
@@ -56,10 +59,10 @@ class LoggingView(BaseView):
         logging.error('ERROR: ')
 
     def _init_widgets(self):
-        angr.misc.disable_root_logger()
+        angr.loggers.disable_root_logger()
+        angr.loggers.handler = self.logger
+        angr.loggers.enable_root_logger()
 
-
-        return
         hlayout = QHBoxLayout()
-
+        hlayout.addWidget(self.logger.widget)
         self.setLayout(hlayout)

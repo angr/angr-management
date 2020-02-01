@@ -10,7 +10,7 @@ from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob
 from ..config import Conf
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, SyncView, PatchesView, )
+                    InteractionView, SyncView, PatchesView, LoggingView, )
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -48,6 +48,7 @@ class Workspace:
             PatchesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
+            LoggingView(self, 'bottom')
         ]
 
         if has_binsync():
