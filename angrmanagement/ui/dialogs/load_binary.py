@@ -50,7 +50,6 @@ class LoadBinary(QDialog):
         processed_objects = set()
         for ident, obj in partial_ld._satisfied_deps.items():
             if obj is partial_ld._kernel_object or \
-                    obj is partial_ld._tls_object or \
                     obj is partial_ld._extern_object or \
                     obj is partial_ld.main_object:
                 continue
