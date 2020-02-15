@@ -8,7 +8,7 @@ from angr.analyses.cfg.cfg_utils import CFGUtils
 from .edge import Edge
 
 
-class EdgeRouter(object):
+class EdgeRouter:
     def __init__(self, graph, col_map, row_map, node_locs, max_col, max_row):
         """
         :param networkx.DiGraph graph:  The graph to route edges on.
@@ -267,7 +267,7 @@ class EdgeRouter(object):
                 edge.max_start_index = max_idx
 
 
-class GraphLayouter(object):
+class GraphLayouter:
     def __init__(self, graph, node_sizes, node_compare_key=None):
         self.graph = graph
         self._node_sizes = node_sizes
@@ -368,7 +368,7 @@ class GraphLayouter(object):
             ordered_nodes = CFGUtils.quasi_topological_sort_nodes(acyclic_graph)
 
         self._assign_rows(graph, acyclic_graph, ordered_nodes)
-        self._assign_columns(graph, acyclic_graph, ordered_nodes)
+        self._assign_columns(acyclic_graph)
 
     def _assign_rows(self, graph, acyclic_graph, ordered_nodes):
 
@@ -435,13 +435,13 @@ class GraphLayouter(object):
 
         self._row_to_nodes = row_to_nodes
 
-    def _assign_columns(self, graph, acyclic_graph, ordered_nodes):
+    def _assign_columns(self, acyclic_graph):
 
         global_max_col = 0
 
         # First iteration: assign column ID bottom-up
         for row_idx in reversed(list(self._row_to_nodes.keys())):
-            row_nodes = self._row_to_nodes[row_idx]
+            row_nodes = sorted(self._row_to_nodes[row_idx], key=lambda n: n.addr)
 
             next_min_col, next_max_col = 1, 2
 
@@ -502,8 +502,11 @@ class GraphLayouter(object):
                         if max_col is None or max_col < pred_col:
                             max_col = pred_col + 1
 
-                # now assign a column ID to the current node
+                # ideally, this node appears in between its predecessors
                 col = (min_col + max_col) // 2
+                overlap, col = self._detect_overlap(node, col, row_idx, min_col)
+
+                # now assign a column ID to the current node
                 self._cols[node] = col
                 self._locations[node] = (col, row_idx)
 
@@ -513,6 +516,43 @@ class GraphLayouter(object):
                 global_max_col = max(global_max_col, col)
 
         self._max_col = global_max_col + 1
+
+    def _detect_overlap(self, node, ideal_col, row_idx, min_col):
+        """
+        Detect if any overlap will be caused if node in row_idx is placed at column col.
+
+        :param node:            The node.
+        :param int ideal_col:   The ideal column index.
+        :param int row_idx:     The row that the node is placed at.
+        :param int min_col:     The left-most acceptable column index for this node.
+        :return:                (bool, int|None), where the first value is True if overlap is detected, False otherwise;
+                                the second value is the suggested column.
+        :rtype:                 tuple
+        """
+
+        overlap_detected = False
+        suggested_col = min_col  # will only be used if overlap is detected
+
+        # overlap detection
+        for samerow_node in sorted(self._row_to_nodes[row_idx], key=lambda n: self._cols[n]):
+            if samerow_node is node:
+                continue
+            samerow_node_col = self._cols[samerow_node]
+            if samerow_node_col - 1 <= ideal_col <= samerow_node_col + 1:
+                # collision detected :(
+                overlap_detected = True
+            if samerow_node_col - 1 <= suggested_col <= samerow_node_col + 1:
+                # adjust our suggestion, which will be tested in the next iteration
+                suggested_col = samerow_node_col + 2
+            if overlap_detected and suggested_col < samerow_node_col - 1:
+                # amazing, we got a suggestion working!
+                # early termination of the loop
+                break
+
+        if overlap_detected:
+            return True, suggested_col
+        else:
+            return False, ideal_col
 
     def _make_grids(self):
         """
