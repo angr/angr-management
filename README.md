@@ -68,25 +68,3 @@ PLUGIN_CLS_NAME = TestPlugin.__name__
 ```
 
 This also allows you to import a plugin class from another package entirely. The plugin itself should inherit from `BasePlugin`. Callbacks and events are a work in progress, so the API is subject to change. See `TestPlugin` for an example of a multithreaded plugin sample.
-
-## Issues
-
-### 'module' object has noattribute 'MIPS_GRP_CALL'
-
-Your capstone install does not support functionality that angr-management uses.
-
-To install a version that does (in your angr virtualenv):
-```
-workon angr
-git clone https://github.com/angr/capstone
-cd capstone
-git checkout next
-./make.sh
-PACKAGES_PATH=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
-mkdir -p $PACKAGES_PATH/capstone
-cp libcapstone.so.4 $PACKAGES_PATH/capstone/libcapstone.so
-cd bindings/python
-pip uninstall capstone  # if already installed
-python setup.py install
-```
-
