@@ -53,7 +53,7 @@ stages:
     - task: GitHubRelease@1
       displayName: 'Create Github Release'
       inputs:
-        gitHubConnection: angr
+        gitHubConnection: angr-management
         repositoryName: '$(Build.Repository.Name)'
         action: 'create'
         target: '$(Build.SourceVersion)'
