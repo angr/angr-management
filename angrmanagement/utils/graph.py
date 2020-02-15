@@ -168,6 +168,8 @@ def to_supergraph(transition_graph):
                                                       dst_supernode.addr
                                                       )
 
+        # add back the node (in case there are no edges)
+        super_graph.add_node(src_supernode)
         # add back the old edges
         for src, _, data in existing_in_edges:
             super_graph.add_edge(src, src_supernode, **data)
