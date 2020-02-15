@@ -24,4 +24,11 @@ pip install -e .
 # Bundle!
 python bundle.py
 
+# macOS apps are folders...
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    pushd dist
+    hdiutil create start.dmg -volname "angr-management nightly" -srcfolder start
+    rm -rf start
+    popd
+fi
 # Binary is currently at dist/start

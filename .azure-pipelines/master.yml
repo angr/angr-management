@@ -3,37 +3,41 @@ trigger:
  - master
 pr: none
 
-jobs:
-- job: Build
-  strategy:
-    matrix:
-      Ubuntu:
-        IMAGE_NAME: 'ubuntu-18.04'
-        SCRIPT: 'build.sh'
-      macOS:
-        IMAGE_NAME: 'macOS-10.14'
-        SCRIPT: 'build.sh'
-      Windows:
-        IMAGE_NAME: 'windows-2019'
-        SCRIPT: 'build.bat'
-  pool:
-    vmImage: $(IMAGE_NAME)
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.6'
-    - script: .azure-pipelines/$(SCRIPT)
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: dist/
-        artifactName: angr-management-$(IMAGE_NAME)
+stages:
+- stage: Build
+  jobs:
+  - job:
+    strategy:
+      matrix:
+        Ubuntu:
+          IMAGE_NAME: 'ubuntu-18.04'
+          SCRIPT: 'build.sh'
+        macOS:
+          IMAGE_NAME: 'macOS-10.14'
+          SCRIPT: 'build.sh'
+        Windows:
+          IMAGE_NAME: 'windows-2019'
+          SCRIPT: 'build.bat'
+    pool:
+      vmImage: $(IMAGE_NAME)
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.6'
+      - script: .azure-pipelines/$(SCRIPT)
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: dist/
+          artifactName: angr-management-$(IMAGE_NAME)
 
-- job: Publish
-  pool:
-    vmImage: ubuntu-18.04
+- stage: Deploy
   dependsOn: Build
   condition: succeeded()
-  steps:
+  jobs:
+  - job:
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
     - task: DownloadPipelineArtifact@0
       inputs:
         targetPath: $(Build.SourcesDirectory)/dist/
@@ -46,12 +50,17 @@ jobs:
       inputs:
         targetPath: $(Build.SourcesDirectory)/dist/
         artifactName: angr-management-windows-2019
-    - task: UsePythonVersion@0
+    - task: GitHubRelease@1
+      displayName: 'Create Github Release'
       inputs:
-        versionSpec: '3.6'
-    - script: pip install PyGithub
-    - script: python .azure-pipelines/release.py
-      env:
-        AM_BUILD_NUMBER: $(Build.BuildId)
-        GIT_HASH: $(Build.SourceVersion)
-        GITHUB_AUTH_TOKEN: $(GITHUB_AUTH_TOKEN)
+        gitHubConnection: angr
+        repositoryName: '$(Build.Repository.Name)'
+        action: 'create'
+        target: '$(Build.SourceVersion)'
+        tagSource: auto
+        name: 'angr-management nightly preview'
+        isPreRelease: true
+        assets: |
+          dist/angr-management-windows-2019/*
+          dist/angr-management-macOS-10.14/*
+          dist/angr-management-ubuntu-18.04/*
