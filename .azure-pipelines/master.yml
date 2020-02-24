@@ -49,8 +49,14 @@ stages:
         target: '$(Build.SourceVersion)'
         tagSource: manual
         tag: nightly-$(BuildID)
-        title: 'angr-management nightly preview #$(BuildID)'
+        title: angr-management nightly preview $(BuildID)
+        releaseNotes: |
+          This release is an automatically generate pre-release. We do our best
+          to make sure everything works, but be advised that features could
+          break or change without notice.
         isPreRelease: true
+        addChangelog: true
+        compareWith: 'lastRelease'
         assets: |
           dist/angr-management-windows-2019/*
           dist/angr-management-macOS-10.14/*
