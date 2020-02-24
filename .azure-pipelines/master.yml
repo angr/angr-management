@@ -41,14 +41,14 @@ stages:
     - task: DownloadPipelineArtifact@2
       inputs:
         path: $(Build.SourcesDirectory)/dist/
-    - task: GitHubRelease@1
+    - task: GitHubRelease@0
       displayName: 'Create Github Release'
       inputs:
         gitHubConnection: angr-management
         repositoryName: '$(Build.Repository.Name)'
-        action: 'create'
         target: '$(Build.SourceVersion)'
-        tagSource: auto
+        tagSource: manual
+        tag: $(Build.BuildNumber)
         name: 'angr-management nightly preview'
         isPreRelease: true
         assets: |
