@@ -1,4 +1,7 @@
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+
+@echo on
+
 pip install pyinstaller
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
@@ -9,4 +12,4 @@ pip install git+https://github.com/angr/angr.git#egg=angr
 pip install -e .
 python bundle.py
 
-rename dist\angr-management.exe dist\angr-management-win64.exe
+rename dist\angr-management.exe angr-management-win64.exe
