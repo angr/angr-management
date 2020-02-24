@@ -9,4 +9,4 @@ pip install git+https://github.com/angr/angr.git#egg=angr
 pip install -e .
 python bundle.py
 
-rename dist\angr-mangement.exe dist\angr-mangement-win64.exe
+rename dist\angr-management.exe dist\angr-management-win64.exe
