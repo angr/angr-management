@@ -48,8 +48,8 @@ stages:
         repositoryName: '$(Build.Repository.Name)'
         target: '$(Build.SourceVersion)'
         tagSource: manual
-        tag: $(Build.BuildNumber)
-        name: 'angr-management nightly preview'
+        tag: nightly-$(BuildID)
+        title: 'angr-management nightly preview #$(BuildID)'
         isPreRelease: true
         assets: |
           dist/angr-management-windows-2019/*
