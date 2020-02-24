@@ -34,7 +34,7 @@ stages:
   dependsOn: Build
   condition: succeeded()
   jobs:
-  - job: Release to GitHub
+  - job: Release
     pool:
       vmImage: ubuntu-18.04
     steps:
