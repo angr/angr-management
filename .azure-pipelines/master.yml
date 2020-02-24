@@ -38,18 +38,9 @@ stages:
     pool:
       vmImage: ubuntu-18.04
     steps:
-    - task: DownloadPipelineArtifact@0
+    - task: DownloadPipelineArtifact@2
       inputs:
-        targetPath: $(Build.SourcesDirectory)/dist/
-        artifactName: angr-management-ubuntu-18.04
-    - task: DownloadPipelineArtifact@0
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/dist/
-        artifactName: angr-management-macOS-10.14
-    - task: DownloadPipelineArtifact@0
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/dist/
-        artifactName: angr-management-windows-2019
+        path: $(Build.SourcesDirectory)/dist/
     - task: GitHubRelease@1
       displayName: 'Create Github Release'
       inputs:
