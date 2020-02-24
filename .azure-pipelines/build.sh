@@ -26,9 +26,8 @@ python bundle.py
 
 # macOS apps are folders...
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    pushd dist
-    hdiutil create start.dmg -volname "angr-management nightly" -srcfolder start
-    rm -rf start
-    popd
+    hdiutil create /tmp/start.dmg -volname "angr-management nightly" -srcfolder dist
+    rm -rf dist/start*
+    mv /tmp/start.dmg dist/start.dmg
 fi
 # Binary is currently at dist/start
