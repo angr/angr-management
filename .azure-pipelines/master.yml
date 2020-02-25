@@ -48,8 +48,8 @@ stages:
         repositoryName: '$(Build.Repository.Name)'
         target: '$(Build.SourceVersion)'
         tagSource: manual
-        tag: nightly-$(BuildID)
-        title: angr-management nightly preview $(BuildID)
+        tag: nightly-$(Build.BuildId)
+        title: angr-management nightly preview $(Build.BuildId)
         releaseNotes: |
           This release is an automatically generate pre-release. We do our best
           to make sure everything works, but be advised that features could
