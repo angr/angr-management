@@ -50,6 +50,7 @@ stages:
         tagSource: manual
         tag: nightly-$(Build.BuildId)
         title: angr-management nightly preview $(Build.BuildId)
+        releaseNotesSource: input
         releaseNotes: >
           This release is an automatically generate pre-release. We do our best
           to make sure everything works, but be advised that features could
