@@ -42,6 +42,15 @@ stages:
       inputs:
         path: $(Build.SourcesDirectory)/dist/
     - task: GitHubRelease@0
+      displayName: Delete old nightlies
+      inputs:
+        gitHubConnection: angr-management
+        action: delete
+        repositoryName: $(Build.Repository.Name)
+        target: $(Build.SourceVersion)
+        tagSource: manual
+        tagPattern: nightly-*
+    - task: GitHubRelease@0
       displayName: Create Github Release
       inputs:
         gitHubConnection: angr-management
