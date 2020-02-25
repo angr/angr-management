@@ -10,20 +10,20 @@ stages:
     strategy:
       matrix:
         Ubuntu:
-          IMAGE_NAME: 'ubuntu-18.04'
-          SCRIPT: 'build.sh'
+          IMAGE_NAME: ubuntu-18.04
+          SCRIPT: build.sh
         macOS:
-          IMAGE_NAME: 'macOS-10.14'
-          SCRIPT: 'build.sh'
+          IMAGE_NAME: macOS-10.14
+          SCRIPT: build.sh
         Windows:
-          IMAGE_NAME: 'windows-2019'
-          SCRIPT: 'build.bat'
+          IMAGE_NAME: windows-2019
+          SCRIPT: build.bat
     pool:
       vmImage: $(IMAGE_NAME)
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: '3.6'
+          versionSpec: 3.6
       - script: .azure-pipelines/$(SCRIPT)
       - task: PublishPipelineArtifact@1
         inputs:
@@ -42,11 +42,11 @@ stages:
       inputs:
         path: $(Build.SourcesDirectory)/dist/
     - task: GitHubRelease@0
-      displayName: 'Create Github Release'
+      displayName: Create Github Release
       inputs:
         gitHubConnection: angr-management
-        repositoryName: '$(Build.Repository.Name)'
-        target: '$(Build.SourceVersion)'
+        repositoryName: $(Build.Repository.Name)
+        target: $(Build.SourceVersion)
         tagSource: manual
         tag: nightly-$(Build.BuildId)
         title: angr-management nightly preview $(Build.BuildId)
