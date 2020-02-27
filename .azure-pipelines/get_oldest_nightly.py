@@ -22,14 +22,10 @@ def main():
     releases = r.get_releases()
     filtered = [x for x in releases if re.match("^nightly-\\d+$", x.tag_name)]
 
-    if len(filtered):
+    if len(filtered) > 1:
         time_map = {k.created_at: k for k in filtered}
         oldest = time_map[min(time_map.keys())]
-        result = oldest.tag_name
-    else:
-        result = ""
-
-    print(f"##vso[task.setvariable variable=old_release]{result}")
+        print(f"##vso[task.setvariable variable=old_release]{oldest.tag_name}")
 
 
 if __name__ == "__main__":
