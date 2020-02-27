@@ -38,18 +38,16 @@ stages:
     pool:
       vmImage: ubuntu-18.04
     steps:
+    # Needed for the oldest_release script
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.6
+    - bash: pip install pygithub
+
+    # Download artifacts and create release
     - task: DownloadPipelineArtifact@2
       inputs:
         path: $(Build.SourcesDirectory)/dist/
-    - task: GitHubRelease@0
-      displayName: Delete old nightlies
-      inputs:
-        gitHubConnection: angr-management
-        action: delete
-        repositoryName: $(Build.Repository.Name)
-        target: $(Build.SourceVersion)
-        tagSource: manual
-        tagPattern: nightly-*
     - task: GitHubRelease@0
       displayName: Create Github Release
       inputs:
@@ -71,3 +69,25 @@ stages:
           dist/angr-management-windows-2019/*
           dist/angr-management-macOS-10.14/*
           dist/angr-management-ubuntu-18.04/*
+
+    # Delete oldest nightly release
+    - task: PythonScript@0
+      inputs:
+        scriptPath: $(Build.SourcesDirectory)/.azure-pipelines/get_oldest_nightly.py
+        arguments: $(Build.Repository.Name)
+    - task: GitHubRelease@0
+      displayName: Delete old nightlies
+      condition: |
+        and(
+          ne('${{old_release}}', ''),
+          startsWith('${{old_release}}', 'nightly-'),
+          not(endsWith('${{old_release}}', '${{Build.BuildID}}'))
+          )
+      inputs:
+        gitHubConnection: angr-management
+        action: delete
+        repositoryName: $(Build.Repository.Name)
+        target: $(Build.SourceVersion)
+        tagSource: manual
+        tagPattern: $(old_release)
+
