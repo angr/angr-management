@@ -92,5 +92,5 @@ stages:
         repositoryName: $(Build.Repository.Name)
         target: $(Build.SourceVersion)
         tagSource: manual
-        tagPattern: $(old_release)
+        tag: $(old_release)
 
