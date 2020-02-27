@@ -81,9 +81,9 @@ stages:
       displayName: Delete old nightlies
       condition: |
         and(
-          ne('${{old_release}}', ''),
-          startsWith('${{old_release}}', 'nightly-'),
-          not(endsWith('${{old_release}}', '${{Build.BuildID}}'))
+          ne($(old_release), ''),
+          startsWith($(old_release), 'nightly-'),
+          not(endsWith($(old_release), $(Build.BuildID)))
           )
       inputs:
         gitHubConnection: angr-management
