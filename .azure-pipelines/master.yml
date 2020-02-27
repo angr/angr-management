@@ -38,7 +38,8 @@ stages:
     pool:
       vmImage: ubuntu-18.04
     variables:
-      old_release: ''
+    - name: old_release
+      value: ''
     steps:
     # Needed for the oldest_release script
     - task: UsePythonVersion@0
