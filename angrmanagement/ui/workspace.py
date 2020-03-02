@@ -7,7 +7,7 @@ from angr.knowledge_plugins import Function
 from angr import StateHierarchy
 
 from ..data.instance import ObjectContainer
-from ..data.jobs import CodeTaggingJob
+from ..data.jobs import CodeTaggingJob, PrototypeFindingJob
 from ..config import Conf
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, SyncView, PatchesView, )
@@ -82,6 +82,12 @@ class Workspace:
 
     def on_cfg_generated(self):
 
+        self.instance.add_job(
+            PrototypeFindingJob(
+                on_finish=self._on_prototype_found,
+            )
+        )
+
         # display the main function if it exists, otherwise display the function at the entry point
         if self.instance.cfg is not None:
             the_func = self.instance.cfg.kb.functions.function(name='main')
@@ -91,6 +97,7 @@ class Workspace:
             if the_func is not None:
                 self.on_function_selected(the_func)
 
+    def _on_prototype_found(self):
         self.instance.add_job(
             CodeTaggingJob(
                 on_finish=self.on_function_tagged,
