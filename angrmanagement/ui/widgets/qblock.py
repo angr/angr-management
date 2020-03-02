@@ -1,16 +1,16 @@
 import logging
 
 from PySide2.QtGui import QColor, QPen, QPainterPath
-from PySide2.QtCore import QRectF, QMarginsF, Qt
-from PySide2.QtWidgets import QApplication
+from PySide2.QtCore import QRectF, QMarginsF
 
 from angr.analyses.disassembly import Instruction
 from angr.sim_variable import SimRegisterVariable
 
 from ...utils import get_block_objects, get_out_branches_for_insn
-from ...utils.block_objects import Variables, PhiVariable, Label
+from ...utils.block_objects import FunctionHeader, Variables, PhiVariable, Label
 from ...config import Conf
 from .qinstruction import QInstruction
+from .qfunction_header import QFunctionHeader
 from .qblock_label import QBlockLabel
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
@@ -132,6 +132,9 @@ class QBlock(QCachedGraphicsItem):
                 for var in obj.variables:
                     variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self)
                     self.objects.append(variable)
+            elif isinstance(obj, FunctionHeader):
+                self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
+                                                    self.disasm_view, self.workspace, parent=self))
         self.layout_widgets()
 
     def layout_widgets(self):
