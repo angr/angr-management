@@ -1,5 +1,15 @@
 
 
+class FunctionHeader:
+
+    __slots__ = ('name', 'prototype', 'args', )
+
+    def __init__(self, name, prototype=None, args=None):
+        self.name = name
+        self.prototype = prototype
+        self.args = args
+
+
 class Variables:
 
     __slots__ = ['variables']

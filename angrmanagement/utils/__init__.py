@@ -1,7 +1,7 @@
 
 import itertools
 
-from .block_objects import Variables, PhiVariable, Label
+from .block_objects import FunctionHeader, Variables, PhiVariable, Label
 
 
 def locate_function(inst, addr):
@@ -67,8 +67,16 @@ def get_block_objects(disasm, nodes, func_addr):
 
     variable_manager = disasm.kb.variables[func_addr]
 
-    # stack variables
+    # function beginning
     if block_addr == func_addr:
+        # function header
+        func = disasm.kb.functions.get_by_addr(func_addr)
+        if func is not None:
+            func_header = FunctionHeader(func.name, func.prototype,
+                                         func.calling_convention.args if func.calling_convention is not None else None)
+            lst.append(func_header)
+
+        # stack variables
         # filter out all stack variables
         variables = variable_manager.get_variables(sort='stack', collapse_same_ident=False)
         variables = sorted(variables, key=lambda v: v.offset)
@@ -88,7 +96,7 @@ def get_block_objects(disasm, nodes, func_addr):
 
     # initial label, if there is any
     # FIXME: all labels should be generated during CFG recovery, and this step should not be necessary.
-    if lst and not isinstance(lst[0], tuple):
+    if lst and not isinstance(lst[0], FunctionHeader):
         # the first element should be a label
         lst.insert(0, Label(block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
 

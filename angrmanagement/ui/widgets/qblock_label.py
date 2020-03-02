@@ -1,5 +1,4 @@
 
-from PySide2.QtWidgets import QGraphicsItem, QGraphicsTextItem
 from PySide2.QtGui import QPainter
 from PySide2.QtCore import Qt, QRectF
 
