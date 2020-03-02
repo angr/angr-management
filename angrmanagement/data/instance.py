@@ -138,7 +138,7 @@ class Instance:
         cfg_job = self.generate_cfg()
 
         # start daemon
-        self._start_daemon_thread(self._refresh_cfg, 'Progressive Refreshing CFG', args=(cfg_job,))
+        self._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
 
     def generate_cfg(self):
         cfg_job = CFGGenerationJob(
