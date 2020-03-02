@@ -20,7 +20,7 @@ def main():
     g = github.Github()
     r = g.get_repo(sys.argv[1])
     releases = r.get_releases()
-    filtered = [x for x in releases if re.match("^nightly-\\d+$", x.tag_name)]
+    filtered = [x for x in releases if re.match("^nightly-\\d{8}\\.\\d+$", x.tag_name)]
 
     if len(filtered) > 1:
         time_map = {k.created_at: k for k in filtered}
