@@ -480,7 +480,7 @@ class GraphLayouter:
         for row_idx in self._row_to_nodes.keys():
             row_nodes = self._row_to_nodes[row_idx]
 
-            next_min_col, next_max_col = 1, 2
+            next_min_col, next_max_col = None, None
 
             for i, node in enumerate(row_nodes):
                 predecessors = list(acyclic_graph.predecessors(node))
@@ -488,8 +488,8 @@ class GraphLayouter:
                     # Not enough predecessors.
                     # update next_min_col and next_max_col
                     col = self._cols[node]
-                    next_min_col = max(next_min_col, col + 2)
-                    next_max_col = max(next_max_col, col + 3)
+                    next_min_col = max(next_min_col if next_min_col is not None else 0, col + 2)
+                    next_max_col = max(next_max_col if next_max_col is not None else 0, col + 3)
                     continue
 
                 min_col, max_col = next_min_col, next_max_col
