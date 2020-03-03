@@ -33,5 +33,6 @@ setup(
         'PySide2',
         'toml',
         'pyxdg',
+        'jupyter-client<6',
     ]
 )
