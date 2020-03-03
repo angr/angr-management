@@ -23,6 +23,11 @@ setup(
             'resources/images/*',
         ]
     },
+    entry_points={
+        "console_scripts": [
+            "angr-management = angrmanagement.__main__:main",
+        ]
+    },
     install_requires=[
         'angr==8.20.1.7',
         'websocket-client',
