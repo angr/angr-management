@@ -87,7 +87,6 @@ def start_management(filepath=None):
     time.sleep(0.05)
     app.processEvents()
 
-    import rpyc
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
@@ -112,7 +111,7 @@ def start_management(filepath=None):
         print("Connecting to an existing angr management daemon.")
         try:
             GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
-        except rpyc.ConnectionRefusedError:
+        except ConnectionRefusedError:
             print("[-] Connection failed... try again.")
             time.sleep(0.4)
             continue

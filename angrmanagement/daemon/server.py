@@ -47,10 +47,8 @@ class ManagementService(rpyc.Service):
             DETACHED_PROCESS = 0x00000008
             flags['creationflags'] = DETACHED_PROCESS
 
-        python_path = os.path.normpath(sys.executable)
-        if sys.platform.startswith("win"):
-            python_path = python_path.replace("pythonw.exe", "python.exe")
-        proc = subprocess.Popen([python_path, "-m", "angrmanagement", bin_path], shell=True, stdin=None, stdout=None,
+        apppath = app_path(pythonw=False, as_list=True)
+        proc = subprocess.Popen(apppath + [bin_path], shell=False, stdin=None, stdout=None,
                                 stderr=None,
                                 close_fds=True, **flags)
 
