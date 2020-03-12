@@ -144,5 +144,4 @@ class AFLQemuBitmap:
             hit_percent = (hit_count / len(block_addrs)) * 100
             bucket_size = 100 / len(AFLQemuBitmap.BUCKET_COLORS)
             bucket_pos = math.floor(hit_percent / bucket_size)
-            bucket_pos = len(AFLQemuBitmap.BUCKET_COLORS) - 1
             self.function_info[func.addr] = {"color": AFLQemuBitmap.BUCKET_COLORS[bucket_pos], "coverage": hit_percent}
