@@ -200,6 +200,9 @@ class TraceViewer(BasePlugin):
                                             filter='json (*.json)',
                                             default_base=project.loader.main_object.mapped_base)
 
+        if trace_file_name is None or baddr is None:
+            return None, None
+
         with open(trace_file_name, 'r') as f:
             trace = json.load(f)
         return trace, baddr

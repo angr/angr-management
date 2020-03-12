@@ -47,7 +47,8 @@ class AFLQemuBitmap:
                 self._node_hitcount_summary[addr] = new
 
     def get_hit_miss_color(self, addr):
-        hitcount = self._node_hitcount_summary[addr]
+        # TODO: sometimes there's addresses here that are not in the hitcount, don't know why
+        hitcount = self._node_hitcount_summary.get(addr, 0)
         if hitcount == 0:
             return AFLQemuBitmap.MISS_COLOR
         else:
