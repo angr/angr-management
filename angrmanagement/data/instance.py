@@ -9,6 +9,8 @@ from .object_container import ObjectContainer
 from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
+from ..daemon.client import DaemonClient
+
 
 class Instance:
     def __init__(self, project=None):
@@ -118,6 +120,14 @@ class Instance:
         # should not trigger a signal
 
     def set_project(self, project, cfg_args=None):
+
+        try:
+            DaemonClient.register_binary(project.loader.main_object.binary,
+                                         project.loader.main_object.md5,
+                                         project.loader.main_object.sha256)
+        except Exception as ex:
+            print(ex)
+
         self._project_container.am_obj = project
         self._project_container.am_event(cfg_args=cfg_args)
 

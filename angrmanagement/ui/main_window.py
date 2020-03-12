@@ -34,6 +34,7 @@ from .dialogs.about import LoadAboutDialog
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
 from ..config import Conf
+from ..daemon.client import DaemonClient
 from .. import plugins
 
 

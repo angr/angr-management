@@ -40,6 +40,11 @@ def set_app_user_model_id():
 
 
 def start_management(filepath=None):
+
+    #from .logic.url_scheme import AngrUrlScheme
+    #AngrUrlScheme().register_url_scheme()
+    #sys.exit(1)
+
     if not check_dependencies():
         sys.exit(1)
 
@@ -70,6 +75,8 @@ def start_management(filepath=None):
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
+    from .daemon import daemon_exists, run_daemon_process, daemon_conn
+    from .daemon.client import ClientService
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
@@ -78,6 +85,17 @@ def start_management(filepath=None):
 
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
+
+    # connect to daemon (if there is one)
+    if not daemon_exists():
+        print("Starting a new daemon.")
+        run_daemon_process()
+        time.sleep(0.2)
+    print("Connecting to an existing angr management daemon.")
+    GlobalInfo.daemon_conn = daemon_conn(service=ClientService, allow_callback=True)
+
+    from rpyc import BgServingThread
+    th = BgServingThread(GlobalInfo.daemon_conn)
 
     file_to_open = filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None
     main_window = MainWindow()
@@ -88,19 +106,35 @@ def start_management(filepath=None):
 
     app.exec_()
 
+
 def main():
     import argparse
-    import runpy
 
     parser = argparse.ArgumentParser(description="angr management")
     parser.add_argument("-s", "--script", type=str, help="run a python script in the (commandline) angr environment")
     parser.add_argument("-i", "--interactive", action='store_true', help="interactive (ipython) mode")
     parser.add_argument("-n", "--no-gui", action='store_true', help="run in headless mode")
+    parser.add_argument("-d", "--daemon", action='store_true', help="start the daemon to handle angr:// URLs.")
+    parser.add_argument("-u", "--url", type=str, help="handle angr:// URLs. the daemon must be running.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
     args = parser.parse_args()
 
+    if args.daemon:
+        from .daemon import start_daemon
+        start_daemon()
+        return
+    elif args.url:
+        from .daemon import daemon_exists, handle_url, run_daemon_process, daemon_conn
+        if not daemon_exists():
+            run_daemon_process()
+            time.sleep(1)
+
+        action = handle_url(args.url, act=False)
+        action.act(daemon_conn())
+        return
     if args.script:
+        import runpy
         script_globals = runpy.run_path(args.script)
     if args.interactive:
         if args.script:
