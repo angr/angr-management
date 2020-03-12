@@ -11,7 +11,7 @@ def app_path(pythonw=None, as_list=False):
     - In development mode, we return the absolute path to the python executable and "-m angr management"
 
     :return:    A string that represents the path to the application that can be used to run angr management.
-    :rtype:     str
+    :rtype:     str|list
     """
 
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):

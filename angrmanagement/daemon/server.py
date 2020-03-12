@@ -48,7 +48,8 @@ class ManagementService(rpyc.Service):
             flags['creationflags'] = DETACHED_PROCESS
 
         apppath = app_path(pythonw=False, as_list=True)
-        proc = subprocess.Popen(apppath + [bin_path], shell=False, stdin=None, stdout=None,
+        shell = True if sys.platform.startswith("win") else False
+        proc = subprocess.Popen(apppath + [bin_path], shell=shell, stdin=None, stdout=None,
                                 stderr=None,
                                 close_fds=True, **flags)
 
