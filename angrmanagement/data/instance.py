@@ -1,7 +1,8 @@
 import time
 from threading import Thread
 from queue import Queue
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Union, Callable
+
 import angr
 
 from .jobs import CFGGenerationJob
@@ -35,6 +36,11 @@ class Instance:
         self.register_container('interactions', lambda: [], List[SavedInteraction], 'Saved program interactions')
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
         self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]], 'Available interaction protocols')
+
+        # Callbacks
+        self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
+        self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
+        self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
         self.sync = SyncControl(self)
         self.cfg_args = None
@@ -94,6 +100,30 @@ class Instance:
 
     def __dir__(self):
         return list(super().__dir__()) + list(self.extra_containers)
+
+    @property
+    def insn_backcolor_callback(self):
+        return self._insn_backcolor_callback
+
+    @insn_backcolor_callback.setter
+    def insn_backcolor_callback(self, v):
+        self._insn_backcolor_callback = v
+
+    @property
+    def label_rename_callback(self):
+        return self._label_rename_callback
+
+    @label_rename_callback.setter
+    def label_rename_callback(self, v):
+        self._label_rename_callback = v
+
+    @property
+    def set_comment_callback(self):
+        return self._set_comment_callback
+
+    @set_comment_callback.setter
+    def set_comment_callback(self, v):
+        self._set_comment_callback = v
 
     #
     # Public methods

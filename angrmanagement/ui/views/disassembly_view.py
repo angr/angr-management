@@ -1,5 +1,4 @@
 import logging
-from typing import Union, Callable
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
@@ -43,11 +42,6 @@ class DisassemblyView(BaseView):
         self._insn_menu = None  # type: DisasmInsnContextMenu
 
         self._insn_addr_on_context_menu = None
-
-        # Callbacks
-        self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
-        self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
-        self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
         self._init_widgets()
         self._init_menus()
@@ -129,29 +123,31 @@ class DisassemblyView(BaseView):
     # Callbacks
     #
 
+    # All callbacks are proxies to self.workspace.instance. These properties *in this class* may be removed in the near
+    # future.
     @property
     def insn_backcolor_callback(self):
-        return self._insn_backcolor_callback
+        return self.workspace.instance.insn_backcolor_callback
 
     @insn_backcolor_callback.setter
     def insn_backcolor_callback(self, v):
-        self._insn_backcolor_callback = v
+        self.workspace.instance.insn_backcolor_callback = v
 
     @property
     def label_rename_callback(self):
-        return self._label_rename_callback
+        return self.workspace.instance.label_rename_callback
 
     @label_rename_callback.setter
     def label_rename_callback(self, v):
-        self._label_rename_callback = v
+        self.workspace.instance.label_rename_callback = v
 
     @property
     def set_comment_callback(self):
-        return self._set_comment_callback
+        return self.workspace.instance.set_comment_callback
 
     @set_comment_callback.setter
     def set_comment_callback(self, v):
-        self._set_comment_callback = v
+        self.workspace.instance.set_comment_callback = v
 
     #
     # Events
@@ -236,7 +232,7 @@ class DisassemblyView(BaseView):
         if comment_addr is None:
             return
 
-        dialog = SetComment(self, comment_addr, parent=self)
+        dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
 
     def popup_newstate_dialog(self, asynch=True):
@@ -394,31 +390,11 @@ class DisassemblyView(BaseView):
                 kb.labels[addr] = new_name
 
             # callback first
-            if self._label_rename_callback:
-                self._label_rename_callback(addr=addr, new_name=new_name)
+            if self.workspace.instance.label_rename_callback:
+                self.workspace.instance.label_rename_callback(addr=addr, new_name=new_name)
 
             # redraw the current block
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
-
-    def set_comment(self, addr, comment_text):
-        if self._flow_graph.disasm is not None:
-
-            is_updating = False
-
-            kb = self._flow_graph.disasm.kb
-            if comment_text is None and addr in kb.comments:
-                del kb.comments[addr]
-            else:
-                is_updating = addr in kb.comments
-
-            kb.comments[addr] = comment_text
-
-            # callback first
-            if self._set_comment_callback:
-                self._set_comment_callback(addr=addr, comment_text=comment_text)
-
-            # redraw
-            self.current_graph.refresh()
 
     def avoid_addr_in_exec(self, addr):
 

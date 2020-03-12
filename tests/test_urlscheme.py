@@ -10,3 +10,5 @@ def test_open_binary():
     # jumpto
     url = "angr://?action=jumpto&addr=0x4006c6&md5=f6ad81a7f5028055d757f6eb39840708"
 
+    # point of interests
+    url = "angr://?action=commentat&addr=0x4006c6&md5=f6ad81a7f5028055d757f6eb39840708&comment=dGVzdCBjb21tZW50"

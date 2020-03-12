@@ -35,6 +35,12 @@ class ClientService(rpyc.Service):
                 # TODO: Support it
                 gui_thread_schedule_async(self.workspace.jump_to, args=(symbol,))
 
+    def exposed_commentat(self, addr, comment):
+
+        if self.workspace is not None:
+            if addr is not None:
+                gui_thread_schedule_async(self.workspace.set_comment(addr, comment))
+
 
 class DaemonClientCls:
     """

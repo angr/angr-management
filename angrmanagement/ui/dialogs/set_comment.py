@@ -25,11 +25,11 @@ class QCommentTextBox(QPlainTextEdit):
 
 
 class SetComment(QDialog):
-    def __init__(self, disasm_view, comment_addr, parent=None):
+    def __init__(self, workspace, comment_addr, parent=None):
         super(SetComment, self).__init__(parent)
 
         # initialization
-        self._disasm_view = disasm_view
+        self._workspace = workspace
         self._comment_addr = comment_addr
 
         self._comment_textbox = None  # type: QCommentTextBox
@@ -51,8 +51,8 @@ class SetComment(QDialog):
 
         # comment textbox
         comment_txtbox = QCommentTextBox(textconfirmed_callback=self._on_ok_clicked, parent=self)
-        if self._comment_addr in self._disasm_view.disasm.kb.comments:
-            comment_txtbox.setPlainText(self._disasm_view.disasm.kb.comments[self._comment_addr])
+        if self._comment_addr in self._workspace.instance.project.kb.comments:
+            comment_txtbox.setPlainText(self._workspace.instance.project.kb.comments[self._comment_addr])
             comment_txtbox.selectAll()
         self._comment_textbox = comment_txtbox
 
@@ -82,7 +82,7 @@ class SetComment(QDialog):
 
     def _on_ok_clicked(self):
         comment_txt = self._comment_textbox.text
-        self._disasm_view.set_comment(self._comment_addr, comment_txt)
+        self._workspace.set_comment(self._comment_addr, comment_txt)
         self.close()
 
     def _on_cancel_clicked(self):

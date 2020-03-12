@@ -92,7 +92,7 @@ def start_management(filepath=None):
         run_daemon_process()
         time.sleep(0.2)
     print("Connecting to an existing angr management daemon.")
-    GlobalInfo.daemon_conn = daemon_conn(service=ClientService, allow_callback=True)
+    GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
 
     from rpyc import BgServingThread
     th = BgServingThread(GlobalInfo.daemon_conn)

@@ -1,8 +1,14 @@
 
+import base64
+import binascii
 import urllib.parse
 
 
 class UrlActionBase:
+
+    def __init__(self, md5, sha256):
+        self.md5 = md5
+        self.sha256 = sha256
 
     def act(self, daemon_conn=None):
         raise NotImplementedError()
@@ -30,13 +36,22 @@ class UrlActionBase:
             return None
         return v[0]
 
+    @staticmethod
+    def str2addr(addr_str):
+        if addr_str is None:
+            return None
+        try:
+            addr = int(addr_str)
+        except ValueError:
+            addr = int(addr_str, 16)
+        return addr
+
 
 class UrlActionOpen(UrlActionBase):
 
-    def __init__(self, bin_path, md5_checksum=None, sha256_checksum=None, headless=False):
+    def __init__(self, bin_path, md5=None, sha256=None, headless=False):
+        super().__init__(md5, sha256)
         self.bin_path = bin_path
-        self.md5_checksum = md5_checksum
-        self.sha256_checksum = sha256_checksum
         self.headless = headless
 
     def act(self, daemon_conn=None):
@@ -46,45 +61,68 @@ class UrlActionOpen(UrlActionBase):
     def _from_params(cls, params):
         return cls(
             cls._one_param(params, 'path'),
-            md5_checksum=cls._one_param(params, 'md5_checksum'),
-            sha256_checksum=cls._one_param(params, 'sha256_checksum'),
+            md5=cls._one_param(params, 'md5_checksum'),
+            sha256=cls._one_param(params, 'sha256_checksum'),
             headless=cls._one_param(params, 'headless'),
         )
 
 
 class UrlActionJumpTo(UrlActionBase):
 
-    def __init__(self, addr=None, symbol=None, md5_checksum=None, sha256_checksum=None):
+    def __init__(self, addr=None, symbol=None, md5=None, sha256=None):
+        super().__init__(md5, sha256)
         self.addr = addr
         self.symbol = symbol
-        self.md5_checksum = md5_checksum
-        self.sha256_checksum = sha256_checksum
 
     def act(self, daemon_conn=None):
-        daemon_conn.root.jumpto(self.addr, self.symbol, self.md5_checksum, self.sha256_checksum)
+        daemon_conn.root.jumpto(self.addr, self.symbol, self.md5, self.sha256)
 
     @classmethod
     def _from_params(cls, params):
 
-        addr = None
-        if 'addr' in params:
-            addr_str = params['addr'][0]
-            try:
-                addr = int(addr_str)
-            except ValueError:
-                addr = int(addr_str, 16)
+        addr = cls.str2addr(cls._one_param(params, 'addr'))
 
         return cls(
             addr=addr,
             symbol=cls._one_param(params, 'symbol'),
-            md5_checksum=cls._one_param(params, 'md5'),
-            sha256_checksum=cls._one_param(params, 'sha256'),
+            md5=cls._one_param(params, 'md5'),
+            sha256=cls._one_param(params, 'sha256'),
+        )
+
+
+class UrlActionCommentAt(UrlActionBase):
+
+    def __init__(self, addr, comment, md5=None, sha256=None):
+        super().__init__(md5, sha256)
+        self.addr = addr
+        self.comment = comment
+
+    def act(self, daemon_conn=None):
+        if self.addr is None or self.comment is None:
+            return
+        daemon_conn.root.commentat(self.addr, self.comment, self.md5, self.sha256)
+
+    @classmethod
+    def _from_params(cls, params):
+
+        addr = cls.str2addr(cls._one_param(params, 'addr'))
+        try:
+            comment = base64.b64decode(cls._one_param(params, 'comment')).decode("utf-8")
+        except (TypeError, binascii.Error):
+            comment = None
+
+        return cls(
+            addr=addr,
+            comment=comment,
+            md5=cls._one_param(params, 'md5'),
+            sha256=cls._one_param(params, 'sha256'),
         )
 
 
 _ACT2CLS = {
     'open': UrlActionOpen,
     'jumpto': UrlActionJumpTo,
+    'commentat': UrlActionCommentAt,
 }
 
 
