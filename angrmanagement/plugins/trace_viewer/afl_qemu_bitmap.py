@@ -10,7 +10,7 @@ def debug_show(*args, **kwargs):
 
 class AFLQemuBitmap:
 
-    HIT_COLOR = QColor(0xee, 0xee, 0xee)
+    HIT_COLOR = QColor(0xee, 0xff, 0xee)
     MISS_COLOR = QColor(0x99, 0x00, 0x00, 0x30)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
     BUCKET_COLORS = [QColor(0xef, 0x65, 0x48, 0x20), QColor(0xfc, 0x8d, 0x59, 0x60),
@@ -62,6 +62,7 @@ class AFLQemuBitmap:
     def get_coverage(self, func):
         if func.addr not in self.function_info:
             self._calc_function_info(func)
+
         return self.function_info[func.addr]["coverage"]
 
     def get_any_trace(self, addr):
@@ -108,7 +109,7 @@ class AFLQemuBitmap:
 
                 idx = prev_loc ^ cur_loc
                 hitc = self.virgin_bitmap[idx] ^ 0xff
-                debug_show("{:x} -> {:x} [{:x}^{:x}={:x}] = {:x}".format(node.addr, succ.addr, prev_loc, cur_loc, idx, hitc))
+                debug_show("{:x} -> {:x} [{:x}^{:x} = {:x}] = {:x}".format(node.addr, succ.addr, prev_loc, cur_loc, idx, hitc))
 
                 hitcount_graph.add_node(succ)
                 hitcount_graph.add_edge(node, succ, hitcount=hitc)
@@ -133,13 +134,17 @@ class AFLQemuBitmap:
         hit_count = 0
 
         for block_addr in block_addrs:
-            if block_addr in node_hitcounts:
+            if block_addr not in node_hitcounts:
+                print("WARNING WARNING: Why is block {} not in the node hitcounts when it's part of function {}???".format(block_addr, func))
+                continue
+
+            if node_hitcounts[block_addr] > 0:
                 hit_count += 1
 
         if hit_count == 0:
             self.function_info[func.addr] = {"color": AFLQemuBitmap.FUNCTION_NOT_VISITED_COLOR, "coverage": 0}
         elif hit_count == len(block_addrs):
-            self.function_info[func.addr] = {"color": AFLQemuBitmap.HIT_COLOR, "coverage": 0}
+            self.function_info[func.addr] = {"color": AFLQemuBitmap.HIT_COLOR, "coverage": 100}
         else:
             hit_percent = (hit_count / len(block_addrs)) * 100
             bucket_size = 100 / len(AFLQemuBitmap.BUCKET_COLORS)
