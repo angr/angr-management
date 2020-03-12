@@ -5,6 +5,8 @@ import subprocess
 
 from PySide2.QtCore import QSettings
 
+from ..utils.env import app_path
+
 
 class AngrUrlScheme:
 
@@ -44,29 +46,6 @@ class AngrUrlScheme:
     #
 
     @staticmethod
-    def _app_path(pythonw=False):
-        """
-        Return the path of the application.
-
-        - In standalone mode (a PyInstaller module), we return the absolute path to the executable.
-        - In development mode, we return the absolute path to the python executable and "-m angr management"
-
-        :return:    A string that represents the path to the application that can be used to run angr management.
-        :rtype:     str
-        """
-
-        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-            # running as a PyInstaller bundle
-            return sys.executable
-        else:
-            # running as a Python package
-            python_path = os.path.normpath(sys.executable)
-            if sys.platform.startswith("win") and pythonw:
-                python_path = python_path.replace("python.exe", "pythonw.exe")
-            app_path = python_path + " -m angrmanagement"
-            return app_path
-
-    @staticmethod
     def _angr_desktop_path():
         home_dir = os.path.expanduser("~")
         p = os.path.join(home_dir, ".local", "share", "applications", "angr.desktop")
@@ -78,7 +57,7 @@ class AngrUrlScheme:
 
     def _register_url_scheme_windows(self):
 
-        app_path = self._app_path(pythonw=True)
+        app_path_ = app_path(pythonw=True)
 
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.NativeFormat)
@@ -93,7 +72,7 @@ class AngrUrlScheme:
         reg.beginGroup("shell")
         reg.beginGroup("open")
         reg.beginGroup("command")
-        reg.setValue("Default", app_path + ' "%1"')
+        reg.setValue("Default", app_path_ + ' "%1"')
         reg.endGroup()
         reg.endGroup()
         reg.endGroup()
@@ -135,7 +114,7 @@ class AngrUrlScheme:
         # extract angr.desktop
         angr_desktop = """[Desktop Entry]
 Comment=angr management
-Exec={app_path} -u "%f"
+Exec="{app_path}" -u "%f"
 Hidden=true
 Name=angr management
 Terminal=false
@@ -144,7 +123,7 @@ Type=Application
 """
         with open(self._angr_desktop_path(), "w") as f:
             f.write(
-                angr_desktop.format(app_path=self._app_path(), url_scheme=self.URL_SCHEME)
+                angr_desktop.format(app_path=app_path(), url_scheme=self.URL_SCHEME)
             )
 
         # register the scheme

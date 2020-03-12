@@ -87,6 +87,7 @@ def start_management(filepath=None):
     time.sleep(0.05)
     app.processEvents()
 
+    import rpyc
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
@@ -106,8 +107,17 @@ def start_management(filepath=None):
         print("Starting a new daemon.")
         run_daemon_process()
         time.sleep(0.2)
-    print("Connecting to an existing angr management daemon.")
-    GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
+
+    while True:
+        print("Connecting to an existing angr management daemon.")
+        try:
+            GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
+        except rpyc.ConnectionRefusedError:
+            print("[-] Connection failed... try again.")
+            time.sleep(0.4)
+            continue
+        print("[+] Connected to daemon.")
+        break
 
     from rpyc import BgServingThread
     th = BgServingThread(GlobalInfo.daemon_conn)

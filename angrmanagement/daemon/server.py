@@ -8,6 +8,8 @@ import tendo.singleton
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
+from ..utils.env import app_path
+
 
 DEFAULT_PORT = 64000
 
@@ -115,10 +117,8 @@ def run_daemon_process():
         DETACHED_PROCESS = 0x00000008
         flags['creationflags'] = DETACHED_PROCESS
 
-    python_path = os.path.normpath(sys.executable)
-    if sys.platform.startswith("win"):
-        python_path = python_path.replace("python.exe", "pythonw.exe")
-    proc = subprocess.Popen([python_path, "-m", "angrmanagement", "-d"], stdin=None, stdout=None, stderr=None,
+    apppath = app_path(pythonw=True, as_list=True)
+    proc = subprocess.Popen(apppath + ["-d"], stdin=None, stdout=None, stderr=None,
                             close_fds=True, **flags)
 
 
