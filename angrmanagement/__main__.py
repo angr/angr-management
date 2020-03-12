@@ -41,16 +41,12 @@ def set_app_user_model_id():
 
 def start_management(filepath=None):
 
-    #from .logic.url_scheme import AngrUrlScheme
-    #AngrUrlScheme().register_url_scheme()
-    #sys.exit(1)
-
     if not check_dependencies():
         sys.exit(1)
 
     set_app_user_model_id()
 
-    from PySide2.QtWidgets import QApplication, QSplashScreen
+    from PySide2.QtWidgets import QApplication, QSplashScreen, QMessageBox
     from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
     from PySide2.QtCore import Qt
 
@@ -59,6 +55,25 @@ def start_management(filepath=None):
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")
     app.setApplicationName("angr management")
+
+    # URL scheme
+    from .logic.url_scheme import AngrUrlScheme
+    scheme = AngrUrlScheme()
+    registered, _ = scheme.is_url_scheme_registered()
+    if not registered:
+        btn = QMessageBox.question(None, "Setting up angr URL scheme",
+                "angr URL scheme allows \"deep linking\" from browsers and other applications by registering the "
+                "angr:// protocol to the current user. Do you want to register it? You may unregister at any "
+                "time in Preferences.",
+                defaultButton=QMessageBox.Yes)
+        if btn == QMessageBox.Yes:
+            try:
+                AngrUrlScheme().register_url_scheme()
+            except (ValueError, FileNotFoundError) as ex:
+                QMessageBox.error(None, "Error in registering angr URL scheme",
+                        "Failed to register the angr URL scheme.\n"
+                        "The following exception occurred:\n"
+                        + str(ex))
 
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')

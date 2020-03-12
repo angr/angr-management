@@ -43,7 +43,8 @@ class AngrUrlScheme:
     # Utils
     #
 
-    def _app_path(self, pythonw=False):
+    @staticmethod
+    def _app_path(pythonw=False):
         """
         Return the path of the application.
 
@@ -64,6 +65,12 @@ class AngrUrlScheme:
                 python_path = python_path.replace("python.exe", "pythonw.exe")
             app_path = python_path + " -m angrmanagement"
             return app_path
+
+    @staticmethod
+    def _angr_desktop_path():
+        home_dir = os.path.expanduser("~")
+        p = os.path.join(home_dir, ".local", "share", "applications", "angr.desktop")
+        return p
 
     #
     # Windows
@@ -114,38 +121,75 @@ class AngrUrlScheme:
 
     def _register_url_scheme_linux(self):
 
-        cmd_0 = "gconftool-2 -t string -s /desktop/gnome/url-handlers/{url_scheme}/command '{app_path} \"%s\"'".format(
-            url_scheme=self.URL_SCHEME,
-            app_path=self._app_path(),
-        )
-        cmd_1 = "gconftool-2 -s /desktop/gnome/url-handlers/{url_scheme}/needs_terminal false -t bool".format(
-            url_scheme=self.URL_SCHEME,
-        )
-        cmd_2 = "gconftool-2 -s /desktop/gnome/url-handlers/{url_scheme}/enabled true -t bool".format(
-            url_scheme=self.URL_SCHEME,
-        )
+        cmd_0 = ["xdg-mime", "default", "angr.desktop", "x-scheme-handler/{url_scheme}".format(url_scheme=self.URL_SCHEME)]
+        cmd_1 = ["update-desktop-database"]
 
-        # test if gconftool-2 is available
-        retcode = subprocess.call(["gconftool-2"])
+        # test if xdg-mime is available
+        retcode = subprocess.call(["xdg-mime"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if retcode != 1:
-            raise FileNotFoundError("gconftool-2 is not installed.")
-        retcode = subprocess.call(["gconftool-2", "-h"])
+            raise FileNotFoundError("xdg-mime is not installed.")
+        retcode = subprocess.call(["xdg-mime", "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if retcode != 0:
-            raise FileNotFoundError("gconftool-2 is not installed.")
+            raise FileNotFoundError("xdg-mime is not installed.")
+
+        # extract angr.desktop
+        angr_desktop = """[Desktop Entry]
+Comment=angr management
+Exec={app_path} -u "%f"
+Hidden=true
+Name=angr management
+Terminal=false
+MimeType=x-scheme-handler/{url_scheme};
+Type=Application
+"""
+        with open(self._angr_desktop_path(), "w") as f:
+            f.write(
+                angr_desktop.format(app_path=self._app_path(), url_scheme=self.URL_SCHEME)
+            )
 
         # register the scheme
         retcode = subprocess.call(cmd_0)
         if retcode != 0:
-            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % cmd_0)
+            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % " ".join(cmd_0))
         retcode = subprocess.call(cmd_1)
         if retcode != 0:
-            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % cmd_1)
-        retcode = subprocess.call(cmd_2)
-        if retcode != 0:
-            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % cmd_2)
+            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % " ".join(cmd_1))
 
     def _unregister_url_scheme_linux(self):
-        raise NotImplementedError()
+
+        angr_desktop_path = self._angr_desktop_path()
+        if os.path.isfile(angr_desktop_path):
+            os.unlink(angr_desktop_path)
 
     def _is_url_scheme_registered_linux(self):
-        raise NotImplementedError()
+
+        # angr.desktop
+        angr_desktop_path = self._angr_desktop_path()
+        if not os.path.isfile(angr_desktop_path):
+            return False, None
+
+        # is xdg-mime available
+        retcode = subprocess.call(["xdg-mime"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if retcode != 1:
+            return False, None
+
+        # xdg-mine query
+        proc = subprocess.Popen(["xdg-mime", "query", "default",
+            "x-scheme-handler/{url_scheme}".format(url_scheme=self.URL_SCHEME)],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, _ = proc.communicate()
+        if not stdout:
+            return False, None
+
+        # Load Exec=
+        with open(angr_desktop_path, "r") as f:
+            data = f.read()
+        lines = data.split("\n")
+        cmdline = None
+        for l in lines:
+            if l.startswith("Exec="):
+                cmdline = l[5:]
+                break
+        if cmdline is None:
+            return False, None
+        return True, cmdline
