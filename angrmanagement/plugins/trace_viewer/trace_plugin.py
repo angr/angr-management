@@ -9,6 +9,7 @@ from angrmanagement.plugins.trace_viewer.qtrace_viewer import QTraceViewer
 from ..base_plugin import BasePlugin
 from .trace_statistics import TraceStatistics
 from .multi_trace import MultiTrace
+from .afl_qemu_bitmap import AFLQemuBitmap
 
 class TraceViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
@@ -131,20 +132,22 @@ class TraceViewer(BasePlugin):
     # features for loading traces!
     #
 
-    MENU_BUTTONS = ['Open trace...', 'Open MultiTrace...']
+    MENU_BUTTONS = ['Open trace...', 'Open MultiTrace...', 'Open AFL bitmap MultiTrace...']
     def handle_click_menu(self, idx):
-        assert idx in (0, 1)
+        assert 0 <= idx <= 2
 
         if self.workspace.instance.project is None:
             return
 
         if idx == 0:
             self.open_trace()
-        else:
+        elif idx == 1:
             self.open_multi_trace()
+        else:
+            self.open_bitmap_multi_trace()
 
     def open_trace(self):
-        trace, baddr = self._open_trace_dialog()
+        trace, baddr = self._open_json_trace_dialog()
         if baddr is None:
             return
 
@@ -152,32 +155,53 @@ class TraceViewer(BasePlugin):
         self.trace.am_event()
 
     def open_multi_trace(self):
-        trace, baddr = self._open_trace_dialog()
+        trace, baddr = self._open_json_trace_dialog()
         if baddr is None:
             return
 
         self.multi_trace.am_obj = MultiTrace(self.workspace, trace, baddr)
         self.multi_trace.am_event()
 
-    def _open_trace_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", "json (*.json)")
+    def open_bitmap_multi_trace(self):
+        trace_file_name, baddr = self._open_trace_dialog(filter='', default_base=0x0000004000000000)
+        if baddr is None:
+            return
+
+        with open(trace_file_name, 'rb') as f:
+            trace = f.read()
+
+        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, baddr)
+        self.multi_trace.am_event()
+
+    def _open_trace_dialog(self, filter, default_base):
+        file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", filter)
         try:
-            with open(file_path, 'r') as f:
-                trace = json.load(f)
+            with open(file_path, 'rb') as f:
+                f.read(1)
         except FileNotFoundError:
             return None, None
         # TODO: exception for json loading
 
-        project = self.workspace.instance.project
-
         if file_path:
             baddr, _ = QInputDialog.getText(None, "Input Trace Base Address",
                                             "Base Address:", QLineEdit.Normal,
-                                            hex(project.loader.main_object.mapped_base))
+                                            hex(default_base))
 
             try:
-                return trace, int(baddr, 16)
+                return file_path, int(baddr, 16)
             except ValueError:
                 pass
 
         return None, None
+
+    def _open_json_trace_dialog(self):
+        project = self.workspace.instance.project
+        trace_file_name, baddr = self._open_trace_dialog(
+                                            filter='json (*.json)',
+                                            default_base=project.loader.main_object.mapped_base)
+
+        with open(trace_file_name, 'r') as f:
+            trace = json.load(f)
+        return trace, baddr
+
+
