@@ -73,7 +73,7 @@ class AngrUrlScheme:
         reg.beginGroup("shell")
         reg.beginGroup("open")
         reg.beginGroup("command")
-        reg.setValue("Default", app_path_ + ' "%1"')
+        reg.setValue("Default", app_path_ + ' -u "%1"')
         reg.endGroup()
         reg.endGroup()
         reg.endGroup()

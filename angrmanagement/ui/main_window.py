@@ -1,5 +1,6 @@
 import pickle
 import os
+import re
 import urllib.parse
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
@@ -376,11 +377,29 @@ class MainWindow(QMainWindow):
         else:
             # url
             r = QMessageBox.question(self,
-                                     "Downloading a file to open",
+                                     "Downloading a file",
                                      "Do you want to download a file from %s and open it in angr management?" %
                                      file_path,
                                      defaultButton=QMessageBox.Yes)
             if r == QMessageBox.Yes:
+                try:
+                    header = requests.head(file_path, allow_redirects=True)
+                except requests.exceptions.InvalidURL:
+                    QMessageBox.critical(self,
+                                         "Downloading failed",
+                                         "angr management failed to download the file. The URL is invalid.")
+                    return
+                if header.status_code != 200:
+                    QMessageBox.critical(self,
+                                         "Downloading failed",
+                                         "angr management failed to retrieve the header of the file. "
+                                         "The HTTP request returned an unexpected status code %d." % header.status_code)
+                    return
+                if 'content-disposition' in header.headers:
+                    # update the base name
+                    fnames = re.findall("filename=(.+)", header.headers['content-disposition'])
+                    if fnames:
+                        basename = fnames[0]
                 filename, folder = QFileDialog.getSaveFileName(
                     self,
                     "Download a file to...",
@@ -390,6 +409,12 @@ class MainWindow(QMainWindow):
                 if filename and folder:
                     target_path = os.path.join(folder, filename)
                     req = requests.get(file_path, allow_redirects=True)
+                    if req.status_code != 200:
+                        QMessageBox.critical(self,
+                                             "Downloading failed",
+                                             "angr management failed to download the file. "
+                                             "The HTTP request returned an unexpected status code %d." % header.status_code)
+                        return
                     with open(target_path, "wb") as f:
                         f.write(req.content)
                     # open the file - now it's a local file
