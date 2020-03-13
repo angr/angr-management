@@ -400,6 +400,11 @@ class MainWindow(QMainWindow):
         self._progress = None
         self._progressbar.hide()
 
+    def bring_to_front(self):
+        self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
+        self.raise_()
+        self.activateWindow()
+
     #
     # Private methods
     #

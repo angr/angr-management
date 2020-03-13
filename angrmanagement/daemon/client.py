@@ -29,6 +29,7 @@ class ClientService(rpyc.Service):
     def exposed_jumpto(self, addr, symbol):
 
         if self.workspace is not None:
+            gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
             if addr is not None:
                 gui_thread_schedule_async(self.workspace.jump_to, args=(addr,))
             elif symbol is not None:
