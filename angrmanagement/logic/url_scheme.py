@@ -102,7 +102,6 @@ class AngrUrlScheme:
     def _register_url_scheme_linux(self):
 
         cmd_0 = ["xdg-mime", "default", "angr.desktop", "x-scheme-handler/{url_scheme}".format(url_scheme=self.URL_SCHEME)]
-        cmd_1 = ["update-desktop-database"]
 
         # test if xdg-mime is available
         retcode = subprocess.call(["xdg-mime"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -134,9 +133,6 @@ Type=Application
         retcode = subprocess.call(cmd_0)
         if retcode != 0:
             raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % " ".join(cmd_0))
-        retcode = subprocess.call(cmd_1)
-        if retcode != 0:
-            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % " ".join(cmd_1))
 
     def _unregister_url_scheme_linux(self):
 
