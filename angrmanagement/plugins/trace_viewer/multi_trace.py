@@ -55,7 +55,7 @@ class MultiTrace:
         if hit_count == 0:
             self.function_info[func.addr] = {"color": MultiTrace.FUNCTION_NOT_VISITED_COLOR, "coverage": 0}
         elif hit_count == len(blocks):
-            self.function_info[func.addr] = {"color": MultiTrace.HIT_COLOR, "coverage": 0}
+            self.function_info[func.addr] = {"color": MultiTrace.HIT_COLOR, "coverage": 100}
         else:
             hit_percent = (hit_count / len(blocks)) * 100
             bucket_size = 100 / len(MultiTrace.BUCKET_COLORS)
