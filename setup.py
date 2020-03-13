@@ -39,6 +39,5 @@ setup(
         'toml',
         'pyxdg',
         'jupyter-client<6',
-        'tendo',
     ]
 )

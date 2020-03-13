@@ -4,10 +4,10 @@ import sys
 import subprocess
 import binascii
 
-import tendo.singleton
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
+from ..logic.singleton import SingleInstance, SingleInstanceException
 from ..utils.env import app_path
 
 
@@ -87,8 +87,9 @@ class ManagementService(rpyc.Service):
 def start_daemon(port=DEFAULT_PORT):
 
     try:
-        inst = tendo.singleton.SingleInstance()
-    except tendo.singleton.SingleInstanceException:
+        from ..logic import GlobalInfo
+        GlobalInfo.daemon_inst = SingleInstance()
+    except SingleInstanceException:
         return
 
     server = ThreadedServer(ManagementService, port=port)
@@ -97,8 +98,8 @@ def start_daemon(port=DEFAULT_PORT):
 
 def daemon_exists():
     try:
-        inst = tendo.singleton.SingleInstance()
-    except tendo.singleton.SingleInstanceException:
+        inst = SingleInstance()
+    except SingleInstanceException:
         return True
     del inst
     return False

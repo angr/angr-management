@@ -103,12 +103,13 @@ def start_management(filepath=None):
 
     # connect to daemon (if there is one)
     if not daemon_exists():
-        print("Starting a new daemon.")
+        print("[+] Starting a new daemon.")
         run_daemon_process()
         time.sleep(0.2)
+    else:
+        print("[+] Connecting to an existing angr management daemon.")
 
     while True:
-        print("Connecting to an existing angr management daemon.")
         try:
             GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
         except ConnectionRefusedError:
