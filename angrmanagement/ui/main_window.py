@@ -399,7 +399,7 @@ class MainWindow(QMainWindow):
                     # update the base name
                     fnames = re.findall("filename=(.+)", header.headers['content-disposition'])
                     if fnames:
-                        basename = fnames[0]
+                        basename = fnames[0].strip('"')
                 filename, folder = QFileDialog.getSaveFileName(
                     self,
                     "Download a file to...",
