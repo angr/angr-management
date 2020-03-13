@@ -15,5 +15,7 @@ class FileMenu(Menu):
             MenuEntry('&Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL + Qt.Key_S)),
             MenuEntry('S&ave angr database as...', main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
             MenuSeparator(),
+            MenuEntry('&Preferences...', main_window.preferences, shortcut=QKeySequence(Qt.CTRL + Qt.Key_P)),
+            MenuSeparator(),
             MenuEntry('E&xit', main_window.quit),
         ])

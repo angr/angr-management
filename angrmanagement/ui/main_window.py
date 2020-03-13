@@ -31,10 +31,10 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.sync_config import SyncConfig
 from .dialogs.about import LoadAboutDialog
+from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
 from ..config import Conf
-from ..daemon.client import DaemonClient
 from .. import plugins
 
 
@@ -372,6 +372,12 @@ class MainWindow(QMainWindow):
             file_path = file_path + ".adb"
 
         self._save_database(file_path)
+
+    def preferences(self):
+
+        # Open Preferences dialog
+        pref = Preferences(self.workspace, parent=self)
+        pref.exec_()
 
     def quit(self):
         self.close()
