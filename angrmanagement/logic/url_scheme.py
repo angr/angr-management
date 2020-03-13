@@ -2,6 +2,7 @@
 import os
 import sys
 import subprocess
+import pathlib
 
 from PySide2.QtCore import QSettings
 
@@ -121,7 +122,10 @@ Terminal=false
 MimeType=x-scheme-handler/{url_scheme};
 Type=Application
 """
-        with open(self._angr_desktop_path(), "w") as f:
+        angr_desktop_path = self._angr_desktop_path()
+        angr_desktop_base = os.path.dirname(angr_desktop_path)
+        pathlib.Path(angr_desktop_base).mkdir(parents=True, exist_ok=True)
+        with open(angr_desktop_path, "w") as f:
             f.write(
                 angr_desktop.format(app_path=app_path(), url_scheme=self.URL_SCHEME)
             )
