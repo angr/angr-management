@@ -115,7 +115,7 @@ class AngrUrlScheme:
         # extract angr.desktop
         angr_desktop = """[Desktop Entry]
 Comment=angr management
-Exec={app_path} -u "%U"
+Exec={app_path} -u %U
 Hidden=true
 Name=angr management
 Terminal=false
