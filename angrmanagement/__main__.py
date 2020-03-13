@@ -40,12 +40,13 @@ def set_app_user_model_id():
 
 
 def start_management(filepath=None):
+
     if not check_dependencies():
         sys.exit(1)
 
     set_app_user_model_id()
 
-    from PySide2.QtWidgets import QApplication, QSplashScreen
+    from PySide2.QtWidgets import QApplication, QSplashScreen, QMessageBox
     from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
     from PySide2.QtCore import Qt
 
@@ -54,6 +55,25 @@ def start_management(filepath=None):
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")
     app.setApplicationName("angr management")
+
+    # URL scheme
+    from .logic.url_scheme import AngrUrlScheme
+    scheme = AngrUrlScheme()
+    registered, _ = scheme.is_url_scheme_registered()
+    if not registered:
+        btn = QMessageBox.question(None, "Setting up angr URL scheme",
+                "angr URL scheme allows \"deep linking\" from browsers and other applications by registering the "
+                "angr:// protocol to the current user. Do you want to register it? You may unregister at any "
+                "time in Preferences.",
+                defaultButton=QMessageBox.Yes)
+        if btn == QMessageBox.Yes:
+            try:
+                AngrUrlScheme().register_url_scheme()
+            except (ValueError, FileNotFoundError) as ex:
+                QMessageBox.warning(None, "Error in registering angr URL scheme",
+                        "Failed to register the angr URL scheme.\n"
+                        "The following exception occurred:\n"
+                        + str(ex))
 
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
@@ -70,6 +90,8 @@ def start_management(filepath=None):
     from .logic import GlobalInfo
     from .ui.css import CSS
     from .ui.main_window import MainWindow
+    from .daemon import daemon_exists, run_daemon_process, daemon_conn
+    from .daemon.client import ClientService
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
@@ -78,6 +100,27 @@ def start_management(filepath=None):
 
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
+
+    # connect to daemon (if there is one)
+    if not daemon_exists():
+        print("[+] Starting a new daemon.")
+        run_daemon_process()
+        time.sleep(0.2)
+    else:
+        print("[+] Connecting to an existing angr management daemon.")
+
+    while True:
+        try:
+            GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
+        except ConnectionRefusedError:
+            print("[-] Connection failed... try again.")
+            time.sleep(0.4)
+            continue
+        print("[+] Connected to daemon.")
+        break
+
+    from rpyc import BgServingThread
+    th = BgServingThread(GlobalInfo.daemon_conn)
 
     file_to_open = filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None
     main_window = MainWindow()
@@ -88,19 +131,35 @@ def start_management(filepath=None):
 
     app.exec_()
 
+
 def main():
     import argparse
-    import runpy
 
     parser = argparse.ArgumentParser(description="angr management")
     parser.add_argument("-s", "--script", type=str, help="run a python script in the (commandline) angr environment")
     parser.add_argument("-i", "--interactive", action='store_true', help="interactive (ipython) mode")
     parser.add_argument("-n", "--no-gui", action='store_true', help="run in headless mode")
+    parser.add_argument("-d", "--daemon", action='store_true', help="start the daemon to handle angr:// URLs.")
+    parser.add_argument("-u", "--url", type=str, help="handle angr:// URLs. the daemon must be running.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
     args = parser.parse_args()
 
+    if args.daemon:
+        from .daemon import start_daemon
+        start_daemon()
+        return
+    elif args.url:
+        from .daemon import daemon_exists, handle_url, run_daemon_process, daemon_conn
+        if not daemon_exists():
+            run_daemon_process()
+            time.sleep(1)
+
+        action = handle_url(args.url, act=False)
+        action.act(daemon_conn())
+        return
     if args.script:
+        import runpy
         script_globals = runpy.run_path(args.script)
     if args.interactive:
         if args.script:

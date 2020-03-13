@@ -1,11 +1,10 @@
 import os
+import binascii
 import logging
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
-    QGroupBox, QListWidgetItem, QListWidget, QMessageBox
+    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout
 from PySide2.QtCore import Qt
-
-import cle
 
 
 l = logging.getLogger('dialogs.load_binary')
@@ -21,6 +20,8 @@ class LoadBinary(QDialog):
 
         # initialization
         self.file_path = partial_ld.main_object.binary
+        self.md5 = None
+        self.sha256 = None
         self.option_widgets = { }
 
         # return values
@@ -28,6 +29,12 @@ class LoadBinary(QDialog):
         self.load_options = None
 
         self.setWindowTitle('Load a new binary')
+
+        # checksums
+        if hasattr(partial_ld.main_object, 'md5'):
+            self.md5 = binascii.hexlify(partial_ld.main_object.md5).decode("ascii")
+        if hasattr(partial_ld.main_object, 'sha256'):
+            self.sha256 = binascii.hexlify(partial_ld.main_object.sha256).decode("ascii")
 
         self.main_layout = QVBoxLayout()
 
@@ -58,6 +65,8 @@ class LoadBinary(QDialog):
             deps.append(ident)
             processed_objects.add(obj)
 
+        # dependencies
+
         dep_list = self.option_widgets['dep_list']  # type: QListWidget
         for dep in deps:
             dep_item = QListWidgetItem(dep)
@@ -65,6 +74,9 @@ class LoadBinary(QDialog):
             dep_list.addItem(dep_item)
 
     def _init_widgets(self):
+
+        layout = QGridLayout()
+        self.main_layout.addLayout(layout)
 
         # filename
 
@@ -74,10 +86,32 @@ class LoadBinary(QDialog):
         filename = QLabel(self)
         filename.setText(self.filename)
 
-        filename_layout = QHBoxLayout()
-        filename_layout.addWidget(filename_caption)
-        filename_layout.addWidget(filename)
-        self.main_layout.addLayout(filename_layout)
+        layout.addWidget(filename_caption, 0, 0, Qt.AlignRight)
+        layout.addWidget(filename, 0, 1)
+
+        # md5
+
+        if self.md5 is not None:
+            md5_caption = QLabel(self)
+            md5_caption.setText('MD5:')
+            md5 = QLineEdit(self)
+            md5.setText(self.md5)
+            md5.setReadOnly(True)
+
+            layout.addWidget(md5_caption, 1, 0, Qt.AlignRight)
+            layout.addWidget(md5, 1, 1)
+
+        # sha256
+
+        if self.sha256 is not None:
+            sha256_caption = QLabel(self)
+            sha256_caption.setText('SHA256:')
+            sha256 = QLineEdit(self)
+            sha256.setText(self.sha256)
+            sha256.setReadOnly(True)
+
+            layout.addWidget(sha256_caption, 2, 0, Qt.AlignRight)
+            layout.addWidget(sha256, 2, 1)
 
         # central tab
 
@@ -201,3 +235,11 @@ class LoadBinary(QDialog):
         except LoadBinaryError:
             pass
         return None, None
+
+    @staticmethod
+    def binary_loading_failed(filename):
+        # TODO: Normalize the path for Windows
+        QMessageBox.critical(None,
+                             "Failed to load binary",
+                             "angr failed to load binary %s. The format is not supported "
+                             "(we don't support loading blobs yet)." % filename)

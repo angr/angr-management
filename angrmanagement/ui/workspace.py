@@ -221,6 +221,22 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def set_comment(self, addr, comment_text):
+
+        kb = self.instance.project.kb
+        if comment_text is None and addr in kb.comments:
+            del kb.comments[addr]
+        kb.comments[addr] = comment_text
+
+        # callback first
+        if self.instance.set_comment_callback:
+            self.instance.set_comment_callback(addr=addr, comment_text=comment_text)
+
+        disasm_view = self._get_or_create_disassembly_view()
+        if disasm_view._flow_graph.disasm is not None:
+            # redraw
+            disasm_view.current_graph.refresh()
+
     def decompile_current_function(self, view=None):
         if view is None or view.category != "disassembly":
             view = self._get_or_create_disassembly_view()
