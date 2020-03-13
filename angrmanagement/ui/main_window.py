@@ -1,12 +1,13 @@
 import pickle
 import os
-import traceback
+import urllib.parse
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QColor
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
+import requests
 
 try:
     import archr
@@ -348,11 +349,51 @@ class MainWindow(QMainWindow):
         self.workspace.instance.set_image(img_name)
 
     def load_file(self, file_path):
-        if os.path.isfile(file_path):
-            if file_path.endswith(".adb"):
-                self.load_database(file_path)
+
+        # is it a URL?
+        is_url = False
+        basename = "."
+        try:
+            result = urllib.parse.urlparse(file_path)
+            if result.scheme in ("http", "https"):
+                is_url = True
+                basename = os.path.basename(result.path)
+        except ValueError:
+            is_url = False
+
+        if not is_url:
+            # file
+            if os.path.isfile(file_path):
+                if file_path.endswith(".adb"):
+                    self.load_database(file_path)
+                else:
+                    self.workspace.instance.add_job(LoadBinaryJob(file_path))
             else:
-                self.workspace.instance.add_job(LoadBinaryJob(file_path))
+                QMessageBox.critical(self,
+                                     "File not found",
+                                     "angr management cannot open file %s. "
+                                     "Please make sure that the file exists." % file_path)
+        else:
+            # url
+            r = QMessageBox.question(self,
+                                     "Downloading a file to open",
+                                     "Do you want to download a file from %s and open it in angr management?" %
+                                     file_path,
+                                     defaultButton=QMessageBox.Yes)
+            if r == QMessageBox.Yes:
+                filename, folder = QFileDialog.getSaveFileName(
+                    self,
+                    "Download a file to...",
+                    basename,
+                    "Any file (*);"
+                )
+                if filename and folder:
+                    target_path = os.path.join(folder, filename)
+                    req = requests.get(file_path, allow_redirects=True)
+                    with open(target_path, "wb") as f:
+                        f.write(req.content)
+                    # open the file - now it's a local file
+                    self.load_file(target_path)
 
     def save_database(self):
         if self.workspace.instance.database_path is None:

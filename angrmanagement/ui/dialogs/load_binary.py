@@ -6,8 +6,6 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWid
     QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout
 from PySide2.QtCore import Qt
 
-import cle
-
 
 l = logging.getLogger('dialogs.load_binary')
 
@@ -237,3 +235,11 @@ class LoadBinary(QDialog):
         except LoadBinaryError:
             pass
         return None, None
+
+    @staticmethod
+    def binary_loading_failed(filename):
+        # TODO: Normalize the path for Windows
+        QMessageBox.critical(None,
+                             "Failed to load binary",
+                             "angr failed to load binary %s. The format is not supported "
+                             "(we don't support loading blobs yet)." % filename)
