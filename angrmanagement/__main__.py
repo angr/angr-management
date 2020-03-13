@@ -70,7 +70,7 @@ def start_management(filepath=None):
             try:
                 AngrUrlScheme().register_url_scheme()
             except (ValueError, FileNotFoundError) as ex:
-                QMessageBox.error(None, "Error in registering angr URL scheme",
+                QMessageBox.warning(None, "Error in registering angr URL scheme",
                         "Failed to register the angr URL scheme.\n"
                         "The following exception occurred:\n"
                         + str(ex))
