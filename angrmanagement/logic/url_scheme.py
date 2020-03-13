@@ -83,7 +83,7 @@ class AngrUrlScheme:
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.NativeFormat)
 
-        reg.remove()
+        reg.remove("")
 
     def _is_url_scheme_registered_windows(self):
 
@@ -91,8 +91,11 @@ class AngrUrlScheme:
         reg = QSettings(reg_path, QSettings.NativeFormat)
 
         if reg.contains("Default"):
-            if reg.contains("shell\\open\\command\\Default"):
-                return True, reg.value("shell\\open\\command\\Default")
+            reg.beginGroup("shell")
+            reg.beginGroup("open")
+            reg.beginGroup("command")
+            if reg.contains("Default"):
+                return True, reg.value("Default")
         return False, None
 
     #
