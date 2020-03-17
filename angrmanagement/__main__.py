@@ -39,7 +39,7 @@ def set_app_user_model_id():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
-def start_management(filepath=None):
+def start_management(filepath=None, use_daemon=False):
 
     if not check_dependencies():
         sys.exit(1)
@@ -101,26 +101,27 @@ def start_management(filepath=None):
     # apply the CSS
     app.setStyleSheet(CSS.global_css())
 
-    # connect to daemon (if there is one)
-    if not daemon_exists():
-        print("[+] Starting a new daemon.")
-        run_daemon_process()
-        time.sleep(0.2)
-    else:
-        print("[+] Connecting to an existing angr management daemon.")
+    if use_daemon:
+        # connect to daemon (if there is one)
+        if not daemon_exists():
+            print("[+] Starting a new daemon.")
+            run_daemon_process()
+            time.sleep(0.2)
+        else:
+            print("[+] Connecting to an existing angr management daemon.")
 
-    while True:
-        try:
-            GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
-        except ConnectionRefusedError:
-            print("[-] Connection failed... try again.")
-            time.sleep(0.4)
-            continue
-        print("[+] Connected to daemon.")
-        break
+        while True:
+            try:
+                GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
+            except ConnectionRefusedError:
+                print("[-] Connection failed... try again.")
+                time.sleep(0.4)
+                continue
+            print("[+] Connected to daemon.")
+            break
 
-    from rpyc import BgServingThread
-    th = BgServingThread(GlobalInfo.daemon_conn)
+        from rpyc import BgServingThread
+        th = BgServingThread(GlobalInfo.daemon_conn)
 
     file_to_open = filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None
     main_window = MainWindow()
@@ -139,8 +140,12 @@ def main():
     parser.add_argument("-s", "--script", type=str, help="run a python script in the (commandline) angr environment")
     parser.add_argument("-i", "--interactive", action='store_true', help="interactive (ipython) mode")
     parser.add_argument("-n", "--no-gui", action='store_true', help="run in headless mode")
-    parser.add_argument("-d", "--daemon", action='store_true', help="start the daemon to handle angr:// URLs.")
-    parser.add_argument("-u", "--url", type=str, help="handle angr:// URLs. the daemon must be running.")
+    parser.add_argument('-d', "--with-daemon", action='store_true', help="use angr with the daemon. this allows angr "
+                                                                         "to handle angr:// URLs. it will "
+                                                                         "automatically start a daemon if there isn't "
+                                                                         "already one running.")
+    parser.add_argument("-D", "--daemon", action='store_true', help="start a daemon to handle angr:// URLs.")
+    parser.add_argument("-u", "--url", type=str, help="(internal) handle angr:// URLs. the daemon must be running.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
     args = parser.parse_args()
