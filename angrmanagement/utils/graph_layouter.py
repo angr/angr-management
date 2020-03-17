@@ -1,5 +1,6 @@
 
 from collections import defaultdict
+from typing import List
 
 import networkx
 
@@ -268,6 +269,12 @@ class EdgeRouter:
 
 
 class GraphLayouter:
+
+    X_MARGIN = 10
+    Y_MARGIN = 5
+    ROW_MARGIN = 16
+    COL_MARGIN = 16
+
     def __init__(self, graph, node_sizes, node_compare_key=None):
         self.graph = graph
         self._node_sizes = node_sizes
@@ -289,7 +296,7 @@ class GraphLayouter:
         self._col_widths = [ ]
         self._grid_coordinates = { }
 
-        self.edges = [ ]
+        self.edges = [ ]  # type: List[Edge]
         self.node_coordinates = { }
 
         self._layout()
@@ -611,10 +618,6 @@ class GraphLayouter:
         :return: None
         """
 
-        ROW_MARGIN = 16
-        COL_MARGIN = 16
-        HORIZONTAL_EDGE_GAP = 5
-
         row_max_ids = { }
         for col, row in self._grid_max_horizontal_id.keys():
             if row not in row_max_ids:
@@ -627,13 +630,13 @@ class GraphLayouter:
             x = 0
             for col in range(self._max_col + 2):
                 self._grid_coordinates[(col, row)] = (x, y)
-                x += self._col_widths[col] + COL_MARGIN
+                x += self._col_widths[col] + self.COL_MARGIN
             if self._row_heights[row] is None:
                 self._row_heights[row] = 0
 
-            margin_height = ROW_MARGIN * 2
+            margin_height = self.ROW_MARGIN * 2
             if row in row_max_ids:
-                margin_height += HORIZONTAL_EDGE_GAP * (row_max_ids[row] + 2)
+                margin_height += 2 * self.Y_MARGIN * (row_max_ids[row] + 2)
             y += self._row_heights[row] + margin_height
 
         # nodes
@@ -668,12 +671,12 @@ class GraphLayouter:
             prev_col, prev_row = self._locations[edge.src]
             prev_col += 1
             prev_row += 1
-            x, y_base = start_point[0], start_point[1] + ROW_MARGIN
+            x, y_base = start_point[0], start_point[1] + self.ROW_MARGIN
 
             if edge.points:
                 next_col, next_row, next_idx = edge.points[0]
                 starting_col, starting_row = self._locations[edge.src]
-                y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + ROW_MARGIN
+                y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + self.ROW_MARGIN
                 y = self._indexed_y(y_base, next_idx, self._grid_max_horizontal_id[(next_col, next_row)])
             else:
                 y = y_base
@@ -691,7 +694,7 @@ class GraphLayouter:
                     # vertical
                     x = prev_x
 
-                    base_y = self._grid_coordinates[(col, row - 1)][1] + self._row_heights[row - 1] + ROW_MARGIN
+                    base_y = self._grid_coordinates[(col, row - 1)][1] + self._row_heights[row - 1] + self.ROW_MARGIN
                     if point_id == len(edge.points) - 1:
                         y = base_y  # TODO: is this correct?
                     else:
@@ -732,13 +735,11 @@ class GraphLayouter:
 
     def _indexed_x(self, base_x, idx, max_idx):
 
-        MARGIN = 10
-        return base_x + idx * MARGIN
+        return base_x + idx * self.X_MARGIN
 
     def _indexed_y(self, base_y, idx, max_idx):
 
-        MARGIN = 5
-        return base_y + idx * MARGIN
+        return base_y + idx * self.Y_MARGIN
 
     def _nointersecting_y(self, row, starting_col, ending_col, default=None):
         """
