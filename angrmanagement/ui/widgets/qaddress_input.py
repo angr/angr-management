@@ -2,8 +2,10 @@ from PySide2.QtWidgets import QLineEdit
 
 
 class QAddressInput(QLineEdit):
-    def __init__(self, textchanged_callback, parent=None, default=None):
+    def __init__(self, textchanged_callback, workspace, parent=None, default=None):
         super(QAddressInput, self).__init__(parent)
+
+        self.workspace = workspace
 
         if default is not None:
             self.setText(str(default))
@@ -27,11 +29,21 @@ class QAddressInput(QLineEdit):
         r = self._convert_to_addr(input)
         return r is not None
 
-    def _convert_to_addr(self, input):
+    def _convert_to_addr(self, input_):
         # TODO: take care of labels
+        # TODO: take care of decimal integers
 
+        # is it a hex?
         try:
-            addr = int(input, 16)
+            addr = int(input_, 16)
             return addr
         except ValueError:
-            return None
+            pass
+
+        # is it a function name?
+        functions = self.workspace.instance.project.kb.functions
+        func = functions.function(name=input_, create=False)
+        if func is not None:
+            return func.addr
+
+        return None
