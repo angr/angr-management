@@ -406,7 +406,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 func = self.cfg.kb.functions[func_addr]
                 disasm = self._get_disasm(func)
                 qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                       self.disasm_view.infodock, obj.addr, [obj], {},
+                                       self.disasm_view.infodock, obj.addr, [obj], {}, None,
                                        )
             else:
                 # TODO: Get disassembly even if the function does not exist
