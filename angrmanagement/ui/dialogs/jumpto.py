@@ -36,7 +36,7 @@ class JumpTo(QDialog):
         address_label = QLabel(self)
         address_label.setText('Address')
 
-        address = QAddressInput(self._on_address_changed, parent=self)
+        address = QAddressInput(self._on_address_changed, self._disasm_view.workspace, parent=self)
         self._address_box = address
 
         address_layout = QHBoxLayout()
@@ -72,6 +72,7 @@ class JumpTo(QDialog):
     #
 
     def _on_address_changed(self, new_text):
+
         if self._address_box.target is None:
             # the address is invalid
 
