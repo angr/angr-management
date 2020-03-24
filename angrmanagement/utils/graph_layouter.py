@@ -79,6 +79,9 @@ class EdgeRouter:
         # start from the next row
         start_row += 1
 
+        start_idx = self._assign_edge_to(edge, 'vertical', start_col, start_row, 0)
+        edge.add_point(start_col, start_row, start_idx)
+
         if start_row < end_row:
             min_row, max_row = start_row, end_row
         else:
@@ -130,7 +133,13 @@ class EdgeRouter:
             edge.add_point(end_col, end_row, idx)
             edge.add_move(move)
 
+            # move downwards
+            # in a new grid, we need a new edge index
+            idx = self._assign_edge_to(edge, 'vertical', end_col, end_row, 0)
+            edge.add_point(end_col, end_row, idx)
+
         self._add_edge(edge)
+        # print(src, dst, edge.points)
 
         return edge
 
@@ -244,7 +253,8 @@ class EdgeRouter:
             max_idx = None
 
             if len(edges) == 2:
-                edges = sorted(edges, key=lambda edge: edge.last_move, reverse=True) # sort by their last horizontal move
+                # sort by their last horizontal move
+                edges = sorted(edges, key=lambda edge: edge.last_move, reverse=True)
 
             for idx, edge in enumerate(edges):
                 edge.end_index = idx
@@ -320,11 +330,11 @@ class GraphLayouter:
         self._vertical_edges = edge_router.vertical_edges
         self._horizontal_edges = edge_router.horizontal_edges
 
-        # determine row and column sizes
-        self._make_grids()
-
         # determine the maximum index for each grid
         self._set_max_grid_edge_id()
+
+        # determine row and column sizes
+        self._make_grids()
 
         # calculate coordinates of nodes
         self._calculate_coordinates()
@@ -571,6 +581,7 @@ class GraphLayouter:
         self._row_heights = [ 0 ] * (self._max_row + 2)
         self._col_widths = [ 0 ] * (self._max_col + 2)
 
+        # update grid sizes based on nodes
         for node in self.graph.nodes():
             col, row = self._locations[node]
 
@@ -584,9 +595,24 @@ class GraphLayouter:
             if col + 1 < len(self._col_widths) and self._col_widths[col + 1] < width // 2:
                 self._col_widths[col + 1] = width // 2
 
+        # update grid sizes based on edges
+        for col in range(self._max_col + 2):
+            for row in range(self._max_row + 2):
+                key = (col, row)
+                if key in self._grid_max_vertical_id:
+                    col_width = (self._grid_max_vertical_id[key] + 2) * self.X_MARGIN
+                    if self._col_widths[col] < col_width:
+                        self._col_widths[col] = col_width
+                if key in self._grid_max_horizontal_id:
+                    row_height = (self._grid_max_horizontal_id[key] + 2) * self.Y_MARGIN
+                    if self._row_heights[row] < row_height:
+                        self._row_heights[row] = row_height
+
         # the left-most and the right-most column do not have any node assigned to it
-        self._col_widths[0] = 20
-        self._col_widths[-1] = 20
+        if self._col_widths[0] < 20:
+            self._col_widths[0] = 20
+        if self._col_widths[-1] < 20:
+            self._col_widths[-1] = 20
 
     def _set_max_grid_edge_id(self):
         """
@@ -663,8 +689,9 @@ class GraphLayouter:
             # dst_node_col, dst_node_row = self._locations[edge.dst]
 
             # start point
-            start_point_x_base = src_node_x + src_node_width // 2 - 5 * ((edge.max_start_index + 1) // 2)
-            start_point_x = self._indexed_x(start_point_x_base, edge.start_index, edge.max_start_index)
+            _, _, start_x_index = edge.points[0]
+            start_point_x_base = src_node_x + src_node_width // 2 - (self.X_MARGIN * (edge.max_start_index + 1) // 2)
+            start_point_x = self._indexed_x(start_point_x_base, start_x_index)
             start_point = (start_point_x, src_node_y + src_node_height)
             edge.add_coordinate(*start_point)
 
@@ -673,44 +700,45 @@ class GraphLayouter:
             prev_row += 1
             x, y_base = start_point[0], start_point[1] + self.ROW_MARGIN
 
-            if edge.points:
-                next_col, next_row, next_idx = edge.points[0]
+            if len(edge.points) > 1:
+                next_col, next_row, next_idx = edge.points[1]
                 starting_col, starting_row = self._locations[edge.src]
                 y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + self.ROW_MARGIN
-                y = self._indexed_y(y_base, next_idx, self._grid_max_horizontal_id[(next_col, next_row)])
+                y = self._indexed_y(y_base, next_idx)
             else:
                 y = y_base
 
             # add a line that moves downwards from the exit
             edge.add_coordinate(x, y)
+
             # set previous x and y
             prev_x, prev_y = x, y
 
             # each point on the edge
 
-            for point_id, (col, row, _) in enumerate(edge.points):
+            for point_id, (col, row, _) in enumerate(edge.points[1:-1]):
                 if col == prev_col:
                     assert row != prev_row
                     # vertical
                     x = prev_x
 
                     base_y = self._grid_coordinates[(col, row - 1)][1] + self._row_heights[row - 1] + self.ROW_MARGIN
-                    if point_id == len(edge.points) - 1:
-                        y = base_y  # TODO: is this correct?
+                    if point_id + 1 == len(edge.points) - 2:
+                        y = base_y
                     else:
-                        next_col, next_row, next_idx = edge.points[point_id + 1]
-                        y = self._indexed_y(base_y, next_idx, self._grid_max_horizontal_id[(next_col, next_row)])
+                        next_col, next_row, next_idx = edge.points[point_id + 1 + 1]
+                        y = self._indexed_y(base_y, next_idx)
 
                 elif row == prev_row:
                     assert col != prev_col
                     # horizontal
-                    if point_id == len(edge.points) - 1:
+                    if point_id + 1 == len(edge.points) - 2:
                         base_x = dst_node_x + dst_node_width // 2
-                        x = self._indexed_x(base_x, edge.end_index, edge.max_end_index)
+                        x = self._indexed_x(base_x, edge.end_index)
                     else:
-                        next_col, next_row, next_idx = edge.points[point_id + 1]
+                        next_col, next_row, next_idx = edge.points[point_id + 1 + 1]
                         base_x = self._grid_coordinates[(col, row)][0]
-                        x = self._indexed_x(base_x, next_idx, self._grid_max_vertical_id[(next_col, next_row)])
+                        x = self._indexed_x(base_x, next_idx)
 
                     y = prev_y
 
@@ -725,19 +753,20 @@ class GraphLayouter:
                 prev_x, prev_y = x, y
 
             # the last point, which is always at the top of the destination node
-            base_x = dst_node_x + dst_node_width // 2 - 5 * ((edge.max_end_index + 1) // 2)
-            x = self._indexed_x(base_x, edge.end_index, edge.max_end_index)
+            base_x = dst_node_x + dst_node_width // 2 - (self.X_MARGIN * (edge.max_end_index + 1) // 2)
+            _, _, end_x_index = edge.points[-1]
+            x = self._indexed_x(base_x, end_x_index)
             if x != prev_x:
                 # add an extra coordinate to move horizontally
                 edge.add_coordinate(x, prev_y)
             end_point = (x, dst_node_y - 6)
             edge.add_coordinate(*end_point)
 
-    def _indexed_x(self, base_x, idx, max_idx):
+    def _indexed_x(self, base_x, idx):
 
         return base_x + idx * self.X_MARGIN
 
-    def _indexed_y(self, base_y, idx, max_idx):
+    def _indexed_y(self, base_y, idx):
 
         return base_y + idx * self.Y_MARGIN
 
