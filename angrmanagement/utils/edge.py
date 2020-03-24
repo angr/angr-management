@@ -7,7 +7,7 @@ class EdgeSort(object):
     BACK_EDGE = 3
 
 
-class Edge(object):
+class Edge:
     def __init__(self, src, dst):
 
         self.src = src
