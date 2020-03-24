@@ -34,4 +34,8 @@ class QAddressInput(QLineEdit):
             addr = int(input, 16)
             return addr
         except ValueError:
-            return None
+            try:
+                addr = self.parent().parent().workspace.instance.project.kb.functions[input].addr
+                return addr
+            except KeyError:
+                return None
