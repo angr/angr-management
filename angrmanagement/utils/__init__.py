@@ -90,8 +90,8 @@ def get_block_objects(disasm, nodes, func_addr):
 
     # instructions and labels
     for insn_addr in insn_addrs:
-        if insn_addr in disasm.kb.labels:
-            lst.append((insn_addr, disasm.kb.labels[insn_addr] + ":"))
+        if insn_addr != func_addr and insn_addr in disasm.kb.labels:
+            lst.append(Label(insn_addr, get_label_text(insn_addr, disasm.kb)))
         lst.append(disasm.raw_result_map['instructions'][insn_addr])
 
     # initial label, if there is any

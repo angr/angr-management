@@ -81,12 +81,13 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
         self._insaddr_to_block.clear()
 
         supergraph = self._function_graph.supergraph
+        scene = self.scene()
         for n in supergraph.nodes():
             block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disasm_view, self.disasm,
-                           self.infodock, n.addr, n.cfg_nodes, get_out_branches(n))
+                           self.infodock, n.addr, n.cfg_nodes, get_out_branches(n), scene)
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block
-            self.scene().addItem(block)
+            scene.addItem(block)
             self.blocks.append(block)
 
             for insn_addr in block.addr_to_insns.keys():
@@ -94,7 +95,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
         self.request_relayout()
         # Leave some margins
-        scene = self.scene()
         rect = scene.itemsBoundingRect()  # type: QRectF
         scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
 
@@ -255,6 +255,19 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
             # make it visible in the center
             self.centerOn(x, y)
+
+    def update_label(self, addr, is_renaming=False):
+        block = self._insaddr_to_block.get(addr, None)  # type: QGraphBlock
+        if block is not None:
+            if is_renaming:
+                # we just need to refresh the current block
+                # block.refresh()  # TODO: We should be able to just refresh that single label
+                block.reload()
+            else:
+                # life is hard... we need to reload the block, and then re-layout the entire graph because of size
+                # changes
+                block.reload()
+                self.request_relayout()
 
     #
     # Private methods

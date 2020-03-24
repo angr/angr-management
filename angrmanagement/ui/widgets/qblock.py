@@ -26,7 +26,8 @@ class QBlock(QCachedGraphicsItem):
     RIGHT_PADDING = 10
     SPACING = 0
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, parent=None):
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
+                 parent=None):
         super().__init__(parent=parent)
 
         # initialization
@@ -39,6 +40,7 @@ class QBlock(QCachedGraphicsItem):
         self.addr = addr
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
+        self.scene = scene
 
         self._config = Conf
 
@@ -73,16 +75,16 @@ class QBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    def refresh_if_contains_addr(self, addr1, addr2):
-        if addr1 in self.addr_to_insns or addr2 in self.addr_to_insns:
-            self.refresh()
-
     def refresh(self):
         for obj in self.objects:
             obj.refresh()
         self.recalculate_size()
         self._create_block_item()
         self.update()
+
+    def reload(self):
+        self._init_widgets()
+        self.refresh()
 
     def size(self):
         return self.width, self.height
@@ -108,6 +110,10 @@ class QBlock(QCachedGraphicsItem):
         self._block_item.addRect(0, 0, self.width, self.height)
 
     def _init_widgets(self):
+
+        if self.scene is not None:
+            for obj in self.objects:
+                self.scene.removeItem(obj)
 
         self.objects.clear()
         block_objects = get_block_objects(self.disasm, self.cfg_nodes, self.func_addr)
