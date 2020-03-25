@@ -11,7 +11,7 @@ class FileMenu(Menu):
 
         self.entries.extend([
             MenuEntry('L&oad a new binary...', main_window.open_file_button, shortcut=QKeySequence(Qt.CTRL + Qt.Key_O)),
-            MenuEntry('Loa&d a new docker target...', main_window.open_docker_button, shortcut=QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_O)),
+            MenuEntry('Loa&d a new docker target...', main_window.open_docker_button, shortcut=QKeySequence(Qt.SHIFT + (Qt.CTRL + Qt.Key_O))),
             MenuEntry('&Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL + Qt.Key_S)),
             MenuEntry('S&ave angr database as...', main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
             MenuSeparator(),
