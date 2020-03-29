@@ -30,22 +30,23 @@ class CodeView(BaseView):
         self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
 
-
     def reload(self):
         if self.workspace.instance.project is None:
             return
-        self._options.options = self._options.get_default_options()
+        self._options.reload(force=True)
 
     def decompile(self):
 
         if self._function is None:
             return
 
-        d = self.workspace.instance.project.analyses.Decompiler(self._function,
-                                                                cfg=self.workspace.instance.cfg,
-                                                                optimization_passes=self._options.selected_options,
-                                                                # kb=dec_kb
-                                                                )
+        d = self.workspace.instance.project.analyses.Decompiler(
+            self._function,
+            cfg=self.workspace.instance.cfg,
+            options=self._options.option_and_values,
+            optimization_passes=self._options.selected_passes,
+            # kb=dec_kb
+            )
         self._doc = QCodeDocument(d.codegen)
         self._textedit.setDocument(self._doc)
         self._highlighter = QCCodeHighlighter(self._doc)
