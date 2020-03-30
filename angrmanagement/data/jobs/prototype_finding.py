@@ -9,8 +9,8 @@ class PrototypeFindingJob(Job):
 
     def run(self, inst):
 
-        func_count = len(inst.cfg.functions)
-        for i, func in enumerate(inst.cfg.functions.values()):
+        func_count = len(inst.kb.functions)
+        for i, func in enumerate(inst.kb.functions.values()):
             if func.is_simprocedure or func.is_plt:
                 func.find_declaration()
 

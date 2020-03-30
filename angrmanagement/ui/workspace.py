@@ -90,9 +90,9 @@ class Workspace:
 
         # display the main function if it exists, otherwise display the function at the entry point
         if self.instance.cfg is not None:
-            the_func = self.instance.cfg.kb.functions.function(name='main')
+            the_func = self.instance.kb.functions.function(name='main')
             if the_func is None:
-                the_func = self.instance.cfg.kb.functions.function(addr=self.instance.cfg.project.entry)
+                the_func = self.instance.kb.functions.function(addr=self.instance.project.entry)
 
             if the_func is not None:
                 self.on_function_selected(the_func)

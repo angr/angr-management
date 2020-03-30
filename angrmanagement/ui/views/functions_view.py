@@ -39,7 +39,7 @@ class FunctionsView(BaseView):
     def reload(self):
         # TODO: this is such a shitshow. all the sub-elements should sync on the cfg directly.
         if self.workspace.instance.cfg is not None:
-            self._function_table.function_manager = self.workspace.instance.cfg.functions
+            self._function_table.function_manager = self.workspace.instance.kb.functions
 
     def minimumSizeHint(self, *args, **kwargs):
         return QSize(100, 0)

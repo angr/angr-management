@@ -110,7 +110,7 @@ class QInstruction(QCachedGraphicsItem):
         return None
 
     def load_comment(self):
-        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        self._comment = get_comment_for_display(self.workspace.instance.kb, self.insn.addr)
         if self._comment is not None:
             self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
 

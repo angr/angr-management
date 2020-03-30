@@ -84,9 +84,9 @@ class TraceStatistics:
             for addr in block.instruction_addrs:
                 self._positions[addr].append(p)
 
-            node = self.workspace.instance.cfg.model.get_any_node(bbl_addr)
+            node = self.workspace.instance.cfg.get_any_node(bbl_addr)
             if node is None: #try again without asssuming node is start of a basic block
-                node = self.workspace.instance.cfg.model.get_any_node(bbl_addr, anyaddr=True)
+                node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
 
             func_name = hex(bbl_addr) #default to using bbl_addr as name if none is not found
             if node is not None:

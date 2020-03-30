@@ -9,8 +9,8 @@ class CodeTaggingJob(Job):
 
     def run(self, inst):
 
-        func_count = len(inst.cfg.functions)
-        for i, func in enumerate(inst.cfg.functions.values()):
+        func_count = len(inst.kb.functions)
+        for i, func in enumerate(inst.kb.functions.values()):
             ct = inst.project.analyses.CodeTagging(func)
             func.tags = tuple(ct.tags)
 

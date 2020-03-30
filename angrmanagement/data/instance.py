@@ -31,7 +31,7 @@ class Instance:
         self.register_container('simgrs', lambda: [], List[angr.SimulationManager], 'Global simulation managers list')
         self.register_container('states', lambda: [], List[angr.SimState], 'Global states list')
         self.register_container('patches', lambda: None, None, 'Global patches update notifier') # dummy
-        self.register_container('cfg_container', lambda: None, Optional[angr.analyses.cfg.CFGBase], "The current CFG")
+        self.register_container('cfg_container', lambda: None, Optional[angr.knowledge_plugins.cfg.CFGModel], "The current CFG")
         self.register_container('cfb_container', lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
         self.register_container('interactions', lambda: [], List[SavedInteraction], 'Saved program interactions')
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
@@ -69,6 +69,12 @@ class Instance:
     @property
     def project_container(self):
         return self._project_container
+
+    @property
+    def kb(self):
+        if self.project is None:
+            return None
+        return self.project.kb
 
     @property
     def cfg(self):

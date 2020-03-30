@@ -17,7 +17,7 @@ def locate_function(inst, addr):
     if inst.cfg is None:
         return None
 
-    functions = inst.cfg.functions
+    functions = inst.kb.functions
     for _, function in functions.items():
         for block in function.blocks:
             if block.addr <= addr < block.addr + block.size:
