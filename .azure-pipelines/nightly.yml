@@ -67,7 +67,7 @@ stages:
         title: angr-management nightly preview $(Build.BuildNumber)
         releaseNotesSource: input
         releaseNotes: >
-          This release is an automatically generate pre-release. We do our best
+          This release is an automatically generated pre-release. We do our best
           to make sure everything works, but be advised that features could
           break or change without notice.
         isPreRelease: true
