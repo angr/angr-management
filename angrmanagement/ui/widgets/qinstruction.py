@@ -110,7 +110,7 @@ class QInstruction(QCachedGraphicsItem):
         return None
 
     def load_comment(self):
-        self._comment = get_comment_for_display(self.workspace.instance.cfg.kb, self.insn.addr)
+        self._comment = get_comment_for_display(self.workspace.instance.kb, self.insn.addr)
         if self._comment is not None:
             self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
 
@@ -191,9 +191,10 @@ class QInstruction(QCachedGraphicsItem):
                                 self._config, parent=self)
             self._operands.append(qoperand)
 
-        if should_display_string_label(self.workspace.instance.cfg, self.insn.addr):
+        if should_display_string_label(self.workspace.instance.cfg, self.insn.addr, self.workspace.instance.project):
             # yes we should display a string label
-            self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr)
+            self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr,
+                                                  self.workspace.instance.project)
             self._string_width = self._config.disasm_font_width * len(self._string)
 
         self.load_comment()

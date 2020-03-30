@@ -290,7 +290,7 @@ class QTraceViewer(QWidget):
         return self.trace.get_bbl_from_position(position)
 
     def _get_func_from_func_name(self, func_name):
-        return self.workspace.instance.cfg.kb.functions.function(name=func_name)
+        return self.workspace.instance.kb.functions.function(name=func_name)
 
     def _get_func_from_y(self, y):
         position = self._get_position(y)
