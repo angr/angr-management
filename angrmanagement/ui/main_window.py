@@ -10,6 +10,8 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import requests
 
+import angr
+
 try:
     import archr
     import keystone
@@ -327,6 +329,8 @@ class MainWindow(QMainWindow):
 
     def open_file_button(self):
         file_path = self._open_mainfile_dialog()
+        if not file_path:
+            return
         self.load_file(file_path)
 
     def open_docker_button(self):
@@ -366,7 +370,7 @@ class MainWindow(QMainWindow):
             # file
             if os.path.isfile(file_path):
                 if file_path.endswith(".adb"):
-                    self.load_database(file_path)
+                    self._load_database(file_path)
                 else:
                     self.workspace.instance.add_job(LoadBinaryJob(file_path))
             else:
@@ -420,7 +424,22 @@ class MainWindow(QMainWindow):
                     # open the file - now it's a local file
                     self.load_file(target_path)
 
+    def load_database(self):
+        # Open File window
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Load angr database", ".",
+            "angr databases (*.adb)",
+        )
+
+        if not file_path:
+            return
+
+        self._load_database(file_path)
+
     def save_database(self):
+        if self.workspace.instance is None or self.workspace.instance.project is None:
+            return
+
         if self.workspace.instance.database_path is None:
             self.save_database_as()
         else:
@@ -428,11 +447,17 @@ class MainWindow(QMainWindow):
 
     def save_database_as(self):
 
+        if self.workspace.instance is None or self.workspace.instance.project is None:
+            return
+
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Save angr database", ".",
             "angr databases (*.adb)",
         )
+
+        if not file_path:
+            return
 
         if not file_path.endswith(".adb"):
             file_path = file_path + ".adb"
@@ -482,19 +507,32 @@ class MainWindow(QMainWindow):
     #
 
     def _load_database(self, file_path):
-        with open(file_path, "rb") as o:
-            p,cfg,cfb = pickle.load(o)
-        self.workspace.instance.project = p
+
+        angrdb = angr.AngrDB()
+        proj = angrdb.load(file_path)
+
+        cfg = proj.kb.cfgs['CFGFast']
+        cfb = proj.analyses.CFB()  # it will load functions from kb
+
+        self.workspace.instance.database_path = file_path
+
+        self.workspace.instance.project = proj
         self.workspace.instance.cfg = cfg
         self.workspace.instance.cfb = cfb
+
+        # trigger callbacks
         self.workspace.reload()
         self.workspace.on_cfg_generated()
-        self.workspace.instance.database_path = file_path
+
         print("DATABASE %s LOADED" % file_path)
 
     def _save_database(self, file_path):
-        with open(file_path, "wb") as o:
-            pickle.dump((self.workspace.instance.project, self.workspace.instance.cfg, self.workspace.instance.cfb), o)
+        if self.workspace.instance is None or self.workspace.instance.project is None:
+            return
+
+        angrdb = angr.AngrDB(project=self.workspace.instance.project)
+        angrdb.dump(file_path)
+
         self.workspace.instance.database_path = file_path
         print("DATABASE %s SAVED" % file_path)
 
