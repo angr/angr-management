@@ -150,7 +150,14 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
         return next(iter(out_branch_map.values()))
 
 
-def should_display_string_label(cfg, insn_addr):
+def fast_memory_load_pointer(project, addr, size=None):
+    try:
+        return project.loader.memory.unpack_word(addr, size=size)
+    except KeyError:
+        return None
+
+
+def should_display_string_label(cfg, insn_addr, project):
 
     if not insn_addr in cfg.insn_addr_to_memory_data:
         return False
@@ -160,7 +167,7 @@ def should_display_string_label(cfg, insn_addr):
         return True
     elif memory_data.sort == 'pointer-array' and memory_data.size == cfg.project.arch.bytes:
         # load the pointer
-        ptr = cfg._fast_memory_load_pointer(memory_data.address)
+        ptr = fast_memory_load_pointer(project, memory_data.address)
         try:
             # see if the pointer is pointing to a string
             return cfg.memory_data[ptr].sort == 'string'
@@ -174,7 +181,7 @@ def filter_string_for_display(s):
     return s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t")
 
 
-def get_string_for_display(cfg, insn_addr):
+def get_string_for_display(cfg, insn_addr, project):
 
     MAX_SIZE = 20
 
@@ -185,7 +192,7 @@ def get_string_for_display(cfg, insn_addr):
     if memory_data.sort == "string":
         str_content = memory_data.content.decode("utf-8")
     elif memory_data.sort == 'pointer-array':
-        ptr = cfg._fast_memory_load_pointer(memory_data.address)
+        ptr = fast_memory_load_pointer(project, memory_data.address)
         if ptr in cfg.memory_data:
             next_level = cfg.memory_data[ptr]
             if next_level.sort == 'string':
