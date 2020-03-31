@@ -98,8 +98,7 @@ class QFeatureMap(QWidget):
             return
 
         if not self._regions_painted:
-            self._regions_painted = True
-            self._paint_regions()
+            self._regions_painted = self._paint_regions()
 
     def select_offset(self, offset):
 
@@ -131,7 +130,7 @@ class QFeatureMap(QWidget):
         cfb = self.instance.cfb_container.am_obj
 
         if cfb is None:
-            return
+            return False
 
         # colors
         func_color = Conf.feature_map_color_regular_function
@@ -193,6 +192,8 @@ class QFeatureMap(QWidget):
             if new_region:
                 pen = QPen(delimiter_color)
                 self.view._scene.addLine(pos, 0, pos, height, pen)
+
+        return True
 
     def _adjust_region_size(self, memory_region):
 
