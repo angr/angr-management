@@ -410,7 +410,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                                        )
             else:
                 # TODO: Get disassembly even if the function does not exist
-                _l.warning("Function %#x does not exist, and we cannot get disassembly for block %s.",
+                _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
                            func_addr, obj)
                 qobject = None
         elif isinstance(obj, Unknown):
