@@ -281,11 +281,6 @@ class QOperand(QCachedGraphicsItem):
                         self.variable = variable
                         self._variable_ident = "<%s>" % variable.ident
                         if offset is None:
-                            # unexpected
-                            # TODO: Figure out why
-                            l.warning("Got an unexpected None for variable offset when variable %s is not None.",
-                                      variable
-                                      )
                             offset = 0
 
                         variable_str = variable.name
