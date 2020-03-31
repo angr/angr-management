@@ -400,10 +400,10 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
 
     def _obj_to_paintable(self, obj_addr, obj):
         if isinstance(obj, Block):
-            cfg_node = self.cfg.model.get_any_node(obj_addr, force_fastpath=True)
+            cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             func_addr = cfg_node.function_address
-            if self.cfg.kb.functions.contains_addr(func_addr):
-                func = self.cfg.kb.functions[func_addr]
+            if self.workspace.instance.kb.functions.contains_addr(func_addr):
+                func = self.workspace.instance.kb.functions[func_addr]
                 disasm = self._get_disasm(func)
                 qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
                                        self.disasm_view.infodock, obj.addr, [obj], {}, None,
