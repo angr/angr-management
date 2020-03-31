@@ -516,6 +516,7 @@ class MainWindow(QMainWindow):
 
         self.workspace.instance.database_path = file_path
 
+        self.workspace.instance.initialized = True  # skip automated CFG recovery
         self.workspace.instance.project = proj
         self.workspace.instance.cfg = cfg
         self.workspace.instance.cfb = cfb
