@@ -10,7 +10,11 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import requests
 
-import angr
+try:
+    from angr.angrdb import AngrDB
+except ImportError as ex:
+    print(str(ex))
+    AngrDB = None
 
 try:
     import archr
@@ -508,7 +512,12 @@ class MainWindow(QMainWindow):
 
     def _load_database(self, file_path):
 
-        angrdb = angr.AngrDB()
+        if AngrDB is None:
+            QMessageBox.critical(None, 'Error',
+                                 'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
+            return
+
+        angrdb = AngrDB()
         proj = angrdb.load(file_path)
 
         cfg = proj.kb.cfgs['CFGFast']
@@ -525,17 +534,19 @@ class MainWindow(QMainWindow):
         self.workspace.reload()
         self.workspace.on_cfg_generated()
 
-        print("DATABASE %s LOADED" % file_path)
-
     def _save_database(self, file_path):
         if self.workspace.instance is None or self.workspace.instance.project is None:
             return
 
-        angrdb = angr.AngrDB(project=self.workspace.instance.project)
+        if AngrDB is None:
+            QMessageBox.critical(None, 'Error',
+                                 'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
+            return
+
+        angrdb = AngrDB(project=self.workspace.instance.project)
         angrdb.dump(file_path)
 
         self.workspace.instance.database_path = file_path
-        print("DATABASE %s SAVED" % file_path)
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.view_manager.docks
