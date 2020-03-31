@@ -305,6 +305,28 @@ class MainWindow(QMainWindow):
         self._recalculate_view_sizes(event.oldSize())
 
     def closeEvent(self, event):
+
+        # Ask if the user wants to save things
+        if self.workspace.instance is not None and self.workspace.instance.project is not None:
+            msgbox = QMessageBox()
+            msgbox.setWindowTitle("Save database")
+            msgbox.setText("angr management is about to exit. Do you want to save the database?")
+            msgbox.setIcon(QMessageBox.Question)
+            msgbox.setWindowIcon(self.windowIcon())
+            msgbox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            msgbox.setDefaultButton(QMessageBox.Yes)
+            r = msgbox.exec_()
+
+            if r == QMessageBox.Cancel:
+                event.ignore()
+                return
+            elif r == QMessageBox.Yes:
+                save_r = self.save_database()
+                if not save_r:
+                    # failed to save the database
+                    event.ignore()
+                    return
+
         for plugin in list(self.workspace.plugins.active_plugins):
             self.workspace.plugins.deactivate_plugin(plugin)
         event.accept()
@@ -442,31 +464,35 @@ class MainWindow(QMainWindow):
 
     def save_database(self):
         if self.workspace.instance is None or self.workspace.instance.project is None:
-            return
+            return True
 
         if self.workspace.instance.database_path is None:
-            self.save_database_as()
+            return self.save_database_as()
         else:
-            self._save_database(self.workspace.instance.database_path)
+            return self._save_database(self.workspace.instance.database_path)
 
     def save_database_as(self):
 
         if self.workspace.instance is None or self.workspace.instance.project is None:
-            return
+            return False
+
+        default_database_path = self.workspace.instance.database_path
+        if default_database_path is None:
+            default_database_path = os.path.normpath(self.workspace.instance.project.filename) + ".adb"
 
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save angr database", ".",
+            self, "Save angr database", default_database_path,
             "angr databases (*.adb)",
         )
 
         if not file_path:
-            return
+            return False
 
         if not file_path.endswith(".adb"):
             file_path = file_path + ".adb"
 
-        self._save_database(file_path)
+        return self._save_database(file_path)
 
     def preferences(self):
 
@@ -536,17 +562,18 @@ class MainWindow(QMainWindow):
 
     def _save_database(self, file_path):
         if self.workspace.instance is None or self.workspace.instance.project is None:
-            return
+            return False
 
         if AngrDB is None:
             QMessageBox.critical(None, 'Error',
                                  'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
-            return
+            return False
 
         angrdb = AngrDB(project=self.workspace.instance.project)
         angrdb.dump(file_path)
 
         self.workspace.instance.database_path = file_path
+        return True
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.view_manager.docks
