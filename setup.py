@@ -40,5 +40,6 @@ setup(
         'pyxdg',
         'jupyter-client<6',
         'requests',
+        'sqlalchemy',
     ]
 )
