@@ -160,7 +160,12 @@ class QFeatureMap(QWidget):
             # are we in a new region?
             new_region = False
             if current_region is None or not (current_region.addr <= addr < current_region.addr + current_region.size):
-                current_region_addr = next(self._addr_to_region.irange(maximum=addr, reverse=True))
+                try:
+                    current_region_addr = next(self._addr_to_region.irange(maximum=addr, reverse=True))
+                except StopIteration:
+                    # FIXME: it's not within any of the known regions
+                    # we should fix this in the future. for now, let's make sure it does not crash
+                    continue
                 current_region = self._addr_to_region[current_region_addr]
                 new_region = True
 
