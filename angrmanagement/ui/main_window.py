@@ -2,6 +2,7 @@ import pickle
 import os
 import re
 import urllib.parse
+from typing import Optional
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
@@ -10,11 +11,13 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import requests
 
+import angr
 try:
     from angr.angrdb import AngrDB
 except ImportError as ex:
     print(str(ex))
-    AngrDB = None
+    AngrDB = None  # type: Optional[type]
+
 
 try:
     import archr
@@ -544,7 +547,18 @@ class MainWindow(QMainWindow):
             return
 
         angrdb = AngrDB()
-        proj = angrdb.load(file_path)
+        try:
+            proj = angrdb.load(file_path)
+        except angr.errors.AngrIncompatibleDBError as ex:
+            QMessageBox.critical(None, 'Error',
+                                 "Failed to load the angr database because of compatibility issues.\n"
+                                 "Details: %s" % str(ex))
+            return
+        except angr.errors.AngrDBError as ex:
+            QMessageBox.critical(None, 'Error',
+                                 'Failed to load the angr database.\n'
+                                 'Details: %s' % str(ex))
+            return
 
         cfg = proj.kb.cfgs['CFGFast']
         cfb = proj.analyses.CFB()  # it will load functions from kb
