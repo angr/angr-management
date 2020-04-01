@@ -53,6 +53,8 @@ class Instance:
         # The image name when loading image
         self.img_name = None
 
+        self.initialized = False
+
     #
     # Properties
     #
@@ -175,16 +177,19 @@ class Instance:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event()
 
-        if cfg_args is None:
-            cfg_args = {}
-        # save cfg_args
-        self.cfg_args = cfg_args
+        if not self.initialized:
+            self.initialized = True
 
-        # generate CFG
-        cfg_job = self.generate_cfg()
+            if cfg_args is None:
+                cfg_args = {}
+            # save cfg_args
+            self.cfg_args = cfg_args
 
-        # start daemon
-        self._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
+            # generate CFG
+            cfg_job = self.generate_cfg()
+
+            # start daemon
+            self._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
 
     def generate_cfg(self):
         cfg_job = CFGGenerationJob(

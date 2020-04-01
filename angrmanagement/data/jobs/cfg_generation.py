@@ -43,7 +43,7 @@ class CFGGenerationJob(Job):
                                         )
         self._cfb = None
         # Build the real one
-        cfb = inst.project.analyses.CFB(cfg=cfg)
+        cfb = inst.project.analyses.CFB(kb=cfg.kb)
 
         return cfg, cfb
 
