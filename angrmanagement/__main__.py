@@ -17,13 +17,15 @@ BUGGY_PYSIDE2_VERSIONS = [
 
 def check_dependencies():
 
+    missing_dep = False
+
     try:
         import PySide2
     except ImportError:
         PySide2 = None
         sys.stderr.write("Cannot find the PySide2 package. You may install it via pip:\n" +
                          "    pip install pyside2\n")
-        return False
+        missing_dep = True
 
     # version check
     if PySide2 is not None and PySide2.__version__ in BUGGY_PYSIDE2_VERSIONS:
@@ -39,9 +41,23 @@ def check_dependencies():
     except ImportError:
         sys.stderr.write("Cannot find the qtconsole package. You may install it via pip:\n" +
                          "    pip install qtconsole\n")
-        return False
+        missing_dep = True
 
-    return True
+    try:
+        import sqlalchemy
+    except ImportError:
+        sys.stderr.write("Cannot find the sqlalchemy package. You may install it via pip:\n" +
+                         "    pip install sqlalchemy\n")
+        missing_dep = True
+
+    try:
+        import pyqodeng.core
+    except ImportError:
+        sys.stderr.write("Cannot find the pyqodeng.core package. You may install it via pip:\n" +
+                         "    pip install pyqodeng.core\n")
+        missing_dep = True
+
+    return not missing_dep
 
 
 def set_app_user_model_id():
