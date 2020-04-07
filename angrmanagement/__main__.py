@@ -10,13 +10,28 @@ def shut_up(*args, **kwargs):
 warnings.simplefilter = shut_up
 
 
+BUGGY_PYSIDE2_VERSIONS = [
+    "5.12.1",  # https://github.com/angr/angr-management/issues/59
+    "5.14.2",  # Tiffany reported
+]
+
 def check_dependencies():
 
     try:
         import PySide2
     except ImportError:
+        PySide2 = None
         sys.stderr.write("Cannot find the PySide2 package. You may install it via pip:\n" +
                          "    pip install pyside2\n")
+        return False
+
+    # version check
+    if PySide2 is not None and PySide2.__version__ in BUGGY_PYSIDE2_VERSIONS:
+        sys.stderr.write("Your installed version of PySide2 is known to have bugs that may lead to angr management "
+                         "crashing. Please switch to other versions.\n"
+                         "A known good version of PySide2 is 5.14.1. You may install it via pip:\n"
+                         "    pip install -U pyside2==5.14.1\n")
+        sys.stderr.write("Bad PySide2 versions include: %s" % ", ".join(BUGGY_PYSIDE2_VERSIONS))
         return False
 
     try:
