@@ -34,7 +34,7 @@ def check_dependencies():
                          "A known good version of PySide2 is 5.14.1. You may install it via pip:\n"
                          "    pip install -U pyside2==5.14.1\n")
         sys.stderr.write("Bad PySide2 versions include: %s" % ", ".join(BUGGY_PYSIDE2_VERSIONS))
-        return False
+        missing_dep = True
 
     try:
         import qtconsole
