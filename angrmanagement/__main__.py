@@ -187,7 +187,7 @@ def main():
         import IPython
         IPython.embed(banner1="")
     if not args.no_gui:
-        start_management(args.binary)
+        start_management(args.binary, use_daemon=args.with_daemon)
 
 if __name__ == '__main__':
     main()
