@@ -17,3 +17,5 @@ start.spec
 
 # enaml cache
 __enamlcache__/
+
+*.spec
