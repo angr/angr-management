@@ -118,7 +118,7 @@ def run_daemon_process():
         flags['creationflags'] = DETACHED_PROCESS
 
     apppath = app_path(pythonw=True, as_list=True)
-    proc = subprocess.Popen(apppath + ["-d"], stdin=None, stdout=None, stderr=None,
+    proc = subprocess.Popen(apppath + ["-D"], stdin=None, stdout=None, stderr=None,
                             close_fds=True, **flags)
 
 
