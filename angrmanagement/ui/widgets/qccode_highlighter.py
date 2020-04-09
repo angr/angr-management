@@ -1,10 +1,12 @@
 
 import re
 
-from PySide2.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont
+from pyqodeng.core.api import SyntaxHighlighter
+from PySide2.QtGui import QTextCharFormat, QFont
 from PySide2.QtCore import Qt
 
 from ...config import Conf
+from ..documents import QCodeDocument
 
 
 FORMATS = {
@@ -15,9 +17,14 @@ FORMATS = {
 }
 
 
-class QCCodeHighlighter(QSyntaxHighlighter):
+class QCCodeHighlighter(SyntaxHighlighter):
 
     HIGHLIGHTING_RULES = [
+        # quotation
+        (r"\".*\"", 'quotation'),
+        # comment
+        (r"/[^\n]*", 'comment'),
+        (r"/\*[^\n]*\*/", 'comment'),
         # keywords
         (r"\bbool\b", 'keyword'),
         (r"\bbreak\b", 'keyword'),
@@ -64,17 +71,16 @@ class QCCodeHighlighter(QSyntaxHighlighter):
         (r"\bvoid\b", 'keyword'),
         (r"\bvolatile\b", 'keyword'),
         (r"\bwhile\b", 'keyword'),
-        # quotation
-        (r"\".*\"", 'quotation'),
+        (r"\bswitch\b", 'keyword'),
         # function
         (r"\b[A-Za-z0-9_]+(?=\()", 'function'),
-        # comment
-        (r"/[^\n]*", 'comment'),
-        (r"/\*[^\n]*\*/", 'comment'),
     ]
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, parent, color_scheme=None):
+        # TODO: Use the color scheme. it's not used right now
+        super().__init__(parent, color_scheme=color_scheme)
+
+        self.doc = parent  # type: QCodeDocument
 
         if FORMATS['keyword'] is None:
             f = QTextCharFormat()
@@ -100,7 +106,12 @@ class QCCodeHighlighter(QSyntaxHighlighter):
             f.setFontWeight(QFont.Bold)
             FORMATS['comment'] = f
 
-    def highlightBlock(self, text):
+    def highlight_block(self, text, block):
         for pattern, format_id in self.HIGHLIGHTING_RULES:
-            for mo in re.finditer(pattern, text):
-                self.setFormat(mo.start(), mo.end() - mo.start(), FORMATS[format_id])
+            for mo in list(re.finditer(pattern, text)):
+                start = mo.start()
+                end = mo.end()
+                self.setFormat(start, end - start, FORMATS[format_id])
+                if format_id in {'quotation', 'comment'}:
+                    # remove the formatted parts so that we do not end up highlighting these parts again
+                    text = text[:start] + " " * (end-start) + text[end:]

@@ -40,5 +40,6 @@ setup(
         'jupyter-client<6',
         'requests',
         'sqlalchemy',
+        'pyqodeng.core',
     ]
 )

@@ -1,8 +1,11 @@
 
+from typing import Optional
+
 from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
-from angr.analyses.decompiler.structured_codegen import CConstant, CVariable, CFunctionCall
+from angr.analyses.decompiler.structured_codegen import CConstant, CVariable, CFunctionCall, StructuredCodeGenerator, \
+    PositionMapping
 
 from ...config import Conf
 
@@ -14,13 +17,30 @@ class QCodeDocument(QTextDocument):
     def __init__(self, codegen):
         super().__init__()
 
-        self._codegen = codegen
+        self._codegen = codegen  # type: StructuredCodeGenerator
 
         # default font
         self.setDefaultFont(Conf.code_font)
 
         self.setPlainText(self._codegen.text)
         self.setDocumentLayout(QPlainTextDocumentLayout(self))
+
+    @property
+    def posmap(self):
+        """
+
+        :return:
+        :rtype:     Optional[PositionMapping]
+        """
+        if self._codegen is None:
+            return None
+        return self._codegen.posmap
+
+    @property
+    def nodemap(self):
+        if self._codegen is None:
+            return None
+        return self._codegen.nodemap
 
     def get_node_at_position(self, pos):
 

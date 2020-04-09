@@ -7,3 +7,12 @@ __version__ = (8, 20, 1, 7)
 import sys
 sys.setswitchinterval(0.00001)
 
+
+try:
+    # make sure qtpy (which is used in PyQodeNG.core) is using PySide2
+    import os
+    os.environ['QT_API'] = 'pyside2'
+    import qtpy
+except ImportError:
+    # qtpy is not installed
+    pass

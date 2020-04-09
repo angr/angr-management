@@ -6,7 +6,6 @@ from PySide2.QtCore import Qt
 import angr
 
 from ..widgets.qccode_edit import QCCodeEdit
-from ..widgets.qccode_highlighter import QCCodeHighlighter
 from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
 from .view import BaseView
@@ -20,9 +19,9 @@ class CodeView(BaseView):
 
         self._function = None
 
-        self._textedit = None  # type:QCCodeEdit
+        self._codeedit = None
+        self._textedit = None
         self._doc = None  # type:QCodeDocument
-        self._highlighter = None  # type:QCCodeHighlighter
         self._options = None  # type:QDecompilationOptions
 
         self._init_widgets()
@@ -49,7 +48,6 @@ class CodeView(BaseView):
             )
         self._doc = QCodeDocument(d.codegen)
         self._textedit.setDocument(self._doc)
-        self._highlighter = QCCodeHighlighter(self._doc)
 
     #
     # Properties
