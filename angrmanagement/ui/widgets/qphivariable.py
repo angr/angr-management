@@ -50,6 +50,10 @@ class QPhiVariable(QCachedGraphicsItem):
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
+        if self.disasm_view.show_variable_identifier is False:
+            # Phi variables are not displayed if variable identifies are hidden
+            return
+
         x = 0
 
         painter.setFont(self._config.disasm_font)
@@ -113,6 +117,12 @@ class QPhiVariable(QCachedGraphicsItem):
         self._update_size()
 
     def _update_size(self):
+
+        if self.disasm_view.show_variable_identifier is False:
+            # Phi variables are not displayed if variable identifies are hidden
+            self._width = 0
+            self._height = 0
+            return
 
         self._variable_name_width = len(self._variable_name) * self._config.disasm_font_width
         self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width
