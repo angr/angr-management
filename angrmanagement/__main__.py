@@ -154,7 +154,7 @@ def start_management(filepath=None, use_daemon=False):
         from rpyc import BgServingThread
         th = BgServingThread(GlobalInfo.daemon_conn)
 
-    file_to_open = filepath if filepath else sys.argv[1] if len(sys.argv) > 1 else None
+    file_to_open = filepath if filepath else None
     main_window = MainWindow()
     splash.finish(main_window)
 
