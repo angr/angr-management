@@ -10,6 +10,10 @@ pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
 pip install git+https://github.com/angr/angr.git#egg=angr
 pip install -e .
-python bundle.py
 
-rename dist\angr-management.exe angr-management-win64.exe
+python .azure-pipelines\bundle.py --onefile
+python .azure-pipelines\bundle.py --onedir
+
+mkdir upload
+move onefile\angr-management.exe upload\angr-management-onefile-win64.exe
+7z a upload\angr-management-win64.zip .\dist\*

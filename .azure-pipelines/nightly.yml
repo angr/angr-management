@@ -8,6 +8,7 @@ schedules:
     include:
     - master
 
+
 stages:
 - stage: Build
   jobs:
@@ -28,12 +29,13 @@ stages:
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.6
+          versionSpec: 3.7
       - script: .azure-pipelines/$(SCRIPT)
       - task: PublishPipelineArtifact@1
         inputs:
-          targetPath: dist/
+          targetPath: upload
           artifactName: angr-management-$(IMAGE_NAME)
+
 
 - stage: Deploy
   dependsOn: Build
@@ -68,7 +70,7 @@ stages:
         releaseNotesSource: input
         releaseNotes: >
           This release is an automatically generated pre-release. We do our best
-          to make sure everything works, but be advised that features could
+          to make sure everything works, but please be advised that features may
           break or change without notice.
         isPreRelease: true
         addChangelog: true
