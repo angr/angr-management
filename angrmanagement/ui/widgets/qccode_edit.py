@@ -24,7 +24,7 @@ class ColorSchemeIDA(api.ColorScheme):
 
 class QCCodeEdit(api.CodeEdit):
     def __init__(self, code_view):
-        super().__init__()
+        super().__init__(create_default_actions=True)
 
         self._code_view = code_view
 
@@ -35,6 +35,15 @@ class QCCodeEdit(api.CodeEdit):
 
         self.setTabChangesFocus(False)
         self.setReadOnly(True)
+
+        # but we don't need some of the actions
+        self.remove_action(self.action_undo)
+        self.remove_action(self.action_redo)
+        self.remove_action(self.action_cut)
+        self.remove_action(self.action_paste)
+        self.remove_action(self.action_duplicate_line)
+        self.remove_action(self.action_swap_line_up)
+        self.remove_action(self.action_swap_line_down)
 
     @property
     def workspace(self):
