@@ -40,7 +40,10 @@ class AngrUrlScheme:
         elif sys.platform.startswith("linux"):
             return self._is_url_scheme_registered_linux()
         else:
-            raise NotImplementedError("We currently do not support registering angr URL scheme on %s." % sys.platform)
+            return False, None
+
+    def is_url_scheme_supported(self):
+        return sys.platform.startswith("win") or sys.platform.startswith("linux")
 
     #
     # Utils
