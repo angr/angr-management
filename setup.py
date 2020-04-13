@@ -14,6 +14,7 @@ if platform.python_implementation() != 'CPython':
 setup(
     name='angr-management',
     version='8.20.1.7',
+    python_requires='>=3.6',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
     packages=packages,
