@@ -72,6 +72,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bvolatile\b", 'keyword'),
         (r"\bwhile\b", 'keyword'),
         (r"\bswitch\b", 'keyword'),
+        (r"\breturn\b", 'keyword'),
         # function
         (r"\b[A-Za-z0-9_]+(?=\()", 'function'),
     ]
