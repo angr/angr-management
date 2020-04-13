@@ -3,7 +3,7 @@ from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton
 
 from angr.analyses.decompiler.decompilation_options import DecompilationOption, options as dec_options
-from angr.analyses.decompiler.optimization_passes import get_optimization_passes
+from angr.analyses.decompiler.optimization_passes import get_optimization_passes, get_default_optimization_passes
 
 
 class OptionType:
@@ -12,7 +12,7 @@ class OptionType:
 
 
 class QDecompilationOption(QTreeWidgetItem):
-    def __init__(self, parent, option, type_: int):
+    def __init__(self, parent, option, type_: int, enabled=True):
         super().__init__(parent)
         self.option = option
         self.type = type_
@@ -26,7 +26,10 @@ class QDecompilationOption(QTreeWidgetItem):
             raise NotImplementedError("Unsupported option type %s." % self.type_)
 
         self.setFlags(self.flags() | Qt.ItemIsUserCheckable)
-        self.setCheckState(0, Qt.Checked)
+        if enabled:
+            self.setCheckState(0, Qt.Checked)
+        else:
+            self.setCheckState(0, Qt.Unchecked)
 
 
 class QDecompilationOptions(QWidget):
@@ -56,7 +59,7 @@ class QDecompilationOptions(QWidget):
 
         if force or self._opti_passes is None:
             if self._instance.project is not None:
-                self._opti_passes = self.get_default_passes()
+                self._opti_passes = self.get_all_passes()
             else:
                 self._opti_passes = []
 
@@ -93,6 +96,11 @@ class QDecompilationOptions(QWidget):
         return dec_options
 
     def get_default_passes(self):
+        if self._instance is None or self._instance.project is None:
+            return set()
+        return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name)
+
+    def get_all_passes(self):
         return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name)
 
     def _init_widgets(self):
@@ -136,8 +144,10 @@ class QDecompilationOptions(QWidget):
         passes_category = QTreeWidgetItem(self._treewidget, ["Optimization Passes"])
         categories['passes'] = passes_category
 
-        for pass_ in sorted(self._opti_passes, key=lambda x: x.__name__):
-            w = QDecompilationOption(passes_category, pass_, OptionType.OPTIMIZATION_PASS)
+        default_passes = set(self.get_default_passes())
+        for pass_ in self._opti_passes:
+            w = QDecompilationOption(passes_category, pass_, OptionType.OPTIMIZATION_PASS,
+                                     enabled=pass_ in default_passes)
             self._qoptipasses.append(w)
 
         # expand all
