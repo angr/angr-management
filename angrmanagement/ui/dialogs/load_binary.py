@@ -142,9 +142,15 @@ class LoadBinary(QDialog):
 
     def _init_load_options_tab(self, tab):
 
+        # load debug symbols
+        load_debug_info = QCheckBox()
+        load_debug_info.setText("Load debug information if available")
+        load_debug_info.setChecked(True)
+        self.option_widgets['load_debug_info'] = load_debug_info
+
         # auto load libs
 
-        auto_load_libs = QCheckBox(self)
+        auto_load_libs = QCheckBox()
         auto_load_libs.setText("Automatically load all libraries")
         auto_load_libs.setChecked(False)
         self.option_widgets['auto_load_libs'] = auto_load_libs
@@ -152,7 +158,7 @@ class LoadBinary(QDialog):
         # dependencies list
 
         dep_group = QGroupBox("Dependencies")
-        dep_list = QListWidget(self)
+        dep_list = QListWidget()
         self.option_widgets['dep_list'] = dep_list
 
         sublayout = QVBoxLayout()
@@ -160,6 +166,7 @@ class LoadBinary(QDialog):
         dep_group.setLayout(sublayout)
 
         layout = QVBoxLayout()
+        layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
         layout.addWidget(dep_group)
         layout.addStretch(0)
@@ -206,6 +213,8 @@ class LoadBinary(QDialog):
 
         self.load_options = { }
         self.load_options['auto_load_libs'] = self.option_widgets['auto_load_libs'].isChecked()
+        self.load_options['load_debug_info'] = self.option_widgets['load_debug_info'].isChecked()
+
         if force_load_libs:
             self.load_options['force_load_libs'] = force_load_libs
         if skip_libs:

@@ -46,21 +46,19 @@ def categorize_edges(disassembly, edges):
     edges_by_node = defaultdict(list)
 
     for edge in edges:
-        edges_by_node[edge.src].append(edge)
+        if edge.sort != EdgeSort.EXCEPTION_EDGE:
+            edges_by_node[edge.src].append(edge)
 
     for src_node, items in edges_by_node.items():
         if len(items) == 1:
             # is it a back edge?
+            # TODO: an accurate back edge identification requires us to identify loop heads. although we do identify
+            # TODO: loop nodes at some point, the information is not available here...
             edge = items[0]
             if edge.src.addr >= edge.dst.addr:
                 edge.sort = EdgeSort.BACK_EDGE
 
         elif len(items) == 2:
-            # determine which branch is true branch
-            #branch_instr = _get_branch_instr(disassembly, src_node)
-            #if branch_instr is not None:
-            #    concrete_target = _get_explicit_branch_target(branch_instr)
-
             # actually, let's determine which branch is the false branch
             fallthrough = src_node.addr + src_node.size
             edge_a, edge_b = items

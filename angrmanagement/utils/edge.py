@@ -1,14 +1,15 @@
 
 
-class EdgeSort(object):
+class EdgeSort:
     DIRECT_JUMP = 0
     TRUE_BRANCH = 1
     FALSE_BRANCH = 2
     BACK_EDGE = 3
+    EXCEPTION_EDGE = 4
 
 
 class Edge:
-    def __init__(self, src, dst):
+    def __init__(self, src, dst, sort=EdgeSort.DIRECT_JUMP):
 
         self.src = src
         self.dst = dst
@@ -21,7 +22,7 @@ class Edge:
         self.points = [ ]
         self.moves = [ ]
         self.coordinates = [ ]
-        self.sort = EdgeSort.DIRECT_JUMP
+        self.sort = sort
 
     def add_point(self, col, row, index):
         self.points.append((col, row, index))

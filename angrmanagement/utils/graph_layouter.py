@@ -6,7 +6,7 @@ import networkx
 
 from angr.analyses.cfg.cfg_utils import CFGUtils
 
-from .edge import Edge
+from .edge import Edge, EdgeSort
 
 
 class EdgeRouter:
@@ -45,8 +45,11 @@ class EdgeRouter:
 
         edges = [ ]
 
-        for src, dst in self._graph.edges():
-            edge = self._route_edge(src, dst)
+        for src, dst, data in self._graph.edges(data=True):
+            sort = None
+            if data.get('type', None) == 'exception':
+                sort = EdgeSort.EXCEPTION_EDGE
+            edge = self._route_edge(src, dst, sort)
             edges.append(edge)
 
         self._set_in_edge_indices()
@@ -54,7 +57,7 @@ class EdgeRouter:
 
         return edges
 
-    def _route_edge(self, src, dst):
+    def _route_edge(self, src, dst, edge_sort=None):
         """
         Find a series of grids to route an edge from the source node to the destination node.
 
@@ -68,7 +71,7 @@ class EdgeRouter:
         MOVE_RIGHT = 2
 
         # build the edge
-        edge = Edge(src, dst)
+        edge = Edge(src, dst, sort=edge_sort)
 
         start_col, start_row = self._node_locations[src]
         end_col, end_row = self._node_locations[dst]

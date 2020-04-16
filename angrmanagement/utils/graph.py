@@ -28,7 +28,7 @@ def to_supergraph(transition_graph):
 
     # remove all edges that transitions to outside
     for src, dst, data in list(transition_graph.edges(data=True)):
-        if data['type'] == 'transition' and data.get('outside', False) is True:
+        if data['type'] in ('transition', 'exception') and data.get('outside', False) is True:
             transition_graph.remove_edge(src, dst)
         if transition_graph.in_degree(dst) == 0:
             transition_graph.remove_node(dst)
@@ -134,7 +134,7 @@ def to_supergraph(transition_graph):
                     for src_, _, data_ in super_graph.in_edges(dst_supernode, data=True):
                         super_graph.add_edge(src_, src_supernode, **data_)
 
-                        if 'type' in data_ and data_['type'] == 'transition':
+                        if 'type' in data_ and data_['type'] in ('transition', 'exception'):
                             if not ('ins_addr' in data_ and 'stmt_idx' in data_):
                                 # this is a hack to work around the issue in Function.normalize() where ins_addr and
                                 # stmt_idx weren't properly set onto edges
@@ -159,7 +159,7 @@ def to_supergraph(transition_graph):
 
                 super_graph.add_edge(src_supernode, dst_supernode, **data)
 
-                if 'type' in data and data['type'] == 'transition':
+                if 'type' in data and data['type'] in ('transition', 'exception'):
                     if not ('ins_addr' in data and 'stmt_idx' in data):
                         # this is a hack to work around the issue in Function.normalize() where ins_addr and
                         # stmt_idx weren't properly set onto edges
