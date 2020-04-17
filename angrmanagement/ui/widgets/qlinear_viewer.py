@@ -273,6 +273,12 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         self.setLayout(layout)
 
     def _update_size(self):
+
+        # ask all objects to update their sizes
+        for obj in self.objects:
+            obj.refresh()
+
+        # update vertical scrollbar
         self.verticalScrollBar().setRange(0, self.max_offset * self._line_height - self.height() // 2)
         offset = 0 if self.offset is None else self.offset
         self.verticalScrollBar().setValue(offset * self._line_height)
