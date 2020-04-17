@@ -1,17 +1,22 @@
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize, Qt
 
 from ..widgets.qxref_viewer import QXRefViewer, XRefMode
 
 
 class XRef(QDialog):
-    def __init__(self, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None, parent=None):
+    def __init__(self, addr=None, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None,
+                 instance=None, parent=None):
         super(XRef, self).__init__(parent)
+
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self._variable_manager = variable_manager
         self._variable = variable
         self._xrefs_manager = xrefs_manager
+        self._addr = addr  # current address
         self._dst_addr = dst_addr
+        self._instance = instance
 
         if variable is not None:
             self.setWindowTitle('XRefs to variable %s(%s)' % (variable.name, variable.ident))
@@ -23,14 +28,15 @@ class XRef(QDialog):
         self._init_widgets()
 
     def sizeHint(self, *args, **kwargs):
-        return QSize(600, 200)
+        return QSize(600, 400)
 
     def _init_widgets(self):
 
         # xref viewer
         xref_viewer = QXRefViewer(
-            variable_manager=self._variable_manager, variable=self._variable,
+            addr=self._addr, variable_manager=self._variable_manager, variable=self._variable,
             xrefs_manager=self._xrefs_manager, dst_addr=self._dst_addr,
+            instance=self._instance,
         )
 
         # buttons

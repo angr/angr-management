@@ -4,6 +4,8 @@ from queue import Queue
 from typing import List, Optional, Type, Union, Callable
 
 import angr
+from angr.block import Block
+from angr.analyses.disassembly import Instruction
 
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
@@ -93,6 +95,11 @@ class Instance:
 
     @property
     def cfb(self):
+        """
+        Get the CFBlanket instance.
+
+        :rtype: angr.analyses.cfg.cfb.CFBlanket
+        """
         return self.cfb_container.am_obj
 
     @cfb.setter
@@ -202,6 +209,31 @@ class Instance:
     def add_job(self, job):
         self.jobs.append(job)
         self._jobs_queue.put(job)
+
+    def get_instruction_text_at(self, addr):
+        """
+        Get the text representation of an instruction at `addr`.
+
+        :param int addr:    Address of the instruction.
+        :return:            Text representation of the instruction, or None if no instruction can be found there.
+        :rtype:             Optional[str]
+        """
+
+        if self.cfb is None:
+            return None
+
+        try:
+            obj_addr, obj = self.cfb.floor_item(addr)
+        except KeyError:
+            # no object before addr exists
+            return None
+
+        if isinstance(obj, Block):
+            for insn in obj.capstone.insns:
+                if insn.address == addr:
+                    insn_piece = Instruction(insn, None, project=self.project)
+                    return insn_piece.render()[0]
+        return None
 
     #
     # Private methods

@@ -162,10 +162,10 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
                     if operand is not None:
                         if operand.variable is not None:
                             # Display cross references to this variable
-                            self.disasm_view.popup_xref_dialog(variable=operand.variable)
+                            self.disasm_view.popup_xref_dialog(addr=ins_addr, variable=operand.variable)
                         elif operand.is_constant:
                             # Display cross references to an address
-                            self.disasm_view.popup_xref_dialog(dst_addr=operand.constant_value)
+                            self.disasm_view.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value)
             return
 
         super().keyPressEvent(event)
