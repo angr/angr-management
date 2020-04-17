@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication
 from PySide2.QtCore import Qt, QSize
@@ -7,7 +8,7 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
@@ -29,17 +30,19 @@ class DisassemblyView(BaseView):
         self._show_variable = False #True
         # whether we want to show identifier or not
         self._show_variable_ident = False
+        # whether we want to show exception edges and all nodes that are only reachable through exception edges
+        self._show_exception_edges = True
 
-        self._linear_viewer = None
-        self._flow_graph = None  # type: QDisassemblyGraph
+        self._linear_viewer = None  # type: Optional[QLinearDisassemblyView]
+        self._flow_graph = None  # type: Optional[QDisassemblyGraph]
         self._statusbar = None
         self._jump_history = JumpHistory()
         self.infodock = InfoDock(self)
         self._variable_recovery_flavor = 'fast'
-        self.variable_manager = None  # type: VariableManager
+        self.variable_manager = None  # type: Optional[VariableManager]
         self._current_function = ObjectContainer(None, 'The currently selected function')
 
-        self._insn_menu = None  # type: DisasmInsnContextMenu
+        self._insn_menu = None  # type: Optional[DisasmInsnContextMenu]
 
         self._insn_addr_on_context_menu = None
 
@@ -94,6 +97,10 @@ class DisassemblyView(BaseView):
     @property
     def show_variable_identifier(self):
         return self._show_variable_ident
+
+    @property
+    def show_exception_edges(self):
+        return self._show_exception_edges
 
     @property
     def variable_recovery_flavor(self):
@@ -354,6 +361,24 @@ class DisassemblyView(BaseView):
 
         self.current_graph.refresh()
 
+    def toggle_show_exception_edges(self, show_exception_edges):
+        """
+        Toggle whether exception edges and the nodes that are only reachable through exception edges should be shown
+        or not.
+
+        :param bool show_exception_edges:   Whether exception edges should be shown or not.
+        :return:                            None
+        """
+
+        if show_exception_edges != self._show_exception_edges:
+            self._show_exception_edges = show_exception_edges
+
+            # reset the function graph
+            if self._flow_graph.function_graph is not None:
+                self._flow_graph.function_graph.exception_edges = show_exception_edges
+                self._flow_graph.function_graph.clear_cache()
+                self._flow_graph.reload()
+
     def jump_to(self, addr, src_ins_addr=None):
 
         # Record the current instruction address first
@@ -484,7 +509,9 @@ class DisassemblyView(BaseView):
         if self._flow_graph.isVisible():
             if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
                 # set function graph of a new function
-                self._flow_graph.function_graph = FunctionGraph(function=the_func)
+                self._flow_graph.function_graph = FunctionGraph(function=the_func,
+                                                                exception_edges=self.show_exception_edges,
+                                                                )
 
         elif self._linear_viewer.isVisible():
             self._linear_viewer.navigate_to_addr(the_func.addr)

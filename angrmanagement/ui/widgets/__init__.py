@@ -7,7 +7,7 @@ from .qdisasm_statusbar import QDisasmStatusBar
 from .qdisasm_graph import QDisassemblyGraph
 from .qsymexec_graph import QSymExecGraph
 
-from .qlinear_viewer import QLinearDisassembly
+from .qlinear_viewer import QLinearDisassembly, QLinearDisassemblyView
 
 # other widgets
 from .qfeature_map import QFeatureMap
