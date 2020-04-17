@@ -15,6 +15,7 @@ l = logging.getLogger('ui.widgets.qoperand')
 class QOperand(QCachedGraphicsItem):
 
     BRANCH_TARGETS_SPACING = 5
+    LABEL_VARIABLE_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
@@ -136,36 +137,41 @@ class QOperand(QCachedGraphicsItem):
         else:
             if self.disasm_view.show_variable and self.variable is not None:
                 # show-variable is enabled and this operand has a linked variable
-                fallback = True
-                if self.infodock.induction_variable_analysis is not None:
-                    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
-                    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                        painter.setPen(Qt.darkYellow)
-                        fallback = False
+                #fallback = True
+                #if self.infodock.induction_variable_analysis is not None:
+                #    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
+                #    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
+                #        painter.setPen(Qt.darkYellow)
+                #        fallback = False
+                pass
 
-                if fallback:
-                    painter.setPen(QColor(0xff, 0x14, 0x93))
-            else:
-                painter.setPen(QColor(0, 0, 0x80))
+            painter.setPen(QColor(0x00, 0x00, 0x80))
 
         painter.setRenderHints(
                 QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
         painter.setFont(self._config.disasm_font)
         y = self._config.disasm_font_ascent
 
-        if self.disasm_view.show_variable and self._variable_label is not None:
-            text = self._variable_label
-            x = self._variable_label_width
-        else:
-            text = self._label
-            x = self._label_width
+        # draw label
+        # [rax]
+        text = self._label
+        x = self._label_width
         painter.drawText(0, y, text)
+
+        # draw variable
+        # {s_10}
+        if self.disasm_view.show_variable and self._variable_label:
+            x += self.LABEL_VARIABLE_SPACING
+            painter.setPen(QColor(0x00, 0x80, 0x00))
+            painter.drawText(x, y, self._variable_label)
+            painter.setPen(QColor(0x00, 0x00, 0x80))
+            x += self._variable_label_width
 
         # draw additional branch targets
         if self._branch_targets_text:
             painter.setPen(Qt.darkYellow)
             x += self.BRANCH_TARGETS_SPACING
-            painter.drawText(x, y, self._branch_targets_text, )
+            painter.drawText(x, y, self._branch_targets_text)
             x += self._branch_targets_text_width
 
         if self.variable is not None and self.disasm_view.show_variable_identifier:
@@ -309,7 +315,10 @@ class QOperand(QCachedGraphicsItem):
                         formatting['values_style'][ident] = 'curly'
 
                     # with variable displayed
-                    self._variable_label = self.operand.render(formatting=formatting)[0]
+                    if variable_sort == 'memory':
+                        self._variable_label = self.operand.render(formatting=formatting)[0]
+                    else:
+                        self._variable_label = ''
                     self._variable_label_width = self._config.disasm_font_metrics.width(self._variable_label)
 
         if self.variable is not None:
@@ -320,10 +329,9 @@ class QOperand(QCachedGraphicsItem):
         self._update_size()
 
     def _update_size(self):
-        if self.disasm_view.show_variable and self._variable_label is not None:
-            self._width = self._variable_label_width
-        else:
-            self._width = self._label_width
+        self._width = self._label_width
+        if self.disasm_view.show_variable and self._variable_label:
+            self._width += self.LABEL_VARIABLE_SPACING + self._variable_label_width
         if self.disasm_view.show_variable_identifier and self._variable_ident_width:
             self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
         if self._branch_targets_text_width:
