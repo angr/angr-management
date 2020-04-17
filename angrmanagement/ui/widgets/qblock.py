@@ -105,6 +105,9 @@ class QBlock(QCachedGraphicsItem):
         """
         Create the block background and border.
         """
+        if self._block_item is not None and self.scene is not None:
+            self.scene.removeItem(self._block_item)
+            self._block_item = None
 
         self._block_item = QPainterPath()
         self._block_item.addRect(0, 0, self.width, self.height)

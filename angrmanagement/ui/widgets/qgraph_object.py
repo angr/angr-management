@@ -19,6 +19,7 @@ class QCachedGraphicsItem(QGraphicsItem):
         return self.boundingRect().height()
 
     def recalculate_size(self):
+        self.prepareGeometryChange()
         self._cached_bounding_rect = self._boundingRect()
 
     def boundingRect(self):
