@@ -118,15 +118,14 @@ class UrlActionCommentAt(UrlActionBase):
             sha256=cls._one_param(params, 'sha256'),
         )
 
+
 class UrlActionOpenBitmap(UrlActionBase):
-    # TODO: pass the md5 of the binary
-    def __init__(self, target, bitmap, md5=None, sha256=None):
+    def __init__(self, bitmap_path, md5=None, sha256=None):
         super().__init__(md5, sha256)
-        self.target = target
-        self.bitmap = bitmap
+        self.bitmap_path = bitmap_path
 
     def act(self, daemon_conn=None):
-        daemon_conn.root.openbitmap(self.bitmap)
+        daemon_conn.root.openbitmap(self.bitmap_path)
 
     @classmethod
     def _from_params(cls, params):
@@ -136,11 +135,12 @@ class UrlActionOpenBitmap(UrlActionBase):
             sha256=cls._one_param(params, 'sha256'),
         )
 
+
 _ACT2CLS = {
     'open': UrlActionOpen,
     'jumpto': UrlActionJumpTo,
     'commentat': UrlActionCommentAt,
-    'openbitmap': UrlActionOpenBitmap
+    'openbitmap': UrlActionOpenBitmap,
 }
 
 

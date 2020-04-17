@@ -144,6 +144,17 @@ class Instance:
     # Public methods
     #
 
+    def register_method(self, name, method):
+        if getattr(self, name):
+            existing_method = getattr(self, name)
+            if existing_method == method:
+                return
+            raise ValueError("Method %s has already been registered under name %s." % (
+                existing_method, name
+            ))
+
+        setattr(self, name, method)
+
     def register_container(self, name, default_val_func, ty, description):
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]

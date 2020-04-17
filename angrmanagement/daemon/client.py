@@ -1,10 +1,13 @@
 
+import logging
 import functools
 
 import rpyc
 
 from ..logic.threads import gui_thread_schedule_async
 from ..logic import GlobalInfo
+
+_l = logging.getLogger(name=__name__)
 
 
 def requires_daemon_conn(f):
@@ -41,6 +44,15 @@ class ClientService(rpyc.Service):
         if self.workspace is not None:
             if addr is not None:
                 gui_thread_schedule_async(self.workspace.set_comment(addr, comment))
+
+    def exposed_openbitmap(self, bitmap_path):
+
+        if self.workspace is not None:
+            if hasattr(self.workspace, "open_bitmap_multi_trace"):
+                gui_thread_schedule_async(self.workspace.open_bitmap_multi_trace, args=(bitmap_path,))
+            else:
+                _l.critical("TracePlugin is probably not installed.")
+                # TODO: Open a message box
 
 
 class DaemonClientCls:

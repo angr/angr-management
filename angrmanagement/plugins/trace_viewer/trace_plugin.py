@@ -2,14 +2,17 @@ import json
 from typing import Optional
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit
+from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
 from angrmanagement.plugins.trace_viewer.qtrace_viewer import QTraceViewer
 
+from ...utils.io import isurl, download_url
+from ...errors import InvalidURLError, UnexpectedStatusCodeError
 from ..base_plugin import BasePlugin
 from .trace_statistics import TraceStatistics
 from .multi_trace import MultiTrace
 from .afl_qemu_bitmap import AFLQemuBitmap
+
 
 class TraceViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
@@ -17,6 +20,8 @@ class TraceViewer(BasePlugin):
 
         self.workspace.instance.register_container('trace', lambda: None, Optional[TraceStatistics], 'The current trace')
         self.workspace.instance.register_container('multi_trace', lambda: None, Optional[MultiTrace], 'The current set of multiple traces')
+
+        self.workspace.instance.register_method('open_bitmap_multi_trace', self.open_bitmap_multi_trace)
 
         self._viewers = []
 
@@ -133,6 +138,7 @@ class TraceViewer(BasePlugin):
     #
 
     MENU_BUTTONS = ['Open trace...', 'Open MultiTrace...', 'Open AFL bitmap MultiTrace...']
+
     def handle_click_menu(self, idx):
         assert 0 <= idx <= 2
 
@@ -155,56 +161,76 @@ class TraceViewer(BasePlugin):
         self.trace.am_event()
 
     def open_multi_trace(self):
-        trace, baddr = self._open_json_trace_dialog()
-        if baddr is None:
+        trace = self._open_json_trace_dialog()
+        if trace is None:
+            return
+        base_addr = self._open_baseaddr_dialog(0x0)
+        if base_addr is None:
             return
 
-        self.multi_trace.am_obj = MultiTrace(self.workspace, trace, baddr)
+        self.multi_trace.am_obj = MultiTrace(self.workspace, trace, base_addr)
         self.multi_trace.am_event()
 
-    def open_bitmap_multi_trace(self):
-        trace_file_name, baddr = self._open_trace_dialog(filter='', default_base=0x0000004000000000)
-        if baddr is None:
-            return
+    def open_bitmap_multi_trace(self, trace_path=None, base_addr=None):
 
-        with open(trace_file_name, 'rb') as f:
-            trace = f.read()
+        if trace_path is None:
+            trace_path = self._open_trace_dialog(filter='')
+            if trace_path is None:
+                return
 
-        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, baddr)
+        if base_addr is None:
+            base_addr = self._open_baseaddr_dialog(0x0)
+            if base_addr is None:
+                return
+
+        if isurl(trace_path):
+            try:
+                trace = download_url(trace_path, parent=self.workspace._main_window, to_file=False)
+            except InvalidURLError:
+                QMessageBox.critical(self.workspace._main_window,
+                                     "Downloading failed",
+                                     "angr management failed to download the file. The URL is invalid.")
+                return
+            except UnexpectedStatusCodeError as ex:
+                QMessageBox.critical(self.workspace._main_window,
+                                     "Downloading failed",
+                                     "angr management failed to retrieve the header of the file. "
+                                     "The HTTP request returned an unexpected status code %d." % ex.status_code)
+                return
+        else:
+            with open(trace_path, 'rb') as f:
+                trace = f.read()
+
+        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr)
         self.multi_trace.am_event()
 
-    def _open_trace_dialog(self, filter, default_base):
+    def _open_trace_dialog(self, filter):
         file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", filter)
         try:
             with open(file_path, 'rb') as f:
                 f.read(1)
         except FileNotFoundError:
-            return None, None
-        # TODO: exception for json loading
+            return None
 
-        if file_path:
-            baddr, _ = QInputDialog.getText(None, "Input Trace Base Address",
+        return file_path
+
+    def _open_baseaddr_dialog(self, default_base):
+        base_addr, _ = QInputDialog.getText(None, "Input Trace Base Address",
                                             "Base Address:", QLineEdit.Normal,
                                             hex(default_base))
-
-            try:
-                return file_path, int(baddr, 16)
-            except ValueError:
-                pass
-
-        return None, None
+        try:
+            return int(base_addr, 16)
+        except ValueError:
+            return None
 
     def _open_json_trace_dialog(self):
         project = self.workspace.instance.project
-        trace_file_name, baddr = self._open_trace_dialog(
-                                            filter='json (*.json)',
-                                            default_base=project.loader.main_object.mapped_base)
+        trace_file_name = self._open_trace_dialog(filter='json (*.json)')
+        base_addr = self._open_baseaddr_dialog(project.loader.main_object.mapped_base)
 
-        if trace_file_name is None or baddr is None:
+        if trace_file_name is None or base_addr is None:
             return None, None
 
         with open(trace_file_name, 'r') as f:
             trace = json.load(f)
-        return trace, baddr
-
-
+        return trace, base_addr
