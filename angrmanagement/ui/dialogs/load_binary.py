@@ -182,13 +182,19 @@ class LoadBinary(QDialog):
         self.option_widgets['resolve_indirect_jumps'] = resolve_indirect_jumps
 
         collect_data_refs = QCheckBox(self)
-        collect_data_refs.setText('Collect cross-references and infer data types')
+        collect_data_refs.setText('Collect data references (one per data item) and guess data types')
         collect_data_refs.setChecked(True)
-        self.option_widgets['collect_data_refs'] = collect_data_refs
+        self.option_widgets['data_references'] = collect_data_refs
+
+        xrefs = QCheckBox(self)
+        xrefs.setText('Collect cross references')
+        xrefs.setChecked(True)
+        self.option_widgets['cross_references'] = xrefs
 
         layout = QVBoxLayout()
         layout.addWidget(resolve_indirect_jumps)
         layout.addWidget(collect_data_refs)
+        layout.addWidget(xrefs)
         layout.addStretch(0)
         frame = QFrame(self)
         frame.setLayout(layout)
@@ -222,7 +228,8 @@ class LoadBinary(QDialog):
 
         self.cfg_args = {
             'resolve_indirect_jumps': self.option_widgets['resolve_indirect_jumps'].isChecked(),
-            'collect_data_references': self.option_widgets['collect_data_refs'].isChecked(),
+            'data_references': self.option_widgets['data_references'].isChecked(),
+            'cross_references': self.option_widgets['cross_references'].isChecked(),
         }
 
         self.close()

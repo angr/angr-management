@@ -17,6 +17,7 @@ class XRef(QDialog):
         self._addr = addr  # current address
         self._dst_addr = dst_addr
         self._instance = instance
+        self._disassembly_view = parent
 
         if variable is not None:
             self.setWindowTitle('XRefs to variable %s(%s)' % (variable.name, variable.ident))
@@ -36,7 +37,7 @@ class XRef(QDialog):
         xref_viewer = QXRefViewer(
             addr=self._addr, variable_manager=self._variable_manager, variable=self._variable,
             xrefs_manager=self._xrefs_manager, dst_addr=self._dst_addr,
-            instance=self._instance,
+            instance=self._instance, disassembly_view=self._disassembly_view, parent=self,
         )
 
         # buttons
@@ -54,6 +55,10 @@ class XRef(QDialog):
         layout.addLayout(buttons_layout)
 
         self.setLayout(layout)
+
+    def jump_to(self, addr):
+        self._disassembly_view.jump_to(addr, src_ins_addr=self._addr)
+        self.close()
 
     #
     # Event handlers

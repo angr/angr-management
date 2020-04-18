@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QPainter, QColor
 from PySide2.QtCore import Qt, QRectF
 
-from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand
+from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand, Value
 
 from ...logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 from .qgraph_object import QCachedGraphicsItem
@@ -76,6 +76,20 @@ class QOperand(QCachedGraphicsItem):
     def constant_value(self):
         if self.is_constant:
             return self.operand.cs_operand.imm
+        return None
+
+    @property
+    def is_constant_memory(self):
+        return (isinstance(self.operand, MemoryOperand) and
+                len(self.operand.values) == 1 and
+                isinstance(self.operand.values[0], Value) and
+                isinstance(self.operand.values[0].val, int)
+                )
+
+    @property
+    def constant_memory_value(self):
+        if self.is_constant_memory:
+            return self.operand.values[0].val
         return None
 
     @property
