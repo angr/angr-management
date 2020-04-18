@@ -138,7 +138,7 @@ class QDecompilationOptions(QWidget):
             else:
                 category = QTreeWidgetItem(self._treewidget, [option.category])
 
-            w = QDecompilationOption(category, option, OptionType.OPTION)
+            w = QDecompilationOption(category, option, OptionType.OPTION, enabled=option.default_value==True)
             self._qoptions.append(w)
 
         passes_category = QTreeWidgetItem(self._treewidget, ["Optimization Passes"])

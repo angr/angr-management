@@ -18,12 +18,17 @@ class DisasmOptionsMenu(Menu):
                                                      checkable=True,
                                                      checked=self.parent.show_variable_identifier
                                                      )
+        self._show_exception_edges_action = MenuEntry('Show &exception transition edges', self._show_exception_edges,
+                                                      checkable=True,
+                                                      checked=self.parent.show_exception_edges,
+                                                      )
 
         self.entries.extend([
             self._smart_highlighting_action,
             self._show_address_action,
             self._show_variable_action,
             self._show_variable_ident_action,
+            self._show_exception_edges_action,
         ])
 
     def _smart_highlighting(self):
@@ -41,3 +46,7 @@ class DisasmOptionsMenu(Menu):
     def _show_variable_identifier(self):
         checked = self._show_variable_ident_action.checked
         self.parent.toggle_show_variable_identifier(checked)
+
+    def _show_exception_edges(self):
+        checked = self._show_exception_edges_action.checked
+        self.parent.toggle_show_exception_edges(checked)

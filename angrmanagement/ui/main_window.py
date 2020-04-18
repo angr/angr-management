@@ -2,6 +2,7 @@ import pickle
 import os
 import re
 import urllib.parse
+import logging
 from typing import Optional
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
@@ -47,6 +48,8 @@ from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
 from ..config import Conf
 from .. import plugins
+
+_l = logging.getLogger(name=__name__)
 
 
 class MainWindow(QMainWindow):
@@ -558,6 +561,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(None, 'Error',
                                  'Failed to load the angr database.\n'
                                  'Details: %s' % str(ex))
+            _l.critical("Failed to load the angr database.", exc_info=True)
             return
 
         cfg = proj.kb.cfgs['CFGFast']
