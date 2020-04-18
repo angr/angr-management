@@ -3,6 +3,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliar
 @echo on
 
 pip install pyinstaller
+pip install git+https://github.com/ltfish/pyelftools.git#egg=pyelftools
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
 pip install git+https://github.com/angr/cle.git#egg=cle
