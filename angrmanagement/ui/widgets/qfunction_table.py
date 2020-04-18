@@ -118,7 +118,10 @@ class QFunctionTableModel(QAbstractTableModel):
             return Conf.ui_default_font
 
     def sort(self, column, order):
-        self.func_list = sorted(self.func_list, key=lambda f: self._get_column_data(f, column), reverse=order==Qt.DescendingOrder)
+        self.layoutAboutToBeChanged.emit()
+        self.func_list = sorted(self.func_list, key=lambda f: self._get_column_data(f, column),
+                                reverse=order==Qt.DescendingOrder)
+        self.layoutChanged.emit()
 
     #
     # Private methods

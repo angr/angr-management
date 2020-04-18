@@ -242,18 +242,30 @@ class DisassemblyView(BaseView):
         dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
 
-    def popup_newstate_dialog(self, asynch=True):
+    def popup_newstate_dialog(self, async_=True):
         addr = self._address_in_selection()
         if addr is None:
             return
 
         dialog = NewState(self.workspace.instance, addr=addr, create_simgr=True, parent=self)
-        if asynch:
+        if async_:
             dialog.show()
         else:
             dialog.exec_()
 
-    def popup_xref_dialog(self, addr=None, variable=None, dst_addr=None, asynch=True):
+    def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_=True):
+        if operand is not None:
+            if operand.variable is not None:
+                # Display cross references to this variable
+                self.popup_xref_dialog(addr=ins_addr, variable=operand.variable, async_=async_)
+            elif operand.is_constant:
+                # Display cross references to an address
+                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value, async_=async_)
+            elif operand.is_constant_memory:
+                # Display cross references to an address
+                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value, async_=async_)
+
+    def popup_xref_dialog(self, addr=None, variable=None, dst_addr=None, async_=True):
 
         if variable is not None:
             dialog = XRef(addr=addr, variable_manager=self.variable_manager, variable=variable,
@@ -261,7 +273,7 @@ class DisassemblyView(BaseView):
         else:
             dialog = XRef(addr=addr, xrefs_manager=self.workspace.instance.project.kb.xrefs, dst_addr=dst_addr,
                           instance=self.workspace.instance, parent=self)
-        if asynch:
+        if async_:
             dialog.show()
         else:
             dialog.exec_()

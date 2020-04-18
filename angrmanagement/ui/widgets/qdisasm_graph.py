@@ -10,7 +10,6 @@ from .qblock import QGraphBlock
 from .qgraph_arrow import QGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
-from .qgraph_object import QCachedGraphicsItem
 
 _l = logging.getLogger(__name__)
 
@@ -114,6 +113,19 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
         self.request_relayout()
 
+    def get_selected_operand_info(self):
+        if not self.infodock.selected_operands:
+            return None
+
+        # get the first operand
+        ins_addr, operand_idx = next(iter(self.infodock.selected_operands))
+        block = self._insaddr_to_block.get(ins_addr, None)
+        if block is not None:
+            operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
+            return block, ins_addr, operand
+
+        return None
+
     #
     # Event handlers
     #
@@ -152,20 +164,11 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
             return
         elif key == Qt.Key_X:
             # XRef
-
             # get the variable
-            if self.infodock.selected_operands:
-                ins_addr, operand_idx = next(iter(self.infodock.selected_operands))
-                block = self._insaddr_to_block.get(ins_addr, None)
-                if block is not None:
-                    operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
-                    if operand is not None:
-                        if operand.variable is not None:
-                            # Display cross references to this variable
-                            self.disasm_view.popup_xref_dialog(addr=ins_addr, variable=operand.variable)
-                        elif operand.is_constant:
-                            # Display cross references to an address
-                            self.disasm_view.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value)
+            r = self.get_selected_operand_info()
+            if r is not None:
+                _, ins_addr, operand = r
+                self.disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand)
             return
 
         super().keyPressEvent(event)
