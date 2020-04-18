@@ -2,9 +2,6 @@
 from functools import partial
 from typing import Callable
 
-from PySide2.QtGui import QKeySequence
-from PySide2.QtCore import Qt
-
 from .menu import Menu, MenuEntry, MenuSeparator
 
 class DisasmInsnContextMenu(Menu):
