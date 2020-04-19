@@ -212,7 +212,8 @@ class QInstruction(QCachedGraphicsItem):
         else:
             self._string_width = 0
         if self._comment is not None:
-            self._comment_width = self._config.disasm_font_metrics.width(self.COMMENT_PREFIX + self._comment)
+            self._comment_width = self._config.disasm_font_metrics.width(self.COMMENT_PREFIX + self._comment) * \
+                                  self.currentDevicePixelRatioF()
         else:
             self._comment_width = 0
 

@@ -1,6 +1,6 @@
 
-from PySide2.QtWidgets import QGraphicsItem
-from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath
+from PySide2.QtWidgets import QGraphicsItem, QApplication
+from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker
 from PySide2.QtCore import QPointF, Qt
 
 from ...utils.edge import EdgeSort
@@ -21,10 +21,12 @@ EDGE_STYLES = {
 
 class QGraphArrow(QGraphicsItem):
 
-    def __init__(self, edge, parent=None):
+    def __init__(self, edge, disasm_view, infodock, parent=None):
         super().__init__(parent)
 
         self.edge = edge
+        self.disasm_view = disasm_view
+        self.infodock = infodock
         self.rect = None
         self._start = QPointF(*self.edge.coordinates[0])
         self.coords = [self.create_point(c) for c in self.edge.coordinates]
@@ -40,25 +42,36 @@ class QGraphArrow(QGraphicsItem):
             path.lineTo(c)
         self.path = path
 
+        self._hovered = False
+
+        self.setAcceptHoverEvents(True)
+
     def create_point(self, stuff):
         return QPointF(*stuff) - self._start
 
     def paint(self, painter, option, widget):
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
+        should_highlight = self.infodock.is_edge_hovered(self.edge.src.addr, self.edge.dst.addr) or \
+                self.infodock.is_block_hovered(self.edge.src.addr) or \
+                self.infodock.is_block_hovered(self.edge.dst.addr)
 
-        pen = QPen(self.color, 2, self.style)
+        if should_highlight:
+            pen = QPen(QColor(0, 0xfe, 0xfe), 2, self.style)
+        else:
+            pen = QPen(self.color, 2, self.style)
         painter.setPen(pen)
 
         painter.drawPath(self.path)
-        #painter.drawPolyline(self.coords)
-        # for segment_start, segment_end in zip(self.coords, self.coords[1:]):
-        #     painter.drawPolyline((segment_start, segment_end))
 
         # arrow
-        # end_point = self.mapToScene(*edges[-1])
         if lod < 0.3:
             return
-        brush = QBrush(self.color)
+
+        # arrow
+        if should_highlight:
+            brush = QBrush(QColor(0, 0xfe, 0xfe))
+        else:
+            brush = QBrush(self.color)
         painter.setBrush(brush)
         painter.drawPolygon(self.arrow)
 
@@ -66,3 +79,30 @@ class QGraphArrow(QGraphicsItem):
         if self.rect is None:
             self.rect = self.path.boundingRect()
         return self.rect
+
+    def shape(self):
+        stroker = QPainterPathStroker()
+        stroker.setWidth(4)
+        stroker.setCapStyle(Qt.RoundCap)
+        return stroker.createStroke(self.path)
+
+    #
+    # Event handlers
+    #
+
+    def hoverEnterEvent(self, event):
+        self.infodock.hover_edge(self.edge.src.addr, self.edge.dst.addr)
+
+    def hoverLeaveEvent(self, event):
+        self.infodock.unhover_edge(self.edge.src.addr, self.edge.dst.addr)
+
+    def mouseDoubleClickEvent(self, event):
+        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            # go to the source
+            self.disasm_view.jump_to(self.edge.src.addr, addr=self.edge.dst.addr)
+            event.accept()
+        else:
+            # go to the destination
+            self.disasm_view.jump_to(self.edge.dst.addr, addr=self.edge.src.addr)
+            event.accept()
+        super().mouseDoubleClickEvent(event)

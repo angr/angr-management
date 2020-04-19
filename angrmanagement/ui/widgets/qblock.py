@@ -56,6 +56,8 @@ class QBlock(QCachedGraphicsItem):
 
         self._create_block_item()
 
+        self.setAcceptHoverEvents(True)
+
     #
     # Properties
     #
@@ -176,11 +178,24 @@ class QGraphBlock(QBlock):
             obj.setPos(x, y)
             y += obj.boundingRect().height()
 
+    def hoverEnterEvent(self, event):
+        self.infodock.hover_block(self.addr)
+        event.accept()
+
+    def hoverLeaveEvent(self, event):
+        self.infodock.unhover_block(self.addr)
+        event.accept()
+
     def mousePressEvent(self, event):
         if self.workspace.plugins.handle_click_block(self, event):
+            # stop handling this event if the event has been handled by a plugin
             event.accept()
-        else:
-            super().mousePressEvent(event)
+            return
+
+        # the block is selected
+        self.on_selected()
+
+        super().mousePressEvent(event)
 
     def _calc_backcolor(self, should_omit_text):
         color = self.workspace.plugins.color_block(self.addr)
@@ -198,7 +213,10 @@ class QGraphBlock(QBlock):
 
         # background of the node
         painter.setBrush(self._calc_backcolor(should_omit_text))
-        painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
+        if self.infodock.is_block_selected(self.addr):
+            painter.setPen(QPen(self._config.disasm_view_selected_node_border_color, 2.5))
+        else:
+            painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
         self._block_item_obj = painter.drawPath(self._block_item)
 
         # content drawing is handled by qt since children are actual child widgets
@@ -212,6 +230,9 @@ class QGraphBlock(QBlock):
 
         # extra content
         self.workspace.plugins.draw_block(self, painter)
+
+    def on_selected(self):
+        self.infodock.select_block(self.addr)
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()

@@ -34,6 +34,9 @@ class InfoDock:
 
         self.selected_insns = ObjectContainer(set(), 'The currently selected instructions')
         self.selected_operands = ObjectContainer({}, 'The currently selected instruction operands')
+        self.selected_blocks = ObjectContainer(set(), 'The currently selected blocks')
+        self.hovered_block = ObjectContainer(None, 'The currently hovered block')
+        self.hovered_edge = ObjectContainer(None, 'The currently hovered edge')
 
     @property
     def smart_highlighting(self):
@@ -47,8 +50,42 @@ class InfoDock:
             self.highlight_mode = OperandHighlightMode.SAME_TEXT
 
     def initialize(self):
+        self.selected_blocks.clear()
         self.selected_insns.clear()
         self.selected_operands.clear()
+        self.hovered_block.am_obj = None
+
+    def hover_edge(self, src_addr, dst_addr):
+        self.hovered_edge.am_obj = src_addr, dst_addr
+        self.hovered_edge.am_event()
+
+    def unhover_edge(self, src_addr, dst_addr):
+        if self.hovered_edge.am_obj == (src_addr, dst_addr):
+            self.hovered_edge.am_obj = None
+            self.hovered_edge.am_event()
+
+    def hover_block(self, block_addr):
+        self.hovered_block.am_obj = block_addr
+        self.hovered_block.am_event()
+
+    def unhover_block(self, block_addr):
+        if self.hovered_block.am_obj == block_addr:
+            self.hovered_block.am_obj = None
+            self.hovered_block.am_event()
+
+    def clear_hovered_block(self):
+        self.hovered_block.am_obj = None
+        self.hovered_block.am_event()
+
+    def select_block(self, block_addr):
+        self.selected_blocks.clear()  # selecting one block at a time
+        self.selected_blocks.add(block_addr)
+        self.selected_blocks.am_event()
+
+    def unselect_block(self, block_addr):
+        if block_addr in self.selected_blocks:
+            self.selected_blocks.remove(block_addr)
+            self.selected_blocks.am_event()
 
     def select_instruction(self, insn_addr, unique=True, insn_pos=None):
         if insn_addr not in self.selected_insns:
@@ -125,11 +162,23 @@ class InfoDock:
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
 
     def clear_selection(self):
+        self.selected_blocks.clear()
+        self.selected_blocks.am_event()
+
         self.selected_insns.clear()
         self.selected_insns.am_event()
 
         self.selected_operands.clear()
         self.selected_operands.am_event()
+
+    def is_edge_hovered(self, src_addr, dst_addr):
+        return self.hovered_edge.am_obj == (src_addr, dst_addr)
+
+    def is_block_hovered(self, block_addr):
+        return block_addr == self.hovered_block.am_obj
+
+    def is_block_selected(self, block_addr):
+        return block_addr in self.selected_blocks
 
     def is_instruction_selected(self, ins_addr):
         """
