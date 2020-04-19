@@ -247,7 +247,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             if not release_event.isAccepted():
                 self.on_background_click()
                 release_event.accept()
-            self._is_mouse_pressed = False
-            self._is_dragging = False
+
+        self._is_mouse_pressed = False
+        self._is_dragging = False
 
         super().mouseReleaseEvent(event)

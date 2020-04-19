@@ -19,7 +19,7 @@ class QBlockLabel(QCachedGraphicsItem):
         self._config = config
         self._disasm_view = disasm_view
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  #pylint: disable=unused-argument
         painter.setRenderHints(
                 QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
         painter.setFont(self._config.code_font)
@@ -33,4 +33,6 @@ class QBlockLabel(QCachedGraphicsItem):
         painter.drawText(0, self._config.disasm_font_ascent, self.text)
 
     def _boundingRect(self):
-        return QRectF(0, 0, self._config.disasm_font_metrics.width(self.text), self._config.disasm_font_height)
+        width = self._config.disasm_font_metrics.width(self.text) * self.currentDevicePixelRatioF()
+        height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        return QRectF(0, 0, width, height)

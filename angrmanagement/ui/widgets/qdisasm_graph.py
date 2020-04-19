@@ -232,7 +232,7 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
         self._arrows.clear()
 
         for edge in self._edges:
-            arrow = QGraphArrow(edge)
+            arrow = QGraphArrow(edge, self.disasm_view, self.infodock)
             self._arrows.append(arrow)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))
