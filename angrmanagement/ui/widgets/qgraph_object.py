@@ -3,9 +3,15 @@ from PySide2.QtGui import QPainter
 
 
 class QCachedGraphicsItem(QGraphicsItem):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, container=None):
         super().__init__(parent=parent)
+        self._container = container
         self._cached_bounding_rect = None
+        self._cached_device_pixel_ratio = None
+
+    def clear_cache(self):
+        self._cached_bounding_rect = None
+        self._cached_device_pixel_ratio = None
 
     def refresh(self):
         pass
@@ -20,12 +26,29 @@ class QCachedGraphicsItem(QGraphicsItem):
 
     def recalculate_size(self):
         self.prepareGeometryChange()
+        self._cached_device_pixel_ratio = None
         self._cached_bounding_rect = self._boundingRect()
 
     def boundingRect(self):
         if self._cached_bounding_rect is None:
             self._cached_bounding_rect = self._boundingRect()
         return self._cached_bounding_rect
+
+    def _boundingRectAdjusted(self):
+        # adjust according to devicePixelRatioF
+        ratio = self.currentDevicePixelRatioF()
+        rect = self._boundingRect()
+        rect.setWidth(rect.width() * ratio)
+        rect.setHeight(rect.height() * ratio)
+        return rect
+
+    def currentDevicePixelRatioF(self):
+        if self._cached_device_pixel_ratio is None:
+            if self._container is None:
+                self._cached_device_pixel_ratio = 1.0
+            else:
+                self._cached_device_pixel_ratio = self._container.currentDevicePixelRatioF()
+        return self._cached_device_pixel_ratio
 
 
 class QGraphObject:

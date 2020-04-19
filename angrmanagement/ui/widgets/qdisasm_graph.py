@@ -83,7 +83,7 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
         scene = self.scene()
         for n in supergraph.nodes():
             block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disasm_view, self.disasm,
-                           self.infodock, n.addr, n.cfg_nodes, get_out_branches(n), scene)
+                                self.infodock, n.addr, n.cfg_nodes, get_out_branches(n), scene, container=self)
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block
             scene.addItem(block)
@@ -93,9 +93,7 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
                 self._insaddr_to_block[insn_addr] = block
 
         self.request_relayout()
-        # Leave some margins
-        rect = scene.itemsBoundingRect()  # type: QRectF
-        scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
+        self._update_scene_boundary()
 
         # determine initial view focus point
         self._reset_view()
@@ -108,10 +106,11 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
             return
 
         for b in self.blocks:
-            b.layout_widgets()
+            b.clear_cache()
             b.refresh()
 
         self.request_relayout()
+        self._update_scene_boundary()
 
     def get_selected_operand_info(self):
         if not self.infodock.selected_operands:
@@ -237,6 +236,12 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
             self._arrows.append(arrow)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))
+
+    def _update_scene_boundary(self):
+        scene = self.scene()
+        # Leave some margins
+        rect = scene.itemsBoundingRect()  # type: QRectF
+        scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
 
     def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False):
         block = self._insaddr_to_block.get(insn_addr, None)  # type: QGraphBlock

@@ -2,18 +2,19 @@
 from PySide2.QtCore import Qt
 
 from ...config import Conf
+from .qgraph_object import QCachedGraphicsItem
 from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtCore import QRectF
 from PySide2.QtGui import QPainter
 
 
-class QUnknownBlock(QGraphicsItem):
+class QUnknownBlock(QCachedGraphicsItem):
 
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = 'Unknown'
 
-    def __init__(self, workspace, addr, bytes_, parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, workspace, addr, bytes_, parent=None, container=None):
+        super().__init__(parent=parent, container=container)
 
         self.workspace = workspace
         self.addr = addr
@@ -54,13 +55,13 @@ class QUnknownBlock(QGraphicsItem):
         painter.drawText(x, y+Conf.disasm_font_ascent, self._addr_text)
         x += self._addr_width
 
-        x += self.LINEAR_INSTRUCTION_OFFSET
+        x += self.LINEAR_INSTRUCTION_OFFSET * self.currentDevicePixelRatioF()
 
         # Content
         if self._bytes_text:
             for line in self._bytes_text:
                 painter.drawText(x, y+Conf.disasm_font_ascent, line)
-                y += Conf.disasm_font_height
+                y += Conf.disasm_font_height * self.currentDevicePixelRatioF()
         else:
             painter.drawText(x, y+Conf.disasm_font_ascent, QUnknownBlock.DEFAULT_TEXT)
 
@@ -71,14 +72,14 @@ class QUnknownBlock(QGraphicsItem):
         width += self.LINEAR_INSTRUCTION_OFFSET
 
         if self._bytes_text:
-            height += Conf.disasm_font_height * len(self._bytes_text)
+            height += Conf.disasm_font_height * len(self._bytes_text) * self.currentDevicePixelRatioF()
         else:
-            height += Conf.disasm_font_height
+            height += Conf.disasm_font_height * self.currentDevicePixelRatioF()
 
         if self._bytes_text:
-            width += max(len(line) for line in self._bytes_text) * Conf.disasm_font_width
+            width += max(len(line) for line in self._bytes_text) * Conf.disasm_font_width * self.currentDevicePixelRatioF()
         else:
-            width += Conf.disasm_font_metrics.width(QUnknownBlock.DEFAULT_TEXT)
+            width += Conf.disasm_font_metrics.width(QUnknownBlock.DEFAULT_TEXT) * self.currentDevicePixelRatioF()
         return QRectF(0, 0, width, height)
 
     #
@@ -88,7 +89,7 @@ class QUnknownBlock(QGraphicsItem):
     def _init_widgets(self):
         # Address
         self._addr_text = "%08x" % self.addr
-        self._addr_width = Conf.disasm_font_width * len(self._addr_text)
+        self._addr_width = Conf.disasm_font_width * len(self._addr_text) * self.currentDevicePixelRatioF()
 
         # Bytes
         if self.bytes:
@@ -103,7 +104,7 @@ class QUnknownBlock(QGraphicsItem):
             if line:
                 self._bytes_text.append(line)
 
-            self._bytes_height = Conf.disasm_font_height * len(self._bytes_text)
+            self._bytes_height = Conf.disasm_font_height * len(self._bytes_text) * self.currentDevicePixelRatioF()
 
         else:
-            self._bytes_height = Conf.disasm_font_height
+            self._bytes_height = Conf.disasm_font_height * self.currentDevicePixelRatioF()

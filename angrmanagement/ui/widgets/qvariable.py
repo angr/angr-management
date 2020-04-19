@@ -9,8 +9,8 @@ class QVariable(QCachedGraphicsItem):
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
-    def __init__(self, workspace, disasm_view, variable, config, parent=None):
-        super(QVariable, self).__init__(parent=parent)
+    def __init__(self, workspace, disasm_view, variable, config, parent=None, container=None):
+        super(QVariable, self).__init__(parent=parent, container=container)
 
         # initialization
         self.workspace = workspace
@@ -58,7 +58,6 @@ class QVariable(QCachedGraphicsItem):
 
     def refresh(self):
         super(QVariable, self).refresh()
-
         self._update_size()
 
     #
@@ -78,16 +77,16 @@ class QVariable(QCachedGraphicsItem):
 
     def _update_size(self):
 
-        self._variable_name_width = len(self._variable_name) * self._config.disasm_font_width
-        self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width
-        self._variable_offset_width = len(self._variable_offset) * self._config.disasm_font_width
+        self._variable_name_width = len(self._variable_name) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
+        self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
+        self._variable_offset_width = len(self._variable_offset) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
 
         self._width = self._variable_name_width + \
-                      self.OFFSET_LEFT_PADDING + self._variable_offset_width
+                      self.OFFSET_LEFT_PADDING * self.currentDevicePixelRatioF() + self._variable_offset_width
         if self.disasm_view.show_variable_identifier:
-            self._width += self.IDENT_LEFT_PADDING + self._variable_ident_width
+            self._width += self.IDENT_LEFT_PADDING * self.currentDevicePixelRatioF() + self._variable_ident_width
 
-        self._height = self._config.disasm_font_height
+        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
 
         self.recalculate_size()
 

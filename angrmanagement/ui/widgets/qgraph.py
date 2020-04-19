@@ -25,7 +25,16 @@ class QBaseGraphicsView(QGraphicsView):
             scene.update(self.sceneRect())
 
 
-class QSaveableGraphicsView(QBaseGraphicsView):
+class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
+
+    def currentDevicePixelRatioF(self) -> float:
+        # getting devicePixelRatio is currently broken in Qt 5.14
+        # see https://bugreports.qt.io/browse/QTBUG-53022
+        # before it is fixed, fall back to manually calculating the ratio using logicalDpiX()
+        return self.logicalDpiX() / 96.0
+
+
+class QSaveableGraphicsView(QDevicePixelRatioAwareGraphicsView):
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 

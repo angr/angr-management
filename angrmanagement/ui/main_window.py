@@ -100,6 +100,9 @@ class MainWindow(QMainWindow):
 
         self.showMaximized()
 
+        # event handlers
+        self.windowHandle().screenChanged.connect(self.on_screen_changed)
+
         # I'm ready to show off!
         self.show()
 
@@ -351,6 +354,13 @@ class MainWindow(QMainWindow):
             return True
 
         return super(MainWindow, self).event(event)
+
+    def on_screen_changed(self, screen):
+        """
+        When changing from one screen to another, ask disassembly views to refresh in case the DPI is changed.
+        """
+        self.workspace.current_screen.am_obj = screen
+        self.workspace.current_screen.am_event()
 
     #
     # Actions

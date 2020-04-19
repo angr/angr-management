@@ -74,7 +74,11 @@ class QFunctionTableModel(QAbstractTableModel):
         if section < len(self.Headers):
             return self.Headers[section]
         else:
-            return self.workspace.plugins.get_func_column(section - len(self.Headers))
+            try:
+                return self.workspace.plugins.get_func_column(section - len(self.Headers))
+            except IndexError:
+                # Not enough columns
+                return None
 
     def data(self, index, role):
         if not index.isValid():

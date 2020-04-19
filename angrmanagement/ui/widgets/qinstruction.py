@@ -24,8 +24,9 @@ class QInstruction(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None,
+                 container=None):
+        super().__init__(parent=parent, container=container)
 
         # initialization
         self.workspace = workspace
@@ -96,6 +97,11 @@ class QInstruction(QCachedGraphicsItem):
 
         return self.infodock.is_instruction_selected(self.addr)
 
+    def clear_cache(self):
+        super().clear_cache()
+        for obj in self._operands:
+            obj.clear_cache()
+
     def refresh(self):
         _l.debug('refreshing')
         self.load_comment()
@@ -111,8 +117,7 @@ class QInstruction(QCachedGraphicsItem):
 
     def load_comment(self):
         self._comment = get_comment_for_display(self.workspace.instance.kb, self.insn.addr)
-        if self._comment is not None:
-            self._comment_width = self._config.disasm_font_width * len(self.COMMENT_PREFIX + self._comment)
+        self._update_size()
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
@@ -134,7 +139,7 @@ class QInstruction(QCachedGraphicsItem):
         if self.disasm_view.show_address:
             painter.setPen(Qt.black)
             painter.drawText(x, y, self._addr)
-            x += self._addr_width + self.GRAPH_ADDR_SPACING
+            x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
 
         # mnemonic
         painter.setPen(QColor(0, 0, 0x80))
@@ -152,11 +157,11 @@ class QInstruction(QCachedGraphicsItem):
 
         # comment or string - comments have precedence
         if self._comment is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING
+            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF()
             painter.setPen(Qt.darkGreen)
             painter.drawText(x, y, self.COMMENT_PREFIX + self._comment)
         elif self._string is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING
+            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF()
             painter.setPen(Qt.gray)
             painter.drawText(x, y, self._string)
 
@@ -171,9 +176,7 @@ class QInstruction(QCachedGraphicsItem):
         self._operands.clear()
 
         self._addr = "%08x" % self.insn.addr
-        self._addr_width = self._config.disasm_font_width * len(self._addr)
         self._mnemonic = self.insn.mnemonic.render()[0]
-        self._mnemonic_width = self._config.disasm_font_width * len(self._mnemonic)
 
         for i, operand in enumerate(self.insn.operands):
             is_branch_target = self.insn.type in ('branch', 'call') and i == self.insn.branch_target_operand
@@ -188,14 +191,13 @@ class QInstruction(QCachedGraphicsItem):
                         branch_targets = (operand.children[0].val,)
             qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
                                 self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets,
-                                self._config, parent=self)
+                                self._config, parent=self, container=self._container)
             self._operands.append(qoperand)
 
         if should_display_string_label(self.workspace.instance.cfg, self.insn.addr, self.workspace.instance.project):
             # yes we should display a string label
             self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr,
                                                   self.workspace.instance.project)
-            self._string_width = self._config.disasm_font_width * len(self._string)
 
         self.load_comment()
 
@@ -203,14 +205,25 @@ class QInstruction(QCachedGraphicsItem):
 
     def _update_size(self):
 
+        self._addr_width = self._config.disasm_font_metrics.width(self._addr) * self.currentDevicePixelRatioF()
+        self._mnemonic_width = self._config.disasm_font_metrics.width(self._mnemonic) * self.currentDevicePixelRatioF()
+        if self._string is not None:
+            self._string_width = self._config.disasm_font_metrics.width(self._string) * self.currentDevicePixelRatioF()
+        else:
+            self._string_width = 0
+        if self._comment is not None:
+            self._comment_width = self._config.disasm_font_metrics.width(self.COMMENT_PREFIX + self._comment)
+        else:
+            self._comment_width = 0
+
         x = 0
         # address
         if self.disasm_view.show_address:
-            x += self._addr_width + self.GRAPH_ADDR_SPACING
+            x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
 
         # mnemonic
-        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING
-        intersperse_width = self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS)
+        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING * self.currentDevicePixelRatioF()
+        intersperse_width = self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS) * self.currentDevicePixelRatioF()
 
         # operands
         if self._operands:
@@ -223,12 +236,12 @@ class QInstruction(QCachedGraphicsItem):
 
         # comments/string
         if self._comment is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
+            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF() + self._comment_width
         elif self._string is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
+            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF() + self._string_width
 
         self._width = x
-        self._height = self._config.disasm_font_height
+        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)

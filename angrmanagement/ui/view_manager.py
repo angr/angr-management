@@ -1,6 +1,8 @@
 from collections import defaultdict
 
 from PySide2.QtCore import Qt
+
+from ..data.object_container import ObjectContainer
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
 

@@ -27,8 +27,8 @@ class QBlock(QCachedGraphicsItem):
     SPACING = 0
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
-                 parent=None):
-        super().__init__(parent=parent)
+                 parent=None, container=None):
+        super().__init__(parent=parent, container=container)
 
         # initialization
         self.workspace = workspace
@@ -45,7 +45,8 @@ class QBlock(QCachedGraphicsItem):
         self._config = Conf
 
         self.objects = [ ]  # instructions and labels
-        self._block_item = None  # QPath
+        self._block_item = None  # type: QPainterPath
+        self._block_item_obj = None  # type: QGraphicsPathItem
         self.addr_to_insns = { }
         self.addr_to_labels = { }
 
@@ -75,9 +76,15 @@ class QBlock(QCachedGraphicsItem):
     # Public methods
     #
 
+    def clear_cache(self):
+        super().clear_cache()
+        for obj in self.objects:
+            obj.clear_cache()
+
     def refresh(self):
         for obj in self.objects:
             obj.refresh()
+        self.layout_widgets()
         self.recalculate_size()
         self._create_block_item()
         self.update()
@@ -105,9 +112,10 @@ class QBlock(QCachedGraphicsItem):
         """
         Create the block background and border.
         """
-        if self._block_item is not None and self.scene is not None:
-            self.scene.removeItem(self._block_item)
+        if self._block_item_obj is not None and self.scene is not None:
+            self.scene.removeItem(self._block_item_obj)
             self._block_item = None
+            self._block_item_obj = None
 
         self._block_item = QPainterPath()
         self._block_item.addRect(0, 0, self.width, self.height)
@@ -125,25 +133,30 @@ class QBlock(QCachedGraphicsItem):
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
                 insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
-                                    self.infodock, obj, out_branch, self._config, parent=self)
+                                    self.infodock, obj, out_branch, self._config, parent=self,
+                                    container=self._container)
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
                 # label
-                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, parent=self)
+                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, parent=self,
+                                    container=self._container)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, PhiVariable):
                 if not isinstance(obj.variable, SimRegisterVariable):
-                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self)
+                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self,
+                                               container=self._container)
                     self.objects.append(phivariable)
             elif isinstance(obj, Variables):
                 for var in obj.variables:
-                    variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self)
+                    variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self,
+                                         container=self._container)
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
                 self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
-                                                    self.disasm_view, self.workspace, parent=self))
+                                                    self.disasm_view, self.workspace, parent=self,
+                                                    container=self._container))
         self.layout_widgets()
 
     def layout_widgets(self):
@@ -158,7 +171,7 @@ class QGraphBlock(QBlock):
         return 'graph'
 
     def layout_widgets(self):
-        x, y = self.LEFT_PADDING, self.TOP_PADDING
+        x, y = self.LEFT_PADDING * self.currentDevicePixelRatioF(), self.TOP_PADDING * self.currentDevicePixelRatioF()
         for obj in self.objects:
             obj.setPos(x, y)
             y += obj.boundingRect().height()
@@ -186,7 +199,7 @@ class QGraphBlock(QBlock):
         # background of the node
         painter.setBrush(self._calc_backcolor(should_omit_text))
         painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
-        painter.drawPath(self._block_item)
+        self._block_item_obj = painter.drawPath(self._block_item)
 
         # content drawing is handled by qt since children are actual child widgets
 
@@ -222,12 +235,12 @@ class QLinearBlock(QBlock):
         max_width = 0
 
         for obj in self.objects:
-            y_offset += self.SPACING
+            y_offset += self.SPACING * self.currentDevicePixelRatioF()
             obj_start = 0
             obj.setPos(obj_start, y_offset)
             if obj_start + obj.width > max_width:
-                max_width = obj_start + obj.width
-            y_offset += obj.height
+                max_width = obj_start + obj.boundingRect().width()
+            y_offset += obj.boundingRect().height()
 
         self._height = y_offset
         self._width = max_width

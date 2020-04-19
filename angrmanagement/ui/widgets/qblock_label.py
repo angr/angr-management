@@ -7,8 +7,8 @@ from .qgraph_object import QCachedGraphicsItem
 
 class QBlockLabel(QCachedGraphicsItem):
 
-    def __init__(self, addr, text, config, disasm_view, workspace, parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, addr, text, config, disasm_view, workspace, parent=None, container=None):
+        super().__init__(parent=parent, container=container)
 
         self.workspace = workspace
         self.addr = addr
