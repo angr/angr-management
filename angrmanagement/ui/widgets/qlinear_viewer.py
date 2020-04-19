@@ -276,6 +276,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
 
         # ask all objects to update their sizes
         for obj in self.objects:
+            obj.clear_cache()
             obj.refresh()
 
         # update vertical scrollbar
@@ -412,7 +413,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 func = self.workspace.instance.kb.functions[func_addr]
                 disasm = self._get_disasm(func)
                 qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                       self.disasm_view.infodock, obj.addr, [obj], {}, None,
+                                       self.disasm_view.infodock, obj.addr, [obj], {}, None, container=self._viewer,
                                        )
             else:
                 # TODO: Get disassembly even if the function does not exist
@@ -420,7 +421,7 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                            func_addr, obj)
                 qobject = None
         elif isinstance(obj, Unknown):
-            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
+            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes, container=self._viewer)
         else:
             qobject = None
         return qobject

@@ -32,6 +32,8 @@ class Workspace:
         self.view_manager = ViewManager(self)
         self.plugins = PluginManager(self)
 
+        self.current_screen = ObjectContainer(None, name="current_screen")
+
         #
         # Initialize font configurations
         #
@@ -52,7 +54,6 @@ class Workspace:
 
         if has_binsync():
             self.default_tabs.append(SyncView(self, 'right'))
-
 
         #
         # Save initial splitter state

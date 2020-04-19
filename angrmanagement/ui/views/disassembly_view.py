@@ -208,6 +208,9 @@ class DisassemblyView(BaseView):
 
         self.current_graph.redraw()
 
+    def on_screen_changed(self):
+        self.current_graph.refresh()
+
     #
     # UI
     #
@@ -492,6 +495,8 @@ class DisassemblyView(BaseView):
         self.infodock.selected_operands.am_subscribe(self._update_current_graph)
 
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
+
+        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     #
     # Private methods
