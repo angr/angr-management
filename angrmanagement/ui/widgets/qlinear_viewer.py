@@ -146,16 +146,16 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         delta = event.delta()
         if delta < 0:
             # scroll down by some lines
-            self.prepare_objects(self.offset, start_line=self._start_line_in_object + int(-delta // self._line_height))
-            self.verticalScrollBar().setValue(self.offset * self._line_height)
-            event.accept()
-            self.viewport().update()
+            lines = min(int(-delta // self._line_height), 3)
+            self.prepare_objects(self.offset, start_line=self._start_line_in_object + lines)
         elif delta > 0:
             # Scroll up by some lines
-            self.prepare_objects(self.offset, start_line=self._start_line_in_object - int(delta // self._line_height))
-            event.accept()
-            self.verticalScrollBar().setValue(self.offset * self._line_height)
-            self.viewport().update()
+            lines = min(int(delta // self._line_height), 3)
+            self.prepare_objects(self.offset, start_line=self._start_line_in_object - lines)
+
+        self.verticalScrollBar().setValue(self.offset * self._line_height)
+        event.accept()
+        self.viewport().update()
 
     def _on_vertical_scroll_bar_triggered(self, action):
 
@@ -212,6 +212,9 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         # enumerate memory regions
         byte_offset = 0
         for mr in self.cfb.regions:  # type: MemoryRegion
+            if mr.type in {'tls', 'kernel'}:
+                # Skip TLS objects and kernel objects
+                continue
             self._addr_to_region_offset[mr.addr] = byte_offset
             self._offset_to_region[byte_offset] = mr
             byte_offset += mr.size
