@@ -6,10 +6,12 @@ from PySide2.QtGui import QPainter
 from PySide2.QtCore import Qt, QRectF, QRect, QEvent
 
 from angr.block import Block
+from angr.knowledge_plugins.cfg.memory_data import MemoryData, MemoryDataSort
 from angr.analyses.cfg.cfb import Unknown
 
 from ...config import Conf
 from .qblock import QLinearBlock
+from .qmemory_data_block import QMemoryDataBlock
 from .qunknown_block import QUnknownBlock
 from .qgraph import QSaveableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
@@ -420,6 +422,8 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
                            func_addr, obj)
                 qobject = None
+        elif isinstance(obj, MemoryData):
+            qobject = QMemoryDataBlock(self.workspace, obj_addr, obj, parent=None, container=self._viewer)
         elif isinstance(obj, Unknown):
             qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes, container=self._viewer)
         else:

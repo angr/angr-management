@@ -65,7 +65,7 @@ class QUnknownBlock(QCachedGraphicsItem):
         else:
             painter.drawText(x, y+Conf.disasm_font_ascent, QUnknownBlock.DEFAULT_TEXT)
 
-    def boundingRect(self):
+    def _boundingRect(self):
         height, width = 0, 0
 
         width += self._addr_width
