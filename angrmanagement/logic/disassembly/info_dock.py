@@ -89,6 +89,7 @@ class InfoDock:
             self.selected_blocks.am_event()
 
     def select_instruction(self, insn_addr, unique=True, insn_pos=None):
+        self.unselect_all_labels()
         if insn_addr not in self.selected_insns:
             if unique:
                 # unselect existing ones
