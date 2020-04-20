@@ -145,7 +145,7 @@ class Instance:
     #
 
     def register_method(self, name, method):
-        if getattr(self, name):
+        if hasattr(self, name):
             existing_method = getattr(self, name)
             if existing_method == method:
                 return
