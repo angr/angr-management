@@ -5,6 +5,7 @@ from PySide2.QtCore import Qt, QRectF
 from angr.sim_type import SimType, SimTypeFunction, SimTypePointer
 from angr.calling_conventions import SimRegArg
 
+from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
 
@@ -29,7 +30,7 @@ class PrototypeArgument:
 
 class QFunctionHeader(QCachedGraphicsItem):
 
-    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, parent=None, container=None):
+    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None, container=None):
         super().__init__(parent=parent, container=container)
 
         self.workspace = workspace
@@ -37,6 +38,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         self.name = name
         self.prototype = prototype  # type: SimTypeFunction
         self.args = args
+        self.infodock = infodock
 
         self._config = config
         self._disasm_view = disasm_view
@@ -56,6 +58,13 @@ class QFunctionHeader(QCachedGraphicsItem):
     def paint(self, painter, option, widget):
         painter.setRenderHints(
                 QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+
+        if self.infodock.is_label_selected(self.addr):
+            highlight_color = Conf.disasm_view_label_highlight_color
+            painter.setBrush(highlight_color)
+            painter.setPen(highlight_color)
+            painter.drawRect(0, 0, self.width, self.height)
+
         painter.setFont(self._config.code_font)
         painter.setPen(Qt.blue)
 
@@ -84,6 +93,18 @@ class QFunctionHeader(QCachedGraphicsItem):
                     x += font_metrics.width(", ") * self.currentDevicePixelRatioF()
 
             painter.drawText(x, y + font_ascent, ")")
+
+    #
+    # Event handlers
+    #
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.infodock.select_label(self.addr)
+
+    #
+    # Private methods
+    #
 
     def _paint_prototype(self, x, y, painter=None):
 

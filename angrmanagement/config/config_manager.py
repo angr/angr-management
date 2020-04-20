@@ -50,6 +50,7 @@ ENTRIES = [
     CE('code_font_ascent', int, None),
     CE('disasm_view_operand_highlight_color', QColor, QColor(0xfc, 0xef, 0)),
     CE('disasm_view_operand_select_color', QColor, QColor(0xff, 0xff, 0)),
+    CE('disasm_view_label_highlight_color', QColor, QColor(0xf0, 0xf0, 0xbf)),
     CE('disasm_view_target_addr_color', QColor, QColor(0, 0, 0xff)),
     CE('disasm_view_antitarget_addr_color', QColor, QColor(0xff, 0, 0)),
     CE('disasm_view_node_background_color', QColor, QColor(0xfa, 0xfa, 0xfa)),

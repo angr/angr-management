@@ -141,8 +141,8 @@ class QBlock(QCachedGraphicsItem):
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
                 # label
-                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, parent=self,
-                                    container=self._container)
+                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, self.infodock,
+                                    parent=self, container=self._container)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, PhiVariable):
@@ -157,7 +157,7 @@ class QBlock(QCachedGraphicsItem):
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
                 self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
-                                                    self.disasm_view, self.workspace, parent=self,
+                                                    self.disasm_view, self.workspace, self.infodock, parent=self,
                                                     container=self._container))
         self.layout_widgets()
 
