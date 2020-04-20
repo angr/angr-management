@@ -49,7 +49,10 @@ class ManagementService(rpyc.Service):
 
         apppath = app_path(pythonw=False, as_list=True)
         shell = True if sys.platform.startswith("win") else False
-        proc = subprocess.Popen(apppath + [bin_path], shell=shell, stdin=None, stdout=None,
+        # default to using daemon
+        # if the user chooses to use angr URL scheme to load a binary, they are more likely to keep interacting with
+        # this binary using angr URL scheme, which requires the angr management instance to run in with-daemon mode.
+        proc = subprocess.Popen(apppath + ["-d", bin_path], shell=shell, stdin=None, stdout=None,
                                 stderr=None,
                                 close_fds=True, **flags)
 
