@@ -6,19 +6,26 @@ from . import GlobalInfo
 
 
 class ExecuteCodeEvent(QEvent):
-    def __init__(self, callable, args=None):
+    def __init__(self, callable, args=None, kwargs=None):
         super(ExecuteCodeEvent, self).__init__(QEvent.User)
         self.callable = callable
         self.args = args
+        self.kwargs = kwargs
         self.event = threading.Event()
         self.result = None
         self.exception = None
 
     def execute(self):
-        if self.args is None:
-            return self.callable()
+        if self.kwargs is None:
+            if self.args is None:
+                return self.callable()
+            else:
+                return self.callable(*self.args)
         else:
-            return self.callable(*self.args)
+            if self.args is None:
+                return self.callable(**self.kwargs)
+            else:
+                return self.callable(*self.args, **self.kwargs)
 
 
 class GUIObjProxy(object):
@@ -136,13 +143,19 @@ def gui_thread_schedule(callable, args=None):
     return event.result
 
 
-def gui_thread_schedule_async(callable, args=None):
+def gui_thread_schedule_async(callable, args=None, kwargs=None):
     if is_gui_thread():
-        if args is None:
-            callable()
+        if kwargs is None:
+            if args is None:
+                callable()
+            else:
+                callable(*args)
         else:
-            callable(*args)
+            if args is None:
+                callable(**kwargs)
+            else:
+                callable(*args, **kwargs)
         return
 
-    event = ExecuteCodeEvent(callable, args)
+    event = ExecuteCodeEvent(callable, args=args, kwargs=kwargs)
     QCoreApplication.postEvent(GlobalInfo.main_window, event)

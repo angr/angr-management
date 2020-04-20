@@ -1,7 +1,4 @@
-import pickle
 import os
-import re
-import urllib.parse
 import logging
 from typing import Optional
 
@@ -9,8 +6,6 @@ from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QColor
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
-
-import requests
 
 import angr
 try:
@@ -46,6 +41,8 @@ from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils import has_binsync
+from ..utils.io import isurl, download_url
+from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
 from .. import plugins
 
@@ -397,18 +394,7 @@ class MainWindow(QMainWindow):
 
     def load_file(self, file_path):
 
-        # is it a URL?
-        is_url = False
-        basename = "."
-        try:
-            result = urllib.parse.urlparse(file_path)
-            if result.scheme in ("http", "https"):
-                is_url = True
-                basename = os.path.basename(result.path)
-        except ValueError:
-            is_url = False
-
-        if not is_url:
+        if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
                 if file_path.endswith(".adb"):
@@ -429,40 +415,20 @@ class MainWindow(QMainWindow):
                                      defaultButton=QMessageBox.Yes)
             if r == QMessageBox.Yes:
                 try:
-                    header = requests.head(file_path, allow_redirects=True)
-                except requests.exceptions.InvalidURL:
+                    target_path = download_url(file_path, parent=self, to_file=True, file_path=None)
+                except InvalidURLError:
                     QMessageBox.critical(self,
                                          "Downloading failed",
                                          "angr management failed to download the file. The URL is invalid.")
                     return
-                if header.status_code != 200:
+                except UnexpectedStatusCodeError as ex:
                     QMessageBox.critical(self,
                                          "Downloading failed",
                                          "angr management failed to retrieve the header of the file. "
-                                         "The HTTP request returned an unexpected status code %d." % header.status_code)
+                                         "The HTTP request returned an unexpected status code %d." % ex.status_code)
                     return
-                if 'content-disposition' in header.headers:
-                    # update the base name
-                    fnames = re.findall("filename=(.+)", header.headers['content-disposition'])
-                    if fnames:
-                        basename = fnames[0].strip('"')
-                filename, folder = QFileDialog.getSaveFileName(
-                    self,
-                    "Download a file to...",
-                    basename,
-                    "Any file (*);"
-                )
-                if filename and folder:
-                    target_path = os.path.join(folder, filename)
-                    req = requests.get(file_path, allow_redirects=True)
-                    if req.status_code != 200:
-                        QMessageBox.critical(self,
-                                             "Downloading failed",
-                                             "angr management failed to download the file. "
-                                             "The HTTP request returned an unexpected status code %d." % header.status_code)
-                        return
-                    with open(target_path, "wb") as f:
-                        f.write(req.content)
+
+                if target_path:
                     # open the file - now it's a local file
                     self.load_file(target_path)
 
@@ -545,8 +511,8 @@ class MainWindow(QMainWindow):
 
     def bring_to_front(self):
         self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
-        self.raise_()
         self.activateWindow()
+        self.raise_()
 
     #
     # Private methods
