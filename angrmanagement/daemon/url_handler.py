@@ -134,7 +134,6 @@ class UrlActionOpenBitmap(UrlActionBase):
     @classmethod
     def _from_params(cls, params):
         url = cls._one_param(params, 'path')
-        print(cls._one_param(params, 'base'))
         return cls(
             url,
             base=cls._one_param(params, 'base'),
