@@ -2,7 +2,8 @@
 import logging
 
 import toml
-from PySide2.QtGui import QFont, QFontMetricsF, QColor, QGuiApplication
+from PySide2.QtGui import QFont, QFontMetricsF, QColor
+from PySide2.QtWidgets import QApplication
 
 from .config_entry import ConfigurationEntry as CE
 
@@ -31,6 +32,7 @@ data_constructors = {
 
 ENTRIES = [
     CE('ui_default_font', QFont, None),
+    CE('tabular_view_font', QFont, None),
     CE('disasm_font', QFont, None),
     CE('disasm_font_metrics', QFontMetricsF, None),
     CE('disasm_font_height', int, None),
@@ -46,7 +48,7 @@ ENTRIES = [
     CE('code_font_height', int, None),
     CE('code_font_width', int, None),
     CE('code_font_ascent', int, None),
-    CE('disasm_view_operand_highlight_color', QColor, QColor(0x7f, 0xf5, 0)),
+    CE('disasm_view_operand_highlight_color', QColor, QColor(0xfc, 0xef, 0)),
     CE('disasm_view_operand_select_color', QColor, QColor(0xff, 0xff, 0)),
     CE('disasm_view_target_addr_color', QColor, QColor(0, 0, 0xff)),
     CE('disasm_view_antitarget_addr_color', QColor, QColor(0xff, 0, 0)),
@@ -85,7 +87,8 @@ class ConfigurationManager:
             self._entries = entries
 
     def init_font_config(self):
-        self.ui_default_font = QGuiApplication.font()
+        self.ui_default_font = QApplication.font("QMenu")
+        self.tabular_view_font = QApplication.font("QMenu")
 
         self.disasm_font = QFont("DejaVu Sans Mono", 10)
         self.disasm_font_metrics = QFontMetricsF(self.disasm_font)

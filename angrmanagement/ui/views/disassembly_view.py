@@ -33,7 +33,7 @@ class DisassemblyView(BaseView):
         # whether we want to show exception edges and all nodes that are only reachable through exception edges
         self._show_exception_edges = True
 
-        self._linear_viewer = None  # type: Optional[QLinearDisassemblyView]
+        self._linear_viewer = None  # type: Optional[QLinearDisassembly]
         self._flow_graph = None  # type: Optional[QDisassemblyGraph]
         self._statusbar = None
         self._jump_history = JumpHistory()
@@ -300,7 +300,7 @@ class DisassemblyView(BaseView):
 
         if self.infodock.selected_insns:
             # display the currently selected instruction
-            self._flow_graph.show_instruction(next(iter(self.infodock.selected_insns)))
+            self._jump_to(next(iter(self.infodock.selected_insns)))
         elif self._current_function.am_obj is not None:
             self._flow_graph.show_instruction(self._current_function.addr)
 
@@ -417,6 +417,9 @@ class DisassemblyView(BaseView):
         if addr is not None:
             self._jump_to(addr)
 
+    def select_label(self, label_addr):
+        self.infodock.select_label(label_addr)
+
     def rename_label(self, addr, new_name):
         if self._flow_graph.disasm is not None:
 
@@ -496,6 +499,7 @@ class DisassemblyView(BaseView):
         self.infodock.selected_blocks.am_subscribe(self._redraw_current_graph)
         self.infodock.hovered_block.am_subscribe(self._redraw_current_graph)
         self.infodock.hovered_edge.am_subscribe(self._redraw_current_graph)
+        self.infodock.selected_labels.am_subscribe(self._redraw_current_graph)
 
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
 
@@ -552,8 +556,14 @@ class DisassemblyView(BaseView):
                 instr_addr = addr
             self.infodock.select_instruction(instr_addr, unique=True)
             return True
-        else:
-            return False
+
+        # it does not belong to any function - we need to switch to linear view mode
+        if self.current_graph is not self._linear_viewer:
+            self.display_linear_viewer()
+            self._linear_viewer.navigate_to_addr(addr)
+            return True
+
+        return False
 
     #
     # Utils

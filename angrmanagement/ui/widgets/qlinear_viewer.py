@@ -51,12 +51,12 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         return super().event(event)
 
 
-class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
+class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
 
     def __init__(self, workspace, disasm_view, parent=None):
-        super().__init__(parent=parent)
-        QDisassemblyBaseControl.__init__(self, workspace, disasm_view)
+        QDisassemblyBaseControl.__init__(self, workspace, disasm_view, QAbstractScrollArea)
+        QAbstractScrollArea.__init__(self, parent=parent)
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -316,6 +316,8 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         addr = self._addr_from_offset(mr, base_offset, offset)
         _l.debug("Address %#x, offset %d, start_line %d.", addr, offset, start_line)
 
+        self._insaddr_to_block.clear()
+
         if start_line < 0:
             # Which object are we currently displaying at the top of the disassembly view?
             try:
@@ -368,9 +370,9 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 # Conversion failed
                 continue
 
-            #if isinstance(qobject, QLinearBlock):
-            #    for insn_addr in qobject.addr_to_insns.keys():
-            #        self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
+            if isinstance(qobject, QLinearBlock):
+                for insn_addr in qobject.addr_to_insns.keys():
+                    self._insaddr_to_block[insn_addr] = qobject
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
@@ -426,7 +428,8 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                            func_addr, obj)
                 qobject = None
         elif isinstance(obj, MemoryData):
-            qobject = QMemoryDataBlock(self.workspace, obj_addr, obj, parent=None, container=self._viewer)
+            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None,
+                                       container=self._viewer)
         elif isinstance(obj, Unknown):
             qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes, container=self._viewer)
         else:

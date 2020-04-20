@@ -2,7 +2,7 @@ import logging
 
 from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QPainter, QColor
-from PySide2.QtCore import Qt, QRectF
+from PySide2.QtCore import Qt, QRectF, QPointF
 
 from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand, Value
 
@@ -108,9 +108,16 @@ class QOperand(QCachedGraphicsItem):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.infodock.toggle_operand_selection(self.insn.addr, self.operand_index,
-                                                   self.operand_descriptor, insn_pos=self.parentItem().scenePos(),
-                                                   unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
+            selected = self.infodock.toggle_operand_selection(
+                self.insn.addr,
+                self.operand_index,
+                self.operand_descriptor,
+                insn_pos=self.parentItem().scenePos(),
+                unique=QApplication.keyboardModifiers() != Qt.ControlModifier
+            )
+            if selected:
+                # select the current instruction, too
+                self.infodock.select_instruction(self.insn.addr, insn_pos=QPointF(self.x(), self.y()), unique=True)
         else:
             super().mousePressEvent(event)
 
@@ -119,6 +126,12 @@ class QOperand(QCachedGraphicsItem):
         if button == Qt.LeftButton:
             if self._branch_target is not None:
                 self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr)
+                return
+            if self.is_constant:
+                self.disasm_view.jump_to(self.constant_value, src_ins_addr=self.insn.addr)
+                return
+            if self.is_constant_memory:
+                self.disasm_view.jump_to(self.constant_memory_value, src_ins_addr=self.insn.addr)
         else:
             super().mouseDoubleClickEvent(event)
 

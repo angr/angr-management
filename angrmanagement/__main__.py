@@ -81,7 +81,7 @@ def start_management(filepath=None, use_daemon=False):
     from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
     from PySide2.QtCore import Qt
 
-    from .config import FONT_LOCATION, IMG_LOCATION
+    from .config import FONT_LOCATION, IMG_LOCATION, Conf
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")
@@ -127,6 +127,11 @@ def start_management(filepath=None, use_daemon=False):
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
+
+    # Initialize font-related configuration
+    Conf.init_font_config()
+    # Set global font
+    app.setFont(Conf.ui_default_font)
 
     GlobalInfo.gui_thread = threading.get_ident()
 

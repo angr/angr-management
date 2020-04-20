@@ -2,6 +2,7 @@ import math
 import string
 
 from PySide2.QtCore import Qt, QRectF
+from PySide2.QtGui import QColor
 
 from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort, MemoryData
 
@@ -16,9 +17,10 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     BYTE_AREA_SPACING = 15
 
-    def __init__(self, workspace, addr, memory_data, bytes_per_line=16, parent=None, container=None):
+    def __init__(self, workspace, infodock, addr, memory_data, bytes_per_line=16, parent=None, container=None):
         super().__init__(parent=parent, container=container)
         self.workspace = workspace
+        self.infodock = infodock
         self.addr = addr
         self.memory_data: MemoryData = memory_data
         self.bytes_per_line: int = bytes_per_line  # TODO: Move it to Conf
@@ -48,11 +50,19 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
     def paint(self, painter, option, widget):
 
-        painter.setFont(Conf.disasm_font)
-        painter.setPen(Qt.black)
+        should_highlight = self.infodock.is_label_selected(self.addr)
 
         x, y = 0, 0
+
+        highlight_color = QColor(0xf0, 0xf0, 0xbf)
+        if should_highlight:
+            painter.setBrush(highlight_color)
+            painter.setPen(highlight_color)
+            painter.drawRect(0, 0, self.width, self.height)
+
         # address
+        painter.setFont(Conf.disasm_font)
+        painter.setPen(Qt.black)
         painter.drawText(x, y + Conf.disasm_font_ascent, self._addr_text)
         x += self._addr_text_width
         # label
@@ -150,6 +160,17 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 ch = "?"
             painter.drawText(x, y + Conf.disasm_font_ascent, ch)
             x += self.character_width
+
+    #
+    # Event handlers
+    #
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # unselect all other labels
+            self.infodock.unselect_all_labels()
+            # select this label
+            self.infodock.select_label(self.addr)
 
     #
     # Private methods

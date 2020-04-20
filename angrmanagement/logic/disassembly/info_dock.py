@@ -37,6 +37,7 @@ class InfoDock:
         self.selected_blocks = ObjectContainer(set(), 'The currently selected blocks')
         self.hovered_block = ObjectContainer(None, 'The currently hovered block')
         self.hovered_edge = ObjectContainer(None, 'The currently hovered edge')
+        self.selected_labels = ObjectContainer(set(), 'The currently selected labels')
 
     @property
     def smart_highlighting(self):
@@ -132,6 +133,21 @@ class InfoDock:
             self.selected_operands.pop((insn_addr, operand_idx))
             self.selected_operands.am_event()
 
+    def select_label(self, label_addr):
+        # only one label can be selected at a time
+        self.selected_labels.clear()
+        self.selected_labels.add(label_addr)
+        self.selected_labels.am_event()
+
+    def unselect_label(self, label_addr):
+        if label_addr in self.selected_labels:
+            self.selected_labels.remove(label_addr)
+            self.selected_labels.am_event()
+
+    def unselect_all_labels(self):
+        self.selected_labels.clear()
+        self.selected_labels.am_event()
+
     def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique=False):
         """
         Toggle the selection state of an instruction in the disassembly view.
@@ -152,14 +168,17 @@ class InfoDock:
         :param int insn_addr:   Address of the instruction to toggle.
         :param int operand_idx: The operand to toggle.
         :param operand:         The operand instance.
-        :return:                None
+        :return:                True if this operand is now selected, False otherwise.
+        :rtype:                 bool
         """
 
         if (insn_addr, operand_idx) in self.selected_operands:
             self.unselect_operand(insn_addr, operand_idx)
+            return False
         else:
             self.select_operand(insn_addr, operand_idx, operand, unique=unique)
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
+            return True
 
     def clear_selection(self):
         self.selected_blocks.clear()
@@ -199,6 +218,9 @@ class InfoDock:
         :return:                    bool
         """
         return (ins_addr, operand_index) in self.selected_operands
+
+    def is_label_selected(self, label_addr):
+        return label_addr in self.selected_labels
 
     def should_highlight_operand(self, selected, operand):
         if selected is None:

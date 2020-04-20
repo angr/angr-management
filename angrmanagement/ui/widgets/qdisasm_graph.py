@@ -14,11 +14,11 @@ from .qdisasm_base_control import QDisassemblyBaseControl
 _l = logging.getLogger(__name__)
 
 
-class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl):
+class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView):
 
     def __init__(self, workspace, disasm_view, parent=None):
-        super().__init__(parent=parent)
-        QDisassemblyBaseControl.__init__(self, workspace, disasm_view)
+        QDisassemblyBaseControl.__init__(self, workspace, disasm_view, QZoomableDraggableGraphicsView)
+        QZoomableDraggableGraphicsView.__init__(self, parent=parent)
 
         self.workspace = workspace
 
@@ -31,7 +31,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
         self._arrows = [ ]  # A list of references to QGraphArrow objects
 
         self.blocks = [ ]
-        self._insaddr_to_block = { }
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -51,10 +50,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
             self._function_graph = v
 
             self.reload()
-
-    @property
-    def infodock(self):
-        return self.disasm_view.infodock
 
     @property
     def induction_variable_analysis(self):
@@ -112,19 +107,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
         self.request_relayout()
         self._update_scene_boundary()
 
-    def get_selected_operand_info(self):
-        if not self.infodock.selected_operands:
-            return None
-
-        # get the first operand
-        ins_addr, operand_idx = next(iter(self.infodock.selected_operands))
-        block = self._insaddr_to_block.get(ins_addr, None)
-        if block is not None:
-            operand = block.addr_to_insns[ins_addr].get_operand(operand_idx)
-            return block, ins_addr, operand
-
-        return None
-
     #
     # Event handlers
     #
@@ -152,25 +134,6 @@ class QDisassemblyGraph(QZoomableDraggableGraphicsView, QDisassemblyBaseControl)
 
     def on_background_click(self):
         pass
-
-    def keyPressEvent(self, event):
-
-        key = event.key()
-
-        if key == Qt.Key_N:
-            # rename a label
-            self.disasm_view.popup_rename_label_dialog()
-            return
-        elif key == Qt.Key_X:
-            # XRef
-            # get the variable
-            r = self.get_selected_operand_info()
-            if r is not None:
-                _, ins_addr, operand = r
-                self.disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand)
-            return
-
-        super().keyPressEvent(event)
 
     #
     # Layout

@@ -1,6 +1,6 @@
 from typing import List
 
-from PySide2.QtWidgets import QTableWidgetItem, QAbstractItemView, QHeaderView, QTableView
+from PySide2.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 from PySide2.QtCore import Qt, QAbstractTableModel
 
 from angr.knowledge_plugins.variables.variable_access import VariableAccess
@@ -67,7 +67,7 @@ class QXRefModel(QAbstractTableModel):
             return self._get_column_text(xref, col)
 
         elif role == Qt.FontRole:
-            return Conf.ui_default_font
+            return Conf.tabular_view_font
 
         return None
 
