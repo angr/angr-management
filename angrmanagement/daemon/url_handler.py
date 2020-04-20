@@ -129,12 +129,14 @@ class UrlActionOpenBitmap(UrlActionBase):
 
     def act(self, daemon_conn=None):
         daemon_conn.root.openbitmap(
-            self.bitmap_path, self.md5, self.sha256)
+            self.bitmap_path, self.base, self.md5, self.sha256)
 
     @classmethod
     def _from_params(cls, params):
+        url = cls._one_param(params, 'path')
+        print(cls._one_param(params, 'base'))
         return cls(
-            cls._one_param(params, 'bitmap'),
+            url,
             base=cls._one_param(params, 'base'),
             md5=cls._one_param(params, 'md5'),
             sha256=cls._one_param(params, 'sha256'),
