@@ -22,7 +22,15 @@ class XRef(QDialog):
         if variable is not None:
             self.setWindowTitle('XRefs to variable %s(%s)' % (variable.name, variable.ident))
         elif dst_addr is not None:
-            self.setWindowTitle('XRefs to address %#x' % dst_addr)
+            # is there a label for it?
+            try:
+                lbl = self._instance.kb.labels.get(dst_addr)
+            except KeyError:
+                lbl = None
+            if lbl is not None:
+                self.setWindowTitle('XRefs to %s' % lbl)
+            else:
+                self.setWindowTitle('XRefs to address %#x' % dst_addr)
         else:
             raise ValueError("Either variable or dst_addr must be specified.")
 

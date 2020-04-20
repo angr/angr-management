@@ -54,7 +54,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         x, y = 0, 0
 
-        highlight_color = QColor(0xf0, 0xf0, 0xbf)
+        highlight_color = Conf.disasm_label_highlight_color
         if should_highlight:
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
