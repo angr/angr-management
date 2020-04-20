@@ -120,17 +120,22 @@ class UrlActionCommentAt(UrlActionBase):
 
 
 class UrlActionOpenBitmap(UrlActionBase):
-    def __init__(self, bitmap_path, md5=None, sha256=None):
+    def __init__(self, bitmap_path, base=None, md5=None, sha256=None):
         super().__init__(md5, sha256)
         self.bitmap_path = bitmap_path
+        self.base = base
+        self.md5 = md5
+        self.sha256 = sha256
 
     def act(self, daemon_conn=None):
-        daemon_conn.root.openbitmap(self.bitmap_path)
+        daemon_conn.root.openbitmap(
+            self.bitmap_path, self.md5, self.sha256)
 
     @classmethod
     def _from_params(cls, params):
         return cls(
             cls._one_param(params, 'bitmap'),
+            base=cls._one_param(params, 'base'),
             md5=cls._one_param(params, 'md5'),
             sha256=cls._one_param(params, 'sha256'),
         )

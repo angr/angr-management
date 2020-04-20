@@ -136,12 +136,14 @@ def gui_thread_schedule(callable, args=None):
     return event.result
 
 
-def gui_thread_schedule_async(callable, args=None):
+def gui_thread_schedule_async(callable, args=None, kwargs=None):
     if is_gui_thread():
-        if args is None:
+        if args is None and kwargs is None:
             callable()
-        else:
+        elif kwargs is None:
             callable(*args)
+        else:
+            callable(*args, **kwargs)
         return
 
     event = ExecuteCodeEvent(callable, args)

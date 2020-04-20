@@ -45,11 +45,16 @@ class ClientService(rpyc.Service):
             if addr is not None:
                 gui_thread_schedule_async(self.workspace.set_comment(addr, comment))
 
-    def exposed_openbitmap(self, bitmap_path):
+    def exposed_openbitmap(self, bitmap_path, base, md5, sha256):
 
         if self.workspace is not None:
             if hasattr(self.workspace, "open_bitmap_multi_trace"):
-                gui_thread_schedule_async(self.workspace.open_bitmap_multi_trace, args=(bitmap_path,))
+                gui_thread_schedule_async(self.workspace.open_bitmap_multi_trace,
+                                          args=(bitmap_path,),
+                                          kwargs={
+                                              'base_addr': base,
+                                              'md5': md5,
+                                              'sha256': sha256})
             else:
                 _l.critical("TracePlugin is probably not installed.")
                 # TODO: Open a message box
