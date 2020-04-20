@@ -10,6 +10,7 @@ class QCachedGraphicsItem(QGraphicsItem):
         self._cached_device_pixel_ratio = None
 
     def clear_cache(self):
+        self.prepareGeometryChange()
         self._cached_bounding_rect = None
         self._cached_device_pixel_ratio = None
 
