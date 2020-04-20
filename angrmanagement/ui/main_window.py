@@ -511,8 +511,8 @@ class MainWindow(QMainWindow):
 
     def bring_to_front(self):
         self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
-        self.raise_()
         self.activateWindow()
+        self.raise_()
 
     #
     # Private methods
