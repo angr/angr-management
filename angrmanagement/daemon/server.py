@@ -1,7 +1,8 @@
 
-import os
+import time
 import sys
 import subprocess
+import threading
 import binascii
 
 import rpyc
@@ -39,7 +40,8 @@ class ManagementService(rpyc.Service):
 
     def on_disconnect(self, conn):
         self._conn = None
-        CONNECTIONS[conn] = None
+        if conn in CONNECTIONS:
+            del CONNECTIONS[conn]
 
     def exposed_open(self, bin_path):
         flags = { }
@@ -62,8 +64,6 @@ class ManagementService(rpyc.Service):
         conn.root.jumpto(addr, symbol)
 
     def exposed_register_binary(self, bin_path, md5, sha256):
-        del CONNECTIONS[self._conn]
-
         md5 = binascii.hexlify(md5).decode("ascii")
         sha256 = binascii.hexlify(sha256).decode("ascii")
 
@@ -92,6 +92,33 @@ class ManagementService(rpyc.Service):
         pass
 
 
+def monitor_thread(server):
+    """
+    Monitors connection status, and kills the server (which is, the daemon process) after the last active connection is
+    gone for 5 minutes.
+    """
+
+    last_active_conn = time.time()
+
+    while True:
+        if CONNECTIONS:
+            print("[*] Has %d active connections." % len(CONNECTIONS))
+            last_active_conn = time.time()
+        else:
+            print("[*] No active connection for %d seconds." % (time.time() - last_active_conn))
+
+        if time.time() - last_active_conn > 300:
+            # kill myself
+            print("[-] Shutting down the server.")
+            server.close()
+            break
+
+        if server._closed:
+            break
+
+        time.sleep(1)
+
+
 def start_daemon(port=DEFAULT_PORT):
 
     try:
@@ -101,6 +128,7 @@ def start_daemon(port=DEFAULT_PORT):
         return
 
     server = ThreadedServer(ManagementService, port=port)
+    threading.Thread(target=monitor_thread, args=(server, ), daemon=True).start()
     server.start()
 
 
