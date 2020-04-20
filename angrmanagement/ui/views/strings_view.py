@@ -2,6 +2,7 @@ from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QLabel
 from PySide2.QtCore import QSize
 
 from angr.knowledge_plugins import Function
+from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 from .view import BaseView
 from ..widgets.qstring_table import QStringTable
@@ -45,7 +46,7 @@ class StringsView(BaseView):
 
         self.reload()
 
-    def _on_string_selected(self, s):
+    def _on_string_selected(self, s: MemoryData):
         """
         A string reference is selected.
 
@@ -53,7 +54,10 @@ class StringsView(BaseView):
         :return:
         """
 
-        pass
+        disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
+        disasm_view.jump_to(s.addr)
+        disasm_view.select_label(s.addr)
+        self.workspace.view_manager.raise_view(disasm_view)
 
     #
     # Private methods

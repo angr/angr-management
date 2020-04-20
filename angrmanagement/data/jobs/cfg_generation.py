@@ -33,7 +33,9 @@ class CFGGenerationJob(Job):
         self._last_progress_callback_triggered = None
 
     def run(self, inst):
-        temp_cfb = inst.project.analyses.CFB()
+        exclude_region_types = {'kernel', 'tls'}
+        # create a temporary CFB for displaying partially analyzed binary during CFG recovery
+        temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)
         self._cfb = temp_cfb
         cfg = inst.project.analyses.CFG(progress_callback=self._progress_callback,
                                         low_priority=True,
@@ -43,7 +45,7 @@ class CFGGenerationJob(Job):
                                         )
         self._cfb = None
         # Build the real one
-        cfb = inst.project.analyses.CFB(kb=cfg.kb)
+        cfb = inst.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
 
         return cfg, cfb
 

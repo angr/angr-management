@@ -34,6 +34,9 @@ class QCachedGraphicsItem(QGraphicsItem):
             self._cached_bounding_rect = self._boundingRect()
         return self._cached_bounding_rect
 
+    def _boundingRect(self):
+        raise NotImplementedError()
+
     def _boundingRectAdjusted(self):
         # adjust according to devicePixelRatioF
         ratio = self.currentDevicePixelRatioF()

@@ -1,6 +1,8 @@
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
+from typing import Any
+
+from PySide2.QtWidgets import QTableView, QTableWidgetItem, QAbstractItemView
 from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex
 
 from angr.analyses.cfg.cfg_fast import MemoryData
 
@@ -8,68 +10,22 @@ from ...utils import filter_string_for_display
 from ...config import Conf
 
 
-class QStringTableItem(QTableWidgetItem):
-    def __init__(self, mem_data, *args, **kwargs):
-        super(QStringTableItem, self).__init__(*args, **kwargs)
+class QStringModel(QAbstractTableModel):
 
-        self._mem_data = mem_data  # type: MemoryData
+    HEADER = [ "Address", "Length", "String" ]
 
-    def widgets(self):
-        """
+    ADDRESS_COL = 0
+    LENGTH_COL = 1
+    STRING_COL = 2
 
-        :return: a list of QTableWidgetItem objects
-        :rtype: list
-        """
+    def __init__(self, cfg, func=None):
+        super().__init__()
 
-        str_data = self._mem_data
-
-        address = "%#x" % str_data.address
-        length = "%d" % str_data.size
-        if str_data.content is None:
-            content = "<ERROR>"
-        else:
-            content = filter_string_for_display(str_data.content.decode("utf-8"))
-
-        widgets = [
-            QTableWidgetItem(address),
-            QTableWidgetItem(length),
-            QTableWidgetItem(content),
-        ]
-
-        for w in widgets:
-            w.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-            w.setFont(Conf.ui_default_font)
-
-        return widgets
-
-
-class QStringTable(QTableWidget):
-    def __init__(self, parent, selection_callback=None):
-        super(QStringTable, self).__init__(parent)
-
-        self._selected = selection_callback
-
-        header_labels = [ 'Address', 'Length', 'String' ]
-
-        self.setColumnCount(len(header_labels))
-        self.setHorizontalHeaderLabels(header_labels)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setShowGrid(False)
-        self.verticalHeader().setVisible(False)
-        self.verticalHeader().setDefaultSectionSize(24)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
-
-        self._cfg = None
+        self._cfg = cfg
+        self._function = func
         self._xrefs = None
-        self._function = None
-        self.items = [ ]
 
-        # self.itemDoubleClicked.connect(self._on_string_selected)
-        self.cellDoubleClicked.connect(self._on_string_selected)
-
-    #
-    # Properties
-    #
+        self._values = None
 
     @property
     def cfg(self):
@@ -77,8 +33,10 @@ class QStringTable(QTableWidget):
 
     @cfg.setter
     def cfg(self, v):
+        self.beginResetModel()
         self._cfg = v
-        self.reload()
+        self._values = None
+        self.endResetModel()
 
     @property
     def xrefs(self):
@@ -87,6 +45,7 @@ class QStringTable(QTableWidget):
     @xrefs.setter
     def xrefs(self, v):
         self._xrefs = v
+        self._values = None
 
     @property
     def function(self):
@@ -94,46 +53,150 @@ class QStringTable(QTableWidget):
 
     @function.setter
     def function(self, v):
-        if v is not self._function:
-            self._function = v
-            self.reload()
+        self._function = v
+        self._values = None
+
+    def _get_all_string_memory_data(self):
+        lst = [ ]
+        if self.cfg is None:
+            return lst
+        for v in self.cfg.memory_data.values():
+            if v.sort == 'string':
+                if self._function is None:
+                    lst.append(v)
+                else:
+                    xrefs = self._xrefs
+                    if v.addr in xrefs.xrefs_by_dst:
+                        for xref in xrefs.xrefs_by_dst[v.addr]:
+                            if xref.block_addr in self._function.block_addrs_set:
+                                lst.append(v)
+                                break
+        return lst
+
+    @property
+    def values(self):
+        if self._values is None:
+            self._values = self._get_all_string_memory_data()
+        return self._values
+
+    def __len__(self):
+        return self.rowCount()
+
+    def rowCount(self, parent=None) -> int:
+        return len(self.values)
+
+    def columnCount(self, parent=None) -> int:
+        return len(self.HEADER)
+
+    def headerData(self, section, orientation, role=None) -> Any:
+        if role == Qt.DisplayRole:
+            if section < len(self.HEADER):
+                return self.HEADER[section]
+        elif role == Qt.InitialSortOrderRole:
+            return Qt.AscendingOrder
+
+        return None
+
+    def data(self, index, role=None) -> Any:
+        if not index.isValid():
+            return None
+
+        row = index.row()
+        if row >= len(self.values):
+            return None
+
+        col = index.column()
+        v = self.values[row]
+
+        if role == Qt.DisplayRole:
+            return self._get_column_text(v, col)
+        elif role == Qt.FontRole:
+            return Conf.tabular_view_font
+        return None
+
+    def sort(self, column, order=None) -> Any:
+        self.layoutAboutToBeChanged.emit()
+
+        self._values = sorted(
+            self.values,
+            key=lambda x: self._get_column_data(x, column), reverse=order == Qt.DescendingOrder,
+        )
+        self.layoutChanged.emit()
+
+    def _get_column_text(self, v: MemoryData, col: int):
+        if col < len(self.HEADER):
+            data = self._get_column_data(v, col)
+            if col == self.ADDRESS_COL and type(data) is int:
+                return hex(data)
+            return data
+
+    def _get_column_data(self, v: MemoryData, col: int) -> Any:
+        mapping = {
+            self.ADDRESS_COL: lambda x: x.addr,
+            self.LENGTH_COL: lambda x: x.size,
+            self.STRING_COL: lambda x: filter_string_for_display(x.content.decode("utf-8")) if x.content is not None else "<ERROR>",
+        }
+
+        if col in mapping:
+            return mapping[col](v)
+        return None
+
+
+class QStringTable(QTableView):
+    def __init__(self, parent, selection_callback=None):
+        super(QStringTable, self).__init__(parent)
+
+        self._selected = selection_callback
+
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setShowGrid(False)
+        self.verticalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(24)
+        self.setHorizontalScrollMode(self.ScrollPerPixel)
+
+        self._model = QStringModel(None)
+        self.setModel(self._model)
+
+        self.setSortingEnabled(True)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+
+        self.doubleClicked.connect(self._on_string_selected)
+
+    #
+    # Properties
+    #
+
+    @property
+    def cfg(self):
+        return self._model.cfg
+
+    @cfg.setter
+    def cfg(self, v):
+        self._model.cfg = v
+        self.fast_resize()
+
+    @property
+    def xrefs(self):
+        return self._model.xrefs
+
+    @xrefs.setter
+    def xrefs(self, v):
+        self._model.xrefs = v
+
+    @property
+    def function(self):
+        return self._model.function
+
+    @function.setter
+    def function(self, v):
+        self._model.function = v
+        self.fast_resize()
 
     #
     # Public methods
     #
 
-    def reload(self):
-
-        current_row = self.currentRow()
-
-        self.clearContents()
-
-        if self._cfg is None:
-            return
-
-        self.items = [ ]
-
-        for f in self._cfg.memory_data.values():
-            if f.sort == 'string':
-                if self._function is None:
-                    self.items.append(QStringTableItem(f))
-                else:
-                    xrefs = self._xrefs
-                    if f.addr in xrefs.xrefs_by_dst:
-                        for xref in xrefs.xrefs_by_dst[f.addr]:
-                            if xref.block_addr in self._function.block_addrs_set:
-                                self.items.append(QStringTableItem(f))
-                                break
-
-        items_count = len(self.items)
-        self.setRowCount(items_count)
-
-        for idx, item in enumerate(self.items):
-            for i, it in enumerate(item.widgets()):
-                self.setItem(idx, i, it)
-
-        if 0 <= current_row < len(self.items):
-            self.setCurrentCell(current_row, 0)
+    def fast_resize(self):
 
         self.setVisible(False)
         self.resizeColumnsToContents()
@@ -143,13 +206,14 @@ class QStringTable(QTableWidget):
     # Event handlers
     #
 
-    def _on_string_selected(self, *args):
-        selected_index = self.currentRow()
-        if 0 <= selected_index < len(self.items):
-            selected_item = self.items[selected_index]
+    def _on_string_selected(self, model_index):
+        selected_index = model_index.row()
+        if self._model is None:
+            return
+        if 0 <= selected_index < len(self._model.values):
+            selected_item = self._model.values[selected_index]
         else:
             selected_item = None
 
         if self._selected is not None:
             self._selected(selected_item)
-

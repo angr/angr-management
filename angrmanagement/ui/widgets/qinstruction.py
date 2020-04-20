@@ -82,7 +82,7 @@ class QInstruction(QCachedGraphicsItem):
             return color
 
         if self.selected:
-            return QColor(0xef, 0xbf, 0xba)
+            return QColor(0xb8, 0xc3, 0xd6)
 
         return None  # None here means transparent, reusing the block color
 

@@ -119,7 +119,7 @@ class QFunctionTableModel(QAbstractTableModel):
             return QBrush(color)
 
         elif role == Qt.FontRole:
-            return Conf.ui_default_font
+            return Conf.tabular_view_font
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
@@ -346,6 +346,8 @@ class QFunctionTable(QWidget):
 
     def update_displayed_function_count(self):
         cnt = self._table_view.model().rowCount()
+        if self.function_manager is None:
+            return
         if cnt == len(self.function_manager):
             self._view.set_displayed_function_count(None)  # no filtering
         else:

@@ -38,8 +38,6 @@ class Workspace:
         # Initialize font configurations
         #
 
-        Conf.init_font_config()
-
         self.default_tabs = [
             FunctionsView(self, 'left'),
             DisassemblyView(self, 'center'),

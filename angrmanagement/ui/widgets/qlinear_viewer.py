@@ -6,10 +6,12 @@ from PySide2.QtGui import QPainter
 from PySide2.QtCore import Qt, QRectF, QRect, QEvent
 
 from angr.block import Block
+from angr.knowledge_plugins.cfg.memory_data import MemoryData, MemoryDataSort
 from angr.analyses.cfg.cfb import Unknown
 
 from ...config import Conf
 from .qblock import QLinearBlock
+from .qmemory_data_block import QMemoryDataBlock
 from .qunknown_block import QUnknownBlock
 from .qgraph import QSaveableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
@@ -49,12 +51,12 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         return super().event(event)
 
 
-class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
+class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
 
     def __init__(self, workspace, disasm_view, parent=None):
-        super().__init__(parent=parent)
-        QDisassemblyBaseControl.__init__(self, workspace, disasm_view)
+        QDisassemblyBaseControl.__init__(self, workspace, disasm_view, QAbstractScrollArea)
+        QAbstractScrollArea.__init__(self, parent=parent)
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -144,16 +146,16 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         delta = event.delta()
         if delta < 0:
             # scroll down by some lines
-            self.prepare_objects(self.offset, start_line=self._start_line_in_object + int(-delta // self._line_height))
-            self.verticalScrollBar().setValue(self.offset * self._line_height)
-            event.accept()
-            self.viewport().update()
+            lines = min(int(-delta // self._line_height), 3)
+            self.prepare_objects(self.offset, start_line=self._start_line_in_object + lines)
         elif delta > 0:
             # Scroll up by some lines
-            self.prepare_objects(self.offset, start_line=self._start_line_in_object - int(delta // self._line_height))
-            event.accept()
-            self.verticalScrollBar().setValue(self.offset * self._line_height)
-            self.viewport().update()
+            lines = min(int(delta // self._line_height), 3)
+            self.prepare_objects(self.offset, start_line=self._start_line_in_object - lines)
+
+        self.verticalScrollBar().setValue(self.offset * self._line_height)
+        event.accept()
+        self.viewport().update()
 
     def _on_vertical_scroll_bar_triggered(self, action):
 
@@ -210,6 +212,9 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         # enumerate memory regions
         byte_offset = 0
         for mr in self.cfb.regions:  # type: MemoryRegion
+            if mr.type in {'tls', 'kernel'}:
+                # Skip TLS objects and kernel objects
+                continue
             self._addr_to_region_offset[mr.addr] = byte_offset
             self._offset_to_region[byte_offset] = mr
             byte_offset += mr.size
@@ -311,6 +316,8 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
         addr = self._addr_from_offset(mr, base_offset, offset)
         _l.debug("Address %#x, offset %d, start_line %d.", addr, offset, start_line)
 
+        self._insaddr_to_block.clear()
+
         if start_line < 0:
             # Which object are we currently displaying at the top of the disassembly view?
             try:
@@ -363,9 +370,9 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 # Conversion failed
                 continue
 
-            #if isinstance(qobject, QLinearBlock):
-            #    for insn_addr in qobject.addr_to_insns.keys():
-            #        self._linear_view._add_insn_addr_block_mapping(insn_addr, qobject)
+            if isinstance(qobject, QLinearBlock):
+                for insn_addr in qobject.addr_to_insns.keys():
+                    self._insaddr_to_block[insn_addr] = qobject
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
@@ -420,6 +427,9 @@ class QLinearDisassembly(QAbstractScrollArea, QDisassemblyBaseControl):
                 _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
                            func_addr, obj)
                 qobject = None
+        elif isinstance(obj, MemoryData):
+            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None,
+                                       container=self._viewer)
         elif isinstance(obj, Unknown):
             qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes, container=self._viewer)
         else:
