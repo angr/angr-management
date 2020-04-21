@@ -18,10 +18,16 @@ class TraceViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace.instance.register_container('trace', lambda: None, Optional[TraceStatistics], 'The current trace')
-        self.workspace.instance.register_container('multi_trace', lambda: None, Optional[MultiTrace], 'The current set of multiple traces')
+        self.workspace.instance.register_container('trace', lambda: None, Optional[TraceStatistics],
+                                                   'The current trace')
+        self.workspace.instance.register_container('multi_trace', lambda: None, Optional[MultiTrace],
+                                                   'The current set of multiple traces')
 
         self.workspace.instance.register_method('open_bitmap_multi_trace', self.open_bitmap_multi_trace)
+
+        # Register event callbacks
+        self.trace.am_subscribe(self._on_trace_updated)
+        self.multi_trace.am_subscribe(self._on_trace_updated)
 
         self._viewers = []
 
@@ -44,6 +50,16 @@ class TraceViewer(BasePlugin):
 
 
     #
+    # Event handlers
+    #
+
+    def _on_trace_updated(self):
+        # redraw disassembly view
+        self.workspace.view_manager.first_view_in_category('disassembly').redraw_current_graph()
+        # refresh function table
+        self.workspace.view_manager.first_view_in_category('functions').refresh()
+
+    #
     # features for the disassembly view
     #
 
@@ -56,7 +72,6 @@ class TraceViewer(BasePlugin):
 
         dview.layout().addWidget(trace_viewer)
         trace_viewer.hide()
-
 
     def color_block(self, addr):
         if self.multi_trace != None:
@@ -137,20 +152,39 @@ class TraceViewer(BasePlugin):
     # features for loading traces!
     #
 
-    MENU_BUTTONS = ['Open trace...', 'Open MultiTrace...', 'Open AFL bitmap MultiTrace...']
+    MENU_BUTTONS = [
+        'Open trace...',
+        'Open MultiTrace...',
+        'Clear trace',
+        'Open AFL bitmap...',
+        'Open inverted AFL bitmap...',
+        'Reset AFL bitmap',
+    ]
+    OPEN_TRACE_ID = 0
+    OPEN_MULTITRACE_ID = 1
+    RESET_TRACE_ID = 2
+    OPEN_AFL_BITMAP_ID = 3
+    OPEN_AFL_BITMAP_INVERTED_ID = 4
+    RESET_AFL_BITMAP = 5
 
     def handle_click_menu(self, idx):
-        assert 0 <= idx <= 2
+
+        if idx < 0 or idx >= len(self.MENU_BUTTONS):
+            return
 
         if self.workspace.instance.project is None:
             return
 
-        if idx == 0:
-            self.open_trace()
-        elif idx == 1:
-            self.open_multi_trace()
-        else:
-            self.open_bitmap_multi_trace()
+        mapping = {
+            self.OPEN_TRACE_ID: self.open_trace,
+            self.OPEN_MULTITRACE_ID: self.open_multi_trace,
+            self.RESET_TRACE_ID: self.reset_trace,
+            self.OPEN_AFL_BITMAP_ID: self.open_bitmap_multi_trace,
+            self.OPEN_AFL_BITMAP_INVERTED_ID: self.open_inverted_bitmap_multi_trace,
+            self.RESET_AFL_BITMAP: self.reset_bitmap,
+        }
+
+        mapping.get(idx)()
 
     def open_trace(self):
         trace, baddr = self._open_json_trace_dialog()
@@ -171,17 +205,43 @@ class TraceViewer(BasePlugin):
         self.multi_trace.am_obj = MultiTrace(self.workspace, trace, base_addr)
         self.multi_trace.am_event()
 
+    def reset_trace(self):
+        self.trace.am_obj = None
+        self.trace.am_event()
+        self.multi_trace.am_obj = None
+        self.multi_trace.am_event()
+
     def open_bitmap_multi_trace(self, trace_path=None, base_addr=None):
+        r = self._open_bitmap_multi_trace(trace_path, base_addr)
+        if r is None:
+            return
+        trace, base_addr = r
+        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr)
+        self.multi_trace.am_event()
+
+    def open_inverted_bitmap_multi_trace(self, trace_path=None, base_addr=None):
+        r = self._open_bitmap_multi_trace(trace_path, base_addr)
+        if r is None:
+            return
+        trace, base_addr = r
+        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr, bits_inverted=True)
+        self.multi_trace.am_event()
+
+    def reset_bitmap(self):
+        self.multi_trace.am_obj = None
+        self.multi_trace.am_event()
+
+    def _open_bitmap_multi_trace(self, trace_path, base_addr):
 
         if trace_path is None:
             trace_path = self._open_trace_dialog(filter='')
             if trace_path is None:
-                return
+                return None
 
         if base_addr is None:
-            base_addr = self._open_baseaddr_dialog(0x0)
+            base_addr = self._open_baseaddr_dialog(0x4000000000)
             if base_addr is None:
-                return
+                return None
 
         if isurl(trace_path):
             try:
@@ -190,19 +250,18 @@ class TraceViewer(BasePlugin):
                 QMessageBox.critical(self.workspace._main_window,
                                      "Downloading failed",
                                      "angr management failed to download the file. The URL is invalid.")
-                return
+                return None
             except UnexpectedStatusCodeError as ex:
                 QMessageBox.critical(self.workspace._main_window,
                                      "Downloading failed",
                                      "angr management failed to retrieve the header of the file. "
                                      "The HTTP request returned an unexpected status code %d." % ex.status_code)
-                return
+                return None
         else:
             with open(trace_path, 'rb') as f:
                 trace = f.read()
 
-        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr)
-        self.multi_trace.am_event()
+        return trace, base_addr
 
     def _open_trace_dialog(self, filter):
         file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", filter)

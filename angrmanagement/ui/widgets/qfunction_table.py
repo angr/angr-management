@@ -229,6 +229,9 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
         self.doubleClicked.connect(self._on_function_selected)
 
+    def refresh(self):
+        self.viewport().update()
+
     @property
     def function_manager(self):
         return self._functions
@@ -325,6 +328,9 @@ class QFunctionTable(QWidget):
     #
     # Public methods
     #
+
+    def refresh(self):
+        self._table_view.refresh()
 
     def show_filter_box(self, prefix=""):
         if prefix:
