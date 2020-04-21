@@ -102,14 +102,15 @@ def monitor_thread(server):
 
     while True:
         if CONNECTIONS:
-            print("[*] Has %d active connections." % len(CONNECTIONS))
+            # print("[*] Has %d active connections." % len(CONNECTIONS))
             last_active_conn = time.time()
         else:
-            print("[*] No active connection for %d seconds." % (time.time() - last_active_conn))
+            # print("[*] No active connection for %d seconds." % (time.time() - last_active_conn))
+            pass
 
         if time.time() - last_active_conn > 300:
             # kill myself
-            print("[-] Shutting down the server.")
+            # print("[-] Shutting down the server.")
             server.close()
             break
 
