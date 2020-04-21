@@ -199,7 +199,7 @@ class DisassemblyView(BaseView):
 
         super().keyReleaseEvent(event)
 
-    def _redraw_current_graph(self, **kwargs):
+    def redraw_current_graph(self, **kwargs):
         """
         Redraw the graph currently in display.
 
@@ -494,12 +494,12 @@ class DisassemblyView(BaseView):
 
     def _register_events(self):
         # redraw the current graph if instruction/operand selection changes
-        self.infodock.selected_insns.am_subscribe(self._redraw_current_graph)
-        self.infodock.selected_operands.am_subscribe(self._redraw_current_graph)
-        self.infodock.selected_blocks.am_subscribe(self._redraw_current_graph)
-        self.infodock.hovered_block.am_subscribe(self._redraw_current_graph)
-        self.infodock.hovered_edge.am_subscribe(self._redraw_current_graph)
-        self.infodock.selected_labels.am_subscribe(self._redraw_current_graph)
+        self.infodock.selected_insns.am_subscribe(self.redraw_current_graph)
+        self.infodock.selected_operands.am_subscribe(self.redraw_current_graph)
+        self.infodock.selected_blocks.am_subscribe(self.redraw_current_graph)
+        self.infodock.hovered_block.am_subscribe(self.redraw_current_graph)
+        self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
+        self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
 
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
 

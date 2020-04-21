@@ -28,6 +28,9 @@ class FunctionsView(BaseView):
     # Public methods
     #
 
+    def refresh(self):
+        self._function_table.refresh()
+
     def set_function_count(self, count):
         self._function_count = count
         self._refresh_status_label()
