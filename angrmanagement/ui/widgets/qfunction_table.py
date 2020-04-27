@@ -168,6 +168,7 @@ class QFunctionTableModel(QAbstractTableModel):
     TAG_STRS = {
         CodeTags.HAS_XOR: "Xor",
         CodeTags.HAS_BITSHIFTS: "Shift",
+        CodeTags.HAS_SQL: "SQL",
     }
 
     @classmethod
