@@ -27,3 +27,6 @@ class BaseView(QFrame):
         # Update current width
         self.old_width = event.oldSize().width()
         self.old_height = event.oldSize().height()
+
+    def is_shown(self):
+        return self.visibleRegion().isEmpty() is False
