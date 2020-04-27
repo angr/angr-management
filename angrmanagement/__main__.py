@@ -12,7 +12,9 @@ warnings.simplefilter = shut_up
 
 BUGGY_PYSIDE2_VERSIONS = [
     "5.12.1",  # https://github.com/angr/angr-management/issues/59
-    "5.14.2",  # Tiffany reported
+    "5.14.2",  # Tiffany reported. Verified. Probably caused by
+               # https://code.qt.io/cgit/pyside/pyside-setup.git/commit/?h=5.14&id=52299827c64cccc1456f9050fdf3dd8596df3e6f
+    "5.14.2.1",  # deadlocks sometimes, although better than 5.14.2
 ]
 
 def check_dependencies():
