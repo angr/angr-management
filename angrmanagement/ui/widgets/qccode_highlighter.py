@@ -74,7 +74,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bswitch\b", 'keyword'),
         (r"\breturn\b", 'keyword'),
         # function
-        (r"\b[A-Za-z0-9_]+(?=\()", 'function'),
+        (r"\b[A-Za-z0-9_:]+(?=\()", 'function'),
     ]
 
     def __init__(self, parent, color_scheme=None):
