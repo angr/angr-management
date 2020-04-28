@@ -168,6 +168,7 @@ class QFunctionTableModel(QAbstractTableModel):
     TAG_STRS = {
         CodeTags.HAS_XOR: "Xor",
         CodeTags.HAS_BITSHIFTS: "Shift",
+        CodeTags.HAS_SQL: "SQL",
     }
 
     @classmethod
@@ -323,6 +324,7 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+        self.filter_functions(self._filter_box.text())
         self.update_displayed_function_count()
 
     #
@@ -339,6 +341,8 @@ class QFunctionTable(QWidget):
         self._filter_box.setFocus()
 
     def hide_filter_box(self):
+        # clear the text inside filter box
+        self._filter_box.setText("")
         self._filter_box.hide()
         self._table_view.setFocus()
 
@@ -358,6 +362,13 @@ class QFunctionTable(QWidget):
             self._view.set_displayed_function_count(None)  # no filtering
         else:
             self._view.set_displayed_function_count(cnt)
+
+    def filter_functions(self, text):
+        self._table_view.filter(text)
+        if not text:
+            self._view.set_displayed_function_count(None)
+        else:
+            self.update_displayed_function_count()
 
     #
     # Private methods
@@ -392,14 +403,8 @@ class QFunctionTable(QWidget):
     #
 
     def _on_filter_box_text_changed(self, text):
-        self._table_view.filter(text)
-        if not text:
-            self._view.set_displayed_function_count(None)
-        else:
-            self.update_displayed_function_count()
+        self.filter_functions(text)
 
     def _on_filter_box_return_pressed(self):
-        # Clear the filter
-        self._filter_box.setText("")
         # Hide the filter box
         self.hide_filter_box()

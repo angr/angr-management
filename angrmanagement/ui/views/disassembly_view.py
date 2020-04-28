@@ -560,10 +560,8 @@ class DisassemblyView(BaseView):
         # it does not belong to any function - we need to switch to linear view mode
         if self.current_graph is not self._linear_viewer:
             self.display_linear_viewer()
-            self._linear_viewer.navigate_to_addr(addr)
-            return True
-
-        return False
+        self._linear_viewer.navigate_to_addr(addr)
+        return True
 
     #
     # Utils
