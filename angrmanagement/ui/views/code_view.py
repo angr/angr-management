@@ -20,7 +20,7 @@ class CodeView(BaseView):
         self._function = None
 
         self._codeedit = None
-        self._textedit = None
+        self._textedit: QCCodeEdit = None
         self._doc = None  # type:QCodeDocument
         self._options = None  # type:QDecompilationOptions
 

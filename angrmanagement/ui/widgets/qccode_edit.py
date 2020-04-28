@@ -1,7 +1,6 @@
 
 from PySide2.QtCore import Qt, QEvent
 from PySide2.QtGui import QTextCharFormat
-from pygments.lexers.compiled import CLexer
 from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
@@ -57,13 +56,13 @@ class QCCodeEdit(api.CodeEdit):
         :return:
         """
 
-        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
-            self.keyPressEvent(event)
+        if event.type() == QEvent.KeyRelease and event.key() == Qt.Key_Tab:
+            self.keyReleaseEvent(event)
             return True
 
         return super().event(event)
 
-    def keyPressEvent(self, key_event):
+    def keyReleaseEvent(self, key_event):
         key = key_event.key()
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
