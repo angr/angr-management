@@ -273,7 +273,26 @@ class QOperand(QCachedGraphicsItem):
                 self._branch_targets = self.branch_targets
                 first_n_targets = self._first_n_branch_targets(self._branch_targets, 3)
                 if first_n_targets:
-                    self._branch_targets_text = "[ %s ]" % ", ".join([ "%xh" % t for t in first_n_targets ])
+                    targets = [ ]
+                    for t in first_n_targets:
+                        txt = None
+                        if is_target_func:
+                            # try to get a function
+                            try:
+                                target_func = self.disasm.kb.functions.get_by_addr(t)
+                                txt = target_func.demangled_name
+                            except KeyError:
+                                pass
+                        # is the address a label?
+                        if txt is None and t in self.disasm.kb.labels:
+                            txt = self.disasm.kb.labels[t]
+                        if txt is None:
+                            # use the hex text
+                            txt = "%#08x" % t
+                        targets.append(txt)
+                    self._branch_targets_text = "[ " + ", ".join(targets) +  " ]"
+                else:
+                    self._branch_targets_text = "[ unknown ]"
 
                 if self._branch_targets and len(self._branch_targets) == 1:
                     self._branch_target = next(iter(self._branch_targets))
