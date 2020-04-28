@@ -133,7 +133,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
     def _get_column_data(self, func, idx):
         if idx == self.NAME_COL:
-            return func.name
+            return func.demangled_name
         elif idx == self.TAGS_COL:
             return func.tags
         elif idx == self.ADDRESS_COL:
