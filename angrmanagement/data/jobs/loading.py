@@ -57,4 +57,4 @@ class LoadBinaryJob(Job):
 
         proj = angr.Project(self.fname, load_options=load_options)
         self._progress_callback(95)
-        inst.set_project(proj, cfg_args)
+        gui_thread_schedule(inst.set_project, (proj, cfg_args))
