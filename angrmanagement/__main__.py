@@ -129,6 +129,7 @@ def start_management(filepath=None, use_daemon=False):
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
+    QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "DejaVuSansMono.ttf"))
 
     # Initialize font-related configuration
     Conf.init_font_config()
