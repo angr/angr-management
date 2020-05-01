@@ -1,3 +1,4 @@
+import sys
 import logging
 
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
@@ -31,6 +32,8 @@ class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
         # getting devicePixelRatio is currently broken in Qt 5.14
         # see https://bugreports.qt.io/browse/QTBUG-53022
         # before it is fixed, fall back to manually calculating the ratio using logicalDpiX()
+        if sys.platform == "darwin":
+            return self.logicalDpiX() / 72.0
         return self.logicalDpiX() / 96.0
 
 
