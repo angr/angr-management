@@ -3,7 +3,7 @@ from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
-import angr
+from angr.analyses.decompiler.structured_codegen import CFunctionCall
 
 from ..widgets.qccode_edit import QCCodeEdit
 from ..widgets.qdecomp_options import QDecompilationOptions
@@ -28,6 +28,7 @@ class CodeView(BaseView):
 
         self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
+        self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
 
     def reload(self):
         if self.workspace.instance.project is None:
@@ -97,6 +98,19 @@ class CodeView(BaseView):
             self.highlight_chunks(chunks)
         else:
             self.highlight_chunks([ ])
+
+    def _on_mouse_doubleclicked(self):
+        if self._doc is None:
+            return
+
+        cursor = self._textedit.textCursor()
+        pos = cursor.position()
+        selected_node = self._doc.get_node_at_position(pos)
+        if selected_node is not None:
+            if isinstance(selected_node, CFunctionCall):
+                # decompile this new function
+                if selected_node.callee_func is not None:
+                    self.workspace.decompile_function(selected_node.callee_func, view=self)
 
     #
     # Private methods
