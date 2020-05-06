@@ -282,7 +282,10 @@ class Instance:
         while True:
             if self.cfg is not None:
                 if self.workspace is not None:
-                    gui_thread_schedule_async(lambda: self.workspace.reload())
+                    gui_thread_schedule_async(self.workspace.reload, kwargs={
+                                                                             'categories': ['disassembly', 'functions'],
+                                                                             }
+                                              )
 
             time.sleep(0.3)
             if cfg_job not in self.jobs:

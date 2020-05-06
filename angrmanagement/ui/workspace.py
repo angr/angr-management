@@ -189,8 +189,16 @@ class Workspace:
 
         self.view_manager.raise_view(view)
 
-    def reload(self):
-        for view in self.view_manager.views:
+    def reload(self, categories=None):
+
+        if categories is None:
+            views = self.view_manager.views
+        else:
+            views = [ ]
+            for category in categories:
+                views.extend(self.view_manager.views_by_category.get(category, [ ]))
+
+        for view in views:
             try:
                 view.reload()
             except Exception:
