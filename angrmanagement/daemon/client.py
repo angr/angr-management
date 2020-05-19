@@ -65,11 +65,27 @@ class ClientService(rpyc.Service):
                 _l.critical("TracePlugin is probably not installed.")
                 # TODO: Open a message box
 
+    def exposed_custom_binary_aware_action(self, action, kwargs):
+        kwargs_copy = dict(kwargs.items())  # copy it to local
+        DaemonClient.invoke(action, kwargs_copy)
+
 
 class DaemonClientCls:
     """
     Implements logic that the client needs to talk to the daemon service.
     """
+
+    def __init__(self, custom_handlers=None):
+        self.custom_handlers = {}
+
+    def register_handler(self, action:str, handler):
+        self.custom_handlers[action] = handler
+
+    def invoke(self, action, kwargs):
+        if action not in self.custom_handlers:
+            _l.critical("Unregistered URL action \"%s\"." % action)
+            return
+        self.custom_handlers[action](kwargs)
 
     @property
     def conn(self):

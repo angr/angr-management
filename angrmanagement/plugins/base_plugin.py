@@ -12,11 +12,14 @@ _l = logging.getLogger(__name__)
 
 
 class BasePlugin:
+    REQUIRE_WORKSPACE = True
     __i_hold_this_abstraction_token = True
 
-
     def __init__(self, workspace):
-        self.workspace = workspace
+
+        from angrmanagement.ui.workspace import Workspace
+
+        self.workspace: Optional[Workspace] = workspace
         _l.info("Loaded plugin {}".format(self.__class__.__name__))
 
         # valid things that we want you do be able to do in __init__:
@@ -60,16 +63,19 @@ class BasePlugin:
 
     # iterable of tuples (icon, tooltip)
     TOOLBAR_BUTTONS = []  # type: List[Tuple[QIcon, str]]
+
     def handle_click_toolbar(self, idx):
         pass
 
     # Iterable of button texts
     MENU_BUTTONS = []  # type: List[str]
+
     def handle_click_menu(self, idx):
         pass
 
     # Iterable of column names
     FUNC_COLUMNS = []  # type: List[str]
+
     def extract_func_column(self, func, idx) -> Tuple[Any, str]:
         # should return a tuple of the sortable column data and the rendered string
         return 0, ''
@@ -85,3 +91,9 @@ class BasePlugin:
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
+
+    # Iterable of URL actions
+    URL_ACTIONS: List[str] = []
+
+    def handle_url_action(self, action, kwargs):
+        pass

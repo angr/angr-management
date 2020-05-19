@@ -142,6 +142,40 @@ class UrlActionOpenBitmap(UrlActionBase):
         )
 
 
+class UrlActionBinaryAware(UrlActionBase):
+    """
+    The base class of all binary-aware URl actions.
+    """
+    def __init__(self, md5=None, sha256=None, action=None, kwargs=None):
+        super().__init__(md5, sha256)
+        self.action = action
+        self.kwargs = kwargs
+
+        if not self.md5 and not self.sha256:
+            raise TypeError("You must provide either MD5 or SHA256 of the target binary.")
+        if not self.action:
+            raise TypeError("You must provide action.")
+
+    def act(self, daemon_conn=None):
+        daemon_conn.root.custom_binary_aware_action(
+            self.md5, self.sha256, self.action, self.kwargs
+        )
+
+    @classmethod
+    def _from_params(cls, params):
+        sha256 = cls._one_param(params, 'sha256')
+        md5 = cls._one_param(params, 'md5')
+        action = cls._one_param(params, 'action')
+        kwargs = {}
+        for k, v in params.items():
+            if k not in {'sha256', 'md5', 'action'}:
+                if isinstance(v, (list, tuple)):
+                    kwargs[k] = v[0]
+                else:
+                    kwargs[k] = v
+        return cls(md5=md5, sha256=sha256, action=action, kwargs=kwargs)
+
+
 _ACT2CLS = {
     'open': UrlActionOpen,
     'jumpto': UrlActionJumpTo,
@@ -158,3 +192,7 @@ def handle_url(url, act=True):
     if act:
         action.act()
     return action
+
+
+def register_url_action(action: str, action_handler: UrlActionBase):
+    _ACT2CLS[action] = action_handler

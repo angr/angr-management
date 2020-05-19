@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 import logging
 import traceback
 
@@ -8,7 +9,6 @@ from angr import StateHierarchy
 
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob
-from ..config import Conf
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, SyncView, PatchesView, )
 from .widgets.qsmart_dockwidget import QSmartDockWidget
@@ -16,6 +16,10 @@ from .view_manager import ViewManager
 
 from ..utils import has_binsync
 from ..plugins import PluginManager
+
+if TYPE_CHECKING:
+    from ..data.instance import Instance
+
 
 _l = logging.getLogger(__name__)
 
@@ -29,7 +33,7 @@ class Workspace:
         self.split_tab_id = 0
         instance.workspace = self
 
-        self.view_manager = ViewManager(self)
+        self.view_manager: ViewManager = ViewManager(self)
         self.plugins = PluginManager(self)
 
         self.current_screen = ObjectContainer(None, name="current_screen")
@@ -68,7 +72,7 @@ class Workspace:
     #
 
     @property
-    def instance(self):
+    def instance(self) -> 'Instance':
         return self._instance
 
     #

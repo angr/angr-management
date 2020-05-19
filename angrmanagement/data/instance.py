@@ -62,7 +62,7 @@ class Instance:
     #
 
     @property
-    def project(self):
+    def project(self) -> Optional[angr.Project]:
         return self._project_container.am_obj
 
     @project.setter
