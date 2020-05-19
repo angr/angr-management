@@ -132,7 +132,12 @@ class LoadComponentsDialog(QDialog):
 
     def _load_json_from_url(self, url):
         content = download_url(url, parent=self, to_file=False)
-        return self._load_json(content)
+
+        try:
+            data = json.loads(content.decode("utf-8"))
+        except ValueError as ex:
+            raise TypeError("URL %s does not contain valid JSON data.\nException: %s." % (url, ex))
+        return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):
 
