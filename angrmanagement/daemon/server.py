@@ -91,6 +91,10 @@ class ManagementService(rpyc.Service):
     def exposed_exit(self):
         pass
 
+    def exposed_custom_binary_aware_action(self, md5, sha256, action, kwargs):
+        conn = self._get_conn(md5, sha256)
+        conn.root.custom_binary_aware_action(action, kwargs)
+
 
 def monitor_thread(server):
     """
@@ -128,7 +132,13 @@ def start_daemon(port=DEFAULT_PORT):
     except SingleInstanceException:
         return
 
-    server = ThreadedServer(ManagementService, port=port)
+    # load plugins in headless mode
+    from ..plugins import PluginManager
+    GlobalInfo.headless_plugin_manager = PluginManager(None)
+    GlobalInfo.headless_plugin_manager.discover_and_initialize_plugins()
+
+    # start the server
+    server = ThreadedServer(ManagementService, port=port, protocol_config={'allow_public_attrs': True})
     threading.Thread(target=monitor_thread, args=(server, ), daemon=True).start()
     server.start()
 
@@ -163,5 +173,6 @@ def daemon_conn(port=DEFAULT_PORT, service=None):
     kwargs = { }
     if service is not None:
         kwargs['service'] = service
+    kwargs['config'] = {'allow_public_attrs': True}
     conn = rpyc.connect("localhost", port, **kwargs)
     return conn

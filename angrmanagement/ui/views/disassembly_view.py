@@ -517,15 +517,7 @@ class DisassemblyView(BaseView):
         self._statusbar.function = the_func
 
         # variable recovery
-        if self.workspace.instance.project.kb.variables.has_function_manager(the_func.addr):
-            variable_manager = self.workspace.instance.project.kb.variables
-        else:
-            # run variable recovery analysis
-            if self._variable_recovery_flavor == 'fast':
-                vr = self.workspace.instance.project.analyses.VariableRecoveryFast(the_func)
-            else:
-                vr = self.workspace.instance.project.analyses.VariableRecovery(the_func)
-            variable_manager = vr.variable_manager
+        variable_manager = self.workspace.instance.project.kb.variables
         self.variable_manager = variable_manager
         self.infodock.variable_manager = variable_manager
 

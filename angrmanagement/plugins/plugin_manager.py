@@ -1,17 +1,27 @@
-import itertools
 import functools
-from typing import Optional, List, Type, Union
+from typing import Optional, List, Type, Union, TYPE_CHECKING
 import logging
+import os
 
 from PySide2.QtGui import QColor
 
 from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
 from angrmanagement.ui.toolbars.toolbar import ToolbarAction
+from angrmanagement.daemon.url_handler import register_url_action, UrlActionBinaryAware
+from angrmanagement.daemon.client import DaemonClient
+from ..config import Conf
+from . import load_plugins_from_dir
 from .base_plugin import BasePlugin
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 l = logging.getLogger(__name__)
 
-# The plugin manager will live on the workspace for now. I have no idea if this is the best idea but it "works".
+# The plugin manager can be initialized in two modes:
+# - UI mode, where workspace is not None
+# - headless mode, where workspace is None, and any plugin that requires workspace will not be initialized
 #
 # Plugins can be in two states:
 # - Loaded, but inactive. In this, the class is present in .loaded_plugins but there is nothing in .active_plugins
@@ -25,12 +35,32 @@ l = logging.getLogger(__name__)
 # first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
 
 class PluginManager:
-    def __init__(self, workspace):
+    def __init__(self, workspace: Optional['Workspace']):
         self.workspace = workspace
         # should one or both of these be ObjectContainers? I think no since we should be synchronizing on models, not
         # views/controllers. not super clear... that's not a hard and fast rule
         self.loaded_plugins = []  # type: List[Type[BasePlugin]]
         self.active_plugins = []  # type: List[BasePlugin]
+
+    def discover_and_initialize_plugins(self):
+        os.environ['AM_BUILTIN_PLUGINS'] = os.path.dirname(__file__)
+        blacklist = Conf.plugin_blacklist.split(',')
+        for search_dir in Conf.plugin_search_path.split(':'):
+            search_dir = os.path.expanduser(search_dir)
+            search_dir = os.path.expandvars(search_dir)
+            for plugin_or_exception in load_plugins_from_dir(search_dir):
+                if isinstance(plugin_or_exception, Exception):
+                    l.info(plugin_or_exception)
+                elif not any(dont in repr(plugin_or_exception) for dont in blacklist):
+                    plugin_or_exception: Type[BasePlugin]
+                    if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
+                            or not plugin_or_exception.REQUIRE_WORKSPACE:
+                        self.activate_plugin(plugin_or_exception)
+                else:
+                    if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
+                            or not plugin_or_exception.REQUIRE_WORKSPACE:
+                        self.load_plugin(plugin_or_exception)
+                        l.info("Blacklisted plugin %s", plugin_or_exception.get_display_name())
 
     def load_plugin(self, plugin_cls: Type[BasePlugin]):
         if plugin_cls in self.loaded_plugins:
@@ -39,6 +69,8 @@ class PluginManager:
             raise TypeError("Cannot load a plugin which is not a BasePlugin subclass")
         if hasattr(plugin_cls, '_%s__i_hold_this_abstraction_token' % plugin_cls.__name__):
             raise TypeError("Cannot load an abstract plugin")
+        if plugin_cls.REQUIRE_WORKSPACE and self.workspace is None:
+            raise RuntimeError("Cannot load plugin %s in headless mode.")
         self.loaded_plugins.append(plugin_cls)
 
     def activate_plugin(self, plugin_cls: Type[BasePlugin]):
@@ -52,25 +84,40 @@ class PluginManager:
             plugin.__cached_toolbar_actions = []  # a hack, lol. really this could be a mapping on PluginManager but idc
             plugin.__cached_menu_actions = []  # as above
 
-            for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
-                action = ToolbarAction(icon, 'plugin %s toolbar %d' % (plugin_cls, idx), tooltip, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_toolbar, False, idx))
-                plugin.__cached_toolbar_actions.append(action)
-                self.workspace._main_window._file_toolbar.add(action)
+            if self.workspace is not None:
+                for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
+                    action = ToolbarAction(icon, 'plugin %s toolbar %d' % (plugin_cls, idx), tooltip, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_toolbar, False, idx))
+                    plugin.__cached_toolbar_actions.append(action)
+                    self.workspace._main_window._file_toolbar.add(action)
 
-            if plugin_cls.MENU_BUTTONS:
-                self.workspace._main_window._plugin_menu.add(MenuSeparator())
-            for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
-                action = MenuEntry(text, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_menu, False, idx))
-                plugin.__cached_menu_actions.append(action)
-                self.workspace._main_window._plugin_menu.add(action)
+                if plugin_cls.MENU_BUTTONS:
+                    self.workspace._main_window._plugin_menu.add(MenuSeparator())
+                for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
+                    action = MenuEntry(text, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_menu, False, idx))
+                    plugin.__cached_menu_actions.append(action)
+                    self.workspace._main_window._plugin_menu.add(action)
 
-            for dview in self.workspace.view_manager.views_by_category['disassembly']:
-                plugin.instrument_disassembly_view(dview)
-        except Exception as e:
-            self.workspace.log("Plugin %s failed to activate:" % plugin_cls.get_display_name())
-            self.workspace.log(e)
+                for dview in self.workspace.view_manager.views_by_category['disassembly']:
+                    plugin.instrument_disassembly_view(dview)
+
+                for action in plugin_cls.URL_ACTIONS:
+                    DaemonClient.register_handler(action,
+                                                  functools.partial(self._dispatch_single,
+                                                                    plugin,
+                                                                    BasePlugin.handle_url_action,
+                                                                    False,
+                                                                    action
+                                                                    )
+                                                  )
+
+            for action in plugin_cls.URL_ACTIONS:
+                register_url_action(action, UrlActionBinaryAware)
+
+        except Exception:
+            l.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(),
+                      exc_info=True)
         else:
-            self.workspace.log("Activated plugin %s" % plugin_cls.get_display_name())
+            l.info("Activated plugin %s", plugin_cls.get_display_name())
 
     def get_plugin_instance(self, plugin_cls: Type[BasePlugin]) -> Optional[BasePlugin]:
         instances = [plugin for plugin in self.active_plugins if type(plugin) is plugin_cls]
@@ -96,9 +143,9 @@ class PluginManager:
 
         try:
             plugin.teardown()
-        except Exception as e:
-            self.workspace.log("Plugin %s errored during removal. The UI may be unstable." % plugin.get_display_name())
-            self.workspace.log(e)
+        except Exception:
+            l.warning("Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(),
+                      exc_info=True)
         self.active_plugins.remove(plugin)
 
     #

@@ -1,9 +1,10 @@
-
+from typing import TYPE_CHECKING
 import time
 
-from angr.analyses import CallingConventionAnalysis
-
 from .job import Job
+
+if TYPE_CHECKING:
+    from ..instance import Instance
 
 
 class VariableRecoveryJob(Job):
@@ -16,10 +17,11 @@ class VariableRecoveryJob(Job):
 
         self._last_progress_callback_triggered = None
 
-    def run(self, inst):
+    def run(self, inst: 'Instance'):
         inst.project.analyses.CompleteCallingConventions(
             recover_variables=True,
             low_priority=True,
+            cfg=inst.cfg,
             progress_callback=self._progress_callback,
         )
 

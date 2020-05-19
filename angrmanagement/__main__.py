@@ -200,6 +200,10 @@ def main():
             run_daemon_process()
             time.sleep(1)
 
+        # initialize plugins
+        from .plugins import PluginManager
+        PluginManager(None).discover_and_initialize_plugins()
+
         action = handle_url(args.url, act=False)
         action.act(daemon_conn())
         return

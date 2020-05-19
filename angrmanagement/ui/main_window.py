@@ -283,19 +283,7 @@ class MainWindow(QMainWindow):
     #
 
     def _init_plugins(self):
-        os.environ['AM_BUILTIN_PLUGINS'] = os.path.dirname(plugins.__file__)
-        blacklist = Conf.plugin_blacklist.split(',')
-        for search_dir in Conf.plugin_search_path.split(':'):
-            search_dir = os.path.expanduser(search_dir)
-            search_dir = os.path.expandvars(search_dir)
-            for plugin_or_exception in plugins.load_plugins_from_dir(search_dir):
-                if isinstance(plugin_or_exception, Exception):
-                    self.workspace.log(plugin_or_exception)
-                elif not any(dont in repr(plugin_or_exception) for dont in blacklist):
-                    self.workspace.plugins.activate_plugin(plugin_or_exception)
-                else:
-                    self.workspace.plugins.load_plugin(plugin_or_exception)
-                    self.workspace.log("Blacklisted plugin %s" % plugin_or_exception.get_display_name())
+        self.workspace.plugins.discover_and_initialize_plugins()
 
     #
     # Event
