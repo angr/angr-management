@@ -35,7 +35,7 @@ setup(
         'qtconsole',
         'ipython',
         'pyzmq',
-        'PySide2<5.14.2',
+        'PySide2>5.14.2.1',
         'toml',
         'pyxdg',
         'jupyter-client<6',
