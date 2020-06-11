@@ -1,9 +1,13 @@
+from typing import TYPE_CHECKING
 
 from .toolbar import Toolbar, ToolbarAction
 
+if TYPE_CHECKING:
+    from ..main_window import MainWindow
+
 
 class AnalysisToolbar(Toolbar):
-    def __init__(self, main_window):
+    def __init__(self, main_window: 'MainWindow'):
         super(AnalysisToolbar, self).__init__(main_window, 'Analysis')
 
         self.actions = [
@@ -12,5 +16,8 @@ class AnalysisToolbar(Toolbar):
                           ),
             ToolbarAction(None, "Induction Variables", "Execute the InductionVariable analysis.",
                           main_window.run_induction_variable_analysis,
+                          ),
+            ToolbarAction(None, "Dependency analysis", "",
+                          main_window.run_dependency_analysis,
                           ),
         ]

@@ -25,6 +25,7 @@ except ImportError as e:
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
+from ..data.jobs import DependencyAnalysisJob
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
@@ -478,6 +479,12 @@ class MainWindow(QMainWindow):
 
     def run_induction_variable_analysis(self):
         self.workspace.view_manager.first_view_in_category('disassembly').run_induction_variable_analysis()
+
+    def run_dependency_analysis(self):
+        if self.workspace is None or self.workspace.instance is None:
+            return
+        dep_analysis_job = DependencyAnalysisJob()
+        self.workspace.instance.add_job(dep_analysis_job)
 
     def decompile_current_function(self):
         if self.workspace is not None:

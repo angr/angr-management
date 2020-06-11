@@ -1,7 +1,7 @@
 import time
 from threading import Thread
 from queue import Queue
-from typing import List, Optional, Type, Union, Callable
+from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
 
 import angr
 from angr.block import Block
@@ -14,13 +14,16 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..daemon.client import DaemonClient
 
+if TYPE_CHECKING:
+    from ..ui.workspace import Workspace
+
 
 class Instance:
     def __init__(self, project=None):
         # delayed import
         from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
 
-        self.workspace = None
+        self.workspace: Optional['Workspace'] = None
 
         self.jobs = []
         self._jobs_queue = Queue()

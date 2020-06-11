@@ -15,6 +15,8 @@ class DisasmInsnContextMenu(Menu):
             MenuSeparator(),
             MenuEntry('&XRefs...', self._popup_xrefs),
             MenuSeparator(),
+            MenuEntry("&Depends on...", self._popup_dependson_dialog),
+            MenuSeparator(),
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
             MenuEntry('&Avoid in execution...', self._avoid_in_execution)
         ])
@@ -24,6 +26,8 @@ class DisasmInsnContextMenu(Menu):
         return self.parent
 
     def _popup_newstate_dialog(self): self._disasm_view.popup_newstate_dialog(async_=True)
+
+    def _popup_dependson_dialog(self): self._disasm_view.popup_dependson_dialog(async_=True)
 
     def _toggle_instruction_selection(self): self._disasm_view.infodock.toggle_instruction_selection(self.insn_addr)
 

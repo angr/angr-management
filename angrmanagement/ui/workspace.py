@@ -34,7 +34,7 @@ class Workspace:
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
-        self.plugins = PluginManager(self)
+        self.plugins: PluginManager = PluginManager(self)
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 

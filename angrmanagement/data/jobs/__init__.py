@@ -7,3 +7,4 @@ from .simgr_step import SimgrStepJob
 from .vfg_generation import VFGGenerationJob
 from .prototype_finding import PrototypeFindingJob
 from .variable_recovery import VariableRecoveryJob
+from .dependency_analysis import DependencyAnalysisJob

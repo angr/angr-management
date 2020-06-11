@@ -256,6 +256,12 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
+    def popup_dependson_dialog(self, async_=True):
+        r = self._flow_graph.get_selected_operand_info()
+        if r is not None:
+            _, ins_addr, operand = r
+
+
     def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_=True):
         if operand is not None:
             if operand.variable is not None:
