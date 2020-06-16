@@ -7,7 +7,7 @@ from ...utils import get_out_branches
 from ...utils.graph_layouter import GraphLayouter
 from ...utils.cfg import categorize_edges
 from .qblock import QGraphBlock
-from .qgraph_arrow import QGraphArrow
+from .qgraph_arrow import QDisasmGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
 
@@ -195,7 +195,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self._arrows.clear()
 
         for edge in self._edges:
-            arrow = QGraphArrow(edge, self.disasm_view, self.infodock)
+            arrow = QDisasmGraphArrow(edge, self.disasm_view, self.infodock)
             self._arrows.append(arrow)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))

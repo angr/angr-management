@@ -1,10 +1,12 @@
 
-from PySide2.QtGui import QPainter
+from PySide2.QtGui import QPainter, QCursor
 from PySide2.QtCore import Qt, QRectF
+from PySide2.QtWidgets import QApplication
 
 from angr.sim_type import SimType, SimTypeFunction, SimTypePointer
 from angr.calling_conventions import SimRegArg
 
+from ...utils.func import type2str
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
@@ -101,6 +103,10 @@ class QFunctionHeader(QCachedGraphicsItem):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.infodock.select_label(self.addr)
+        elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
+            if self.addr not in self.infodock.selected_labels:
+                self.infodock.select_label(self.addr)
+            self._disasm_view.label_context_menu(self.addr, QCursor.pos())
 
     #
     # Private methods
@@ -119,7 +125,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
         else:
             # type of the return value
-            rt = self._type2str(self.prototype.returnty)
+            rt = type2str(self.prototype.returnty)
             self._return_type_width = font_metrics.width(rt) * self.currentDevicePixelRatioF()
             if painter: painter.drawText(x, y + font_ascent, rt)
             x += self._return_type_width
@@ -138,7 +144,7 @@ class QFunctionHeader(QCachedGraphicsItem):
             # arguments
             self._prototype_args = [ ]
             for i, arg_type in enumerate(self.prototype.args):
-                type_str = self._type2str(arg_type)
+                type_str = type2str(arg_type)
                 type_str_width = font_metrics.width(type_str) * self.currentDevicePixelRatioF()
 
                 if self.prototype.arg_names and i < len(self.prototype.arg_names):
@@ -205,18 +211,3 @@ class QFunctionHeader(QCachedGraphicsItem):
         )
 
         return QRectF(0, 0, width, height)
-
-    def _type2str(self, ty):
-        """
-        Convert a SimType instance to a string that can be displayed.
-
-        :param SimType ty:  The SimType instance.
-        :return:            A string.
-        :rtype:             str
-        """
-
-        if isinstance(ty, SimTypePointer):
-            return "{}*".format(self._type2str(ty.pts_to))
-        if ty.label:
-            return ty.label
-        return repr(ty)

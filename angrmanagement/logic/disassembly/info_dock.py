@@ -134,11 +134,32 @@ class InfoDock:
             self.selected_operands.pop((insn_addr, operand_idx))
             self.selected_operands.am_event()
 
+    def unselect_all_operands(self):
+        if self.selected_operands:
+            self.selected_operands.clear()
+            self.selected_operands.am_event()
+
     def select_label(self, label_addr):
         # only one label can be selected at a time
+        # also, clear selection of instructions and operands
+        self.unselect_all_instructions()
+        self.unselect_all_operands()
+
         self.selected_labels.clear()
         self.selected_labels.add(label_addr)
         self.selected_labels.am_event()
+
+    def toggle_label_selection(self, addr: int) -> None:
+        """
+        Toggle the selection state of a label in the disassembly view.
+
+        :param addr:    Address of the instruction to toggle.
+        """
+
+        if addr in self.selected_labels:
+            self.unselect_label(addr)
+        else:
+            self.select_label(addr)
 
     def unselect_label(self, label_addr):
         if label_addr in self.selected_labels:

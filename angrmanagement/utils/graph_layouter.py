@@ -282,6 +282,9 @@ class EdgeRouter:
 
 
 class GraphLayouter:
+    """
+    Implements a pseudo layered graph layout (Sugiyama graph layout) algorithm.
+    """
 
     X_MARGIN = 10
     Y_MARGIN = 5

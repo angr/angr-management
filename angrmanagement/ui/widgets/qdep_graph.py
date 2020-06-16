@@ -1,32 +1,36 @@
+from typing import TYPE_CHECKING, List
 import logging
 
 from PySide2.QtGui import QColor, QPen, QBrush
 from PySide2.QtCore import Qt, QPointF
 
-from ...utils.graph_layouter import GraphLayouter
+from ...utils.tree_graph_layouter import TreeGraphLayouter
 from .qgraph import QZoomableDraggableGraphicsView
+from .qgraph_arrow import QGraphArrowBezier
 
-l = logging.getLogger('ui.widgets.qpg_graph')
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.ui.views.dep_view import DependencyView
 
 
-class QSymExecGraph(QZoomableDraggableGraphicsView):
+_l = logging.getLogger(name=__name__)
+
+
+class QDependencyGraph(QZoomableDraggableGraphicsView):
 
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, current_state, workspace, symexec_view, parent=None):
-        super(QSymExecGraph, self).__init__(parent=parent)
+    def __init__(self, workspace: 'Workspace', dep_view: 'DependencyView', parent=None):
+        super().__init__(parent=parent)
 
-        self.state = current_state
-        self._symexec_view = symexec_view
+        self._workspace = workspace
+        self._dep_view = dep_view
 
         self._graph = None
         self.blocks = set()
-        self._edges = []
-
-        self._edge_paths = [ ]
-
-        self.state.am_subscribe(self._watch_state)
+        self._edges = [ ]
+        self._arrows: List[QGraphArrowBezier] = [ ]
 
     @property
     def graph(self):
@@ -46,21 +50,19 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
         if self.graph is None:
             return
 
-        # remove all edges
+        # remove all arrows
         scene = self.scene()
-        for p in self._edge_paths:
+        for p in self._arrows:
             scene.removeItem(p)
 
         # remove all nodes
         self.blocks.clear()
-        #self.remove_all_children()
-        self._edge_paths = []
 
         node_sizes = {}
         for node in self.graph.nodes():
             self.blocks.add(node)
             node_sizes[node] = (node.width, node.height)
-        gl = GraphLayouter(self.graph, node_sizes, node_compare_key=lambda n: 0)
+        gl = TreeGraphLayouter(self.graph, node_sizes)
 
         self._edges = gl.edges
 
@@ -75,12 +77,17 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
             min_y = min(min_y, node.y())
             max_y = max(max_y, node.y() + node.height)
 
+        # draw edges
+        for edge in self._edges:
+            arrow = QGraphArrowBezier(edge, arrow_direction="right")
+            self._arrows.append(arrow)
+            scene.addItem(arrow)
+            arrow.setPos(QPointF(*edge.coordinates[0]))
+
         min_x -= self.LEFT_PADDING
         max_x += self.LEFT_PADDING
         min_y -= self.TOP_PADDING
         max_y += self.TOP_PADDING
-        width = (max_x - min_x) + 2 * self.LEFT_PADDING
-        height = (max_y - min_y) + 2 * self.TOP_PADDING
 
         self._reset_view()
 
@@ -103,15 +110,6 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         super().keyPressEvent(event)
 
-    def _watch_state(self, **kwargs):
-        for block in self.blocks:
-            if block.get_state() == self.state:
-                block.selected = True
-            else:
-                block.selected = False
-
-        self.viewport().update()
-
     #
     # Private methods
     #
@@ -119,12 +117,6 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
     def _initial_position(self):
         ibr = self.scene().itemsBoundingRect()
         return ibr.center()
-
-    def _block_from_state(self, state):
-        for block in self.blocks:
-            if block.get_state() == state:
-                return block
-        return None
 
     def _draw_edges(self, painter, topleft_point, bottomright_point):
         for edge in self._edges:

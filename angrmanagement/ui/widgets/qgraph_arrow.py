@@ -1,3 +1,5 @@
+import math
+from typing import Tuple
 
 from PySide2.QtWidgets import QGraphicsItem, QApplication
 from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker
@@ -21,39 +23,50 @@ EDGE_STYLES = {
 
 class QGraphArrow(QGraphicsItem):
 
-    def __init__(self, edge, disasm_view, infodock, parent=None):
+    def __init__(self, edge, arrow_direction='down', parent=None):
         super().__init__(parent)
 
         self.edge = edge
-        self.disasm_view = disasm_view
-        self.infodock = infodock
         self.rect = None
         self._start = QPointF(*self.edge.coordinates[0])
         self.coords = [self.create_point(c) for c in self.edge.coordinates]
         self.end = self.coords[-1]
 
         self.color = EDGE_COLORS.get(self.edge.sort, EDGE_COLORS[EdgeSort.DIRECT_JUMP])
-        self.arrow = [QPointF(self.end.x() - 3, self.end.y()), QPointF(self.end.x() + 3, self.end.y()),
-                 QPointF(self.end.x(), self.end.y() + 6)]
+        self.arrow = self._make_arrow(arrow_direction)
         self.style = EDGE_STYLES.get(self.edge.sort, EDGE_STYLES[EdgeSort.DIRECT_JUMP])
         #self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
-        path = QPainterPath(self.coords[0])
-        for c in self.coords[1:] + self.arrow:
-            path.lineTo(c)
-        self.path = path
+        self.path = self._make_path()
 
         self._hovered = False
 
         self.setAcceptHoverEvents(True)
+
+    def _make_path(self):
+        path = QPainterPath(self.coords[0])
+        for c in self.coords[1:] + self.arrow:
+            path.lineTo(c)
+        return path
+
+    def _make_arrow(self, direction):
+        if direction == "down":
+            return [QPointF(self.end.x() - 3, self.end.y()), QPointF(self.end.x() + 3, self.end.y()),
+                     QPointF(self.end.x(), self.end.y() + 6)]
+        elif direction == "right":
+            return [QPointF(self.end.x(), self.end.y() - 3), QPointF(self.end.x(), self.end.y() + 3),
+                 QPointF(self.end.x() + 6, self.end.y())]
+        else:
+            raise NotImplementedError("Direction %s is not supported yet." % direction)
+
+    def _should_highlight(self) -> bool:
+        return False
 
     def create_point(self, stuff):
         return QPointF(*stuff) - self._start
 
     def paint(self, painter, option, widget):
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
-        should_highlight = self.infodock.is_edge_hovered(self.edge.src.addr, self.edge.dst.addr) or \
-                self.infodock.is_block_hovered(self.edge.src.addr) or \
-                self.infodock.is_block_hovered(self.edge.dst.addr)
+        should_highlight = self._should_highlight()
 
         if should_highlight:
             pen = QPen(QColor(0, 0xfe, 0xfe), 2, self.style)
@@ -91,6 +104,31 @@ class QGraphArrow(QGraphicsItem):
     #
 
     def hoverEnterEvent(self, event):
+        pass
+
+    def hoverLeaveEvent(self, event):
+        pass
+
+    def mouseDoubleClickEvent(self, event):
+        pass
+
+
+class QDisasmGraphArrow(QGraphArrow):
+    def __init__(self, edge, disasm_view, infodock, parent=None):
+        super().__init__(edge, arrow_direction='down', parent=parent)
+        self.disasm_view = disasm_view
+        self.infodock = infodock
+
+    def _should_highlight(self) -> bool:
+        return self.infodock.is_edge_hovered(self.edge.src.addr, self.edge.dst.addr) or \
+                self.infodock.is_block_hovered(self.edge.src.addr) or \
+                self.infodock.is_block_hovered(self.edge.dst.addr)
+
+    #
+    # Event handlers
+    #
+
+    def hoverEnterEvent(self, event):
         self.infodock.hover_edge(self.edge.src.addr, self.edge.dst.addr)
 
     def hoverLeaveEvent(self, event):
@@ -106,3 +144,50 @@ class QGraphArrow(QGraphicsItem):
             self.disasm_view.jump_to(self.edge.dst.addr, src_ins_addr=self.edge.src.addr)
             event.accept()
         super().mouseDoubleClickEvent(event)
+
+
+class QGraphArrowBezier(QGraphArrow):
+    def __init__(self, edge, arrow_direction='down', radius=18, parent=None):
+        self._radius = radius
+        super().__init__(edge, arrow_direction=arrow_direction, parent=parent)
+
+    @staticmethod
+    def _get_distance(pt0: QPointF, pt1: QPointF) -> float:
+        d = (pt1.x() - pt0.x()) ** 2 + (pt1.y() - pt0.y()) ** 2
+        return math.sqrt(d)
+
+    def _get_line_start(self, i: int) -> QPointF:
+        pt0 = self.coords[i]
+        pt1 = self.coords[i+1] if i+1<len(self.coords) else self.coords[0]
+        rat = self._radius / self._get_distance(pt0, pt1)
+        if rat > 0.5:
+            rat = 0.5
+        return QPointF((1.0 - rat) * pt0.x() + rat * pt1.x(), (1.0 - rat) * pt0.y() + rat * pt1.y())
+
+    def _get_line_end(self, i: int) -> QPointF:
+        pt0 = self.coords[i]
+        pt1 = self.coords[i + 1] if i + 1 < len(self.coords) else self.coords[0]
+        rat = self._radius / self._get_distance(pt0, pt1)
+        if rat > 0.5:
+            rat = 0.5
+        return QPointF(rat * pt0.x() + (1.0 - rat) * pt1.x(), rat * pt0.y() + (1.0 - rat) * pt1.y())
+
+    def _make_path(self):
+        if len(self.coords) < 3:
+            return super()._make_path()
+            # raise ValueError("At least 3 coordinates are required.")  # programming error - don't use this class for a simple segment!
+
+        path = QPainterPath(self.coords[0])
+
+        for i in range(len(self.coords) - 1):
+            pt0 = self._get_line_start(i)
+            if i == 0:
+                path.lineTo(pt0)
+            else:
+                path.quadTo(self.coords[i], pt0)
+            pt1 = self._get_line_end(i)
+            path.lineTo(pt1)
+
+        path.lineTo(self.coords[-1])
+
+        return path

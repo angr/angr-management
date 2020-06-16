@@ -1,82 +1,66 @@
+from typing import TYPE_CHECKING
 import logging
 
-from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
 from ...config import Conf
 from ...utils import locate_function
+from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.views.dep_view import DependencyView
+
 
 _l = logging.getLogger(__name__)
 
 
-class QStateBlock(QGraphicsItem):
+class QDepGraphBlock(QCachedGraphicsItem):
 
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, symexec_view, state=None, history=None):
-        super(QStateBlock, self).__init__()
+    def __init__(self, is_selected, dep_view: 'DependencyView', addr: int):
+        super().__init__()
 
-        self.symexec_view = symexec_view
-        self._workspace = self.symexec_view.workspace
+        self._dep_view = dep_view
+        self._workspace = self._dep_view.workspace
         self._config = Conf
 
-        self.state = state
-        self.history = history
-        if history is None and state is not None:
-            self.history = state.history
-        if history is not None and state is None:
-            self.state = history.state
         self.selected = is_selected
 
         # widgets
         self._label_str = None
         self._function_str = None
 
-        self.addr = None
+        self.addr = addr
 
         self._init_widgets()
         self._update_size()
 
-    def get_state(self):
-        if self.state is not None:
-            return self.state
-        elif self.history is not None:
-            return self.history.state
-        else:
-            return None
-
     def _init_widgets(self):
 
-        addr = None
-        if self.state.regs._ip.symbolic:
-            self._label_str = str(self.state.regs._ip)
-        else:
-            addr = self.state.regs._ip._model_concrete.value
-            self._label_str = "%#x" % addr
-        self._label_str = "State " + self._label_str
-
-        self.addr = addr
-
-        if addr is None:
+        if self.addr is None:
             self._function_str = "Unknown"
+            self._label_str = "Unknown"
         else:
-            the_func = locate_function(self._workspace.instance, addr)
+            the_func = locate_function(self._workspace.instance, self.addr)
             if the_func is None:
                 # is it a SimProcedure?
-                if self._workspace.instance.project.is_hooked(addr):
-                    hooker = self._workspace.instance.project.hooked_by(addr)
+                if self._workspace.instance.project.is_hooked(self.addr):
+                    hooker = self._workspace.instance.project.hooked_by(self.addr)
                     self._function_str = "SimProcedure " + hooker.__class__.__name__.split('.')[-1]
                 else:
                     self._function_str = "Unknown"
             else:
-                offset = addr - the_func.addr
+                offset = self.addr - the_func.addr
                 if not the_func.name:
                     self._function_str = "%#x%+x" % (the_func.addr, offset)
                 else:
                     self._function_str = "%s%+x" % (the_func.name, offset)
+            self._label_str = "%#x:   %s" % (self.addr, self._workspace.instance.get_instruction_text_at(self.addr))
+
         self._function_str = "Function: %s" % self._function_str
 
     def mousePressEvent(self, event): #pylint: disable=no-self-use
@@ -86,7 +70,7 @@ class QStateBlock(QGraphicsItem):
         # _l.debug('QStateBlock received mouse release event')
         if event.button() == Qt.LeftButton:
             self.selected = not self.selected
-            self.symexec_view.redraw_graph()
+            self._dep_view.redraw_graph()
             event.accept()
 
         super().mouseReleaseEvent(event)
@@ -94,12 +78,8 @@ class QStateBlock(QGraphicsItem):
     def mouseDoubleClickEvent(self, event):
         # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
-            if self.state is not None:
-                self._workspace.viz(self.state.addr)
-                event.accept()
-            elif self.history is not None:
-                self._workspace.viz(self.history.state.addr)
-                event.accept()
+            self._workspace.viz(self.addr)
+            event.accept()
 
         super().mouseDoubleClickEvent(event)
 
@@ -140,15 +120,7 @@ class QStateBlock(QGraphicsItem):
         function_label_y = y + self.VERTICAL_PADDING
         painter.drawText(function_label_x, function_label_y + self._config.symexec_font_ascent, self._function_str)
 
-    @property
-    def height(self):
-        return self.boundingRect().height()
-
-    @property
-    def width(self):
-        return self.boundingRect().width()
-
-    def boundingRect(self):
+    def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
 
     #
@@ -156,8 +128,10 @@ class QStateBlock(QGraphicsItem):
     #
 
     def _update_size(self):
-        width_candidates = [ self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width,
-                             self.HORIZONTAL_PADDING * 2 + len(self._function_str) * self._config.symexec_font_width
+        width_candidates = [ self.HORIZONTAL_PADDING * 2 * self.currentDevicePixelRatioF() +
+                             len(self._label_str) * self._config.symexec_font_width * self.currentDevicePixelRatioF(),
+                             self.HORIZONTAL_PADDING * 2 * self.currentDevicePixelRatioF() +
+                             len(self._function_str) * self._config.symexec_font_width * self.currentDevicePixelRatioF(),
                              ]
         height_candidates = [ 0 ]
         self._width = max(width_candidates)

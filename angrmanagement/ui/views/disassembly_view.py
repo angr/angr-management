@@ -1,7 +1,7 @@
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication, QMessageBox
 from PySide2.QtCore import Qt, QSize
 
 from ...data.instance import ObjectContainer
@@ -9,13 +9,19 @@ from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView
+from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
+from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import Function
+
 
 _l = logging.getLogger(__name__)
 
@@ -43,6 +49,7 @@ class DisassemblyView(BaseView):
         self._current_function = ObjectContainer(None, 'The currently selected function')
 
         self._insn_menu = None  # type: Optional[DisasmInsnContextMenu]
+        self._label_menu = None  # type: Optional[DisasmLabelContextMenu]
 
         self._insn_addr_on_context_menu = None
 
@@ -226,6 +233,13 @@ class DisassemblyView(BaseView):
 
         self._insn_addr_on_context_menu = None
 
+    def label_context_menu(self, addr: int, pos):
+
+        self._label_addr_on_context_menu = addr
+        self._label_menu.addr = addr
+        self._label_menu.qmenu().exec_(pos)
+        self._label_addr_on_context_menu = None
+
     def popup_jumpto_dialog(self):
         JumpTo(self, parent=self).exec_()
 
@@ -256,11 +270,44 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
-    def popup_dependson_dialog(self, async_=True):
-        r = self._flow_graph.get_selected_operand_info()
-        if r is not None:
-            _, ins_addr, operand = r
+    def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False,
+                               async_=True):
+        if use_operand:
+            r = self._flow_graph.get_selected_operand_info()
+            if r is not None:
+                _, addr, operand = r
+            else:
+                QMessageBox(self,
+                            "No operand"
+                            "Please select an operand first.",
+                            buttons=QMessageBox.Ok,
+                            icon=QMessageBox.Critical
+                            )
+                return
+        else:
+            if addr is None:
+                raise ValueError("No address is provided.")  # this is a programming error
+            operand = None
 
+        if func:
+            # attempt to pass in a function
+            try:
+                the_func = self.workspace.instance.kb.functions.get_by_addr(addr)
+            except KeyError:
+                the_func = None
+        else:
+            the_func = None
+
+        dependson = DependsOn(addr, operand, func=the_func, parent=self)
+        dependson.exec_()
+
+        if dependson.location is not None:
+            if dependson.arg is not None:
+                # track function argument
+                self.workspace._main_window.run_dependency_analysis(
+                    func_addr=addr,
+                    func_arg_idx=dependson.arg,
+                )
 
     def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_=True):
         if operand is not None:
@@ -497,6 +544,7 @@ class DisassemblyView(BaseView):
 
     def _init_menus(self):
         self._insn_menu = DisasmInsnContextMenu(self)
+        self._label_menu = DisasmLabelContextMenu(self)
 
     def _register_events(self):
         # redraw the current graph if instruction/operand selection changes

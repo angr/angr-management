@@ -78,7 +78,7 @@ class Instance:
         return self._project_container
 
     @property
-    def kb(self):
+    def kb(self) -> Optional[angr.KnowledgeBase]:
         if self.project is None:
             return None
         return self.project.kb

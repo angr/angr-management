@@ -17,7 +17,4 @@ class AnalysisToolbar(Toolbar):
             ToolbarAction(None, "Induction Variables", "Execute the InductionVariable analysis.",
                           main_window.run_induction_variable_analysis,
                           ),
-            ToolbarAction(None, "Dependency analysis", "",
-                          main_window.run_dependency_analysis,
-                          ),
         ]

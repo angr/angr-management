@@ -480,10 +480,10 @@ class MainWindow(QMainWindow):
     def run_induction_variable_analysis(self):
         self.workspace.view_manager.first_view_in_category('disassembly').run_induction_variable_analysis()
 
-    def run_dependency_analysis(self):
+    def run_dependency_analysis(self, func_addr: Optional[int]=None, func_arg_idx: Optional[int]=None):
         if self.workspace is None or self.workspace.instance is None:
             return
-        dep_analysis_job = DependencyAnalysisJob()
+        dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
         self.workspace.instance.add_job(dep_analysis_job)
 
     def decompile_current_function(self):
