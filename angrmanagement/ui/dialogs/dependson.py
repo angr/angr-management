@@ -169,11 +169,10 @@ class DependsOn(QDialog):
                 self.arg = int(self._arg_box.text())
             except ValueError:
                 # invalid argument index
-                QMessageBox(self,
+                QMessageBox(self).critical(self,
                             "Invalid argument index",
                             "The given function argument index \"%s\" is unsupported. Only integers are allowed." % self._arg_box.text(),
                             buttons=QMessageBox.Ok,
-                            icon=QMessageBox.Critical,
                             )
                 return
         else:

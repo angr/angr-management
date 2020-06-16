@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 import logging
 
+import PySide2.QtWidgets
 from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
@@ -39,6 +40,8 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self._init_widgets()
         self._update_size()
 
+        self.setAcceptHoverEvents(True)
+
     def _init_widgets(self):
 
         if self.addr is None:
@@ -63,6 +66,10 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         self._function_str = "Function: %s" % self._function_str
 
+    #
+    # Event handlers
+    #
+
     def mousePressEvent(self, event): #pylint: disable=no-self-use
         super().mousePressEvent(event)
 
@@ -82,6 +89,12 @@ class QDepGraphBlock(QCachedGraphicsItem):
             event.accept()
 
         super().mouseDoubleClickEvent(event)
+
+    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+        self._dep_view.hover_enter_block(self)
+
+    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+        self._dep_view.hover_leave_block(self)
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
         """

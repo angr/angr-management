@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Optional
 import logging
 
+from PySide2.QtWidgets import QMessageBox
+
 from angr import KnowledgeBase
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.knowledge_plugins.key_definitions.atoms import Register, MemoryLocation, SpOffset
@@ -60,10 +62,16 @@ class DependencyAnalysisJob(Job):
         return None, None
 
     def run(self, inst: 'Instance'):
+        self._progress_callback(0.0)
+        self._run(inst)
+        self._progress_callback(100.0)
+
+    def _run(self, inst: 'Instance'):
         if not argument_resolver:
-            # TODO: Raise a warning
+            gui_thread_schedule_async(self._display_import_error)
             return
 
+        self._progress_callback(10.0)
         sink, atom = self._get_sink_and_atom(inst)
         if sink is None:
             # invalid sink setup
@@ -72,7 +80,9 @@ class DependencyAnalysisJob(Job):
         # make a copy of the kb
         kb_copy = self._get_new_kb_with_cfgs_and_functions(inst.project, inst.kb)
 
+        self._progress_callback(20.0, text="Slicing CFG")
         slice = cfg_slice_to_sink(inst.cfg, sink)
+        self._progress_callback(30.0, text="Calculating reaching definitions")
         rda = inst.project.analyses.ReachingDefinitions(
             subject=slice,
             observe_all=True,
@@ -80,6 +90,7 @@ class DependencyAnalysisJob(Job):
             kb=kb_copy,
             dep_graph=DepGraph(),
         )
+        self._progress_callback(80.0, text="Computing transitive closures")
         closures = _transitive_closures(atom, rda)
 
         # display in the dependencies view
@@ -112,10 +123,19 @@ class DependencyAnalysisJob(Job):
 
         return new_kb
 
+    def _display_import_error(self):
+        QMessageBox.critical(None,
+                             "Import error",
+                             "Failed to import argument_resolver package. Is operation-mango installed?",
+                             )
+
     def _display_closures(self, inst, closures):
         view = inst.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return
         view.closures = closures
-        view.reload()
+        try:
+            view.reload()
+        except Exception:
+            l.warning("An error occurred when displaying the closures.", exc_info=True)
         inst.workspace.view_manager.raise_view(view)

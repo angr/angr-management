@@ -1,12 +1,13 @@
-from typing import TYPE_CHECKING, List
+from collections import defaultdict
+from typing import TYPE_CHECKING, List, Dict, Any
 import logging
 
-from PySide2.QtGui import QColor, QPen, QBrush
 from PySide2.QtCore import Qt, QPointF
 
+from ...utils.edge import Edge
 from ...utils.tree_graph_layouter import TreeGraphLayouter
 from .qgraph import QZoomableDraggableGraphicsView
-from .qgraph_arrow import QGraphArrowBezier
+from .qgraph_arrow import QDepGraphArrow
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -29,8 +30,10 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
 
         self._graph = None
         self.blocks = set()
-        self._edges = [ ]
-        self._arrows: List[QGraphArrowBezier] = [ ]
+        self._edges: List[Edge] = [ ]
+        self._arrows_by_src: Dict[Any,List[QDepGraphArrow]] = defaultdict(list)
+        self._arrows_by_dst: Dict[Any,List[QDepGraphArrow]] = defaultdict(list)
+        self._arrows: List[QDepGraphArrow] = [ ]
 
     @property
     def graph(self):
@@ -54,6 +57,8 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
         scene = self.scene()
         for p in self._arrows:
             scene.removeItem(p)
+        self._arrows_by_src.clear()
+        self._arrows_by_dst.clear()
 
         # remove all nodes
         self.blocks.clear()
@@ -79,8 +84,10 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
 
         # draw edges
         for edge in self._edges:
-            arrow = QGraphArrowBezier(edge, arrow_direction="right")
+            arrow = QDepGraphArrow(self._dep_view, edge, arrow_direction="right")
             self._arrows.append(arrow)
+            self._arrows_by_src[edge.src].append(arrow)
+            self._arrows_by_dst[edge.dst].append(arrow)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))
 
@@ -90,6 +97,10 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
         max_y += self.TOP_PADDING
 
         self._reset_view()
+
+    def _initial_position(self):
+        ibr = self.scene().itemsBoundingRect()
+        return ibr.center()
 
     #
     # Event handlers
@@ -110,40 +121,16 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
 
         super().keyPressEvent(event)
 
-    #
-    # Private methods
-    #
-
-    def _initial_position(self):
-        ibr = self.scene().itemsBoundingRect()
-        return ibr.center()
-
-    def _draw_edges(self, painter, topleft_point, bottomright_point):
-        for edge in self._edges:
-            edge_coords = edge.coordinates
-
-            color = QColor(0x70, 0x70, 0x70)
-            pen = QPen(color)
-            pen.setWidth(1.5)
-            painter.setPen(pen)
-
-            for from_, to_ in zip(edge_coords, edge_coords[1:]):
-                start_point = QPointF(*from_)
-                end_point = QPointF(*to_)
-                # optimization: don't draw edges that are outside of the current scope
-                if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and \
-                        (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()):
-                    continue
-                elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and \
-                        (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()):
-                    continue
-                painter.drawPolyline((start_point, end_point))
-
-            # arrow
-            # end_point = self.mapToScene(*edges[-1])
-            end_point = (edge_coords[-1][0], edge_coords[-1][1])
-            arrow = [QPointF(end_point[0] - 3, end_point[1]), QPointF(end_point[0] + 3, end_point[1]),
-                     QPointF(end_point[0], end_point[1] + 6)]
-            brush = QBrush(color)
-            painter.setBrush(brush)
-            painter.drawPolygon(arrow)
+    def on_block_hovered(self, block):
+        if block is None:
+            return
+        scene = self.scene()
+        # move all relevant arrows to the top
+        if block in self._arrows_by_src:
+            for arrow in self._arrows_by_src[block]:
+                for item in scene.collidingItems(arrow):
+                    item.stackBefore(arrow)
+        if block in self._arrows_by_dst:
+            for arrow in self._arrows_by_dst[block]:
+                for item in scene.collidingItems(arrow):
+                    item.stackBefore(arrow)

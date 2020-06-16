@@ -1,11 +1,16 @@
 import math
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 from PySide2.QtWidgets import QGraphicsItem, QApplication
 from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker
 from PySide2.QtCore import QPointF, Qt
 
 from ...utils.edge import EdgeSort
+
+if TYPE_CHECKING:
+    from ..views.dep_view import DependencyView
+    from .qdepgraph_block import QDepGraphBlock
+
 
 EDGE_COLORS = {
     EdgeSort.BACK_EDGE: QColor(0xf9, 0xd5, 0x77),  # Honey
@@ -191,3 +196,14 @@ class QGraphArrowBezier(QGraphArrow):
         path.lineTo(self.coords[-1])
 
         return path
+
+
+class QDepGraphArrow(QGraphArrowBezier):
+    def __init__(self, dep_view: 'DependencyView', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._dep_view = dep_view
+
+    def _should_highlight(self) -> bool:
+        if self._dep_view.hovered_block is None:
+            return False
+        return self._dep_view.hovered_block is self.edge.src or self._dep_view.hovered_block is self.edge.dst

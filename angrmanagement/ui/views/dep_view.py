@@ -25,8 +25,19 @@ class DependencyView(BaseView):
         # data
         self.closures: Optional[Dict[Definition,networkx.DiGraph]] = None
         self._graph: Optional[networkx.DiGraph] = None
+        self.hovered_block: Optional[QDepGraphBlock] = None
 
         self._init_widgets()
+
+    def hover_enter_block(self, block: QDepGraphBlock):
+        self.hovered_block = block
+        if self._graph_widget is not None:
+            self._graph_widget.on_block_hovered(block)
+        self.redraw_graph()
+
+    def hover_leave_block(self, block: QDepGraphBlock):
+        self.hovered_block = None
+        self.redraw_graph()
 
     def reload(self):
         if self._graph_widget is None:
