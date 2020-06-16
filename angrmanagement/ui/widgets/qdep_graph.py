@@ -127,10 +127,17 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
         scene = self.scene()
         # move all relevant arrows to the top
         if block in self._arrows_by_src:
-            for arrow in self._arrows_by_src[block]:
+            arrows = set(self._arrows_by_src[block])
+            for arrow in arrows:
                 for item in scene.collidingItems(arrow):
+                    if item in arrows:
+                        continue
                     item.stackBefore(arrow)
+
         if block in self._arrows_by_dst:
-            for arrow in self._arrows_by_dst[block]:
+            arrows = set(self._arrows_by_dst[block])
+            for arrow in arrows:
                 for item in scene.collidingItems(arrow):
+                    if item in arrows:
+                        continue
                     item.stackBefore(arrow)
