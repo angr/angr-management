@@ -6,6 +6,8 @@ from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtCore import QSize
 
 from angr.knowledge_plugins.key_definitions.definition import Definition
+from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
+from angr import SIM_PROCEDURES
 
 from ..widgets.qdep_graph import QDependencyGraph
 from ..widgets.qdepgraph_block import QDepGraphBlock
@@ -69,9 +71,20 @@ class DependencyView(BaseView):
 
         self.setLayout(hlayout)
 
-    def _convert_node(self, node: Definition, converted: Dict[Definition,QDepGraphBlock]) -> QDepGraphBlock:
+    def _convert_node(self, node: Definition, converted: Dict[Definition,QDepGraphBlock]) -> Optional[QDepGraphBlock]:
         if node in converted:
             return converted[node]
+
+        # skip external
+        if isinstance(node.codeloc, ExternalCodeLocation):
+            return None
+
+        if self.workspace.instance.project.is_hooked(node.codeloc.block_addr):
+            hook = self.workspace.instance.project.hooked_by(node.codeloc.block_addr)
+            if isinstance(hook, (SIM_PROCEDURES['stubs']['UnresolvableJumpTarget'],
+                                 SIM_PROCEDURES['stubs']['UnresolvableCallTarget'])):
+                return None
+
         new_node = QDepGraphBlock(False, self, node.codeloc.ins_addr)
         converted[node] = new_node
         return new_node
@@ -85,14 +98,17 @@ class DependencyView(BaseView):
         converted = { }
         for key, graph in self.closures.items():
             node = self._convert_node(key, converted)
-            g.add_edge(node, source_node)
+            if node is not None:
+                g.add_edge(node, source_node)
 
             for node_ in graph.nodes:
                 node = self._convert_node(node_, converted)
-                g.add_node(node)
+                if node is not None:
+                    g.add_node(node)
             for src_, dst_ in graph.edges:
                 src = self._convert_node(src_, converted)
                 dst = self._convert_node(dst_, converted)
-                g.add_edge(src, dst)
+                if src is not None and dst is not None:
+                    g.add_edge(src, dst)
 
         return g

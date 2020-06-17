@@ -1,9 +1,11 @@
+from functools import partial
 from typing import TYPE_CHECKING, Optional
 import logging
 
 from PySide2.QtWidgets import QMessageBox
 
 from angr import KnowledgeBase
+from angr.analyses.cfg_slice_to_sink import CFGSliceToSink, slice_cfg_graph, slice_function_graph
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.knowledge_plugins.key_definitions.atoms import Register, MemoryLocation, SpOffset
 from angr.knowledge_plugins import Function
@@ -82,19 +84,32 @@ class DependencyAnalysisJob(Job):
 
         self._progress_callback(20.0, text="Slicing CFG")
         slice = cfg_slice_to_sink(inst.cfg, sink)
+
         self._progress_callback(30.0, text="Calculating reaching definitions")
-        rda = inst.project.analyses.ReachingDefinitions(
-            subject=slice,
-            observe_all=True,
-            function_handler=Handler(inst.project),
-            kb=kb_copy,
-            dep_graph=DepGraph(),
-        )
+
+        # slice the CFG, function graphs, etc. in the knowledge base
+        self._update_kb_content_from_slice(kb_copy, slice)
+
+        # find out *all* functions that we can run RDA from
+        cfg_graph = kb_copy.cfgs['CFGFast'].graph
+        starts = [node for node in cfg_graph.nodes() if cfg_graph.in_degree(node) == 0]
+
         self._progress_callback(80.0, text="Computing transitive closures")
-        closures = _transitive_closures(atom, rda)
+        closures = { }
+        for start in starts:
+            rda = inst.project.analyses.ReachingDefinitions(
+                subject=kb_copy.functions.get_by_addr(start.addr),
+                observe_all=True,
+                function_handler=Handler(inst.project),
+                kb=kb_copy,
+                dep_graph=DepGraph(),
+            )
+            closures.update(_transitive_closures(atom, sink, slice, rda))
 
         # display in the dependencies view
         gui_thread_schedule_async(self._display_closures, (inst, closures, ))
+
+        return
 
         # visualize the CFG slice
         dep_plugin: Optional['DependencyViewer'] = inst.workspace.plugins.get_plugin_instance_by_name('DependencyViewer')
@@ -110,6 +125,29 @@ class DependencyAnalysisJob(Job):
                 if dst not in dep_plugin.covered_blocks:
                     block = inst.cfg.get_any_node(dst)
                     dep_plugin.covered_blocks[dst] = block.size
+
+    @staticmethod
+    def _update_kb_content_from_slice(kb, slice: CFGSliceToSink):
+        # Removes the nodes that are not in the slice from the CFG.
+        cfg = kb.cfgs['CFGFast']
+        slice_cfg_graph(cfg.graph, slice)
+        for node in cfg.nodes():
+            node._cfg_model = cfg
+
+        # Removes the functions for which entrypoints are not present in the slice.
+        for f in kb.functions:
+            if f not in slice.nodes:
+                del kb.functions[f]
+
+        # Remove the nodes that are not in the slice from the functions' graphs.
+        def _update_function_graph(cfg_slice_to_sink, function):
+            if len(function.graph.nodes()) > 1:
+                slice_function_graph(function.graph, cfg_slice_to_sink)
+
+        list(map(
+            partial(_update_function_graph, slice),
+            kb.functions._function_map.values()
+        ))
 
     @staticmethod
     def _get_new_kb_with_cfgs_and_functions(project, kb):
