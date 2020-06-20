@@ -47,13 +47,9 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         # remove all edges
         scene = self.scene()
-        for p in self._edge_paths:
-            scene.removeItem(p)
 
         # remove all nodes
         self.blocks.clear()
-        #self.remove_all_children()
-        self._edge_paths = []
 
         node_sizes = {}
         for node in self.graph.nodes():

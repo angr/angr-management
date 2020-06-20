@@ -321,7 +321,7 @@ class GraphLayouter:
         # order the nodes
         ordered_nodes = CFGUtils.quasi_topological_sort_nodes(self.graph)
 
-        # conver the graph to an acylic graph
+        # convert the graph to an acylic graph
         acyclic_graph = self._to_acyclic_graph(self.graph, ordered_nodes=ordered_nodes)
 
         # assign row and column to each node
