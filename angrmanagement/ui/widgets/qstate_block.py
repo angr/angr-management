@@ -24,11 +24,14 @@ class QStateBlock(QGraphicsItem):
         self._config = Conf
 
         self.state = state
+        self.addr = None
         self.history = history
         if history is None and state is not None:
             self.history = state.history
+            self.addr = state.addr
         if history is not None and state is None:
             self.state = history.state
+            self.addr = history.state.addr
         self.selected = is_selected
 
         # widgets
