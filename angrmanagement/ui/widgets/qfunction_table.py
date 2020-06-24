@@ -55,7 +55,9 @@ class QFunctionTableModel(QAbstractTableModel):
             # remove the filtering
             self._func_list = None
         else:
-            self._func_list = [ func for func in self._raw_func_list if self._func_match_keyword(func, keyword) ]
+            extra_columns = self.workspace.plugins.count_func_columns()
+            self._func_list = [ func for func in self._raw_func_list if
+                                self._func_match_keyword(func, keyword, extra_columns=extra_columns) ]
 
         self.emit(SIGNAL("layoutChanged()"))
 
@@ -175,7 +177,7 @@ class QFunctionTableModel(QAbstractTableModel):
     def _get_tags_display_string(cls, tags):
         return ", ".join(cls.TAG_STRS.get(t, t) for t in tags)
 
-    def _func_match_keyword(self, func, keyword):
+    def _func_match_keyword(self, func, keyword, extra_columns: int=0):
         """
         Check whether the function matches against the given keyword or not.
 
@@ -185,20 +187,27 @@ class QFunctionTableModel(QAbstractTableModel):
         :rtype:             bool
         """
 
-        if keyword in func.name:
+        keyword = keyword.lower()
+
+        if keyword in func.name.lower():
             return True
         demangled_name = func.demangled_name
-        if demangled_name and keyword in func.demangled_name:
+        if demangled_name and keyword in demangled_name.lower():
             return True
         if type(func.addr) is int:
             if keyword in "%x" % func.addr:
                 return True
             if keyword in "%#x" % func.addr:
                 return True
-        if keyword.lower() in ",".join(func.tags).lower():
+        if keyword in ",".join(func.tags).lower():
             return True
-        if func.binary and keyword in func.binary.binary:
+        if func.binary and keyword in func.binary.binary.lower():
             return True
+        if extra_columns > 0:
+            for idx in range(extra_columns):
+                txt = self.workspace.plugins.extract_func_column(func, idx)[1]
+                if txt and keyword in txt.lower():
+                    return True
         return False
 
 

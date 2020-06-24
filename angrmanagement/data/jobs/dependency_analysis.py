@@ -98,8 +98,13 @@ class DependencyAnalysisJob(Job):
         self._progress_callback(80.0, text="Computing transitive closures")
         closures = { }
         for start in starts:
+            try:
+                the_func = kb_copy.functions.get_by_addr(start.addr)
+            except KeyError:
+                l.warning("Function %#x is not found in the knowledge base.", start.addr)
+                continue
             rda = inst.project.analyses.ReachingDefinitions(
-                subject=kb_copy.functions.get_by_addr(start.addr),
+                subject=the_func,
                 observe_all=True,
                 function_handler=Handler(inst.project),
                 kb=kb_copy,
