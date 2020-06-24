@@ -30,6 +30,7 @@ class DependencyView(BaseView):
         self.hovered_block: Optional[QDepGraphBlock] = None
 
         self._init_widgets()
+        self._register_events()
 
     def hover_enter_block(self, block: QDepGraphBlock):
         self.hovered_block = block
@@ -40,6 +41,10 @@ class DependencyView(BaseView):
     def hover_leave_block(self, block: QDepGraphBlock):
         self.hovered_block = None
         self.redraw_graph()
+
+    def on_screen_changed(self):
+        if self._graph_widget is not None:
+            self._graph_widget.refresh()
 
     def reload(self):
         if self._graph_widget is None:
@@ -70,6 +75,9 @@ class DependencyView(BaseView):
         hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)
+
+    def _register_events(self):
+        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _convert_node(self, node: Definition, converted: Dict[Definition,QDepGraphBlock]) -> Optional[QDepGraphBlock]:
         if node in converted:

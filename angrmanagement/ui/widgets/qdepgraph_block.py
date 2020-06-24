@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import logging
 
 import PySide2.QtWidgets
@@ -6,7 +6,7 @@ from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
 from ...config import Conf
-from ...utils import locate_function
+from ...utils import locate_function, get_string_for_display
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
@@ -32,8 +32,9 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self.selected = is_selected
 
         # widgets
-        self._label_str = None
-        self._function_str = None
+        self._instruction_str: str = None
+        self._function_str: str = None
+        self._text: Optional[str] = None
 
         self.addr = addr
 
@@ -46,8 +47,9 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         if self.addr is None:
             self._function_str = "Unknown"
-            self._label_str = "Unknown"
+            self._instruction_str = "Unknown"
         else:
+            # function string
             the_func = locate_function(self._workspace.instance, self.addr)
             if the_func is None:
                 # is it a SimProcedure?
@@ -62,9 +64,19 @@ class QDepGraphBlock(QCachedGraphicsItem):
                     self._function_str = "%#x%+x" % (the_func.addr, offset)
                 else:
                     self._function_str = "%s%+x" % (the_func.name, offset)
-            self._label_str = "%#x:   %s" % (self.addr, self._workspace.instance.get_instruction_text_at(self.addr))
+            # instruction
+            self._instruction_str = "%#x:   %s" % (self.addr, self._workspace.instance.get_instruction_text_at(self.addr))
+            # text
+            self._text = get_string_for_display(self._workspace.instance.cfg,
+                                                self.addr,
+                                                self._workspace.instance.project,
+                                                max_size=60,
+                                                )
 
         self._function_str = "Function: %s" % self._function_str
+
+    def refresh(self):
+        self._update_size()
 
     #
     # Event handlers
@@ -119,12 +131,21 @@ class QDepGraphBlock(QCachedGraphicsItem):
         x = 0
         y = 0
 
-        # The addr label
+        # The instruction
+        y += self.VERTICAL_PADDING
         addr_label_x = x + self.HORIZONTAL_PADDING
-        addr_label_y = y + self.VERTICAL_PADDING
         painter.setPen(Qt.black)
-        painter.drawText(addr_label_x, addr_label_y + self._config.symexec_font_ascent, self._label_str)
+        painter.drawText(addr_label_x, y + self._config.symexec_font_ascent, self._instruction_str)
+        x = addr_label_x + self._config.symexec_font_metrics.width(self._instruction_str)
 
+        # The text
+        if self._text:
+            x += 10
+            text_label_x = x
+            painter.setPen(Qt.gray)
+            painter.drawText(text_label_x, y + self._config.symexec_font_ascent, self._text)
+
+        painter.setPen(Qt.black)
         y += self._config.symexec_font_height + self.LINE_MARGIN
         x = 0
 
@@ -141,11 +162,14 @@ class QDepGraphBlock(QCachedGraphicsItem):
     #
 
     def _update_size(self):
-        width_candidates = [ self.HORIZONTAL_PADDING * 2 * self.currentDevicePixelRatioF() +
-                             len(self._label_str) * self._config.symexec_font_width * self.currentDevicePixelRatioF(),
-                             self.HORIZONTAL_PADDING * 2 * self.currentDevicePixelRatioF() +
-                             len(self._function_str) * self._config.symexec_font_width * self.currentDevicePixelRatioF(),
-                             ]
+        width_candidates = [(self.HORIZONTAL_PADDING * 2 +
+                             len(self._instruction_str) * self._config.symexec_font_width +
+                             ((10 +
+                             self._config.symexec_font_metrics.width(self._text)) if self._text else 0)
+                             ) * self.currentDevicePixelRatioF(),
+                            self.HORIZONTAL_PADDING * 2 * self.currentDevicePixelRatioF() +
+                            len(self._function_str) * self._config.symexec_font_width * self.currentDevicePixelRatioF(),
+                            ]
         height_candidates = [ 0 ]
         self._width = max(width_candidates)
         self._height = max(height_candidates)

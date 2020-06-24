@@ -51,7 +51,8 @@ class DependencyAnalysisJob(Job):
 
             # TODO: Handle stack-passing arguments
             # TODO: Handle variadic arguments
-            arg = cc.arg_locs(None)[self.func_arg_idx]
+            arg_locs = cc.arg_locs(None)
+            arg = arg_locs[self.func_arg_idx]
 
             # convert arg into atom
             if isinstance(arg, SimRegArg):

@@ -1,7 +1,7 @@
-
 from functools import partial
 from typing import Callable
 
+from ...config import Conf
 from .menu import Menu, MenuEntry, MenuSeparator
 
 
@@ -16,8 +16,13 @@ class DisasmLabelContextMenu(Menu):
             MenuSeparator(),
             MenuEntry('&XRefs...', self._popup_xrefs),
             MenuSeparator(),
-            MenuEntry("&Depends on...", self._popup_dependson_dialog),
-            MenuSeparator(),
+        ])
+        if Conf.has_operation_mango:
+            self.entries.extend([
+                MenuEntry("&Depends on...", self._popup_dependson_dialog),
+                MenuSeparator(),
+            ])
+        self.entries.extend([
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
             MenuEntry('&Avoid in execution...', self._avoid_in_execution)
         ])

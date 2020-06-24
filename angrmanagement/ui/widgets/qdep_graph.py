@@ -48,6 +48,11 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
     def reload(self):
         self.request_relayout()
 
+    def refresh(self):
+        for block in self.blocks:
+            block.refresh()
+        self.scene().update(self.sceneRect())
+
     def request_relayout(self):
         self._reset_scene()
         if self.graph is None:

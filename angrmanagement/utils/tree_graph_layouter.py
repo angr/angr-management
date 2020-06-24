@@ -14,11 +14,13 @@ class Direction:
 class TreeGraphEdgeRouter:
     def __init__(self,
                  layers: List[List[Any]],
+                 layer_widths: List[float],
                  graph: networkx.DiGraph,
                  node_coordinates: Dict[Any,Tuple[float,float]],
                  node_sizes: Dict[Any,Tuple[float,float]],
                  ):
         self.layers = layers
+        self.layer_widths = layer_widths
         self.graph = graph
         self.node_coordinates = node_coordinates
         self.node_sizes = node_sizes
@@ -28,7 +30,9 @@ class TreeGraphEdgeRouter:
         self._route()
 
     def _route(self):
-        for layer in self.layers:
+        curr_x = 0
+        for i, layer in enumerate(self.layers):
+            curr_x += self.layer_widths[i] + TreeGraphLayouter.HORIZONTAL_SPACING
             for src in layer:
                 x0, y0 = self.node_coordinates[src]
                 src_width, src_height = self.node_sizes[src]
@@ -42,7 +46,7 @@ class TreeGraphEdgeRouter:
                     x = x0 + src_width
                     y = y0 + src_height / 2
                     edge.add_coordinate(x, y)
-                    x = x1 - 45
+                    x = curr_x - 45
                     edge.add_coordinate(x, y)
                     y = y1 + dst_height / 2
                     edge.add_coordinate(x, y)
@@ -128,14 +132,17 @@ class TreeGraphLayouter:
                 last_layer = new_layer
 
         # layout each layer, from root nodes to leaves
+        layer_widths = [ ]
         x, y = 0.0, 0.0
         for layer in layers:
             layer_width, layer_height = self._layout_layer(x, y, layer)
             x += layer_width + self.HORIZONTAL_SPACING
             y = 0.0
+            layer_widths.append(layer_width)
 
         # edges
-        self.edges = TreeGraphEdgeRouter(layers, self._graph, self.node_coordinates, self._node_sizes).edges
+        self.edges = TreeGraphEdgeRouter(layers, layer_widths, self._graph, self.node_coordinates,
+                                         self._node_sizes).edges
 
     def _layout_layer(self, x, y, nodes) -> Tuple[float,float]:
         """

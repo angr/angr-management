@@ -198,6 +198,8 @@ class QInstruction(QCachedGraphicsItem):
             # yes we should display a string label
             self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr,
                                                   self.workspace.instance.project)
+            if self._string is None:
+                self._string = "<Unknown>"
 
         self.load_comment()
 
