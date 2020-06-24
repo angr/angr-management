@@ -187,6 +187,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
         if keyword in func.name:
             return True
+        demangled_name = func.demangled_name
+        if demangled_name and keyword in func.demangled_name:
+            return True
         if type(func.addr) is int:
             if keyword in "%x" % func.addr:
                 return True

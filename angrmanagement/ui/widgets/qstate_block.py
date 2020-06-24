@@ -35,6 +35,8 @@ class QStateBlock(QGraphicsItem):
         self._label_str = None
         self._function_str = None
 
+        self.addr = None
+
         self._init_widgets()
         self._update_size()
 
@@ -55,6 +57,8 @@ class QStateBlock(QGraphicsItem):
             addr = self.state.regs._ip._model_concrete.value
             self._label_str = "%#x" % addr
         self._label_str = "State " + self._label_str
+
+        self.addr = addr
 
         if addr is None:
             self._function_str = "Unknown"

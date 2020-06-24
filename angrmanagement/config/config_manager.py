@@ -159,3 +159,11 @@ class ConfigurationManager:
             _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', e.msg)
 
         return cls(entry_map)
+
+    @property
+    def has_operation_mango(self) -> bool:
+        try:
+            import argument_resolver
+            return True
+        except ImportError:
+            return False

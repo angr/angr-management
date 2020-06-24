@@ -8,8 +8,6 @@ from PySide2.QtCore import Qt, QSize, QEvent, QUrl
 from ...config import IMG_LOCATION
 
 
-
-
 class LoadAboutDialog(QDialog):
     def __init__(self):
         super(LoadAboutDialog, self).__init__()

@@ -1,8 +1,7 @@
 import logging
 
-from PySide2.QtGui import QPainter, QColor, QPen, QBrush
-from PySide2.QtWidgets import QGraphicsView
-from PySide2.QtCore import QPoint, Qt, QPointF, QRectF
+from PySide2.QtGui import QColor, QPen, QBrush
+from PySide2.QtCore import Qt, QPointF
 
 from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QZoomableDraggableGraphicsView
@@ -24,6 +23,8 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
         self._graph = None
         self.blocks = set()
         self._edges = []
+
+        self._edge_paths = [ ]
 
         self.state.am_subscribe(self._watch_state)
 

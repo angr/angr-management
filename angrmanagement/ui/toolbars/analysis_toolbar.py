@@ -1,9 +1,13 @@
+from typing import TYPE_CHECKING
 
 from .toolbar import Toolbar, ToolbarAction
 
+if TYPE_CHECKING:
+    from ..main_window import MainWindow
+
 
 class AnalysisToolbar(Toolbar):
-    def __init__(self, main_window):
+    def __init__(self, main_window: 'MainWindow'):
         super(AnalysisToolbar, self).__init__(main_window, 'Analysis')
 
         self.actions = [

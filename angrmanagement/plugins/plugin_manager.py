@@ -119,6 +119,14 @@ class PluginManager:
         else:
             l.info("Activated plugin %s", plugin_cls.get_display_name())
 
+    def get_plugin_instance_by_name(self, plugin_cls_name: str) -> Optional[BasePlugin]:
+        instances = [plugin for plugin in self.active_plugins if plugin.__class__.__name__.split(".")[-1] == plugin_cls_name]
+        if not instances:
+            return None
+        if len(instances) > 1:
+            l.error("Somehow there is more than one instance of %s active?" % plugin_cls_name)
+        return instances[0]
+
     def get_plugin_instance(self, plugin_cls: Type[BasePlugin]) -> Optional[BasePlugin]:
         instances = [plugin for plugin in self.active_plugins if type(plugin) is plugin_cls]
         if len(instances) == 0:

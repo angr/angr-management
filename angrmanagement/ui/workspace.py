@@ -7,10 +7,11 @@ from PySide2.QtCore import Qt, QSettings
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
 
+from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, SyncView, PatchesView, )
+                    InteractionView, SyncView, PatchesView, DependencyView, )
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -34,7 +35,7 @@ class Workspace:
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
-        self.plugins = PluginManager(self)
+        self.plugins: PluginManager = PluginManager(self)
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 
@@ -46,6 +47,12 @@ class Workspace:
             FunctionsView(self, 'left'),
             DisassemblyView(self, 'center'),
             CodeView(self, 'center'),
+        ]
+        if Conf.has_operation_mango:
+            self.default_tabs.append(
+                DependencyView(self, 'center')
+            )
+        self.default_tabs += [
             SymexecView(self, 'center'),
             StatesView(self, 'center'),
             StringsView(self, 'center'),

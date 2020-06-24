@@ -1,12 +1,18 @@
+from typing import TYPE_CHECKING
+
 from PySide2.QtWidgets import QFrame
 from PySide2.QtCore import QSize
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class BaseView(QFrame):
     def __init__(self, category: str, workspace, default_docking_position, *args, **kwargs):
 
         super(BaseView, self).__init__(*args, **kwargs)
 
-        self.workspace = workspace
+        self.workspace: 'Workspace' = workspace
         self.category = category
         self.default_docking_position = default_docking_position
 

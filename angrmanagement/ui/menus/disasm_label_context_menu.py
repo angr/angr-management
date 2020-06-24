@@ -5,14 +5,14 @@ from ...config import Conf
 from .menu import Menu, MenuEntry, MenuSeparator
 
 
-class DisasmInsnContextMenu(Menu):
+class DisasmLabelContextMenu(Menu):
     def __init__(self, disasm_view):
-        super(DisasmInsnContextMenu, self).__init__("", parent=disasm_view)
+        super().__init__("", parent=disasm_view)
 
-        self.insn_addr = None
+        self.addr: int = None
 
         self.entries.extend([
-            MenuEntry('T&oggle selection', self._toggle_instruction_selection),
+            MenuEntry('T&oggle selection', self._toggle_label_selection),
             MenuSeparator(),
             MenuEntry('&XRefs...', self._popup_xrefs),
             MenuSeparator(),
@@ -33,25 +33,23 @@ class DisasmInsnContextMenu(Menu):
 
     def _popup_newstate_dialog(self): self._disasm_view.popup_newstate_dialog(async_=True)
 
-    def _popup_dependson_dialog(self): self._disasm_view.popup_dependson_dialog(async_=True)
+    def _popup_dependson_dialog(self):
+        self._disasm_view.popup_dependson_dialog(addr=self.addr, func=True, async_=True)
 
-    def _toggle_instruction_selection(self): self._disasm_view.infodock.toggle_instruction_selection(self.insn_addr)
+    def _toggle_label_selection(self): self._disasm_view.infodock.toggle_label_selection(self.addr)
 
-    def _avoid_in_execution(self): self._disasm_view.avoid_addr_in_exec(self.insn_addr)
+    def _avoid_in_execution(self): self._disasm_view.avoid_addr_in_exec(self.addr)
 
     def _popup_xrefs(self):
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
             return
-        r = self._disasm_view._flow_graph.get_selected_operand_info()
-        if r is not None:
-            _, ins_addr, operand = r
-            self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand, async_=True)
+        self._disasm_view.popup_xref_dialog(addr=self.addr, variable=None, dst_addr=self.addr, async_=True)
 
     #
     # Public Methods
     #
 
-    def add_menu_entry(self, text, callback: Callable[['DisasmInsnContextMenu'], None], add_separator_first=True):
+    def add_menu_entry(self, text, callback: Callable[['DisasmLabelContextMenu'], None], add_separator_first=True):
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))

@@ -1,4 +1,4 @@
-
+from typing import Optional
 import itertools
 
 from .block_objects import FunctionHeader, Variables, PhiVariable, Label
@@ -72,7 +72,7 @@ def get_block_objects(disasm, nodes, func_addr):
         # function header
         func = disasm.kb.functions.get_by_addr(func_addr)
         if func is not None:
-            func_header = FunctionHeader(func.name, func.prototype,
+            func_header = FunctionHeader(func.demangled_name, func.prototype,
                                          func.calling_convention.args if func.calling_convention is not None else None)
             lst.append(func_header)
 
@@ -181,13 +181,14 @@ def filter_string_for_display(s):
     return s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t")
 
 
-def get_string_for_display(cfg, insn_addr, project):
-
-    MAX_SIZE = 20
+def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str]:
 
     str_content = None
 
-    memory_data = cfg.insn_addr_to_memory_data[insn_addr]
+    try:
+        memory_data = cfg.insn_addr_to_memory_data[insn_addr]
+    except KeyError:
+        return None
 
     if memory_data.sort == "string":
         str_content = memory_data.content.decode("utf-8")
@@ -199,10 +200,10 @@ def get_string_for_display(cfg, insn_addr, project):
                 str_content = next_level.content.decode('utf-8')
 
     if str_content is not None:
-        if len(str_content) > MAX_SIZE: return '"' + filter_string_for_display(str_content[:MAX_SIZE]) + '..."'
+        if len(str_content) > max_size: return '"' + filter_string_for_display(str_content[:max_size]) + '..."'
         else: return '"' + filter_string_for_display(str_content) + '"'
     else:
-        return '<Unknown>'
+        return None
 
 def get_comment_for_display(kb, insn_addr):
     if insn_addr in kb.comments:
