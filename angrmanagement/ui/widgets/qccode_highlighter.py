@@ -23,7 +23,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         # quotation
         (r"\".*\"", 'quotation'),
         # comment
-        (r"/[^\n]*", 'comment'),
+        (r"//[^\n]*", 'comment'),
         (r"/\*[^\n]*\*/", 'comment'),
         # keywords
         (r"\bbool\b", 'keyword'),
