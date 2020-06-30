@@ -151,7 +151,7 @@ class LoadBinary(QDialog):
         # auto load libs
 
         auto_load_libs = QCheckBox()
-        auto_load_libs.setText("Automatically load all libraries")
+        auto_load_libs.setText("Automatically load all libraries (slow, not recommended)")
         auto_load_libs.setChecked(False)
         self.option_widgets['auto_load_libs'] = auto_load_libs
 
