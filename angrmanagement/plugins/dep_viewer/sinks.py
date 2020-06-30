@@ -73,7 +73,7 @@ FAS = FunctionArgumentSink
 _path_traversal_sinks = [
     FAS('libc', 'fopen', 0),
     FAS('libc', 'chdir', 0),
-    FAS(None, 'std::basic_ifstream::basic_ifstream', 0),
+    FAS(None, 'std::basic_ifstream::__ctor__', 1),
 ]
 
 _command_injection_sinks = [

@@ -59,9 +59,7 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
             return
 
         # remove all arrows
-        scene = self.scene()
-        for p in self._arrows:
-            scene.removeItem(p)
+        self._arrows.clear()
         self._arrows_by_src.clear()
         self._arrows_by_dst.clear()
 
@@ -89,7 +87,7 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
 
         # draw edges
         for edge in self._edges:
-            arrow = QDepGraphArrow(self._dep_view, edge, arrow_direction="right")
+            arrow = QDepGraphArrow(self._dep_view, edge, arrow_location="start", arrow_direction="left")
             self._arrows.append(arrow)
             self._arrows_by_src[edge.src].append(arrow)
             self._arrows_by_dst[edge.dst].append(arrow)

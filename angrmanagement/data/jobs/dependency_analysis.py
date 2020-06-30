@@ -1,12 +1,14 @@
 from functools import partial
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Generator, List, Tuple, Set
 import logging
 
 from PySide2.QtWidgets import QMessageBox
 
 from angr import KnowledgeBase
 from angr.analyses.cfg_slice_to_sink import CFGSliceToSink, slice_cfg_graph, slice_function_graph
+from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
+from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.knowledge_plugins.key_definitions.atoms import Register, MemoryLocation, SpOffset
 from angr.knowledge_plugins import Function
 from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg, SimStackArg
@@ -16,13 +18,17 @@ from ...logic.threads import gui_thread_schedule_async
 
 try:
     import argument_resolver
+    from argument_resolver.handlers import handler_factory, StdioHandlers, StdlibHandlers
     from argument_resolver.slicer.slicer import cfg_slices_to_sinks, cfg_slice_to_sink
-    from argument_resolver.transitive_closure import _transitive_closures, _vulnerable_atom
-    from angr_patch.function_call_handler import Handler
+    from argument_resolver.transitive_closure import transitive_closures_from_defs
+    from argument_resolver.call_trace_visitor import CallTraceSubject
 except ImportError:
     argument_resolver = None
 
 if TYPE_CHECKING:
+    from angr.knowledge_plugins.key_definitions.definition import Definition
+    from angr.knowledge_plugins.key_definitions.atoms import Atom
+    from angr.analyses.reaching_definitions import ReachingDefinitionsAnalysis
     from ...plugins.dep_viewer import DependencyViewer
     from ..instance import Instance
 
@@ -74,46 +80,55 @@ class DependencyAnalysisJob(Job):
             gui_thread_schedule_async(self._display_import_error)
             return
 
-        self._progress_callback(10.0)
+        self._progress_callback(10.0, text="Extracting sink and atom")
         sink, atom = self._get_sink_and_atom(inst)
         if sink is None:
             # invalid sink setup
             return None
 
-        # make a copy of the kb
-        kb_copy = self._get_new_kb_with_cfgs_and_functions(inst.project, inst.kb)
-
-        self._progress_callback(20.0, text="Slicing CFG")
-        slice = cfg_slice_to_sink(inst.cfg, sink)
-
-        self._progress_callback(30.0, text="Calculating reaching definitions")
-
-        # slice the CFG, function graphs, etc. in the knowledge base
-        self._update_kb_content_from_slice(kb_copy, slice)
-
-        # find out *all* functions that we can run RDA from
-        cfg_graph = kb_copy.cfgs['CFGFast'].graph
-        starts = [node for node in cfg_graph.nodes() if cfg_graph.in_degree(node) == 0]
-
-        self._progress_callback(80.0, text="Computing transitive closures")
         closures = { }
-        for start in starts:
-            try:
-                the_func = kb_copy.functions.get_by_addr(start.addr)
-            except KeyError:
-                l.warning("Function %#x is not found in the knowledge base.", start.addr)
-                continue
-            rda = inst.project.analyses.ReachingDefinitions(
-                subject=the_func,
-                observe_all=True,
-                function_handler=Handler(inst.project),
-                kb=kb_copy,
-                dep_graph=DepGraph(),
-            )
-            closures.update(_transitive_closures(atom, sink, slice, rda))
+        excluded_functions: Set[int] = set()
+        min_depth = 1
+        max_depth = 8
+        progress_chunk = 70.0 / (max_depth - min_depth)
+
+        for depth in range(min_depth, max_depth):
+            base_progress: float = 30.0 + (depth - min_depth) * progress_chunk
+            self._progress_callback(base_progress,
+                                    text="Calculating reaching definitions... depth %d." % depth)
+            for idx, total, atom_defs, dep in self._dependencies(sink, [atom], inst.project.kb, inst.project, depth,
+                                                      excluded_functions):
+                self._progress_callback(base_progress + idx / total * progress_chunk,
+                                        text="Computing transitive closures: %d/%d" % (idx + 1, total))
+
+                all_defs = set()
+                for defs_ in atom_defs.values():
+                    all_defs |= defs_
+
+                cc = transitive_closures_from_defs(all_defs, dep)
+
+                # determine if there is any values are marked as coming from External. these values are not resolved
+                # within the current call-depth range
+                has_external = False
+                for def_, graph in closures.items():
+                    for node in graph.nodes():
+                        if isinstance(node.codeloc, ExternalCodeLocation):
+                            # yes!
+                            has_external = True
+                            break
+                    if has_external:
+                        break
+                if not has_external:
+                    # fully resolved - we should exclude this function for future exploration
+                    current_function_address = dep.subject.content.current_function_address()
+                    l.info("Exclude function %#x from future slices since the data dependencies are fully resolved.",
+                           current_function_address)
+                    excluded_functions.add(current_function_address)
+
+                closures.update(cc)
 
         # display in the dependencies view
-        gui_thread_schedule_async(self._display_closures, (inst, closures, ))
+        gui_thread_schedule_async(self._display_closures, (inst, atom, sink.addr, closures, ))
 
         return
 
@@ -132,28 +147,60 @@ class DependencyAnalysisJob(Job):
                     block = inst.cfg.get_any_node(dst)
                     dep_plugin.covered_blocks[dst] = block.size
 
-    @staticmethod
-    def _update_kb_content_from_slice(kb, slice: CFGSliceToSink):
-        # Removes the nodes that are not in the slice from the CFG.
-        cfg = kb.cfgs['CFGFast']
-        slice_cfg_graph(cfg.graph, slice)
-        for node in cfg.nodes():
-            node._cfg_model = cfg
+    def _dependencies(self, subject, sink_atoms: List['Atom'], kb, project, max_depth: int,
+                      excluded_funtions: Set[int]) -> Generator[Tuple[int,int,'ReachingDefinitionsAnalysis'], None, None]:
+        Handler = handler_factory([
+            StdioHandlers,
+            StdlibHandlers,
+        ])
 
-        # Removes the functions for which entrypoints are not present in the slice.
-        for f in kb.functions:
-            if f not in slice.nodes:
-                del kb.functions[f]
+        if isinstance(subject, Function):
+            sink = subject
+        else:
+            raise TypeError('Unsupported type of subject %s.' % type(subject))
 
-        # Remove the nodes that are not in the slice from the functions' graphs.
-        def _update_function_graph(cfg_slice_to_sink, function):
-            if len(function.graph.nodes()) > 1:
-                slice_function_graph(function.graph, cfg_slice_to_sink)
+        # peek into the callgraph and discover all functions reaching the sink within N layers of calls, which is determined
+        # by the depth parameter
+        queue: List[Tuple[CallTrace, int]] = [(CallTrace(sink.addr), 0)]
+        starts: Set[CallTrace] = set()
+        encountered: Set[int] = set(excluded_funtions)
+        while queue:
+            trace, curr_depth = queue.pop(0)
+            if trace.current_function_address() in starts:
+                continue
+            caller_func_addr = trace.current_function_address()
+            callers: Set[int] = set(kb.functions.callgraph.predecessors(caller_func_addr))
+            # remove the functions that we already came across - essentially bypassing recursive function calls
+            callers = set(addr for addr in callers if addr not in encountered)
+            caller_depth = curr_depth + 1
+            if caller_depth >= max_depth:
+                # reached the depth limit. add them to potential analysis starts
+                starts |= set(map(lambda caller_addr: trace.step_back(caller_addr, None, caller_func_addr), callers))
+            else:
+                # add them to the queue
+                for item in map(lambda caller_addr: (trace.step_back(caller_addr, None, caller_func_addr),
+                                                     caller_depth),
+                                callers
+                                ):
+                    queue.append(item)
+            encountered |= callers
 
-        list(map(
-            partial(_update_function_graph, slice),
-            kb.functions._function_map.values()
-        ))
+        l.info("Discovered %d function starts at call-depth %d for sink %r.",
+               len(starts),
+               max_depth,
+               sink
+               )
+
+        for idx, start in enumerate(starts):
+            handler = Handler(project, sink, sink_atoms)
+            rda = project.analyses.ReachingDefinitions(
+                subject=CallTraceSubject(start, kb.functions[start.current_function_address()]),
+                observe_all=True,
+                function_handler=handler,
+                kb=kb,
+                dep_graph=DepGraph()
+            )
+            yield idx, len(starts), handler.sink_atom_defs, rda
 
     @staticmethod
     def _get_new_kb_with_cfgs_and_functions(project, kb):
@@ -173,10 +220,13 @@ class DependencyAnalysisJob(Job):
                              "Failed to import argument_resolver package. Is operation-mango installed?",
                              )
 
-    def _display_closures(self, inst, closures):
+    def _display_closures(self, inst, sink_atom: 'Atom', sink_addr: int, closures):
         view = inst.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return
+
+        view.sink_atom = sink_atom
+        view.sink_ins_addr = sink_addr
         view.closures = closures
         try:
             view.reload()
