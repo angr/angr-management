@@ -93,7 +93,7 @@ class DependsOn(QDialog):
         atom_type_group = QGroupBox("Atom type")
         atom_type_layout = QVBoxLayout()
         atom_type_layout.addWidget(self._arg_radiobox)
-        atom_type_layout.addWidget(self._reg_radiobox)
+        # atom_type_layout.addWidget(self._reg_radiobox)
         atom_type_layout.addStretch(1)
         atom_type_group.setLayout(atom_type_layout)
 
