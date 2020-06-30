@@ -6,6 +6,7 @@ from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtCore import QSize
 
 from angr.knowledge_plugins.key_definitions.definition import Definition
+from angr.knowledge_plugins.key_definitions.atoms import Atom
 from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
 from angr import SIM_PROCEDURES
 
@@ -25,6 +26,8 @@ class DependencyView(BaseView):
         self._graph_widget: QDependencyGraph = None
 
         # data
+        self.sink_atom: Optional[Atom] = None
+        self.sink_ins_addr: Optional[int] = None
         self.closures: Optional[Dict[Definition,networkx.DiGraph]] = None
         self._graph: Optional[networkx.DiGraph] = None
         self.hovered_block: Optional[QDepGraphBlock] = None
@@ -93,18 +96,18 @@ class DependencyView(BaseView):
                                  SIM_PROCEDURES['stubs']['UnresolvableCallTarget'])):
                 return None
 
-        new_node = QDepGraphBlock(False, self, node.codeloc.ins_addr)
+        new_node = QDepGraphBlock(False, self, definition=node, addr=node.codeloc.ins_addr)
         converted[node] = new_node
         return new_node
 
     def _create_ui_graph(self) -> networkx.DiGraph:
 
         g = networkx.DiGraph()
-        source_node = QDepGraphBlock(False, self, 0)
+        source_node = QDepGraphBlock(False, self, atom=self.sink_atom, addr=self.sink_ins_addr)
         g.add_node(source_node)
 
-        converted = { }
         for key, graph in self.closures.items():
+            converted = { }
             node = self._convert_node(key, converted)
             if node is not None:
                 g.add_edge(node, source_node)

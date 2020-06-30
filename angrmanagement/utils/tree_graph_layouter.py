@@ -36,22 +36,29 @@ class TreeGraphEdgeRouter:
             for src in layer:
                 x0, y0 = self.node_coordinates[src]
                 src_width, src_height = self.node_sizes[src]
-                for dst in self.graph.successors(src):
+                for dst in self.graph.predecessors(src):
                     x1, y1 = self.node_coordinates[dst]
                     # TODO: Right now there is no going back. This should be fixed to handle loops
                     if x0 >= x1:
                         continue
                     dst_height = self.node_sizes[dst][1]
                     edge = Edge(src, dst)
-                    x = x0 + src_width
-                    y = y0 + src_height / 2
-                    edge.add_coordinate(x, y)
-                    x = curr_x - 45
-                    edge.add_coordinate(x, y)
-                    y = y1 + dst_height / 2
-                    edge.add_coordinate(x, y)
-                    x = x1 - 6  # size of the arrow
-                    edge.add_coordinate(x, y)
+                    x_start = x0 + src_width
+                    x_start += 6  # width of the arrow
+                    y_start = y0 + src_height / 2
+                    y_end = y1 + dst_height / 2
+                    if y_start == y_end:
+                        # just draw a straight line
+                        edge.add_coordinate(x_start, y_start)
+                        edge.add_coordinate(x1, y_end)
+                    else:
+                        # segment line
+                        edge.add_coordinate(x_start, y_start)
+                        x = curr_x - 45
+                        edge.add_coordinate(x, y_start)
+                        edge.add_coordinate(x, y_end)
+                        x = x1
+                        edge.add_coordinate(x, y_end)
 
                     self.edges.append(edge)
 
@@ -88,8 +95,8 @@ class TreeGraphLayouter:
         layers: List[List[Any]] = [ ]
 
         if not self._initial_nodes:
-            # use leaf nodes as the initial nodes
-            # assuming leaf nodes are not within any loop
+            # use root nodes as the initial nodes
+            # assuming root nodes are not within any loop
             initial_nodes = [ n for n in self._graph.nodes() if self._graph.out_degree[n] == 0 ]
         else:
             initial_nodes = self._initial_nodes
@@ -100,24 +107,24 @@ class TreeGraphLayouter:
         if self._direction in (Direction.BOTTOM, Direction.BOTH):
             # expand to include successors
             i = 0
-            last_layer = layers[-1]
+            last_layer = layers[0]
             while self._bottom_limit is None or i < self._bottom_limit:
                 i += 1
                 new_layer = []
                 for node in last_layer:
-                    for pred in self._graph.successors(node):
-                        if pred not in existing_nodes:
-                            new_layer.append(pred)
-                            existing_nodes.add(pred)
+                    for succ in self._graph.successors(node):
+                        if succ not in existing_nodes:
+                            new_layer.append(succ)
+                            existing_nodes.add(succ)
                 if not new_layer:
                     break
-                layers.append(new_layer)
+                layers.insert(0, new_layer)
                 last_layer = new_layer
 
         if self._direction in (Direction.TOP, Direction.BOTH):
             # expand to include predecessors
             i = 0
-            last_layer = layers[0]
+            last_layer = layers[-1]
             while self._top_limit is None or i < self._top_limit:
                 i += 1
                 new_layer = [ ]
@@ -128,7 +135,7 @@ class TreeGraphLayouter:
                             existing_nodes.add(pred)
                 if not new_layer:
                     break
-                layers.insert(0, new_layer)
+                layers.append(new_layer)
                 last_layer = new_layer
 
         # layout each layer, from root nodes to leaves

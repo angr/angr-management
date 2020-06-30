@@ -3,6 +3,8 @@ from sortedcontainers import SortedDict
 
 from PySide2.QtGui import QColor, Qt
 
+from angr.sim_type import normalize_cpp_function_name
+
 from ..base_plugin import BasePlugin
 from .sinks import sink_manager, VulnerabilityType
 
@@ -32,7 +34,14 @@ class DependencyViewer(BasePlugin):
     def extract_func_column(self, func, idx):
         assert idx == 0
 
-        vulntype_and_sinks = sink_manager.get_function_sinks(func.demangled_name)
+        func_name = func.demangled_name
+        if "<" in func_name or "{" in func_name:
+            func_name = normalize_cpp_function_name(func_name)
+            if "(" in func_name:
+                # only take function name
+                func_name = func_name[:func_name.index("(")]
+
+        vulntype_and_sinks = sink_manager.get_function_sinks(func_name)
         if not vulntype_and_sinks:
             return 0, ''
 

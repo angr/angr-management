@@ -9,7 +9,6 @@ from ...utils.edge import EdgeSort
 
 if TYPE_CHECKING:
     from ..views.dep_view import DependencyView
-    from .qdepgraph_block import QDepGraphBlock
 
 
 EDGE_COLORS = {
@@ -28,7 +27,7 @@ EDGE_STYLES = {
 
 class QGraphArrow(QGraphicsItem):
 
-    def __init__(self, edge, arrow_direction='down', parent=None):
+    def __init__(self, edge, arrow_location="end", arrow_direction='down', parent=None):
         super().__init__(parent)
 
         self.edge = edge
@@ -36,11 +35,11 @@ class QGraphArrow(QGraphicsItem):
         self._start = QPointF(*self.edge.coordinates[0])
         self.coords = [self.create_point(c) for c in self.edge.coordinates]
         self.end = self.coords[-1]
+        self.start = self.coords[0]
 
         self.color = EDGE_COLORS.get(self.edge.sort, EDGE_COLORS[EdgeSort.DIRECT_JUMP])
-        self.arrow = self._make_arrow(arrow_direction)
+        self.arrow = self._make_arrow(arrow_location, arrow_direction)
         self.style = EDGE_STYLES.get(self.edge.sort, EDGE_STYLES[EdgeSort.DIRECT_JUMP])
-        #self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
         self.path = self._make_path()
 
         self._hovered = False
@@ -49,17 +48,25 @@ class QGraphArrow(QGraphicsItem):
 
     def _make_path(self):
         path = QPainterPath(self.coords[0])
-        for c in self.coords[1:] + self.arrow:
+        for c in self.coords[1:]:
             path.lineTo(c)
         return path
 
-    def _make_arrow(self, direction):
+    def _make_arrow(self, location, direction):
+        if location == "start":
+            coord = self.start
+        else:
+            coord = self.end
+
         if direction == "down":
-            return [QPointF(self.end.x() - 3, self.end.y()), QPointF(self.end.x() + 3, self.end.y()),
-                     QPointF(self.end.x(), self.end.y() + 6)]
+            return [QPointF(coord.x() - 3, coord.y()), QPointF(coord.x() + 3, coord.y()),
+                     QPointF(coord.x(), coord.y() + 6)]
         elif direction == "right":
-            return [QPointF(self.end.x(), self.end.y() - 3), QPointF(self.end.x(), self.end.y() + 3),
-                 QPointF(self.end.x() + 6, self.end.y())]
+            return [QPointF(coord.x(), coord.y() - 3), QPointF(coord.x(), coord.y() + 3),
+                 QPointF(coord.x() + 6, coord.y())]
+        elif direction == "left":
+            return [QPointF(coord.x(), coord.y() - 3), QPointF(coord.x(), coord.y() + 3),
+                    QPointF(coord.x() - 6, coord.y())]
         else:
             raise NotImplementedError("Direction %s is not supported yet." % direction)
 
@@ -152,9 +159,9 @@ class QDisasmGraphArrow(QGraphArrow):
 
 
 class QGraphArrowBezier(QGraphArrow):
-    def __init__(self, edge, arrow_direction='down', radius=18, parent=None):
+    def __init__(self, edge, arrow_location="end", arrow_direction='down', radius=18, parent=None):
         self._radius = radius
-        super().__init__(edge, arrow_direction=arrow_direction, parent=parent)
+        super().__init__(edge, arrow_location=arrow_location, arrow_direction=arrow_direction, parent=parent)
 
     @staticmethod
     def _get_distance(pt0: QPointF, pt1: QPointF) -> float:
