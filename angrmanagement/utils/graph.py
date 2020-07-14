@@ -44,8 +44,6 @@ def to_supergraph(transition_graph):
         # - boring jumps that directly transfer the control to the block immediately after the current block. this is
         #   usually caused by how VEX breaks down basic blocks, which happens very often in MIPS
 
-
-
         if len(edges) == 1 and src.addr + src.size == next(iter(edges.keys())).addr:
             dst = next(iter(edges.keys()))
             dst_in_edges = transition_graph.in_edges(dst)
@@ -134,7 +132,7 @@ def to_supergraph(transition_graph):
                     for src_, _, data_ in super_graph.in_edges(dst_supernode, data=True):
                         super_graph.add_edge(src_, src_supernode, **data_)
 
-                        if 'type' in data_ and data_['type'] in ('transition', 'exception'):
+                        if 'type' in data_ and data_['type'] in {'transition', 'exception', 'call'}:
                             if not ('ins_addr' in data_ and 'stmt_idx' in data_):
                                 # this is a hack to work around the issue in Function.normalize() where ins_addr and
                                 # stmt_idx weren't properly set onto edges
@@ -159,7 +157,7 @@ def to_supergraph(transition_graph):
 
                 super_graph.add_edge(src_supernode, dst_supernode, **data)
 
-                if 'type' in data and data['type'] in ('transition', 'exception'):
+                if 'type' in data and data['type'] in {'transition', 'exception', 'call'}:
                     if not ('ins_addr' in data and 'stmt_idx' in data):
                         # this is a hack to work around the issue in Function.normalize() where ins_addr and
                         # stmt_idx weren't properly set onto edges
