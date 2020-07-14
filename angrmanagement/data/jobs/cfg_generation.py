@@ -2,6 +2,8 @@
 import time
 import logging
 
+import alii_cfg  # pylint:disable=unused-import
+
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
 from .job import Job
@@ -37,12 +39,22 @@ class CFGGenerationJob(Job):
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
         temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)
         self._cfb = temp_cfb
+        # pass 1: generate the CFG
         cfg = inst.project.analyses.CFG(progress_callback=self._progress_callback,
                                         low_priority=True,
-                                        cfb=temp_cfb,
+                                        # cfb=temp_cfb,
                                         use_patches=True,
                                         **self.cfg_args
                                         )
+        # pass 2: use the current CFG to seed alii CFG
+        cfg = inst.project.analyses.AliiCFG(cfg,
+                                            progress_callback=self._progress_callback,
+                                            low_priority=True,
+                                            cfb=temp_cfb,
+                                            use_patches=True,
+                                            **self.cfg_args,
+                                            ).resolved_cfg
+
         self._cfb = None
         # Build the real one
         cfb = inst.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
