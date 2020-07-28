@@ -17,8 +17,10 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CVariable,
     CVariableField,
 )
+from angr.analyses.viscosity.viscosity import Viscosity
 from angr.sim_type import SimType
 from angr.sim_variable import SimTemporaryVariable, SimVariable
+import pyvex
 from pyqodeng.core import api, modes, panels
 from pyqodeng.core.api.syntax_highlighter import COLOR_SCHEME_KEYS
 from PySide6.QtCore import QEvent, Qt
@@ -32,6 +34,8 @@ from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
+from angrmanagement.ui.dialogs.ccode_edit_atom import CCodeEditAtom
+
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QTextDocument
@@ -626,6 +630,18 @@ class QCCodeEdit(api.CodeEdit):
         self.action_swap_binop_operands = QAction("Swap operands")
         self.action_swap_binop_operands.triggered.connect(self.swap_binop_operands)
 
+        # remove statement
+        self.action_remove_stmt = QAction("&Remove statement", self)
+        self.action_remove_stmt.triggered.connect(self._on_remove_stmt_clicked)
+
+        # operator
+        self.action_edit_operator = QAction("&Edit operator", self)
+        self.action_edit_operator.triggered.connect(self._on_edit_operator_clicked)
+
+        # constant
+        self.action_edit_constant = QAction("&Edit constant", self)
+        self.action_edit_constant.triggered.connect(self._on_edit_constant_clicked)
+
         expr_actions = [
             self.action_to_ite_expr,
             self.action_swap_binop_operands,
@@ -654,7 +670,16 @@ class QCCodeEdit(api.CodeEdit):
             self.action_double,
         ]
 
-        self.call_actions = [self.action_rename_node, self.action_xref]
+        self.call_actions = [
+            self.action_rename_node,
+            self.action_xref,
+            self.action_remove_stmt,
+        ]
+
+        self.operator_actions = [
+            self.action_edit_operator,
+            self._separator(),
+        ]
 
         self.constant_actions += base_actions + expr_actions
         self.operator_actions += base_actions + expr_actions
@@ -663,3 +688,50 @@ class QCCodeEdit(api.CodeEdit):
         self.call_actions += base_actions + expr_actions
         self.selected_actions += base_actions
         self.default_actions += base_actions
+
+    #
+    # Actions
+    #
+
+    def _on_edit_operator_clicked(self):
+        dialog = CCodeEditAtom(self.instance, self._selected_node)
+        dialog.exec_()
+
+    def _on_edit_constant_clicked(self):
+        dialog = CCodeEditAtom(self.instance, self._selected_node)
+        dialog.exec_()
+
+    def _on_remove_stmt_clicked(self):
+        if isinstance(self._selected_node, CFunctionCall):
+            proj = self.instance.project
+            block = proj.factory.block(self._selected_node.tags["vex_block_addr"], cross_insn_opt=False)
+            vex_block_copy = block.vex.copy()
+
+            # remove all statements that correspond to the ins_addr
+            start_idx = [
+                i
+                for i, stmt in enumerate(vex_block_copy.statements)
+                if isinstance(stmt, pyvex.stmt.IMark) and stmt.addr == self._selected_node.tags["ins_addr"]
+            ][0]
+            try:
+                end_idx = next(
+                    iter(
+                        i
+                        for i, stmt in enumerate(vex_block_copy.statements)
+                        if isinstance(stmt, pyvex.stmt.IMark) and stmt.addr > self._selected_node.tags["ins_addr"]
+                    )
+                )
+            except StopIteration:
+                end_idx = None
+
+            if end_idx is not None:
+                vex_block_copy.statements = vex_block_copy.statements[:start_idx] + vex_block_copy[end_idx:]
+            else:
+                vex_block_copy.statements = vex_block_copy.statements[:start_idx]
+
+            v = proj.analyses.Viscosity(block, vex_block_copy)
+            if v.result:
+                for edit in v.result:
+                    patch = Viscosity.edit_to_patch(edit, proj)
+                    self.instance.kb.patches.add_patch_obj(patch)
+                self.instance.patches.am_event()
