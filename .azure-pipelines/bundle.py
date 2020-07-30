@@ -56,6 +56,7 @@ def make_common_options():
     args = ["pyinstaller",
             "--name=angr-management",
             "--hidden-import=ipykernel.datapub",
+            "--hidden-import=pkg_resources.py2_warn",
             "-w",
             "-i",
             os.path.join(os.path.dirname(angrmanagement.__file__),

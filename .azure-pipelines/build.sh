@@ -2,8 +2,9 @@
 
 # Install dependencies
 
+pip install wheel
 pip install pyinstaller
-pip install git+https://github.com/ltfish/pyelftools.git#egg=pyelftools
+pip install git+https://github.com/eliben/pyelftools#egg=pyelftools
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
 pip install git+https://github.com/angr/cle.git#egg=cle
