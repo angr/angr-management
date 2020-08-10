@@ -39,6 +39,7 @@ def make_common_options():
 
     # dynamically-loaded DLLs have to be explicitly added. We just include the entire lib dir.
     included_libs = [
+        (os.path.join(os.path.dirname(angr.__file__), "lib"), "angr/lib"),
         (os.path.join(os.path.dirname(pyvex.__file__), "lib"), "pyvex/lib"),
         (os.path.join(os.path.dirname(unicorn.__file__), "lib"), "unicorn/lib"),
         (capstone._path, "capstone/lib"),
