@@ -8,38 +8,42 @@ schedules:
     include:
     - master
 
+parameters:
+- name: pools
+  type: object
+  default: [ "ubuntu-18.04", "windows-2019", "macos-10.14" ]
 
 stages:
 - stage: Build
   jobs:
-  - job:
-    strategy:
-      matrix:
-        Ubuntu:
-          IMAGE_NAME: ubuntu-18.04
-          SCRIPT: build.sh
-        macOS:
-          IMAGE_NAME: macOS-10.14
-          SCRIPT: build.sh
-        Windows:
-          IMAGE_NAME: windows-2019
-          SCRIPT: build.bat
-    pool:
-      vmImage: $(IMAGE_NAME)
-    steps:
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: 3.7
-      - script: .azure-pipelines/$(SCRIPT)
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: upload
-          artifactName: angr-management-$(IMAGE_NAME)
-
+  - ${{ each pool in parameters.pools }}:
+    - job:
+      displayName: Build angr-management on ${{ pool }}
+      pool:
+        vmImage: ${{ pool }}
+      steps:
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: 3.7
+        - ${{ if contains(pool, 'windows') }}:
+          - task: BatchScript@1
+            displayName: Call vcvars64.bat
+            inputs:
+              filename: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+              modifyEnvironment: true
+        - task: Bash@3
+          displayName: Run build.sh
+          inputs:
+            targetType: 'filePath'
+            filePath: .azure-pipelines/build.sh
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: upload
+            artifactName: angr-management-${{ pool }}
 
 - stage: Deploy
   dependsOn: Build
-  condition: succeeded()
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   jobs:
   - job: Release
     pool:

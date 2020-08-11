@@ -28,14 +28,18 @@ mkdir upload
 # Prepare onefiles
 if [[ "$OSTYPE" == "darwin"* ]]; then
     cp onefile/angr-management upload/angr-management-onefile-macos
-else
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     cp onefile/angr-management upload/angr-management-onefile-ubuntu
+else
+    mv onefile/angr-management.exe upload/angr-management-onefile-win64.exe
 fi
 
 # Prepare onedirs
 if [[ "$OSTYPE" == "darwin"* ]]; then
     rm -rf dist/angr-management
     hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder dist
-else
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     tar -C dist -czf upload/angr-management-ubuntu.tar.gz angr-management
+else
+    7z a upload/angr-management-win64.zip ./dist/\*
 fi
