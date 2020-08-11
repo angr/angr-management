@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import os
 import ctypes
@@ -72,12 +73,18 @@ def set_app_user_model_id():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
+def set_windows_event_loop_policy():
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
 def start_management(filepath=None, use_daemon=False):
 
     if not check_dependencies():
         sys.exit(1)
 
     set_app_user_model_id()
+    set_windows_event_loop_policy()
 
     from PySide2.QtWidgets import QApplication, QSplashScreen, QMessageBox
     from PySide2.QtGui import QFontDatabase, QPixmap, QIcon

@@ -38,7 +38,7 @@ setup(
         'PySide2>5.14.2.1',
         'toml',
         'pyxdg',
-        'jupyter-client<6',
+        'jupyter-client',
         'requests',
         'sqlalchemy',
         'pyqodeng.core',
