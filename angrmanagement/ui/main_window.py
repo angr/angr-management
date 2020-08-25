@@ -166,6 +166,11 @@ class MainWindow(QMainWindow):
         dlg.exec_()
 
     def open_newstate_dialog(self):
+        if self.workspace.instance.project is None:
+            QMessageBox.critical(self,
+                                 "Cannot create new states",
+                                 "Please open a binary to analyze first.")
+            return
         new_state_dialog = NewState(self.workspace.instance, parent=self)
         new_state_dialog.exec_()
 
