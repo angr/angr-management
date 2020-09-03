@@ -43,12 +43,23 @@ class LoadBinaryJob(Job):
 
     def run(self, inst):
         self._progress_callback(5)
+
+        partial_ld = None
         try:
+            # Try automatic loading
             partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
         except cle.CLECompatibilityError:
-            # we don't support this binary format (at least for now)
-            gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
-            return
+            pass
+
+        if partial_ld is None:
+            try:
+                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                partial_ld = cle.Loader(self.fname, main_opts={'backend': 'blob', 'arch': 'x86'})
+            except cle.CLECompatibilityError:
+                # Failed to load executable, even as blob!
+                gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
+                return
+
         self._progress_callback(50)
         load_options, cfg_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
         partial_ld.close()

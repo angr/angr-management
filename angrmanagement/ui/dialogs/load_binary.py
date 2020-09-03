@@ -1,9 +1,11 @@
 import os
 import binascii
 import logging
+import archinfo
+from cle import Blob
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
-    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout
+    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox
 from PySide2.QtCore import Qt
 
 
@@ -23,6 +25,7 @@ class LoadBinary(QDialog):
         self.md5 = None
         self.sha256 = None
         self.option_widgets = { }
+        self.is_blob = isinstance(partial_ld.main_object, Blob)
 
         # return values
         self.cfg_args = None
@@ -31,9 +34,9 @@ class LoadBinary(QDialog):
         self.setWindowTitle('Load a new binary')
 
         # checksums
-        if hasattr(partial_ld.main_object, 'md5'):
+        if hasattr(partial_ld.main_object, 'md5') and partial_ld.main_object.md5 is not None:
             self.md5 = binascii.hexlify(partial_ld.main_object.md5).decode("ascii")
-        if hasattr(partial_ld.main_object, 'sha256'):
+        if hasattr(partial_ld.main_object, 'sha256') and partial_ld.main_object.sha256 is not None:
             self.sha256 = binascii.hexlify(partial_ld.main_object.sha256).decode("ascii")
 
         self.main_layout = QVBoxLayout()
@@ -141,6 +144,36 @@ class LoadBinary(QDialog):
         self._init_cfg_options_tab(tab)
 
     def _init_load_options_tab(self, tab):
+        if self.is_blob:
+            blob_layout = QGridLayout()
+
+            # architecture selection
+            arch_caption = QLabel(self)
+            arch_caption.setText('Architecture:')
+            blob_layout.addWidget(arch_caption, 0, 0)
+            arch = QComboBox(self)
+            for a in archinfo.all_arches:
+                arch.addItem(f'{a.bits}b {a.name} ({a.memory_endness[-2:]})')
+            blob_layout.addWidget(arch, 0, 1)
+            self.option_widgets['arch'] = arch
+
+            # load address
+            base_addr_caption = QLabel(self)
+            base_addr_caption.setText('Base Address:')
+            blob_layout.addWidget(base_addr_caption, 1, 0)
+            base_addr = QLineEdit(self)
+            base_addr.setText('0')
+            blob_layout.addWidget(base_addr, 1, 1)
+            self.option_widgets['base_addr'] = base_addr
+
+            # entry address
+            entry_addr_caption = QLabel(self)
+            entry_addr_caption.setText('Entry Address:')
+            blob_layout.addWidget(entry_addr_caption, 2, 0)
+            entry_addr = QLineEdit(self)
+            entry_addr.setText('0')
+            blob_layout.addWidget(entry_addr, 2, 1)
+            self.option_widgets['entry_addr'] = entry_addr
 
         # load debug symbols
         load_debug_info = QCheckBox()
@@ -166,6 +199,8 @@ class LoadBinary(QDialog):
         dep_group.setLayout(sublayout)
 
         layout = QVBoxLayout()
+        if self.is_blob:
+            layout.addLayout(blob_layout)
         layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
         layout.addWidget(dep_group)
@@ -221,6 +256,14 @@ class LoadBinary(QDialog):
         self.load_options['auto_load_libs'] = self.option_widgets['auto_load_libs'].isChecked()
         self.load_options['load_debug_info'] = self.option_widgets['load_debug_info'].isChecked()
 
+        if self.is_blob:
+            self.load_options['main_opts'] = {
+                'backend': 'blob',
+                'arch': archinfo.all_arches[self.option_widgets['arch'].currentIndex()],
+                'base_addr': int(self.option_widgets['base_addr'].text(), 16),
+                'entry_point': int(self.option_widgets['entry_addr'].text(), 16),
+            }
+
         if force_load_libs:
             self.load_options['force_load_libs'] = force_load_libs
         if skip_libs:
@@ -257,5 +300,4 @@ class LoadBinary(QDialog):
         # TODO: Normalize the path for Windows
         QMessageBox.critical(None,
                              "Failed to load binary",
-                             "angr failed to load binary %s. The format is not supported "
-                             "(we don't support loading blobs yet)." % filename)
+                             "angr failed to load binary %s." % filename)
