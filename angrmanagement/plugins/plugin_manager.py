@@ -51,16 +51,22 @@ class PluginManager:
             for plugin_or_exception in load_plugins_from_dir(search_dir):
                 if isinstance(plugin_or_exception, Exception):
                     l.info(plugin_or_exception)
-                elif not any(dont in repr(plugin_or_exception) for dont in blacklist):
-                    plugin_or_exception: Type[BasePlugin]
-                    if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
-                            or not plugin_or_exception.REQUIRE_WORKSPACE:
-                        self.activate_plugin(plugin_or_exception)
                 else:
-                    if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
-                            or not plugin_or_exception.REQUIRE_WORKSPACE:
-                        self.load_plugin(plugin_or_exception)
-                        l.info("Blacklisted plugin %s", plugin_or_exception.get_display_name())
+                    plugin_or_exception: Type[BasePlugin]
+                    plugin_conf_key = "plugin_%s_enabled" % plugin_or_exception.__name__
+
+                    # see if the plugin is enabled or not
+                    if not any(dont in repr(plugin_or_exception) for dont in blacklist) and \
+                            not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False):
+                        if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
+                                or not plugin_or_exception.REQUIRE_WORKSPACE:
+                            self.activate_plugin(plugin_or_exception)
+                    else:
+                        plugin_or_exception: Type[BasePlugin]
+                        if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
+                                or not plugin_or_exception.REQUIRE_WORKSPACE:
+                            self.load_plugin(plugin_or_exception)
+                            l.info("Blacklisted plugin %s", plugin_or_exception.get_display_name())
 
     def load_plugin(self, plugin_cls: Type[BasePlugin]):
         if plugin_cls in self.loaded_plugins:
