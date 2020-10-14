@@ -17,10 +17,10 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CVariable,
     CVariableField,
 )
+import pyvex
 from angr.analyses.viscosity.viscosity import Viscosity
 from angr.sim_type import SimType
 from angr.sim_variable import SimTemporaryVariable, SimVariable
-import pyvex
 from pyqodeng.core import api, modes, panels
 from pyqodeng.core.api.syntax_highlighter import COLOR_SCHEME_KEYS
 from PySide6.QtCore import QEvent, Qt
@@ -133,6 +133,7 @@ class QCCodeEdit(api.CodeEdit):
             mnu.addActions(self.operator_actions)
         if (
             isinstance(under_cursor, CFunctionCall)
+            and under_cursor.tags
             and "vex_block_addr" in under_cursor.tags
             and "ins_addr" in under_cursor.tags
         ):
@@ -668,12 +669,16 @@ class QCCodeEdit(api.CodeEdit):
             self.action_char,
             self.action_float,
             self.action_double,
+            self._separator(),
+            self.action_edit_constant,
         ]
 
         self.call_actions = [
             self.action_rename_node,
             self.action_xref,
             self.action_remove_stmt,
+            self._separator(),
+            self.action_edit_operator,
         ]
 
         self.operator_actions = [
