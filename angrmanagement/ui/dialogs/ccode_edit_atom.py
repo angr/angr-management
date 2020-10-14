@@ -4,7 +4,7 @@ import pyvex
 
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QGridLayout
 
-from angr.analyses.decompiler.structured_codegen.c import CExpression, CBinaryOp
+from angr.analyses.decompiler.structured_codegen.c import CExpression, CBinaryOp, CConstant
 from angr.analyses.viscosity.viscosity import Viscosity
 
 # AIL binary operations
@@ -21,9 +21,17 @@ AIL_BINOP_REPR2NAME = dict((v, k) for k, v in AIL_BINOP_NAME2REPR.items())
 
 # VEX binary operations
 AIL_BINOP_TO_VEX_BINOP = {
-    'CmpLE': 'Iop_CmpLE64U',
-    'CmpLT': 'Iop_CmpLT64U',
+    'CmpLE': 'Iop_CmpLE{b}U',
+    'CmpLT': 'Iop_CmpLT{b}U',
+    'CmpEQ': 'Iop_CmpEQ{b}',
+    'CmpNE': 'Iop_CmpNE{b}',
 }
+
+
+def ailop2vexop(ail_op: str, bits: int):
+    if ail_op in AIL_BINOP_TO_VEX_BINOP:
+        return AIL_BINOP_TO_VEX_BINOP[ail_op].format(b=bits)
+    return None
 
 
 class CCodeEditAtom(QDialog):
@@ -53,11 +61,12 @@ class CCodeEditAtom(QDialog):
     #
 
     def _extract_vex_statement(self):
-        if isinstance(self.node, CBinaryOp):
+        if isinstance(self.node, (CBinaryOp, CConstant)):
             vex_block_addr = self.node.tags.get('vex_block_addr', None)
             self._vex_stmt_idx = self.node.tags.get('vex_stmt_idx', None)
 
-            if vex_block_addr is not None and self._vex_stmt_idx is not None:
+            if vex_block_addr is not None and self._vex_stmt_idx is not None and self._vex_stmt_idx >= 0:
+                # note that we do not support modifying offsets for DEFAULT_EXIT
                 self._block = self.instance.project.factory.block(vex_block_addr, cross_insn_opt=False)
                 self._vex_stmt = self._block.vex.statements[self._vex_stmt_idx]
 
@@ -70,6 +79,8 @@ class CCodeEditAtom(QDialog):
         atom_type = QLabel(self)
         if isinstance(self.node, CBinaryOp):
             atom_type.setText("Binary operator")
+        elif isinstance(self.node, CConstant):
+            atom_type.setText("Constant")
         else:
             atom_type.setText("Unsupported")
         upper_layout.addWidget(atom_type_label, 0, 0)
@@ -80,6 +91,8 @@ class CCodeEditAtom(QDialog):
         atom = QLabel(self)
         if isinstance(self.node, CBinaryOp):
             atom.setText(AIL_BINOP_NAME2REPR.get(self.node.op, self.node.op))
+        elif isinstance(self.node, CConstant):
+            atom.setText(str(self.node.value))
         else:
             atom.setText("Unsupported")
         upper_layout.addWidget(atom_label, 1, 0)
@@ -126,6 +139,7 @@ class CCodeEditAtom(QDialog):
         if self._block is None or self._vex_stmt_idx is None or self._vex_stmt is None:
             return False, [ ]
 
+        # build the new VEX block
         if isinstance(self.node, CBinaryOp):
             # binary operator
             text = self._new_atom_edit.text().strip()
@@ -133,7 +147,7 @@ class CCodeEditAtom(QDialog):
             binop_name = AIL_BINOP_REPR2NAME.get(text, None)
             if binop_name is None:
                 return False, [ ]
-            vex_binop_name = AIL_BINOP_TO_VEX_BINOP.get(binop_name)
+            vex_binop_name = ailop2vexop(binop_name, self.instance.project.arch.bits)
             if vex_binop_name is None:
                 return False, [ ]
 
@@ -147,10 +161,41 @@ class CCodeEditAtom(QDialog):
             the_stmt.data._op = None
             the_stmt.data.op_int = vex_op_int
 
-            v = self.instance.project.analyses.Viscosity(self._block, changed_vex_block)
+        elif isinstance(self.node, CConstant):
+            # constant
+            text = self._new_atom_edit.text().strip()
+            try:
+                new_value = int(text)
+            except (ValueError, TypeError):
+                # Cannot convert the string to an integer
+                return False, [ ]
 
-            if v.result:
-                return True, v.result
+            changed_vex_block = self._block.vex.copy()
+            the_stmt = changed_vex_block.statements[self._vex_stmt_idx]
+
+            if isinstance(the_stmt, pyvex.stmt.WrTmp):
+                if isinstance(the_stmt.data, pyvex.expr.Const):
+                    const = the_stmt.data.con.__class__(new_value)
+                    the_stmt.data = pyvex.expr.Const(const)
+                elif isinstance(the_stmt.data, pyvex.expr.Binop):
+                    args = the_stmt.data.args
+                    if isinstance(the_stmt.data.args[1], pyvex.expr.Const):
+                        const = args[1].con.__class__(new_value)
+                        the_stmt.data.args = (args[0], pyvex.expr.Const(const))
+                    elif isinstance(the_stmt.data.args[0], pyvex.expr.Const):
+                        const = args[0].con.__class__(new_value)
+                        the_stmt.data.args = (pyvex.expr.Const(const), args[1])
+            elif isinstance(the_stmt, pyvex.stmt.Put) and isinstance(the_stmt.data, pyvex.expr.Const):
+                const = the_stmt.data.con.__class__(new_value)
+                the_stmt.data = pyvex.expr.Const(const)
+
+        else:
+            return False, [ ]
+
+        v = self.instance.project.analyses.Viscosity(self._block, changed_vex_block)
+
+        if v.result:
+            return True, v.result
 
         return False, [ ]
 
