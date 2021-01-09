@@ -118,6 +118,11 @@ class EdgeRouter:
             idx = self._assign_edge_to(edge, 'horizontal', min_col, start_row, max_col - min_col)
             edge.add_point(col, start_row, idx)
             edge.add_move(move)
+        else:
+            # there will be a horizontal edge even when the beginning column and the target column are the same, since
+            # the two blocks may not be aligned.
+            _ = self._assign_edge_to(edge, 'horizontal', start_col, start_row, 1)
+            # however, we do not need to add the point to the edge
 
         if start_row != end_row:
             # generate a line to move to the target row
@@ -658,18 +663,26 @@ class GraphLayouter:
                 row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
 
         y = 0
+        # calculate the top margin based on the number of horizontal edges above
+        top_margin_height = self.ROW_MARGIN * 2
+        if 0 in row_max_ids:
+            top_margin_height += self.Y_MARGIN * (row_max_ids[0] + 2)
+        y += top_margin_height
+
         for row in range(self._max_row + 2):
             x = 0
+
             for col in range(self._max_col + 2):
                 self._grid_coordinates[(col, row)] = (x, y)
                 x += self._col_widths[col] + self.COL_MARGIN
             if self._row_heights[row] is None:
                 self._row_heights[row] = 0
 
-            margin_height = self.ROW_MARGIN * 2
-            if row in row_max_ids:
-                margin_height += 2 * self.Y_MARGIN * (row_max_ids[row] + 2)
-            y += self._row_heights[row] + margin_height
+            # calculate the bottom margin based on the number of horizontal edges below
+            bottom_margin_height = self.ROW_MARGIN * 2
+            if (row + 1) in row_max_ids:
+                bottom_margin_height += self.Y_MARGIN * (row_max_ids[row + 1] + 2)
+            y += self._row_heights[row] + bottom_margin_height
 
         # nodes
         for node in self.graph.nodes():
