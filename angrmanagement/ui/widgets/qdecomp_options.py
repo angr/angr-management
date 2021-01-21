@@ -4,11 +4,13 @@ from PySide2.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTre
 
 from angr.analyses.decompiler.decompilation_options import DecompilationOption, options as dec_options
 from angr.analyses.decompiler.optimization_passes import get_optimization_passes, get_default_optimization_passes
+from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, STMT_OPTS
 
 
 class OptionType:
     OPTION = 1
     OPTIMIZATION_PASS = 2
+    PEEPHOLE_OPTIMIZATION = 3
 
 
 class QDecompilationOption(QTreeWidgetItem):
@@ -22,6 +24,9 @@ class QDecompilationOption(QTreeWidgetItem):
         elif self.type == OptionType.OPTION:
             self.setText(0, option.name)
             self.setToolTip(0, option.description)
+        elif self.type == OptionType.PEEPHOLE_OPTIMIZATION:
+            self.setText(0, option.name)
+            self.setToolTip(0, option.description)
         else:
             raise NotImplementedError("Unsupported option type %s." % self.type_)
 
@@ -33,13 +38,14 @@ class QDecompilationOption(QTreeWidgetItem):
 
 
 class QDecompilationOptions(QWidget):
-    def __init__(self, code_view, instance, options=None, passes=None):
+    def __init__(self, code_view, instance, options=None, passes=None, peephole_opts=None):
         super().__init__()
 
         self._code_view = code_view
         self._instance = instance
         self._options = options
         self._opti_passes = passes
+        self._peephole_opts = peephole_opts
 
         # widgets
         self._search_box = None  # type:QLineEdit
@@ -48,6 +54,7 @@ class QDecompilationOptions(QWidget):
 
         self._qoptions = [ ]
         self._qoptipasses = [ ]
+        self._qpeephole_opts = [ ]
 
         self._init_widgets()
 
@@ -63,12 +70,23 @@ class QDecompilationOptions(QWidget):
             else:
                 self._opti_passes = []
 
+        if force or self._peephole_opts is None:
+            self._peephole_opts = self.get_all_peephole_opts()
+
         self._reload_options()
 
     @property
     def selected_passes(self):
         selected = [ ]
         for item in self._qoptipasses:
+            if item.checkState(0):
+                selected.append(item.option)
+        return selected
+
+    @property
+    def selected_peephole_opts(self):
+        selected = []
+        for item in self._qpeephole_opts:
             if item.checkState(0):
                 selected.append(item.option)
         return selected
@@ -103,6 +121,12 @@ class QDecompilationOptions(QWidget):
     def get_all_passes(self):
         return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name)
 
+    def get_default_peephole_opts(self):
+        return STMT_OPTS + EXPR_OPTS
+
+    def get_all_peephole_opts(self):
+        return STMT_OPTS + EXPR_OPTS
+
     def _init_widgets(self):
 
         # search box
@@ -128,6 +152,7 @@ class QDecompilationOptions(QWidget):
         self._treewidget.clear()
         self._qoptions.clear()
         self._qoptipasses.clear()
+        self._qpeephole_opts.clear()
 
         categories = { }
 
@@ -149,6 +174,15 @@ class QDecompilationOptions(QWidget):
             w = QDecompilationOption(passes_category, pass_, OptionType.OPTIMIZATION_PASS,
                                      enabled=pass_ in default_passes)
             self._qoptipasses.append(w)
+
+        po_category = QTreeWidgetItem(self._treewidget, ["Peephole Optimizations"])
+        categories['peephole_opts'] = po_category
+
+        default_peephole_opts = self.get_default_peephole_opts()
+        for opt_ in self._peephole_opts:
+            w = QDecompilationOption(po_category, opt_, OptionType.PEEPHOLE_OPTIMIZATION,
+                                     enabled=opt_ in default_peephole_opts)
+            self._qpeephole_opts.append(w)
 
         # expand all
         self._treewidget.expandAll()

@@ -45,6 +45,7 @@ class CodeView(BaseView):
             cfg=self.workspace.instance.cfg,
             options=self._options.option_and_values,
             optimization_passes=self._options.selected_passes,
+            peephole_optimizations=self._options.selected_peephole_opts,
             # kb=dec_kb
             )
         self._doc = QCodeDocument(d.codegen)
