@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 import pyvex
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CFunctionCall, CVariable
+from angr.analyses.decompiler.structured_codegen import CBinaryOp, CStatement, CVariable
 
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 
@@ -134,14 +134,10 @@ class QCCodeEdit(api.CodeEdit):
         pos = cursor.position()
 
         # get the node at the associated cursor position
-        current_node = doc.get_node_at_position(pos)
+        current_node = doc.get_stmt_node_at_position(pos)
 
-        if current_node is not None:
-            # associated asm pos to the current node of code
-            if isinstance(current_node, CFunctionCall):
-                asm_ins_addr = current_node.tags['ins_addr']
-            elif isinstance(current_node, CVariable):
-                asm_ins_addr = self._code_view.function.addr
+        if current_node is not None and isinstance(current_node, CStatement):
+            asm_ins_addr = current_node.tags['ins_addr']
 
         else:
             # the top of the function decompiled
