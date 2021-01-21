@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 import pyvex
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CStatement, CVariable
+from angr.analyses.decompiler.structured_codegen import CBinaryOp, CStatement, CVariable, CFunctionCall
 
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 
