@@ -3,7 +3,7 @@ from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
 from angr.analyses.decompiler.structured_codegen import CConstant, CVariable, CFunctionCall, StructuredCodeGenerator, \
-    CStructField
+    CStructField, CStatement
 
 from ...config import Conf
 
@@ -41,7 +41,6 @@ class QCodeDocument(QTextDocument):
         return self._codegen.nodemap
 
     def get_node_at_position(self, pos):
-
         if self._codegen is not None and self._codegen.posmap is not None:
             n = self._codegen.posmap.get_node(pos)
             if n is None:
@@ -49,6 +48,18 @@ class QCodeDocument(QTextDocument):
             return n
 
         return None
+
+    def get_stmt_node_at_position(self, pos):
+        if self._codegen is not None and self._codegen.stmt_posmap is not None:
+            n = self._codegen.stmt_posmap.get_node(pos)
+
+            # catch function calls
+            if isinstance(n, CFunctionCall):
+                return n
+
+            if n is None or n is not isinstance(n, CStatement):
+                n = self._codegen.stmt_posmap.get_node(pos - 1)
+            return n
 
     def find_related_text_chunks(self, node):
 

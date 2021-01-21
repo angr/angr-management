@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 import pyvex
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CFunctionCall
+from angr.analyses.decompiler.structured_codegen import CBinaryOp, CStatement, CVariable
 
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 
@@ -117,11 +117,42 @@ class QCCodeEdit(api.CodeEdit):
 
         return super().event(event)
 
+    def get_src_to_inst(self) -> int:
+        """
+        Uses the current cursor position, which is in a code view, and gets the
+        corresponding instruction address that is associated to the code.
+        Returns the start of the function if unable to calculate.
+
+        :return: int (address of inst)
+        """
+
+        # get the Qt document
+        doc: 'QCodeDocument' = self.document()
+
+        # get the current position of the cursor
+        cursor = self.textCursor()
+        pos = cursor.position()
+
+        # get the node at the associated cursor position
+        current_node = doc.get_stmt_node_at_position(pos)
+
+        if current_node is not None and isinstance(current_node, CStatement):
+            asm_ins_addr = current_node.tags['ins_addr']
+
+        else:
+            # the top of the function decompiled
+            asm_ins_addr = self._code_view.function.addr
+
+        return asm_ins_addr
+
     def keyReleaseEvent(self, key_event):
         key = key_event.key()
         if key == Qt.Key_Tab:
+            # Compute the location to switch back to
+            asm_inst_addr = self.get_src_to_inst()
+
             # Switch back to disassembly view
-            self.workspace.jump_to(self._code_view.function.addr)
+            self.workspace.jump_to(asm_inst_addr)
             return True
 
         super().keyPressEvent(key_event)
