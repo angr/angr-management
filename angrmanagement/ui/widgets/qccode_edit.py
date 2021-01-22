@@ -136,7 +136,8 @@ class QCCodeEdit(api.CodeEdit):
         # get the node at the associated cursor position
         current_node = doc.get_stmt_node_at_position(pos)
 
-        if current_node is not None and isinstance(current_node, CStatement):
+        if current_node is not None and hasattr(current_node, 'tags') and \
+                current_node.tags is not None and 'ins_addr' in current_node.tags:
             asm_ins_addr = current_node.tags['ins_addr']
 
         else:

@@ -3,7 +3,7 @@ from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
 from angr.analyses.decompiler.structured_codegen import CConstant, CVariable, CFunctionCall, StructuredCodeGenerator, \
-    CStructField, CStatement
+    CStructField, CStatement, CExpression
 
 from ...config import Conf
 
@@ -50,15 +50,26 @@ class QCodeDocument(QTextDocument):
         return None
 
     def get_stmt_node_at_position(self, pos):
+        """
+        Iteratively finds the first valid node inside the GUI display that is not None.
+        Finds the node based on the postion given (usually related to the mouse location).
+        The function can return any valid Cxxx class inside the angr decompiler.
+
+        :param pos:
+        :return:
+        """
+
         if self._codegen is not None and self._codegen.stmt_posmap is not None:
             n = self._codegen.stmt_posmap.get_node(pos)
 
-            # catch function calls
-            if isinstance(n, CFunctionCall):
-                return n
+            # find the fist node that is not None
+            if n is None:
+                cur_pos = pos
+                # make sure we always stop at the start of the doc if we can't find a valid node
+                while n is None and cur_pos > 0:
+                    cur_pos -= 1
+                    n = self._codegen.stmt_posmap.get_node(cur_pos)
 
-            if n is None or n is not isinstance(n, CStatement):
-                n = self._codegen.stmt_posmap.get_node(pos - 1)
             return n
 
     def find_related_text_chunks(self, node):
