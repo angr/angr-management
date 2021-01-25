@@ -264,7 +264,23 @@ class Workspace:
 
         view.decompile_current_function()
 
-    def decompile_function(self, func, view=None):
+    def position_cursor_on_decomp(self, view, curr_ins):
+        if view is not None and curr_ins is not None:
+            # get the Qt document
+            doc = view.document
+
+            # get closest node for ins
+            new_text_pos = doc.find_closest_node_pos(curr_ins)
+
+            if new_text_pos is not None:
+                # set the new cursor position
+                textedit = view.textedit
+                cursor = textedit.textCursor()
+                cursor.setPosition(new_text_pos)
+                textedit.setTextCursor(cursor)
+
+
+    def decompile_function(self, func, curr_ins, view=None):
         """
         Decompile a function and switch to the pseudocode view.
 
@@ -279,6 +295,10 @@ class Workspace:
         view.function = func
         self.raise_view(view)
         view.setFocus()
+
+        # correspond disass location to new decomp position
+        self.position_cursor_on_decomp(view, curr_ins)
+
 
     def create_simulation_manager(self, state, state_name, view=None):
 

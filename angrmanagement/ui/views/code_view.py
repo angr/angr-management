@@ -56,6 +56,14 @@ class CodeView(BaseView):
     #
 
     @property
+    def textedit(self):
+        return self._textedit
+
+    @property
+    def document(self):
+        return self._doc
+
+    @property
     def function(self):
         return self._function
 

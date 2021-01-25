@@ -380,7 +380,8 @@ class DisassemblyView(BaseView):
     def decompile_current_function(self):
 
         if self._current_function.am_obj is not None:
-            self.workspace.decompile_function(self._current_function.am_obj)
+            curr_ins = next(iter(self.infodock.selected_insns))
+            self.workspace.decompile_function(self._current_function.am_obj, curr_ins)
 
     def toggle_smart_highlighting(self, enabled):
         """
