@@ -85,24 +85,20 @@ class QCCodeHighlighter(SyntaxHighlighter):
 
         if FORMATS['keyword'] is None:
             f = QTextCharFormat()
-            f.setFont(Conf.code_font)
             f.setForeground(Qt.darkBlue)
             f.setFontWeight(QFont.Bold)
             FORMATS['keyword'] = f
         if FORMATS['quotation'] is None:
             f = QTextCharFormat()
-            f.setFont(Conf.code_font)
             f.setForeground(Qt.darkGreen)
             FORMATS['quotation'] = f
         if FORMATS['function'] is None:
             f = QTextCharFormat()
-            f.setFont(Conf.code_font)
             f.setForeground(Qt.blue)
             f.setFontWeight(QFont.Bold)
             FORMATS['function'] = f
         if FORMATS['comment'] is None:
             f = QTextCharFormat()
-            f.setFont(Conf.code_font)
             f.setForeground(Qt.darkGreen)
             f.setFontWeight(QFont.Bold)
             FORMATS['comment'] = f
