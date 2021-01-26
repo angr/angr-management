@@ -32,7 +32,8 @@ class PrototypeArgument:
 
 class QFunctionHeader(QCachedGraphicsItem):
 
-    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None, container=None):
+    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, io_params=None,
+                 parent=None, container=None):
         super().__init__(parent=parent, container=container)
 
         self.workspace = workspace
@@ -41,6 +42,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         self.prototype = prototype  # type: SimTypeFunction
         self.args = args
         self.infodock = infodock
+        self.io_params = io_params
 
         self._config = config
         self._disasm_view = disasm_view
@@ -51,6 +53,8 @@ class QFunctionHeader(QCachedGraphicsItem):
         self._arg_str_list = None
         self._args_str = None
         self._args_str_width = None
+        self._io_param_str_list = None
+        self._io_param_str_width = None
 
         self._init_widgets()
 
@@ -95,6 +99,15 @@ class QFunctionHeader(QCachedGraphicsItem):
                     x += font_metrics.width(", ") * self.currentDevicePixelRatioF()
 
             painter.drawText(x, y + font_ascent, ")")
+
+        # parameter analysis
+        if self._io_param_str_list is not None:
+            for s in self._io_param_str_list:
+                x = 0
+                y += self._config.disasm_font_height * self.currentDevicePixelRatioF()
+
+                painter.drawText(x, y + font_ascent, s)
+
 
     #
     # Event handlers
@@ -194,6 +207,15 @@ class QFunctionHeader(QCachedGraphicsItem):
         else:
             self._args_str = ""
 
+        if self.io_params is not None:
+            self._io_param_str_list = []
+            self._io_param_str_width = 0
+            for param, descriptors in self.io_params.items():
+                s = "%s: %s" % (param, "; ".join(repr(d) for d in descriptors))
+                self._io_param_str_list.append(s)
+                self._io_param_str_width = max(self._io_param_str_width,
+                                               self._config.disasm_font_metrics.width(s) * self.currentDevicePixelRatioF())
+
         self._update_sizes()
 
     def _update_sizes(self):
@@ -204,10 +226,13 @@ class QFunctionHeader(QCachedGraphicsItem):
         height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
         if self._args_str:
             height += self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        if self._io_param_str_list:
+            height += len(self._io_param_str_list) * self._config.disasm_font_height * self.currentDevicePixelRatioF()
 
         width = max(
             self._prototype_width,
             self._args_str_width,
+            0 if self._io_param_str_width is None else self._io_param_str_width,
         )
 
         return QRectF(0, 0, width, height)

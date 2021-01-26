@@ -2,12 +2,13 @@
 
 class FunctionHeader:
 
-    __slots__ = ('name', 'prototype', 'args', )
+    __slots__ = ('name', 'prototype', 'args', 'io_params', )
 
-    def __init__(self, name, prototype=None, args=None):
+    def __init__(self, name, prototype=None, args=None, io_params=None):
         self.name = name
         self.prototype = prototype
         self.args = args
+        self.io_params = io_params
 
 
 class Variables:

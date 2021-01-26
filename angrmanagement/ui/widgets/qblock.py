@@ -158,7 +158,7 @@ class QBlock(QCachedGraphicsItem):
             elif isinstance(obj, FunctionHeader):
                 self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
                                                     self.disasm_view, self.workspace, self.infodock, parent=self,
-                                                    container=self._container))
+                                                    container=self._container, io_params=obj.io_params))
         self.layout_widgets()
 
     def layout_widgets(self):
