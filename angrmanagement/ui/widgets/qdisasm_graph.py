@@ -1,4 +1,4 @@
-
+from typing import Optional, TYPE_CHECKING
 import logging
 
 from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF
@@ -10,6 +10,10 @@ from .qblock import QGraphBlock
 from .qgraph_arrow import QDisasmGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
+
+if TYPE_CHECKING:
+    from angrmanagement.logic.disassembly import InfoDock
+
 
 _l = logging.getLogger(__name__)
 
@@ -63,9 +67,20 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     # Public methods
     #
 
-    def reload(self):
+    def reload(self, old_infodock: Optional['InfoDock']=None):
+
+        # if there is an instruction in selection, we will want to select that instruction again after reloading this
+        # view.
+        if old_infodock is not None:
+            selected_insns = old_infodock.selected_insns.am_obj
+        else:
+            selected_insns = set()
+
         self._reset_scene()
         self._arrows.clear()
+        if self._function_graph is None:
+            return
+
         self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
         self.workspace.view_manager.first_view_in_category('console').push_namespace({
             'disasm': self.disasm,
@@ -95,6 +110,10 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         # show the graph
         self.show()
+
+        # select the old instructions
+        for insn_addr in selected_insns:
+            self.infodock.select_instruction(insn_addr, unique=False)
 
     def refresh(self):
         if not self.blocks:

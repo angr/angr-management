@@ -1,3 +1,4 @@
+from typing import Optional, TYPE_CHECKING
 import logging
 from sortedcontainers import SortedDict
 
@@ -15,6 +16,10 @@ from .qmemory_data_block import QMemoryDataBlock
 from .qunknown_block import QUnknownBlock
 from .qgraph import QSaveableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl
+
+if TYPE_CHECKING:
+    from angrmanagement.logic.disassembly import InfoDock
+
 
 _l = logging.getLogger(__name__)
 
@@ -87,7 +92,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self._init_widgets()
 
-    def reload(self):
+    def reload(self, old_infodock: Optional['InfoDock']=None):
         self.initialize()
 
     #

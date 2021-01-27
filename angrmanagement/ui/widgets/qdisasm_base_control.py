@@ -1,5 +1,9 @@
+from typing import TYPE_CHECKING
 
 from PySide2.QtCore import Qt
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.views import DisassemblyView
 
 
 class QDisassemblyBaseControl:
@@ -9,7 +13,7 @@ class QDisassemblyBaseControl:
 
     def __init__(self, workspace, disasm_view, base_cls):
         self.workspace = workspace
-        self.disasm_view = disasm_view
+        self.disasm_view: 'DisassemblyView' = disasm_view
         self._base_cls = base_cls
 
         self._insaddr_to_block = { }

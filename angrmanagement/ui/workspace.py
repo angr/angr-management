@@ -110,6 +110,9 @@ class Workspace:
             if the_func is not None:
                 self.on_function_selected(the_func)
 
+            # Initialize the linear viewer
+            self.view_manager.first_view_in_category('disassembly')._linear_viewer.initialize()
+
     def _on_prototype_found(self):
         self.instance.add_job(
             VariableRecoveryJob(
@@ -125,7 +128,11 @@ class Workspace:
         )
 
     def on_function_tagged(self):
-        pass
+        view = self.view_manager.first_view_in_category('disassembly')
+        if view is not None:
+            view: DisassemblyView
+            if view.current_function.am_obj is not None:
+                view.reload()
 
     #
     # Public methods
@@ -318,7 +325,7 @@ class Workspace:
     # Private methods
     #
 
-    def _get_or_create_disassembly_view(self):
+    def _get_or_create_disassembly_view(self) -> DisassemblyView:
         # Take the first disassembly view
         view = self.view_manager.first_view_in_category("disassembly")
 
