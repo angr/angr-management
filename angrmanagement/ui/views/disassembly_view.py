@@ -167,7 +167,7 @@ class DisassemblyView(BaseView):
     # Events
     #
 
-    def keyPressEvent(self, event):
+    def keyReleaseEvent(self, event):
         key = event.key()
         if key == Qt.Key_G:
             # jump to window
@@ -193,12 +193,7 @@ class DisassemblyView(BaseView):
             # add comment
             self.popup_comment_dialog()
             return
-        super().keyPressEvent(event)
-
-    def keyReleaseEvent(self, event):
-        key = event.key()
-
-        if key == Qt.Key_Space:
+        elif key == Qt.Key_Space:
             # switch to linear view
             self.toggle_disasm_view()
             event.accept()
@@ -380,7 +375,10 @@ class DisassemblyView(BaseView):
     def decompile_current_function(self):
 
         if self._current_function.am_obj is not None:
-            curr_ins = next(iter(self.infodock.selected_insns))
+            curr_ins = None
+            if self.infodock.selected_insns is not None:
+                curr_ins = next(iter(self.infodock.selected_insns))
+
             self.workspace.decompile_function(self._current_function.am_obj, curr_ins)
 
     def toggle_smart_highlighting(self, enabled):

@@ -277,6 +277,8 @@ class Workspace:
                 textedit = view.textedit
                 cursor = textedit.textCursor()
                 cursor.setPosition(new_text_pos)
+                textedit.setTextCursor(cursor)
+                textedit.setFocus()
 
 
     def decompile_function(self, func, curr_ins, view=None):
