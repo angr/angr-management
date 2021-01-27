@@ -72,6 +72,9 @@ class QCodeDocument(QTextDocument):
 
             return n
 
+    def find_closest_node_pos(self, ins_addr):
+        return self._codegen.insmap.get_nearest_pos(ins_addr)
+
     def find_related_text_chunks(self, node):
 
         if self._codegen is None or self._codegen.nodemap is None:
@@ -111,3 +114,9 @@ class QCodeDocument(QTextDocument):
                 continue
             chunks.append((elem.start, elem.length + elem.start))
         return chunks
+
+    #
+    #   Private Helper Functions
+    #
+
+
