@@ -171,13 +171,25 @@ class DisassemblyView(BaseView):
     # Events
     #
 
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Escape:
+            # jump back
+            # we put it here because the escape key is used to close other dialogs, and we do not want to catch the
+            # key-release event of the escape key in such cases.
+            self.jump_back()
+            return
+
+        super().keyPressEvent(event)
+
+
     def keyReleaseEvent(self, event):
         key = event.key()
         if key == Qt.Key_G:
             # jump to window
             self.popup_jumpto_dialog()
             return
-        elif key == Qt.Key_Escape or (key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0):
+        elif key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0:
             # jump back
             self.jump_back()
             return
