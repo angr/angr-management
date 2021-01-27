@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import logging
 import traceback
 
@@ -280,14 +280,16 @@ class Workspace:
                 textedit.setTextCursor(cursor)
                 textedit.setFocus()
 
-
-    def decompile_function(self, func, curr_ins, view=None):
+    def decompile_function(self, func: Function, curr_ins: int, view=None):
         """
-        Decompile a function and switch to the pseudocode view.
+        Decompile a function a switch to decompiled view. If curr_ins is
+        defined, then also switch cursor focus to the position associated
+        with the asm instruction addr
 
-        :param Function func:   The function to decompile.
-        :param view:    The pseudocode view to raise.
-        :return:        None
+        :param func: The function to decompile
+        :param curr_ins: The instruction the cursor was at before switching to decompiled view
+        :param view: The decompiled qt text view
+        :return:
         """
 
         if view is None or view.category != "pseudocode":
@@ -299,7 +301,6 @@ class Workspace:
 
         # correspond disass location to new decomp position
         self.position_cursor_on_decomp(view, curr_ins)
-
 
     def create_simulation_manager(self, state, state_name, view=None):
 
