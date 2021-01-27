@@ -1,9 +1,12 @@
 from collections import defaultdict
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from PySide2.QtCore import Qt
 
-from ..data.object_container import ObjectContainer
 from .widgets.qsmart_dockwidget import QSmartDockWidget
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.views.view import BaseView
 
 
 class ViewManager:
@@ -24,7 +27,7 @@ class ViewManager:
         self.views = [ ]
         self.docks = [ ]
         self.view_to_dock = { }
-        self.views_by_category = defaultdict(list)
+        self.views_by_category: Dict[str,List[BaseView]] = defaultdict(list)
 
     @property
     def main_window(self):
@@ -88,7 +91,7 @@ class ViewManager:
                     docks.append(dock)
         return docks
 
-    def first_view_in_category(self, category):
+    def first_view_in_category(self, category) -> Optional['BaseView']:
         """
         Return the first view in a specific category.
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Union, Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication, QMessageBox
 from PySide2.QtCore import Qt, QSize
@@ -59,12 +59,13 @@ class DisassemblyView(BaseView):
 
     def reload(self):
 
+        old_infodock = self.infodock.copy()
+
         self.infodock.initialize()
         self._feature_map.refresh()
 
-        # Initialize the linear viewer
-        # TODO: Relocate the logic to a better place
-        self._linear_viewer.initialize()
+        # Reload the current graph to make sure it gets the latest information, such as variables.
+        self.current_graph.reload(old_infodock=old_infodock)
 
     def refresh(self):
         self.current_graph.refresh()
@@ -121,17 +122,20 @@ class DisassemblyView(BaseView):
                 # TODO: Rerun the variable recovery analysis and update the current view
 
     @property
-    def current_graph(self):
+    def current_graph(self) -> Union[QLinearDisassemblyView,QDisassemblyGraph]:
         """
         Return the current disassembly control, either linear viewer or flow graph.
 
         :return:    Linear viewer or flow graph.
-        :rtype:     QLinearDisassembly or QDisassemblyGraph
         """
         if self._linear_viewer.isVisible():
             return self._linear_viewer
         else:
             return self._flow_graph
+
+    @property
+    def current_function(self) -> ObjectContainer:
+        return self._current_function
 
     #
     # Callbacks

@@ -56,6 +56,18 @@ class InfoDock:
         self.selected_operands.clear()
         self.hovered_block.am_obj = None
 
+    def copy(self) -> 'InfoDock':
+        r = InfoDock(self.disasm_view)
+        r.variable_manager = self.variable_manager
+        r.highlight_mode = self.highlight_mode
+        r.selected_insns.am_obj = set(self.selected_insns.am_obj)
+        r.selected_operands.am_obj = dict(self.selected_operands.am_obj)
+        r.selected_blocks.am_obj = set(self.selected_blocks.am_obj)
+        r.hovered_block.am_obj = self.hovered_block.am_obj
+        r.hovered_edge.am_obj = self.hovered_edge.am_obj
+        r.selected_labels.am_obj = set(self.selected_labels.am_obj)
+        return r
+
     def hover_edge(self, src_addr, dst_addr):
         self.hovered_edge.am_obj = src_addr, dst_addr
         self.hovered_edge.am_event()
