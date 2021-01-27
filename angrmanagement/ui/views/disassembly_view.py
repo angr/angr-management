@@ -375,9 +375,10 @@ class DisassemblyView(BaseView):
     def decompile_current_function(self):
 
         if self._current_function.am_obj is not None:
-            curr_ins = None
-            if self.infodock.selected_insns is not None:
+            try:
                 curr_ins = next(iter(self.infodock.selected_insns))
+            except StopIteration:
+                curr_ins = None
 
             self.workspace.decompile_function(self._current_function.am_obj, curr_ins)
 
