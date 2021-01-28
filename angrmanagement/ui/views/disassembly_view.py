@@ -396,7 +396,7 @@ class DisassemblyView(BaseView):
             except StopIteration:
                 curr_ins = None
 
-            self.workspace.decompile_function(self._current_function.am_obj, curr_ins)
+            self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
 
     def toggle_smart_highlighting(self, enabled):
         """
