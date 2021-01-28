@@ -91,7 +91,7 @@ class Workspace:
         self._get_or_create_disassembly_view().display_function(func)
         codeview = self.view_manager.first_view_in_category('pseudocode')
         if codeview is not None and codeview.is_shown():
-            self.decompile_function(func, codeview)
+            self.decompile_function(func, view=codeview)
 
     def on_cfg_generated(self):
 
@@ -287,7 +287,7 @@ class Workspace:
                 textedit.setTextCursor(cursor)
                 textedit.setFocus()
 
-    def decompile_function(self, func: Function, curr_ins: int, view=None):
+    def decompile_function(self, func: Function, curr_ins=None, view=None):
         """
         Decompile a function a switch to decompiled view. If curr_ins is
         defined, then also switch cursor focus to the position associated
