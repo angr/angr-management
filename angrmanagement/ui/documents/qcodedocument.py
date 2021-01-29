@@ -55,6 +55,12 @@ class QCodeDocument(QTextDocument):
         Finds the node based on the postion given (usually related to the mouse location).
         The function can return any valid Cxxx class inside the angr decompiler.
 
+        Algorithm: O(n)
+        This algorithm will search the position map by alternating between extended it's left and right search
+        until we either hit the EOL or newline on the left and right. We stop either side searching once we
+        hit a newline or EOL as well. In addition, we keep a special case for when the cursor is off the screen
+        to simply put it back on the screen.
+
         :param pos:
         :return:
         """
@@ -62,13 +68,38 @@ class QCodeDocument(QTextDocument):
         if self._codegen is not None and self._codegen.stmt_posmap is not None:
             n = self._codegen.stmt_posmap.get_node(pos)
 
-            # find the fist node that is not None
+            # if we can't find a node at the current position, start the algorithm search
+            # from the left and right iteratively.
             if n is None:
-                cur_pos = pos
-                # make sure we always stop at the start of the doc if we can't find a valid node
-                while n is None and cur_pos > 0:
-                    cur_pos -= 1
-                    n = self._codegen.stmt_posmap.get_node(cur_pos)
+
+                # special case where cursor is off the screen, reposition to before the end
+                if pos >= len(self._codegen.text) - 2:
+                    l = len(self._codegen.text) - 4
+                else:
+                    l = pos-1
+
+                r = pos+1
+                inc_l = not self._pos_is_newline_or_oob(l)
+                inc_r = not self._pos_is_newline_or_oob(r)
+
+                # iterate until we hit start or end of document
+                while inc_l or inc_r:
+
+                    # continue left search if we are still at a valid char
+                    if inc_l:
+                        n = self._codegen.stmt_posmap.get_node(l)
+                        if n is not None:
+                            break
+                        l -= 1
+                        inc_l = not self._pos_is_newline_or_oob(l)
+
+                    # continue right search if we are still at a valid char
+                    if inc_r:
+                        n = self._codegen.stmt_posmap.get_node(r)
+                        if n is not None:
+                            break
+                        r += 1
+                        inc_r = not self._pos_is_newline_or_oob(r)
 
             return n
 
@@ -118,5 +149,18 @@ class QCodeDocument(QTextDocument):
     #
     #   Private Helper Functions
     #
+
+    def _pos_is_newline_or_oob(self, pos: int):
+        """
+        Checks if a position is a newline or out of bounds of the
+        text generated from the decompiler.
+
+        :param pos:
+        :return:
+        """
+        if pos >= len(self._codegen.text):
+            return True
+
+        return self._codegen.text[pos] == "\n"
 
 
