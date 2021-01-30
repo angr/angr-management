@@ -3,7 +3,7 @@ from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
-from angr.analyses.decompiler.structured_codegen import CFunctionCall
+from angr.analyses.decompiler.structured_codegen import CFunctionCall, CConstant
 
 from ..widgets.qccode_edit import QCCodeEdit
 from ..widgets.qdecomp_options import QDecompilationOptions
@@ -120,6 +120,10 @@ class CodeView(BaseView):
                 # decompile this new function
                 if selected_node.callee_func is not None:
                     self.workspace.decompile_function(selected_node.callee_func, view=self)
+            elif isinstance(selected_node, CConstant):
+                # jump to highlighted constants
+                if selected_node.reference_values is not None and selected_node.value is not None:
+                    self.workspace.jump_to(selected_node.value.value)
 
     #
     # Private methods
