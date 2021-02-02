@@ -117,7 +117,10 @@ class QCodeDocument(QTextDocument):
                 return [ ]
 
         elif isinstance(node, CVariable):
-            starts = self._codegen.nodemap.get(node.variable, None)
+            if node.unified_variable is not None:
+                starts = self._codegen.nodemap.get(node.unified_variable, None)
+            else:
+                starts = self._codegen.nodemap.get(node.variable, None)
             if starts is None:
                 return [ ]
 
