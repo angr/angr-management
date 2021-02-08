@@ -44,8 +44,10 @@ class QStringModel(QAbstractTableModel):
 
     @xrefs.setter
     def xrefs(self, v):
+        self.beginResetModel()
         self._xrefs = v
         self._values = None
+        self.endResetModel()
 
     @property
     def function(self):
@@ -53,8 +55,10 @@ class QStringModel(QAbstractTableModel):
 
     @function.setter
     def function(self, v):
+        self.beginResetModel()
         self._function = v
         self._values = None
+        self.endResetModel()
 
     def _get_all_string_memory_data(self):
         lst = [ ]
