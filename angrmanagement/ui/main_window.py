@@ -518,6 +518,13 @@ class MainWindow(QMainWindow):
     def interact(self):
         self.workspace.interact_program(self.workspace.instance.img_name)
 
+    def infer_variable_names(self):
+        if self.workspace is not None:
+            self.workspace.infer_variable_names()
+
+    def setup_sync(self):
+        self.open_sync_config_dialog()
+
     #
     # Other public methods
     #
