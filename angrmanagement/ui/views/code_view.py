@@ -20,6 +20,7 @@ class CodeView(BaseView):
         self._function = None
 
         self._codeedit = None
+        self.codegen = None
         self._textedit: QCCodeEdit = None
         self._doc = None  # type:QCodeDocument
         self._options = None  # type:QDecompilationOptions
@@ -48,7 +49,11 @@ class CodeView(BaseView):
             peephole_optimizations=self._options.selected_peephole_opts,
             # kb=dec_kb
             )
-        self._doc = QCodeDocument(d.codegen)
+        self.codegen = d.codegen
+        self.set_codegen(d.codegen)
+
+    def set_codegen(self, codegen):
+        self._doc = QCodeDocument(codegen)
         self._textedit.setDocument(self._doc)
 
     #
