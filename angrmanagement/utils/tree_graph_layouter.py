@@ -14,25 +14,69 @@ class Direction:
 class TreeGraphEdgeRouter:
     def __init__(self,
                  layers: List[List[Any]],
-                 layer_widths: List[float],
+                 vertical: bool,
+                 layer_widths: List[float],  # used if vertical is False
+                 layer_heights: List[float],  # used if vertical is True
                  graph: networkx.DiGraph,
                  node_coordinates: Dict[Any,Tuple[float,float]],
                  node_sizes: Dict[Any,Tuple[float,float]],
+                 horizontal_spacing: int,
+                 vertical_spacing: int,
                  ):
         self.layers = layers
+        self.vertical = vertical
         self.layer_widths = layer_widths
+        self.layer_heights = layer_heights
         self.graph = graph
         self.node_coordinates = node_coordinates
         self.node_sizes = node_sizes
+        self.horizontal_spacing = horizontal_spacing
+        self.vertical_spacing = vertical_spacing
 
         self.edges = [ ]
 
-        self._route()
+        if self.vertical:
+            self._route_vertical()
+        else:
+            self._route_horizontal()
 
-    def _route(self):
+    def _route_vertical(self):
+        curr_y = 0
+        for i, layer in enumerate(self.layers):
+            curr_y += self.layer_heights[i] + self.vertical_spacing
+            for src in layer:
+                x0, y0 = self.node_coordinates[src]
+                src_width, src_height = self.node_sizes[src]
+                for dst in self.graph.successors(src):
+                    x1, y1 = self.node_coordinates[dst]
+                    # TODO: Right now there is no going back. This should be fixed to handle loops
+                    if y0 >= y1:
+                        continue
+                    dst_width = self.node_sizes[dst][0]
+                    edge = Edge(src, dst)
+                    x_start = x0 + src_width / 2
+                    x_start += 3  # half of the width of the arrow
+                    y_start = y0 + src_height
+                    x_end = x1 + dst_width / 2
+                    y_end = y1 - 6  # height of the arrow
+                    if x_start == x_end:
+                        # just draw a straight line
+                        edge.add_coordinate(x_start, y_start)
+                        edge.add_coordinate(x1, y_end)
+                    else:
+                        # segment line
+                        edge.add_coordinate(x_start, y_start)
+                        y = curr_y - self.vertical_spacing / 2
+                        edge.add_coordinate(x_start, y)
+                        edge.add_coordinate(x_end, y)
+                        edge.add_coordinate(x_end, y_end)
+
+                    self.edges.append(edge)
+
+    def _route_horizontal(self):
         curr_x = 0
         for i, layer in enumerate(self.layers):
-            curr_x += self.layer_widths[i] + TreeGraphLayouter.HORIZONTAL_SPACING
+            curr_x += self.layer_widths[i] + self.horizontal_spacing
             for src in layer:
                 x0, y0 = self.node_coordinates[src]
                 src_width, src_height = self.node_sizes[src]
@@ -54,7 +98,7 @@ class TreeGraphEdgeRouter:
                     else:
                         # segment line
                         edge.add_coordinate(x_start, y_start)
-                        x = curr_x - 45
+                        x = curr_x - self.horizontal_spacing / 2
                         edge.add_coordinate(x, y_start)
                         edge.add_coordinate(x, y_end)
                         x = x1
@@ -65,17 +109,20 @@ class TreeGraphEdgeRouter:
 
 class TreeGraphLayouter:
     """
-    Vertically (not implemented right now) or horizontally layout a tree-like graph.
+    Vertically or horizontally layout a tree-like graph.
     """
 
-    HORIZONTAL_SPACING = 145
-    VERTICAL_SPACING = 15
-
-    def __init__(self, graph: networkx.DiGraph, node_sizes: Dict[Any,Tuple[float,float]],
+    def __init__(self,
+                 graph: networkx.DiGraph,
+                 node_sizes: Dict[Any,Tuple[float,float]],
                  initial_nodes: Optional[List[Any]]=None,
+                 vertical: bool=False,
                  direction: int=Direction.BOTH,
                  top_limit: Optional[int]=None,
                  bottom_limit: Optional[int]=None,
+                 horizontal_spacing: int=145,
+                 vertical_spacing: int=15,
+                 layer_sorter=None,
                  ):
         self._graph = graph
         self._node_sizes = node_sizes
@@ -84,6 +131,10 @@ class TreeGraphLayouter:
         self._top_limit = top_limit
         self._bottom_limit = bottom_limit
         self._direction = direction
+        self._vertical = vertical
+        self.horizontal_spacing = horizontal_spacing
+        self.vertical_spacing = vertical_spacing
+        self._layer_sorter = layer_sorter
 
         self.node_coordinates: Dict[Any,Tuple[float,float]] = { }
         self.edges = [ ]
@@ -97,7 +148,7 @@ class TreeGraphLayouter:
         if not self._initial_nodes:
             # use root nodes as the initial nodes
             # assuming root nodes are not within any loop
-            initial_nodes = [ n for n in self._graph.nodes() if self._graph.out_degree[n] == 0 ]
+            initial_nodes = [ n for n in self._graph.nodes() if self._graph.in_degree[n] == 0 ]
         else:
             initial_nodes = self._initial_nodes
 
@@ -118,6 +169,8 @@ class TreeGraphLayouter:
                             existing_nodes.add(succ)
                 if not new_layer:
                     break
+                if self._layer_sorter:
+                    new_layer = self._layer_sorter(new_layer)
                 layers.insert(0, new_layer)
                 last_layer = new_layer
 
@@ -135,26 +188,38 @@ class TreeGraphLayouter:
                             existing_nodes.add(pred)
                 if not new_layer:
                     break
+                if self._layer_sorter:
+                    new_layer = self._layer_sorter(new_layer)
                 layers.append(new_layer)
                 last_layer = new_layer
 
         # layout each layer, from root nodes to leaves
         layer_widths = [ ]
+        layer_heights = [ ]
         x, y = 0.0, 0.0
-        for layer in layers:
-            layer_width, layer_height = self._layout_layer(x, y, layer)
-            x += layer_width + self.HORIZONTAL_SPACING
-            y = 0.0
-            layer_widths.append(layer_width)
+
+        if self._vertical:
+            # Tree layers are vertically layouted
+            layers = layers[::-1]
+            for layer in layers:
+                layer_width, layer_height = self._layout_layer_vertical(x, y, layer)
+                y += layer_height + self.vertical_spacing
+                x = 0.0
+                layer_heights.append(layer_height)
+        else:
+            # Tree layers are horizontally layouted
+            for layer in layers:
+                layer_width, layer_height = self._layout_layer_horizontal(x, y, layer)
+                x += layer_width + self.horizontal_spacing
+                y = 0.0
+                layer_widths.append(layer_width)
 
         # edges
-        self.edges = TreeGraphEdgeRouter(layers, layer_widths, self._graph, self.node_coordinates,
-                                         self._node_sizes).edges
+        self.edges = TreeGraphEdgeRouter(layers, self._vertical, layer_widths, layer_heights, self._graph,
+                                         self.node_coordinates, self._node_sizes, self.horizontal_spacing,
+                                         self.vertical_spacing).edges
 
-    def _layout_layer(self, x, y, nodes) -> Tuple[float,float]:
-        """
-        Layout a layer of nodes.
-        """
+    def _max_width_and_height(self, nodes) -> Tuple[float,float]:
         max_width, max_height = 0.0, 0.0
 
         # calculate max width and max height
@@ -164,6 +229,53 @@ class TreeGraphLayouter:
                 max_width = width_
             if height_ > max_height:
                 max_height = height_
+
+        return max_width, max_height
+
+    def _layout_layer_vertical(self, x, y, nodes) -> Tuple[float,float]:
+        """
+        Vertically layout a layer of nodes.
+        """
+        max_width, max_height = self._max_width_and_height(nodes)
+
+        # calculate their coordinates
+        curr_x = x
+
+        for node in nodes:
+            preds = self._graph.predecessors(node)
+            min_x = None
+            max_x = None
+            for pred in preds:
+                if pred in self.node_coordinates:
+                    pred_x, _ = self.node_coordinates[pred]
+                    if min_x is None or pred_x < min_x:
+                        min_x = pred_x
+                    if max_x is None or pred_x + self._node_sizes[pred][0] > max_x:
+                        max_x = pred_x + pred.width
+
+            width_, height_ = self._node_sizes[node]
+            y_ = y + (max_height / 2 - height_ / 2)
+
+            if min_x is None or max_x is None:
+                # preds don't exist
+                # just give it something
+                x_ = curr_x
+            else:
+                # stay in the middle of the preds
+                x_ = min_x + (max_x - min_x) / 2 - width_ / 2
+                if x_ < curr_x:
+                    x_ = curr_x
+
+            self.node_coordinates[node] = (x_, y_)
+            curr_x = x_ + width_ + self.horizontal_spacing
+
+        return curr_x, max_height
+
+    def _layout_layer_horizontal(self, x, y, nodes) -> Tuple[float,float]:
+        """
+        Horizontally layout a layer of nodes.
+        """
+        max_width, max_height = self._max_width_and_height(nodes)
 
         # calculate their coordinates
         curr_y = y
@@ -194,6 +306,6 @@ class TreeGraphLayouter:
                     y_ = curr_y
 
             self.node_coordinates[node] = (x_, y_)
-            curr_y = y_ + height_ + self.VERTICAL_SPACING
+            curr_y = y_ + height_ + self.vertical_spacing
 
         return max_width, curr_y

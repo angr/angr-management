@@ -291,15 +291,20 @@ class GraphLayouter:
     Implements a pseudo layered graph layout (Sugiyama graph layout) algorithm.
     """
 
-    X_MARGIN = 10
-    Y_MARGIN = 5
-    ROW_MARGIN = 16
-    COL_MARGIN = 16
-
-    def __init__(self, graph, node_sizes, node_compare_key=None):
+    def __init__(self, graph, node_sizes, node_compare_key=None, node_sorter=None,
+                 x_margin=10, y_margin=5, row_margin=16, col_margin=16):
         self.graph = graph
         self._node_sizes = node_sizes
         self._node_compare_key = node_compare_key
+        self._node_sorter = node_sorter
+
+        if self._node_compare_key and self._node_sorter:
+            raise RuntimeError("You cannot provide both node_compare_key and node_sorter.")
+
+        self.x_margin = x_margin
+        self.y_margin = y_margin
+        self.row_margin = row_margin
+        self.col_margin = col_margin
 
         self._cols = None
         self._rows = None
@@ -457,6 +462,8 @@ class GraphLayouter:
         for row in row_to_nodes.keys():
             if self._node_compare_key is not None:
                 row_to_nodes[row] = sorted(row_to_nodes[row], key=self._node_compare_key)
+            elif self._node_sorter is not None:
+                row_to_nodes[row] = self._node_sorter(row_to_nodes[row])
             else:
                 # TODO: Use a custom comparator for displaying the CFG, too
                 row_to_nodes[row] = sorted(row_to_nodes[row], key=lambda n_: n_.addr, reverse=True)
@@ -469,7 +476,12 @@ class GraphLayouter:
 
         # First iteration: assign column ID bottom-up
         for row_idx in reversed(list(self._row_to_nodes.keys())):
-            row_nodes = sorted(self._row_to_nodes[row_idx], key=lambda n: n.addr)
+            if self._node_compare_key is not None:
+                row_nodes = sorted(self._row_to_nodes[row_idx], key=self._node_compare_key)
+            elif self._node_sorter is not None:
+                row_nodes = self._node_sorter(self._row_to_nodes[row_idx])
+            else:
+                row_nodes = sorted(self._row_to_nodes[row_idx], key=lambda n: n.addr)
 
             next_min_col, next_max_col = 1, 2
 
@@ -611,11 +623,11 @@ class GraphLayouter:
             for row in range(self._max_row + 2):
                 key = (col, row)
                 if key in self._grid_max_vertical_id:
-                    col_width = (self._grid_max_vertical_id[key] + 2) * self.X_MARGIN
+                    col_width = (self._grid_max_vertical_id[key] + 2) * self.x_margin
                     if self._col_widths[col] < col_width:
                         self._col_widths[col] = col_width
                 if key in self._grid_max_horizontal_id:
-                    row_height = (self._grid_max_horizontal_id[key] + 2) * self.Y_MARGIN
+                    row_height = (self._grid_max_horizontal_id[key] + 2) * self.y_margin
                     if self._row_heights[row] < row_height:
                         self._row_heights[row] = row_height
 
@@ -664,9 +676,9 @@ class GraphLayouter:
 
         y = 0
         # calculate the top margin based on the number of horizontal edges above
-        top_margin_height = self.ROW_MARGIN * 2
+        top_margin_height = self.row_margin * 2
         if 0 in row_max_ids:
-            top_margin_height += self.Y_MARGIN * (row_max_ids[0] + 2)
+            top_margin_height += self.y_margin * (row_max_ids[0] + 2)
         y += top_margin_height
 
         for row in range(self._max_row + 2):
@@ -674,14 +686,14 @@ class GraphLayouter:
 
             for col in range(self._max_col + 2):
                 self._grid_coordinates[(col, row)] = (x, y)
-                x += self._col_widths[col] + self.COL_MARGIN
+                x += self._col_widths[col] + self.col_margin
             if self._row_heights[row] is None:
                 self._row_heights[row] = 0
 
             # calculate the bottom margin based on the number of horizontal edges below
-            bottom_margin_height = self.ROW_MARGIN * 2
+            bottom_margin_height = self.row_margin * 2
             if (row + 1) in row_max_ids:
-                bottom_margin_height += self.Y_MARGIN * (row_max_ids[row + 1] + 2)
+                bottom_margin_height += self.y_margin * (row_max_ids[row + 1] + 2)
             y += self._row_heights[row] + bottom_margin_height
 
         # nodes
@@ -709,7 +721,7 @@ class GraphLayouter:
 
             # start point
             _, _, start_x_index = edge.points[0]
-            start_point_x_base = src_node_x + src_node_width // 2 - (self.X_MARGIN * (edge.max_start_index + 1) // 2)
+            start_point_x_base = src_node_x + src_node_width // 2 - (self.x_margin * (edge.max_start_index + 1) // 2)
             start_point_x = self._indexed_x(start_point_x_base, start_x_index)
             start_point = (start_point_x, src_node_y + src_node_height)
             edge.add_coordinate(*start_point)
@@ -717,12 +729,12 @@ class GraphLayouter:
             prev_col, prev_row = self._locations[edge.src]
             prev_col += 1
             prev_row += 1
-            x, y_base = start_point[0], start_point[1] + self.ROW_MARGIN
+            x, y_base = start_point[0], start_point[1] + self.row_margin
 
             if len(edge.points) > 1:
                 next_col, next_row, next_idx = edge.points[1]
                 starting_col, starting_row = self._locations[edge.src]
-                y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + self.ROW_MARGIN
+                y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + self.row_margin
                 y = self._indexed_y(y_base, next_idx)
             else:
                 y = y_base
@@ -741,7 +753,7 @@ class GraphLayouter:
                     # vertical
                     x = prev_x
 
-                    base_y = self._grid_coordinates[(col, row - 1)][1] + self._row_heights[row - 1] + self.ROW_MARGIN
+                    base_y = self._grid_coordinates[(col, row - 1)][1] + self._row_heights[row - 1] + self.row_margin
                     if point_id + 1 == len(edge.points) - 2:
                         y = base_y
                     else:
@@ -772,7 +784,7 @@ class GraphLayouter:
                 prev_x, prev_y = x, y
 
             # the last point, which is always at the top of the destination node
-            base_x = dst_node_x + dst_node_width // 2 - (self.X_MARGIN * (edge.max_end_index + 1) // 2)
+            base_x = dst_node_x + dst_node_width // 2 - (self.x_margin * (edge.max_end_index + 1) // 2)
             _, _, end_x_index = edge.points[-1]
             x = self._indexed_x(base_x, end_x_index)
             if x != prev_x:
@@ -783,11 +795,11 @@ class GraphLayouter:
 
     def _indexed_x(self, base_x, idx):
 
-        return base_x + idx * self.X_MARGIN
+        return base_x + idx * self.x_margin
 
     def _indexed_y(self, base_y, idx):
 
-        return base_y + idx * self.Y_MARGIN
+        return base_y + idx * self.y_margin
 
     def _nointersecting_y(self, row, starting_col, ending_col, default=None):
         """
