@@ -3,6 +3,7 @@ import logging
 import traceback
 
 from PySide2.QtCore import Qt, QSettings
+from PySide2.QtWidgets import QMessageBox
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
@@ -351,6 +352,87 @@ class Workspace:
 
         self.raise_view(view)
         view.setFocus()
+
+    def infer_variable_names(self):
+        view = self._get_or_create_pseudocode_view()
+        if view.codegen is not None:
+            import json
+            import requests
+            import re
+
+            def randstr(n=8):
+                import random
+                import string
+                return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
+
+            for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+                v.name = "@@%s@@%s@@" % (v.name, randstr())
+
+            view.codegen.regenerate_text()
+            d = {
+                'code': [
+                    {
+                        "raw_codes": [
+                            view.codegen.text,
+                        ]
+                    }
+                ]
+            }
+            r = requests.post("http://192.168.32.129:5000/varec", data=json.dumps(d))
+            print(json.dumps(d))
+            try:
+                result = json.loads(r.text)
+            except json.JSONDecodeError:
+                # shrug
+                for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+                    m = re.match(r"@@(\S+)@@(\S+)@@", v.name)
+                    if m is not None:
+                        var_name = m.group(1)
+                        v.name = var_name
+                # refresh the view
+                view.codegen.regenerate_text()
+                view.set_codegen(view.codegen)
+
+                QMessageBox.critical(self._main_window,
+                                     "Error in variable name prediction",
+                                     "Failed to predict names for all variables involved.",
+                                     QMessageBox.Ok
+                                     )
+
+                return
+
+            from collections import defaultdict
+            varname_to_predicted = defaultdict(list)
+            for idx, m in enumerate(re.finditer(r"@@(\S+)@@(\S+)@@", view.codegen.text)):
+                var_name = m.group(1)
+                varname_to_predicted[var_name].append(result['code'][0]['predictions'][0][idx])
+
+            # rename them all
+            used_names = set({'UNK'})
+            for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+                m = re.match(r"@@(\S+)@@\S+@@", v.name)
+                if m is not None:
+                    var_name = m.group(1)
+                    predicted = varname_to_predicted[var_name]
+                    predicted = sorted(predicted, key=lambda x: x['confidence'], reverse=True)
+                    for pred in predicted:
+                        if pred['pred_name'] not in used_names:
+                            v.name = pred['pred_name']
+                            used_names.add(v.name)
+                            break
+                    else:
+                        if predicted:
+                            v.name = predicted[0]['pred_name'] + "_" + randstr(2)
+                        else:
+                            v.name = var_name  # restore the original name
+            view.codegen.regenerate_text()
+
+            # refresh the view
+            view.set_codegen(view.codegen)
+
+            import pprint
+            pprint.pprint(dict(varname_to_predicted))
+
 
     def log(self, msg):
         if isinstance(msg, Exception):
