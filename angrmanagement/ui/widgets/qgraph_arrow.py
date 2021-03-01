@@ -214,3 +214,16 @@ class QDepGraphArrow(QGraphArrowBezier):
         if self._dep_view.hovered_block is None:
             return False
         return self._dep_view.hovered_block is self.edge.src or self._dep_view.hovered_block is self.edge.dst
+
+
+class QProximityGraphArrow(QGraphArrow):
+    def __init__(self, proximity_view: 'QProximityView', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._proximity_view = proximity_view
+
+    def _should_highlight(self) -> bool:
+        if self._proximity_view.hovered_block is None:
+            return False
+        return self._proximity_view.hovered_block is self.edge.src or \
+               self._proximity_view.hovered_block is self.edge.dst
+

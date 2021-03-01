@@ -483,6 +483,10 @@ class MainWindow(QMainWindow):
         if self.workspace is not None:
             self.workspace.decompile_current_function()
 
+    def view_proximity_for_current_function(self):
+        if self.workspace is not None:
+            self.workspace.view_proximity_for_current_function()
+
     def interact(self):
         self.workspace.interact_program(self.workspace.instance.img_name)
 
