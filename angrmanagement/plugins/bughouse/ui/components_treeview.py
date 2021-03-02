@@ -76,7 +76,7 @@ class ComponentsView(BaseView):
         Display a component tree.
         """
 
-        if self.workspace.instance.project is None:
+        if self.workspace.instance.project.am_none:
             return
         proj = self.workspace.instance.project
         funcs = self.workspace.instance.kb.functions

@@ -157,7 +157,7 @@ class LoadComponentsDialog(QDialog):
                 if blob_type != "bin":
                     raise TypeError("Unsupported blob_type \"%s\"." % blob_type)
                 file_hash = binary.get('file_hash')
-                if self.workspace.instance.project is None:
+                if self.workspace.instance.project.am_none:
                     raise ValueError("No project has been loaded.")
                 sha256 = self.workspace.instance.project.loader.main_object.sha256
                 if binascii.unhexlify(file_hash) != sha256:

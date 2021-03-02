@@ -61,7 +61,7 @@ class QRegisterViewer(QFrame):
 
     def reload(self):
         for reg_name, reg_ctrl in self._registers.items():
-            if self._state.am_none():
+            if self._state.am_none:
                 reg_ctrl.ast = None
             else:
                 reg_ctrl.ast = self._state.registers.load(reg_name, disable_actions=True, inspect=False)
@@ -71,7 +71,7 @@ class QRegisterViewer(QFrame):
     #
 
     def _init_widgets(self):
-        if self._state.am_none():
+        if self._state.am_none:
             return
 
         if self._state.arch.name not in self.ARCH_REGISTERS:

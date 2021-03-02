@@ -32,7 +32,7 @@ class CodeView(BaseView):
         self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
 
     def reload(self):
-        if self.workspace.instance.project is None:
+        if self.workspace.instance.project.am_none:
             return
         self._options.reload(force=True)
 

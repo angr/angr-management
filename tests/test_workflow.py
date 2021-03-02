@@ -11,8 +11,9 @@ class TestWorkflow(unittest.TestCase):
         setUp()
 
         main = MainWindow(show=False)
-        proj = angr.Project(os.path.join(test_location, "x86_64", "fauxware"), auto_load_libs=False)
-        main.workspace.instance.set_project(proj)
+        proj = angr.Project(os.path.join(test_location, "x86_64", "true"), auto_load_libs=False)
+        main.workspace.instance.project.am_obj = proj
+        main.workspace.instance.project.am_event()
         main.workspace.instance.join_all_jobs()
 
 

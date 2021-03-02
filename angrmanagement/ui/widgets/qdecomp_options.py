@@ -65,7 +65,7 @@ class QDecompilationOptions(QWidget):
             self._options = self.get_default_options()
 
         if force or self._opti_passes is None:
-            if self._instance.project is not None:
+            if not self._instance.project.am_none:
                 self._opti_passes = self.get_all_passes()
             else:
                 self._opti_passes = []
@@ -114,7 +114,7 @@ class QDecompilationOptions(QWidget):
         return dec_options
 
     def get_default_passes(self):
-        if self._instance is None or self._instance.project is None:
+        if self._instance is None or self._instance.project.am_none:
             return set()
         return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name)
 

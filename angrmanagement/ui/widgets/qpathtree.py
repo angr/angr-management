@@ -33,7 +33,7 @@ class QPathTree(QFrame):
     #
 
     def reload(self):
-        if self.simgr.am_none():
+        if self.simgr.am_none:
             return
 
         states = [state for (stash, states) in self.simgr.stashes.items() if stash != 'pruned' for state in states]

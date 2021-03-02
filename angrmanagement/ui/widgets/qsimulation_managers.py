@@ -159,15 +159,15 @@ class QSimulationManagers(QFrame):
     #
 
     def _on_step_clicked(self):
-        if not self.simgr.am_none():
+        if not self.simgr.am_none:
             self.instance.add_job(SimgrStepJob.create(self.simgr.am_obj, until_branch=False))
 
     def _on_step_until_branch_clicked(self):
-        if not self.simgr.am_none():
+        if not self.simgr.am_none:
             self.instance.add_job(SimgrStepJob.create(self.simgr.am_obj, until_branch=True))
 
     def _on_explore_clicked(self):
-        if not self.simgr.am_none():
+        if not self.simgr.am_none:
             def _step_callback(simgr):
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(simgr, events=False)
