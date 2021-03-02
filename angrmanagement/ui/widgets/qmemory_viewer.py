@@ -158,7 +158,7 @@ class QMemoryViewer(QFrame):
     #
 
     def reload(self):
-        if self.state.am_none():
+        if self.state.am_none:
             return
 
         if self.addr is None:

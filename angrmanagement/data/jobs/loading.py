@@ -24,7 +24,6 @@ class LoadTargetJob(Job):
             apb = archr.arsenal.angrProjectBow(t, dsb)
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
             self._progress_callback(50)
-            # is it smart to do this from the worker thread? who knows
             load_options, cfg_args = gui_thread_schedule(LoadBinary.run, (partial_ld,))
             partial_ld.close()
             if cfg_args is None:
@@ -33,7 +32,9 @@ class LoadTargetJob(Job):
             # Create the project, load it, then record the image name on success
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
             self._progress_callback(95)
-            inst.set_project(proj, cfg_args=cfg_args)
+            inst._reset_containers()
+            inst.project = proj
+            inst.project.am_event(cfg_args=cfg_args)
 
 
 class LoadBinaryJob(Job):
@@ -68,4 +69,8 @@ class LoadBinaryJob(Job):
 
         proj = angr.Project(self.fname, load_options=load_options)
         self._progress_callback(95)
-        gui_thread_schedule(inst.set_project, (proj, cfg_args))
+        def callback():
+            inst._reset_containers()
+            inst.project.am_obj = proj
+            inst.project.am_event(cfg_args=cfg_args)
+        gui_thread_schedule(callback, ())

@@ -13,7 +13,7 @@ class FunctionsView(BaseView):
         self._function_table = None  # type: QFunctionTable
         self._status_label = None
 
-        self.workspace.instance.cfg_container.am_subscribe(self.reload)
+        self.workspace.instance.cfg.am_subscribe(self.reload)
 
         self._init_widgets()
 
@@ -41,7 +41,7 @@ class FunctionsView(BaseView):
 
     def reload(self):
         # TODO: this is such a shitshow. all the sub-elements should sync on the cfg directly.
-        if self.workspace.instance.cfg is not None:
+        if not self.workspace.instance.cfg.am_none:
             self._function_table.function_manager = self.workspace.instance.kb.functions
 
     def minimumSizeHint(self, *args, **kwargs):

@@ -43,7 +43,7 @@ class QSimulationManagerViewer(QTreeWidget):
     def _init_widgets(self):
         self.clear()
 
-        if self.simgr.am_none():
+        if self.simgr.am_none:
             return
 
         for stash_name, stash in self.simgr.stashes.items():

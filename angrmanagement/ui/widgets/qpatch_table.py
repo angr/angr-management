@@ -71,7 +71,8 @@ class QPatchTable(QTableWidget):
             self._selected(self.current_state_record())
 
     def _watch_patches(self, **kwargs):
-        self.reload()
+        if not self.instance.patches.am_none:
+            self.reload()
 
     @staticmethod
     def _get_bytes(proj, addr, size):

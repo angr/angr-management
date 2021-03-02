@@ -40,6 +40,7 @@ class ObjectContainer(EventSentinel):
             v.am_subscribe(self.__forwarder)
         self._am_obj = v
 
+    @property
     def am_none(self):
         return self._am_obj is None
 

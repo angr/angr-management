@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
         dlg.exec_()
 
     def open_newstate_dialog(self):
-        if self.workspace.instance.project is None:
+        if self.workspace.instance.project.am_none:
             QMessageBox.critical(self,
                                  "Cannot create new states",
                                  "Please open a binary to analyze first.")
@@ -176,7 +176,7 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
 
     def open_sync_config_dialog(self):
-        if self.workspace.instance.project is None:
+        if self.workspace.instance.project.am_none:
             # project does not exist yet
             return
 
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
             self.menuBar().addMenu(self._sync_menu.qmenu())
             def on_load(**kwargs):
                 self._sync_menu.action_by_key("config").enable()
-            self.workspace.instance._project_container.am_subscribe(on_load)
+            self.workspace.instance.project.am_subscribe(on_load)
         self.menuBar().addMenu(self._plugin_menu.qmenu())
         self.menuBar().addMenu(self._help_menu.qmenu())
 
@@ -258,13 +258,13 @@ class MainWindow(QMainWindow):
         self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
 
         def set_caption(**kwargs):
-            if self.workspace.instance.project == None:
+            if self.workspace.instance.project.am_none:
                 self.caption = ''
             elif self.workspace.instance.project.filename is None:
                 self.caption = "Loaded from stream"
             else:
                 self.caption = os.path.basename(self.workspace.instance.project.filename)
-        self.workspace.instance.project_container.am_subscribe(set_caption)
+        self.workspace.instance.project.am_subscribe(set_caption)
 
     #
     # Shortcuts
@@ -307,7 +307,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
 
         # Ask if the user wants to save things
-        if self.workspace.instance is not None and self.workspace.instance.project is not None:
+        if self.workspace.instance is not None and not self.workspace.instance.project.am_none:
             msgbox = QMessageBox()
             msgbox.setWindowTitle("Save database")
             msgbox.setText("angr management is about to exit. Do you want to save the database?")
@@ -439,7 +439,7 @@ class MainWindow(QMainWindow):
         self._load_database(file_path)
 
     def save_database(self):
-        if self.workspace.instance is None or self.workspace.instance.project is None:
+        if self.workspace.instance is None or self.workspace.instance.project.am_none:
             return True
 
         if self.workspace.instance.database_path is None:
@@ -449,7 +449,7 @@ class MainWindow(QMainWindow):
 
     def save_database_as(self):
 
-        if self.workspace.instance is None or self.workspace.instance.project is None:
+        if self.workspace.instance is None or self.workspace.instance.project.am_none:
             return False
 
         default_database_path = self.workspace.instance.database_path
@@ -545,17 +545,18 @@ class MainWindow(QMainWindow):
 
         self.workspace.instance.database_path = file_path
 
-        self.workspace.instance.initialized = True  # skip automated CFG recovery
+        self.workspace.instance._reset_containers()
         self.workspace.instance.project = proj
         self.workspace.instance.cfg = cfg
         self.workspace.instance.cfb = cfb
+        self.workspace.instance.project.am_event(initialized=True)
 
         # trigger callbacks
         self.workspace.reload()
         self.workspace.on_cfg_generated()
 
     def _save_database(self, file_path):
-        if self.workspace.instance is None or self.workspace.instance.project is None:
+        if self.workspace.instance is None or self.workspace.instance.project.am_none:
             return False
 
         if AngrDB is None:

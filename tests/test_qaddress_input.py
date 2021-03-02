@@ -14,7 +14,7 @@ from common import setUp, test_location
 
 def test_address_conversion():
     main = MainWindow(show=False)
-    main.workspace.instance.set_project(load_shellcode(b'X', 'amd64'))
+    main.workspace.instance.project = load_shellcode(b'X', 'amd64')
     main.workspace.instance.project.kb.functions.function(addr=0x1234, name='foo', create=True)
 
     obj = QAddressInput(None, main.workspace)
@@ -35,7 +35,7 @@ def test_address_conversion():
 def test_function_name():
     proj = angr.Project(os.path.join(test_location, "x86_64", "fauxware"), auto_load_libs=False)
     main = MainWindow(show=False)
-    main.workspace.instance.set_project(proj)
+    main.workspace.instance.project = proj
 
     cfg = proj.analyses.CFG()
     obj = QAddressInput(None, main.workspace)

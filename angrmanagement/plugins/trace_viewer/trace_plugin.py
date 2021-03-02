@@ -173,7 +173,7 @@ class TraceViewer(BasePlugin):
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
-        if self.workspace.instance.project is None:
+        if self.workspace.instance.project.am_none:
             return
 
         mapping = {

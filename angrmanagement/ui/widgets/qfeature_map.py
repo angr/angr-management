@@ -127,7 +127,7 @@ class QFeatureMap(QWidget):
 
     def _paint_regions(self):
 
-        cfb = self.instance.cfb_container.am_obj
+        cfb = self.instance.cfb.am_obj
 
         if cfb is None:
             return False

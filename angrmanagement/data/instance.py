@@ -19,28 +19,32 @@ if TYPE_CHECKING:
 
 
 class Instance:
+    project: Union[angr.Project, ObjectContainer]
+
     def __init__(self, project=None):
         # delayed import
         from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
 
+        self._live = False
         self.workspace: Optional['Workspace'] = None
 
         self.jobs = []
         self._jobs_queue = Queue()
 
-        self._project_container = ObjectContainer(project, "The current angr project")
-        self._project_container.am_subscribe(self.initialize)
         self.extra_containers = {}
         self._container_defaults = {}
 
+        self.register_container('project', lambda: None, Optional[angr.Project], "The current angr project")
         self.register_container('simgrs', lambda: [], List[angr.SimulationManager], 'Global simulation managers list')
         self.register_container('states', lambda: [], List[angr.SimState], 'Global states list')
         self.register_container('patches', lambda: None, None, 'Global patches update notifier') # dummy
-        self.register_container('cfg_container', lambda: None, Optional[angr.knowledge_plugins.cfg.CFGModel], "The current CFG")
-        self.register_container('cfb_container', lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
+        self.register_container('cfg', lambda: None, Optional[angr.knowledge_plugins.cfg.CFGModel], "The current CFG")
+        self.register_container('cfb', lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
         self.register_container('interactions', lambda: [], List[SavedInteraction], 'Saved program interactions')
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
         self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]], 'Available interaction protocols')
+
+        self.project.am_subscribe(self.initialize)
 
         # Callbacks
         self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
@@ -58,24 +62,11 @@ class Instance:
         # The image name when loading image
         self.img_name = None
 
-        self.initialized = False
+        self._live = True
 
     #
     # Properties
     #
-
-    @property
-    def project(self) -> Optional[angr.Project]:
-        return self._project_container.am_obj
-
-    @project.setter
-    def project(self, v):
-        self._project_container.am_obj = v
-        self._project_container.am_event()
-
-    @property
-    def project_container(self):
-        return self._project_container
 
     @property
     def kb(self) -> Optional[angr.KnowledgeBase]:
@@ -83,38 +74,20 @@ class Instance:
             return None
         return self.project.kb
 
-    @property
-    def cfg(self):
-        return self.cfg_container.am_obj
-
-    @cfg.setter
-    def cfg(self, v):
-        self.cfg_container.am_obj = v
-        self.cfg_container.am_event()
-
-        # notify the workspace
-        if self.workspace is not None:
-            self.workspace.reload()
-
-    @property
-    def cfb(self):
-        """
-        Get the CFBlanket instance.
-
-        :rtype: angr.analyses.cfg.cfb.CFBlanket
-        """
-        return self.cfb_container.am_obj
-
-    @cfb.setter
-    def cfb(self, v):
-        self.cfb_container.am_obj = v
-        self.cfb_container.am_event()
-
     def __getattr__(self, k):
+        if k == 'extra_containers':
+            return {}
+
         try:
             return self.extra_containers[k]
         except KeyError as e:
             raise AttributeError(k) from e
+
+    def __setattr__(self, k, v):
+        if k in self.extra_containers:
+            self.extra_containers[k].am_obj = v
+        else:
+            super().__setattr__(k, v)
 
     def __dir__(self):
         return list(super().__dir__()) + list(self.extra_containers)
@@ -168,39 +141,23 @@ class Instance:
             self._container_defaults[name] = (default_val_func, ty)
             self.extra_containers[name] = ObjectContainer(default_val_func(), description)
 
-    def async_set_cfg(self, cfg):
-        self.cfg_container.am_obj = cfg
-        # This should not trigger a signal because the CFG is not yet done. We'll trigger a
-        # signal on cfg.setter only
-        # self.cfg_container.am_event()
-
-    def async_set_cfb(self, cfb):
-        self.cfb_container.am_obj = cfb
-        # should not trigger a signal
-
-    def set_project(self, project, cfg_args=None):
-
-        try:
-            DaemonClient.register_binary(project.loader.main_object.binary,
-                                         project.loader.main_object.md5,
-                                         project.loader.main_object.sha256)
-        except Exception as ex:
-            print(ex)
-
-        self._project_container.am_obj = project
-        self._project_container.am_event(cfg_args=cfg_args)
-
     def set_image(self, image):
         self.img_name = image
 
-    def initialize(self, cfg_args=None):
+    def _reset_containers(self, **kwargs):
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
-            self.extra_containers[name].am_event()
+            self.extra_containers[name].am_event(**kwargs)
 
-        if not self.initialized:
-            self.initialized = True
+    def initialize(self, initialized=False, cfg_args=None, **kwargs):
+        if self.project.am_none:
+            return
 
+        DaemonClient.register_binary(self.project.loader.main_object.binary,
+                                     self.project.loader.main_object.md5,
+                                     self.project.loader.main_object.sha256)
+
+        if not initialized:
             if cfg_args is None:
                 cfg_args = {}
             # save cfg_args
@@ -252,7 +209,7 @@ class Instance:
     def join_all_jobs(self):
         # ...lol
         while self.jobs:
-            time.sleep(0.1)
+            time.sleep(0.05)
 
     #
     # Private methods

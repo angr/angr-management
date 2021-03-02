@@ -39,7 +39,7 @@ class SyncControl:
         self.tally_container = ObjectContainer({}, notes="Tally information.")
 
         # Subscribe to project creation
-        self.instance.project_container.am_subscribe(self._initialize)
+        self.instance.project.am_subscribe(self._initialize)
 
         # How often do we call the client and update our information?
         self._refresh_interval = 10
