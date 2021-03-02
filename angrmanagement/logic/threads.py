@@ -123,7 +123,7 @@ class GUIObjProxy(object):
 
 
 def is_gui_thread():
-    return threading.get_ident() == GlobalInfo.gui_thread
+    return threading.get_ident() == GlobalInfo.gui_thread or GlobalInfo.gui_thread is None
 
 
 def gui_thread_schedule(callable, args=None):

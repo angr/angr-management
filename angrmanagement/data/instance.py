@@ -249,6 +249,11 @@ class Instance:
                     return insn_piece.render()[0]
         return None
 
+    def join_all_jobs(self):
+        # ...lol
+        while self.jobs:
+            time.sleep(0.1)
+
     #
     # Private methods
     #
