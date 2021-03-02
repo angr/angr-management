@@ -7,10 +7,9 @@ import angr
 from angr import load_shellcode
 
 from angrmanagement.ui.widgets.qaddress_input import QAddressInput
-from common import setUp
+from common import setUp, test_location
 
 
-test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'binaries', 'tests')
 
 
 def test_address_conversion():
