@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, show=True):
         super(MainWindow, self).__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
@@ -96,13 +96,11 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
 
-        self.showMaximized()
-
-        # event handlers
-        self.windowHandle().screenChanged.connect(self.on_screen_changed)
-
         # I'm ready to show off!
-        self.show()
+        if show:
+            self.showMaximized()
+            self.windowHandle().screenChanged.connect(self.on_screen_changed)
+            self.show()
 
         self.status = "Ready."
 
@@ -262,6 +260,8 @@ class MainWindow(QMainWindow):
         def set_caption(**kwargs):
             if self.workspace.instance.project == None:
                 self.caption = ''
+            elif self.workspace.instance.project.filename is None:
+                self.caption = "Loaded from stream"
             else:
                 self.caption = os.path.basename(self.workspace.instance.project.filename)
         self.workspace.instance.project_container.am_subscribe(set_caption)
