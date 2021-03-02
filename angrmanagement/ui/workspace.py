@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 import logging
 import traceback
+import itertools
 
 from PySide2.QtCore import Qt, QSettings
 from PySide2.QtWidgets import QMessageBox
@@ -401,14 +402,23 @@ class Workspace:
 
                 return
 
+            varname_blacklist = {'UNK', 'null', "true", "false", }
+
             from collections import defaultdict
             varname_to_predicted = defaultdict(list)
             for idx, m in enumerate(re.finditer(r"@@(\S+)@@(\S+)@@", view.codegen.text)):
                 var_name = m.group(1)
-                varname_to_predicted[var_name].append(result['code'][0]['predictions'][0][idx])
+                prediction = result['code'][0]['predictions'][0][idx]
+                topk = prediction['top-k']
+                # remove variable names that we don't like
+                filtered_topk = [item for item in topk if item['pred_name'] not in varname_blacklist]
+                if filtered_topk:
+                    varname_to_predicted[var_name].extend(filtered_topk)
+
+            ctrs = defaultdict(itertools.count)
 
             # rename them all
-            used_names = set({'UNK'})
+            used_names = set()
             for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
                 m = re.match(r"@@(\S+)@@\S+@@", v.name)
                 if m is not None:
@@ -422,13 +432,10 @@ class Workspace:
                             break
                     else:
                         if predicted:
-                            v.name = predicted[0]['pred_name'] + "_" + randstr(2)
+                            v.name = predicted[0]['pred_name'] + "_" + str(next(ctrs[predicted[0]['pred_name']]))
                         else:
                             v.name = var_name  # restore the original name
-            view.codegen.regenerate_text()
-
-            # refresh the view
-            view.set_codegen(view.codegen)
+            view.refresh_text()
 
             import pprint
             pprint.pprint(dict(varname_to_predicted))
