@@ -1,8 +1,14 @@
+from typing import Callable, Optional, TYPE_CHECKING
+
 from PySide2.QtWidgets import QLineEdit
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QAddressInput(QLineEdit):
-    def __init__(self, textchanged_callback, workspace, parent=None, default=None):
+    def __init__(self, textchanged_callback: Optional[Callable], workspace: 'Workspace', parent=None,
+                 default: Optional[str]=None):
         super(QAddressInput, self).__init__(parent)
 
         self.workspace = workspace
