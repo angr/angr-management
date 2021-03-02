@@ -9,8 +9,9 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 import pyvex
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CStatement, CVariable, CFunctionCall
+from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall
 
+from ..dialogs.rename_variable import RenameVariable
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
@@ -46,12 +47,15 @@ class QCCodeEdit(api.CodeEdit):
 
         self.constant_actions = [ ]
         self.operator_actions = [ ]
+        self.variable_actions = [ ]
         self.selected_actions = [ ]
         self.call_actions = [ ]
         self.default_actions = [ ]
         self._initialize_context_menus()
 
         self._selected_node = None
+
+        self.action_rename_variable = None
 
         # but we don't need some of the actions
         self.remove_action(self.action_undo)
@@ -62,26 +66,29 @@ class QCCodeEdit(api.CodeEdit):
         self.remove_action(self.action_swap_line_up)
         self.remove_action(self.action_swap_line_down)
 
-    def get_context_menu(self):
-        if self.document() is None:
-            return QMenu()
-
+    def node_under_cursor(self):
         doc: 'QCodeDocument' = self.document()
         # determine the current status
         cursor = self.textCursor()
         pos = cursor.position()
         current_node = doc.get_node_at_position(pos)
         if current_node is not None:
-            under_cursor = current_node
+            return current_node
         else:
             # nothing is under the cursor
-            under_cursor = None
+            return None
+
+    def get_context_menu(self):
+        if self.document() is None:
+            return QMenu()
 
         # TODO: Anything in sel?
 
         # Get the highlighted item
+        under_cursor = self.node_under_cursor()
 
         mnu = QMenu()
+        self._selected_node = None
         if isinstance(under_cursor, CBinaryOp) \
                 and "vex_stmt_idx" in under_cursor.tags \
                 and "vex_block_addr" in under_cursor.tags:
@@ -94,6 +101,10 @@ class QCCodeEdit(api.CodeEdit):
             # function call in selection
             self._selected_node = under_cursor
             mnu.addActions(self.call_actions)
+        if isinstance(under_cursor, CVariable):
+            # variable in selection
+            self._selected_node = under_cursor
+            mnu.addActions(self.variable_actions)
         else:
             mnu.addActions(self.default_actions)
 
@@ -155,6 +166,11 @@ class QCCodeEdit(api.CodeEdit):
             # Switch back to disassembly view
             self.workspace.jump_to(asm_inst_addr)
             return True
+        elif key == Qt.Key_N:
+            node = self.node_under_cursor()
+            if isinstance(node, CVariable):
+                self.rename_variable(node)
+            return True
 
         super().keyPressEvent(key_event)
 
@@ -163,6 +179,17 @@ class QCCodeEdit(api.CodeEdit):
 
         self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
         self.syntax_highlighter.fold_detector = api.CharBasedFoldDetector()
+
+    #
+    # Actions
+    #
+
+    def rename_variable(self, cvariable=None):
+        v = cvariable if cvariable is not None else self._selected_node
+        if not isinstance(v, CVariable):
+            return
+        dialog = RenameVariable(code_view=self._code_view, cvariable=v)
+        dialog.exec_()
 
     @staticmethod
     def _separator():
@@ -178,8 +205,16 @@ class QCCodeEdit(api.CodeEdit):
             self.action_select_all,
         ]
 
+        self.action_rename_variable = QAction('Re&name variable', self)
+        self.action_rename_variable.triggered.connect(self.rename_variable)
+
+        self.variable_actions = [
+            self.action_rename_variable,
+        ]
+
         self.constant_actions += base_actions
         self.operator_actions += base_actions
+        self.variable_actions += base_actions
         self.call_actions += base_actions
         self.selected_actions += base_actions
         self.default_actions += base_actions

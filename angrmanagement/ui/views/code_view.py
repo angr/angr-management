@@ -94,6 +94,11 @@ class CodeView(BaseView):
             extra_selections.append(sel)
         self._textedit.setExtraSelections(extra_selections)
 
+    def refresh_text(self):
+        if self.codegen is not None:
+            self.codegen.regenerate_text()
+            self.set_codegen(self.codegen)
+
     #
     # Event callbacks
     #
