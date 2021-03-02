@@ -276,7 +276,7 @@ class Workspace:
 
         disasm_view = self._get_or_create_disassembly_view()
         if disasm_view.current_function is not None:
-            view.function = disasm_view.current_function
+            view.function = disasm_view.current_function.am_obj
 
         self.raise_view(view)
 

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Set
+from typing import Dict, Optional, Set, TYPE_CHECKING
 
 import networkx
 
@@ -12,6 +12,9 @@ from ..widgets.qproximity_graph import QProximityGraph
 from ..widgets.qproximitygraph_block import (QProximityGraphCallBlock, QProximityGraphStringBlock,
                                              QProximityGraphFunctionBlock, QProximityGraphBlock)
 
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.functions import Function
+
 
 class ProximityView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
@@ -20,7 +23,7 @@ class ProximityView(BaseView):
         self.caption = 'Proximity'
         self.workspace = workspace
 
-        self._function = None
+        self._function: Optional['Function'] = None
         self._expand_function_addrs: Set[int] = set()
 
         # UI widgets
@@ -45,12 +48,24 @@ class ProximityView(BaseView):
             self._expand_function_addrs.clear()
             self.run_analysis()
 
+    def get_decompilation(self):
+        # FIXME: Get rid of this fucker and replace it with the new decompilation manager
+        inst = self.workspace.instance
+        dec = inst.project.analyses.Decompiler(
+            self.function,
+            cfg=self.workspace.instance.cfg,
+        )
+        return dec
+
     def run_analysis(self):
+        dec = self.get_decompilation()
+
         inst = self.workspace.instance
         prox = inst.project.analyses.Proximity(
             self.function,
             inst.cfg,
             inst.kb.xrefs,
+            decompilation=dec,
             expand_funcs=self._expand_function_addrs,
         )
         self._proximity_graph = prox.graph

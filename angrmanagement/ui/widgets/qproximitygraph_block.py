@@ -1,14 +1,14 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Tuple, Type, Optional
 import logging
 
 import PySide2.QtWidgets
 from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
-from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode
+from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
+    IntegerProxiNode, UnknownProxiNode
 
 from ...config import Conf
-from ...utils import locate_function, get_string_for_display
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
@@ -31,6 +31,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
     FUNCTION_NODE_TEXT_COLOR = Qt.blue
     STRING_NODE_TEXT_COLOR = Qt.darkGreen
+    INTEGER_NODE_TEXT_COLOR = Qt.black
     CALL_NODE_TEXT_COLOR = Qt.darkBlue
     CALL_NODE_TEXT_COLOR_PLT = Qt.darkMagenta
     CALL_NODE_TEXT_COLOR_SIMPROC = Qt.darkMagenta
@@ -198,11 +199,26 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
 class QProximityGraphCallBlock(QProximityGraphBlock):
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: CallProxiNode):
-        self._text = None
+        self._func_name: str = None
+        self._args: List[Tuple[Type,str]] = None
         super().__init__(is_selected, proximity_view, node)
 
     def _init_widgets(self):
-        self._text = "%s()" % self._node.callee.name
+        self._node: CallProxiNode
+        self._func_name = self._node.callee.name
+        if self._node.args is not None:
+            self._args = [ self._argument_text(arg) for arg in self._node.args ]
+        else:
+            self._args = [ ]
+
+    def _argument_text(self, arg) -> Tuple[Type,str]:
+        if isinstance(arg, StringProxiNode):
+            return str, '"' + arg.content.decode("utf-8") + '"'
+        elif isinstance(arg, IntegerProxiNode):
+            return int, str(arg.value)
+        elif isinstance(arg, UnknownProxiNode):
+            return object, str(arg.dummy_value)
+        return object, "Unknown"
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.LeftButton and (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
@@ -220,19 +236,48 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         y = self.VERTICAL_PADDING
         if self._node.callee.is_simprocedure:
             pen_color = self.CALL_NODE_TEXT_COLOR_SIMPROC
-        if self._node.callee.is_plt:
+        elif self._node.callee.is_plt:
             pen_color = self.CALL_NODE_TEXT_COLOR_SIMPROC
         else:
             pen_color = self.CALL_NODE_TEXT_COLOR
+
         painter.setPen(pen_color)
-        painter.drawText(x, y + self._config.symexec_font_ascent, self._text)
+        # func name
+        painter.drawText(x, y + self._config.symexec_font_ascent, self._func_name)
+        x += self._config.symexec_font_metrics.width(self._func_name)
+        # left parenthesis
+        painter.drawText(x, y + self._config.symexec_font_ascent, "(")
+        x += self._config.symexec_font_metrics.width("(")
+
+        # arguments
+        for i, (type_, arg) in enumerate(self._args):
+            if type_ is str:
+                painter.setPen(self.STRING_NODE_TEXT_COLOR)
+            elif type_ is int:
+                painter.setPen(self.INTEGER_NODE_TEXT_COLOR)
+            else:
+                painter.setPen(self.CALL_NODE_TEXT_COLOR)
+            width = self._config.symexec_font_metrics.width(arg)
+            painter.drawText(x, y + self._config.symexec_font_ascent, arg)
+            x += width
+            if i != len(self._args) - 1:
+                painter.setPen(pen_color)
+                painter.drawText(x, y + self._config.symexec_font_ascent, ", ")
+                x += self._config.symexec_font_metrics.width(", ")
+
+        # right parenthesis
+        painter.setPen(pen_color)
+        painter.drawText(x, y + self._config.symexec_font_ascent, ")")
+        x += self._config.symexec_font_metrics.width(")")
 
     def _update_size(self):
         fm = self._config.symexec_font_metrics
         dpr = self.currentDevicePixelRatioF()
 
+        text = self._func_name + "(" + ", ".join(arg for _, arg in self._args) + ")"
+
         width_candidates = [
-            (self.HORIZONTAL_PADDING * 2 + self._config.symexec_font_metrics.width(self._text)) * dpr,
+            (self.HORIZONTAL_PADDING * 2 + self._config.symexec_font_metrics.width(text)) * dpr,
         ]
 
         self._width = max(width_candidates)
