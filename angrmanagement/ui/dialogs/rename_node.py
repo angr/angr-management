@@ -1,40 +1,40 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from PySide2.QtCore import Qt
+from angr.analyses.decompiler.structured_codegen import CVariable, CFunction, CConstruct
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.code_view import CodeView
-    from angr.analyses.decompiler.structured_codegen import CVariable
 
 
-class VariableNameBox(QLineEdit):
+class NodeNameBox(QLineEdit):
     def __init__(self, textchanged_callback, parent=None):
-        super(VariableNameBox, self).__init__(parent)
+        super().__init__(parent)
 
         self.textChanged.connect(textchanged_callback)
 
     @property
     def name(self):
         text = self.text()
-        if self._is_valid_variable_name(text):
+        if self._is_valid_node_name(text):
             return text.strip()
         return None
 
-    def _is_valid_variable_name(self, input):
-        return input and not (' ' in input.strip())
+    @staticmethod
+    def _is_valid_node_name(name):
+        return name and not (' ' in name.strip())
 
 
-class RenameVariable(QDialog):
-    def __init__(self, disasm_view: Optional['DisassemblyView']=None, code_view: Optional['CodeView']=None,
-                 cvariable: Optional['CVariable']=None, parent=None):
-        super(RenameVariable, self).__init__(parent)
+class RenameNode(QDialog):
+    def __init__(self, disasm_view: Optional['DisassemblyView'] = None, code_view: Optional['CodeView'] = None,
+                 node: Optional[CConstruct] = None, parent=None):
+        super().__init__(parent)
 
         # initialization
         self._disasm_view = disasm_view
         self._code_view = code_view
-        self._cvariable = cvariable
+        self._node = node
 
         self._name_box = None
         self._status_label = None
@@ -59,9 +59,14 @@ class RenameVariable(QDialog):
         name_label = QLabel(self)
         name_label.setText('New name')
 
-        name_box = VariableNameBox(self._on_name_changed, self)
-        if self._cvariable is not None and self._cvariable.unified_variable.name:
-            name_box.setText(self._cvariable.unified_variable.name)
+        name_box = NodeNameBox(self._on_name_changed, self)
+        if self._node is not None:
+            # parse node type, either a Function header or a Variable.
+            if isinstance(self._node, CVariable) and self._node.unified_variable.name:
+                name_box.setText(self._node.unified_variable.name)
+            elif isinstance(self._node, CFunction) and self._node.name:
+                name_box.setText(self._node.name)
+
             name_box.selectAll()
         self._name_box = name_box
 
@@ -76,7 +81,6 @@ class RenameVariable(QDialog):
         self._status_label = status_label
 
         # buttons
-
         ok_button = QPushButton(self)
         ok_button.setText('OK')
         ok_button.setEnabled(False)
@@ -97,7 +101,7 @@ class RenameVariable(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text):
+    def _on_name_changed(self, new_text):  # pylint:disable=unused-argument
 
         if self._name_box is None:
             # initialization is not done yet
@@ -117,13 +121,19 @@ class RenameVariable(QDialog):
         self._status_label.style().polish(self._status_label)
 
     def _on_ok_clicked(self):
-        varname = self._name_box.name
-        if varname is not None:
-            if self._code_view is not None and self._cvariable is not None:
-                self._cvariable.unified_variable.name = varname
+        node_name = self._name_box.name
+        if node_name is not None:
+            if self._code_view is not None and self._node is not None:
+                if isinstance(self._node, CVariable):
+                    self._node.unified_variable.name = node_name
+                elif isinstance(self._node, CFunction):
+                    code_kb = self._code_view.workspace.view_manager.first_view_in_category("pseudocode").codegen.kb
+                    code_kb.functions[self._node.name].name = node_name
+                    self._node.name = node_name
+                    self._node.demangled_name = node_name
+
                 self._code_view.refresh_text()
                 self.close()
 
     def _on_cancel_clicked(self):
-        self.cfg_args = None
         self.close()
