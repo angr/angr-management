@@ -1,5 +1,6 @@
 import unittest
 import os
+import sys
 
 from angrmanagement.ui.main_window import MainWindow
 from common import test_location, setUp
@@ -7,9 +8,10 @@ import angr
 
 
 class TestWorkflow(unittest.TestCase):
-    def test_workflow(self):
+    def setUp(self):
         setUp()
 
+    def test_workflow(self):
         main = MainWindow(show=False)
         proj = angr.Project(os.path.join(test_location, "x86_64", "true"), auto_load_libs=False)
         main.workspace.instance.project.am_obj = proj
@@ -18,4 +20,4 @@ class TestWorkflow(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(argv=sys.argv)
