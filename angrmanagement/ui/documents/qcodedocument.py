@@ -1,9 +1,8 @@
-
 from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
 from angr.analyses.decompiler.structured_codegen import CConstant, CVariable, CFunctionCall, StructuredCodeGenerator, \
-    CStructField, CStatement, CExpression, CClosingObject, CFunction
+    CStructField, CClosingObject, CFunction
 
 from ...config import Conf
 
@@ -65,43 +64,45 @@ class QCodeDocument(QTextDocument):
         :return:
         """
 
-        if self._codegen is not None and self._codegen.stmt_posmap is not None:
-            n = self._codegen.stmt_posmap.get_node(pos)
+        if self._codegen is None or self._codegen.stmt_posmap is None:
+            return None
 
-            # if we can't find a node at the current position, start the algorithm search
-            # from the left and right iteratively.
-            if n is None:
+        n = self._codegen.stmt_posmap.get_node(pos)
 
-                # special case where cursor is off the screen, reposition to before the end
-                if pos >= len(self._codegen.text) - 2:
-                    l = len(self._codegen.text) - 4
-                else:
-                    l = pos-1
+        # if we can't find a node at the current position, start the algorithm search
+        # from the left and right iteratively.
+        if n is None:
 
-                r = pos+1
-                inc_l = not self._pos_is_newline_or_oob(l)
-                inc_r = not self._pos_is_newline_or_oob(r)
+            # special case where cursor is off the screen, reposition to before the end
+            if pos >= len(self._codegen.text) - 2:
+                l = len(self._codegen.text) - 4
+            else:
+                l = pos-1
 
-                # iterate until we hit start or end of document
-                while inc_l or inc_r:
+            r = pos+1
+            inc_l = not self._pos_is_newline_or_oob(l)
+            inc_r = not self._pos_is_newline_or_oob(r)
 
-                    # continue left search if we are still at a valid char
-                    if inc_l:
-                        n = self._codegen.stmt_posmap.get_node(l)
-                        if n is not None:
-                            break
-                        l -= 1
-                        inc_l = not self._pos_is_newline_or_oob(l)
+            # iterate until we hit start or end of document
+            while inc_l or inc_r:
 
-                    # continue right search if we are still at a valid char
-                    if inc_r:
-                        n = self._codegen.stmt_posmap.get_node(r)
-                        if n is not None:
-                            break
-                        r += 1
-                        inc_r = not self._pos_is_newline_or_oob(r)
+                # continue left search if we are still at a valid char
+                if inc_l:
+                    n = self._codegen.stmt_posmap.get_node(l)
+                    if n is not None:
+                        break
+                    l -= 1
+                    inc_l = not self._pos_is_newline_or_oob(l)
 
-            return n
+                # continue right search if we are still at a valid char
+                if inc_r:
+                    n = self._codegen.stmt_posmap.get_node(r)
+                    if n is not None:
+                        break
+                    r += 1
+                    inc_r = not self._pos_is_newline_or_oob(r)
+
+        return n
 
     def find_closest_node_pos(self, ins_addr):
         return self._codegen.insmap.get_nearest_pos(ins_addr)
@@ -177,5 +178,3 @@ class QCodeDocument(QTextDocument):
             return True
 
         return self._codegen.text[pos] == "\n"
-
-

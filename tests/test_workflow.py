@@ -6,6 +6,7 @@ from angrmanagement.ui.main_window import MainWindow
 from common import test_location, setUp
 import angr
 
+# pylint: disable=no-self-use
 
 class TestWorkflow(unittest.TestCase):
     def setUp(self):

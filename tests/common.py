@@ -14,4 +14,3 @@ def setUp():
     if app is None:
         app = QApplication([])
         Conf.init_font_config()
-

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class Instance:
     project: Union[angr.Project, ObjectContainer]
 
-    def __init__(self, project=None):
+    def __init__(self):
         # delayed import
         from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
 
@@ -130,7 +130,7 @@ class Instance:
             self._container_defaults[name] = (default_val_func, ty)
             self.extra_containers[name] = ObjectContainer(default_val_func(), description)
 
-    def initialize(self, initialized=False, cfg_args=None, **kwargs):
+    def initialize(self, initialized=False, cfg_args=None, **kwargs):  # pylint: disable=unused-argument
         if self.project.am_none:
             return
 
@@ -214,7 +214,7 @@ class Instance:
 
             try:
                 result = job.run(self)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 self.workspace.log('Exception while running job "%s":' % job.name)
                 self.workspace.log(e)
             else:

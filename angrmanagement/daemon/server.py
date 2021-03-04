@@ -20,9 +20,9 @@ SHA256toCONN = { }
 
 
 class ManagementService(rpyc.Service):
+    _conn = None
 
     def _get_conn(self, md5, sha256):
-
         if md5 in MD5toCONN:
             conn = MD5toCONN[md5]
         elif sha256 in SHA256toCONN:
@@ -54,12 +54,11 @@ class ManagementService(rpyc.Service):
         # default to using daemon
         # if the user chooses to use angr URL scheme to load a binary, they are more likely to keep interacting with
         # this binary using angr URL scheme, which requires the angr management instance to run in with-daemon mode.
-        proc = subprocess.Popen(apppath + ["-d", bin_path], shell=shell, stdin=None, stdout=None,
+        subprocess.Popen(apppath + ["-d", bin_path], shell=shell, stdin=None, stdout=None,
                                 stderr=None,
                                 close_fds=True, **flags)
 
     def exposed_jumpto(self, addr, symbol, md5, sha256):
-
         conn = self._get_conn(md5, sha256)
         conn.root.jumpto(addr, symbol)
 
