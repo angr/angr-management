@@ -71,22 +71,8 @@ class ManagementService(rpyc.Service):
         SHA256toCONN[sha256] = self._conn
 
     def exposed_commentat(self, addr, comment, md5, sha256):
-        """
-
-        :param addr:
-        :param str comment:
-        :param md5:
-        :param sha256:
-        :return:
-        """
-
         conn = self._get_conn(md5, sha256)
         conn.root.commentat(addr, comment)
-
-    def exposed_openbitmap(self, bitmap_path, base, md5, sha256):
-
-        conn = self._get_conn(md5, sha256)
-        conn.root.openbitmap(bitmap_path, base)
 
     def exposed_exit(self):
         pass

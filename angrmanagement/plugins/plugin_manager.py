@@ -55,12 +55,15 @@ class PluginManager:
                     plugin_or_exception: Type[BasePlugin]
                     plugin_conf_key = "plugin_%s_enabled" % plugin_or_exception.__name__
 
+                    # see if we can't load this plugin because headless mode
+                    if self.workspace is None and plugin_or_exception.REQUIRE_WORKSPACE:
+                        # still note that we can use the url handlers
+                        for action in plugin_or_exception.URL_ACTIONS:
+                            register_url_action(action, UrlActionBinaryAware)
                     # see if the plugin is enabled or not
-                    if not any(dont in repr(plugin_or_exception) for dont in blacklist) and \
+                    elif not any(dont in repr(plugin_or_exception) for dont in blacklist) and \
                             not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False):
-                        if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
-                                or not plugin_or_exception.REQUIRE_WORKSPACE:
-                            self.activate_plugin(plugin_or_exception)
+                        self.activate_plugin(plugin_or_exception)
                     else:
                         plugin_or_exception: Type[BasePlugin]
                         if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \

@@ -6,6 +6,8 @@ from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
 from angrmanagement.plugins.trace_viewer.qtrace_viewer import QTraceViewer
+from ...logic import GlobalInfo
+from ...logic.threads import gui_thread_schedule_async
 
 from ...utils.io import isurl, download_url
 from ...errors import InvalidURLError, UnexpectedStatusCodeError
@@ -59,6 +61,23 @@ class TraceViewer(BasePlugin):
         self.workspace.view_manager.first_view_in_category('disassembly').redraw_current_graph()
         # refresh function table
         self.workspace.view_manager.first_view_in_category('functions').refresh()
+
+    URL_ACTIONS = ['openbitmap']
+
+    def handle_url_action(self, action, kwargs):
+        if action == 'openbitmap':
+            try:
+                base = int(kwargs['base'], 16)
+            except (ValueError, KeyError):
+                base = None
+            gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
+            gui_thread_schedule_async(self.open_bitmap_multi_trace,
+                                      args=(kwargs['path'],),
+                                      kwargs={
+                                          'base_addr': base,
+                                      })
+        else:
+            raise ValueError("Trace plugin cannot handle url action " + action)
 
     #
     # features for the disassembly view
