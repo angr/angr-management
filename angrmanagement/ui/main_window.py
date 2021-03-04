@@ -222,6 +222,7 @@ class MainWindow(QMainWindow):
         self._help_menu = HelpMenu(self)
         self._plugin_menu = PluginMenu(self)
 
+        #self.menuBar().setNativeMenuBar(False)
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
         self.menuBar().addMenu(self._analyze_menu.qmenu())

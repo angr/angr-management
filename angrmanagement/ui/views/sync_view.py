@@ -143,6 +143,14 @@ class SyncView(BaseView):
                     comments[ins_addr] = kb.comments[ins_addr]
         kb.sync.push_comments(comments)
 
+        # TODO: update this kb usage after decompiler has an API
+        # stack_variables
+        var_kb = self.workspace.view_manager.first_view_in_category("pseudocode").codegen._variable_kb
+        stack_vars = var_kb.unified_variables
+        for stack_var in stack_vars:
+            #XXX: finish this
+            pass
+
         # TODO: Fix this
         kb.sync.commit()
 
