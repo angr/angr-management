@@ -26,8 +26,6 @@ class TraceViewer(BasePlugin):
         self.workspace.instance.register_container('multi_trace', lambda: None, Optional[MultiTrace],
                                                    'The current set of multiple traces')
 
-        self.workspace.instance.register_method('open_bitmap_multi_trace', self.open_bitmap_multi_trace)
-
         # Register event callbacks
         self.trace.am_subscribe(self._on_trace_updated)
         self.multi_trace.am_subscribe(self._on_trace_updated)
