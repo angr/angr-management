@@ -9,9 +9,9 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 import pyvex
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall
+from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
 
-from ..dialogs.rename_variable import RenameVariable
+from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
@@ -51,11 +51,12 @@ class QCCodeEdit(api.CodeEdit):
         self.selected_actions = [ ]
         self.call_actions = [ ]
         self.default_actions = [ ]
+        self.function_name_actions = []
         self._initialize_context_menus()
 
         self._selected_node = None
 
-        self.action_rename_variable = None
+        self.action_rename_node = None
 
         # but we don't need some of the actions
         self.remove_action(self.action_undo)
@@ -105,6 +106,11 @@ class QCCodeEdit(api.CodeEdit):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
+        if isinstance(under_cursor, CFunction):
+            # decompiled function name in selection
+            self._selected_node = under_cursor
+            mnu.addActions(self.function_name_actions)
+
         else:
             mnu.addActions(self.default_actions)
 
@@ -168,8 +174,8 @@ class QCCodeEdit(api.CodeEdit):
             return True
         elif key == Qt.Key_N:
             node = self.node_under_cursor()
-            if isinstance(node, CVariable):
-                self.rename_variable(node)
+            if isinstance(node, (CVariable, CFunction)):
+                self.rename_node(node)
             return True
 
         super().keyPressEvent(key_event)
@@ -184,11 +190,11 @@ class QCCodeEdit(api.CodeEdit):
     # Actions
     #
 
-    def rename_variable(self, cvariable=None):
-        v = cvariable if cvariable is not None else self._selected_node
-        if not isinstance(v, CVariable):
+    def rename_node(self, node=None):
+        n = node if node is not None else self._selected_node
+        if not isinstance(n, (CVariable, CFunction)):
             return
-        dialog = RenameVariable(code_view=self._code_view, cvariable=v)
+        dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()
 
     @staticmethod
@@ -205,16 +211,21 @@ class QCCodeEdit(api.CodeEdit):
             self.action_select_all,
         ]
 
-        self.action_rename_variable = QAction('Re&name variable', self)
-        self.action_rename_variable.triggered.connect(self.rename_variable)
+        self.action_rename_node = QAction('Re&name variable', self)
+        self.action_rename_node.triggered.connect(self.rename_node)
 
         self.variable_actions = [
-            self.action_rename_variable,
+            self.action_rename_node,
+        ]
+
+        self.function_name_actions = [
+            self.action_rename_node,
         ]
 
         self.constant_actions += base_actions
         self.operator_actions += base_actions
         self.variable_actions += base_actions
+        self.function_name_actions += base_actions
         self.call_actions += base_actions
         self.selected_actions += base_actions
         self.default_actions += base_actions
