@@ -18,6 +18,7 @@ class ConsoleView(BaseView):
         self._ipython_widget = None
 
         self._init_widgets()
+        self.reload()
 
     def reload(self):
 

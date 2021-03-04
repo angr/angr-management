@@ -384,7 +384,7 @@ class MainWindow(QMainWindow):
             return
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
         self.workspace.instance.add_job(LoadTargetJob(target))
-        self.workspace.instance.set_image(img_name)
+        self.workspace.instance.img_name = img_name
 
     def load_file(self, file_path):
 

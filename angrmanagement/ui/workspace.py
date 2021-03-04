@@ -392,6 +392,8 @@ class Workspace:
     # UI-related Callback Setters & Manipulation
     #
 
+    # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
+
     from typing import Callable
     from angr.knowledge_plugins.functions.function import Function as angrFunc
     from .menus.disasm_insn_context_menu import DisasmInsnContextMenu

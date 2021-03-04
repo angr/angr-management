@@ -130,14 +130,6 @@ class Instance:
             self._container_defaults[name] = (default_val_func, ty)
             self.extra_containers[name] = ObjectContainer(default_val_func(), description)
 
-    def set_image(self, image):
-        self.img_name = image
-
-    def _reset_containers(self, **kwargs):
-        for name in self.extra_containers:
-            self.extra_containers[name].am_obj = self._container_defaults[name][0]()
-            self.extra_containers[name].am_event(**kwargs)
-
     def initialize(self, initialized=False, cfg_args=None, **kwargs):
         if self.project.am_none:
             return
@@ -244,3 +236,8 @@ class Instance:
             time.sleep(0.3)
             if cfg_job not in self.jobs:
                 break
+
+    def _reset_containers(self, **kwargs):
+        for name in self.extra_containers:
+            self.extra_containers[name].am_obj = self._container_defaults[name][0]()
+            self.extra_containers[name].am_event(**kwargs)
