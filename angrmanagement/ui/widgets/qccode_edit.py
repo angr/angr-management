@@ -8,6 +8,7 @@ from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
 
+import pyvex
 from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
 
 from ..dialogs.rename_node import RenameNode

@@ -1,6 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
+from PySide2.QtCore import Qt
 from angr.analyses.decompiler.structured_codegen import CVariable, CFunction, CConstruct
 
 if TYPE_CHECKING:
@@ -11,6 +12,7 @@ if TYPE_CHECKING:
 class NodeNameBox(QLineEdit):
     def __init__(self, textchanged_callback, parent=None):
         super().__init__(parent)
+        super(NodeNameBox, self).__init__(parent)
 
         self.textChanged.connect(textchanged_callback)
 
@@ -21,15 +23,25 @@ class NodeNameBox(QLineEdit):
             return text.strip()
         return None
 
+<<<<<<< HEAD:angrmanagement/ui/dialogs/rename_node.py
     @staticmethod
     def _is_valid_node_name(name):
         return name and not (' ' in name.strip())
+=======
+    def _is_valid_node_name(self, input):
+        return input and not (' ' in input.strip())
+>>>>>>> added function renaming:angrmanagement/ui/dialogs/rename_variable.py
 
 
 class RenameNode(QDialog):
     def __init__(self, disasm_view: Optional['DisassemblyView'] = None, code_view: Optional['CodeView'] = None,
+<<<<<<< HEAD:angrmanagement/ui/dialogs/rename_node.py
                  node: Optional[CConstruct] = None, parent=None):
         super().__init__(parent)
+=======
+                 node: Optional['CConstruct'] = None, parent=None):
+        super(RenameNode, self).__init__(parent)
+>>>>>>> added function renaming:angrmanagement/ui/dialogs/rename_variable.py
 
         # initialization
         self._disasm_view = disasm_view
