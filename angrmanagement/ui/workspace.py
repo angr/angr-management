@@ -38,6 +38,7 @@ class Workspace:
         self.plugins: PluginManager = PluginManager(self)
 
         self.current_screen = ObjectContainer(None, name="current_screen")
+        self.console_view = ConsoleView(self, 'bottom')
 
         #
         # Initialize font configurations
@@ -58,7 +59,7 @@ class Workspace:
             StringsView(self, 'center'),
             PatchesView(self, 'center'),
             InteractionView(self, 'center'),
-            ConsoleView(self, 'bottom'),
+            self.console_view,
         ]
 
         if has_binsync():
