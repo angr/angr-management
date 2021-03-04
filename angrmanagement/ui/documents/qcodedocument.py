@@ -3,7 +3,7 @@ from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
 from angr.analyses.decompiler.structured_codegen import CConstant, CVariable, CFunctionCall, StructuredCodeGenerator, \
-    CStructField, CStatement, CExpression, CClosingObject
+    CStructField, CStatement, CExpression, CClosingObject, CFunction
 
 from ...config import Conf
 
@@ -138,6 +138,12 @@ class QCodeDocument(QTextDocument):
                 return [ ]
 
         elif isinstance(node, CClosingObject):
+            starts = self._codegen.nodemap.get(node, None)
+
+            if starts is None:
+                return [ ]
+
+        elif isinstance(node, CFunction):
             starts = self._codegen.nodemap.get(node, None)
 
             if starts is None:
