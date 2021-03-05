@@ -54,34 +54,34 @@ class SyncView(BaseView):
         # operations
 
         # pull function button
-        pullfunc_btn = QPushButton(self)
-        pullfunc_btn.setText("Pull func")
-        pullfunc_btn.setToolTip("Pull current function from the selected user")
-        pullfunc_btn.clicked.connect(self._on_pullfunc_clicked)
+        #pullfunc_btn = QPushButton(self)
+        #pullfunc_btn.setText("Pull func")
+        #pullfunc_btn.setToolTip("Pull current function from the selected user")
+        #pullfunc_btn.clicked.connect(self._on_pullfunc_clicked)
 
-        # push function button
-        pushfunc_btn = QPushButton()
-        pushfunc_btn.setText('Push func')
-        pushfunc_btn.setToolTip("Push current function to the repo")
-        pushfunc_btn.clicked.connect(self._on_pushfunc_clicked)
+        ## push function button
+        #pushfunc_btn = QPushButton()
+        #pushfunc_btn.setText('Push func')
+        #pushfunc_btn.setToolTip("Push current function to the repo")
+        #pushfunc_btn.clicked.connect(self._on_pushfunc_clicked)
 
-        # pull patches button
-        pullpatches_btn = QPushButton(self)
-        pullpatches_btn.setText("Pull patches")
-        pullpatches_btn.setToolTip("Pull all patches from the selected user")
-        pullpatches_btn.clicked.connect(self._on_pullpatches_clicked)
+        ## pull patches button
+        #pullpatches_btn = QPushButton(self)
+        #pullpatches_btn.setText("Pull patches")
+        #pullpatches_btn.setToolTip("Pull all patches from the selected user")
+        #pullpatches_btn.clicked.connect(self._on_pullpatches_clicked)
 
-        actions_box = QGroupBox(self)
-        actions_box.setTitle("Actions")
-        actions_layout = QHBoxLayout()
-        actions_layout.addWidget(pullfunc_btn)
-        actions_layout.addWidget(pushfunc_btn)
-        actions_layout.addWidget(pullpatches_btn)
-        actions_box.setLayout(actions_layout)
+        ##actions_box = QGroupBox(self)
+        ##actions_box.setTitle("Actions")
+        ##actions_layout = QHBoxLayout()
+        ##actions_layout.addWidget(pullfunc_btn)
+        ##actions_layout.addWidget(pushfunc_btn)
+        ##actions_layout.addWidget(pullpatches_btn)
+        ##actions_box.setLayout(actions_layout)
 
         team_layout = QVBoxLayout()
         team_layout.addWidget(self._team_table)
-        team_layout.addWidget(actions_box)
+        #team_layout.addWidget(actions_box)
         team_box.setLayout(team_layout)
 
         main_layout = QVBoxLayout()

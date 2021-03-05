@@ -1,11 +1,19 @@
 import os
 import string
+from functools import partial
 
 from angr.analyses.code_tagging import CodeTags
+from angr.sim_variable import SimStackVariable
+
+try:
+    import binsync
+    binsync_available = True
+except ImportError:
+    binsync_available = False
 
 from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit, \
-    QStyledItemDelegate
-from PySide2.QtGui import QBrush, QColor
+    QStyledItemDelegate, QMenu, QAction
+from PySide2.QtGui import QBrush, QColor, QCursor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
 from ...data.instance import ObjectContainer
@@ -281,6 +289,110 @@ class QFunctionTableView(QTableView):
         # show the filtering text box
         self._function_table.show_filter_box(prefix=text)
         return True
+
+    def _create_pull_options(self):
+        self.pull_menu.clear()
+        self.auto_pull_menu.clear()
+
+    def contextMenuEvent(self, event):
+        # get selected function
+        row = self.currentIndex().row()
+        self.curr_func = self._model.func_list[row]
+
+        # create the menu
+        self.menu = QMenu(self)
+        pushAction = QAction('Push', self)
+        pushAction.triggered.connect(self.pushFunction)
+        self.menu.addAction(pushAction)
+        self.menu.popup(QCursor.pos())
+
+        # dynamically build the pull list
+        self.pull_menu = self.menu.addMenu("Pull...")
+        self.auto_pull_menu = self.menu.addMenu("Auto Pull...")
+        if binsync_available:
+            for user in self.workspace.instance.sync.users:
+                self.pull_menu.addAction(user.name, self.pullFunction)
+                self.pull_menu.actions()[-1].setCheckable(True)
+                self.auto_pull_menu.addAction(user.name, self.autoPullFunction)
+                self.pull_menu.actions()[-1].setCheckable(True)
+
+
+    def pushFunction(self):
+        # set the fuction
+
+        # function
+        func = self.curr_func
+        kb = self.workspace.instance.project.kb
+        kb.sync.push_function(func)
+
+        # comments
+        comments = { }
+        for block in func.blocks:
+            for ins_addr in block.instruction_addrs:
+                if ins_addr in kb.comments:
+                    comments[ins_addr] = kb.comments[ins_addr]
+        kb.sync.push_comments(comments)
+
+        # stack_variables
+        # TODO: update this kb usage after decompiler has an API
+        code_view = self.workspace._get_or_create_pseudocode_view()
+        var_manager = code_view.codegen._variable_kb.variables[func.addr]
+        sim_vars = var_manager._unified_variables
+        stack_vars = set([var for var in sim_vars if isinstance(var, SimStackVariable)])
+        kb.sync.push_stack_variables(stack_vars, var_manager)
+
+        # TODO: Fix this
+        kb.sync.commit()
+        print("pushed")
+
+    def pullFunction(self):
+        user_action = self.sender()
+        user = user_action.text()
+
+        # mark the action
+        for action in self.pull_menu.actions():
+            if action.text() == user:
+                action.setChecked(True)
+
+        self._pull_func(user)
+
+    def autoPullFunction(self):
+        pass
+
+    def _pull_func(self, user):
+        current_function = self.curr_func
+
+        disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
+        code_view = self.workspace._get_or_create_pseudocode_view()
+        func_table_view = self.workspace.view_manager.first_view_in_category("functions")
+
+        # sync the function
+        self.workspace.instance.project.kb.sync.fill_function(current_function, user=user)
+        code_view.codegen.cfunc.name = self.workspace.instance.kb.functions[current_function.addr].name
+        code_view.codegen.cfunc.demangled_name = code_view.codegen.cfunc.name
+
+        # TODO move this into angr once we have a decompiler API
+        # get stack variables and update internal kb
+        var_manager = code_view.codegen._variable_kb.variables[current_function.addr]
+        current_sim_vars = var_manager._unified_variables
+        current_stack_vars = set([var for var in current_sim_vars if isinstance(var, SimStackVariable)])
+        stack_vars = self.workspace.instance.project.kb.sync.pull_stack_variables(current_function.addr, user=user)
+        stack_var_dict = {s[0]: s[1] for s in stack_vars}
+        for var in current_stack_vars:
+            if isinstance(var, SimStackVariable):
+                offset = var.offset
+                try:
+                    new_var = stack_var_dict[offset]
+                except:
+                    continue
+                # overwrite the variable with the new var
+                var.name = new_var.name
+
+        # trigger a refresh
+        disasm_view.refresh()
+        code_view.refresh_text()
+        func_table_view.refresh()
+
 
 
 class QFunctionTableFilterBox(QLineEdit):
