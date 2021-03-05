@@ -290,10 +290,6 @@ class QFunctionTableView(QTableView):
         self._function_table.show_filter_box(prefix=text)
         return True
 
-    def _create_pull_options(self):
-        self.pull_menu.clear()
-        self.auto_pull_menu.clear()
-
     def contextMenuEvent(self, event):
         # get selected function
         row = self.currentIndex().row()
@@ -304,22 +300,27 @@ class QFunctionTableView(QTableView):
         pushAction = QAction('Push', self)
         pushAction.triggered.connect(self.pushFunction)
         self.menu.addAction(pushAction)
+
+        # open the menu
         self.menu.popup(QCursor.pos())
 
-        # dynamically build the pull list
+        # dynamically build the pull & patch list
         self.pull_menu = self.menu.addMenu("Pull...")
         self.auto_pull_menu = self.menu.addMenu("Auto Pull...")
+        self.patch_menu = self.menu.addMenu("Pull Patches...")
         if binsync_available:
+            # add the users for each submenu
             for user in self.workspace.instance.sync.users:
+                # pulling
                 self.pull_menu.addAction(user.name, self.pullFunction)
-                self.pull_menu.actions()[-1].setCheckable(True)
-                self.auto_pull_menu.addAction(user.name, self.autoPullFunction)
-                self.pull_menu.actions()[-1].setCheckable(True)
 
+                # auto pulling
+                self.auto_pull_menu.addAction(user.name, self.autoPullFunction)
+
+                # patching
+                self.patch_menu.addAction(user.name, self.pullPatches)
 
     def pushFunction(self):
-        # set the fuction
-
         # function
         func = self.curr_func
         kb = self.workspace.instance.project.kb
@@ -352,12 +353,46 @@ class QFunctionTableView(QTableView):
         # mark the action
         for action in self.pull_menu.actions():
             if action.text() == user:
+                print("set true")
                 action.setChecked(True)
 
         self._pull_func(user)
 
     def autoPullFunction(self):
+        user_action = self.sender()
+        user = user_action.text()
+
+        # mark the action
+        for action in self.pull_menu.actions():
+            if action.text() == user:
+                print("set true")
+                action.setChecked(True)
+
+        # TODO: implement auto-pulling
         pass
+
+    def pullPatches(self):
+        user_action = self.sender()
+        user = user_action.text()
+
+        kb = self.workspace.instance.project.kb
+        # currently we assume all patches are against the main object
+        main_object = self.workspace.instance.project.loader.main_object
+        patches = kb.sync.pull_patches(user=user)
+
+        patch_added = False
+        for patch in patches:
+            addr = main_object.mapped_base + patch.offset
+            kb.patches.add_patch(addr, patch.new_bytes)
+            patch_added = True
+
+        if patch_added:
+            # trigger a refresh
+            self.workspace.instance.patches.am_event()
+
+            # re-generate the CFG
+            # TODO: CFG refinement
+            self.workspace.instance.generate_cfg()
 
     def _pull_func(self, user):
         current_function = self.curr_func
@@ -392,7 +427,6 @@ class QFunctionTableView(QTableView):
         disasm_view.refresh()
         code_view.refresh_text()
         func_table_view.refresh()
-
 
 
 class QFunctionTableFilterBox(QLineEdit):
