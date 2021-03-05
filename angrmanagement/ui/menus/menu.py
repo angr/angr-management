@@ -74,7 +74,7 @@ class Menu:
             menu = QMenu(self.caption)
 
         for entry in self.entries + extra_entries:
-            self._translate_element(menu, entry)
+            self.translate_element(menu, entry)
 
         # in order to cache the result, must not have extra entries
         if not extra_entries:
@@ -82,7 +82,8 @@ class Menu:
 
         return menu
 
-    def _translate_element(self, menu, entry):
+    @staticmethod
+    def translate_element(menu, entry):
         if isinstance(entry, MenuEntry):
             action = menu.addAction(entry.caption, entry.action)  # type: QAction
             if entry.shortcut is not None:
@@ -101,7 +102,7 @@ class Menu:
     def add(self, action):
         self.entries.append(action)
         if self._qmenu is not None:
-            self._translate_element(self._qmenu, action)
+            self.translate_element(self._qmenu, action)
 
     def remove(self, action):
         self.entries.remove(action)

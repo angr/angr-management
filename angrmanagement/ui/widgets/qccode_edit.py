@@ -12,9 +12,11 @@ from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CF
 
 from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
+from ..menus.menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
     from ..documents.qcodedocument import QCodeDocument
+    from ..views.code_view import CodeView
 
 
 class ColorSchemeIDA(api.ColorScheme):
@@ -34,7 +36,7 @@ class QCCodeEdit(api.CodeEdit):
     def __init__(self, code_view):
         super().__init__(create_default_actions=True)
 
-        self._code_view = code_view
+        self._code_view: 'CodeView' = code_view
 
         self.panels.append(panels.LineNumberPanel())
         self.panels.append(panels.FoldingPanel())
@@ -112,6 +114,9 @@ class QCCodeEdit(api.CodeEdit):
 
         else:
             mnu.addActions(self.default_actions)
+
+        for entry in self.workspace.plugins.build_context_menu_node(under_cursor):
+            Menu.translate_element(mnu, MenuSeparator() if entry is None else MenuEntry(*entry))
 
         return mnu
 
