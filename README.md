@@ -68,3 +68,7 @@ PLUGIN_CLS_NAME = TestPlugin.__name__
 ```
 
 This also allows you to import a plugin class from another package entirely. The plugin itself should inherit from `BasePlugin`. Callbacks and events are a work in progress, so the API is subject to change. See `TestPlugin` for an example of a multithreaded plugin sample.
+
+## Scripting
+
+Take a look at https://docs.angr.io/extending-angr/angr_management !
