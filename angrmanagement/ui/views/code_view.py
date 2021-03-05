@@ -167,3 +167,5 @@ class CodeView(BaseView):
         layout.addWidget(window)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        self.workspace.plugins.instrument_code_view(self)

@@ -108,6 +108,8 @@ class PluginManager:
 
                 for dview in self.workspace.view_manager.views_by_category['disassembly']:
                     plugin.instrument_disassembly_view(dview)
+                for cview in self.workspace.view_manager.views_by_category['code']:
+                    plugin.instrument_code_view(cview)
 
                 for action in plugin_cls.URL_ACTIONS:
                     DaemonClient.register_handler(action,
@@ -225,6 +227,10 @@ class PluginManager:
 
     def instrument_disassembly_view(self, dview):
         for _ in self._dispatch(BasePlugin.instrument_disassembly_view, False, dview):
+            pass
+
+    def instrument_code_view(self, cview):
+        for _ in self._dispatch(BasePlugin.instrument_code_view, False, cview):
             pass
 
     def handle_click_insn(self, qinsn, event):
