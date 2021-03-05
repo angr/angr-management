@@ -360,6 +360,7 @@ class Workspace:
             import json
             import requests
             import re
+            import string
 
             def randstr(n=8):
                 import random
@@ -367,7 +368,8 @@ class Workspace:
                 return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
 
             for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
-                v.name = "@@%s@@%s@@" % (v.name, randstr())
+                if not v.renamed:
+                    v.name = "@@%s@@%s@@" % (v.name, randstr())
 
             view.codegen.regenerate_text()
             d = {
@@ -425,6 +427,7 @@ class Workspace:
                     var_name = m.group(1)
                     predicted = varname_to_predicted[var_name]
                     predicted = sorted(predicted, key=lambda x: x['confidence'], reverse=True)
+                    v.candidate_names = set([pred['pred_name'] for pred in predicted])
                     for pred in predicted:
                         if pred['pred_name'] not in used_names:
                             v.name = pred['pred_name']

@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 from collections import OrderedDict
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
 if TYPE_CHECKING:
@@ -37,12 +37,22 @@ class RenameNode(QDialog):
         self._name_box: NodeNameBox = None
         self._status_label = None
         self._ok_button: QPushButton = None
+        self._suggestion_box: QListWidget = None
 
         self.setWindowTitle('Rename Variable')
 
         self.main_layout = QVBoxLayout()
 
         self._init_widgets()
+
+        if not isinstance(self._node, CVariable):
+            self._suggestion_box.setEnabled(False)
+        else:
+            if not self._node.unified_variable.candidate_names:
+                self._suggestion_box.setEnabled(False)
+            else:
+                for candidate in self._node.unified_variable.candidate_names:
+                    self._suggestion_box.addItem(candidate)
 
         self.setLayout(self.main_layout)
 
@@ -78,6 +88,17 @@ class RenameNode(QDialog):
         label_layout.addWidget(name_label)
         label_layout.addWidget(name_box)
         self.main_layout.addLayout(label_layout)
+
+        # suggestions
+        suggest_label = QLabel(self)
+        suggest_label.setText("Suggestions")
+
+        suggestion_box = QListWidget()
+        self._suggestion_box = suggestion_box
+        suggestion_layout = QHBoxLayout()
+        suggestion_layout.addWidget(suggest_label)
+        suggestion_layout.addWidget(suggestion_box)
+        self.main_layout.addLayout(suggestion_layout)
 
         # status label
         status_label = QLabel(self)
@@ -151,9 +172,11 @@ class RenameNode(QDialog):
                     # callback not supported
                     self._code_view.workspace.instance.kb.labels[self._node.variable.addr] = node_name
                     self._node.variable.name = node_name
+                    self._node.variable.renamed = True
                 elif isinstance(self._node, CVariable):
                     # function argument, probably?
                     self._node.variable.name = node_name
+                    self._node.variable.renamed = True
                 elif isinstance(self._node, CFunction):
                     # callback
                     workspace.plugins.handle_function_rename(code_kb.functions.get_by_addr(self._node.addr),
