@@ -108,7 +108,7 @@ class PluginManager:
 
                 for dview in self.workspace.view_manager.views_by_category['disassembly']:
                     plugin.instrument_disassembly_view(dview)
-                for cview in self.workspace.view_manager.views_by_category['code']:
+                for cview in self.workspace.view_manager.views_by_category['pseudocode']:
                     plugin.instrument_code_view(cview)
 
                 for action in plugin_cls.URL_ACTIONS:
