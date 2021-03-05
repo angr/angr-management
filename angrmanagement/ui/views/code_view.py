@@ -21,6 +21,7 @@ class CodeView(BaseView):
 
         self._codeedit = None
         self.codegen = None
+        self.saved_codegen = {}
         self._textedit: QCCodeEdit = None
         self._doc = None  # type:QCodeDocument
         self._options = None  # type:QDecompilationOptions
@@ -41,16 +42,26 @@ class CodeView(BaseView):
         if self._function is None:
             return
 
-        d = self.workspace.instance.project.analyses.Decompiler(
-            self._function,
-            cfg=self.workspace.instance.cfg,
-            options=self._options.option_and_values,
-            optimization_passes=self._options.selected_passes,
-            peephole_optimizations=self._options.selected_peephole_opts,
-            # kb=dec_kb
-            )
-        self.codegen = d.codegen
-        self.set_codegen(d.codegen)
+        # retrieve saved codegens
+        try:
+            self.codegen = self.saved_codegen[self._function]
+        except KeyError:
+            self.codegen = None
+
+        if self.codegen is None:
+            d = self.workspace.instance.project.analyses.Decompiler(
+                self._function,
+                cfg=self.workspace.instance.cfg,
+                options=self._options.option_and_values,
+                optimization_passes=self._options.selected_passes,
+                peephole_optimizations=self._options.selected_peephole_opts,
+                # kb=dec_kb
+                )
+            self.codegen = d.codegen
+            # save a codegen so we don't need to reconstruct it again
+            self.saved_codegen[self._function] = self.codegen
+
+        self.set_codegen(self.codegen)
 
     def set_codegen(self, codegen):
         self._doc = QCodeDocument(codegen)

@@ -1,9 +1,12 @@
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QPushButton, QMessageBox
+from typing import Set, List
 
 from .view import BaseView
 from ..widgets.qteam_table import QTeamTable
 
+from angr.sim_variable import SimStackVariable, SimVariable
+from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
 
 class SyncView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
@@ -93,6 +96,8 @@ class SyncView(BaseView):
 
     def _on_pullfunc_clicked(self):
         disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
+        code_view = self.workspace._get_or_create_pseudocode_view()
+        func_table_view = self.workspace.view_manager.first_view_in_category("functions")
         if disasm_view is None:
             QMessageBox.critical(None, 'Error',
                                  "Cannot determine the current function. No disassembly view is open.")
@@ -112,10 +117,33 @@ class SyncView(BaseView):
                                  "Please select a user in the team table first.")
             return
 
+        # get function name and update it's codeview
         self.workspace.instance.project.kb.sync.fill_function(current_function, user=u)
+        code_view.codegen.cfunc.name = self.workspace.instance.kb.functions[current_function.addr].name
+        code_view.codegen.cfunc.demangled_name = code_view.codegen.cfunc.name
+
+
+        # TODO move this into angr once we have a decompiler API
+        # get stack variables and update internal kb
+        var_manager = code_view.codegen._variable_kb.variables[current_function.addr]
+        current_sim_vars: List[SimVariable] = var_manager._unified_variables
+        current_stack_vars = set([var for var in current_sim_vars if isinstance(var, SimStackVariable)])
+        stack_vars = self.workspace.instance.project.kb.sync.pull_stack_variables(current_function.addr, user=u)
+        stack_var_dict = {s[0]: s[1] for s in stack_vars}
+        for var in current_stack_vars:
+            if isinstance(var, SimStackVariable):
+                offset = var.offset
+                try:
+                    new_var = stack_var_dict[offset]
+                except:
+                    continue
+                # overwrite the variable with the new var
+                var.name = new_var.name
 
         # trigger a refresh
         disasm_view.refresh()
+        code_view.refresh_text()
+        func_table_view.refresh()
 
     def _on_pushfunc_clicked(self):
 
@@ -131,6 +159,7 @@ class SyncView(BaseView):
                                  "No function is current in the disassembly view.")
             return
 
+        # function
         func = current_function
         kb = self.workspace.instance.project.kb
         kb.sync.push_function(func)
@@ -143,13 +172,13 @@ class SyncView(BaseView):
                     comments[ins_addr] = kb.comments[ins_addr]
         kb.sync.push_comments(comments)
 
-        # TODO: update this kb usage after decompiler has an API
         # stack_variables
-        var_kb = self.workspace.view_manager.first_view_in_category("pseudocode").codegen._variable_kb
-        stack_vars = var_kb.unified_variables
-        for stack_var in stack_vars:
-            #XXX: finish this
-            pass
+        # TODO: update this kb usage after decompiler has an API
+        code_view = self.workspace._get_or_create_pseudocode_view()
+        var_manager = code_view.codegen._variable_kb.variables[func.addr]
+        sim_vars: Set[SimVariable] = var_manager._unified_variables
+        stack_vars = set([var for var in sim_vars if isinstance(var, SimStackVariable)])
+        kb.sync.push_stack_variables(stack_vars, var_manager)
 
         # TODO: Fix this
         kb.sync.commit()
