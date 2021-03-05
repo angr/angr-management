@@ -71,4 +71,4 @@ This also allows you to import a plugin class from another package entirely. The
 
 ## Scripting
 
-Take a look at https://docs.angr.io/extending-angr/angr_management !
+Take a look at https://docs.angr.io/extending-angr/angr_management!
