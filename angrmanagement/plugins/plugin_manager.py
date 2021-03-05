@@ -249,6 +249,14 @@ class PluginManager:
         for res in self._dispatch(BasePlugin.build_context_menu_insn, False, insn):
             yield from res
 
+    def build_context_menu_block(self, block):
+        for res in self._dispatch(BasePlugin.build_context_menu_block, False, block):
+            yield from res
+
+    def build_context_menu_node(self, node):
+        for res in self._dispatch(BasePlugin.build_context_menu_node, False, node):
+            yield from res
+
     def get_func_column(self, idx):
         for plugin in self.active_plugins:
             if idx >= len(plugin.FUNC_COLUMNS):

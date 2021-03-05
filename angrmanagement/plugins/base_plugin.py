@@ -95,6 +95,12 @@ class BasePlugin:
         """
         return []
 
+    def build_context_menu_node(self, node) -> Iterator[Union[None, Tuple[str, Callable]]]:
+        """
+        Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
+        """
+        return []
+
     # Iterable of URL actions
     URL_ACTIONS: List[str] = []
 
