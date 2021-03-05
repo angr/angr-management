@@ -114,7 +114,8 @@ class TraceStatistics:
     def _func_name(self, a):
         return self.workspace.instance.project.kb.functions[self._func_addr(a)].name
 
-    def _random_color(self):
+    @staticmethod
+    def _random_color():
         r = random.randint(0, 255)
         g = random.randint(0, 255)
         b = random.randint(0, 255)
@@ -122,4 +123,3 @@ class TraceStatistics:
 
     def _get_position(self, addr, i):
         return self._positions[addr][i]
-

@@ -1,10 +1,9 @@
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from PySide2.QtCore import Qt
 
 
 class LabelNameBox(QLineEdit):
     def __init__(self, textchanged_callback, parent=None):
-        super(LabelNameBox, self).__init__(parent)
+        super().__init__(parent)
 
         self.textChanged.connect(textchanged_callback)
 
@@ -15,8 +14,8 @@ class LabelNameBox(QLineEdit):
             return text.strip()
         return None
 
-    def _is_valid_label_name(self, input):
-        return not (' ' in input.strip())
+    def _is_valid_variable_name(self, input_):  # pylint: disable=no-self-use
+        return input_ and not (' ' in input_.strip())
 
 
 class RenameLabel(QDialog):
@@ -88,7 +87,7 @@ class RenameLabel(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text):
+    def _on_name_changed(self, new_text): # pylint: disable=unused-argument
 
         if self._name_box is None:
             # initialization is not done yet
@@ -115,5 +114,4 @@ class RenameLabel(QDialog):
             self.close()
 
     def _on_cancel_clicked(self):
-        self.cfg_args = None
         self.close()
