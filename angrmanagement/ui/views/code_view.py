@@ -9,6 +9,7 @@ from ..widgets.qccode_edit import QCCodeEdit
 from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
 from .view import BaseView
+from ...data.object_container import ObjectContainer
 
 
 class CodeView(BaseView):
@@ -18,6 +19,7 @@ class CodeView(BaseView):
         self.caption = 'Pseudocode'
 
         self._function = None
+        self.current_node = ObjectContainer(None, 'Current selected C-code node')
 
         self._codeedit = None
         self.codegen = None
@@ -122,6 +124,9 @@ class CodeView(BaseView):
             self.highlight_chunks(chunks)
         else:
             self.highlight_chunks([ ])
+
+        self.current_node.am_obj = selected_node
+        self.current_node.am_event()
 
     def _on_mouse_doubleclicked(self):
         if self._doc is None:
