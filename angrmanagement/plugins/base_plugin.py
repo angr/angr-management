@@ -4,7 +4,7 @@ from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
 
-from angrmanagement.ui.views import disassembly_view
+from angrmanagement.ui.views import disassembly_view, code_view
 from angrmanagement.ui.widgets.qblock import QBlock
 from angrmanagement.ui.widgets.qinstruction import QInstruction
 
@@ -53,6 +53,9 @@ class BasePlugin:
         pass
 
     def instrument_disassembly_view(self, dview: 'disassembly_view.DisassemblyView'):
+        pass
+
+    def instrument_code_view(self, cview: 'code_view.CodeView'):
         pass
 
     def handle_click_insn(self, qinsn, event: QGraphicsSceneMouseEvent):
