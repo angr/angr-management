@@ -349,24 +349,11 @@ class QFunctionTableView(QTableView):
     def pullFunction(self):
         user_action = self.sender()
         user = user_action.text()
-
-        # mark the action
-        for action in self.pull_menu.actions():
-            if action.text() == user:
-                print("set true")
-                action.setChecked(True)
-
         self._pull_func(user)
 
     def autoPullFunction(self):
         user_action = self.sender()
         user = user_action.text()
-
-        # mark the action
-        for action in self.pull_menu.actions():
-            if action.text() == user:
-                print("set true")
-                action.setChecked(True)
 
         # TODO: implement auto-pulling
         pass
