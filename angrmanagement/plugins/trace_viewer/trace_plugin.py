@@ -1,14 +1,13 @@
 import json
-from typing import Optional, List, Tuple
-
+from typing import Optional, Union, List, Tuple
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
-from angrmanagement.plugins.trace_viewer.qtrace_viewer import QTraceViewer
+from .qtrace_viewer import QTraceViewer
+from ...data.object_container import ObjectContainer
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
-
 from ...utils.io import isurl, download_url
 from ...errors import InvalidURLError, UnexpectedStatusCodeError
 from ..base_plugin import BasePlugin
@@ -42,11 +41,11 @@ class TraceViewer(BasePlugin):
     #
 
     @property
-    def trace(self) -> Optional[TraceStatistics]:
+    def trace(self) -> Union[ObjectContainer, Optional[TraceStatistics]]:
         return self.workspace.instance.trace
 
     @property
-    def multi_trace(self) -> Optional[MultiTrace]:
+    def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace]]:
         return self.workspace.instance.multi_trace
 
 
@@ -92,7 +91,7 @@ class TraceViewer(BasePlugin):
         trace_viewer.hide()
 
     def color_block(self, addr):
-        if self.multi_trace is not None and self.multi_trace.am_obj is not None:
+        if not self.multi_trace.am_none:
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
@@ -122,7 +121,7 @@ class TraceViewer(BasePlugin):
                 legend_x += w
 
     def _gen_strata(self, addr):
-        if self.trace is not None and self.trace.am_obj is not None:
+        if not self.trace.am_none:
             # count is cached in trace.
             count = self.trace.get_count(addr)
 
@@ -143,10 +142,10 @@ class TraceViewer(BasePlugin):
     #
 
     def color_func(self, func):
-        if self.multi_trace is not None and self.multi_trace.am_obj is not None:
+        if not self.multi_trace.am_none:
             return self.multi_trace.get_percent_color(func)
 
-        if self.trace is not None and self.trace.am_obj is not None:
+        if not self.trace.am_none:
             for itr_func in self.trace.trace_func:
                 if itr_func.bbl_addr == func.addr:
                     return QColor(0xf0, 0xe7, 0xda)
@@ -157,7 +156,7 @@ class TraceViewer(BasePlugin):
 
     def extract_func_column(self, func, idx):
         assert idx == 0
-        if self.multi_trace is None:
+        if self.multi_trace.am_none:
             cov = 0
             rend = ''
         else:
