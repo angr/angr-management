@@ -1,6 +1,5 @@
 import os
 import string
-from functools import partial
 
 from angr.analyses.code_tagging import CodeTags
 from angr.sim_variable import SimStackVariable
@@ -291,6 +290,9 @@ class QFunctionTableView(QTableView):
         return True
 
     def contextMenuEvent(self, event):
+        if binsync_available is False:
+            return
+
         # get selected function
         row = self.currentIndex().row()
         self.curr_func = self._model.func_list[row]
@@ -344,7 +346,6 @@ class QFunctionTableView(QTableView):
 
         # TODO: Fix this
         kb.sync.commit()
-        print("pushed")
 
     def pullFunction(self):
         user_action = self.sender()

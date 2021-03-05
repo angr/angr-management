@@ -87,6 +87,7 @@ class Workspace:
     #
 
     def on_function_selected(self, func):
+
         self._get_or_create_disassembly_view().display_function(func)
         codeview = self.view_manager.first_view_in_category('pseudocode')
         if codeview is not None and codeview.is_shown():
