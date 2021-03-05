@@ -1,5 +1,6 @@
 import json
-from typing import Optional
+from typing import Optional, List, Tuple
+
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
@@ -74,7 +75,7 @@ class TraceViewer(BasePlugin):
         trace_viewer.hide()
 
     def color_block(self, addr):
-        if self.multi_trace != None:
+        if self.multi_trace is not None and self.multi_trace.am_obj is not None:
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
@@ -82,7 +83,7 @@ class TraceViewer(BasePlugin):
         btn = event.button()
 
         if QApplication.keyboardModifiers() == Qt.ControlModifier and btn == Qt.RightButton:
-            if self.multi_trace is not None:
+            if self.multi_trace is not None and self.multi_trace.am_obj is not None:
                 the_trace = self.multi_trace.get_any_trace(qblock.addr)
                 if the_trace is not None:
                     self.trace.am_obj = TraceStatistics(self.workspace, the_trace, self.multi_trace.base_addr)
@@ -104,7 +105,7 @@ class TraceViewer(BasePlugin):
                 legend_x += w
 
     def _gen_strata(self, addr):
-        if self.trace != None:
+        if self.trace is not None and self.trace.am_obj is not None:
             # count is cached in trace.
             count = self.trace.get_count(addr)
 
@@ -125,10 +126,10 @@ class TraceViewer(BasePlugin):
     #
 
     def color_func(self, func):
-        if self.multi_trace != None:
+        if self.multi_trace is not None and self.multi_trace.am_obj is not None:
             return self.multi_trace.get_percent_color(func)
 
-        if self.trace != None:
+        if self.trace is not None and self.trace.am_obj is not None:
             for itr_func in self.trace.trace_func:
                 if itr_func.bbl_addr == func.addr:
                     return QColor(0xf0, 0xe7, 0xda)
@@ -139,7 +140,7 @@ class TraceViewer(BasePlugin):
 
     def extract_func_column(self, func, idx):
         assert idx == 0
-        if self.multi_trace == None:
+        if self.multi_trace is None:
             cov = 0
             rend = ''
         else:
@@ -187,19 +188,16 @@ class TraceViewer(BasePlugin):
         mapping.get(idx)()
 
     def open_trace(self):
-        trace, baddr = self._open_json_trace_dialog()
-        if baddr is None:
+        trace, base_addr = self._open_json_trace_dialog()
+        if trace is None or base_addr is None:
             return
 
-        self.trace.am_obj = TraceStatistics(self.workspace, trace, baddr)
+        self.trace.am_obj = TraceStatistics(self.workspace, trace, base_addr)
         self.trace.am_event()
 
     def open_multi_trace(self):
-        trace = self._open_json_trace_dialog()
-        if trace is None:
-            return
-        base_addr = self._open_baseaddr_dialog(0x0)
-        if base_addr is None:
+        trace, base_addr = self._open_json_trace_dialog()
+        if trace is None or base_addr is None:
             return
 
         self.multi_trace.am_obj = MultiTrace(self.workspace, trace, base_addr)
@@ -282,14 +280,22 @@ class TraceViewer(BasePlugin):
         except ValueError:
             return None
 
-    def _open_json_trace_dialog(self):
+    def _open_json_trace_dialog(self) -> Tuple[Optional[List[int]],Optional[int]]:
         project = self.workspace.instance.project
         trace_file_name = self._open_trace_dialog(filter='json (*.json)')
-        base_addr = self._open_baseaddr_dialog(project.loader.main_object.mapped_base)
 
-        if trace_file_name is None or base_addr is None:
+        if trace_file_name is None:
             return None, None
 
         with open(trace_file_name, 'r') as f:
             trace = json.load(f)
+
+        if not isinstance(trace, list):
+            QMessageBox.critical(self.workspace._main_window,
+                                 "Incorrect trace format",
+                                 "Failed to open the JSON trace. We expect the JSON trace to be a list of integers.")
+            return None, None
+
+        base_addr = self._open_baseaddr_dialog(0x4000000000)
+
         return trace, base_addr

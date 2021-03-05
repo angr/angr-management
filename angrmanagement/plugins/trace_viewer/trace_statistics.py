@@ -91,7 +91,11 @@ class TraceStatistics:
             func_name = hex(bbl_addr) #default to using bbl_addr as name if none is not found
             if node is not None:
                 func_addr = node.function_address
-                func_name = self.workspace.instance.project.kb.functions[func_addr].name
+                functions = self.workspace.instance.project.kb.functions
+                if func_addr in functions:
+                    func_name = functions[func_addr].name
+                else:
+                    func_name = "Unknown"
             else:
                 l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name))
