@@ -12,7 +12,7 @@ from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CF
 
 from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
-from ..menus.menu import Menu, MenuEntry, MenuSeparator
+from ..menus.menu import Menu
 
 if TYPE_CHECKING:
     from ..documents.qcodedocument import QCodeDocument
@@ -168,8 +168,8 @@ class QCCodeEdit(api.CodeEdit):
 
         return asm_ins_addr
 
-    def keyReleaseEvent(self, key_event):
-        key = key_event.key()
+    def keyReleaseEvent(self, event):
+        key = event.key()
         if key == Qt.Key_Tab:
             # Compute the location to switch back to
             asm_inst_addr = self.get_src_to_inst()
@@ -183,7 +183,7 @@ class QCCodeEdit(api.CodeEdit):
                 self.rename_node(node)
             return True
 
-        super().keyPressEvent(key_event)
+        return super().keyPressEvent(event)
 
     def setDocument(self, document):
         super().setDocument(document)

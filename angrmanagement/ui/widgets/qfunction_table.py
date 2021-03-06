@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
-from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit, \
-    QStyledItemDelegate
+from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
 from PySide2.QtGui import QBrush, QColor, QCursor
-from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
+from PySide2.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
 
 from ..menus.function_context_menu import FunctionContextMenu
 from ...data.instance import ObjectContainer
@@ -28,8 +27,7 @@ class QFunctionTableModel(QAbstractTableModel):
     BLOCKS_COL = 5
 
     def __init__(self, workspace, func_list):
-
-        super(QFunctionTableModel, self).__init__()
+        super().__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
@@ -127,6 +125,8 @@ class QFunctionTableModel(QAbstractTableModel):
         elif role == Qt.FontRole:
             return Conf.tabular_view_font
 
+        return None
+
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
         self.func_list = sorted(self.func_list, key=lambda f: self._get_column_data(f, column),
@@ -217,7 +217,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
 class QFunctionTableView(QTableView):
     def __init__(self, parent, workspace, selection_callback=None):
-        super(QFunctionTableView, self).__init__(parent)
+        super().__init__(parent)
         self.workspace = workspace
         self._context_menu = FunctionContextMenu(self)
 
@@ -281,7 +281,7 @@ class QFunctionTableView(QTableView):
         text = key_event.text()
         if not text or text not in string.printable or text in string.whitespace:
             # modifier keys
-            return super(QFunctionTableView, self).keyPressEvent(key_event)
+            return super().keyPressEvent(key_event)
 
         # show the filtering text box
         self._function_table.show_filter_box(prefix=text)
@@ -294,7 +294,7 @@ class QFunctionTableView(QTableView):
 
 class QFunctionTableFilterBox(QLineEdit):
     def __init__(self, parent):
-        super(QFunctionTableFilterBox, self).__init__()
+        super().__init__()
 
         self._table = parent
 
@@ -317,7 +317,7 @@ class QFunctionTableFilterBox(QLineEdit):
 class QFunctionTable(QWidget):
 
     def __init__(self, parent, workspace, selection_callback=None):
-        super(QFunctionTable, self).__init__(parent)
+        super().__init__(parent)
         self.workspace = workspace
 
         self._view = parent  # type: 'FunctionsView'
