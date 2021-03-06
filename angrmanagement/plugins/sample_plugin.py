@@ -10,4 +10,4 @@ class SamplePlugin(BasePlugin):
     MENU_BUTTONS = ('Add Bookmark',)
 
     def build_context_menu_node(self, node) -> Iterator[Union[None, Tuple[str, Callable]]]:
-        yield "uwu", lambda: None
+        yield ("owo", [("uwu", lambda: None), ("o_O", lambda: None)])
