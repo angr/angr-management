@@ -42,7 +42,7 @@ class MenuSeparator:
 
 
 class Menu:
-    def __init__(self, caption, parent=None):
+    def __init__(self, caption, children=(), parent=None):
 
         self.parent = parent
         self.caption = caption
@@ -51,6 +51,9 @@ class Menu:
         self._keyed_entries = None
 
         self._qmenu = None  # type: QMenu
+
+        for child in children:
+            self.add(child)
 
     def action_by_key(self, key):
         if not self._keyed_entries:
@@ -61,8 +64,6 @@ class Menu:
     def qmenu(self, extra_entries=None):
         if extra_entries is None:
             extra_entries = []
-        else:
-            extra_entries = [MenuSeparator() if entry is None else MenuEntry(*entry) for entry in extra_entries]
 
         if not extra_entries and self._qmenu is not None:
             # in order to use the cached result, must not have extra entries
@@ -84,6 +85,13 @@ class Menu:
 
     @staticmethod
     def translate_element(menu, entry):
+        if entry is None:
+            entry = MenuSeparator()
+        elif type(entry) is tuple and len(entry) == 2 and callable(entry[1]):
+            entry = MenuEntry(*entry)
+        elif type(entry) is tuple and len(entry) == 2 and hasattr(entry[1], '__iter__'):
+            entry = Menu(*entry)
+
         if isinstance(entry, MenuEntry):
             action = menu.addAction(entry.caption, entry.action)  # type: QAction
             if entry.shortcut is not None:
@@ -96,6 +104,12 @@ class Menu:
             entry.qaction = action
         elif isinstance(entry, MenuSeparator):
             menu.addSeparator()
+        elif isinstance(entry, Menu):
+            menu.addMenu(entry.qmenu())
+        elif isinstance(entry, QMenu):
+            menu.addMenu(entry)
+        elif isinstance(entry, QAction):
+            menu.addAction(entry)
         else:
             raise TypeError('Unsupported type', type(entry))
 

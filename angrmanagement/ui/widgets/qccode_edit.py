@@ -116,7 +116,7 @@ class QCCodeEdit(api.CodeEdit):
             mnu.addActions(self.default_actions)
 
         for entry in self.workspace.plugins.build_context_menu_node(under_cursor):
-            Menu.translate_element(mnu, MenuSeparator() if entry is None else MenuEntry(*entry))
+            Menu.translate_element(mnu, entry)
 
         return mnu
 
