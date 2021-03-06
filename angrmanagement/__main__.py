@@ -125,8 +125,9 @@ def start_management(filepath=None, use_daemon=False):
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
     splash.setEnabled(False)
     splash.show()
-    time.sleep(0.05)
-    app.processEvents()
+    for _ in range(5):
+        time.sleep(0.01)
+        app.processEvents()
 
     from .logic import GlobalInfo
     from .ui.css import CSS
