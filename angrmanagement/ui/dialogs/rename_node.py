@@ -127,7 +127,7 @@ class RenameNode(QDialog):
                 if isinstance(self._node, CVariable):
                     self._node.unified_variable.name = node_name
                 elif isinstance(self._node, CFunction):
-                    code_kb = self._code_view.workspace.view_manager.first_view_in_category("pseudocode").codegen.kb
+                    code_kb = self._code_view.codegen.kb
                     code_kb.functions[self._node.name].name = node_name
                     self._node.name = node_name
                     self._node.demangled_name = node_name

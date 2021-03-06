@@ -105,6 +105,10 @@ class BasePlugin:
         """
         return []
 
+
+    def build_context_menu_function(self, func) -> Iterator[Union[None, Tuple[str, Callable]]]:
+        return []
+
     # Iterable of URL actions
     URL_ACTIONS: List[str] = []
 

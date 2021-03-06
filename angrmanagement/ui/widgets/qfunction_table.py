@@ -1,17 +1,21 @@
 import os
 import string
+from typing import TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
 from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit, \
     QStyledItemDelegate
-from PySide2.QtGui import QBrush, QColor
+from PySide2.QtGui import QBrush, QColor, QCursor
 from PySide2.QtCore import Qt, QSize, QAbstractTableModel, SIGNAL, QEvent
 
+from ..menus.function_context_menu import FunctionContextMenu
 from ...data.instance import ObjectContainer
 from ...config import Conf
 from ..toolbars import FunctionTableToolbar
 
+if TYPE_CHECKING:
+    import PySide2
 
 class QFunctionTableModel(QAbstractTableModel):
 
@@ -215,6 +219,7 @@ class QFunctionTableView(QTableView):
     def __init__(self, parent, workspace, selection_callback=None):
         super(QFunctionTableView, self).__init__(parent)
         self.workspace = workspace
+        self._context_menu = FunctionContextMenu(self)
 
         self._function_table = parent  # type: QFunctionTable
         self._selected_func = ObjectContainer(None, 'Currently selected function')
@@ -281,6 +286,10 @@ class QFunctionTableView(QTableView):
         # show the filtering text box
         self._function_table.show_filter_box(prefix=text)
         return True
+
+    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None:
+        row = self.currentIndex().row()
+        self._context_menu.set(self._model.func_list[row]).qmenu().popup(QCursor.pos())
 
 
 class QFunctionTableFilterBox(QLineEdit):
