@@ -1,15 +1,19 @@
 import logging
-from typing import Optional, Tuple, Callable, Iterator, List, Any, Union
+from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_CHECKING
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
 
-from angrmanagement.ui.views import disassembly_view, code_view
 from angrmanagement.ui.widgets.qblock import QBlock
 from angrmanagement.ui.widgets.qinstruction import QInstruction
 
 _l = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.views import disassembly_view, code_view
+
+
+# pylint: disable=no-self-use,unused-argument
 
 class BasePlugin:
     REQUIRE_WORKSPACE = True
@@ -20,7 +24,7 @@ class BasePlugin:
         from angrmanagement.ui.workspace import Workspace
 
         self.workspace: Optional[Workspace] = workspace
-        _l.info("Loaded plugin {}".format(self.__class__.__name__))
+        _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
         # - set callbacks for object containers
