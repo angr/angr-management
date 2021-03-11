@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 from typing import Optional
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
@@ -221,6 +222,11 @@ class MainWindow(QMainWindow):
         self._view_menu = ViewMenu(self)
         self._help_menu = HelpMenu(self)
         self._plugin_menu = PluginMenu(self)
+
+        # TODO: Eventually fix menu bars to have native support on MacOS
+        # if on a Mac, don't use the native menu bar (bug mitigation from QT)
+        if sys.platform == 'darwin':
+            self.menuBar().setNativeMenuBar(False)
 
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
