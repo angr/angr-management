@@ -15,7 +15,6 @@ from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, Str
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
-from ..utils import has_binsync
 from ..plugins import PluginManager
 
 if TYPE_CHECKING:
@@ -188,7 +187,6 @@ class Workspace:
     def toggle_split(self):
         """
         Toggles the split state
-        
         :return:    None
         """
 

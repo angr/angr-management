@@ -3,9 +3,9 @@ import logging
 import sys
 from typing import Optional
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QInputDialog, QProgressBar
-from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QLineEdit
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QColor
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
+from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
+from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
@@ -32,7 +32,6 @@ from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
 from .menus.view_menu import ViewMenu
 from .menus.plugin_menu import PluginMenu
-from .menus.sync_menu import SyncMenu
 from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_plugins import LoadPlugins
@@ -41,7 +40,6 @@ from .dialogs.new_state import NewState
 from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
-from ..utils import has_binsync
 from ..utils.io import isurl, download_url
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
@@ -87,7 +85,6 @@ class MainWindow(QMainWindow):
         self._view_menu = None
         self._help_menu = None
         self._plugin_menu = None
-        self._sync_menu = None
 
         self._init_toolbars()
         self._init_statusbar()
@@ -488,9 +485,6 @@ class MainWindow(QMainWindow):
 
     def interact(self):
         self.workspace.interact_program(self.workspace.instance.img_name)
-
-    def setup_sync(self):
-        self.open_sync_config_dialog()
 
     #
     # Other public methods
