@@ -121,7 +121,6 @@ class SyncConfig(QDialog):
     #
 
     def _on_ok_clicked(self):
-        proj = self._instance.project
         user = self._user_edit.text()
         path = self._repo_edit.text()
 
@@ -150,9 +149,9 @@ class SyncConfig(QDialog):
         self.close()
 
     def _on_repo_clicked(self):
-        dir = QFileDialog.getExistingDirectory(self, "Select sync repo", "",
-                                               QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
-        self._repo_edit.setText(QDir.toNativeSeparators(dir))
+        directory = QFileDialog.getExistingDirectory(self, "Select sync repo", "",
+                                                    QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+        self._repo_edit.setText(QDir.toNativeSeparators(directory))
 
     def _on_repo_textchanged(self, new_text):
         # is it a git repo?

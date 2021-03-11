@@ -1,12 +1,10 @@
 from angrmanagement.plugins import BasePlugin
-from typing import List, Iterator, Union, Tuple, Callable
 
 from angr.sim_variable import SimStackVariable
 
 from ...ui.workspace import Workspace
 from .sync_config import SyncConfig
 from .sync_view import SyncView
-
 
 
 class BinsyncPlugin(BasePlugin):
@@ -17,7 +15,7 @@ class BinsyncPlugin(BasePlugin):
         self.sync_view = SyncView(workspace, 'right')
         self.workspace.add_view(self.sync_view, self.sync_view.caption, self.sync_view.category)
 
-        #workspace.instance.register_container('bookmarks', lambda: [], List[int], 'Bookmarked addresses')
+        self.selected_func = None
 
     #
     # Binsync Deinit
@@ -63,24 +61,22 @@ class BinsyncPlugin(BasePlugin):
 
     def build_context_menu_function(self, func): # pylint: disable=unused-argument
         # if not connected to a repo, give no options
-        if not self.workspace.instance.kb.sync.connected:
-            return None
+        if self.workspace.instance.kb.sync.connected:
+            # connection is live, get the context!
+            self.selected_func = func
 
-        # connection is live, get the context!
-        self.selected_func = func
+            pull_menu = []
+            auto_pull_menu = []
+            patch_menu = []
+            for user in self.workspace.instance.sync.users:
+                pull_menu.append((user.name, self.pullFunction))
+                auto_pull_menu.append((user.name, self.autoPullFunction))
+                patch_menu.append((user.name, self.pullPatches))
 
-        pull_menu = []
-        auto_pull_menu = []
-        patch_menu = []
-        for user in self.workspace.instance.sync.users:
-            pull_menu.append((user.name, self.pullFunction))
-            auto_pull_menu.append((user.name, self.autoPullFunction))
-            patch_menu.append((user.name, self.pullPatches))
-
-        yield ("Patch", self.pushFunction)
-        yield ("Pull..", pull_menu)
-        yield ("Auto Pull...", auto_pull_menu)
-        yield ("Pull Patches...", patch_menu)
+            yield ("Patch", self.pushFunction)
+            yield ("Pull..", pull_menu)
+            yield ("Auto Pull...", auto_pull_menu)
+            yield ("Pull Patches...", patch_menu)
 
     def pushFunction(self):
         # function
@@ -101,7 +97,7 @@ class BinsyncPlugin(BasePlugin):
         code_view = self.workspace._get_or_create_pseudocode_view()
         var_manager = code_view.codegen._variable_kb.variables[func.addr]
         sim_vars = var_manager._unified_variables
-        stack_vars = set([var for var in sim_vars if isinstance(var, SimStackVariable)])
+        stack_vars = set(var for var in sim_vars if isinstance(var, SimStackVariable))
         kb.sync.push_stack_variables(stack_vars, var_manager)
 
         # TODO: Fix this
@@ -115,13 +111,8 @@ class BinsyncPlugin(BasePlugin):
         self._pull_func(user)
 
     def autoPullFunction(self):
-        func_view = self.workspace.view_manager.first_view_in_category('functions')
-
-        user_action = func_view.sender()
-        user = user_action.text()
-
         # TODO: implement auto-pulling
-        pass
+        return self.selected_func
 
     def pullPatches(self):
         func_view = self.workspace.view_manager.first_view_in_category('functions')
@@ -164,7 +155,7 @@ class BinsyncPlugin(BasePlugin):
         # get stack variables and update internal kb
         var_manager = code_view.codegen._variable_kb.variables[current_function.addr]
         current_sim_vars = var_manager._unified_variables
-        current_stack_vars = set([var for var in current_sim_vars if isinstance(var, SimStackVariable)])
+        current_stack_vars = set(var for var in current_sim_vars if isinstance(var, SimStackVariable))
         stack_vars = self.workspace.instance.project.kb.sync.pull_stack_variables(current_function.addr, user=user)
         stack_var_dict = {s[0]: s[1] for s in stack_vars}
         for var in current_stack_vars:
@@ -172,7 +163,7 @@ class BinsyncPlugin(BasePlugin):
                 offset = var.offset
                 try:
                     new_var = stack_var_dict[offset]
-                except:
+                except KeyError:
                     continue
                 # overwrite the variable with the new var
                 var.name = new_var.name
@@ -181,5 +172,3 @@ class BinsyncPlugin(BasePlugin):
         disasm_view.refresh()
         code_view.refresh_text()
         func_table_view.refresh()
-
-
