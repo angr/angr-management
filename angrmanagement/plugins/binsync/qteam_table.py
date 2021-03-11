@@ -1,6 +1,6 @@
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QHeaderView
-from PySide2.QtCore import Qt, QItemSelectionModel
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
+from PySide2.QtCore import Qt
 
 
 class QUserItem:
@@ -44,6 +44,7 @@ class QTeamTable(QTableWidget):
 
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.instance = instance
 
         self.items = [ ]
 

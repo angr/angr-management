@@ -1,5 +1,6 @@
 from collections import defaultdict
 from typing import Dict, List, Optional, TYPE_CHECKING
+import logging
 
 from PySide2.QtCore import Qt
 
@@ -8,6 +9,7 @@ from .widgets.qsmart_dockwidget import QSmartDockWidget
 if TYPE_CHECKING:
     from angrmanagement.ui.views.view import BaseView
 
+_l = logging.getLogger(__name__)
 
 class ViewManager:
     """
@@ -61,6 +63,41 @@ class ViewManager:
 
         if retab:
             self.tabify_center_views()
+
+    def remove_view(self, view):
+        """
+        Remove a view from this workspace
+
+        :param view:            The view to remove.
+        """
+
+        self.views_by_category[view.category].remove(view)
+
+        # find the correct dock
+        dock: Optional[QSmartDockWidget] = None
+        for d in self.docks:
+            if d.windowTitle() == view.caption:
+                dock = d
+
+        # sanity check on the dock
+        if dock is None:
+            _l.warning("Warning: removed view does not exist as a dock!")
+            return
+
+        if view.default_docking_position == 'center':
+            self.main_window.central_widget.removeDockWidget(dock)
+            retab = True
+        else:
+            self.main_window.removeDockWidget(dock)
+            retab = False
+
+        self.views.remove(view)
+        self.docks.remove(dock)
+        self.view_to_dock.pop(view)
+
+        if retab:
+            self.tabify_center_views()
+
 
     def raise_view(self, view):
         """
