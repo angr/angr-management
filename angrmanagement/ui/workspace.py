@@ -11,7 +11,7 @@ from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, SyncView, PatchesView, DependencyView, )
+                    InteractionView, PatchesView, DependencyView, )
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -60,9 +60,6 @@ class Workspace:
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
         ]
-
-        if has_binsync():
-            self.default_tabs.append(SyncView(self, 'right'))
 
         #
         # Save initial splitter state
@@ -162,6 +159,9 @@ class Workspace:
 
     def add_view(self, view, caption, category):
         self.view_manager.add_view(view, caption, category)
+
+    def remove_view(self, view):
+        self.view_manager.remove_view(view)
 
     def unsplit_view(self):
         """

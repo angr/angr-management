@@ -1,8 +1,8 @@
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QPushButton, QMessageBox
 
-from .view import BaseView
-from ..widgets.qteam_table import QTeamTable
+from ...ui.views.view import BaseView
+from .qteam_table import QTeamTable
 
 
 class SyncView(BaseView):
