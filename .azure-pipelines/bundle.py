@@ -58,6 +58,7 @@ def make_common_options():
             "--name=angr-management",
             "--hidden-import=ipykernel.datapub",
             "--hidden-import=pkg_resources.py2_warn",
+            "--hidden-import=sqlalchemy.sql.default_comparator",
             "-w",
             "-i",
             os.path.join(os.path.dirname(angrmanagement.__file__),
