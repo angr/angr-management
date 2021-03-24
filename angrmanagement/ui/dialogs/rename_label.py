@@ -14,7 +14,7 @@ class LabelNameBox(QLineEdit):
             return text.strip()
         return None
 
-    def _is_valid_variable_name(self, input_):  # pylint: disable=no-self-use
+    def _is_valid_label_name(self, input_):  # pylint: disable=no-self-use
         return input_ and not (' ' in input_.strip())
 
 
