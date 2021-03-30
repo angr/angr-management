@@ -9,3 +9,4 @@ from .code_view import CodeView
 from .interaction_view import InteractionView
 from .patches_view import PatchesView
 from .dep_view import DependencyView
+from .proximity_view import ProximityView
