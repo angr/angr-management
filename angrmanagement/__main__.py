@@ -95,6 +95,8 @@ def start_management(filepath=None, use_daemon=False):
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")
     app.setApplicationName("angr management")
+    icon_location = os.path.join(IMG_LOCATION, 'angr.png')
+    QApplication.setWindowIcon(QIcon(icon_location))
 
     # URL scheme
     from .logic.url_scheme import AngrUrlScheme
