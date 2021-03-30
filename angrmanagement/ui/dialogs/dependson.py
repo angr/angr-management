@@ -83,7 +83,7 @@ class DependsOn(QDialog):
         # function argument
         self._arg_radiobox = QRadioButton("Function argument")
         self._arg_radiobox.clicked.connect(self._on_targetatoms_radiobutton_clicked)
-        self._arg_box = QLineEdit("")
+        self._arg_box = QLineEdit("0")
 
         # register
         self._reg_radiobox = QRadioButton("Register")

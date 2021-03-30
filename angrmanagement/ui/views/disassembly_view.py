@@ -288,17 +288,22 @@ class DisassemblyView(BaseView):
             if r is not None:
                 _, addr, operand = r
             else:
-                QMessageBox(self,
-                            "No operand"
-                            "Please select an operand first.",
-                            buttons=QMessageBox.Ok,
-                            icon=QMessageBox.Critical
-                            )
+                QMessageBox.critical(self,
+                                     "No operand",
+                                     "Please select an operand first.",
+                                     buttons=QMessageBox.Ok,
+                                     )
                 return
         else:
             if addr is None:
                 raise ValueError("No address is provided.")  # this is a programming error
             operand = None
+
+        # if a function target is selected, switch to function mode
+        if operand is not None and not func:
+            if operand._branch_target is not None and operand._is_target_func:
+                func = True
+                addr = operand._branch_target
 
         if func:
             # attempt to pass in a function

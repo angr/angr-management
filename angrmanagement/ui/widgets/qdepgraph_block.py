@@ -58,16 +58,17 @@ class QDepGraphBlock(QCachedGraphicsItem):
             atom = self.definition.atom
         else:
             atom = self.atom
+        addr_str = "unknown address" if self.addr is None else "%#x" % self.addr
         if isinstance(atom, Register):
             # convert it to a register name
             arch = self._workspace.instance.project.arch
             register_name = arch.translate_register_name(atom.reg_offset, size=atom.size)
-            self._definition_str = "Register {} @ {}".format(register_name, hex(self.addr))
+            self._definition_str = "Register {} @ {}".format(register_name, addr_str)
         elif isinstance(atom, MemoryLocation):
             if isinstance(atom.addr, SpOffset):
-                self._definition_str = "Stack sp%+#x @ %#x" % (atom.addr.offset, self.addr)
+                self._definition_str = "Stack sp%+#x @ %s" % (atom.addr.offset, addr_str)
             elif isinstance(atom.addr, int):
-                self._definition_str = "Memory %#x @ %#x" % (atom.addr, self.addr)
+                self._definition_str = "Memory %#x @ %s" % (atom.addr, addr_str)
 
         if not self._definition_str:
             # fallback

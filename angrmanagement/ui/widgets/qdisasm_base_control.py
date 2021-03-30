@@ -1,8 +1,10 @@
-from typing import TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from PySide2.QtCore import Qt
 
 if TYPE_CHECKING:
+    from angrmanagement.ui.widgets.qblock import QBlock
+    from angrmanagement.ui.widgets.qoperand import QOperand
     from angrmanagement.ui.views import DisassemblyView
 
 
@@ -41,7 +43,7 @@ class QDisassemblyBaseControl:
     # Public methods
     #
 
-    def get_selected_operand_info(self):
+    def get_selected_operand_info(self) -> Optional[Tuple['QBlock',int,'QOperand']]:
         if not self.infodock.selected_operands:
             return None
 

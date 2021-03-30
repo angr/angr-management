@@ -1,3 +1,4 @@
+from typing import List
 import logging
 
 from PySide2.QtGui import QPainter, QColor, QCursor
@@ -44,7 +45,7 @@ class QInstruction(QCachedGraphicsItem):
         self._addr_width = None
         self._mnemonic = None
         self._mnemonic_width = None
-        self._operands = [ ]
+        self._operands: List[QOperand] = [ ]
         self._string = None
         self._string_width = None
         self._comment = None

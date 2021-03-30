@@ -5,21 +5,20 @@ import logging
 from PySide2.QtWidgets import QMessageBox
 
 from angr import KnowledgeBase
-from angr.analyses.cfg_slice_to_sink import CFGSliceToSink, slice_cfg_graph, slice_function_graph
 from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.analyses.reaching_definitions.call_trace import CallTrace
+from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
 from angr.knowledge_plugins.key_definitions.atoms import Register, MemoryLocation, SpOffset
 from angr.knowledge_plugins import Function
-from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg, SimStackArg
+from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg, SimStackArg, SimType
 
 from .job import Job
 from ...logic.threads import gui_thread_schedule_async
 
 try:
     import argument_resolver
-    from argument_resolver.handlers import handler_factory, StdioHandlers, StdlibHandlers
-    from argument_resolver.slicer.slicer import cfg_slices_to_sinks, cfg_slice_to_sink
+    from argument_resolver.handlers import handler_factory, StdioHandlers, StdlibHandlers, StringHandlers
     from argument_resolver.transitive_closure import transitive_closures_from_defs
     from argument_resolver.call_trace_visitor import CallTraceSubject
 except ImportError:
@@ -96,14 +95,21 @@ class DependencyAnalysisJob(Job):
             base_progress: float = 30.0 + (depth - min_depth) * progress_chunk
             self._progress_callback(base_progress,
                                     text="Calculating reaching definitions... depth %d." % depth)
-            for idx, total, atom_defs, dep in self._dependencies(sink, [atom], inst.project.kb, inst.project, depth,
+            for idx, total, dep in self._dependencies(sink, [(atom,SimType())], inst.project.kb, inst.project, depth,
                                                       excluded_functions):
                 self._progress_callback(base_progress + idx / total * progress_chunk,
                                         text="Computing transitive closures: %d/%d" % (idx + 1, total))
 
                 all_defs = set()
-                for defs_ in atom_defs.values():
-                    all_defs |= defs_
+                # find the instructions that call this function
+                for pred in inst.cfg.am_obj.get_predecessors(inst.cfg.am_obj.get_any_node(self.func_addr)):
+                    if pred.instruction_addrs:
+                        call_inst_addr = pred.instruction_addrs[-1]
+                        loc = ('insn', call_inst_addr, OP_BEFORE)
+                        if loc in dep.observed_results:
+                            observed_result = dep.observed_results[loc]
+                            defs_ = observed_result.get_definitions_from_atoms([atom])
+                            all_defs |= defs_
 
                 cc = transitive_closures_from_defs(all_defs, dep)
 
@@ -147,11 +153,12 @@ class DependencyAnalysisJob(Job):
                     block = inst.cfg.get_any_node(dst)
                     dep_plugin.covered_blocks[dst] = block.size
 
-    def _dependencies(self, subject, sink_atoms: List['Atom'], kb, project, max_depth: int,
+    def _dependencies(self, subject, sink_atoms: List[Tuple['Atom',SimType]], kb, project, max_depth: int,
                       excluded_funtions: Set[int]) -> Generator[Tuple[int,int,'ReachingDefinitionsAnalysis'], None, None]:
         Handler = handler_factory([
             StdioHandlers,
             StdlibHandlers,
+            StringHandlers,
         ])
 
         if isinstance(subject, Function):
@@ -192,7 +199,7 @@ class DependencyAnalysisJob(Job):
                )
 
         for idx, start in enumerate(starts):
-            handler = Handler(project, sink, sink_atoms)
+            handler = Handler(project, False, sink_function=sink, sink_atoms=sink_atoms)
             rda = project.analyses.ReachingDefinitions(
                 subject=CallTraceSubject(start, kb.functions[start.current_function_address()]),
                 observe_all=True,
@@ -200,7 +207,7 @@ class DependencyAnalysisJob(Job):
                 kb=kb,
                 dep_graph=DepGraph()
             )
-            yield idx, len(starts), handler.sink_atom_defs, rda
+            yield idx, len(starts), rda
 
     @staticmethod
     def _get_new_kb_with_cfgs_and_functions(project, kb):
