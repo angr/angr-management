@@ -5,6 +5,7 @@ import ctypes
 import threading
 import time
 import warnings
+import platform
 
 def shut_up(*args, **kwargs):
     return
@@ -78,7 +79,23 @@ def set_windows_event_loop_policy():
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
+def macos_bigsur_wants_layer():
+    # workaround for https://bugreports.qt.io/browse/QTBUG-87014
+    # this is because the latest PySide2 (5.15.2) does not include this fix
+    v, _, _ = platform.mac_ver()
+    vs = v.split(".")
+    if len(vs) >= 2:
+        major, minor = list(map(int, vs[:2]))
+    else:
+        return
+    if major >= 11 or major == 10 and minor == 16:
+        os.environ['QT_MAC_WANTS_LAYER'] = '1'
+
+
 def start_management(filepath=None, use_daemon=False):
+
+    if sys.platform == "darwin":
+        macos_bigsur_wants_layer()
 
     if not check_dependencies():
         sys.exit(1)
