@@ -34,7 +34,10 @@ class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
         # before it is fixed, fall back to manually calculating the ratio using logicalDpiX()
         if sys.platform == "darwin":
             return self.logicalDpiX() / 72.0
-        return self.logicalDpiX() / 96.0
+        elif sys.platform == "win32":
+            return self.logicalDpiX() / 96.0
+        else:
+            return self.devicePixelRatioF()
 
 
 class QSaveableGraphicsView(QDevicePixelRatioAwareGraphicsView):
