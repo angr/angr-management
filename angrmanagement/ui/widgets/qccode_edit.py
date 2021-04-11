@@ -127,7 +127,7 @@ class QCCodeEdit(api.CodeEdit):
 
     def event(self, event):
         """
-        Reimplemented to capture the Tab key pressed event.
+        Reimplemented to capture the Tab key pressed/released event.
 
         :param event:
         :return:
@@ -176,6 +176,7 @@ class QCCodeEdit(api.CodeEdit):
 
             # Switch back to disassembly view
             self.workspace.jump_to(asm_inst_addr)
+            event.accept()
             return True
         elif key == Qt.Key_N:
             node = self.node_under_cursor()
@@ -183,7 +184,7 @@ class QCCodeEdit(api.CodeEdit):
                 self.rename_node(node)
             return True
 
-        return super().keyPressEvent(event)
+        return super().keyReleaseEvent(event)
 
     def setDocument(self, document):
         super().setDocument(document)
