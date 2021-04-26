@@ -89,9 +89,8 @@ class SyncConfig(QDialog):
 
         # initialize repo checkbox
         self._initrepo_checkbox = QCheckBox(self)
-        self._initrepo_checkbox.setText("Initialize repo")
-        self._initrepo_checkbox.setToolTip("I'm the first user of this sync repo and I'd like to initialize it as a new "
-                                     "repo.")
+        self._initrepo_checkbox.setText("Create repository")
+        self._initrepo_checkbox.setToolTip("I'm the first user of this binsync project and I'd like to initialize it as a sync repo.")
         self._initrepo_checkbox.setChecked(False)
         self._initrepo_checkbox.setEnabled(False)
 
@@ -123,6 +122,7 @@ class SyncConfig(QDialog):
     def _on_ok_clicked(self):
         user = self._user_edit.text()
         path = self._repo_edit.text()
+        init_repo = self._initrepo_checkbox.isChecked()
 
         if not user:
             QMessageBox(self).critical(None, "Invalid user name",
@@ -130,21 +130,25 @@ class SyncConfig(QDialog):
                                        )
             return
 
-        if not os.path.isdir(path):
+        if not os.path.isdir(path) and not init_repo:
             QMessageBox(self).critical(None, "Repo does not exist",
-                                       "The specified sync repo does not exist."
+                                       "The specified sync directory does not exist. "
+                                       "Do you maybe want to initialize it?"
                                        )
             return
 
         # TODO: Add a user ID to angr management
         if not self.is_git_repo(path):
-            init_repo = self._initrepo_checkbox.isChecked()
             remote_url = self._remote_edit.text()
         else:
-            init_repo = False
             remote_url = None
 
-        self._instance.sync.connect(user, path, init_repo=init_repo, remote_url=remote_url)
+        try:
+            self._instance.sync.connect(user, path, init_repo=init_repo, remote_url=remote_url)
+        except Exception as e:
+            QMessageBox(self).critical(None, "Error connecting to repository", str(e))
+            return
+
         self._instance.workspace.view_manager.first_view_in_category('sync').reload()
         self.close()
 

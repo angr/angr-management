@@ -2,6 +2,8 @@
 import time
 import threading
 
+from PySide2.QtWidgets import QMessageBox
+
 from .object_container import ObjectContainer
 
 
@@ -109,7 +111,10 @@ class SyncControl:
 
             if ts - self._last_update_ts > self._update_interval:
                 # commit stuff
-                self.project.kb.sync.update()
+                try:
+                    self.project.kb.sync.update()
+                except Exception as e:
+                    QMessageBox.critical(None, "Binsync error", "Encountered error during sync:\n" + str(e))
 
                 self._last_update_ts = ts
 
