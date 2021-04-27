@@ -1,4 +1,4 @@
-
+import traceback
 import os
 
 from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox,
@@ -144,9 +144,11 @@ class SyncConfig(QDialog):
             remote_url = None
 
         try:
-            self._instance.sync.connect(user, path, init_repo=init_repo, remote_url=remote_url)
+            md5 = self._instance.project.loader.main_object.md5.hex()
+            self._instance.sync.connect(user, path, init_repo=init_repo, remote_url=remote_url, binary_hash=md5)
         except Exception as e:
-            QMessageBox(self).critical(None, "Error connecting to repository", str(e))
+            QMessageBox(self).critical(None, "Error connecting to repository", repr(e))
+            traceback.print_exc()
             return
 
         self._instance.workspace.view_manager.first_view_in_category('sync').reload()

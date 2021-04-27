@@ -1,6 +1,7 @@
 
 import time
 import threading
+import traceback
 
 from PySide2.QtWidgets import QMessageBox
 
@@ -81,12 +82,11 @@ class SyncControl:
     def _initialize(self, **kwargs):
         self.project = self.instance.project
 
-    def connect(self, user, repo_path, init_repo=False, remote_url=None):
-
+    def connect(self, user, repo_path, init_repo=False, remote_url=None, binary_hash=None):
         if binsync is None:
             raise ImportError("binsync is not installed.")
 
-        client = binsync.Client(user, repo_path, init_repo=init_repo, remote_url=remote_url)
+        client = binsync.Client(user, repo_path, init_repo=init_repo, remote_url=remote_url, binary_hash=binary_hash)
         self.project.kb.sync.connect(client)
 
         # Spawn the worker thread
@@ -114,6 +114,7 @@ class SyncControl:
                 try:
                     self.project.kb.sync.update()
                 except Exception as e:
+                    traceback.print_exc()
                     QMessageBox.critical(None, "Binsync error", "Encountered error during sync:\n" + str(e))
 
                 self._last_update_ts = ts
