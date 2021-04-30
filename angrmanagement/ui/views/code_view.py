@@ -1,3 +1,4 @@
+from typing import Set
 
 from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
@@ -27,6 +28,8 @@ class CodeView(BaseView):
         self._doc = None  # type:QCodeDocument
         self._options = None  # type:QDecompilationOptions
 
+        self.vars_must_struct: Set[str] = set()
+
         self._init_widgets()
 
         self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
@@ -37,18 +40,23 @@ class CodeView(BaseView):
         if self.workspace.instance.project.am_none:
             return
         self._options.reload(force=True)
+        self.vars_must_struct = set()
 
-    def decompile(self):
+    def decompile(self, clear_prototype: bool=True):
 
         if self._function is None:
             return
 
+        if clear_prototype:
+            # clear the existing function prototype
+            self._function.prototype = None
         d = self.workspace.instance.project.analyses.Decompiler(
             self._function,
             cfg=self.workspace.instance.cfg,
             options=self._options.option_and_values,
             optimization_passes=self._options.selected_passes,
             peephole_optimizations=self._options.selected_peephole_opts,
+            vars_must_struct=self.vars_must_struct,
             # kb=dec_kb
             )
         self.codegen = d.codegen
