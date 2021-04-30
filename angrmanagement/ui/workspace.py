@@ -110,6 +110,9 @@ class Workspace:
             # Initialize the linear viewer
             self.view_manager.first_view_in_category('disassembly')._linear_viewer.initialize()
 
+            # Reload the pseudocode view
+            self.view_manager.first_view_in_category('pseudocode').reload()
+
     def _on_prototype_found(self):
         self.instance.add_job(
             VariableRecoveryJob(

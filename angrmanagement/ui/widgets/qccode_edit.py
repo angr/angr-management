@@ -8,6 +8,7 @@ from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
 
+from angr.sim_variable import SimVariable
 from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
 
 from ..dialogs.rename_node import RenameNode
@@ -53,11 +54,10 @@ class QCCodeEdit(api.CodeEdit):
         self.call_actions = [ ]
         self.default_actions = [ ]
         self.function_name_actions = []
-        self._initialize_context_menus()
-
+        self.action_rename_node = None
         self._selected_node = None
 
-        self.action_rename_node = None
+        self._initialize_context_menus()
 
         # but we don't need some of the actions
         self.remove_action(self.action_undo)
@@ -181,7 +181,7 @@ class QCCodeEdit(api.CodeEdit):
         elif key == Qt.Key_N:
             node = self.node_under_cursor()
             if isinstance(node, (CVariable, CFunction)):
-                self.rename_node(node)
+                self.rename_node(node=node)
             return True
 
         return super().keyReleaseEvent(event)
@@ -196,12 +196,25 @@ class QCCodeEdit(api.CodeEdit):
     # Actions
     #
 
-    def rename_node(self, node=None):
+    def rename_node(self, *args, node=None):
         n = node if node is not None else self._selected_node
         if not isinstance(n, (CVariable, CFunction)):
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()
+
+    def toggle_struct(self):
+        node = self._selected_node
+        if not isinstance(node, CVariable):
+            return
+        if isinstance(node.variable, SimVariable):
+            ident = node.variable.ident
+            if ident in self._code_view.vars_must_struct:
+                self._code_view.vars_must_struct.remove(ident)
+            else:
+                self._code_view.vars_must_struct.add(ident)
+            # decompile again
+            self._code_view.decompile()
 
     @staticmethod
     def _separator():
@@ -219,9 +232,12 @@ class QCCodeEdit(api.CodeEdit):
 
         self.action_rename_node = QAction('Re&name variable', self)
         self.action_rename_node.triggered.connect(self.rename_node)
+        self.action_toggle_struct = QAction('Toggle &struct/array')
+        self.action_toggle_struct.triggered.connect(self.toggle_struct)
 
         self.variable_actions = [
             self.action_rename_node,
+            self.action_toggle_struct,
         ]
 
         self.function_name_actions = [
