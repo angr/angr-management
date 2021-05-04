@@ -36,8 +36,9 @@ def make_common_options():
         (os.path.join(os.path.dirname(angr.__file__),
                       "analyses/identifier/functions"), "angr/analyses/identifier/functions"),
         (os.path.join(os.path.dirname(angr.__file__), "procedures"), "angr/procedures"),
-        (os.path.join(os.path.dirname(zmq.__file__), os.pardir, "pyzmq.libs"), "pyzmq.libs")
     ]
+    if sys.platform != "darwin":
+        included_data.append((os.path.join(os.path.dirname(zmq.__file__), os.pardir, "pyzmq.libs"), "pyzmq.libs"))
 
     # dynamically-loaded DLLs have to be explicitly added. We just include the entire lib dir.
     included_libs = [
