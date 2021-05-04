@@ -21,23 +21,45 @@ def make_common_options():
 
     # any dynamically-loaded modules have to be explicitly added
     included_data = [
-        (os.path.join(os.path.dirname(angrmanagement.__file__),
-                      "resources"), "angrmanagement/resources"),
-        (os.path.join(os.path.dirname(angrmanagement.__file__),
-                      "resources/images"), "angrmanagement/resources/images"),
-        (os.path.join(os.path.dirname(angrmanagement.__file__),
-                      "plugins"), "angrmanagement/plugins"),
-        (os.path.join(os.path.dirname(angrmanagement.__file__),
-                      "config"), "angrmanagement/config"),
-        (os.path.join(os.path.dirname(cle.__file__),
-                      "backends/pe/relocation"), "cle/backends/pe/relocation"),
-        (os.path.join(os.path.dirname(cle.__file__),
-                      "backends/elf/relocation"), "cle/backends/elf/relocation"),
-        (os.path.join(os.path.dirname(angr.__file__),
-                      "analyses/identifier/functions"), "angr/analyses/identifier/functions"),
+        (
+            os.path.join(os.path.dirname(angrmanagement.__file__), "resources"),
+            "angrmanagement/resources",
+        ),
+        (
+            os.path.join(os.path.dirname(angrmanagement.__file__), "resources/images"),
+            "angrmanagement/resources/images",
+        ),
+        (
+            os.path.join(os.path.dirname(angrmanagement.__file__), "plugins"),
+            "angrmanagement/plugins",
+        ),
+        (
+            os.path.join(os.path.dirname(angrmanagement.__file__), "config"),
+            "angrmanagement/config",
+        ),
+        (
+            os.path.join(os.path.dirname(cle.__file__), "backends/pe/relocation"),
+            "cle/backends/pe/relocation",
+        ),
+        (
+            os.path.join(os.path.dirname(cle.__file__), "backends/elf/relocation"),
+            "cle/backends/elf/relocation",
+        ),
+        (
+            os.path.join(
+                os.path.dirname(angr.__file__), "analyses/identifier/functions"
+            ),
+            "angr/analyses/identifier/functions",
+        ),
         (os.path.join(os.path.dirname(angr.__file__), "procedures"), "angr/procedures"),
-        (os.path.join(os.path.dirname(zmq.__file__), os.pardir, "pyzmq.libs"), "pyzmq.libs")
     ]
+    if sys.platform != "darwin":
+        included_data.append(
+            (
+                os.path.join(os.path.dirname(zmq.__file__), os.pardir, "pyzmq.libs"),
+                "pyzmq.libs",
+            )
+        )
 
     # dynamically-loaded DLLs have to be explicitly added. We just include the entire lib dir.
     included_libs = [
@@ -50,22 +72,27 @@ def make_common_options():
 
     if sys.platform == "linux":
         import keystone
+
         included_libs.append((os.path.dirname(keystone.__file__), "keystone"))
 
-    all_mappings = [(';' if sys.platform.startswith('win') else ':').join(
-        mapping) for mapping in (included_data + included_libs)]
+    all_mappings = [
+        (";" if sys.platform.startswith("win") else ":").join(mapping)
+        for mapping in (included_data + included_libs)
+    ]
 
     # include ipython because it's not autodetected for some reason
-    args = ["pyinstaller",
-            "--name=angr-management",
-            "--hidden-import=ipykernel.datapub",
-            "--hidden-import=pkg_resources.py2_warn",
-            "--hidden-import=sqlalchemy.sql.default_comparator",
-            "-w",
-            "-i",
-            os.path.join(os.path.dirname(angrmanagement.__file__),
-                         "resources", "images", "angr.ico"),
-            ]
+    args = [
+        "pyinstaller",
+        "--name=angr-management",
+        "--hidden-import=ipykernel.datapub",
+        "--hidden-import=pkg_resources.py2_warn",
+        "--hidden-import=sqlalchemy.sql.default_comparator",
+        "-w",
+        "-i",
+        os.path.join(
+            os.path.dirname(angrmanagement.__file__), "resources", "images", "angr.ico"
+        ),
+    ]
 
     for mapping in all_mappings:
         args.append("--add-data")
