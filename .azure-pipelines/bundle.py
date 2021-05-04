@@ -11,6 +11,7 @@ import pyvex
 import angr
 import cle
 import z3
+import zmq
 
 
 def make_common_options():
@@ -35,6 +36,7 @@ def make_common_options():
         (os.path.join(os.path.dirname(angr.__file__),
                       "analyses/identifier/functions"), "angr/analyses/identifier/functions"),
         (os.path.join(os.path.dirname(angr.__file__), "procedures"), "angr/procedures"),
+        (os.path.join(os.path.dirname(zmq.__file__), os.pardir, "pyzmq.libs"), "pyzmq.libs")
     ]
 
     # dynamically-loaded DLLs have to be explicitly added. We just include the entire lib dir.
