@@ -126,6 +126,7 @@ class RenameNode(QDialog):
             if self._code_view is not None and self._node is not None:
                 if isinstance(self._node, CVariable):
                     self._node.unified_variable.name = node_name
+                    self._node.unified_variable.renamed = True
                 elif isinstance(self._node, CFunction):
                     code_kb = self._code_view.codegen.kb
                     code_kb.functions[self._node.name].name = node_name
