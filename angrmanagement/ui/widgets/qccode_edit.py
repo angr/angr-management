@@ -169,6 +169,7 @@ class QCCodeEdit(api.CodeEdit):
         return asm_ins_addr
 
     def keyReleaseEvent(self, event):
+        # TODO what of this should live in the CodeView?
         key = event.key()
         if key == Qt.Key_Tab:
             # Compute the location to switch back to
@@ -182,6 +183,14 @@ class QCCodeEdit(api.CodeEdit):
             node = self.node_under_cursor()
             if isinstance(node, (CVariable, CFunction)):
                 self.rename_node(node=node)
+            return True
+        elif key == Qt.Key_Escape:
+            addr = self._code_view.jump_history.backtrack()
+            if addr is None:
+                self._code_view.workspace.view_manager.remove_view(self._code_view)
+            else:
+                target_func = self._code_view.workspace.instance.kb.functions.floor_func(addr)
+                self._code_view.workspace.decompile_function(target_func, curr_ins=addr, view=self._code_view)
             return True
 
         return super().keyReleaseEvent(event)

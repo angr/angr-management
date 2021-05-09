@@ -11,6 +11,7 @@ from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
 from .view import BaseView
 from ...data.object_container import ObjectContainer
+from ...logic.disassembly import JumpHistory
 
 
 class CodeView(BaseView):
@@ -27,6 +28,7 @@ class CodeView(BaseView):
         self._textedit: QCCodeEdit = None
         self._doc = None  # type:QCodeDocument
         self._options = None  # type:QDecompilationOptions
+        self.jump_history = JumpHistory()
 
         self.vars_must_struct: Set[str] = set()
 
@@ -147,6 +149,8 @@ class CodeView(BaseView):
             if isinstance(selected_node, CFunctionCall):
                 # decompile this new function
                 if selected_node.callee_func is not None:
+                    self.jump_history.record_address(selected_node.tags['ins_addr'])
+                    self.jump_history.jump_to(selected_node.callee_func.addr)
                     self.workspace.decompile_function(selected_node.callee_func, view=self)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
