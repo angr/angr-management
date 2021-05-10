@@ -17,6 +17,7 @@ class JumpHistory(object):
             self._history.append(addr)
             self._pos = len(self._history) - 1
 
+    # TODO this should maybe not adjust pos and just update the most recent entry
     def record_address(self, addr):
 
         if self._pos != len(self._history) - 1:

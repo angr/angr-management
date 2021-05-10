@@ -315,11 +315,12 @@ class Workspace:
             view = self._get_or_create_pseudocode_view()
 
         view.function = func
-        self.raise_view(view)
-        view.setFocus()
 
         # correspond disass location to new decomp position
         self.position_cursor_on_decomp(view, curr_ins)
+
+        view.setFocus()
+        self.raise_view(view)
 
     def create_simulation_manager(self, state, state_name, view=None):
 
@@ -365,7 +366,7 @@ class Workspace:
 
         if view is None:
             # Create a new disassembly view
-            view = DisassemblyView(self, 'right')
+            view = DisassemblyView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
@@ -376,7 +377,7 @@ class Workspace:
 
         if view is None:
             # Create a new pseudo-code view
-            view = CodeView(self, 'right')
+            view = CodeView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
@@ -387,7 +388,7 @@ class Workspace:
 
         if view is None:
             # Create a new symexec view
-            view = CodeView(self, 'right')
+            view = CodeView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
@@ -396,7 +397,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("interaction")
         if view is None:
             # Create a new interaction view
-            view = InteractionView(self, 'right')
+            view = InteractionView(self, 'center')
             self.add_view(view, view.caption, view.category)
         return view
 
