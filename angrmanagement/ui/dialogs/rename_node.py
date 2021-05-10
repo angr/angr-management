@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from angr.analyses.decompiler.structured_codegen import CVariable, CFunction, CConstruct
+from angr.analyses.decompiler.structured_codegen import CVariable, CFunction, CConstruct, CFunctionCall
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
@@ -66,6 +66,8 @@ class RenameNode(QDialog):
                 name_box.setText(self._node.unified_variable.name)
             elif isinstance(self._node, CFunction) and self._node.name:
                 name_box.setText(self._node.name)
+            elif isinstance(self._node, CFunctionCall):
+                name_box.setText(self._node.callee_func.name)
 
             name_box.selectAll()
         self._name_box = name_box
@@ -132,6 +134,8 @@ class RenameNode(QDialog):
                     code_kb.functions[self._node.name].name = node_name
                     self._node.name = node_name
                     self._node.demangled_name = node_name
+                elif isinstance(self._node, CFunctionCall):
+                    self._node.callee_func.name = node_name
 
                 self._code_view.refresh_text()
                 self.close()

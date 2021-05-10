@@ -174,7 +174,7 @@ class QCCodeEdit(api.CodeEdit):
         key = event.key()
         if key == Qt.Key_N:
             node = self.node_under_cursor()
-            if isinstance(node, (CVariable, CFunction)):
+            if isinstance(node, (CVariable, CFunction, CFunctionCall)):
                 self.rename_node(node=node)
             return True
 
@@ -193,7 +193,7 @@ class QCCodeEdit(api.CodeEdit):
 
     def rename_node(self, *args, node=None):
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction)):
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()

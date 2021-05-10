@@ -191,3 +191,7 @@ class ViewManager:
 
         center_dockable_views = self.get_center_views()
         center_dockable_views[self.get_current_tab_id()-1].raise_()
+
+    @property
+    def current_tab(self):
+        return self.get_center_views()[self.get_current_tab_id()].widget()
