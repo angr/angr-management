@@ -157,6 +157,26 @@ class CodeView(BaseView):
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.workspace.jump_to(selected_node.value.value)
 
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Tab:
+            # Compute the location to switch back to
+            asm_inst_addr = self._textedit.get_src_to_inst()
+
+            # Switch back to disassembly view
+            self.workspace.jump_to(asm_inst_addr)
+            return True
+        elif key == Qt.Key_Escape:
+            addr = self.jump_history.backtrack()
+            if addr is None:
+                self.workspace.view_manager.remove_view(self)
+            else:
+                target_func = self.workspace.instance.kb.functions.floor_func(addr)
+                self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
+            return True
+
+        return super().keyPressEvent(event)
+
     #
     # Private methods
     #
@@ -184,5 +204,7 @@ class CodeView(BaseView):
         layout.addWidget(window)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        self._textedit.focusWidget()
 
         self.workspace.plugins.instrument_code_view(self)

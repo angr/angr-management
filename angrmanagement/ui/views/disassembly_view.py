@@ -38,7 +38,6 @@ class DisassemblyView(BaseView):
         self._show_variable_ident = False
         # whether we want to show exception edges and all nodes that are only reachable through exception edges
         self._show_exception_edges = True
-        self._tab_pressed: bool = False  # if the Tab key has been pressed before
 
         self._linear_viewer = None  # type: Optional[QLinearDisassembly]
         self._flow_graph = None  # type: Optional[QDisassemblyGraph]
@@ -174,21 +173,6 @@ class DisassemblyView(BaseView):
 
     def keyPressEvent(self, event):
         key = event.key()
-        self._tab_pressed = False
-        if key == Qt.Key_Escape:
-            # jump back
-            # we put it here because the escape key is used to close other dialogs, and we do not want to catch the
-            # key-release event of the escape key in such cases.
-            self.jump_back()
-            return
-
-        elif key == Qt.Key_Tab:
-            self._tab_pressed = True
-
-        super().keyPressEvent(event)
-
-    def keyReleaseEvent(self, event):
-        key = event.key()
         if key == Qt.Key_G:
             # jump to window
             self.popup_jumpto_dialog()
@@ -205,10 +189,9 @@ class DisassemblyView(BaseView):
             # switch between highlight mode
             self.toggle_smart_highlighting(not self.infodock.smart_highlighting)
             return
-        elif key == Qt.Key_Tab and self._tab_pressed:
+        elif key == Qt.Key_Tab:
             # decompile
             self.decompile_current_function()
-            self._tab_pressed = False
             return
         elif key == Qt.Key_Semicolon:
             # add comment
@@ -219,8 +202,12 @@ class DisassemblyView(BaseView):
             self.toggle_disasm_view()
             event.accept()
             return
+        elif key == Qt.Key_Escape:
+            # jump back
+            self.jump_back()
+            return
 
-        super().keyReleaseEvent(event)
+        super().keyPressEvent(event)
 
     def redraw_current_graph(self, **kwargs):
         """

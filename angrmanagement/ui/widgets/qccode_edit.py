@@ -133,9 +133,11 @@ class QCCodeEdit(api.CodeEdit):
         :return:
         """
 
+        # if you set this to ShortcutOverride it triggers and everything but the tab DOESN'T FUCKING SWITCH
         if event.type() == QEvent.KeyRelease and event.key() == Qt.Key_Tab:
-            self.keyReleaseEvent(event)
-            return True
+            self.keyPressEvent(event)
+            event.accept()
+            return False
 
         return super().event(event)
 
@@ -168,32 +170,16 @@ class QCCodeEdit(api.CodeEdit):
 
         return asm_ins_addr
 
-    def keyReleaseEvent(self, event):
-        # TODO what of this should live in the CodeView?
+    def keyPressEvent(self, event):
         key = event.key()
-        if key == Qt.Key_Tab:
-            # Compute the location to switch back to
-            asm_inst_addr = self.get_src_to_inst()
-
-            # Switch back to disassembly view
-            self.workspace.jump_to(asm_inst_addr)
-            event.accept()
-            return True
-        elif key == Qt.Key_N:
+        if key == Qt.Key_N:
             node = self.node_under_cursor()
             if isinstance(node, (CVariable, CFunction)):
                 self.rename_node(node=node)
             return True
-        elif key == Qt.Key_Escape:
-            addr = self._code_view.jump_history.backtrack()
-            if addr is None:
-                self._code_view.workspace.view_manager.remove_view(self._code_view)
-            else:
-                target_func = self._code_view.workspace.instance.kb.functions.floor_func(addr)
-                self._code_view.workspace.decompile_function(target_func, curr_ins=addr, view=self._code_view)
-            return True
 
-        return super().keyReleaseEvent(event)
+        #return super().keyPressEvent(event)
+        return self._code_view.keyPressEvent(event)
 
     def setDocument(self, document):
         super().setDocument(document)

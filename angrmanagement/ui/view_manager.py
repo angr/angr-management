@@ -115,6 +115,7 @@ class ViewManager:
 
         dock.show()
         dock.raise_()
+        view.focusWidget()
 
     def get_center_views(self):
         """
