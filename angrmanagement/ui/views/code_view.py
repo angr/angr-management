@@ -131,7 +131,7 @@ class CodeView(BaseView):
             else:
                 self.codegen.regenerate_text()
 
-            self.set_codegen(self.codegen)
+            self._codegen.am_event()
 
     #
     # Event callbacks

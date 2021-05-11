@@ -62,8 +62,10 @@ class RenameNode(QDialog):
         name_box = NodeNameBox(self._on_name_changed, self)
         if self._node is not None:
             # parse node type, either a Function header or a Variable.
-            if isinstance(self._node, CVariable) and self._node.unified_variable.name:
+            if isinstance(self._node, CVariable) and self._node.unified_variable and self._node.unified_variable.name:
                 name_box.setText(self._node.unified_variable.name)
+            elif isinstance(self._node, CVariable) and self._node.variable.region == '':
+                name_box.setText(self._node.variable.name)
             elif isinstance(self._node, CFunction) and self._node.name:
                 name_box.setText(self._node.name)
             elif isinstance(self._node, CFunctionCall):
@@ -126,9 +128,12 @@ class RenameNode(QDialog):
         node_name = self._name_box.name
         if node_name is not None:
             if self._code_view is not None and self._node is not None:
-                if isinstance(self._node, CVariable):
+                if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
                     self._node.unified_variable.name = node_name
                     self._node.unified_variable.renamed = True
+                elif isinstance(self._node, CVariable) and self._node.variable.region == '':
+                    self._code_view.workspace.instance.kb.labels[self._node.variable.addr] = node_name
+                    self._node.variable.name = node_name
                 elif isinstance(self._node, CFunction):
                     code_kb = self._code_view.codegen.kb
                     code_kb.functions[self._node.name].name = node_name
