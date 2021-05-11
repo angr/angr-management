@@ -21,7 +21,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
 
     HIGHLIGHTING_RULES = [
         # quotation
-        (r"\".*\"", 'quotation'),
+        (r"\"([^\\\"]|(\\.))*\"", 'quotation'),
         # comment
         (r"//[^\n]*", 'comment'),
         (r"/\*[^\n]*\*/", 'comment'),
