@@ -133,11 +133,11 @@ class QCCodeEdit(api.CodeEdit):
         :return:
         """
 
-        # if you set this to ShortcutOverride it triggers and everything but the tab DOESN'T FUCKING SWITCH
-        if event.type() == QEvent.KeyRelease and event.key() == Qt.Key_Tab:
-            self.keyPressEvent(event)
+        if event.type() == QEvent.ShortcutOverride and event.key() == Qt.Key_Tab:
             event.accept()
-            return False
+            return True
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
+            return self.keyPressEvent(event)
 
         return super().event(event)
 
@@ -178,7 +178,6 @@ class QCCodeEdit(api.CodeEdit):
                 self.rename_node(node=node)
             return True
 
-        #return super().keyPressEvent(event)
         return self._code_view.keyPressEvent(event)
 
     def setDocument(self, document):

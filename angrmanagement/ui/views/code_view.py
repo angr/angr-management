@@ -1,5 +1,4 @@
 from typing import Set
-import functools
 
 from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
