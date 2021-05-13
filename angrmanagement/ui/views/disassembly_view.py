@@ -1,7 +1,7 @@
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication, QMessageBox
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
 from PySide2.QtCore import Qt, QSize
 
 from ...data.instance import ObjectContainer
@@ -28,7 +28,7 @@ _l = logging.getLogger(__name__)
 
 class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
-        super(DisassemblyView, self).__init__('disassembly', workspace, *args, **kwargs)
+        super().__init__('disassembly', workspace, *args, **kwargs)
 
         self.caption = 'Disassembly'
 
@@ -52,6 +52,10 @@ class DisassemblyView(BaseView):
         self._label_menu = None  # type: Optional[DisasmLabelContextMenu]
 
         self._insn_addr_on_context_menu = None
+        self._label_addr_on_context_menu = None
+
+        self.width_hint = 800
+        self.height_hint = 800
 
         self._init_widgets()
         self._init_menus()
@@ -209,7 +213,7 @@ class DisassemblyView(BaseView):
 
         super().keyPressEvent(event)
 
-    def redraw_current_graph(self, **kwargs):
+    def redraw_current_graph(self, **kwargs):  # pylint: disable=unused-argument
         """
         Redraw the graph currently in display.
 
@@ -273,8 +277,7 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
-    def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False,
-                               async_=True):
+    def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:
             r = self._flow_graph.get_selected_operand_info()
             if r is not None:
@@ -510,9 +513,6 @@ class DisassemblyView(BaseView):
     def avoid_addr_in_exec(self, addr):
 
         self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
-
-    def sizeHint(self):
-        return QSize(800, 800)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:

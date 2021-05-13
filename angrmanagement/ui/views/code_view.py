@@ -137,7 +137,7 @@ class CodeView(BaseView):
     # Event callbacks
     #
 
-    def _on_new_function(self, focus=False, focus_addr=None, **kwargs):
+    def _on_new_function(self, focus=False, focus_addr=None, **kwargs):  # pylint: disable=unused-argument
         if self.codegen is not None and self.codegen._func is self.function.am_obj:
             self.focus(focus_addr, focus=focus)
             return
