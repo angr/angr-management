@@ -4,13 +4,15 @@ from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
-from angr.analyses.decompiler.structured_codegen import CFunctionCall, CConstant
+from angr.analyses.decompiler.structured_codegen import CFunctionCall, CConstant, StructuredCodeGenerator
 
 from ..widgets.qccode_edit import QCCodeEdit
 from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
 from .view import BaseView
 from ...data.object_container import ObjectContainer
+from ...logic.disassembly import JumpHistory
+from ...data.jobs import DecompileFunctionJob
 
 
 class CodeView(BaseView):
@@ -19,14 +21,15 @@ class CodeView(BaseView):
 
         self.caption = 'Pseudocode'
 
-        self._function = None
+        self.function = ObjectContainer(None, 'The function to decompile')
         self.current_node = ObjectContainer(None, 'Current selected C-code node')
 
         self._codeedit = None
-        self.codegen = None
+        self._codegen = ObjectContainer(None, "The currently-displayed codegen object")
         self._textedit: QCCodeEdit = None
         self._doc = None  # type:QCodeDocument
         self._options = None  # type:QDecompilationOptions
+        self.jump_history = JumpHistory()
 
         self.vars_must_struct: Set[str] = set()
 
@@ -35,6 +38,8 @@ class CodeView(BaseView):
         self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
         self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
+        self.function.am_subscribe(self._on_new_function)
+        self._codegen.am_subscribe(self._on_new_codegen)
 
     def reload(self):
         if self.workspace.instance.project.am_none:
@@ -42,28 +47,49 @@ class CodeView(BaseView):
         self._options.reload(force=True)
         self.vars_must_struct = set()
 
-    def decompile(self, clear_prototype: bool=True):
-
-        if self._function is None:
+    def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None):
+        if self.function.am_none:
             return
 
         if clear_prototype:
             # clear the existing function prototype
-            self._function.prototype = None
-        d = self.workspace.instance.project.analyses.Decompiler(
-            self._function,
+            self.function.prototype = None
+
+        def decomp_ready():
+            self._codegen.am_obj = job.result.codegen
+            self._codegen.am_event()
+            self.focus(focus_addr, focus)
+
+        job = DecompileFunctionJob(
+            self.function.am_obj,
+            flavor='pseudocode',
             cfg=self.workspace.instance.cfg,
             options=self._options.option_and_values,
             optimization_passes=self._options.selected_passes,
             peephole_optimizations=self._options.selected_peephole_opts,
             vars_must_struct=self.vars_must_struct,
-            # kb=dec_kb
-            )
-        self.codegen = d.codegen
-        self.set_codegen(d.codegen)
+            on_finish=decomp_ready,
+        )
 
-    def set_codegen(self, codegen):
-        self._doc = QCodeDocument(codegen)
+        self.workspace.instance.add_job(job)
+
+    def focus(self, focus_addr=None, focus=True):
+        if focus:
+            self.workspace.view_manager.raise_view(self)
+        if focus_addr is not None:
+            # get closest node for ins
+            new_text_pos = self._doc.find_closest_node_pos(focus_addr)
+
+            if new_text_pos is not None:
+                # set the new cursor position
+                textedit = self.textedit
+                cursor = textedit.textCursor()
+                cursor.setPosition(new_text_pos)
+                textedit.setTextCursor(cursor)
+                textedit.setFocus()
+
+    def _on_new_codegen(self):
+        self._doc = QCodeDocument(self.codegen)
         self._textedit.setDocument(self._doc)
 
     #
@@ -79,15 +105,8 @@ class CodeView(BaseView):
         return self._doc
 
     @property
-    def function(self):
-        return self._function
-
-    @function.setter
-    def function(self, v):
-        if v is self._function:
-            return
-        self._function = v
-        self.decompile()
+    def codegen(self) -> StructuredCodeGenerator:
+        return self._codegen.am_obj
 
     #
     # Public methods
@@ -112,11 +131,17 @@ class CodeView(BaseView):
             else:
                 self.codegen.regenerate_text()
 
-            self.set_codegen(self.codegen)
+            self._codegen.am_event()
 
     #
     # Event callbacks
     #
+
+    def _on_new_function(self, focus=False, focus_addr=None, **kwargs):  # pylint: disable=unused-argument
+        if self.codegen is not None and self.codegen._func is self.function.am_obj:
+            self.focus(focus_addr, focus=focus)
+            return
+        self.decompile(focus=focus, focus_addr=focus_addr)
 
     def _on_cursor_position_changed(self):
         if self._doc is None:
@@ -147,11 +172,33 @@ class CodeView(BaseView):
             if isinstance(selected_node, CFunctionCall):
                 # decompile this new function
                 if selected_node.callee_func is not None:
+                    self.jump_history.record_address(selected_node.tags['ins_addr'])
+                    self.jump_history.jump_to(selected_node.callee_func.addr)
                     self.workspace.decompile_function(selected_node.callee_func, view=self)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.workspace.jump_to(selected_node.value.value)
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key_Tab:
+            # Compute the location to switch back to
+            asm_inst_addr = self._textedit.get_src_to_inst()
+
+            # Switch back to disassembly view
+            self.workspace.jump_to(asm_inst_addr)
+            return True
+        elif key == Qt.Key_Escape:
+            addr = self.jump_history.backtrack()
+            if addr is None:
+                self.workspace.view_manager.remove_view(self)
+            else:
+                target_func = self.workspace.instance.kb.functions.floor_func(addr)
+                self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
+            return True
+
+        return super().keyPressEvent(event)
 
     #
     # Private methods
@@ -180,5 +227,7 @@ class CodeView(BaseView):
         layout.addWidget(window)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        self._textedit.focusWidget()
 
         self.workspace.plugins.instrument_code_view(self)

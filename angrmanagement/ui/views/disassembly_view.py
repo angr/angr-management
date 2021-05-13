@@ -1,7 +1,7 @@
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QMenu, QApplication, QMessageBox
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
 from PySide2.QtCore import Qt, QSize
 
 from ...data.instance import ObjectContainer
@@ -28,7 +28,7 @@ _l = logging.getLogger(__name__)
 
 class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
-        super(DisassemblyView, self).__init__('disassembly', workspace, *args, **kwargs)
+        super().__init__('disassembly', workspace, *args, **kwargs)
 
         self.caption = 'Disassembly'
 
@@ -38,7 +38,6 @@ class DisassemblyView(BaseView):
         self._show_variable_ident = False
         # whether we want to show exception edges and all nodes that are only reachable through exception edges
         self._show_exception_edges = True
-        self._tab_pressed: bool = False  # if the Tab key has been pressed before
 
         self._linear_viewer = None  # type: Optional[QLinearDisassembly]
         self._flow_graph = None  # type: Optional[QDisassemblyGraph]
@@ -53,6 +52,10 @@ class DisassemblyView(BaseView):
         self._label_menu = None  # type: Optional[DisasmLabelContextMenu]
 
         self._insn_addr_on_context_menu = None
+        self._label_addr_on_context_menu = None
+
+        self.width_hint = 800
+        self.height_hint = 800
 
         self._init_widgets()
         self._init_menus()
@@ -174,21 +177,6 @@ class DisassemblyView(BaseView):
 
     def keyPressEvent(self, event):
         key = event.key()
-        self._tab_pressed = False
-        if key == Qt.Key_Escape:
-            # jump back
-            # we put it here because the escape key is used to close other dialogs, and we do not want to catch the
-            # key-release event of the escape key in such cases.
-            self.jump_back()
-            return
-
-        elif key == Qt.Key_Tab:
-            self._tab_pressed = True
-
-        super().keyPressEvent(event)
-
-    def keyReleaseEvent(self, event):
-        key = event.key()
         if key == Qt.Key_G:
             # jump to window
             self.popup_jumpto_dialog()
@@ -205,10 +193,9 @@ class DisassemblyView(BaseView):
             # switch between highlight mode
             self.toggle_smart_highlighting(not self.infodock.smart_highlighting)
             return
-        elif key == Qt.Key_Tab and self._tab_pressed:
+        elif key == Qt.Key_Tab:
             # decompile
             self.decompile_current_function()
-            self._tab_pressed = False
             return
         elif key == Qt.Key_Semicolon:
             # add comment
@@ -219,10 +206,14 @@ class DisassemblyView(BaseView):
             self.toggle_disasm_view()
             event.accept()
             return
+        elif key == Qt.Key_Escape:
+            # jump back
+            self.jump_back()
+            return
 
-        super().keyReleaseEvent(event)
+        super().keyPressEvent(event)
 
-    def redraw_current_graph(self, **kwargs):
+    def redraw_current_graph(self, **kwargs):  # pylint: disable=unused-argument
         """
         Redraw the graph currently in display.
 
@@ -286,8 +277,7 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
-    def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False,
-                               async_=True):
+    def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:
             r = self._flow_graph.get_selected_operand_info()
             if r is not None:
@@ -523,9 +513,6 @@ class DisassemblyView(BaseView):
     def avoid_addr_in_exec(self, addr):
 
         self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
-
-    def sizeHint(self):
-        return QSize(800, 800)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:

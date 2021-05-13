@@ -8,7 +8,7 @@ from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
 
-from angr.sim_variable import SimVariable
+from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
 
 from ..dialogs.rename_node import RenameNode
@@ -133,9 +133,11 @@ class QCCodeEdit(api.CodeEdit):
         :return:
         """
 
-        if event.type() == QEvent.KeyRelease and event.key() == Qt.Key_Tab:
-            self.keyReleaseEvent(event)
+        if event.type() == QEvent.ShortcutOverride and event.key() == Qt.Key_Tab:
+            event.accept()
             return True
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Tab:
+            return self.keyPressEvent(event)
 
         return super().event(event)
 
@@ -168,23 +170,15 @@ class QCCodeEdit(api.CodeEdit):
 
         return asm_ins_addr
 
-    def keyReleaseEvent(self, event):
+    def keyPressEvent(self, event):
         key = event.key()
-        if key == Qt.Key_Tab:
-            # Compute the location to switch back to
-            asm_inst_addr = self.get_src_to_inst()
-
-            # Switch back to disassembly view
-            self.workspace.jump_to(asm_inst_addr)
-            event.accept()
-            return True
-        elif key == Qt.Key_N:
+        if key == Qt.Key_N:
             node = self.node_under_cursor()
-            if isinstance(node, (CVariable, CFunction)):
+            if isinstance(node, (CVariable, CFunction, CFunctionCall)):
                 self.rename_node(node=node)
             return True
 
-        return super().keyReleaseEvent(event)
+        return self._code_view.keyPressEvent(event)
 
     def setDocument(self, document):
         super().setDocument(document)
@@ -198,7 +192,10 @@ class QCCodeEdit(api.CodeEdit):
 
     def rename_node(self, *args, node=None):
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction)):
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
+            return
+        if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
+            # unsupported right now..
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()

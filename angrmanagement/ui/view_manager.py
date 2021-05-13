@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import Dict, List, Optional, TYPE_CHECKING
 import logging
+import functools
 
 from PySide2.QtCore import Qt
 
@@ -47,7 +48,7 @@ class ViewManager:
 
         self.views_by_category[category].append(view)
 
-        dock = QSmartDockWidget(caption, parent=view)
+        dock = QSmartDockWidget(caption, parent=view, on_close=functools.partial(self.remove_view, view))
         dock_area = self.DOCKING_POSITIONS.get(view.default_docking_position, Qt.RightDockWidgetArea)
         if view.default_docking_position == 'center':
             self.main_window.central_widget.addDockWidget(dock_area, dock)
@@ -112,7 +113,9 @@ class ViewManager:
         if dock is None:
             return
 
+        dock.show()
         dock.raise_()
+        view.focusWidget()
 
     def get_center_views(self):
         """
@@ -188,3 +191,7 @@ class ViewManager:
 
         center_dockable_views = self.get_center_views()
         center_dockable_views[self.get_current_tab_id()-1].raise_()
+
+    @property
+    def current_tab(self):
+        return self.get_center_views()[self.get_current_tab_id()].widget()

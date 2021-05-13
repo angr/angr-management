@@ -33,7 +33,7 @@ class DisasmInsnContextMenu(Menu):
 
     def _popup_newstate_dialog(self): self._disasm_view.popup_newstate_dialog(async_=True)
 
-    def _popup_dependson_dialog(self): self._disasm_view.popup_dependson_dialog(use_operand=True, async_=True)
+    def _popup_dependson_dialog(self): self._disasm_view.popup_dependson_dialog(use_operand=True)
 
     def _toggle_instruction_selection(self): self._disasm_view.infodock.toggle_instruction_selection(self.insn_addr)
 

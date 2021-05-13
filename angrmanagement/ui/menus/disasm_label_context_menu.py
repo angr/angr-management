@@ -34,7 +34,7 @@ class DisasmLabelContextMenu(Menu):
     def _popup_newstate_dialog(self): self._disasm_view.popup_newstate_dialog(async_=True)
 
     def _popup_dependson_dialog(self):
-        self._disasm_view.popup_dependson_dialog(addr=self.addr, func=True, async_=True)
+        self._disasm_view.popup_dependson_dialog(addr=self.addr, func=True)
 
     def _toggle_label_selection(self): self._disasm_view.infodock.toggle_label_selection(self.addr)
 

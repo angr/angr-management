@@ -283,22 +283,6 @@ class Workspace:
 
         self.raise_view(view)
 
-    def position_cursor_on_decomp(self, view, curr_ins):
-        if view is not None and curr_ins is not None:
-            # get the Qt document
-            doc = view.document
-
-            # get closest node for ins
-            new_text_pos = doc.find_closest_node_pos(curr_ins)
-
-            if new_text_pos is not None:
-                # set the new cursor position
-                textedit = view.textedit
-                cursor = textedit.textCursor()
-                cursor.setPosition(new_text_pos)
-                textedit.setTextCursor(cursor)
-                textedit.setFocus()
-
     def decompile_function(self, func: Function, curr_ins=None, view=None):
         """
         Decompile a function a switch to decompiled view. If curr_ins is
@@ -314,12 +298,8 @@ class Workspace:
         if view is None or view.category != "pseudocode":
             view = self._get_or_create_pseudocode_view()
 
-        view.function = func
-        self.raise_view(view)
-        view.setFocus()
-
-        # correspond disass location to new decomp position
-        self.position_cursor_on_decomp(view, curr_ins)
+        view.function.am_obj = func
+        view.function.am_event(focus=True, focus_addr=curr_ins)
 
     def create_simulation_manager(self, state, state_name, view=None):
 
@@ -365,7 +345,7 @@ class Workspace:
 
         if view is None:
             # Create a new disassembly view
-            view = DisassemblyView(self, 'right')
+            view = DisassemblyView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
@@ -376,7 +356,7 @@ class Workspace:
 
         if view is None:
             # Create a new pseudo-code view
-            view = CodeView(self, 'right')
+            view = CodeView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
@@ -387,7 +367,7 @@ class Workspace:
 
         if view is None:
             # Create a new symexec view
-            view = CodeView(self, 'right')
+            view = CodeView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
@@ -396,7 +376,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("interaction")
         if view is None:
             # Create a new interaction view
-            view = InteractionView(self, 'right')
+            view = InteractionView(self, 'center')
             self.add_view(view, view.caption, view.category)
         return view
 
