@@ -8,7 +8,7 @@ from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
 
-from angr.sim_variable import SimVariable
+from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
 
 from ..dialogs.rename_node import RenameNode
@@ -193,6 +193,9 @@ class QCCodeEdit(api.CodeEdit):
     def rename_node(self, *args, node=None):
         n = node if node is not None else self._selected_node
         if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
+            return
+        if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
+            # unsupported right now..
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()
