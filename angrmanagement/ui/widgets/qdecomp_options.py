@@ -162,6 +162,7 @@ class QDecompilationOptions(QWidget):
                 category = categories[option.category]
             else:
                 category = QTreeWidgetItem(self._treewidget, [option.category])
+                categories[option.category] = category
 
             w = QDecompilationOption(category, option, OptionType.OPTION, enabled=option.default_value==True)
             self._qoptions.append(w)
