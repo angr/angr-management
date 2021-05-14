@@ -141,8 +141,16 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
             self.zoom(event.delta() < 0, event.pos())
-        else:
+        elif event.angleDelta().y() != event.delta() or event.angleDelta().x() != 0:
+            # if this is an angled zoom (e.g. touchpad) then just let the default handler take care of it
             super().wheelEvent(event)
+        else:
+            # if it is not an angled zoom (e.g. mouse wheel) parse the shift key specially to mean horizontal movement
+            if event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier:
+                event.setModifiers(event.modifiers() & ~Qt.ShiftModifier)
+                self.horizontalScrollBar().wheelEvent(event)
+            else:
+                self.verticalScrollBar().wheelEvent(event)
 
     def _save_last_coords(self, event):
         pos = self.mapToScene(event.pos())
