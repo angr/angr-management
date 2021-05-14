@@ -54,6 +54,8 @@ class CFGGenerationJob(Job):
             cfg, cfb = result
             inst.cfb = cfb
             inst.cfg = cfg.model
+            inst.cfb.am_event()
+            inst.cfg.am_event()
             super(CFGGenerationJob, self).finish(inst, result)
         except Exception:
             _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)
