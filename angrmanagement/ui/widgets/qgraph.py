@@ -108,31 +108,39 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
 
+    def zoom(self, out=False, at=None, reset=False):
+        if at is None:
+            at = self.scene().sceneRect().center().toPoint()
+        lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
+        zoomInFactor = 1.25
+        zoomOutFactor = 1 / zoomInFactor
+
+        if reset:
+            zoomFactor = 1 / lod
+        elif not out:
+            zoomFactor = zoomInFactor
+        else:
+            zoomFactor = zoomOutFactor
+            # limit the scroll out limit for usability
+            if lod < 0.015:
+                return
+
+        # Save the scene pos
+        oldPos = self.mapToScene(at)
+
+        # Zoom
+        self.scale(zoomFactor, zoomFactor)
+
+        # Get the new position
+        newPos = self.mapToScene(at)
+
+        # Move scene to old position
+        delta = newPos - oldPos
+        self.translate(delta.x(), delta.y())
+
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
-            zoomInFactor = 1.25
-            zoomOutFactor = 1 / zoomInFactor
-
-            # Save the scene pos
-            oldPos = self.mapToScene(event.pos())
-
-            # Zoom
-            if event.delta() > 0:
-                zoomFactor = zoomInFactor
-            else:
-                zoomFactor = zoomOutFactor
-                # limit the scroll out limit for usability
-                if lod < 0.015:
-                    return
-            self.scale(zoomFactor, zoomFactor)
-
-            # Get the new position
-            newPos = self.mapToScene(event.pos())
-
-            # Move scene to old position
-            delta = newPos - oldPos
-            self.translate(delta.x(), delta.y())
+            self.zoom(event.delta() < 0, event.pos())
         else:
             super().wheelEvent(event)
 
@@ -142,11 +150,12 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self._last_screen_pos = event.pos()
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Equal:
-            try:
-                self._reset_view()
-            except NotImplementedError:
-                _l.warning('%s does not implement _initial_position', type(self).__name__)
+        if event.key() == Qt.Key_Equal and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
+            self.zoom(out=False)
+        elif event.key() == Qt.Key_Minus and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
+            self.zoom(out=True)
+        elif event.key() == Qt.Key_0 and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
+            self.zoom(reset=True)
         else:
             super().keyPressEvent(event)
 
