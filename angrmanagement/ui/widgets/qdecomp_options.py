@@ -1,8 +1,7 @@
-
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton
 
-from angr.analyses.decompiler.decompilation_options import DecompilationOption, options as dec_options
+from angr.analyses.decompiler.decompilation_options import options as dec_options
 from angr.analyses.decompiler.optimization_passes import get_optimization_passes, get_default_optimization_passes
 from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, STMT_OPTS
 
@@ -41,6 +40,8 @@ class QDecompilationOptions(QWidget):
     def __init__(self, code_view, instance, options=None, passes=None, peephole_opts=None):
         super().__init__()
 
+        self.dirty = True
+
         self._code_view = code_view
         self._instance = instance
         self._options = options
@@ -74,6 +75,17 @@ class QDecompilationOptions(QWidget):
             self._peephole_opts = self.get_all_peephole_opts()
 
         self._reload_options()
+
+    def _on_item_changed(self, item, _column):
+        if getattr(item.option, 'clears_cache', True):
+            self.dirty = True
+
+    def _on_apply_pressed(self):
+        if self.dirty:
+            self.dirty = False
+            self._code_view.decompile()
+        else:
+            self._code_view.update_options()
 
     @property
     def selected_passes(self):
@@ -110,7 +122,7 @@ class QDecompilationOptions(QWidget):
         self._options = v
         self._reload_options()
 
-    def get_default_options(self):
+    def get_default_options(self):  # pylint: disable=no-self-use
         return dec_options
 
     def get_default_passes(self):
@@ -121,10 +133,10 @@ class QDecompilationOptions(QWidget):
     def get_all_passes(self):
         return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name)
 
-    def get_default_peephole_opts(self):
+    def get_default_peephole_opts(self):  # pylint: disable=no-self-use
         return STMT_OPTS + EXPR_OPTS
 
-    def get_all_peephole_opts(self):
+    def get_all_peephole_opts(self):  # pylint: disable=no-self-use
         return STMT_OPTS + EXPR_OPTS
 
     def _init_widgets(self):
@@ -135,10 +147,11 @@ class QDecompilationOptions(QWidget):
         # tree view
         self._treewidget = QTreeWidget()
         self._treewidget.setHeaderHidden(True)
+        self._treewidget.itemChanged.connect(self._on_item_changed)
 
         # refresh button
         self._apply_btn = QPushButton("Apply")
-        self._apply_btn.clicked.connect(self._code_view.decompile)
+        self._apply_btn.clicked.connect(self._on_apply_pressed)
 
         layout = QVBoxLayout()
         layout.addWidget(self._search_box)
@@ -164,7 +177,7 @@ class QDecompilationOptions(QWidget):
                 category = QTreeWidgetItem(self._treewidget, [option.category])
                 categories[option.category] = category
 
-            w = QDecompilationOption(category, option, OptionType.OPTION, enabled=option.default_value==True)
+            w = QDecompilationOption(category, option, OptionType.OPTION, enabled=option.default_value)
             self._qoptions.append(w)
 
         passes_category = QTreeWidgetItem(self._treewidget, ["Optimization Passes"])
