@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+import PySide2.QtGui
 from PySide2.QtWidgets import QFrame
 from PySide2.QtCore import QSize
 
@@ -36,3 +37,7 @@ class BaseView(QFrame):
 
     def is_shown(self):
         return self.visibleRegion().isEmpty() is False
+
+    def closeEvent(self, event:PySide2.QtGui.QCloseEvent):
+        self.workspace.view_manager.remove_view(self)
+        event.accept()
