@@ -113,6 +113,9 @@ class Workspace:
             # Reload the pseudocode view
             self.view_manager.first_view_in_category('pseudocode').reload()
 
+            # Reload the strings view
+            self.view_manager.first_view_in_category('strings').reload()
+
     def _on_prototype_found(self):
         self.instance.add_job(
             VariableRecoveryJob(
@@ -128,6 +131,7 @@ class Workspace:
         )
 
     def on_function_tagged(self):
+        # reload disassembly view
         view = self.view_manager.first_view_in_category('disassembly')
         if view is not None:
             view: DisassemblyView
