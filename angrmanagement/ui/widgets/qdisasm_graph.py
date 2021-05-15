@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 import logging
 
-from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF
+from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
 
 from ...utils import get_out_branches
 from ...utils.graph_layouter import GraphLayouter
@@ -18,6 +18,31 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 
+class QViewPortMover:
+    def __init__(self, disasm_graph: 'QDisassemblyGraph', x:int, y:int, target_x: int, target_y: int,
+                 interval: int=700, max_frame: int=100):
+        self.disasm_graph = disasm_graph
+        self.target_x = target_x
+        self.target_y = target_y
+
+        self.initial_x = x
+        self.initial_y = y
+        self.x_step = (self.target_x - self.initial_x) / max_frame
+        self.y_step = (self.target_y - self.initial_y) / max_frame
+
+        self._move_timeline = QTimeLine(interval)
+        self._move_timeline.setFrameRange(0, max_frame)
+        self._move_timeline.setUpdateInterval(10)
+
+    def start(self):
+        self._move_timeline.frameChanged.connect(self._set_pos)
+        self._move_timeline.start()
+
+    def _set_pos(self, step):
+        self.disasm_graph.centerOn(self.initial_x + self.x_step * step,
+                                   self.initial_y + self.y_step * step)
+
+
 class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView):
 
     def __init__(self, workspace, disasm_view, parent=None):
@@ -30,6 +55,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self.variable_manager = None
 
         self._function_graph = None
+        self._viewport_mover = None
 
         self._edges = None
         self._arrows = [ ]  # A list of references to QGraphArrow objects
@@ -113,7 +139,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         # select the old instructions
         for insn_addr in selected_insns:
-            self.infodock.select_instruction(insn_addr, unique=False)
+            self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
 
     def refresh(self):
         if not self.blocks:
@@ -225,7 +251,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         rect = scene.itemsBoundingRect()  # type: QRectF
         scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
 
-    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=True):
         block = self._insaddr_to_block.get(insn_addr, None)  # type: QGraphBlock
         if block is not None:
             if use_block_pos:
@@ -244,7 +270,13 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                     return
 
             # make it visible in the center
-            self.centerOn(x, y)
+            if use_animation:
+                viewport = self.viewport()
+                current_pos = self.mapToScene(viewport.width() // 2, viewport.height() // 2)
+                self._viewport_mover = QViewPortMover(self, current_pos.x(), current_pos.y(), x, y)
+                self._viewport_mover.start()
+            else:
+                self.centerOn(x, y)
 
     def update_label(self, addr, is_renaming=False):
         block = self._insaddr_to_block.get(addr, None)  # type: QGraphBlock

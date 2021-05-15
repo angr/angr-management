@@ -149,11 +149,11 @@ class QDisasmGraphArrow(QGraphArrow):
     def mouseDoubleClickEvent(self, event):
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             # go to the source
-            self.disasm_view.jump_to(self.edge.src.addr, src_ins_addr=self.edge.dst.addr)
+            self.disasm_view.jump_to(self.edge.src.addr, src_ins_addr=self.edge.dst.addr, use_animation=True)
             event.accept()
         else:
             # go to the destination
-            self.disasm_view.jump_to(self.edge.dst.addr, src_ins_addr=self.edge.src.addr)
+            self.disasm_view.jump_to(self.edge.dst.addr, src_ins_addr=self.edge.src.addr, use_animation=True)
             event.accept()
         super().mouseDoubleClickEvent(event)
 

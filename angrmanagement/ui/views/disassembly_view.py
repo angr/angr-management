@@ -465,26 +465,26 @@ class DisassemblyView(BaseView):
                 self._flow_graph.function_graph.clear_cache()
                 self._flow_graph.reload()
 
-    def jump_to(self, addr, src_ins_addr=None):
+    def jump_to(self, addr, src_ins_addr=None, use_animation=False):
 
         # Record the current instruction address first
         if src_ins_addr is not None:
             self._jump_history.record_address(src_ins_addr)
 
         self._jump_history.jump_to(addr)
-        self._jump_to(addr)
+        self._jump_to(addr, use_animation=use_animation)
 
         return True
 
     def jump_back(self):
         addr = self._jump_history.backtrack()
         if addr is not None:
-            self._jump_to(addr)
+            self._jump_to(addr, use_animation=False)
 
     def jump_forward(self):
         addr = self._jump_history.forwardstep()
         if addr is not None:
-            self._jump_to(addr)
+            self._jump_to(addr, use_animation=False)
 
     def select_label(self, label_addr):
         self.infodock.select_label(label_addr)
@@ -606,14 +606,14 @@ class DisassemblyView(BaseView):
             'function_': the_func,
         })
 
-    def _jump_to(self, addr):
+    def _jump_to(self, addr, use_animation=False):
         function = locate_function(self.workspace.instance, addr)
         if function is not None:
             self._display_function(function)
             instr_addr = function.addr_to_instruction_addr(addr)
             if instr_addr is None:
                 instr_addr = addr
-            self.infodock.select_instruction(instr_addr, unique=True)
+            self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
             return True
 
         # it does not belong to any function - we need to switch to linear view mode

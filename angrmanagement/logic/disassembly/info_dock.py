@@ -100,7 +100,7 @@ class InfoDock:
             self.selected_blocks.remove(block_addr)
             self.selected_blocks.am_event()
 
-    def select_instruction(self, insn_addr, unique=True, insn_pos=None):
+    def select_instruction(self, insn_addr, unique=True, insn_pos=None, use_animation=True):
         self.unselect_all_labels()
         if insn_addr not in self.selected_insns:
             if unique:
@@ -109,7 +109,7 @@ class InfoDock:
                 self.selected_insns.add(insn_addr)
             else:
                 self.selected_insns.add(insn_addr)
-            self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
+            self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos, use_animation=use_animation)
             self.selected_insns.am_event(insn_addr=insn_addr)
 
     def unselect_instruction(self, insn_addr):

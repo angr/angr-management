@@ -234,7 +234,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         _l.debug('Going to function at 0x%x by scrolling to %s', func.addr, desired_center_y)
         self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
 
-    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False):
         """
 
         :param insn_addr:
