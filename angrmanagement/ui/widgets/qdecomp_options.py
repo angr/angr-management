@@ -41,6 +41,8 @@ class QDecompilationOptions(QWidget):
     def __init__(self, code_view, instance, options=None, passes=None, peephole_opts=None):
         super().__init__()
 
+        self.dirty = True
+
         self._code_view = code_view
         self._instance = instance
         self._options = options
@@ -74,6 +76,17 @@ class QDecompilationOptions(QWidget):
             self._peephole_opts = self.get_all_peephole_opts()
 
         self._reload_options()
+
+    def _on_item_changed(self, item, column):
+        if getattr(item.option, 'clears_cache', True):
+            self.dirty = True
+
+    def _on_apply_pressed(self):
+        if self.dirty:
+            self.dirty = False
+            self._code_view.decompile()
+        else:
+            self._code_view.update_options()
 
     @property
     def selected_passes(self):
@@ -135,10 +148,11 @@ class QDecompilationOptions(QWidget):
         # tree view
         self._treewidget = QTreeWidget()
         self._treewidget.setHeaderHidden(True)
+        self._treewidget.itemChanged.connect(self._on_item_changed)
 
         # refresh button
         self._apply_btn = QPushButton("Apply")
-        self._apply_btn.clicked.connect(self._code_view.decompile)
+        self._apply_btn.clicked.connect(self._on_apply_pressed)
 
         layout = QVBoxLayout()
         layout.addWidget(self._search_box)

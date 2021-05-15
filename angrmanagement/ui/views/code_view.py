@@ -88,7 +88,13 @@ class CodeView(BaseView):
                 textedit.setTextCursor(cursor)
                 textedit.setFocus()
 
+    def update_options(self):
+        self._codegen.reapply_options(self._options.option_and_values)
+        self._codegen.regenerate_text()
+        self._codegen.am_event()
+
     def _on_new_codegen(self):
+        self._options.dirty = False
         self._doc = QCodeDocument(self.codegen)
         self._textedit.setDocument(self._doc)
 
