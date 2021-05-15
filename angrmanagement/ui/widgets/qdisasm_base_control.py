@@ -36,7 +36,7 @@ class QDisassemblyBaseControl:
     def reload(self):
         raise NotImplementedError()
 
-    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False):
+    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False):
         raise NotImplementedError()
 
     #

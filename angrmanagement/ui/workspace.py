@@ -247,11 +247,11 @@ class Workspace:
         elif type(obj) is Function:
             self.jump_to(obj.addr)
 
-    def jump_to(self, addr, view=None):
+    def jump_to(self, addr, view=None, use_animation=False):
         if view is None or view.category != "disassembly":
             view = self._get_or_create_disassembly_view()
 
-        view.jump_to(addr)
+        view.jump_to(addr, use_animation=use_animation)
         self.raise_view(view)
         view.setFocus()
 

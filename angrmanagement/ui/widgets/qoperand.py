@@ -125,13 +125,13 @@ class QOperand(QCachedGraphicsItem):
         button = event.button()
         if button == Qt.LeftButton:
             if self._branch_target is not None:
-                self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr)
+                self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr, use_animation=True)
                 return
             if self.is_constant:
-                self.disasm_view.jump_to(self.constant_value, src_ins_addr=self.insn.addr)
+                self.disasm_view.jump_to(self.constant_value, src_ins_addr=self.insn.addr, use_animation=True)
                 return
             if self.is_constant_memory:
-                self.disasm_view.jump_to(self.constant_memory_value, src_ins_addr=self.insn.addr)
+                self.disasm_view.jump_to(self.constant_memory_value, src_ins_addr=self.insn.addr, use_animation=True)
         else:
             super().mouseDoubleClickEvent(event)
 
