@@ -72,6 +72,8 @@ class ViewManager:
         :param view:            The view to remove.
         """
 
+        if view not in self.views_by_category[view.category]:
+            return
         self.views_by_category[view.category].remove(view)
 
         # find the correct dock

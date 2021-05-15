@@ -59,6 +59,10 @@ class CodeView(BaseView):
             self._codegen.am_obj = job.result.codegen
             self._codegen.am_event()
             self.focus(focus_addr, focus)
+            if focus_addr is not None:
+                self.jump_history.record_address(focus_addr)
+            else:
+                self.jump_history.record_address(self.function.am_obj.addr)
 
         job = DecompileFunctionJob(
             self.function.am_obj,
@@ -198,7 +202,7 @@ class CodeView(BaseView):
         elif key == Qt.Key_Escape:
             addr = self.jump_history.backtrack()
             if addr is None:
-                self.workspace.view_manager.remove_view(self)
+                self.close()
             else:
                 target_func = self.workspace.instance.kb.functions.floor_func(addr)
                 self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
