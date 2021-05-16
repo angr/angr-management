@@ -122,7 +122,7 @@ class CodeView(BaseView):
     # Event callbacks
     #
 
-    def _on_new_addr(self, already_moved=False, focus=False, **kwargs):
+    def _on_new_addr(self, already_moved=False, focus=False, **kwargs):  # pylint: disable=unused-argument
         if already_moved:
             return
 
@@ -150,11 +150,11 @@ class CodeView(BaseView):
                 else:
                     l.error("There is a block which is in the current function but find_closest_node_pos failed on it")
 
-    def _on_new_node(self, **kwargs):
+    def _on_new_node(self, **kwargs):  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
         self.addr.am_event(already_focused=True)
 
-    def _on_new_codegen(self, already_regenerated=False, **kwargs):
+    def _on_new_codegen(self, already_regenerated=False, **kwargs):  # pylint: disable=unused-argument
         if not already_regenerated:
             self.codegen.regenerate_text()
         self._options.dirty = False
