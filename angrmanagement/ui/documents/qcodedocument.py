@@ -1,8 +1,9 @@
 from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
-from angr.analyses.decompiler.structured_codegen.c import CConstant, CVariable, CFunctionCall, StructuredCodeGenerator, \
+from angr.analyses.decompiler.structured_codegen.c import CConstant, CVariable, CFunctionCall, \
     CStructField, CClosingObject, CFunction
+from angr.analyses.decompiler.structured_codegen.base import BaseStructuredCodeGenerator
 
 from ...config import Conf
 
@@ -14,7 +15,7 @@ class QCodeDocument(QTextDocument):
     def __init__(self, codegen):
         super().__init__()
 
-        self._codegen = codegen  # type: StructuredCodeGenerator
+        self._codegen = codegen  # type: BaseStructuredCodeGenerator
 
         # default font
         self.setDefaultFont(Conf.code_font)
