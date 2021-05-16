@@ -5,7 +5,7 @@ from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
-from angr.analyses.decompiler.structured_codegen import CFunctionCall, CConstant, StructuredCodeGenerator
+from angr.analyses.decompiler.structured_codegen.c import CFunctionCall, CConstant, CStructuredCodeGenerator
 from angr.knowledge_plugins.functions.function import Function
 
 from ..widgets.qccode_edit import QCCodeEdit
@@ -28,7 +28,7 @@ class CodeView(BaseView):
         self.function: Union[ObjectContainer, Function] = ObjectContainer(None, 'The function to decompile')
         self.current_node = ObjectContainer(None, 'Current selected C-code node')
         self.addr: Union[ObjectContainer, int] = ObjectContainer(0, "Current cursor address")
-        self.codegen: Union[ObjectContainer, StructuredCodeGenerator] = ObjectContainer(None, "The currently-displayed codegen object")
+        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(None, "The currently-displayed codegen object")
 
         self._codeedit = None
         self._textedit: Optional[QCCodeEdit] = None

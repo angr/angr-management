@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from angr.analyses.decompiler.structured_codegen import CVariable, CFunction, CConstruct, CFunctionCall
+from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.disassembly_view import DisassemblyView

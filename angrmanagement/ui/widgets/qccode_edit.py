@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from angr.sim_variable import SimVariable, SimTemporaryVariable
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
+from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction
 
 from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
