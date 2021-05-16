@@ -24,6 +24,9 @@ class BaseView(QFrame):
         self.width_hint = -1
         self.height_hint = -1
 
+    def focus(self):
+        self.workspace.view_manager.raise_view(self)
+
     def reload(self):
         pass
 

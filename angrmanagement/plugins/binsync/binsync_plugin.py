@@ -170,5 +170,5 @@ class BinsyncPlugin(BasePlugin):
 
         # trigger a refresh
         disasm_view.refresh()
-        code_view.refresh_text()
+        code_view.codegen.am_event()
         func_table_view.refresh()

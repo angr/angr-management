@@ -142,7 +142,7 @@ class RenameNode(QDialog):
                 elif isinstance(self._node, CFunctionCall):
                     self._node.callee_func.name = node_name
 
-                self._code_view.refresh_text()
+                self._code_view.codegen.am_event()
                 self.close()
 
     def _on_cancel_clicked(self):

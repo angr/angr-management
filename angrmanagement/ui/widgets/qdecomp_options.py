@@ -85,7 +85,8 @@ class QDecompilationOptions(QWidget):
             self.dirty = False
             self._code_view.decompile()
         else:
-            self._code_view.update_options()
+            self._code_view.codegen.reapply_options(self.option_and_values)
+            self._code_view.codegen.am_event()
 
     @property
     def selected_passes(self):
