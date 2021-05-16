@@ -88,7 +88,8 @@ class Workspace:
         self._get_or_create_disassembly_view().display_function(func)
         codeview = self.view_manager.first_view_in_category('pseudocode')
         if codeview is not None and codeview.is_shown():
-            self.decompile_function(func, view=codeview)
+            codeview.function.am_obj = func
+            codeview.function.am_event(focus=True)
 
     def on_cfg_generated(self):
 
@@ -271,11 +272,13 @@ class Workspace:
             # redraw
             disasm_view.current_graph.refresh()
 
-    def decompile_current_function(self, view=None):
-        if view is None or view.category != "disassembly":
+    def decompile_current_function(self):
+        current = self.view_manager.current_tab
+        if isinstance(current, CodeView):
+            current.decompile()
+        else:
             view = self._get_or_create_disassembly_view()
-
-        view.decompile_current_function()
+            view.decompile_current_function()
 
     def view_proximity_for_current_function(self, view=None):
         if view is None or view.category != "proximity":

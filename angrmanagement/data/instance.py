@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 class Instance:
     project: Union[angr.Project, ObjectContainer]
+    cfg: Union[angr.analyses.cfg.CFGBase, ObjectContainer]
+    cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
 
     def __init__(self):
         # delayed import
