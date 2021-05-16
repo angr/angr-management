@@ -152,7 +152,7 @@ class CodeView(BaseView):
 
     def _on_new_node(self, **kwargs):  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
-        self.addr.am_event(already_focused=True)
+        self.addr.am_event(already_moved=True)
 
     def _on_new_codegen(self, already_regenerated=False, **kwargs):  # pylint: disable=unused-argument
         if not already_regenerated:
