@@ -19,4 +19,7 @@ class AnalyzeMenu(Menu):
             MenuEntry('&Interact',
                 main_window.interact,
                 shortcut=QKeySequence(Qt.Key_F6)),
+            MenuEntry('Infer from &artifacts...',
+                      main_window.infer_from_artifacts,
+                      )
         ],)
