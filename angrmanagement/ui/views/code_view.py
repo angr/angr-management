@@ -30,6 +30,7 @@ class CodeView(BaseView):
         self.addr: Union[ObjectContainer, int] = ObjectContainer(0, "Current cursor address")
         self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(None, "The currently-displayed codegen object")
 
+        self._last_function: Optional[Function] = None
         self._codeedit = None
         self._textedit: Optional[QCCodeEdit] = None
         self._doc: Optional[QCodeDocument] = None
@@ -55,7 +56,7 @@ class CodeView(BaseView):
             self.addr.am_obj = focus_addr
             self.addr.am_event()
 
-            #
+    #
     # Properties
     #
 
@@ -77,7 +78,7 @@ class CodeView(BaseView):
         self._options.reload(force=True)
         self.vars_must_struct = set()
 
-    def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None):
+    def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None, flavor='pseudocode'):
         if self.function.am_none:
             return
 
@@ -86,17 +87,19 @@ class CodeView(BaseView):
             self.function.prototype = None
 
         def decomp_ready():
-            self.codegen.am_obj = job.result.codegen
-            self.codegen.am_event(already_regenerated=True)
-            self._focus_core(focus, focus_addr)
-            if focus_addr is not None:
-                self.jump_history.record_address(focus_addr)
-            else:
-                self.jump_history.record_address(self.function.am_obj.addr)
+            available = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
+            if available:
+                chosen_flavor = flavor if flavor in available else available[0]
+                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
+                self.codegen.am_event(already_regenerated=True)
+                self._focus_core(focus, focus_addr)
+                if focus_addr is not None:
+                    self.jump_history.record_address(focus_addr)
+                else:
+                    self.jump_history.record_address(self.function.am_obj.addr)
 
         job = DecompileFunctionJob(
             self.function.am_obj,
-            flavor='pseudocode',
             cfg=self.workspace.instance.cfg,
             options=self._options.option_and_values,
             optimization_passes=self._options.selected_passes,
@@ -161,15 +164,30 @@ class CodeView(BaseView):
         self._doc = QCodeDocument(self.codegen)
         self._textedit.setDocument(self._doc)
 
-    def _on_new_function(self, focus=False, focus_addr=None, **kwargs):  # pylint: disable=unused-argument
+        if self.codegen.flavor == 'pseudocode':
+            self._options.show()
+        else:
+            self._options.hide()
+
+    def _on_new_function(self, focus=False, focus_addr=None, flavor=None, **kwargs):  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
-        if not self.codegen.am_none and self.codegen._func is self.function.am_obj:
+        if flavor is None:
+            if self.codegen.am_none:
+                flavor = 'pseudocode'
+            else:
+                flavor = self.codegen.flavor
+
+        if not self.codegen.am_none and self._last_function is self.function.am_obj:
             self._focus_core(focus, focus_addr)
-        elif (self.function.addr, 'pseudocode') in self.workspace.instance.kb.structured_code:
-            self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, 'pseudocode')]
+            return
+        available = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
+        if available:
+            chosen_flavor = flavor if flavor in available else available[0]
+            self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
             self.codegen.am_event()
         else:
-            self.decompile(focus=focus, focus_addr=focus_addr)
+            self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
+        self._last_function = self.function.am_obj
 
     def _on_cursor_position_changed(self):
         if self._doc is None:
@@ -222,6 +240,15 @@ class CodeView(BaseView):
                 target_func = self.workspace.instance.kb.functions.floor_func(addr)
                 self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
             return True
+        elif key == Qt.Key_Space:
+            if not self.codegen.am_none:
+                flavor = self.codegen.flavor
+                flavors = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
+                idx = flavors.index(flavor)
+                newidx = (idx + 1) % len(flavors)
+                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, flavors[newidx])]
+                self.codegen.am_event()
+                return True
 
         return super().keyPressEvent(event)
 
