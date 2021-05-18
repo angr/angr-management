@@ -178,7 +178,9 @@ class QCCodeEdit(api.CodeEdit):
                 self.rename_node(node=node)
             return True
 
-        return self._code_view.keyPressEvent(event)
+        if self._code_view.keyPressEvent(event):
+            return True
+        return super().keyPressEvent(event)
 
     def setDocument(self, document):
         super().setDocument(document)

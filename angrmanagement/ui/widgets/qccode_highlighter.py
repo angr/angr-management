@@ -25,6 +25,9 @@ class QCCodeHighlighter(SyntaxHighlighter):
         # comment
         #(r"//[^\n]*", 'comment'),
         #(r"/\*[^\n]*\*/", 'comment'),
+        # function
+        (r"\b[A-Za-z0-9_:]+\s*(?=\()", 'function'),
+        (r"\bNULL\b", 'function'),
         # keywords
         (r"\bbool\b", 'keyword'),
         (r"\bbreak\b", 'keyword'),
@@ -73,8 +76,6 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bwhile\b", 'keyword'),
         (r"\bswitch\b", 'keyword'),
         (r"\breturn\b", 'keyword'),
-        # function
-        (r"\b[A-Za-z0-9_:]+(?=\()", 'function'),
     ]
 
     def __init__(self, parent, color_scheme=None):
