@@ -104,7 +104,7 @@ def start_management(filepath=None, use_daemon=False):
     set_windows_event_loop_policy()
 
     from PySide2.QtWidgets import QApplication, QSplashScreen, QMessageBox
-    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
+    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon, QPalette, QColor
     from PySide2.QtCore import Qt
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
@@ -114,6 +114,28 @@ def start_management(filepath=None, use_daemon=False):
     app.setApplicationName("angr management")
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     QApplication.setWindowIcon(QIcon(icon_location))
+
+    app.setStyle('Fusion')
+
+    # Dark theme via https://gist.github.com/gph03n1x/7281135 with modifications
+    palette = QPalette()
+    palette.setColor(QPalette.Window, QColor(53,53,53))
+    palette.setColor(QPalette.WindowText, Qt.white)
+    palette.setColor(QPalette.Base, QColor(15,15,15))
+    palette.setColor(QPalette.AlternateBase, QColor(53,53,53))
+    palette.setColor(QPalette.ToolTipBase, Qt.white)
+    palette.setColor(QPalette.ToolTipText, Qt.white)
+    palette.setColor(QPalette.Text, Qt.white)
+    palette.setColor(QPalette.Button, QColor(53,53,53))
+    palette.setColor(QPalette.ButtonText, Qt.white)
+    palette.setColor(QPalette.BrightText, Qt.red)
+    palette.setColor(QPalette.Highlight, QColor(45,197,45).lighter())
+    palette.setColor(QPalette.HighlightedText, Qt.black)
+    palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
+    palette.setColor(QPalette.Disabled, QPalette.WindowText, Qt.darkGray)
+    app.setPalette(palette)
+
 
     # URL scheme
     from .logic.url_scheme import AngrUrlScheme
