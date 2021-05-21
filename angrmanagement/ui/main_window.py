@@ -3,7 +3,8 @@ import logging
 import sys
 from typing import Optional
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QDialog, QLabel, QLineEdit, \
+    QPushButton, QVBoxLayout
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
@@ -52,11 +53,52 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
+
+    username = None
+
+    class Modal(QDialog):
+        def __init__(self, outerClass):
+            super().__init__(outerClass)
+            self.username = None
+            # Create widgets
+            self.label = QLabel("Enter your Name")
+            self.edit = QLineEdit("")
+            self.button = QPushButton("Submit")
+            self.outerClass = outerClass
+
+            # Create layout and add widgets
+
+            layout = QVBoxLayout()
+
+            layout.addWidget(self.label)
+            layout.addWidget(self.edit)
+            layout.addWidget(self.button)
+
+            # Set dialog layout
+
+            self.setLayout(layout)
+
+            # Add button signal to greetings slot
+
+            self.button.clicked.connect(self.greetings)
+
+        # Greets the user
+
+        def greetings(self):
+            self.outerClass.username = self.edit.text()
+            self.close()
+
+        def closeEvent(self, event):
+            if not self.outerClass.username:
+                event.ignore()
+
+
     def __init__(self, parent=None, show=True):
         super(MainWindow, self).__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
+        self._fatigue_flag = True
 
         GlobalInfo.main_window = self
 
@@ -95,6 +137,8 @@ class MainWindow(QMainWindow):
 
         # I'm ready to show off!
         if show:
+            self.modal = self.Modal(self)
+            self.modal.show()
             self.showMaximized()
             self.windowHandle().screenChanged.connect(self.on_screen_changed)
             self.show()
@@ -317,6 +361,8 @@ class MainWindow(QMainWindow):
 
         for plugin in list(self.workspace.plugins.active_plugins):
             self.workspace.plugins.deactivate_plugin(plugin)
+        self._fatigue_flag = False
+        self.modal.close()
         event.accept()
 
     def event(self, event):
