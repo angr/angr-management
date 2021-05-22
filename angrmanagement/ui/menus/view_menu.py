@@ -13,4 +13,7 @@ class ViewMenu(Menu):
             MenuEntry('Previous Tab', main_window.workspace.view_manager.previous_tab, shortcut=QKeySequence("Ctrl+Shift+Tab")),
             MenuSeparator(),
             MenuEntry('Split / Unsplit View', main_window.workspace.toggle_split, shortcut=QKeySequence("Ctrl+D")),
+            MenuSeparator(),
+            MenuEntry('Linear Disassembly', main_window.workspace.show_linear_disassembly_view),
+            MenuEntry('Graph Disassembly', main_window.workspace.show_graph_disassembly_view),
         ])
