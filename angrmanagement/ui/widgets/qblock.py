@@ -1,7 +1,7 @@
 import logging
 
 from PySide2.QtGui import QColor, QPen, QPainterPath
-from PySide2.QtCore import QRectF, QMarginsF
+from PySide2.QtCore import QRectF, QMarginsF, Qt
 
 from angr.analyses.disassembly import Instruction
 from angr.sim_variable import SimRegisterVariable
@@ -211,12 +211,19 @@ class QGraphBlock(QBlock):
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
 
+        painter.setBrush(self._config.disasm_view_node_shadow_color)
+        painter.setPen(self._config.disasm_view_node_shadow_color)
+        shadow_path = QPainterPath(self._block_item)
+        shadow_path.translate(5,5)
+        painter.drawPath(shadow_path)
+
         # background of the node
         painter.setBrush(self._calc_backcolor(should_omit_text))
         if self.infodock.is_block_selected(self.addr):
             painter.setPen(QPen(self._config.disasm_view_selected_node_border_color, 2.5))
         else:
             painter.setPen(QPen(self._config.disasm_view_node_border_color, 1.5))
+
         self._block_item_obj = painter.drawPath(self._block_item)
 
         # content drawing is handled by qt since children are actual child widgets
