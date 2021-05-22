@@ -4,7 +4,6 @@ from PySide2.QtWidgets import QDockWidget
 class QSmartDockWidget(QDockWidget):
     def __init__(self, caption, parent=None, on_close=None):
         super(QSmartDockWidget, self).__init__(caption, parent)
-
         self.old_size = None
         self.original_min = None
         self.original_max = None

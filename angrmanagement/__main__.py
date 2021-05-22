@@ -116,12 +116,10 @@ def start_management(filepath=None, use_daemon=False):
     QApplication.setWindowIcon(QIcon(icon_location))
 
     app.setStyle('Fusion')
-
-    # Dark theme via https://gist.github.com/gph03n1x/7281135 with modifications
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor(53,53,53))
     palette.setColor(QPalette.WindowText, Qt.white)
-    palette.setColor(QPalette.Base, QColor(15,15,15))
+    palette.setColor(QPalette.Base, QColor(40,40,40))
     palette.setColor(QPalette.AlternateBase, QColor(53,53,53))
     palette.setColor(QPalette.ToolTipBase, Qt.white)
     palette.setColor(QPalette.ToolTipText, Qt.white)
@@ -129,13 +127,19 @@ def start_management(filepath=None, use_daemon=False):
     palette.setColor(QPalette.Button, QColor(53,53,53))
     palette.setColor(QPalette.ButtonText, Qt.white)
     palette.setColor(QPalette.BrightText, Qt.red)
-    palette.setColor(QPalette.Highlight, QColor(45,197,45).lighter())
-    palette.setColor(QPalette.HighlightedText, Qt.black)
+    palette.setColor(QPalette.Highlight, QColor(40,40,40).lighter())
+    palette.setColor(QPalette.HighlightedText, Qt.white)
     palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
     palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
     palette.setColor(QPalette.Disabled, QPalette.WindowText, Qt.darkGray)
+    palette.setColor(QPalette.Light, QColor(0,0,0))
+    palette.setColor(QPalette.Midlight, QColor(0,0,0))
+    palette.setColor(QPalette.Dark, QColor(0,0,0))
+    palette.setColor(QPalette.Mid, QColor(0,0,0))
+    palette.setColor(QPalette.Shadow, QColor(0,0,0))
+    palette.setColor(QPalette.Link, QColor(45,197,45).lighter())
+    palette.setColor(QPalette.LinkVisited, QColor(45,197,45).darker())
     app.setPalette(palette)
-
 
     # URL scheme
     from .logic.url_scheme import AngrUrlScheme

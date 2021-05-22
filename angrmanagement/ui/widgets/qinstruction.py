@@ -1,7 +1,7 @@
 from typing import List
 import logging
 
-from PySide2.QtGui import QPainter, QColor, QCursor
+from PySide2.QtGui import QPainter, QColor, QCursor, QPen
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
 
@@ -138,12 +138,12 @@ class QInstruction(QCachedGraphicsItem):
 
         # address
         if self.disasm_view.show_address:
-            painter.setPen(Qt.black)
+            painter.setPen(QPen(self._config.disasm_view_node_address_color, 1.5))
             painter.drawText(x, y, self._addr)
             x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
 
         # mnemonic
-        painter.setPen(QColor(0, 0, 0x80))
+        painter.setPen(QPen(self._config.disasm_view_node_mnemonic_color, 1.5))
         painter.drawText(x, y, self._mnemonic)
         x += self._mnemonic_width
 

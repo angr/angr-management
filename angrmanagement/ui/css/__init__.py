@@ -65,10 +65,22 @@ QLabel[class=insn_string] {
 }
 
 QDockWidget::title {
-    background: lightgray;
-    border: 1px solid gray;
+    background: rgb(70,70,70);
+    border: 0px solid gray;
     padding: 0px 0px 0px 5px;
     margin: 0px 0px 2px 0px;
+}
+
+QPlainTextEdit, QTextEdit {
+    background-color: rgb(40,40,40);
+}
+
+QToolBar {
+    border: 1px solid rgb(80,80,80);
+}
+
+QTableView {
+    background-color: rgb(40,40,40);
 }
 """
 

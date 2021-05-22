@@ -172,7 +172,7 @@ class QOperand(QCachedGraphicsItem):
                 #        fallback = False
                 pass
 
-            painter.setPen(QColor(0x00, 0x00, 0x80))
+            painter.setPen(self._config.disasm_view_operand_color)
 
         painter.setRenderHints(
                 QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
@@ -189,9 +189,9 @@ class QOperand(QCachedGraphicsItem):
         # {s_10}
         if self.disasm_view.show_variable and self._variable_label:
             x += self.LABEL_VARIABLE_SPACING * self.currentDevicePixelRatioF()
-            painter.setPen(QColor(0x00, 0x80, 0x00))
+            painter.setPen(self._config.disasm_view_variable_label_color)
             painter.drawText(x, y, self._variable_label)
-            painter.setPen(QColor(0x00, 0x00, 0x80))
+            painter.setPen(self._config.disasm_view_operand_color)
             x += self._variable_label_width
 
         # draw additional branch targets
@@ -208,7 +208,7 @@ class QOperand(QCachedGraphicsItem):
             x += self._variable_ident_width
 
         # restores the color
-        painter.setPen(QColor(0, 0, 0x80))
+        painter.setPen(self._config.disasm_view_operand_color)
 
     #
     # Private methods

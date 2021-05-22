@@ -16,6 +16,8 @@ from ..toolbars import FunctionTableToolbar
 if TYPE_CHECKING:
     import PySide2
 
+from ...config import Conf
+
 class QFunctionTableModel(QAbstractTableModel):
 
     Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
@@ -32,6 +34,7 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = func_list
         self.workspace = workspace
+        self._config = Conf
 
     def __len__(self):
         if self._func_list is not None:
@@ -99,15 +102,16 @@ class QFunctionTableModel(QAbstractTableModel):
             return self._get_column_text(func, col)
 
         elif role == Qt.ForegroundRole:
-            color = QColor(0, 0, 0)
             if func.is_syscall:
-                color = QColor(0, 0, 0x80)
+                color = self._config.function_table_syscall_color
             elif func.is_plt:
-                color = QColor(0, 0x80, 0)
+                color = self._config.function_table_plt_color
             elif func.is_simprocedure:
-                color = QColor(0x80, 0, 0)
+                color = self._config.function_table_simprocedure_color
             elif func.alignment:
-                color = Qt.darkMagenta
+                color = self._config.function_table_alignment_color
+            else:
+                color = self._config.function_table_color
 
             #for w in widgets:
             #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
@@ -117,10 +121,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = self.workspace.plugins.color_func(func)
-            if color is None:
-                color = QColor(0xff, 0xff, 0xff)
-
-            return QBrush(color)
+            return color
 
         elif role == Qt.FontRole:
             return Conf.tabular_view_font
