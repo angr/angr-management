@@ -1,15 +1,26 @@
-
+from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
-    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit
+    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame
 from PySide2.QtCore import QSize
 
+from ..widgets.qcolor_option import QColorOption
+from ...config.config_manager import ENTRIES
+from ...config import Conf
 from ...logic.url_scheme import AngrUrlScheme
 
 
-class Integration(QWidget):
+class Page(QWidget):
+    def save_config(self):
+        raise NotImplementedError
+
+    NAME = NotImplemented
+
+
+class Integration(Page):
     """
     The integration page.
     """
+    NAME = 'OS Integration'
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -21,7 +32,7 @@ class Integration(QWidget):
 
     def _init_widgets(self):
 
-        # os integratio
+        # os integration
         os_integration = QGroupBox("OS integration")
         self._url_scheme_chk = QCheckBox("Register angr URL scheme (angr://).")
         self._url_scheme_text = QLineEdit()
@@ -65,6 +76,40 @@ class Integration(QWidget):
             pass
 
 
+class Colors(Page):
+    NAME = "Colors"
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self._to_save = []
+
+        self._init_widgets()
+
+    def _init_widgets(self):
+        layout = QVBoxLayout()
+
+        for ce in ENTRIES:
+            if ce.type_ is not QColor:
+                continue
+            row = QColorOption(getattr(Conf, ce.name), ce.name)
+            layout.addWidget(row)
+
+            self._to_save.append((ce, row))
+
+        frame = QFrame()
+        frame.setLayout(layout)
+        scroll = QScrollArea()
+        scroll.setWidget(frame)
+
+        layout2 = QHBoxLayout()
+        layout2.addWidget(scroll)
+        self.setLayout(layout2)
+
+    def save_config(self):
+        for ce, row in self._to_save:
+            setattr(Conf, ce.name, row.color.am_obj)
+
 class Preferences(QDialog):
     def __init__(self, workspace, parent=None):
         super().__init__(parent)
@@ -85,11 +130,21 @@ class Preferences(QDialog):
         contents.setMaximumWidth(128)
         contents.setSpacing(12)
 
+        def item_changed(item: QListWidgetItem):
+            pageno = item.data(1)  # type: Page
+            pages.setCurrentIndex(pageno)
+
+        contents.itemClicked.connect(item_changed)
+
         self._pages.append(Integration())
+        self._pages.append(Colors())
 
         pages = QStackedWidget()
-        for page in self._pages:
+        for idx, page in enumerate(self._pages):
             pages.addWidget(page)
+            list_item = QListWidgetItem(page.NAME)
+            list_item.setData(1, idx)
+            contents.addItem(list_item)
 
         # buttons
         ok_button = QPushButton("OK")
