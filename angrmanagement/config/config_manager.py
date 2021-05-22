@@ -58,6 +58,7 @@ ENTRIES = [
     CE('disasm_view_target_addr_color', QColor, QColor(0, 0, 0xff)),
     CE('disasm_view_antitarget_addr_color', QColor, QColor(0xff, 0, 0)),
     CE('disasm_view_node_background_color', QColor, QColor(60, 60, 60)),
+    CE('disasm_view_node_zoomed_out_background_color', QColor, QColor(100, 100, 100)),
     CE('disasm_view_node_border_color', QColor, QColor(80, 80, 80)),
     CE('disasm_view_node_address_color', QColor, QColor(0xe0, 0xe0, 0xe0)),
     CE('disasm_view_node_mnemonic_color', QColor, QColor(0xe0, 0xe0, 0xe0)),

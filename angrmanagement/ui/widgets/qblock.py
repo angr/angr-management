@@ -203,7 +203,7 @@ class QGraphBlock(QBlock):
             return color
 
         if should_omit_text:
-            return QColor(0xda, 0xda, 0xda)
+            return self._config.disasm_view_node_zoomed_out_background_color
 
         return self._config.disasm_view_node_background_color
 
