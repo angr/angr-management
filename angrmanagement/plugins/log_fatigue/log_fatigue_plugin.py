@@ -39,7 +39,6 @@ class LogFatiguePlugin(BasePlugin):
             if self._fatigue.user:
                 self.session.add(self._fatigue)
                 self.session.commit()
-                print(self._fatigue.mouse_speed, self._fatigue.user)
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.HoverMove:
