@@ -342,6 +342,18 @@ class Workspace:
             console.print_text(msg)
             console.print_text('\n')
 
+    def show_linear_disassembly_view(self):
+        view = self._get_or_create_disassembly_view()
+        view.display_linear_viewer()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_graph_disassembly_view(self):
+        view = self._get_or_create_disassembly_view()
+        view.display_disasm_graph()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
