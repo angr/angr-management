@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from angr.sim_variable import SimVariable, SimTemporaryVariable
-from angr.analyses.decompiler.structured_codegen import CBinaryOp, CVariable, CFunctionCall, CFunction
+from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction
 
 from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
@@ -178,7 +178,9 @@ class QCCodeEdit(api.CodeEdit):
                 self.rename_node(node=node)
             return True
 
-        return self._code_view.keyPressEvent(event)
+        if self._code_view.keyPressEvent(event):
+            return True
+        return super().keyPressEvent(event)
 
     def setDocument(self, document):
         super().setDocument(document)
