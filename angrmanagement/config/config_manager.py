@@ -9,45 +9,60 @@ from .config_entry import ConfigurationEntry as CE
 
 _l = logging.getLogger(__name__)
 
-def color_constructor(config_option, value):
-    if isinstance(value, str):
-        value = int(value, 0)
+def color_parser(config_option, value):
+    if not isinstance(value, str) or len(value) != 6:
+        _l.error('Failed to parse value %r as rgb color for option %s', value, config_option)
+        return None
 
-    if type(value) is int:
-        return QColor(value)
-    elif isinstance(value, dict):
-        keys = set(value.keys())
-        expected_keys = {'r', 'g', 'b'}
-        if keys != expected_keys:
-            _l.warning('Found color type with keys %s for option %s, expecting %s. Skipping...',
-                    config_option, keys, expected_keys)
-        return QColor(value['r'], value['g'], value['b'])
-    else:
-        _l.error('Failed to parse value %s for option %s', value, config_option)
+    r = int(value[0:2], 16)
+    g = int(value[2:4], 16)
+    b = int(value[4:6], 16)
 
-data_constructors = {
-    QColor : color_constructor,
+    return QColor(r, g, b)
+
+def color_serializer(config_option, value: QColor):
+    if not isinstance(value, QColor):
+        _l.error("Failed to serialize value %r as rgb color for option %s", value, config_option)
+        return None
+
+    return f'{value.red():02x}{value.green():02x}{value.blue():02x}'
+
+def font_parser(config_option, value):
+    if not isinstance(value, str) or 'px ' not in value:
+        _l.error('Failed to parse value %r as font for option %s', value, config_option)
+        return None
+
+    parts = value.split('px ', 1)
+    try:
+        size = int(parts[0])
+    except ValueError:
+        _l.error('Failed to parse value %r as font for option %s', value, config_option)
+        return None
+
+    return QFont(parts[1], size)
+
+def font_serializer(config_option, value: QFont):
+    if not isinstance(value, QFont):
+        _l.error("Failed to serialize value %r as font for option %s", value, config_option)
+        return None
+
+    return f'{value.pointSize()}px {value.family()}'
+
+
+data_serializers = {
+    QColor: (color_parser, color_serializer),
+    QFont: (font_parser, font_serializer)
 }
 
 
+# CE(name, type, default_value)
 ENTRIES = [
     CE('ui_default_font', QFont, None),
     CE('tabular_view_font', QFont, None),
-    CE('disasm_font', QFont, None),
-    CE('disasm_font_metrics', QFontMetricsF, None),
-    CE('disasm_font_height', int, None),
-    CE('disasm_font_width', int, None),
-    CE('disasm_font_ascent', int, None),
-    CE('symexec_font', QFont, None),
-    CE('symexec_font_metrics', QFontMetricsF, None),
-    CE('symexec_font_height', int, None),
-    CE('symexec_font_width', int, None),
-    CE('symexec_font_ascent', int, None),
-    CE('code_font_metrics', QFontMetricsF, None),
-    CE('code_font', QFont, None),
-    CE('code_font_height', int, None),
-    CE('code_font_width', int, None),
-    CE('code_font_ascent', int, None),
+    CE('disasm_font', QFont, QFont("DejaVu Sans Mono", 10)),
+    CE('symexec_font', QFont, QFont("DejaVu Sans Mono", 10)),
+    CE('code_font', QFont, QFont("Source Code Pro", 10)),
+
     CE('disasm_view_operand_color', QColor, QColor(0xf0, 0xf0, 0xf0)),
     CE('disasm_view_variable_label_color', QColor, QColor(0x00, 0x80, 0x00)),
     CE('disasm_view_operand_highlight_color', QColor, QColor(0xfc, 0xef, 0)),
@@ -95,9 +110,16 @@ ENTRIES = [
 
 class ConfigurationManager:
 
-    __slots__ = ['_entries']
+    __slots__ = ('_entries',
+                 '_disasm_font', '_disasm_font_metrics', '_disasm_font_height', '_disasm_font_width', '_disasm_font_ascent',
+                 '_symexec_font', '_symexec_font_metrics', '_symexec_font_height', '_symexec_font_width', '_symexec_font_ascent',
+                 '_code_font', '_code_font_metrics', '_code_font_height', '_code_font_width', '_code_font_ascent',
+                 )
 
     def __init__(self, entries=None):
+        self._disasm_font = self._disasm_font_metrics = self._disasm_font_height = self._disasm_font_width = self._disasm_font_ascent = None
+        self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = self._symexec_font_width = self._symexec_font_ascent = None
+        self._code_font = self._code_font_metrics = self._code_font_height = self._code_font_width = self._code_font_ascent = None
 
         if entries is None:
             self._entries = { }
@@ -107,32 +129,126 @@ class ConfigurationManager:
         else:
             self._entries = entries
 
+    @staticmethod
+    def _manage_font_cache(real_font, font, metrics, height, width, ascent):
+        if real_font == font:
+            return font, metrics, height, width, ascent
+
+        metrics = QFontMetricsF(real_font)
+        height = metrics.height()
+        width = metrics.width('A')
+        ascent = metrics.ascent()
+        return real_font, metrics, height, width, ascent
+
+    def _disasm_manage_font_cache(self):
+        self._disasm_font, \
+        self._disasm_font_metrics, \
+        self._disasm_font_height, \
+        self._disasm_font_width, \
+        self._disasm_font_ascent = ConfigurationManager._manage_font_cache(
+            self.disasm_font,
+            self._disasm_font,
+            self._disasm_font_metrics,
+            self._disasm_font_height,
+            self._disasm_font_width,
+            self._disasm_font_ascent)
+
+    def _symexec_manage_font_cache(self):
+        self._symexec_font, \
+        self._symexec_font_metrics, \
+        self._symexec_font_height, \
+        self._symexec_font_width, \
+        self._symexec_font_ascent = ConfigurationManager._manage_font_cache(
+            self.symexec_font,
+            self._symexec_font,
+            self._symexec_font_metrics,
+            self._symexec_font_height,
+            self._symexec_font_width,
+            self._symexec_font_ascent)
+
+    def _code_manage_font_cache(self):
+        self._code_font, \
+        self._code_font_metrics, \
+        self._code_font_height, \
+        self._code_font_width, \
+        self._code_font_ascent = ConfigurationManager._manage_font_cache(
+            self.code_font,
+            self._code_font,
+            self._code_font_metrics,
+            self._code_font_height,
+            self._code_font_width,
+            self._code_font_ascent)
+
+    @property
+    def disasm_font_metrics(self):
+        self._disasm_manage_font_cache()
+        return self._disasm_font_metrics
+
+    @property
+    def disasm_font_height(self):
+        self._disasm_manage_font_cache()
+        return self._disasm_font_height
+
+    @property
+    def disasm_font_width(self):
+        self._disasm_manage_font_cache()
+        return self._disasm_font_width
+
+    @property
+    def disasm_font_ascent(self):
+        self._disasm_manage_font_cache()
+        return self._disasm_font_ascent
+
+    @property
+    def symexec_font_metrics(self):
+        self._symexec_manage_font_cache()
+        return self._symexec_font_metrics
+
+    @property
+    def symexec_font_height(self):
+        self._symexec_manage_font_cache()
+        return self._symexec_font_height
+
+    @property
+    def symexec_font_width(self):
+        self._symexec_manage_font_cache()
+        return self._symexec_font_width
+
+    @property
+    def symexec_font_ascent(self):
+        self._symexec_manage_font_cache()
+        return self._symexec_font_ascent
+
+    @property
+    def code_font_metrics(self):
+        self._code_manage_font_cache()
+        return self._code_font_metrics
+
+    @property
+    def code_font_height(self):
+        self._code_manage_font_cache()
+        return self._code_font_height
+
+    @property
+    def code_font_width(self):
+        self._code_manage_font_cache()
+        return self._code_font_width
+
+    @property
+    def code_font_ascent(self):
+        self._code_manage_font_cache()
+        return self._code_font_ascent
+
     def init_font_config(self):
-        self.ui_default_font = QApplication.font("QMenu")
-        self.tabular_view_font = QApplication.font("QMenu")
-
-        self.disasm_font = QFont("DejaVu Sans Mono", 10)
-        self.disasm_font_metrics = QFontMetricsF(self.disasm_font)
-        self.disasm_font_height = self.disasm_font_metrics.height()
-        self.disasm_font_width = self.disasm_font_metrics.width('A')
-        self.disasm_font_ascent = self.disasm_font_metrics.ascent()
-
-        self.symexec_font = QFont("DejaVu Sans Mono", 10)
-        self.symexec_font_metrics = QFontMetricsF(self.symexec_font)
-        self.symexec_font_height = self.symexec_font_metrics.height()
-        self.symexec_font_width = self.symexec_font_metrics.width('A')
-        self.symexec_font_ascent = self.symexec_font_metrics.ascent()
-
-        self.code_font = QFont("Source Code Pro", 10)
-        self.code_font_metrics = QFontMetricsF(self.code_font)
-        self.code_font_height = self.code_font_metrics.height()
-        self.code_font_width = self.code_font_metrics.width('A')
-        self.code_font_ascent = self.code_font_metrics.ascent()
+        if self.ui_default_font is None:
+            self.ui_default_font = QApplication.font("QMenu")
+        if self.tabular_view_font is None:
+            self.tabular_view_font = QApplication.font("QMenu")
 
     def __getattr__(self, item):
 
-        if item in self.__slots__:
-            raise AttributeError()
+        if item in self.__slots__ or item in type(self).__dict__:
+            return super().__getattribute__(item)
 
         if item in self._entries:
             return self._entries[item].value
@@ -141,7 +257,7 @@ class ConfigurationManager:
 
     def __setattr__(self, key, value):
 
-        if key in self.__slots__:
+        if key in self.__slots__ or key in type(self).__dict__:
             super(ConfigurationManager, self).__setattr__(key, value)
             return
 
@@ -164,12 +280,15 @@ class ConfigurationManager:
             loaded = toml.load(f)
 
             for k, v in loaded.items():
-                if entry.type_ in data_constructors:
-                    v = data_constructors[entry.type_](k, v)
                 if k not in entry_map:
                     _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
                     continue
                 entry = entry_map[k]
+
+                if entry.type_ in data_serializers:
+                    v = data_serializers[entry.type_][0](k, v)
+                if v is None:
+                    continue
                 if type(v) is not entry.type_:
                     _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. Ignoring...',
                              v, k, type(v), entry.type_)
@@ -179,6 +298,16 @@ class ConfigurationManager:
             _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', e.msg)
 
         return cls(entry_map)
+
+    def save(self, f):
+        out = {}
+        for k, v in self._entries.items():
+            v = v.value
+            while type(v) in data_serializers:
+                v = data_serializers[type(v)][1](k, v)
+            out[k] = v
+
+        toml.dump(out, f)
 
     @property
     def has_operation_mango(self) -> bool:
