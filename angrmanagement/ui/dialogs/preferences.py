@@ -1,12 +1,14 @@
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
-    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame
+    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, QSizePolicy
 from PySide2.QtCore import QSize
 
 from ..widgets.qcolor_option import QColorOption
-from ...config.config_manager import ENTRIES
+from ...config.config_manager import ENTRIES, COLOR_SCHEMES
 from ...config import Conf
 from ...logic.url_scheme import AngrUrlScheme
+
+from __main__ import refresh_theme
 
 
 class Page(QWidget):
@@ -82,33 +84,63 @@ class Colors(Page):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self._to_save = []
+        self._to_save = {}
+        self._schemes_combo = None
 
         self._init_widgets()
 
     def _init_widgets(self):
-        layout = QVBoxLayout()
+        page_layout = QVBoxLayout()
 
+        scheme_loader_layout = QHBoxLayout()
+        color_scheme_lbl = QLabel("Load Color Scheme:")
+        color_scheme_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        scheme_loader_layout.addWidget(color_scheme_lbl)
+
+        self._schemes_combo = QComboBox(self)
+        for name in sorted(COLOR_SCHEMES):
+            self._schemes_combo.addItem(name)
+        scheme_loader_layout.addWidget(self._schemes_combo)
+        load_btn = QPushButton("Load")
+        load_btn.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        load_btn.clicked.connect(self._on_load_scheme_clicked)
+        scheme_loader_layout.addWidget(load_btn)
+        page_layout.addLayout(scheme_loader_layout)
+
+        edit_colors_layout = QVBoxLayout()
         for ce in ENTRIES:
             if ce.type_ is not QColor:
                 continue
             row = QColorOption(getattr(Conf, ce.name), ce.name)
-            layout.addWidget(row)
-
-            self._to_save.append((ce, row))
+            edit_colors_layout.addWidget(row)
+            self._to_save[ce.name] = (ce, row)
 
         frame = QFrame()
-        frame.setLayout(layout)
+        frame.setLayout(edit_colors_layout)
+
         scroll = QScrollArea()
         scroll.setWidget(frame)
 
-        layout2 = QHBoxLayout()
-        layout2.addWidget(scroll)
-        self.setLayout(layout2)
+        scroll_layout = QHBoxLayout()
+        scroll_layout.addWidget(scroll)
+
+        page_layout.addLayout(scroll_layout)
+
+        self.setLayout(page_layout)
+
+    def _load_color_scheme(self, name):
+        for prop, value in COLOR_SCHEMES[name].items():
+            row = self._to_save[prop][1]
+            row.set_color(value)
+
+    def _on_load_scheme_clicked(self):
+        self._load_color_scheme(self._schemes_combo.currentText())
+        self.save_config()
 
     def save_config(self):
-        for ce, row in self._to_save:
+        for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
+        refresh_theme()
 
 class Preferences(QDialog):
     def __init__(self, workspace, parent=None):

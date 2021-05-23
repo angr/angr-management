@@ -92,6 +92,44 @@ def macos_bigsur_wants_layer():
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 
+def refresh_theme():
+    from PySide2.QtWidgets import QApplication, QStyle
+    from PySide2.QtGui import QPalette
+    from .config import Conf
+    from .ui.css import CSS
+
+    app = QApplication.instance()
+    app.setStyle('Fusion')
+
+    palette = QPalette()
+    palette.setColor(QPalette.Window,          Conf.palette_window)
+    palette.setColor(QPalette.WindowText,      Conf.palette_windowtext)
+    palette.setColor(QPalette.Base,            Conf.palette_base)
+    palette.setColor(QPalette.AlternateBase,   Conf.palette_alternatebase)
+    palette.setColor(QPalette.ToolTipBase,     Conf.palette_tooltipbase)
+    palette.setColor(QPalette.ToolTipText,     Conf.palette_tooltiptext)
+    palette.setColor(QPalette.Text,            Conf.palette_text)
+    palette.setColor(QPalette.Button,          Conf.palette_button)
+    palette.setColor(QPalette.ButtonText,      Conf.palette_buttontext)
+    palette.setColor(QPalette.BrightText,      Conf.palette_brighttext)
+    palette.setColor(QPalette.Highlight,       Conf.palette_highlight)
+    palette.setColor(QPalette.HighlightedText, Conf.palette_highlightedtext)
+    palette.setColor(QPalette.Light,           Conf.palette_light)
+    palette.setColor(QPalette.Midlight,        Conf.palette_midlight)
+    palette.setColor(QPalette.Dark,            Conf.palette_dark)
+    palette.setColor(QPalette.Mid,             Conf.palette_mid)
+    palette.setColor(QPalette.Shadow,          Conf.palette_shadow)
+    palette.setColor(QPalette.Link,            Conf.palette_link)
+    palette.setColor(QPalette.LinkVisited,     Conf.palette_linkvisited)
+    palette.setColor(QPalette.Disabled, QPalette.Text,       Conf.palette_disabled_text)
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, Conf.palette_disabled_buttontext)
+    palette.setColor(QPalette.Disabled, QPalette.WindowText, Conf.palette_disabled_windowtext)
+    app.setPalette(palette)
+
+    # apply the CSS
+    app.setStyleSheet(CSS.global_css())
+
+
 def start_management(filepath=None, use_daemon=False):
 
     if sys.platform == "darwin":
@@ -115,31 +153,7 @@ def start_management(filepath=None, use_daemon=False):
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     QApplication.setWindowIcon(QIcon(icon_location))
 
-    app.setStyle('Fusion')
-    palette = QPalette()
-    palette.setColor(QPalette.Window, QColor(53,53,53))
-    palette.setColor(QPalette.WindowText, Qt.white)
-    palette.setColor(QPalette.Base, QColor(40,40,40))
-    palette.setColor(QPalette.AlternateBase, QColor(53,53,53))
-    palette.setColor(QPalette.ToolTipBase, Qt.white)
-    palette.setColor(QPalette.ToolTipText, Qt.white)
-    palette.setColor(QPalette.Text, Qt.white)
-    palette.setColor(QPalette.Button, QColor(53,53,53))
-    palette.setColor(QPalette.ButtonText, Qt.white)
-    palette.setColor(QPalette.BrightText, Qt.red)
-    palette.setColor(QPalette.Highlight, QColor(40,40,40).lighter())
-    palette.setColor(QPalette.HighlightedText, Qt.white)
-    palette.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
-    palette.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
-    palette.setColor(QPalette.Disabled, QPalette.WindowText, Qt.darkGray)
-    palette.setColor(QPalette.Light, QColor(0,0,0))
-    palette.setColor(QPalette.Midlight, QColor(0,0,0))
-    palette.setColor(QPalette.Dark, QColor(0,0,0))
-    palette.setColor(QPalette.Mid, QColor(0,0,0))
-    palette.setColor(QPalette.Shadow, QColor(0,0,0))
-    palette.setColor(QPalette.Link, QColor(45,197,45).lighter())
-    palette.setColor(QPalette.LinkVisited, QColor(45,197,45).darker())
-    app.setPalette(palette)
+    refresh_theme()
 
     # URL scheme
     from .logic.url_scheme import AngrUrlScheme
@@ -190,9 +204,6 @@ def start_management(filepath=None, use_daemon=False):
     app.setFont(Conf.ui_default_font)
 
     GlobalInfo.gui_thread = threading.get_ident()
-
-    # apply the CSS
-    app.setStyleSheet(CSS.global_css())
 
     if use_daemon:
         # connect to daemon (if there is one)

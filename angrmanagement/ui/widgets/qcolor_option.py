@@ -14,12 +14,15 @@ class QColorOption(QWidget):
 
         self._init_widgets()
 
+    def set_color(self, color):
+        self.color.am_obj = color
+        self.color.am_event()
+
     def mouseReleaseEvent(self, event):
         dialog.setCurrentColor(self.color.am_obj)
         dialog.exec()
         if dialog.result() == QColorDialog.Accepted:
-            self.color.am_obj = dialog.currentColor()
-            self.color.am_event()
+            self.set_color(dialog.currentColor())
 
     def _init_widgets(self):
         layout = QHBoxLayout()

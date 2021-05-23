@@ -1,8 +1,18 @@
+from ...config import Conf
 
+def repr_color(color):
+    r,g,b,a = color.getRgb()
+    return f'rgba({r},{g},{b},{a})'
+
+#
+# FIXME: Need to propagate CSS updates to more objects.
+#
 
 class CSS(object):
 
-    css = """
+    @staticmethod
+    def global_css():
+        return """
 QLabel[class=insn] {
     font: 10pt courier new;
     color: #000080;
@@ -65,25 +75,24 @@ QLabel[class=insn_string] {
 }
 
 QDockWidget::title {
-    background: rgb(70,70,70);
+""" + f"    background: {repr_color(Conf.palette_mid)};" + """
     border: 0px solid gray;
     padding: 0px 0px 0px 5px;
     margin: 0px 0px 2px 0px;
 }
 
 QPlainTextEdit, QTextEdit {
-    background-color: rgb(40,40,40);
+""" + f"    background-color: {repr_color(Conf.palette_base)};" + """
 }
 
+/*
 QToolBar {
     border: 1px solid rgb(80,80,80);
 }
+*/
 
 QTableView {
-    background-color: rgb(40,40,40);
+""" + f"    background-color: {repr_color(Conf.palette_base)};" + """
 }
 """
 
-    @staticmethod
-    def global_css():
-        return CSS.css
