@@ -38,7 +38,7 @@ class QCodeDocument(QTextDocument):
     def nodemap(self):
         if self._codegen is None:
             return None
-        return self._codegen.map_pos_to_ast
+        return self._codegen.map_ast_to_node
 
     def get_node_at_position(self, pos):
         if self._codegen is not None and self._codegen.map_pos_to_node is not None:
@@ -110,43 +110,43 @@ class QCodeDocument(QTextDocument):
 
     def find_related_text_chunks(self, node):
 
-        if self._codegen is None or self._codegen.map_pos_to_ast is None:
+        if self._codegen is None or self._codegen.map_ast_to_node is None:
             return None
 
         if isinstance(node, CConstant):
-            starts = self._codegen.map_pos_to_ast.get(node.value, None)
+            starts = self._codegen.map_ast_to_node.get(node.value, None)
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CVariable):
             if node.unified_variable is not None:
-                starts = self._codegen.map_pos_to_ast.get(node.unified_variable, None)
+                starts = self._codegen.map_ast_to_node.get(node.unified_variable, None)
             else:
-                starts = self._codegen.map_pos_to_ast.get(node.variable, None)
+                starts = self._codegen.map_ast_to_node.get(node.variable, None)
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CFunctionCall):
-            starts = self._codegen.map_pos_to_ast.get(node.callee_func if node.callee_func is not None else node.callee_target,
-                                                      None)
+            starts = self._codegen.map_ast_to_node.get(node.callee_func if node.callee_func is not None else node.callee_target,
+                                                       None)
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CStructField):
             key = (node.struct_type, node.offset)
-            starts = self._codegen.map_pos_to_ast.get(key, None)
+            starts = self._codegen.map_ast_to_node.get(key, None)
 
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CClosingObject):
-            starts = self._codegen.map_pos_to_ast.get(node, None)
+            starts = self._codegen.map_ast_to_node.get(node, None)
 
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CFunction):
-            starts = self._codegen.map_pos_to_ast.get(node, None)
+            starts = self._codegen.map_ast_to_node.get(node, None)
 
             if starts is None:
                 return [ ]
