@@ -189,7 +189,6 @@ def start_management(filepath=None, use_daemon=False):
         app.processEvents()
 
     from .logic import GlobalInfo
-    from .ui.css import CSS
     from .ui.main_window import MainWindow
     from .daemon import daemon_exists, run_daemon_process, daemon_conn
     from .daemon.client import ClientService

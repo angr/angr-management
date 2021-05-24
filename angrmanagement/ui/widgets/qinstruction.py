@@ -138,12 +138,12 @@ class QInstruction(QCachedGraphicsItem):
 
         # address
         if self.disasm_view.show_address:
-            painter.setPen(QPen(self._config.disasm_view_node_address_color, 1.5))
+            painter.setPen(self._config.disasm_view_node_address_color)
             painter.drawText(x, y, self._addr)
             x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
 
         # mnemonic
-        painter.setPen(QPen(self._config.disasm_view_node_mnemonic_color, 1.5))
+        painter.setPen(self._config.disasm_view_node_mnemonic_color)
         painter.drawText(x, y, self._mnemonic)
         x += self._mnemonic_width
 

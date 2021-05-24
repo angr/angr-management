@@ -75,24 +75,18 @@ QLabel[class=insn_string] {
 }
 
 QDockWidget::title {
-""" + f"    background: {repr_color(Conf.palette_mid)};" + """
-    border: 0px solid gray;
+    """ + f"background: {repr_color(Conf.palette_mid)};" + """
+    border: 1px solid gray;
     padding: 0px 0px 0px 5px;
     margin: 0px 0px 2px 0px;
 }
 
 QPlainTextEdit, QTextEdit {
-""" + f"    background-color: {repr_color(Conf.palette_base)};" + """
+    """ + f"background-color: {repr_color(Conf.palette_base)};" + """
 }
-
-/*
-QToolBar {
-    border: 1px solid rgb(80,80,80);
-}
-*/
 
 QTableView {
-""" + f"    background-color: {repr_color(Conf.palette_base)};" + """
+    """ + f"background-color: {repr_color(Conf.palette_base)};" + """
 }
 """
 
