@@ -1,6 +1,7 @@
 import asyncio
 
 from PySide2.QtCore import QEvent
+from PySide2.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from slacrs import Slacrs
 from slacrs.model import HumanFatigue
@@ -8,9 +9,16 @@ from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from ..base_plugin import BasePlugin
 
+#
+# Plugin to capture the User Mouse Movements.
+# User must input their name to use this plugin.
+#
+
 
 class LogFatiguePlugin(BasePlugin):
     def __init__(self, workspace):
+        self.username = None
+        self._fatigue_flag = True
         super().__init__(workspace)
         self._fatigue = HumanFatigue()
         self._strokes = []
@@ -19,6 +27,8 @@ class LogFatiguePlugin(BasePlugin):
         self._main_window.setMouseTracking(True)
         self._main_window.eventFilter = self.eventFilter
         self._main_window.installEventFilter(self._main_window)
+        self.modal = self.Modal(self)
+        self.modal.show()
 
     def log_fatigue(self):
         import threading
@@ -32,10 +42,8 @@ class LogFatiguePlugin(BasePlugin):
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         self.slacr = Slacrs()
         self.session = self.slacr.session()
-        while self._main_window._fatigue_flag is True:
+        while self._fatigue_flag is True:
             sleep(2)
-            if self._main_window.username:
-                self._fatigue.user = self._main_window.username
             if self._fatigue.user:
                 self.session.add(self._fatigue)
                 self.session.commit()
@@ -64,3 +72,42 @@ class LogFatiguePlugin(BasePlugin):
             self._fatigue.stroke = len(self._strokes)
 
         return False
+
+    #
+    # Creates Model so user can input name, if modal is closed without submitting name,
+    # the LogFatigue plugin will be deactivated
+    #
+
+    class Modal(QDialog):
+        def __init__(self, outerclass):
+            super().__init__(outerclass._main_window)
+            self.username = None
+
+            self.label = QLabel("Enter your Name")
+            self.edit = QLineEdit("")
+            self.button = QPushButton("Submit")
+            self.outerclass = outerclass
+
+
+            layout = QVBoxLayout()
+
+            layout.addWidget(self.label)
+            layout.addWidget(self.edit)
+            layout.addWidget(self.button)
+
+            self.setLayout(layout)
+
+            self.button.clicked.connect(self.input)
+
+        def input(self):
+            self.outerclass._fatigue.user = self.edit.text()
+            self.close()
+
+        def closeEvent(self, event):
+            if not self.outerclass.username:
+                self.outerclass._fatigue_flag = False
+                self.outerclass.workspace.plugins.deactivate_plugin(self.outerclass)
+
+    def teardown(self):
+        self._fatigue_flag = False
+        self.modal.close()
