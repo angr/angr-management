@@ -32,19 +32,19 @@ class QCodeDocument(QTextDocument):
         """
         if self._codegen is None:
             return None
-        return self._codegen.posmap
+        return self._codegen.map_pos_to_node
 
     @property
     def nodemap(self):
         if self._codegen is None:
             return None
-        return self._codegen.nodemap
+        return self._codegen.map_pos_to_ast
 
     def get_node_at_position(self, pos):
-        if self._codegen is not None and self._codegen.posmap is not None:
-            n = self._codegen.posmap.get_node(pos)
+        if self._codegen is not None and self._codegen.map_pos_to_node is not None:
+            n = self._codegen.map_pos_to_node.get_node(pos)
             if n is None:
-                n = self._codegen.posmap.get_node(pos - 1)
+                n = self._codegen.map_pos_to_node.get_node(pos - 1)
             return n
 
         return None
@@ -65,10 +65,10 @@ class QCodeDocument(QTextDocument):
         :return:
         """
 
-        if self._codegen is None or self._codegen.stmt_posmap is None:
+        if self._codegen is None or self._codegen.map_pos_to_addr is None:
             return None
 
-        n = self._codegen.stmt_posmap.get_node(pos)
+        n = self._codegen.map_pos_to_addr.get_node(pos)
 
         # if we can't find a node at the current position, start the algorithm search
         # from the left and right iteratively.
@@ -89,7 +89,7 @@ class QCodeDocument(QTextDocument):
 
                 # continue left search if we are still at a valid char
                 if inc_l:
-                    n = self._codegen.stmt_posmap.get_node(l)
+                    n = self._codegen.map_pos_to_addr.get_node(l)
                     if n is not None:
                         break
                     l -= 1
@@ -97,7 +97,7 @@ class QCodeDocument(QTextDocument):
 
                 # continue right search if we are still at a valid char
                 if inc_r:
-                    n = self._codegen.stmt_posmap.get_node(r)
+                    n = self._codegen.map_pos_to_addr.get_node(r)
                     if n is not None:
                         break
                     r += 1
@@ -106,47 +106,47 @@ class QCodeDocument(QTextDocument):
         return n
 
     def find_closest_node_pos(self, ins_addr):
-        return self._codegen.insmap.get_nearest_pos(ins_addr)
+        return self._codegen.map_addr_to_pos.get_nearest_pos(ins_addr)
 
     def find_related_text_chunks(self, node):
 
-        if self._codegen is None or self._codegen.nodemap is None:
+        if self._codegen is None or self._codegen.map_pos_to_ast is None:
             return None
 
         if isinstance(node, CConstant):
-            starts = self._codegen.nodemap.get(node.value, None)
+            starts = self._codegen.map_pos_to_ast.get(node.value, None)
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CVariable):
             if node.unified_variable is not None:
-                starts = self._codegen.nodemap.get(node.unified_variable, None)
+                starts = self._codegen.map_pos_to_ast.get(node.unified_variable, None)
             else:
-                starts = self._codegen.nodemap.get(node.variable, None)
+                starts = self._codegen.map_pos_to_ast.get(node.variable, None)
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CFunctionCall):
-            starts = self._codegen.nodemap.get(node.callee_func if node.callee_func is not None else node.callee_target,
-                                               None)
+            starts = self._codegen.map_pos_to_ast.get(node.callee_func if node.callee_func is not None else node.callee_target,
+                                                      None)
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CStructField):
             key = (node.struct_type, node.offset)
-            starts = self._codegen.nodemap.get(key, None)
+            starts = self._codegen.map_pos_to_ast.get(key, None)
 
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CClosingObject):
-            starts = self._codegen.nodemap.get(node, None)
+            starts = self._codegen.map_pos_to_ast.get(node, None)
 
             if starts is None:
                 return [ ]
 
         elif isinstance(node, CFunction):
-            starts = self._codegen.nodemap.get(node, None)
+            starts = self._codegen.map_pos_to_ast.get(node, None)
 
             if starts is None:
                 return [ ]
@@ -157,7 +157,7 @@ class QCodeDocument(QTextDocument):
 
         chunks = [ ]
         for start in starts:
-            elem = self._codegen.posmap.get_element(start)
+            elem = self._codegen.map_pos_to_node.get_element(start)
             if elem is None:
                 continue
             chunks.append((elem.start, elem.length + elem.start))
