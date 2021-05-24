@@ -5,7 +5,6 @@ from pyqodeng.core.api import SyntaxHighlighter
 from PySide2.QtGui import QTextCharFormat, QFont
 from PySide2.QtCore import Qt
 
-from ...config import Conf
 from ..documents import QCodeDocument
 
 

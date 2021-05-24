@@ -13,7 +13,6 @@ COLOR_SCHEMES = {
         'disasm_view_target_addr_color'                : QColor(0x00, 0x00, 0xff),
         'disasm_view_antitarget_addr_color'            : QColor(0xff, 0x00, 0x00),
         'disasm_view_node_shadow_color'                : QColor(0x00, 0x00, 0x00, 0x00),
-        'disasm_view_node_background_color'            : QColor(0x3c, 0x3c, 0x3c),
         'disasm_view_node_background_color'            : QColor(0xfa, 0xfa, 0xfa),
         'disasm_view_node_zoomed_out_background_color' : QColor(0xda, 0xda, 0xda),
         'disasm_view_node_border_color'                : QColor(0xf0, 0xf0, 0xf0),

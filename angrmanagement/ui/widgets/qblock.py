@@ -1,7 +1,7 @@
 import logging
 
-from PySide2.QtGui import QColor, QPen, QPainterPath
-from PySide2.QtCore import QRectF, QMarginsF, Qt
+from PySide2.QtGui import QPen, QPainterPath
+from PySide2.QtCore import QRectF, QMarginsF
 
 from angr.analyses.disassembly import Instruction
 from angr.sim_variable import SimRegisterVariable
@@ -250,11 +250,17 @@ class QGraphBlock(QBlock):
 class QLinearBlock(QBlock):
     ADDRESS_PADDING = 10
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._height = 0
+        self._width = 0
+
     @property
     def mode(self):
         return 'linear'
 
-    def format_address(self, addr):
+    @staticmethod
+    def format_address(addr):
         return '{:08x}'.format(addr)
 
     def layout_widgets(self):

@@ -92,44 +92,6 @@ def macos_bigsur_wants_layer():
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 
-def refresh_theme():
-    from PySide2.QtWidgets import QApplication, QStyle
-    from PySide2.QtGui import QPalette
-    from .config import Conf
-    from .ui.css import CSS
-
-    app = QApplication.instance()
-    app.setStyle('Fusion')
-
-    palette = QPalette()
-    palette.setColor(QPalette.Window,          Conf.palette_window)
-    palette.setColor(QPalette.WindowText,      Conf.palette_windowtext)
-    palette.setColor(QPalette.Base,            Conf.palette_base)
-    palette.setColor(QPalette.AlternateBase,   Conf.palette_alternatebase)
-    palette.setColor(QPalette.ToolTipBase,     Conf.palette_tooltipbase)
-    palette.setColor(QPalette.ToolTipText,     Conf.palette_tooltiptext)
-    palette.setColor(QPalette.Text,            Conf.palette_text)
-    palette.setColor(QPalette.Button,          Conf.palette_button)
-    palette.setColor(QPalette.ButtonText,      Conf.palette_buttontext)
-    palette.setColor(QPalette.BrightText,      Conf.palette_brighttext)
-    palette.setColor(QPalette.Highlight,       Conf.palette_highlight)
-    palette.setColor(QPalette.HighlightedText, Conf.palette_highlightedtext)
-    palette.setColor(QPalette.Light,           Conf.palette_light)
-    palette.setColor(QPalette.Midlight,        Conf.palette_midlight)
-    palette.setColor(QPalette.Dark,            Conf.palette_dark)
-    palette.setColor(QPalette.Mid,             Conf.palette_mid)
-    palette.setColor(QPalette.Shadow,          Conf.palette_shadow)
-    palette.setColor(QPalette.Link,            Conf.palette_link)
-    palette.setColor(QPalette.LinkVisited,     Conf.palette_linkvisited)
-    palette.setColor(QPalette.Disabled, QPalette.Text,       Conf.palette_disabled_text)
-    palette.setColor(QPalette.Disabled, QPalette.ButtonText, Conf.palette_disabled_buttontext)
-    palette.setColor(QPalette.Disabled, QPalette.WindowText, Conf.palette_disabled_windowtext)
-    app.setPalette(palette)
-
-    # apply the CSS
-    app.setStyleSheet(CSS.global_css())
-
-
 def start_management(filepath=None, use_daemon=False):
 
     if sys.platform == "darwin":
@@ -142,10 +104,11 @@ def start_management(filepath=None, use_daemon=False):
     set_windows_event_loop_policy()
 
     from PySide2.QtWidgets import QApplication, QSplashScreen, QMessageBox
-    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon, QPalette, QColor
+    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
     from PySide2.QtCore import Qt
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
+    from .ui.css import refresh_theme
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")

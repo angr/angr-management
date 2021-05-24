@@ -6,7 +6,7 @@ from IPython.lib import guisupport
 from ..css import CSS
 
 class QIPythonWidget(RichJupyterWidget):
-    def __init__(self, banner=None, namespace=None, *args, **kwargs):
+    def __init__(self, *args, banner=None, namespace=None, **kwargs):
         if banner is not None:
             self.banner = banner
         RichJupyterWidget.__init__(self, *args, **kwargs)
@@ -40,4 +40,3 @@ class QIPythonWidget(RichJupyterWidget):
 
     def execute_command(self, command):
         self._execute(command, False)
-

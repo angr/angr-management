@@ -7,8 +7,8 @@ from ..widgets.qcolor_option import QColorOption
 from ...config.config_manager import ENTRIES, COLOR_SCHEMES
 from ...config import Conf
 from ...logic.url_scheme import AngrUrlScheme
+from ..css import refresh_theme
 
-from __main__ import refresh_theme
 
 
 class Page(QWidget):
@@ -66,7 +66,7 @@ class Integration(Page):
     def save_config(self):
         scheme = AngrUrlScheme()
         try:
-            registered, register_as = scheme.is_url_scheme_registered()
+            registered, _ = scheme.is_url_scheme_registered()
             if registered != self._url_scheme_chk.isChecked():
                 # we need to do something
                 if self._url_scheme_chk.isChecked():

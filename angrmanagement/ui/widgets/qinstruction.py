@@ -1,7 +1,7 @@
 from typing import List
 import logging
 
-from PySide2.QtGui import QPainter, QColor, QCursor, QPen
+from PySide2.QtGui import QPainter, QColor, QCursor
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
 
@@ -51,6 +51,8 @@ class QInstruction(QCachedGraphicsItem):
         self._comment = None
         self._comment_width = None
         self._legend = None
+        self._width = 0
+        self._height = 0
 
         self._init_widgets()
 

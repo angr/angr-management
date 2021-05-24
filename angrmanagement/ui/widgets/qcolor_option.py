@@ -18,7 +18,7 @@ class QColorOption(QWidget):
         self.color.am_obj = color
         self.color.am_event()
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event): # pylint:disable=unused-argument
         dialog.setCurrentColor(self.color.am_obj)
         dialog.exec()
         if dialog.result() == QColorDialog.Accepted:
@@ -30,7 +30,7 @@ class QColorOption(QWidget):
         frame.setFixedWidth(30)
         frame.setFixedHeight(15)
 
-        def update_color(**kwargs):
+        def update_color(**kwargs): # pylint:disable=unused-argument
             r,g,b,a = self.color.getRgb()
             frame.setStyleSheet(f"background-color: rgba({r},{g},{b},{a});")
         update_color()

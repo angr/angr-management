@@ -16,8 +16,6 @@ from ..toolbars import FunctionTableToolbar
 if TYPE_CHECKING:
     import PySide2
 
-from ...config import Conf
-
 class QFunctionTableModel(QAbstractTableModel):
 
     Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
@@ -66,15 +64,15 @@ class QFunctionTableModel(QAbstractTableModel):
 
         self.emit(SIGNAL("layoutChanged()"))
 
-    def rowCount(self, *args, **kwargs):
+    def rowCount(self, *args, **kwargs): # pylint:disable=unused-argument
         if self.func_list is None:
             return 0
         return len(self.func_list)
 
-    def columnCount(self, *args, **kwargs):
+    def columnCount(self, *args, **kwargs): # pylint:disable=unused-argument
         return len(self.Headers) + self.workspace.plugins.count_func_columns()
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section, orientation, role): # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
 
@@ -166,7 +164,8 @@ class QFunctionTableModel(QAbstractTableModel):
 
         return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
 
-    def _get_binary_name(self, func):
+    @staticmethod
+    def _get_binary_name(func):
         return os.path.basename(func.binary.binary) if func.binary is not None else ""
 
     def _get_function_backcolor(self, func) -> QColor:
@@ -288,7 +287,7 @@ class QFunctionTableView(QTableView):
         self._function_table.show_filter_box(prefix=text)
         return True
 
-    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None:
+    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
         row = self.currentIndex().row()
         self._context_menu.set(self._model.func_list[row]).qmenu().popup(QCursor.pos())
 
@@ -301,7 +300,7 @@ class QFunctionTableFilterBox(QLineEdit):
 
         self.installEventFilter(self)
 
-    def eventFilter(self, obj, event):
+    def eventFilter(self, obj, event): # pylint:disable=unused-argument
         if event.type() == QEvent.KeyPress:
             if event.key() == Qt.Key_Escape:
                 if self.text():

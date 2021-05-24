@@ -75,7 +75,6 @@ ENTRIES = [
     CE('disasm_view_target_addr_color',                QColor, QColor(0x00, 0x00, 0xff)),
     CE('disasm_view_antitarget_addr_color',            QColor, QColor(0xff, 0x00, 0x00)),
     CE('disasm_view_node_shadow_color',                QColor, QColor(0x00, 0x00, 0x00, 0x00)),
-    CE('disasm_view_node_background_color',            QColor, QColor(0x3c, 0x3c, 0x3c)),
     CE('disasm_view_node_background_color',            QColor, QColor(0xfa, 0xfa, 0xfa)),
     CE('disasm_view_node_zoomed_out_background_color', QColor, QColor(0xda, 0xda, 0xda)),
     CE('disasm_view_node_border_color',                QColor, QColor(0xf0, 0xf0, 0xf0)),
@@ -323,6 +322,11 @@ class ConfigurationManager:
 
         return cls(entry_map)
 
+    @classmethod
+    def parse_file(cls, path:str):
+        with open(path, 'r') as f:
+            return cls.parse(f)
+
     def save(self, f):
         out = {}
         for k, v in self._entries.items():
@@ -332,6 +336,10 @@ class ConfigurationManager:
             out[k] = v
 
         toml.dump(out, f)
+
+    def save_file(self, path:str):
+        with open(path, 'w') as f:
+            self.save(f)
 
     @property
     def has_operation_mango(self) -> bool:

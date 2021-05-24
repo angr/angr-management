@@ -1,7 +1,7 @@
 import logging
 
 from PySide2.QtWidgets import QApplication
-from PySide2.QtGui import QPainter, QColor
+from PySide2.QtGui import QPainter
 from PySide2.QtCore import Qt, QRectF, QPointF
 
 from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand, Value
@@ -236,7 +236,7 @@ class QOperand(QCachedGraphicsItem):
         # try to render it
         rendered = operand.render()[0]
         for t in branch_targets:
-            if "%x" % t == rendered or "%#x" % t == rendered:
+            if rendered in ("%x" % t, "%#x" % t):
                 return t
             if t == rendered:
                 return t
@@ -246,7 +246,8 @@ class QOperand(QCachedGraphicsItem):
         # return a random one
         return next(iter(branch_targets))
 
-    def _first_n_branch_targets(self, branch_targets, n):
+    @staticmethod
+    def _first_n_branch_targets(branch_targets, n):
 
         if not branch_targets:
             return [ ]
@@ -258,12 +259,8 @@ class QOperand(QCachedGraphicsItem):
         if self.is_branch_target:
             # a branch instruction
 
-            if self.branch_targets is not None and next(iter(self.branch_targets)) in self.disasm.kb.functions:
-                # jumping to a function
-                is_target_func = True
-            else:
-                # jumping to a non-function address
-                is_target_func = False
+            is_target_func = bool(self.branch_targets is not None
+                                  and next(iter(self.branch_targets)) in self.disasm.kb.functions)
 
             if self.is_indirect_branch:
                 # indirect jump

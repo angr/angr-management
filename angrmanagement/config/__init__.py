@@ -11,8 +11,7 @@ fc = BaseDirectory.save_config_path('angr-management')
 if fc is not None:
     config_path = os.path.join(fc, 'config')
     try:
-        with open(config_path, 'r') as f:
-            Conf = ConfigurationManager.parse(f)
+        Conf = ConfigurationManager.parse_file(config_path)
     except FileNotFoundError:
         Conf = ConfigurationManager()
 else:
@@ -22,8 +21,7 @@ else:
 def save_config():
     if fc is None:
         return
-    with open(config_path, 'w') as f:
-        Conf.save(f)
+    Conf.save_file(config_path)
 atexit.register(save_config)
 
 APP_LOCATION = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
