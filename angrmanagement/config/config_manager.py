@@ -1,5 +1,6 @@
 
 import logging
+import re
 
 import toml
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
@@ -10,24 +11,23 @@ from .config_entry import ConfigurationEntry as CE
 from .color_schemes import COLOR_SCHEMES
 
 _l = logging.getLogger(__name__)
+color_re = re.compile('[0-9a-fA-F]+')
 
 def color_parser(config_option, value):
-    if not isinstance(value, str) or len(value) != 6:
+    if not isinstance(value, str) \
+       or not color_re.match(value) \
+       or len(value) not in (3, 6, 8, 12):
         _l.error('Failed to parse value %r as rgb color for option %s', value, config_option)
         return None
 
-    r = int(value[0:2], 16)
-    g = int(value[2:4], 16)
-    b = int(value[4:6], 16)
-
-    return QColor(r, g, b)
+    return QColor('#' + value)
 
 def color_serializer(config_option, value: QColor):
     if not isinstance(value, QColor):
         _l.error("Failed to serialize value %r as rgb color for option %s", value, config_option)
         return None
 
-    return f'{value.red():02x}{value.green():02x}{value.blue():02x}'
+    return f'{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}'
 
 def font_parser(config_option, value):
     if not isinstance(value, str) or 'px ' not in value:
