@@ -207,13 +207,16 @@ class QCCodeEdit(api.CodeEdit):
         dialog.exec_()
 
     def comment(self, expr=False, node=None):
-        if node is None:
+        addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+        if addr is None:
             if expr:
                 addr = self.get_src_to_inst()
             else:
-                node = self.document().get_stmt_node_at_position(self.textCursor().position())
-                tags = getattr(node, 'tags', None) or {}
-                addr = tags.get('ins_addr', None)
+                pos = self.textCursor().position()
+                while self.document().characterAt(pos) not in ('\n', '\u2029') and pos < self.document().characterCount():  # qt WHAT are you doing
+                    pos += 1
+                node = self.document().get_stmt_node_at_position(pos)
+                addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
 
         if addr is None:
             return
