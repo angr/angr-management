@@ -9,12 +9,12 @@ from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
-
 try:
     from angr.angrdb import AngrDB
 except ImportError as ex:
     print(str(ex))
     AngrDB = None  # type: Optional[type]
+
 
 try:
     import archr
@@ -52,9 +52,6 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-
-    username = None
-
     def __init__(self, parent=None, show=True):
         super(MainWindow, self).__init__(parent)
 
@@ -359,10 +356,10 @@ class MainWindow(QMainWindow):
 
     def open_docker_button(self):
         required = {
-            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .': archr,
-            'keystone: pip install --no-binary keystone-engine keystone-engine': keystone
-        }
-        is_missing = [key for key, value in required.items() if value is None]
+            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
+            'keystone: pip install --no-binary keystone-engine keystone-engine':keystone
+            }
+        is_missing = [ key for key, value in required.items() if value is None ]
         if len(is_missing) > 0:
             req_msg = 'You need to install the following:\n\n\t' + '\n\t'.join(is_missing)
             req_msg += '\n\nInstall them to enable this functionality.'
@@ -476,7 +473,7 @@ class MainWindow(QMainWindow):
     def run_induction_variable_analysis(self):
         self.workspace.view_manager.first_view_in_category('disassembly').run_induction_variable_analysis()
 
-    def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
+    def run_dependency_analysis(self, func_addr: Optional[int]=None, func_arg_idx: Optional[int]=None):
         if self.workspace is None or self.workspace.instance is None:
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
@@ -564,7 +561,7 @@ class MainWindow(QMainWindow):
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.view_manager.docks
-                                     if dock.widget().default_docking_position in ('left', 'bottom',)]
+                                     if dock.widget().default_docking_position in ('left', 'bottom', )]
 
         if not adjustable_dockable_views:
             return
