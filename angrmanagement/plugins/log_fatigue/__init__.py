@@ -1,0 +1,1 @@
+from .log_fatigue_plugin import LogFatiguePlugin

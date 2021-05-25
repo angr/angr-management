@@ -123,7 +123,7 @@ ENTRIES = [
 
     # plugins
     CE('plugin_search_path', str, '$AM_BUILTIN_PLUGINS:~/.local/share/angr-management/plugins'),
-    CE('plugin_blacklist', str, 'sample_plugin'),
+    CE('plugin_blacklist', str, 'sample_plugin,log_fatigue_plugin'),
 
     # configurations for individual plugins
     # TOOD: Move them to separate locations
