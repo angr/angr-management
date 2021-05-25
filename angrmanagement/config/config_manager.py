@@ -6,6 +6,7 @@ import toml
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication
 from PySide2.QtCore import Qt
+from typing import Union
 
 from .config_entry import ConfigurationEntry as CE
 from .color_schemes import COLOR_SCHEMES
@@ -13,7 +14,7 @@ from .color_schemes import COLOR_SCHEMES
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
 
-def color_parser(config_option, value):
+def color_parser(config_option, value) -> Union[QColor, None]:
     if not isinstance(value, str) \
        or not color_re.match(value) \
        or len(value) not in (3, 6, 8, 12):
@@ -22,14 +23,14 @@ def color_parser(config_option, value):
 
     return QColor('#' + value)
 
-def color_serializer(config_option, value: QColor):
+def color_serializer(config_option, value: QColor) -> str:
     if not isinstance(value, QColor):
         _l.error("Failed to serialize value %r as rgb color for option %s", value, config_option)
         return None
 
     return f'{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}'
 
-def font_parser(config_option, value):
+def font_parser(config_option, value) -> Union[QFont, None]:
     if not isinstance(value, str) or 'px ' not in value:
         _l.error('Failed to parse value %r as font for option %s', value, config_option)
         return None
@@ -43,7 +44,7 @@ def font_parser(config_option, value):
 
     return QFont(parts[1], size)
 
-def font_serializer(config_option, value: QFont):
+def font_serializer(config_option, value: QFont) -> str:
     if not isinstance(value, QFont):
         _l.error("Failed to serialize value %r as font for option %s", value, config_option)
         return None
