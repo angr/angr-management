@@ -17,7 +17,7 @@ COLOR_SCHEMES = {
         'disasm_view_node_background_color': QColor(0xfa, 0xfa, 0xfa),
         'disasm_view_node_zoomed_out_background_color': QColor(0xda, 0xda, 0xda),
         'disasm_view_node_border_color': QColor(0xf0, 0xf0, 0xf0),
-        'disasm_view_node_instruction_selected_background_colo<': QColor(0xb8, 0xc3, 0xd6),
+        'disasm_view_node_instruction_selected_background_color': QColor(0xb8, 0xc3, 0xd6),
         'disasm_view_node_address_color': QColor(0x00, 0x00, 0x00),
         'disasm_view_node_mnemonic_color': QColor(0x00, 0x00, 0x80),
         'disasm_view_selected_node_border_color': QColor(0x6b, 0x71, 0x7c),
