@@ -1,10 +1,21 @@
 import asyncio
+import math
+import threading
+import time
+from time import sleep
+from typing import Optional
 
-from PySide2.QtCore import QEvent
+
+from PySide2.QtCore import QEvent, QObject
 from PySide2.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
-from slacrs import Slacrs
-from slacrs.model import HumanFatigue
+try:
+    from slacrs import Slacrs
+    from slacrs.model import HumanFatigue
+except ImportError as ex:
+    print(str(ex))
+    Slacrs = None  # type: Optional[type]
+    HumanFatigue = None  # type: Optional[type]
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from ..base_plugin import BasePlugin
@@ -17,61 +28,59 @@ from ..base_plugin import BasePlugin
 
 class LogFatiguePlugin(BasePlugin):
     def __init__(self, workspace):
-        self.username = None
         self._fatigue_flag = True
         super().__init__(workspace)
         self._fatigue = HumanFatigue()
         self._strokes = []
-        self.log_fatigue()
         self._main_window = workspace.view_manager.main_window
         self._main_window.setMouseTracking(True)
-        self._main_window.eventFilter = self.eventFilter
-        self._main_window.installEventFilter(self._main_window)
+        self.EventFilterInstance = self.EventFilter(self._fatigue)
+        self._main_window.installEventFilter(self.EventFilterInstance)
         self.modal = self.Modal(self)
         self.modal.show()
 
-    def log_fatigue(self):
-        import threading
-
-        t_log = threading.Thread(target=self._log_mouse, args=())
-        t_log.start()
+        self.t_log = threading.Thread(target=self._log_mouse, args=())
+        self.t_log.setDaemon(True)
+        self.t_log.start()
 
     def _log_mouse(self):
-        from time import sleep
-
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        self.slacr = Slacrs()
-        self.session = self.slacr.session()
-        while self._fatigue_flag is True:
-            sleep(2)
-            if self._fatigue.user:
-                self.session.add(self._fatigue)
-                self.session.commit()
+        session = Slacrs().session()
+        with session.no_autoflush:
+            while self._fatigue_flag is True:
+                sleep(2)
+                if self._fatigue.user:
+                    session.add(self._fatigue)
+                    session.commit()
+            session.close()
 
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.HoverMove:
-            x = event.pos().x()
-            old_x = event.oldPos().x()
-            y = event.pos().y()
-            old_y = event.oldPos().y()
-            import math
+    class EventFilter(QObject):
+        def __init__(self, fatigue):
+            super().__init__()
+            self._fatigue = fatigue
+            self._strokes = []
 
-            self._fatigue.mouse_speed = int(
-                math.sqrt((x - old_x) ** 2 + (y - old_y) ** 2)
-            )
-        elif event.type() == QEvent.KeyPress:
-            import time
+        def eventFilter(self, obj, event):  # pylint: disable=unused-argument
+            if event.type() == QEvent.HoverMove:
+                x = event.pos().x()
+                old_x = event.oldPos().x()
+                y = event.pos().y()
+                old_y = event.oldPos().y()
 
-            timestamp = time.time()
-            i = 0
-            for i in range(len(self._strokes)):
-                if timestamp - self._strokes[i] <= 10:
-                    break
-            self._strokes = self._strokes[i:]
-            self._strokes.append(timestamp)
-            self._fatigue.stroke = len(self._strokes)
+                self._fatigue.mouse_speed = int(
+                    math.sqrt((x - old_x) ** 2 + (y - old_y) ** 2)
+                )
+            elif event.type() == QEvent.KeyPress:
+                timestamp = time.time()
+                i = 0
+                for i in range(len(self._strokes)):
+                    if timestamp - self._strokes[i] <= 10:
+                        break
+                self._strokes = self._strokes[i:]
+                self._strokes.append(timestamp)
+                self._fatigue.stroke = len(self._strokes)
 
-        return False
+            return False
 
     #
     # Creates Model so user can input name, if modal is closed without submitting name,
@@ -81,13 +90,11 @@ class LogFatiguePlugin(BasePlugin):
     class Modal(QDialog):
         def __init__(self, outerclass):
             super().__init__(outerclass._main_window)
-            self.username = None
 
             self.label = QLabel("Enter your Name")
             self.edit = QLineEdit("")
             self.button = QPushButton("Submit")
             self.outerclass = outerclass
-
 
             layout = QVBoxLayout()
 
@@ -104,10 +111,11 @@ class LogFatiguePlugin(BasePlugin):
             self.close()
 
         def closeEvent(self, event):
-            if not self.outerclass.username:
+            if not self.outerclass._fatigue.user:
                 self.outerclass._fatigue_flag = False
                 self.outerclass.workspace.plugins.deactivate_plugin(self.outerclass)
+            event.accept()
 
     def teardown(self):
         self._fatigue_flag = False
-        self.modal.close()
+        self.t_log.join()
