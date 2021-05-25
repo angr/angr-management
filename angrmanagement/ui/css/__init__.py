@@ -1,7 +1,9 @@
-from ...config import Conf
+import sys
 
-from PySide2.QtWidgets import QApplication, QStyle
+from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QPalette
+
+from ...config import Conf
 
 
 def repr_color(color):
@@ -97,7 +99,18 @@ QTableView {
 
 def refresh_theme():
     app = QApplication.instance()
-    app.setStyle('Fusion')
+
+    # determine the default application style according to the OS
+    if sys.platform == "win32":
+        app_style = "Windows"
+    elif sys.platform == "darwin":
+        app_style = "macintosh"
+    elif sys.platform == "linux":
+        app_style = "Fusion"
+    else:
+        app_style = "Fusion"
+
+    app.setStyle(app_style)
 
     palette = QPalette()
     palette.setColor(QPalette.Window,          Conf.palette_window)
