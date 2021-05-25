@@ -10,7 +10,8 @@ class QIPythonWidget(RichJupyterWidget):
         if banner is not None:
             self.banner = banner
         RichJupyterWidget.__init__(self, *args, **kwargs)
-        self.setStyleSheet(CSS.global_css())
+        self._on_css_updated()
+        CSS.global_css.am_subscribe(self._on_css_updated)
 
         self.kernel_manager = kernel_manager = QtInProcessKernelManager()
         kernel_manager.start_kernel()
@@ -28,6 +29,13 @@ class QIPythonWidget(RichJupyterWidget):
             guisupport.get_app_qt4().exit()
 
         self.exit_requested.connect(stop)
+
+    def __del__(self):
+        super().__del__()
+        CSS.global_css.am_unsubscribe(self._on_css_updated)
+
+    def _on_css_updated(self):
+        self.setStyleSheet(CSS.global_css.am_obj)
 
     def push_namespace(self, namespace):
         self.kernel_manager.kernel.shell.push(namespace)

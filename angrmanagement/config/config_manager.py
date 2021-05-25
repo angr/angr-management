@@ -6,6 +6,7 @@ import toml
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication
 from PySide2.QtCore import Qt
+from typing import Union
 
 from .config_entry import ConfigurationEntry as CE
 from .color_schemes import COLOR_SCHEMES
@@ -13,7 +14,7 @@ from .color_schemes import COLOR_SCHEMES
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
 
-def color_parser(config_option, value):
+def color_parser(config_option, value) -> Union[QColor, None]:
     if not isinstance(value, str) \
        or not color_re.match(value) \
        or len(value) not in (3, 6, 8, 12):
@@ -22,14 +23,14 @@ def color_parser(config_option, value):
 
     return QColor('#' + value)
 
-def color_serializer(config_option, value: QColor):
+def color_serializer(config_option, value: QColor) -> str:
     if not isinstance(value, QColor):
         _l.error("Failed to serialize value %r as rgb color for option %s", value, config_option)
         return None
 
     return f'{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}'
 
-def font_parser(config_option, value):
+def font_parser(config_option, value) -> Union[QFont, None]:
     if not isinstance(value, str) or 'px ' not in value:
         _l.error('Failed to parse value %r as font for option %s', value, config_option)
         return None
@@ -43,7 +44,7 @@ def font_parser(config_option, value):
 
     return QFont(parts[1], size)
 
-def font_serializer(config_option, value: QFont):
+def font_serializer(config_option, value: QFont) -> str:
     if not isinstance(value, QFont):
         _l.error("Failed to serialize value %r as font for option %s", value, config_option)
         return None
@@ -66,55 +67,58 @@ ENTRIES = [
     CE('code_font', QFont, QFont("Source Code Pro", 10)),
 
     CE('theme_name', str, "Light"),
-    CE('disasm_view_operand_color',                    QColor, QColor(0x00, 0x00, 0x80)),
-    CE('disasm_view_variable_label_color',             QColor, QColor(0x00, 0x80, 0x00)),
-    CE('disasm_view_operand_highlight_color',          QColor, QColor(0xfc, 0xef, 0x00)),
-    CE('disasm_view_operand_select_color',             QColor, QColor(0xff, 0xff, 0x00)),
-    CE('disasm_view_function_color',                   QColor, QColor(0x00, 0x00, 0xff)),
-    CE('disasm_view_label_color',                      QColor, QColor(0x00, 0x00, 0xff)),
-    CE('disasm_view_label_highlight_color',            QColor, QColor(0xf0, 0xf0, 0xbf)),
-    CE('disasm_view_target_addr_color',                QColor, QColor(0x00, 0x00, 0xff)),
-    CE('disasm_view_antitarget_addr_color',            QColor, QColor(0xff, 0x00, 0x00)),
-    CE('disasm_view_node_shadow_color',                QColor, QColor(0x00, 0x00, 0x00, 0x00)),
-    CE('disasm_view_node_background_color',            QColor, QColor(0xfa, 0xfa, 0xfa)),
+    CE('disasm_view_operand_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('disasm_view_operand_constant_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('disasm_view_variable_label_color', QColor, QColor(0x00, 0x80, 0x00)),
+    CE('disasm_view_operand_highlight_color', QColor, QColor(0xfc, 0xef, 0x00)),
+    CE('disasm_view_operand_select_color', QColor, QColor(0xff, 0xff, 0x00)),
+    CE('disasm_view_function_color', QColor, QColor(0x00, 0x00, 0xff)),
+    CE('disasm_view_label_color', QColor, QColor(0x00, 0x00, 0xff)),
+    CE('disasm_view_label_highlight_color', QColor, QColor(0xf0, 0xf0, 0xbf)),
+    CE('disasm_view_target_addr_color', QColor, QColor(0x00, 0x00, 0xff)),
+    CE('disasm_view_antitarget_addr_color', QColor, QColor(0xff, 0x00, 0x00)),
+    CE('disasm_view_node_shadow_color', QColor, QColor(0x00, 0x00, 0x00, 0x00)),
+    CE('disasm_view_node_background_color', QColor, QColor(0xfa, 0xfa, 0xfa)),
     CE('disasm_view_node_zoomed_out_background_color', QColor, QColor(0xda, 0xda, 0xda)),
-    CE('disasm_view_node_border_color',                QColor, QColor(0xf0, 0xf0, 0xf0)),
-    CE('disasm_view_node_address_color',               QColor, QColor(0x00, 0x00, 0x00)),
-    CE('disasm_view_node_mnemonic_color',              QColor, QColor(0x00, 0x00, 0x80)),
-    CE('disasm_view_selected_node_border_color',       QColor, QColor(0x6b, 0x71, 0x7c)),
-    CE('disasm_view_printable_byte_color',             QColor, QColor(0x00, 0x80, 0x40)),
-    CE('disasm_view_printable_character_color',        QColor, QColor(0x00, 0x80, 0x40)),
-    CE('disasm_view_unprintable_byte_color',           QColor, QColor(0x80, 0x40, 0x00)),
-    CE('disasm_view_unprintable_character_color',      QColor, QColor(0x80, 0x40, 0x00)),
-    CE('disasm_view_unknown_byte_color',               QColor, QColor(0xf0, 0x00, 0x00)),
-    CE('disasm_view_unknown_character_color',          QColor, QColor(0xf0, 0x00, 0x00)),
-    CE('function_table_color',                         QColor, QColor(0x00, 0x00, 0x00)),
-    CE('function_table_syscall_color',                 QColor, QColor(0x00, 0x00, 0x80)),
-    CE('function_table_plt_color',                     QColor, QColor(0x00, 0x80, 0x00)),
-    CE('function_table_simprocedure_color',            QColor, QColor(0x80, 0x00, 0x00)),
-    CE('function_table_alignment_color',               QColor, QColor(0x80, 0x00, 0x80)),
-    CE('palette_window',                               QColor, QColor(0xef, 0xef, 0xef, 0xff)),
-    CE('palette_windowtext',                           QColor, QColor(0x00, 0x00, 0x00, 0xff)),
-    CE('palette_base',                                 QColor, QColor(0xff, 0xff, 0xff, 0xff)),
-    CE('palette_alternatebase',                        QColor, QColor(0xf7, 0xf7, 0xf7, 0xff)),
-    CE('palette_tooltipbase',                          QColor, QColor(0xff, 0xff, 0xdc, 0xff)),
-    CE('palette_tooltiptext',                          QColor, QColor(0x00, 0x00, 0x00, 0xff)),
-    CE('palette_text',                                 QColor, QColor(0x00, 0x00, 0x00, 0xff)),
-    CE('palette_button',                               QColor, QColor(0xef, 0xef, 0xef, 0xff)),
-    CE('palette_buttontext',                           QColor, QColor(0x00, 0x00, 0x00, 0xff)),
-    CE('palette_brighttext',                           QColor, QColor(0xff, 0xff, 0xff, 0xff)),
-    CE('palette_highlight',                            QColor, QColor(0x30, 0x8c, 0xc6, 0xff)),
-    CE('palette_highlightedtext',                      QColor, QColor(0xff, 0xff, 0xff, 0xff)),
-    CE('palette_disabled_text',                        QColor, QColor(0xbe, 0xbe, 0xbe, 0xff)),
-    CE('palette_disabled_buttontext',                  QColor, QColor(0xbe, 0xbe, 0xbe, 0xff)),
-    CE('palette_disabled_windowtext',                  QColor, QColor(0xbe, 0xbe, 0xbe, 0xff)),
-    CE('palette_light',                                QColor, QColor(0xff, 0xff, 0xff, 0xff)),
-    CE('palette_midlight',                             QColor, QColor(0xca, 0xca, 0xca, 0xff)),
-    CE('palette_dark',                                 QColor, QColor(0x9f, 0x9f, 0x9f, 0xff)),
-    CE('palette_mid',                                  QColor, QColor(0xb8, 0xb8, 0xb8, 0xff)),
-    CE('palette_shadow',                               QColor, QColor(0x76, 0x76, 0x76, 0xff)),
-    CE('palette_link',                                 QColor, QColor(0x00, 0x00, 0xff, 0xff)),
-    CE('palette_linkvisited',                          QColor, QColor(0xff, 0x00, 0xff, 0xff)),
+    CE('disasm_view_node_border_color', QColor, QColor(0xf0, 0xf0, 0xf0)),
+    CE('disasm_view_node_instruction_selected_background_color', QColor, QColor(0xb8, 0xc3, 0xd6)),
+    CE('disasm_view_node_address_color', QColor, QColor(0x00, 0x00, 0x00)),
+    CE('disasm_view_node_mnemonic_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('disasm_view_node_rounding', int, 0),
+    CE('disasm_view_selected_node_border_color', QColor, QColor(0x6b, 0x71, 0x7c)),
+    CE('disasm_view_printable_byte_color', QColor, QColor(0x00, 0x80, 0x40)),
+    CE('disasm_view_printable_character_color', QColor, QColor(0x00, 0x80, 0x40)),
+    CE('disasm_view_unprintable_byte_color', QColor, QColor(0x80, 0x40, 0x00)),
+    CE('disasm_view_unprintable_character_color', QColor, QColor(0x80, 0x40, 0x00)),
+    CE('disasm_view_unknown_byte_color', QColor, QColor(0xf0, 0x00, 0x00)),
+    CE('disasm_view_unknown_character_color', QColor, QColor(0xf0, 0x00, 0x00)),
+    CE('function_table_color', QColor, QColor(0x00, 0x00, 0x00)),
+    CE('function_table_syscall_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('function_table_plt_color', QColor, QColor(0x00, 0x80, 0x00)),
+    CE('function_table_simprocedure_color', QColor, QColor(0x80, 0x00, 0x00)),
+    CE('function_table_alignment_color', QColor, QColor(0x80, 0x00, 0x80)),
+    CE('palette_window', QColor, QColor(0xef, 0xef, 0xef, 0xff)),
+    CE('palette_windowtext', QColor, QColor(0x00, 0x00, 0x00, 0xff)),
+    CE('palette_base', QColor, QColor(0xff, 0xff, 0xff, 0xff)),
+    CE('palette_alternatebase', QColor, QColor(0xf7, 0xf7, 0xf7, 0xff)),
+    CE('palette_tooltipbase', QColor, QColor(0xff, 0xff, 0xdc, 0xff)),
+    CE('palette_tooltiptext', QColor, QColor(0x00, 0x00, 0x00, 0xff)),
+    CE('palette_text', QColor, QColor(0x00, 0x00, 0x00, 0xff)),
+    CE('palette_button', QColor, QColor(0xef, 0xef, 0xef, 0xff)),
+    CE('palette_buttontext', QColor, QColor(0x00, 0x00, 0x00, 0xff)),
+    CE('palette_brighttext', QColor, QColor(0xff, 0xff, 0xff, 0xff)),
+    CE('palette_highlight', QColor, QColor(0x30, 0x8c, 0xc6, 0xff)),
+    CE('palette_highlightedtext', QColor, QColor(0xff, 0xff, 0xff, 0xff)),
+    CE('palette_disabled_text', QColor, QColor(0xbe, 0xbe, 0xbe, 0xff)),
+    CE('palette_disabled_buttontext', QColor, QColor(0xbe, 0xbe, 0xbe, 0xff)),
+    CE('palette_disabled_windowtext', QColor, QColor(0xbe, 0xbe, 0xbe, 0xff)),
+    CE('palette_light', QColor, QColor(0xff, 0xff, 0xff, 0xff)),
+    CE('palette_midlight', QColor, QColor(0xca, 0xca, 0xca, 0xff)),
+    CE('palette_dark', QColor, QColor(0x9f, 0x9f, 0x9f, 0xff)),
+    CE('palette_mid', QColor, QColor(0xb8, 0xb8, 0xb8, 0xff)),
+    CE('palette_shadow', QColor, QColor(0x76, 0x76, 0x76, 0xff)),
+    CE('palette_link', QColor, QColor(0x00, 0x00, 0xff, 0xff)),
+    CE('palette_linkvisited', QColor, QColor(0xff, 0x00, 0xff, 0xff)),
 
     # feature map
     CE('feature_map_color_regular_function', QColor, QColor(0x00, 0xa0, 0xe8)),

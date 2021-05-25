@@ -2,6 +2,7 @@ import sys
 
 from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QPalette
+from ...data.object_container import ObjectContainer
 
 from ...config import Conf
 
@@ -16,9 +17,11 @@ def repr_color(color):
 
 class CSS:
 
+    global_css = ObjectContainer('', 'Global CSS')
+
     @staticmethod
-    def global_css():
-        return """
+    def rebuild():
+        CSS.global_css.am_obj = """
 QLabel[class=insn] {
     font: 10pt courier new;
     color: #000080;
@@ -95,6 +98,7 @@ QTableView {
     """ + f"background-color: {repr_color(Conf.palette_base)};" + """
 }
 """
+        CSS.global_css.am_event()
 
 
 def refresh_theme():
@@ -143,4 +147,5 @@ def refresh_theme():
     palette.setColor(QPalette.Disabled, QPalette.ButtonText, Conf.palette_disabled_buttontext)
     palette.setColor(QPalette.Disabled, QPalette.WindowText, Conf.palette_disabled_windowtext)
     app.setPalette(palette)
-    app.setStyleSheet(CSS.global_css())
+    CSS.rebuild()
+    app.setStyleSheet(CSS.global_css.am_obj)

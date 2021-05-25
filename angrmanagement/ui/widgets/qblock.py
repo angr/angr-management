@@ -120,7 +120,9 @@ class QBlock(QCachedGraphicsItem):
             self._block_item_obj = None
 
         self._block_item = QPainterPath()
-        self._block_item.addRect(0, 0, self.width, self.height)
+        self._block_item.addRoundedRect(0, 0, self.width, self.height,
+            self._config.disasm_view_node_rounding,
+            self._config.disasm_view_node_rounding)
 
     def _init_widgets(self):
 
