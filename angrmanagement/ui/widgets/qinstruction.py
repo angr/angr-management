@@ -51,6 +51,8 @@ class QInstruction(QCachedGraphicsItem):
         self._comment = None
         self._comment_width = None
         self._legend = None
+        self._width = 0
+        self._height = 0
 
         self._init_widgets()
 
@@ -138,12 +140,12 @@ class QInstruction(QCachedGraphicsItem):
 
         # address
         if self.disasm_view.show_address:
-            painter.setPen(Qt.black)
+            painter.setPen(self._config.disasm_view_node_address_color)
             painter.drawText(x, y, self._addr)
             x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
 
         # mnemonic
-        painter.setPen(QColor(0, 0, 0x80))
+        painter.setPen(self._config.disasm_view_node_mnemonic_color)
         painter.drawText(x, y, self._mnemonic)
         x += self._mnemonic_width
 

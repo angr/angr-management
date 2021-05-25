@@ -1,8 +1,22 @@
+from ...config import Conf
+
+from PySide2.QtWidgets import QApplication, QStyle
+from PySide2.QtGui import QPalette
 
 
-class CSS(object):
+def repr_color(color):
+    r,g,b,a = color.getRgb()
+    return f'rgba({r},{g},{b},{a})'
 
-    css = """
+#
+# FIXME: Need to propagate CSS updates to more objects.
+#
+
+class CSS:
+
+    @staticmethod
+    def global_css():
+        return """
 QLabel[class=insn] {
     font: 10pt courier new;
     color: #000080;
@@ -65,13 +79,48 @@ QLabel[class=insn_string] {
 }
 
 QDockWidget::title {
-    background: lightgray;
+    """ + f"background: {repr_color(Conf.palette_mid)};" + """
     border: 1px solid gray;
     padding: 0px 0px 0px 5px;
     margin: 0px 0px 2px 0px;
 }
+
+QPlainTextEdit, QTextEdit {
+    """ + f"background-color: {repr_color(Conf.palette_base)};" + """
+}
+
+QTableView {
+    """ + f"background-color: {repr_color(Conf.palette_base)};" + """
+}
 """
 
-    @staticmethod
-    def global_css():
-        return CSS.css
+
+def refresh_theme():
+    app = QApplication.instance()
+    app.setStyle('Fusion')
+
+    palette = QPalette()
+    palette.setColor(QPalette.Window,          Conf.palette_window)
+    palette.setColor(QPalette.WindowText,      Conf.palette_windowtext)
+    palette.setColor(QPalette.Base,            Conf.palette_base)
+    palette.setColor(QPalette.AlternateBase,   Conf.palette_alternatebase)
+    palette.setColor(QPalette.ToolTipBase,     Conf.palette_tooltipbase)
+    palette.setColor(QPalette.ToolTipText,     Conf.palette_tooltiptext)
+    palette.setColor(QPalette.Text,            Conf.palette_text)
+    palette.setColor(QPalette.Button,          Conf.palette_button)
+    palette.setColor(QPalette.ButtonText,      Conf.palette_buttontext)
+    palette.setColor(QPalette.BrightText,      Conf.palette_brighttext)
+    palette.setColor(QPalette.Highlight,       Conf.palette_highlight)
+    palette.setColor(QPalette.HighlightedText, Conf.palette_highlightedtext)
+    palette.setColor(QPalette.Light,           Conf.palette_light)
+    palette.setColor(QPalette.Midlight,        Conf.palette_midlight)
+    palette.setColor(QPalette.Dark,            Conf.palette_dark)
+    palette.setColor(QPalette.Mid,             Conf.palette_mid)
+    palette.setColor(QPalette.Shadow,          Conf.palette_shadow)
+    palette.setColor(QPalette.Link,            Conf.palette_link)
+    palette.setColor(QPalette.LinkVisited,     Conf.palette_linkvisited)
+    palette.setColor(QPalette.Disabled, QPalette.Text,       Conf.palette_disabled_text)
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, Conf.palette_disabled_buttontext)
+    palette.setColor(QPalette.Disabled, QPalette.WindowText, Conf.palette_disabled_windowtext)
+    app.setPalette(palette)
+    app.setStyleSheet(CSS.global_css())

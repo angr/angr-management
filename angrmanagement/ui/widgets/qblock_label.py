@@ -30,7 +30,7 @@ class QBlockLabel(QCachedGraphicsItem):
             painter.setPen(highlight_color)
             painter.drawRect(0, 0, self.width, self.height)
 
-        painter.setPen(Qt.blue)
+        painter.setPen(Conf.disasm_view_label_color)
         painter.drawText(0, self._config.disasm_font_ascent, self.text)
 
     #

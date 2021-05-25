@@ -1,15 +1,28 @@
-
+from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
-    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit
+    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, QSizePolicy
 from PySide2.QtCore import QSize
 
+from ..widgets.qcolor_option import QColorOption
+from ...config.config_manager import ENTRIES, COLOR_SCHEMES
+from ...config import Conf
 from ...logic.url_scheme import AngrUrlScheme
+from ..css import refresh_theme
 
 
-class Integration(QWidget):
+
+class Page(QWidget):
+    def save_config(self):
+        raise NotImplementedError
+
+    NAME = NotImplemented
+
+
+class Integration(Page):
     """
     The integration page.
     """
+    NAME = 'OS Integration'
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -21,7 +34,7 @@ class Integration(QWidget):
 
     def _init_widgets(self):
 
-        # os integratio
+        # os integration
         os_integration = QGroupBox("OS integration")
         self._url_scheme_chk = QCheckBox("Register angr URL scheme (angr://).")
         self._url_scheme_text = QLineEdit()
@@ -53,7 +66,7 @@ class Integration(QWidget):
     def save_config(self):
         scheme = AngrUrlScheme()
         try:
-            registered, register_as = scheme.is_url_scheme_registered()
+            registered, _ = scheme.is_url_scheme_registered()
             if registered != self._url_scheme_chk.isChecked():
                 # we need to do something
                 if self._url_scheme_chk.isChecked():
@@ -64,6 +77,70 @@ class Integration(QWidget):
             # the current OS is not supported
             pass
 
+
+class Colors(Page):
+    NAME = "Colors"
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self._to_save = {}
+        self._schemes_combo = None
+
+        self._init_widgets()
+
+    def _init_widgets(self):
+        page_layout = QVBoxLayout()
+
+        scheme_loader_layout = QHBoxLayout()
+        color_scheme_lbl = QLabel("Load Color Scheme:")
+        color_scheme_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        scheme_loader_layout.addWidget(color_scheme_lbl)
+
+        self._schemes_combo = QComboBox(self)
+        for name in sorted(COLOR_SCHEMES):
+            self._schemes_combo.addItem(name)
+        scheme_loader_layout.addWidget(self._schemes_combo)
+        load_btn = QPushButton("Load")
+        load_btn.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        load_btn.clicked.connect(self._on_load_scheme_clicked)
+        scheme_loader_layout.addWidget(load_btn)
+        page_layout.addLayout(scheme_loader_layout)
+
+        edit_colors_layout = QVBoxLayout()
+        for ce in ENTRIES:
+            if ce.type_ is not QColor:
+                continue
+            row = QColorOption(getattr(Conf, ce.name), ce.name)
+            edit_colors_layout.addWidget(row)
+            self._to_save[ce.name] = (ce, row)
+
+        frame = QFrame()
+        frame.setLayout(edit_colors_layout)
+
+        scroll = QScrollArea()
+        scroll.setWidget(frame)
+
+        scroll_layout = QHBoxLayout()
+        scroll_layout.addWidget(scroll)
+
+        page_layout.addLayout(scroll_layout)
+
+        self.setLayout(page_layout)
+
+    def _load_color_scheme(self, name):
+        for prop, value in COLOR_SCHEMES[name].items():
+            row = self._to_save[prop][1]
+            row.set_color(value)
+
+    def _on_load_scheme_clicked(self):
+        self._load_color_scheme(self._schemes_combo.currentText())
+        self.save_config()
+
+    def save_config(self):
+        for ce, row in self._to_save.values():
+            setattr(Conf, ce.name, row.color.am_obj)
+        refresh_theme()
 
 class Preferences(QDialog):
     def __init__(self, workspace, parent=None):
@@ -85,11 +162,21 @@ class Preferences(QDialog):
         contents.setMaximumWidth(128)
         contents.setSpacing(12)
 
+        def item_changed(item: QListWidgetItem):
+            pageno = item.data(1)  # type: Page
+            pages.setCurrentIndex(pageno)
+
+        contents.itemClicked.connect(item_changed)
+
         self._pages.append(Integration())
+        self._pages.append(Colors())
 
         pages = QStackedWidget()
-        for page in self._pages:
+        for idx, page in enumerate(self._pages):
             pages.addWidget(page)
+            list_item = QListWidgetItem(page.NAME)
+            list_item.setData(1, idx)
+            contents.addItem(list_item)
 
         # buttons
         ok_button = QPushButton("OK")

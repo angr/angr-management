@@ -32,6 +32,7 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = func_list
         self.workspace = workspace
+        self._config = Conf
 
     def __len__(self):
         if self._func_list is not None:
@@ -63,15 +64,15 @@ class QFunctionTableModel(QAbstractTableModel):
 
         self.emit(SIGNAL("layoutChanged()"))
 
-    def rowCount(self, *args, **kwargs):
+    def rowCount(self, *args, **kwargs): # pylint:disable=unused-argument
         if self.func_list is None:
             return 0
         return len(self.func_list)
 
-    def columnCount(self, *args, **kwargs):
+    def columnCount(self, *args, **kwargs): # pylint:disable=unused-argument
         return len(self.Headers) + self.workspace.plugins.count_func_columns()
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section, orientation, role): # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
 
@@ -99,15 +100,16 @@ class QFunctionTableModel(QAbstractTableModel):
             return self._get_column_text(func, col)
 
         elif role == Qt.ForegroundRole:
-            color = QColor(0, 0, 0)
             if func.is_syscall:
-                color = QColor(0, 0, 0x80)
+                color = self._config.function_table_syscall_color
             elif func.is_plt:
-                color = QColor(0, 0x80, 0)
+                color = self._config.function_table_plt_color
             elif func.is_simprocedure:
-                color = QColor(0x80, 0, 0)
+                color = self._config.function_table_simprocedure_color
             elif func.alignment:
-                color = Qt.darkMagenta
+                color = self._config.function_table_alignment_color
+            else:
+                color = self._config.function_table_color
 
             #for w in widgets:
             #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
@@ -117,10 +119,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = self.workspace.plugins.color_func(func)
-            if color is None:
-                color = QColor(0xff, 0xff, 0xff)
-
-            return QBrush(color)
+            return color
 
         elif role == Qt.FontRole:
             return Conf.tabular_view_font
@@ -165,7 +164,8 @@ class QFunctionTableModel(QAbstractTableModel):
 
         return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
 
-    def _get_binary_name(self, func):
+    @staticmethod
+    def _get_binary_name(func):
         return os.path.basename(func.binary.binary) if func.binary is not None else ""
 
     def _get_function_backcolor(self, func) -> QColor:
@@ -287,7 +287,7 @@ class QFunctionTableView(QTableView):
         self._function_table.show_filter_box(prefix=text)
         return True
 
-    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None:
+    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
         row = self.currentIndex().row()
         self._context_menu.set(self._model.func_list[row]).qmenu().popup(QCursor.pos())
 
@@ -300,7 +300,7 @@ class QFunctionTableFilterBox(QLineEdit):
 
         self.installEventFilter(self)
 
-    def eventFilter(self, obj, event):
+    def eventFilter(self, obj, event): # pylint:disable=unused-argument
         if event.type() == QEvent.KeyPress:
             if event.key() == Qt.Key_Escape:
                 if self.text():

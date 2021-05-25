@@ -108,12 +108,15 @@ def start_management(filepath=None, use_daemon=False):
     from PySide2.QtCore import Qt
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
+    from .ui.css import refresh_theme
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")
     app.setApplicationName("angr management")
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     QApplication.setWindowIcon(QIcon(icon_location))
+
+    refresh_theme()
 
     # URL scheme
     from .logic.url_scheme import AngrUrlScheme
@@ -149,7 +152,6 @@ def start_management(filepath=None, use_daemon=False):
         app.processEvents()
 
     from .logic import GlobalInfo
-    from .ui.css import CSS
     from .ui.main_window import MainWindow
     from .daemon import daemon_exists, run_daemon_process, daemon_conn
     from .daemon.client import ClientService
@@ -164,9 +166,6 @@ def start_management(filepath=None, use_daemon=False):
     app.setFont(Conf.ui_default_font)
 
     GlobalInfo.gui_thread = threading.get_ident()
-
-    # apply the CSS
-    app.setStyleSheet(CSS.global_css())
 
     if use_daemon:
         # connect to daemon (if there is one)

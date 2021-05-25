@@ -1,18 +1,28 @@
 
 import os
+import atexit
 
 from xdg import BaseDirectory
 
 from .config_manager import ConfigurationManager
 
 # Global configuration manager instance
-fc = BaseDirectory.load_first_config('angr-management')
+fc = BaseDirectory.save_config_path('angr-management')
 if fc is not None:
     config_path = os.path.join(fc, 'config')
-    with open(config_path, 'r') as f:
-        Conf = ConfigurationManager.parse(f)
+    try:
+        Conf = ConfigurationManager.parse_file(config_path)
+    except FileNotFoundError:
+        Conf = ConfigurationManager()
 else:
+    print("Could not find configuration directory - settings will not be saved")
     Conf = ConfigurationManager()
+
+def save_config():
+    if fc is None:
+        return
+    Conf.save_file(config_path)
+atexit.register(save_config)
 
 APP_LOCATION = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 PLUGIN_PATH = str(os.path.join(APP_LOCATION, 'plugins'))

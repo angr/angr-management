@@ -68,7 +68,7 @@ class QFunctionHeader(QCachedGraphicsItem):
             painter.drawRect(0, 0, self.width, self.height)
 
         painter.setFont(self._config.code_font)
-        painter.setPen(Qt.blue)
+        painter.setPen(self._config.disasm_view_function_color)
 
         font_ascent = self._config.disasm_font_ascent
         font_metrics = self._config.disasm_font_metrics
