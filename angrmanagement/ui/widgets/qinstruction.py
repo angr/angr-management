@@ -1,7 +1,7 @@
 from typing import List
 import logging
 
-from PySide2.QtGui import QPainter, QColor, QCursor
+from PySide2.QtGui import QPainter, QCursor
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent
 
@@ -85,7 +85,7 @@ class QInstruction(QCachedGraphicsItem):
             return color
 
         if self.selected:
-            return QColor(0xb8, 0xc3, 0xd6)
+            return self._config.disasm_view_node_instruction_selected_background_color
 
         return None  # None here means transparent, reusing the block color
 

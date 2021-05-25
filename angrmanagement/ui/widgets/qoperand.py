@@ -172,7 +172,10 @@ class QOperand(QCachedGraphicsItem):
                 #        fallback = False
                 pass
 
-            painter.setPen(self._config.disasm_view_operand_color)
+            if self.is_constant:
+                painter.setPen(self._config.disasm_view_operand_constant_color)
+            else:
+                painter.setPen(self._config.disasm_view_operand_color)
 
         painter.setRenderHints(
                 QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
