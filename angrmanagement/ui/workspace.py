@@ -33,6 +33,7 @@ from angrmanagement.data.jobs import (
     CFGGenerationJob,
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
+    InsightsJob,
     Job,
     PrototypeFindingJob,
     VariableRecoveryJob,
@@ -64,6 +65,7 @@ from .views import (
     DisassemblyView,
     FunctionsView,
     HexView,
+    InsightsView,
     JobsView,
     LogView,
     PatchesView,
@@ -122,6 +124,7 @@ class Workspace:
             HexView(self, "center", self._main_instance),
             CodeView(self, "center", self._main_instance),
             FunctionsView(self, "left", self._main_instance),
+            InsightsView(self, "center", self._main_instance),
         ]
         if Conf.has_operation_mango:
             self.default_tabs.append(DependencyView(self, "center", self._main_instance))
@@ -361,6 +364,12 @@ class Workspace:
                 self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
             self.job_manager.add_job(self.main_instance.variable_recovery_job)
 
+        self.main_instance.add_job(
+            InsightsJob(
+                on_finish=self.on_insights_collected,
+            )
+        )
+
     def _on_patch_event(self, **kwargs) -> None:
         if self.main_instance.cfg.am_none:
             return
@@ -383,6 +392,21 @@ class Workspace:
                     #        option for it.
                 }
             )
+
+    def on_insights_collected(self):
+        # reload insights view
+        view: InsightsView | None = self.view_manager.first_view_in_category("insights")
+        if view is not None:
+            view: InsightsView
+            view.reload()
+            view.raise_()
+
+        # reload disassembly view
+        view: DisassemblyView | None = self.view_manager.first_view_in_category("disassembly")
+        if view is not None:
+            view: DisassemblyView
+            if view.current_function.am_obj is not None:
+                view.reload()
 
     #
     # Public methods
