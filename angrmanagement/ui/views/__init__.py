@@ -9,6 +9,7 @@ from .dep_view import DependencyView
 from .disassembly_view import DisassemblyView
 from .functions_view import FunctionsView
 from .hex_view import HexView
+from .insights_view import InsightsView
 from .jobs_view import JobsView
 from .log_view import LogView
 from .patches_view import PatchesView
@@ -34,6 +35,7 @@ __all__ = [
     "DisassemblyView",
     "FunctionsView",
     "HexView",
+    "InsightsView",
     "JobsView",
     "LogView",
     "PatchesView",

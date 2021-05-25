@@ -7,6 +7,7 @@ from .decompile_function import DecompileFunctionJob
 from .deobfuscation import APIDeobfuscationJob
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtSignatureRecognitionJob
+from .insights import InsightsJob
 from .job import Job
 from .prototype_finding import PrototypeFindingJob
 from .simgr_explore import SimgrExploreJob
@@ -22,6 +23,7 @@ __all__ = [
     "DecompileFunctionJob",
     "DependencyAnalysisJob",
     "FlirtSignatureRecognitionJob",
+    "InsightsJob",
     "Job",
     "PrototypeFindingJob",
     "SimgrExploreJob",
