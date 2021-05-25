@@ -6,6 +6,7 @@ import threading
 import time
 import warnings
 import platform
+import signal
 
 def shut_up(*args, **kwargs):
     return
@@ -201,6 +202,7 @@ def start_management(filepath=None, use_daemon=False):
 
 def main():
     import argparse
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     parser = argparse.ArgumentParser(description="angr management")
     parser.add_argument("-s", "--script", type=str, help="run a python script in the (commandline) angr environment")
