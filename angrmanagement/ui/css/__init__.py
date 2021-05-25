@@ -102,15 +102,22 @@ def refresh_theme():
 
     # determine the default application style according to the OS
     if sys.platform == "win32":
-        app_style = "Windows"
+        if Conf.theme_name == "Light":
+            app_style = None
+        else:
+            app_style = "Fusion"
     elif sys.platform == "darwin":
-        app_style = "macintosh"
+        if Conf.theme_name == "Light":
+            app_style = None
+        else:
+            app_style = "Fusion"
     elif sys.platform == "linux":
         app_style = "Fusion"
     else:
         app_style = "Fusion"
 
-    app.setStyle(app_style)
+    if app_style:
+        app.setStyle(app_style)
 
     palette = QPalette()
     palette.setColor(QPalette.Window,          Conf.palette_window)

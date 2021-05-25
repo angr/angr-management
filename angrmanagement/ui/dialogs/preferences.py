@@ -78,14 +78,14 @@ class Integration(Page):
             pass
 
 
-class Colors(Page):
-    NAME = "Colors"
+class ThemeAndColors(Page):
+    NAME = "Theme and Colors"
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
         self._to_save = {}
-        self._schemes_combo = None
+        self._schemes_combo: QComboBox = None
 
         self._init_widgets()
 
@@ -93,13 +93,17 @@ class Colors(Page):
         page_layout = QVBoxLayout()
 
         scheme_loader_layout = QHBoxLayout()
-        color_scheme_lbl = QLabel("Load Color Scheme:")
+        color_scheme_lbl = QLabel("Load Theme:")
         color_scheme_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         scheme_loader_layout.addWidget(color_scheme_lbl)
 
         self._schemes_combo = QComboBox(self)
-        for name in sorted(COLOR_SCHEMES):
+        current_theme_idx = 0
+        for idx, name in enumerate(["Current"] + list(sorted(COLOR_SCHEMES))):
+            if name == Conf.theme_name:
+                current_theme_idx = idx
             self._schemes_combo.addItem(name)
+        self._schemes_combo.setCurrentIndex(current_theme_idx)
         scheme_loader_layout.addWidget(self._schemes_combo)
         load_btn = QPushButton("Load")
         load_btn.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
@@ -138,9 +142,11 @@ class Colors(Page):
         self.save_config()
 
     def save_config(self):
+        Conf.theme_name = self._schemes_combo.currentText()
         for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
         refresh_theme()
+
 
 class Preferences(QDialog):
     def __init__(self, workspace, parent=None):
@@ -169,7 +175,7 @@ class Preferences(QDialog):
         contents.itemClicked.connect(item_changed)
 
         self._pages.append(Integration())
-        self._pages.append(Colors())
+        self._pages.append(ThemeAndColors())
 
         pages = QStackedWidget()
         for idx, page in enumerate(self._pages):

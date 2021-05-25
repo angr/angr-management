@@ -65,6 +65,7 @@ ENTRIES = [
     CE('symexec_font', QFont, QFont("DejaVu Sans Mono", 10)),
     CE('code_font', QFont, QFont("Source Code Pro", 10)),
 
+    CE('theme_name', str, "Light"),
     CE('disasm_view_operand_color',                    QColor, QColor(0x00, 0x00, 0x80)),
     CE('disasm_view_variable_label_color',             QColor, QColor(0x00, 0x80, 0x00)),
     CE('disasm_view_operand_highlight_color',          QColor, QColor(0xfc, 0xef, 0x00)),
