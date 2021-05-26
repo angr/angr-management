@@ -44,7 +44,7 @@ class PluginManager:
 
     def discover_and_initialize_plugins(self):
         os.environ['AM_BUILTIN_PLUGINS'] = os.path.dirname(__file__)
-        blacklist = Conf.plugin_blacklist.split(',')
+        enabled_plugins = [ plugin_.strip() for plugin_ in Conf.enabled_plugins.split(',') if plugin_.strip() ]
         for search_dir in Conf.plugin_search_path.split(':'):
             search_dir = os.path.expanduser(search_dir)
             search_dir = os.path.expandvars(search_dir)
@@ -61,7 +61,7 @@ class PluginManager:
                         for action in plugin_or_exception.URL_ACTIONS:
                             register_url_action(action, UrlActionBinaryAware)
                     # see if the plugin is enabled or not
-                    elif not any(dont in repr(plugin_or_exception) for dont in blacklist) and \
+                    elif any(plugin in repr(plugin_or_exception) for plugin in enabled_plugins) and \
                             not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False):
                         self.activate_plugin(plugin_or_exception)
                     else:
