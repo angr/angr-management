@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from PySide2.QtCore import Qt, QEvent
 from PySide2.QtGui import QTextCharFormat
-from PySide2.QtWidgets import QMenu, QAction
+from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit
 
 from pyqodeng.core import api
 from pyqodeng.core import modes
@@ -172,10 +172,14 @@ class QCCodeEdit(api.CodeEdit):
 
     def keyPressEvent(self, event):
         key = event.key()
+        node = self.node_under_cursor()
+
         if key == Qt.Key_N:
-            node = self.node_under_cursor()
             if isinstance(node, (CVariable, CFunction, CFunctionCall)):
                 self.rename_node(node=node)
+            return True
+        if key in (Qt.Key_Slash, Qt.Key_Question):
+            self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
 
         if self._code_view.keyPressEvent(event):
@@ -192,7 +196,7 @@ class QCCodeEdit(api.CodeEdit):
     # Actions
     #
 
-    def rename_node(self, *args, node=None):
+    def rename_node(self, *args, node=None):  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
         if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
             return
@@ -201,6 +205,45 @@ class QCCodeEdit(api.CodeEdit):
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()
+
+    def comment(self, expr=False, node=None):
+        addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+        if addr is None:
+            if expr:
+                addr = self.get_src_to_inst()
+            else:
+                pos = self.textCursor().position()
+                while self.document().characterAt(pos) not in ('\n', '\u2029') and pos < self.document().characterCount():  # qt WHAT are you doing
+                    pos += 1
+                node = self.document().get_stmt_node_at_position(pos)
+                addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+
+        if addr is None:
+            return
+
+        try:
+            cdict = self._code_view.codegen.expr_comments if expr else self._code_view.codegen.stmt_comments
+        except AttributeError:
+            return
+        text = cdict.get(addr, "")
+
+        text, ok = QInputDialog.getText(
+            self._code_view,
+            "Expression Comment" if expr else "Statement Comment",
+            "",
+            QLineEdit.Normal,
+            text)
+
+        if ok:
+            if text:
+                cdict[addr] = text
+            else:
+                try:
+                    del cdict[addr]
+                except KeyError:
+                    pass
+
+            self._code_view.codegen.am_event()
 
     def toggle_struct(self):
         node = self._selected_node
