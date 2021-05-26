@@ -39,7 +39,7 @@ setup(
         'toml',
         'pyxdg',
         'jupyter-client',
-        'requests',
+        'requests[socks]',
         'sqlalchemy',
         'pyqodeng.core',
     ]
