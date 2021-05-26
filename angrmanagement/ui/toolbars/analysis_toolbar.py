@@ -11,10 +11,10 @@ class AnalysisToolbar(Toolbar):
         super(AnalysisToolbar, self).__init__(main_window, 'Analysis')
 
         self.actions = [
-            ToolbarAction(None, "Recover Variables", "Execute the VariableRecovery analysis.",
-                          main_window.run_variable_recovery,
-                          ),
-            ToolbarAction(None, "Induction Variables", "Execute the InductionVariable analysis.",
-                          main_window.run_induction_variable_analysis,
-                          ),
+            # ToolbarAction(None, "Recover Variables", "Execute the VariableRecovery analysis.",
+            #               main_window.run_variable_recovery,
+            #               ),
+            # ToolbarAction(None, "Induction Variables", "Execute the InductionVariable analysis.",
+            #               main_window.run_induction_variable_analysis,
+            #               ),
         ]
