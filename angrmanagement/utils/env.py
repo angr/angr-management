@@ -1,9 +1,10 @@
+from typing import Union, List
 
 import sys
 import os
 
 
-def app_path(pythonw=None, as_list=False):
+def app_path(pythonw=None, as_list=False) -> Union[str,List[str]]:
     """
     Return the path of the application.
 
@@ -35,3 +36,22 @@ def app_path(pythonw=None, as_list=False):
                 python_path = '"%s"' % python_path
             app_path = python_path + " -m angrmanagement"
             return app_path
+
+
+def app_root() -> str:
+    """
+    Return the path of the application.
+
+    - In standalone mode (a PyInstaller module), we return the absolute path of the directory where the executable is.
+    - In development mode, we return the absolute path to the directory where the angr management package is.
+
+    :return:    A string that represents the path to the application that can be used to run angr management.
+    :rtype:     str|list
+    """
+
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # running as a PyInstaller bundle
+        return os.path.dirname(sys.executable)
+    else:
+        # running as a Python package
+        return os.path.normpath(os.path.join(os.path.abspath(__file__), "..", ".."))

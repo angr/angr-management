@@ -4,7 +4,8 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QL
 from PySide2.QtCore import QSize
 
 from ..widgets.qcolor_option import QColorOption
-from ...config.config_manager import ENTRIES, COLOR_SCHEMES
+from ...config.config_manager import ENTRIES
+from ...config.color_schemes import COLOR_SCHEMES
 from ...config import Conf
 from ...logic.url_scheme import AngrUrlScheme
 from ..css import refresh_theme

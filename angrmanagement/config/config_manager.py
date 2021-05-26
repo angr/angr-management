@@ -1,15 +1,15 @@
-
+import os
 import logging
 import re
 
 import toml
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
-from PySide2.QtWidgets import QApplication
-from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QApplication, QMessageBox
 from typing import Union
 
+from ..utils.env import app_root
 from .config_entry import ConfigurationEntry as CE
-from .color_schemes import COLOR_SCHEMES
+
 
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
@@ -346,6 +346,54 @@ class ConfigurationManager:
     def save_file(self, path:str):
         with open(path, 'w') as f:
             self.save(f)
+
+    def attempt_importing_initial_config(self) -> bool:
+        """
+        Look for am_initial_config inside the last four levels of directories. Import the first one found. Then remove
+        the file. Prompt user to manually remove the file if file removing fails.
+
+        :return: True if successfully imports the initial configuration. False otherwise.
+        """
+
+        loaded = False
+
+        base = app_root()
+        for i in range(4):
+            initial_config_path = os.path.join(base, "am_initial_config")
+            if os.path.isfile(initial_config_path):
+                from . import save_config  # delayed import
+                # we found it!
+                new_conf = self.__class__.parse_file(initial_config_path)
+                # copy entries over
+                self._entries = new_conf._entries
+                # save it!
+                save_config()
+                loaded = True
+
+                # remove the file
+                try:
+                    os.remove(initial_config_path)
+                except (IsADirectoryError, FileNotFoundError):
+                    pass
+                except Exception:
+                    QMessageBox.warning(None,
+                                        "Failed to remove the initial configuration file",
+                                        f"angr management imported the initial configuration but failed to remove the"
+                                        f"initial configuration file at {initial_config_path}. Please remove it "
+                                        f"manually. Otherwise your settings will be overwritten next time angr "
+                                        f"management starts.",
+                                        )
+
+                break
+
+            last_dirname = base
+            base = os.path.dirname(last_dirname)
+
+            if base == last_dirname:
+                # we reached the end of the directory hierarchy
+                break
+
+        return loaded
 
     @property
     def has_operation_mango(self) -> bool:
