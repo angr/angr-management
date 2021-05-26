@@ -48,11 +48,12 @@ class RenameNode(QDialog):
         if not isinstance(self._node, CVariable):
             self._suggestion_box.setEnabled(False)
         else:
-            if not self._node.unified_variable.candidate_names:
-                self._suggestion_box.setEnabled(False)
-            else:
-                for candidate in self._node.unified_variable.candidate_names:
-                    self._suggestion_box.addItem(candidate)
+            if self._node.unified_variable is not None:
+                if not self._node.unified_variable.candidate_names:
+                    self._suggestion_box.setEnabled(False)
+                else:
+                    for candidate in self._node.unified_variable.candidate_names:
+                        self._suggestion_box.addItem(candidate)
 
         self.setLayout(self.main_layout)
 
