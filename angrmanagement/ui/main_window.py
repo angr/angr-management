@@ -379,6 +379,8 @@ class MainWindow(QMainWindow):
         if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
+                self.workspace.instance.binary_path = file_path
+                self.workspace.instance.original_binary_path = file_path
                 if file_path.endswith(".adb"):
                     self._load_database(file_path)
                 else:
@@ -412,6 +414,8 @@ class MainWindow(QMainWindow):
 
                 if target_path:
                     # open the file - now it's a local file
+                    self.workspace.instance.binary_path = target_path
+                    self.workspace.instance.original_binary_path = file_path
                     self.load_file(target_path)
 
     def load_database(self):

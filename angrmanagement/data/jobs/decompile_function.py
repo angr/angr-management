@@ -1,3 +1,5 @@
+import os.path
+
 from .job import Job
 
 
@@ -14,8 +16,14 @@ class DecompileFunctionJob(Job):
             **self.kwargs,
             progress_callback=self._progress_callback,
         )
+
+        source_root = None
+        if inst.original_binary_path:
+            source_root = os.path.dirname(inst.original_binary_path)
+
         inst.project.analyses.ImportSourceCode(
             self.function,
             flavor='source',
             progress_callback=self._progress_callback,
+            source_root=source_root,
         )
