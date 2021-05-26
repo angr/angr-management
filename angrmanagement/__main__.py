@@ -117,6 +117,9 @@ def start_management(filepath=None, use_daemon=False):
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     QApplication.setWindowIcon(QIcon(icon_location))
 
+    # try to import the initial configuration for the install
+    Conf.attempt_importing_initial_config()
+
     refresh_theme()
 
     # URL scheme
