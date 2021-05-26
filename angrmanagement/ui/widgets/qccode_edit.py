@@ -178,7 +178,7 @@ class QCCodeEdit(api.CodeEdit):
             if isinstance(node, (CVariable, CFunction, CFunctionCall)):
                 self.rename_node(node=node)
             return True
-        if key == Qt.Key_Slash or key == Qt.Key_Question:
+        if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
 
@@ -196,7 +196,7 @@ class QCCodeEdit(api.CodeEdit):
     # Actions
     #
 
-    def rename_node(self, *args, node=None):
+    def rename_node(self, *args, node=None):  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
         if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
             return
