@@ -3,7 +3,6 @@ from PySide2.QtWidgets import QWidget, QHBoxLayout, QFrame, QLabel, QColorDialog
 
 from ...data.object_container import ObjectContainer
 
-dialog = QColorDialog()
 
 class QColorOption(QWidget):
     def __init__(self, color: QColor, label: str, parent=None):
@@ -19,6 +18,7 @@ class QColorOption(QWidget):
         self.color.am_event()
 
     def mouseReleaseEvent(self, event): # pylint:disable=unused-argument
+        dialog = QColorDialog()
         dialog.setCurrentColor(self.color.am_obj)
         dialog.exec()
         if dialog.result() == QColorDialog.Accepted:
