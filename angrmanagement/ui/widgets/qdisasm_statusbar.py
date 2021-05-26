@@ -1,12 +1,15 @@
 import os
 import logging
 
-from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog
+from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
 from PySide2.QtCore import Qt
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
+from .qdisasm_graph import QDisassemblyGraph
+from .qlinear_viewer import QLinearDisassembly
 
 _l = logging.getLogger(__name__)
+
 
 class QDisasmStatusBar(QFrame):
     def __init__(self, disasm_view, parent=None):
@@ -15,9 +18,9 @@ class QDisasmStatusBar(QFrame):
         self.disasm_view = disasm_view
 
         # widgets
-        self._saveimage_btn = None  # type: QPushButton
-        self._function_label = None  # type: QLabel
-        self._options_menu = None  # type: DisasmOptionsMenu
+        self._function_label: QLabel = None
+        self._options_menu: DisasmOptionsMenu = None
+        self._view_combo: QComboBox = None
 
         # information
         self._function = None
@@ -48,8 +51,13 @@ class QDisasmStatusBar(QFrame):
     def _init_widgets(self):
 
         # current function
-        function_label = QLabel()
-        self._function_label = function_label
+        self._function_label = QLabel()
+
+        self._view_combo = QComboBox(self)
+        self._view_combo.addItem("Linear Disassembly", QLinearDisassembly)
+        self._view_combo.addItem("Graph Disassembly", QDisassemblyGraph)
+        self._view_combo.activated.connect(self._view_combo_changed)
+        self.disasm_view.view_visibility_changed.connect(self._update_view_combo)
 
         # options button
         option_btn = QPushButton()
@@ -63,10 +71,11 @@ class QDisasmStatusBar(QFrame):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(2, 2, 2, 2)
-        layout.addWidget(function_label)
+        layout.addWidget(self._function_label)
 
         layout.addStretch(0)
         layout.addWidget(saveimage_btn)
+        layout.addWidget(self._view_combo)
         layout.addWidget(option_btn)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -78,6 +87,17 @@ class QDisasmStatusBar(QFrame):
     #
     # Private methods
     #
+
+    def _view_combo_changed(self, index:int):
+        {
+            QLinearDisassembly: self.disasm_view.display_linear_viewer,
+            QDisassemblyGraph: self.disasm_view.display_disasm_graph
+        }[self._view_combo.itemData(index)]()
+
+    def _update_view_combo(self):
+        graph_type = type(self.disasm_view.current_graph)
+        index = self._view_combo.findData(graph_type)
+        self._view_combo.setCurrentIndex(index)
 
     def _update_function_address(self):
         if self.function_address is not None:

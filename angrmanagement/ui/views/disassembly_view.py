@@ -2,7 +2,7 @@ import logging
 from typing import Union, Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
-from PySide2.QtCore import Qt, QSize
+from PySide2.QtCore import Qt, QSize, Signal
 
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
@@ -27,6 +27,8 @@ _l = logging.getLogger(__name__)
 
 
 class DisassemblyView(BaseView):
+    view_visibility_changed = Signal()
+
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('disassembly', workspace, *args, **kwargs)
 
@@ -369,6 +371,7 @@ class DisassemblyView(BaseView):
             self._flow_graph.show_instruction(self._current_function.addr)
 
         self._flow_graph.setFocus()
+        self.view_visibility_changed.emit()
 
     def display_linear_viewer(self):
 
@@ -382,6 +385,7 @@ class DisassemblyView(BaseView):
             self._linear_viewer.show_instruction(self._current_function.addr)
 
         self._linear_viewer.setFocus()
+        self.view_visibility_changed.emit()
 
     def display_function(self, function):
 
