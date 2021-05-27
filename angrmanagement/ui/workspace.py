@@ -374,6 +374,14 @@ class Workspace:
             import re
             import string
 
+            if Conf.http_proxy or Conf.https_proxy:
+                proxies = {
+                    "http": Conf.http_proxy,
+                    "https": Conf.https_proxy,
+                }
+            else:
+                proxies = None
+
             def randstr(n=8):
                 import random
                 import string
@@ -393,7 +401,7 @@ class Workspace:
                     }
                 ]
             }
-            r = requests.post(f"{Conf.varec_endpoint}", data=json.dumps(d))
+            r = requests.post(f"{Conf.varec_endpoint}", data=json.dumps(d), proxies=proxies)
             print(json.dumps(d))
             try:
                 result = json.loads(r.text)
