@@ -13,7 +13,6 @@ try:
     from slacrs import Slacrs
     from slacrs.model import HumanFatigue
 except ImportError as ex:
-    print(str(ex))
     Slacrs = None  # type: Optional[type]
     HumanFatigue = None  # type: Optional[type]
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
