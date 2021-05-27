@@ -7,6 +7,7 @@ import requests
 
 from PySide2.QtWidgets import QFileDialog
 
+from ..config import Conf
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 
 
@@ -21,16 +22,23 @@ def isurl(uri):
     return False
 
 
-def download_url(url, parent=None, to_file=True, file_path=None):
+def download_url(url, parent=None, to_file=True, file_path=None, use_proxies=True):
 
     if not isurl(url):
         raise TypeError("The given URL %s is not a valid URL.", url)
 
     r = urllib.parse.urlparse(url)
     basename = os.path.basename(r.path)
+    if use_proxies and (Conf.http_proxy or Conf.https_proxy):
+        proxies = {
+            "http": Conf.http_proxy,
+            "https": Conf.https_proxy,
+        }
+    else:
+        proxies = None
 
     try:
-        header = requests.head(url, allow_redirects=True)
+        header = requests.head(url, allow_redirects=True, proxies=proxies)
     except requests.exceptions.InvalidURL:
         raise InvalidURLError()
 
@@ -61,7 +69,7 @@ def download_url(url, parent=None, to_file=True, file_path=None):
             target_path = file_path
 
         # downloading it
-        req = requests.get(url, allow_redirects=True)
+        req = requests.get(url, allow_redirects=True, proxies=proxies)
         if req.status_code != 200:
             raise UnexpectedStatusCodeError(req.status_code)
 
@@ -72,7 +80,7 @@ def download_url(url, parent=None, to_file=True, file_path=None):
     else:
         # download the content and return as a blob
         # downloading it
-        req = requests.get(url, allow_redirects=True)
+        req = requests.get(url, allow_redirects=True, proxies=proxies)
         if req.status_code != 200:
             raise UnexpectedStatusCodeError(req.status_code)
 

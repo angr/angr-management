@@ -126,6 +126,10 @@ ENTRIES = [
     CE('feature_map_color_delimiter',        QColor, QColor(0x00, 0x00, 0x00)),
     CE('feature_map_color_data',             QColor, QColor(0xc0, 0xc0, 0xc0)),
 
+    # networking
+    CE('http_proxy', str, ""),
+    CE('https_proxy', str, ""),
+
     # plugins
     CE('plugin_search_path', str, '$AM_BUILTIN_PLUGINS:~/.local/share/angr-management/plugins'),
     CE('plugin_blacklist', str, 'sample_plugin,log_fatigue_plugin'),
