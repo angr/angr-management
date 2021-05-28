@@ -1,9 +1,9 @@
-
 import time
 import sys
 import subprocess
 import threading
 import binascii
+from typing import Callable
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
@@ -161,3 +161,7 @@ def daemon_conn(port=DEFAULT_PORT, service=None):
     kwargs['config'] = {'allow_public_attrs': True}
     conn = rpyc.connect("localhost", port, **kwargs)
     return conn
+
+
+def register_server_exposed_method(method_name: str, method: Callable):
+    setattr(ManagementService, f"exposed_{method_name}", method)
