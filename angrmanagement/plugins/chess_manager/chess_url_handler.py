@@ -161,18 +161,30 @@ class ChessUrlHandler(BasePlugin):
         with open(rootdirs_path, "w") as f:
             toml.dump(entries, f)
 
-    def _vscode_path(self) -> str:
+    def _vscode_path(self) -> Optional[str]:
         if sys.platform == "win32":
-            # load VSCode's location from the registry
-            raise NotImplementedError()
+            default_locations = [
+                os.path.join(os.getenv("LOCALAPPDATA"), "Programs", "Microsoft VS Code"),
+            ]
+            default_locations += os.getenv("PATH").split(";")
+            code_exe = "code.exe"
         elif sys.platform == "linux":
-            # try the default path
-            raise NotImplementedError()
+            # assuming code is within PATH
+            return "code"
         elif sys.platform == "darwin":
             # try the default path
             raise NotImplementedError()
         else:
             raise NotImplementedError()
+
+        for loc in default_locations:
+            vscode_path = os.path.join(loc, code_exe)
+            if os.path.isfile(vscode_path):
+                # found it!
+                if sys.platform in ("linux", "darwin"):
+                    return vscode_path
+
+        return None
 
     def exposed_open_source_file(self, target_uuid: str, challenge_name: str, source_file: str, line_number: int,
                                  position: int, editor: str) -> None:
@@ -193,8 +205,16 @@ class ChessUrlHandler(BasePlugin):
         if editor == "vscode":
             # https://code.visualstudio.com/docs/editor/command-line#_opening-files-and-folders
             vscode = self._vscode_path()
-            cmd_line = [vscode, "-g", f"{file_path}:{line_number}[{position}]"]
-            subprocess.Popen(cmd_line, shell=True, close_fds=True)
+            if vscode:
+                cmd_line = [vscode, "-g", f"{file_path}:{line_number}[{position}]"]
+                subprocess.Popen(cmd_line, shell=True, close_fds=True)
+            else:
+                QMessageBox.critical(
+                    None,
+                    "VSCode is not found",
+                    "Cannot find the executable for VS Code."
+                )
+                return
 
         elif editor == "am":
             raise NotImplementedError()
