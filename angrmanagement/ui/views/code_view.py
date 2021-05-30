@@ -160,9 +160,22 @@ class CodeView(BaseView):
     def _on_new_codegen(self, already_regenerated=False, **kwargs):  # pylint: disable=unused-argument
         if not already_regenerated:
             self.codegen.regenerate_text()
+
+        old_pos: Optional[int] = None
+        if self._last_function is self.function.am_obj:
+            # we are re-rendering the current function (e.g., triggered by a node renaming). save the old cursor and
+            # reuse it later.
+            old_cursor: QTextCursor = self._textedit.textCursor()
+            old_pos = old_cursor.position()
+
         self._options.dirty = False
         self._doc = QCodeDocument(self.codegen)
         self._textedit.setDocument(self._doc)
+
+        if old_pos is not None:
+            new_cursor: QTextCursor = self._textedit.textCursor()
+            new_cursor.setPosition(old_pos)
+            self._textedit.setTextCursor(new_cursor)
 
         if self.codegen.flavor == 'pseudocode':
             self._options.show()
