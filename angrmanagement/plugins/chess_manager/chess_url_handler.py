@@ -2,10 +2,12 @@ import os
 import sys
 import subprocess
 import logging
+from pathlib import Path
 from typing import Tuple, Optional
 
 import toml
 from xdg import BaseDirectory
+from PySide2.QtWidgets import QApplication
 from PySide2.QtWidgets import QMessageBox, QFileDialog
 
 from angrmanagement.plugins import BasePlugin
@@ -13,6 +15,14 @@ from angrmanagement.daemon.url_handler import UrlActionBase, register_url_action
 from angrmanagement.daemon.server import register_server_exposed_method
 
 _l = logging.getLogger(name=__name__)
+
+# we probably want to put this feature into angr management
+_app = None
+def tmp_app():
+    global _app
+    if _app is None:
+        _app = QApplication()
+    return _app
 
 
 class UrlActionOpenSourceFile(UrlActionBase):
@@ -78,14 +88,15 @@ class ChessUrlHandler(BasePlugin):
 
     def _get_rootdir(self, target_uuid: str, challenge_name: str, source_file: str) -> Tuple[Optional[str],Optional[str]]:
         rootdirs_path = self._get_rootdir_config_path()
-        # load it
-        with open(rootdirs_path, "r") as f:
-            try:
-                entries = toml.load(f)
-                _l.error("Cannot decode rootdirs file %s. Ignore existing content.",
-                         rootdirs_path)
-            except toml.TomlDecodeError:
-                entries = { }
+        # load it if it exists
+        entries = { }
+        if os.path.isfile(rootdirs_path):
+            with open(rootdirs_path, "r") as f:
+                try:
+                    entries = toml.load(f)
+                except toml.TomlDecodeError:
+                    _l.error("Cannot decode rootdirs file %s. Ignore existing content.",
+                             rootdirs_path)
 
         dir_path = None
         if 'uuid_to_rootdir' in entries:
@@ -120,6 +131,7 @@ class ChessUrlHandler(BasePlugin):
 
             # we either did not find the file under the specified directory or got a wrong directory to start with
             # ask the user to manually specify a directory
+            tmp_app()
             QMessageBox.information(
                 None,
                 "Specifying the root directory",
@@ -131,6 +143,8 @@ class ChessUrlHandler(BasePlugin):
             dir_path = QFileDialog.getExistingDirectory(
                 None,
                 f"Specifying the root directory for target {target_uuid} ({challenge_name})",
+                # TODO: Use the default challenge root directory
+                str(Path.home()),
                 QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
             )
             if not dir_path:
@@ -143,12 +157,13 @@ class ChessUrlHandler(BasePlugin):
         rootdirs_path = self._get_rootdir_config_path()
         # load it
         entries = { }
-        with open(rootdirs_path, "r") as f:
-            try:
-                entries = toml.load(f)
-            except toml.TomlDecodeError:
-                _l.error("Cannot decode rootdirs file %s. Ignore existing content.",
-                         rootdirs_path)
+        if os.path.isfile(rootdirs_path):
+            with open(rootdirs_path, "r") as f:
+                try:
+                    entries = toml.load(f)
+                except toml.TomlDecodeError:
+                    _l.error("Cannot decode rootdirs file %s. Ignore existing content.",
+                             rootdirs_path)
 
         if 'uuid_to_challenge' not in entries:
             entries['uuid_to_challenge'] = { }
@@ -206,9 +221,10 @@ class ChessUrlHandler(BasePlugin):
             # https://code.visualstudio.com/docs/editor/command-line#_opening-files-and-folders
             vscode = self._vscode_path()
             if vscode:
-                cmd_line = [vscode, "-g", f"{file_path}:{line_number}[{position}]"]
+                cmd_line = [vscode, "-g", f"{file_path}:{line_number}:{position}"]
                 subprocess.Popen(cmd_line, shell=True, close_fds=True)
             else:
+                tmp_app()
                 QMessageBox.critical(
                     None,
                     "VSCode is not found",
