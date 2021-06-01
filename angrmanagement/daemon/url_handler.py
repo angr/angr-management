@@ -1,4 +1,4 @@
-
+from typing import Dict, Type
 import base64
 import binascii
 import urllib.parse
@@ -6,7 +6,7 @@ import urllib.parse
 
 class UrlActionBase:
 
-    def __init__(self, md5, sha256):
+    def __init__(self, md5=None, sha256=None):
         self.md5 = md5
         self.sha256 = sha256
 
@@ -153,7 +153,7 @@ class UrlActionBinaryAware(UrlActionBase):
         return cls(md5=md5, sha256=sha256, action=action, kwargs=kwargs)
 
 
-_ACT2CLS = {
+_ACT2CLS: Dict[str,Type[UrlActionBase]] = {
     'open': UrlActionOpen,
     'jumpto': UrlActionJumpTo,
     'commentat': UrlActionCommentAt,
@@ -170,5 +170,5 @@ def handle_url(url, act=True):
     return action
 
 
-def register_url_action(action: str, action_handler: UrlActionBase):
+def register_url_action(action: str, action_handler: Type[UrlActionBase]):
     _ACT2CLS[action] = action_handler
