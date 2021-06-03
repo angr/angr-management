@@ -14,7 +14,8 @@ Some screenshots:
 
 The easiest way to run angr-management is by grabbing a bundled release here: https://github.com/angr/angr-management/releases
 
-This binary, built with pyinstaller, can be placed and executed anywhere.
+"Onefile" builds can be placed and run from anywhere.
+Non-onefile builds must be extracted and then the `angr-management` binary can be run from the extracted directory.
 
 ### From PyPI
 
@@ -24,28 +25,17 @@ To install angr-management, use pip:
 pip install angr-management
 ```
 
-The version on PyPI may not be up-to-date.
-Please consider having a development install if you plan to use latest features/fixes in angr Management.
+angr-management can then be run with the command `angr-management`.
 
 ### Development Install
 
 See [angr-dev](https://github.com/angr/angr-dev) for how to set up a development enviroment for the angr suite.
+angr-management is included by default and checked out to `angr-management` directory.
+If you encounter dependency issues, re-running `setup.sh` or `setup.bat` from angr-dev will ensure all dependencies are installed.
+
+angr-management can then be run with `angr-management` or `python start.py`.
 
 ## Usage
-
-### How to run
-
-To run angr-management:
-
-```
-python -m angrmanagement
-```
-
-Or if you have a development install:
-
-```
-python start.py
-```
 
 ### Shortcuts
 - Load a new binary: ```Ctrl+O```
