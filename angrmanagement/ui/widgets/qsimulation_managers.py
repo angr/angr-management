@@ -26,10 +26,17 @@ class QSimulationManagers(QFrame):
         self._oneactive_checkbox = None  # type: QCheckBox
 
         self._init_widgets()
+        self.refresh()
 
         self.simgr.am_subscribe(self._watch_simgr)
         self.simgrs.am_subscribe(self._watch_simgrs)
         self.state.am_subscribe(self._watch_state)
+
+    def hideEvent(self, event):
+        self.simgr.am_unsubscribe(self._watch_simgr)
+        self.simgrs.am_unsubscribe(self._watch_simgrs)
+        self.state.am_unsubscribe(self._watch_state)
+        return super().destroy()
 
     #
     # Public methods

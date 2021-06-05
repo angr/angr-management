@@ -16,4 +16,5 @@ class ViewMenu(Menu):
             MenuSeparator(),
             MenuEntry('Linear Disassembly', main_window.workspace.show_linear_disassembly_view),
             MenuEntry('Graph Disassembly', main_window.workspace.show_graph_disassembly_view),
+            MenuEntry('Symbolic Execution', main_window.workspace.show_symexec_view),
         ])

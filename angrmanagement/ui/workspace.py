@@ -354,6 +354,11 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_symexec_view(self):
+        view = self._get_or_create_symexec_view()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -386,7 +391,7 @@ class Workspace:
 
         if view is None:
             # Create a new symexec view
-            view = CodeView(self, 'center')
+            view = SymexecView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
