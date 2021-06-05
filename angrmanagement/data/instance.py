@@ -87,7 +87,7 @@ class Instance:
 
         try:
             return self.extra_containers[k]
-        except KeyError as e:
+        except KeyError:
             return super().__getattribute__(k)
 
     def __setattr__(self, k, v):
@@ -182,7 +182,7 @@ class Instance:
             return None
 
         try:
-            obj_addr, obj = self.cfb.floor_item(addr)
+            _, obj = self.cfb.floor_item(addr)
         except KeyError:
             # no object before addr exists
             return None
@@ -203,7 +203,8 @@ class Instance:
     # Private methods
     #
 
-    def _start_daemon_thread(self, target, name, args=None):
+    @staticmethod
+    def _start_daemon_thread(target, name, args=None):
         t = Thread(target=target, name=name, args=args if args else tuple())
         t.daemon = True
         t.start()
