@@ -77,7 +77,7 @@ class Instance:
 
     @property
     def kb(self) -> Optional[angr.KnowledgeBase]:
-        if self.project is None:
+        if self.project.am_none:
             return None
         return self.project.kb
 
@@ -88,7 +88,7 @@ class Instance:
         try:
             return self.extra_containers[k]
         except KeyError as e:
-            raise AttributeError(k) from e
+            return super().__getattribute__(k)
 
     def __setattr__(self, k, v):
         if k in self.extra_containers:

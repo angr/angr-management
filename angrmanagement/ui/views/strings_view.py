@@ -21,8 +21,11 @@ class StringsView(BaseView):
         self._selected_function = None
 
         self._init_widgets()
+        self.reload()
 
     def reload(self):
+        if self.workspace.instance.kb is None:
+            return
         self._function_list.functions = self.workspace.instance.kb.functions
         self._string_table.cfg = self.workspace.instance.cfg
         self._string_table.xrefs = self.workspace.instance.project.kb.xrefs
@@ -82,4 +85,3 @@ class StringsView(BaseView):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
-
