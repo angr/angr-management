@@ -62,6 +62,20 @@ def check_dependencies():
                          "    pip install pyqodeng.core\n")
         missing_dep = True
 
+    try:
+        import xdg
+    except ImportError:
+        sys.stderr.write("Cannot find the xdg package. You may install it via pip:\n" +
+                         "    pip install pyxdg\n")
+        missing_dep = True
+
+    try:
+        import requests
+    except ImportError:
+        sys.stderr.write("Cannot find the requests package. You may install it via pip:\n" +
+                         "    pip install requests\n")
+        missing_dep = True
+
     return not missing_dep
 
 
