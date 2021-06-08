@@ -354,6 +354,21 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_symexec_view(self):
+        view = self._get_or_create_symexec_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_states_view(self):
+        view = self._get_or_create_states_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_strings_view(self):
+        view = self._get_or_create_strings_view()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -387,7 +402,29 @@ class Workspace:
 
         if view is None:
             # Create a new symexec view
-            view = CodeView(self, 'center')
+            view = SymexecView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_states_view(self):
+        # Take the first states view
+        view = self.view_manager.first_view_in_category("states")
+
+        if view is None:
+            # Create a new states view
+            view = StatesView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_strings_view(self):
+        # Take the first strings view
+        view = self.view_manager.first_view_in_category("strings")
+
+        if view is None:
+            # Create a new states view
+            view = StringsView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view

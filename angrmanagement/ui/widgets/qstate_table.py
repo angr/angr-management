@@ -72,6 +72,11 @@ class QStateTable(QTableWidget):
         self.itemDoubleClicked.connect(self._on_state_selected)
         self.cellDoubleClicked.connect(self._on_state_selected)
         self.states.am_subscribe(self._watch_states)
+        self.reload()
+
+    def hideEvent(self, event):
+        self.states.am_unsubscribe(self._watch_states)
+        return super().hideEvent(event)
 
     def current_state_record(self):
         selected_index = self.currentRow()

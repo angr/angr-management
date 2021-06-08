@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QLineEdit, QPushButton, QGroupBox, \
+from PySide2.QtWidgets import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
     QCheckBox, QTabWidget, QListWidget, QListWidgetItem
-from PySide2.QtCore import QSize, Qt
+from PySide2.QtCore import Qt
 
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
@@ -8,12 +8,12 @@ from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 
 
 class QSimulationManagers(QFrame):
-    def __init__(self, instance, simgr, state, parent=None):
+    def __init__(self, instance: Instance, simgr, state, parent=None):
         """
-        :param Instance instance:       The data source for this project
+        :param instance:                The data source for this project
         :param object parent:           The parent widget.
         """
-        super(QSimulationManagers, self).__init__(parent)
+        super().__init__(parent)
 
         self.instance = instance
         self.simgrs = instance.simgrs
@@ -26,10 +26,17 @@ class QSimulationManagers(QFrame):
         self._oneactive_checkbox = None  # type: QCheckBox
 
         self._init_widgets()
+        self.refresh()
 
         self.simgr.am_subscribe(self._watch_simgr)
         self.simgrs.am_subscribe(self._watch_simgrs)
         self.state.am_subscribe(self._watch_state)
+
+    def hideEvent(self, event):  # pylint: disable=unused-argument
+        self.simgr.am_unsubscribe(self._watch_simgr)
+        self.simgrs.am_unsubscribe(self._watch_simgrs)
+        self.state.am_unsubscribe(self._watch_state)
+        return super().destroy()
 
     #
     # Public methods
@@ -215,7 +222,7 @@ class QSimulationManagers(QFrame):
 
         self._simgr_viewer.select_state(self.state.am_obj)
 
-    def _watch_simgrs(self, **kwargs):
+    def _watch_simgrs(self, **kwargs):  # pylint: disable=unused-argument
         self.refresh()
 
     #
