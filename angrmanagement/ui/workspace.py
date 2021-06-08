@@ -366,6 +366,7 @@ class Workspace:
             # Create a new disassembly view
             view = DisassemblyView(self, 'center')
             self.add_view(view, view.caption, view.category)
+            view.reload()
 
         return view
 
