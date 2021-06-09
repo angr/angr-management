@@ -160,9 +160,12 @@ class QInstruction(QCachedGraphicsItem):
 
         # comment or string - comments have precedence
         if self._comment is not None:
+            lines = self._comment.split('\n')
             x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF()
-            painter.setPen(Qt.darkGreen)
-            painter.drawText(x, y, self.COMMENT_PREFIX + self._comment)
+            for line in lines:
+                painter.setPen(Qt.darkGreen)
+                painter.drawText(x, y, self.COMMENT_PREFIX + line)
+                y += self._config.disasm_font_height * self.currentDevicePixelRatioF()
         elif self._string is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF()
             painter.setPen(Qt.gray)
@@ -241,13 +244,15 @@ class QInstruction(QCachedGraphicsItem):
             x += last_operand.boundingRect().width()
 
         # comments/string
+        lines = 1
         if self._comment is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF() + self._comment_width
+            lines = self._comment.count('\n') + 1
         elif self._string is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF() + self._string_width
 
         self._width = x
-        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF() * lines
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
