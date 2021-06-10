@@ -438,7 +438,7 @@ class Workspace:
                             v.name = predicted[0]['pred_name'] + "_" + str(next(ctrs[predicted[0]['pred_name']]))
                         else:
                             v.name = var_name  # restore the original name
-            view.refresh_text()
+            view.codegen.am_event()
 
             import pprint
             pprint.pprint(dict(varname_to_predicted))
