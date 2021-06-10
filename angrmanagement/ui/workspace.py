@@ -408,6 +408,30 @@ class Workspace:
 
             from collections import defaultdict
             varname_to_predicted = defaultdict(list)
+
+            # handle failure cases
+            if 'code' not in result or not result['code']:
+                QMessageBox.critical(self._main_window,
+                                     "Error in variable name prediction",
+                                     "Unexpected output returned from the backend. 'code' is not found or empty.",
+                                     QMessageBox.Ok
+                                     )
+                return
+            if 'predictions' not in result['code'][0] or not result['code'][0]['predictions']:
+                QMessageBox.critical(self._main_window,
+                                     "Error in variable name prediction",
+                                     "Unexpected output returned from the backend. 'predictions' is not found or empty.",
+                                     QMessageBox.Ok
+                                     )
+                return
+            if len(result['code'][0]['predictions']) == 1 and isinstance(result['code'][0]['predictions'][0], str):
+                QMessageBox.critical(self._main_window,
+                                     "Error in variable name prediction",
+                                     f"Prediction failed. Error: {result['code'][0]['predictions'][0]}",
+                                     QMessageBox.Ok
+                                     )
+                return
+
             for idx, m in enumerate(re.finditer(r"@@(\S+)@@(\S+)@@", view.codegen.text)):
                 var_name = m.group(1)
                 prediction = result['code'][0]['predictions'][0][idx]
