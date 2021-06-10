@@ -355,6 +355,18 @@ class Workspace:
         view.setFocus()
 
     def infer_variable_names(self):
+
+        def _restore_stage():
+            # shrug
+            for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+                m = re.match(r"@@(\S+)@@(\S+)@@", v.name)
+                if m is not None:
+                    var_name = m.group(1)
+                    v.name = var_name
+            # refresh the view
+            view.codegen.regenerate_text()
+            view.set_codegen(view.codegen)
+
         view = self._get_or_create_pseudocode_view()
         if view.codegen is not None:
             import json
@@ -386,15 +398,7 @@ class Workspace:
             try:
                 result = json.loads(r.text)
             except json.JSONDecodeError:
-                # shrug
-                for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
-                    m = re.match(r"@@(\S+)@@(\S+)@@", v.name)
-                    if m is not None:
-                        var_name = m.group(1)
-                        v.name = var_name
-                # refresh the view
-                view.codegen.regenerate_text()
-                view.set_codegen(view.codegen)
+                _restore_stage()
 
                 QMessageBox.critical(self._main_window,
                                      "Error in variable name prediction",
@@ -411,6 +415,7 @@ class Workspace:
 
             # handle failure cases
             if 'code' not in result or not result['code']:
+                _restore_stage()
                 QMessageBox.critical(self._main_window,
                                      "Error in variable name prediction",
                                      "Unexpected output returned from the backend. 'code' is not found or empty.",
@@ -423,6 +428,7 @@ class Workspace:
                                      "Unexpected output returned from the backend. 'predictions' is not found or empty.",
                                      QMessageBox.Ok
                                      )
+                _restore_stage()
                 return
             if len(result['code'][0]['predictions']) == 1 and isinstance(result['code'][0]['predictions'][0], str):
                 QMessageBox.critical(self._main_window,
@@ -430,6 +436,7 @@ class Workspace:
                                      f"Prediction failed. Error: {result['code'][0]['predictions'][0]}",
                                      QMessageBox.Ok
                                      )
+                _restore_stage()
                 return
 
             for idx, m in enumerate(re.finditer(r"@@(\S+)@@(\S+)@@", view.codegen.text)):
