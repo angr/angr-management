@@ -1,6 +1,9 @@
+import logging
 
 from ..utils.namegen import NameGenerator
 
+
+l = logging.getLogger(__name__)
 
 class EventSentinel:
     def __init__(self):
@@ -12,7 +15,10 @@ class EventSentinel:
 
     def am_unsubscribe(self, listener):
         if listener is not None:
-            self.am_subscribers.remove(listener)
+            try:
+                self.am_subscribers.remove(listener)
+            except ValueError:
+                l.warning(f"Double-unsubscribe of {listener} from {self}")
 
     def am_event(self, **kwargs):
         for listener in self.am_subscribers:
@@ -81,4 +87,3 @@ class ObjectContainer(EventSentinel):
 
     def __repr__(self):
         return '(container: %s)%s' % (self.am_name, repr(self._am_obj))
-
