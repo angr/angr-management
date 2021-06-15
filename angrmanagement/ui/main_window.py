@@ -89,9 +89,9 @@ class MainWindow(QMainWindow):
         self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
-        self._init_shortcuts()
         self._init_menus()
         self._init_plugins()
+        self._init_shortcuts()
 
         # I'm ready to show off!
         if show:
@@ -123,7 +123,6 @@ class MainWindow(QMainWindow):
     @status.setter
     def status(self, v):
         self._status = v
-
         self.statusBar().showMessage(v)
 
     @property
@@ -268,6 +267,8 @@ class MainWindow(QMainWindow):
         center_dockable_views = self.workspace.view_manager.get_center_views()
         for i in range(1, len(center_dockable_views)+1):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, center_dockable_views[i-1].raise_)
+
+        QShortcut(QKeySequence("Ctrl+C"), self, self.workspace.instance.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
         center_dockable_views[0].raise_()

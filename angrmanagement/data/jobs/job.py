@@ -21,6 +21,10 @@ class Job:
         if self._on_finish:
             gui_thread_schedule_async(self._on_finish)
 
+    def keyboard_interrupt(self):
+        """Called from the GUI thread when the user presses Ctrl+C"""
+        pass
+
     def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
 
