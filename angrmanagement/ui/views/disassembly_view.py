@@ -515,8 +515,10 @@ class DisassemblyView(BaseView):
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
-
         self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
+
+    def find_addr_in_exec(self, addr):
+        self.workspace.view_manager.first_view_in_category('symexec').find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:

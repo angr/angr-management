@@ -58,6 +58,15 @@ class SymexecView(BaseView):
     def avoid_addr_in_exec(self, addr):
         self._simgrs.add_avoid_address(addr)
 
+    def find_addr_in_exec(self, addr):
+        self._simgrs.add_find_address(addr)
+
+    def remove_avoid_addr_in_exec(self, addr):
+        self._simgrs.remove_avoid_address(addr)
+
+    def remove_find_addr_in_exec(self, addr):
+        self._simgrs.remove_find_address(addr)
+        
     def redraw_graph(self):
         if self.graph is not None:
             self.graph.viewport().update()
