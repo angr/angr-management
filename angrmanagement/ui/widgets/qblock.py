@@ -29,6 +29,8 @@ class QBlock(QCachedGraphicsItem):
     RIGHT_PADDING = 10
     SPACING = 0
     AIL_SHOW_CONDITIONAL_JUMP_TARGETS = True
+    SHADOW_OFFSET_X = 0
+    SHADOW_OFFSET_Y = 0
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
                  parent=None, container=None):
@@ -124,7 +126,7 @@ class QBlock(QCachedGraphicsItem):
             self._block_item_obj = None
 
         self._block_item = QPainterPath()
-        self._block_item.addRoundedRect(0, 0, self.width, self.height,
+        self._block_item.addRoundedRect(0, 0, self.width - self.SHADOW_OFFSET_X, self.height - self.SHADOW_OFFSET_Y,
             self._config.disasm_view_node_rounding,
             self._config.disasm_view_node_rounding)
 
@@ -202,6 +204,8 @@ class QBlock(QCachedGraphicsItem):
 class QGraphBlock(QBlock):
     MINIMUM_DETAIL_LEVEL = 0.4
     AIL_SHOW_CONDITIONAL_JUMP_TARGETS = False
+    SHADOW_OFFSET_X = 5
+    SHADOW_OFFSET_Y = 5
 
     @property
     def mode(self):
@@ -249,7 +253,7 @@ class QGraphBlock(QBlock):
         painter.setBrush(self._config.disasm_view_node_shadow_color)
         painter.setPen(self._config.disasm_view_node_shadow_color)
         shadow_path = QPainterPath(self._block_item)
-        shadow_path.translate(5,5)
+        shadow_path.translate(self.SHADOW_OFFSET_X, self.SHADOW_OFFSET_Y)
         painter.drawPath(shadow_path)
 
         # background of the node
@@ -278,7 +282,9 @@ class QGraphBlock(QBlock):
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()
-        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING, self.RIGHT_PADDING, self.BOTTOM_PADDING)
+        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING,
+                            self.RIGHT_PADDING + self.SHADOW_OFFSET_X,
+                            self.BOTTOM_PADDING + self.SHADOW_OFFSET_Y)
         return cbr.marginsAdded(margins)
 
 
