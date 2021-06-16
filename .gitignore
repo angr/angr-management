@@ -19,3 +19,4 @@ start.spec
 __enamlcache__/
 
 *.spec
+.idea/

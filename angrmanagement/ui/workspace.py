@@ -3,6 +3,7 @@ import logging
 import traceback
 
 from PySide2.QtCore import Qt, QSettings
+from string import ascii_uppercase
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
@@ -31,6 +32,7 @@ class Workspace:
         self._instance = instance
         self.is_split = False
         self.split_tab_id = 0
+        self.disas_tab_id = 0
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
@@ -142,6 +144,29 @@ class Workspace:
     #
     # Public methods
     #
+
+    def new_disassembly_view(self):
+        """
+        Add a new disassembly view into the
+        central_widget and rename the views
+        accordingly
+
+        :return:    None
+        """
+
+        if self.disas_tab_id == 0:
+            for view in self.view_manager.docks:
+                if view.windowTitle() == 'Disassembly':
+                    view.setWindowTitle("Disassembly-A")
+        if self.disas_tab_id <= 24:
+            new_view = DisassemblyView(self, 'center')
+            self.disas_tab_id += 1
+            self.add_view(new_view, f'Disassembly-{ascii_uppercase[self.disas_tab_id]}', new_view.category)
+            self.raise_view(new_view)
+            # TODO move new_view tab to front of dock
+        else:
+            # TODO grey out menu option
+            print("add MenuOption.setDisable(True)")
 
     def split_view(self):
         """
