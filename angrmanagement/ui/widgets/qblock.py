@@ -3,18 +3,21 @@ import logging
 from PySide2.QtGui import QPen, QPainterPath
 from PySide2.QtCore import QRectF, QMarginsF
 
-from angr.analyses.disassembly import Instruction
+from angr.analyses.disassembly import Instruction, IROp
+from angr.analyses.decompiler.clinic import Clinic
 from angr.sim_variable import SimRegisterVariable
 
-from ...utils import get_block_objects, get_out_branches_for_insn
+from ...utils import get_block_objects, get_out_branches_for_insn, get_label_text
 from ...utils.block_objects import FunctionHeader, Variables, PhiVariable, Label
 from ...config import Conf
 from .qinstruction import QInstruction
 from .qfunction_header import QFunctionHeader
 from .qblock_label import QBlockLabel
+from .qblock_code import QBlockCode, QAilObj, QIROpObj
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
 from .qgraph_object import QCachedGraphicsItem
+
 
 _l = logging.getLogger(__name__)
 
@@ -25,6 +28,9 @@ class QBlock(QCachedGraphicsItem):
     LEFT_PADDING = 10
     RIGHT_PADDING = 10
     SPACING = 0
+    AIL_SHOW_CONDITIONAL_JUMP_TARGETS = True
+    SHADOW_OFFSET_X = 0
+    SHADOW_OFFSET_Y = 0
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
                  parent=None, container=None):
@@ -120,20 +126,29 @@ class QBlock(QCachedGraphicsItem):
             self._block_item_obj = None
 
         self._block_item = QPainterPath()
-        self._block_item.addRoundedRect(0, 0, self.width, self.height,
+        self._block_item.addRoundedRect(0, 0, self.width - self.SHADOW_OFFSET_X, self.height - self.SHADOW_OFFSET_Y,
             self._config.disasm_view_node_rounding,
             self._config.disasm_view_node_rounding)
 
-    def _init_widgets(self):
+    def _init_ail_block_widgets(self):
+        bn = self.cfg_nodes
+        if bn.addr in self.disasm.kb.labels:
+            label = QBlockLabel(bn.addr, get_label_text(bn.addr, self.disasm.kb),
+                                self._config, self.disasm_view, self.workspace,
+                                self.infodock, parent=self, container=self._container)
+            self.objects.append(label)
+            self.addr_to_labels[bn.addr] = label
+        for stmt in bn.statements:
+            code_obj = QAilObj(stmt, self.infodock, parent=None, container=self._container,
+                options={'show_conditional_jump_targets': self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS})
+            obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
+                             self.workspace, self.infodock, parent=self,
+                             container=self._container)
+            code_obj.parent = obj # Reparent
+            self.objects.append(obj)
 
-        if self.scene is not None:
-            for obj in self.objects:
-                self.scene.removeItem(obj)
-
-        self.objects.clear()
-        block_objects = get_block_objects(self.disasm, self.cfg_nodes, self.func_addr)
-
-        for obj in block_objects:
+    def _init_disassembly_block_widgets(self):
+        for obj in get_block_objects(self.disasm, self.cfg_nodes, self.func_addr):
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
                 insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
@@ -142,11 +157,17 @@ class QBlock(QCachedGraphicsItem):
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
-                # label
                 label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, self.infodock,
                                     parent=self, container=self._container)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
+            elif isinstance(obj, IROp):
+                code_obj = QIROpObj(obj, self.infodock, parent=None, container=self._container)
+                disp_obj = QBlockCode(obj.addr, code_obj, self._config, self.disasm_view,
+                                 self.workspace, self.infodock, parent=self,
+                                 container=self._container)
+                code_obj.parent = disp_obj # Reparent
+                self.objects.append(disp_obj)
             elif isinstance(obj, PhiVariable):
                 if not isinstance(obj.variable, SimRegisterVariable):
                     phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self,
@@ -161,6 +182,19 @@ class QBlock(QCachedGraphicsItem):
                 self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
                                                     self.disasm_view, self.workspace, self.infodock, parent=self,
                                                     container=self._container))
+
+    def _init_widgets(self):
+        if self.scene is not None:
+            for obj in self.objects:
+                self.scene.removeItem(obj)
+
+        self.objects.clear()
+
+        if isinstance(self.disasm, Clinic):
+            self._init_ail_block_widgets()
+        else:
+            self._init_disassembly_block_widgets()
+
         self.layout_widgets()
 
     def layout_widgets(self):
@@ -169,6 +203,9 @@ class QBlock(QCachedGraphicsItem):
 
 class QGraphBlock(QBlock):
     MINIMUM_DETAIL_LEVEL = 0.4
+    AIL_SHOW_CONDITIONAL_JUMP_TARGETS = False
+    SHADOW_OFFSET_X = 5
+    SHADOW_OFFSET_Y = 5
 
     @property
     def mode(self):
@@ -216,7 +253,7 @@ class QGraphBlock(QBlock):
         painter.setBrush(self._config.disasm_view_node_shadow_color)
         painter.setPen(self._config.disasm_view_node_shadow_color)
         shadow_path = QPainterPath(self._block_item)
-        shadow_path.translate(5,5)
+        shadow_path.translate(self.SHADOW_OFFSET_X, self.SHADOW_OFFSET_Y)
         painter.drawPath(shadow_path)
 
         # background of the node
@@ -245,7 +282,9 @@ class QGraphBlock(QBlock):
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()
-        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING, self.RIGHT_PADDING, self.BOTTOM_PADDING)
+        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING,
+                            self.RIGHT_PADDING + self.SHADOW_OFFSET_X,
+                            self.BOTTOM_PADDING + self.SHADOW_OFFSET_Y)
         return cbr.marginsAdded(margins)
 
 

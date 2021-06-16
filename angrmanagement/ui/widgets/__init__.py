@@ -2,6 +2,7 @@
 from .qaddress_input import QAddressInput
 from .qstate_combobox import QStateComboBox
 from .qdisasm_statusbar import QDisasmStatusBar
+from .qdisasm_base_control import DisassemblyLevel
 
 # graphs
 from .qdisasm_graph import QDisassemblyGraph

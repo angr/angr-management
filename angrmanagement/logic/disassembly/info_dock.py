@@ -1,6 +1,8 @@
 
 from ...data.object_container import ObjectContainer
 
+from PySide2.QtCore import QObject, Signal
+
 
 class OperandHighlightMode:
     SAME_IDENT = 0
@@ -18,13 +20,15 @@ class OperandDescriptor:
         self.variable_ident = variable_ident
 
 
-class InfoDock:
+class InfoDock(QObject):
     """
     Stores information associated to a disassembly view. Such information will be shared between the graph view and the
     linear view.
     """
+    qblock_code_obj_selection_changed = Signal()
 
     def __init__(self, disasm_view):
+        super().__init__()
         self.disasm_view = disasm_view
 
         self.induction_variable_analysis = None
@@ -38,6 +42,8 @@ class InfoDock:
         self.hovered_block = ObjectContainer(None, 'The currently hovered block')
         self.hovered_edge = ObjectContainer(None, 'The currently hovered edge')
         self.selected_labels = ObjectContainer(set(), 'The currently selected labels')
+
+        self.selected_qblock_code_obj = None
 
     @property
     def smart_highlighting(self):
@@ -268,3 +274,11 @@ class InfoDock:
                 return selected.variable.ident == operand.variable.ident
 
         return False
+
+    def select_qblock_code_obj(self, obj):
+        """
+        For QBlockCodeObj, we simply track selected state for now and handle
+        matching in object handlers
+        """
+        self.selected_qblock_code_obj = obj
+        self.qblock_code_obj_selection_changed.emit()

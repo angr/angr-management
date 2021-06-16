@@ -2,13 +2,13 @@ import logging
 from typing import Union, Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
-from PySide2.QtCore import Qt, QSize, Signal
+from PySide2.QtCore import Qt, Signal
 
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView, DisassemblyLevel
 from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
@@ -28,12 +28,14 @@ _l = logging.getLogger(__name__)
 
 class DisassemblyView(BaseView):
     view_visibility_changed = Signal()
+    disassembly_level_changed = Signal(DisassemblyLevel)
 
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('disassembly', workspace, *args, **kwargs)
 
         self.caption = 'Disassembly'
 
+        self._disassembly_level = DisassemblyLevel.MachineCode
         self._show_address = True
         self._show_variable = True
         # whether we want to show identifier or not
@@ -62,6 +64,16 @@ class DisassemblyView(BaseView):
         self._init_widgets()
         self._init_menus()
         self._register_events()
+
+    @property
+    def disassembly_level(self):
+        return self._disassembly_level
+    def set_disassembly_level(self, level:DisassemblyLevel):
+        self._disassembly_level = level
+        self._flow_graph.set_disassembly_level(level)
+        self._linear_viewer.set_disassembly_level(level)
+        self.disassembly_level_changed.emit(level)
+        self.redraw_current_graph()
 
     def reload(self):
 
@@ -372,6 +384,7 @@ class DisassemblyView(BaseView):
 
         self._flow_graph.setFocus()
         self.view_visibility_changed.emit()
+        self._flow_graph.refresh()
 
     def display_linear_viewer(self):
 
@@ -386,6 +399,7 @@ class DisassemblyView(BaseView):
 
         self._linear_viewer.setFocus()
         self.view_visibility_changed.emit()
+        self._linear_viewer.refresh()
 
     def display_function(self, function):
 
@@ -575,6 +589,8 @@ class DisassemblyView(BaseView):
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
 
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
+
+        self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
 
     #
     # Private methods
