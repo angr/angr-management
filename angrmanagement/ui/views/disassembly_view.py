@@ -15,6 +15,7 @@ from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
+from ..dialogs.hook import HookDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
@@ -278,6 +279,19 @@ class DisassemblyView(BaseView):
             dialog.show()
         else:
             dialog.exec_()
+
+    def popup_modify_hook_dialog(self, async_=True, addr=None):
+        addr = addr or self._address_in_selection()
+
+        if addr is None:
+            return
+
+        dialog = HookDialog(self.workspace.instance, addr=addr, parent=self)
+        if async_:
+            dialog.show()
+        else:
+            dialog.exec_()
+
 
     def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:

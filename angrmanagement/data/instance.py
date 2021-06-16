@@ -71,6 +71,8 @@ class Instance:
 
         self._live = True
 
+        self._hook_code_strings = {}
+
     #
     # Properties
     #
@@ -198,6 +200,21 @@ class Instance:
         # ...lol
         while self.jobs:
             time.sleep(0.05)
+
+    def apply_hook(self, addr, hook_code_string):
+        self.project.unhook(addr)
+        # For the context of the exec call
+        p = self.project
+        # execute the hook definition provided by the user. This will register the hook with the project (as long as
+        # the user didn't delete the @project.hook decorator on the function)
+        exec(hook_code_string)
+        # Store the text of the hook so it could be retrieved later and modified
+        self._hook_code_strings[addr] = hook_code_string
+
+    def delete_hook(self, addr):
+        self.project.unhook(addr)
+        self._hook_code_strings.pop(addr)
+
 
     #
     # Private methods
