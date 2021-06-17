@@ -31,6 +31,8 @@ class ViewManager:
         self.docks = [ ]
         self.view_to_dock = { }
         self.views_by_category: Dict[str,List[BaseView]] = defaultdict(list)
+        self.disas_view_counter = 1
+        self.enable_disas_button = True
 
     @property
     def main_window(self):
@@ -82,6 +84,11 @@ class ViewManager:
             if d.windowTitle() == view.caption:
                 dock = d
 
+        # check for removing disassembly view
+        if view.category == 'disassembly':
+            self.disas_view_counter -= 1
+            self.toggle_new_disas_button()
+
         # sanity check on the dock
         if dock is None:
             _l.warning("Warning: removed view does not exist as a dock!")
@@ -100,7 +107,6 @@ class ViewManager:
 
         if retab:
             self.tabify_center_views()
-
 
     def raise_view(self, view):
         """
@@ -193,6 +199,22 @@ class ViewManager:
 
         center_dockable_views = self.get_center_views()
         center_dockable_views[self.get_current_tab_id()-1].raise_()
+
+    def toggle_new_disas_button(self):
+        # Prevent double checking if already enabled
+        if self.enable_disas_button == False:
+            for menu_entry in self.main_window._view_menu.entries:
+                try:
+                    if menu_entry.caption == 'New Disassembly View':
+                        if self.disas_view_counter >= 26:
+                            menu_entry.disable()
+                        else:
+                            menu_entry.enable()
+                            self.enable_disas_button = True
+                        break
+                except AttributeError:
+                    # Catch the MenuSeparators()
+                    pass
 
     @property
     def current_tab(self):

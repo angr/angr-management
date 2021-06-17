@@ -32,7 +32,7 @@ class Workspace:
         self._instance = instance
         self.is_split = False
         self.split_tab_id = 0
-        self.disas_tab_id = 0
+        # self.disas_tab_id = 0
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
@@ -154,25 +154,20 @@ class Workspace:
         :return:    None
         """
 
-        if self.disas_tab_id == 0:
+        if self.view_manager.disas_view_counter == 1:
             for view in self.view_manager.docks:
                 if view.windowTitle() == 'Disassembly':
                     view.setWindowTitle("Disassembly-A")
-        if self.disas_tab_id <= 24:
+                    break
+        if self.view_manager.disas_view_counter < 26:
             new_view = DisassemblyView(self, 'center')
-            self.disas_tab_id += 1
-            self.add_view(new_view, f'Disassembly-{ascii_uppercase[self.disas_tab_id]}', new_view.category)
+            self.add_view(new_view, f'Disassembly-{ascii_uppercase[self.view_manager.disas_view_counter]}', new_view.category)
+            self.view_manager.disas_view_counter += 1
             self.raise_view(new_view)
             # TODO move new_view tab to front of dock
-        else:
-            for menu_entry in self._main_window._view_menu.entries:
-                try:
-                    if menu_entry.caption == 'New Disassembly View':
-                        menu_entry.disable()
-                        break
-                except AttributeError:
-                    # Catch the MenuSeparators()
-                    pass
+            if self.view_manager.disas_view_counter >= 26:
+                self.view_manager.enable_disas_button = False
+                self.view_manager.toggle_new_disas_button()
 
     def split_view(self):
         """
