@@ -257,6 +257,9 @@ class MainWindow(QMainWindow):
     # Shortcuts
     #
 
+    def interrupt_current_job(self):
+        self.workspace.instance.interrupt_current_job()
+
     def _init_shortcuts(self):
         """
         Initialize shortcuts
@@ -268,7 +271,7 @@ class MainWindow(QMainWindow):
         for i in range(1, len(center_dockable_views)+1):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, center_dockable_views[i-1].raise_)
 
-        QShortcut(QKeySequence("Ctrl+C"), self, self.workspace.instance.interrupt_current_job)
+        QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
         center_dockable_views[0].raise_()
