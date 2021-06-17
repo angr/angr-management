@@ -1,9 +1,8 @@
 from collections import defaultdict
-from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
+from typing import List
 
-from PySide2.QtGui import QMouseEvent, QCursor, QContextMenuEvent
-from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QHBoxLayout, QLabel, QLineEdit, QDialog, \
-    QInputDialog, QAbstractItemView
+from PySide2.QtGui import QCursor, QContextMenuEvent
+from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QInputDialog, QAbstractItemView
 from PySide2.QtCore import Qt
 
 from angr import SimState
@@ -63,15 +62,15 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
         self.simgr_viewer.simgr.drop(stash=self.stash_name, filter_func=lambda state: state in self.states)
         self.refresh()
 
-    def delete_stash(self, *args, **kwargs):
+    def delete_stash(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.simgr._stashes.pop(self.stash_name)
         self.simgr_viewer.refresh()
 
-    def paste_states(self, *args, **kwargs):
+    def paste_states(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.paste_from_clipboard(self.stash_name)
         self.refresh()
 
-    def move_states(self, *args, **kwargs):
+    def move_states(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.move_to_stash(self.stash_name)
         self.refresh()
 
@@ -102,16 +101,16 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
             plural = "s"
         menu.addAction(string + plural, action)
 
-    def copy_states(self, *args, **kwargs):
+    def copy_states(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.copy_selected_to_clipboard()
 
-    def cut_states(self, *args, **kwargs):
+    def cut_states(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.cut_selected_to_clipboard()
 
-    def delete_states(self, *args, **kwargs):
+    def delete_states(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.delete_selected_states()
 
-    def paste_states(self, *args, **kwargs):
+    def paste_states(self, *args, **kwargs): #pylint: disable=unused-argument
         self.simgr_viewer.paste_from_clipboard(self.stash_name)
 
 
@@ -119,7 +118,7 @@ class QSimulationManagerViewer(QTreeWidget):
     state_clipboard: List[SimState]
 
     def __init__(self, simgr, parent=None):
-        super(QSimulationManagerViewer, self).__init__(parent)
+        super().__init__(parent)
 
         self.setColumnCount(1)
         self.setHeaderHidden(True)
@@ -148,7 +147,7 @@ class QSimulationManagerViewer(QTreeWidget):
     def delete_selected_states(self):
         stash_to_states = self._stash_to_selected_states()
         for stash_name, states in stash_to_states.items():
-            self.simgr.drop(stash=stash_name, filter_func=lambda state: state in states)
+            self.simgr.drop(stash=stash_name, filter_func=lambda state, state_set=states: state in state_set)
             self.get_stash_tree_item(stash_name).refresh()
 
     def paste_from_clipboard(self, stash_name):
@@ -164,7 +163,7 @@ class QSimulationManagerViewer(QTreeWidget):
             if not accepted:
                 return
             try:
-                lambda_func = eval(lambda_str)
+                lambda_func = eval(lambda_str) #pylint: disable=eval-used
                 if not isfunction(lambda_func):
                     raise ValueError()
             except Exception as e:  # pylint: disable=broad-except
@@ -182,7 +181,7 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.addAction("Create new stash", self._create_new_stash)
             menu.exec_(QCursor.pos())
 
-    def _create_new_stash(self, *args, **kwargs):
+    def _create_new_stash(self, *args, **kwargs): #pylint: disable=unused-argument
 
         stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
 
@@ -243,7 +242,7 @@ class QSimulationManagerViewer(QTreeWidget):
             return
 
         self.stash_tree_items = {}
-        for stash_name, stash in self.simgr.stashes.items():
+        for stash_name, stash in self.simgr.stashes.items(): #pylint: disable=unused-variable
             # if not stash and stash_name not in ('active', 'deadended', 'avoided'):
             #     continue
             item = StashTreeItem(stash_name, simgr_viewer=self)
