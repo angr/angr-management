@@ -165,8 +165,14 @@ class Workspace:
             self.raise_view(new_view)
             # TODO move new_view tab to front of dock
         else:
-            # TODO grey out menu option
-            print("add MenuOption.setDisable(True)")
+            for menu_entry in self._main_window._view_menu.entries:
+                try:
+                    if menu_entry.caption == 'New Disassembly View':
+                        menu_entry.disable()
+                        break
+                except AttributeError:
+                    # Catch the MenuSeparators()
+                    pass
 
     def split_view(self):
         """
