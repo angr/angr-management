@@ -1,6 +1,7 @@
 
 import logging
 from collections import defaultdict
+from angr.analyses.decompiler.clinic import Clinic
 
 from .edge import EdgeSort
 
@@ -60,8 +61,13 @@ def categorize_edges(disassembly, edges):
 
         elif len(items) == 2:
             # actually, let's determine which branch is the false branch
-            fallthrough = src_node.addr + src_node.size
             edge_a, edge_b = items
+
+            if isinstance(disassembly, Clinic):
+                fallthrough = edge_a.src.statements[-1].false_target.value
+            else:
+                fallthrough = src_node.addr + src_node.size
+
             if edge_a.dst.addr == fallthrough and edge_b.dst.addr != fallthrough:
                 edge_a.sort = EdgeSort.FALSE_BRANCH
                 edge_b.sort = EdgeSort.TRUE_BRANCH

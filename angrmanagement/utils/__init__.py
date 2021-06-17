@@ -93,6 +93,7 @@ def get_block_objects(disasm, nodes, func_addr):
         if insn_addr != func_addr and insn_addr in disasm.kb.labels:
             lst.append(Label(insn_addr, get_label_text(insn_addr, disasm.kb)))
         lst.append(disasm.raw_result_map['instructions'][insn_addr])
+        lst.extend(disasm.raw_result_map['ir'][insn_addr])
 
     # initial label, if there is any
     # FIXME: all labels should be generated during CFG recovery, and this step should not be necessary.

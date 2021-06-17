@@ -1,11 +1,17 @@
 from typing import Optional, Tuple, TYPE_CHECKING
-
 from PySide2.QtCore import Qt
+from enum import Enum
 
 if TYPE_CHECKING:
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qoperand import QOperand
     from angrmanagement.ui.views import DisassemblyView
+
+
+class DisassemblyLevel(Enum):
+    MachineCode = 0
+    LifterIR = 1
+    AIL = 2
 
 
 class QDisassemblyBaseControl:
@@ -17,8 +23,8 @@ class QDisassemblyBaseControl:
         self.workspace = workspace
         self.disasm_view: 'DisassemblyView' = disasm_view
         self._base_cls = base_cls
-
         self._insaddr_to_block = { }
+        self._disassembly_level = disasm_view.disassembly_level
 
     @property
     def infodock(self):
@@ -55,6 +61,10 @@ class QDisassemblyBaseControl:
             return block, ins_addr, operand
 
         return None
+
+    def set_disassembly_level(self, level:DisassemblyLevel):
+        self._disassembly_level = level
+        self.reload()
 
     #
     # Event handlers
