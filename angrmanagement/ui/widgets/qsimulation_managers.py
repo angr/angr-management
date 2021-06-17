@@ -291,7 +291,8 @@ class QSimulationManagers(QFrame):
         return True
 
 
-    def _get_checked_items(self, qlist: QTreeWidget):
+    @staticmethod
+    def _get_checked_items(qlist: QTreeWidget):
         items = []
         for i in range(qlist.topLevelItemCount()):
             item = qlist.topLevelItem(i)
