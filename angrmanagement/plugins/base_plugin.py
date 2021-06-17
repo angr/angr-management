@@ -38,7 +38,7 @@ class BasePlugin:
         return getattr(cls, 'DISPLAY_NAME', cls.__name__)
 
     #
-    # Callbacks
+    # UI Callbacks
     #
 
     def color_insn(self, addr, selected) -> Optional[QColor]:
@@ -114,3 +114,56 @@ class BasePlugin:
 
     def handle_url_action(self, action, kwargs):
         pass
+
+    #
+    # Decompiler Callbacks
+    #
+
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+        """
+        A handler that is called *right before* function stack variable is renamed. Note: this does not directly
+        allow you to intercept the call and change the results of the change. This handler is only intended to be
+        used to observe the actuall changing and act accordingly after.
+
+        @param func:        angr Function the variable is changed in
+        @param offset:      the offset of the stack variable
+        @param old_name:    name before change
+        @param new_name:    name after change
+        @return:
+        """
+        return False
+
+    def handle_function_rename(self, func, old_name: str, new_name: str):
+        """
+        A handler that is called *right before* a functions name is renamed. See the Note in handle_variable_rename
+        about how this should only be for observance.
+
+        @param func:        angr Function that is being renamed
+        @param old_name:    name before change
+        @param new_name:    name after change
+        @return:
+        """
+        return False
+
+    def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
+        """
+        A handler that is called for a variety of reasons related to changing and making a comment. All are called
+        right before the operation happens:
+        1. A comment is made for the first time
+        2. A comment is changed
+
+        `new` bool is true when it is being created for the first time.
+
+        In additon to those two cases, each comment can either be changed in the decompilation view or the
+        dissassembly view, specified by the `decomp` boolean. If true, the comment is changed in the decompilation
+        view.
+
+        @param func:        Function the comment is in
+        @param addr:        Address in func that comment is on
+        @param new:         T if a new comment
+        @param decomp:      T if comment in decompilation view
+        @return:
+        """
+
+        return False
+

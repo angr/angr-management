@@ -285,3 +285,21 @@ class PluginManager:
                     self.workspace.log("PLEASE FIX YOUR PLUGIN AHHHHHHHHHHHHHHHHH")
                     return 0, ''
         raise IndexError("Not enough columns")
+
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+        for res in self._dispatch(BasePlugin.handle_variable_rename, False, func, offset, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_function_rename(self, func, old_name: str, new_name: str):
+        for res in self._dispatch(BasePlugin.handle_function_rename, False, func, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
+        for res in self._dispatch(BasePlugin.handle_comment_changed, False, func, addr, new, decomp):
+            if res:
+                return True
+        return False

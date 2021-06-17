@@ -78,6 +78,18 @@ class BinsyncPlugin(BasePlugin):
             yield ("Auto Pull...", auto_pull_menu)
             yield ("Pull Patches...", patch_menu)
 
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+        print("Variable Renamed")
+        return False
+
+    def handle_function_rename(self, func, old_name: str, new_name: str):
+        print("Function Renamed!")
+        return False
+
+    def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
+        print("Comment Changed!")
+        return False
+
     def pushFunction(self):
         # function
         func = self.selected_func
