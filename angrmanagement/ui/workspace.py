@@ -151,7 +151,7 @@ class Workspace:
         :return:    None
         """
 
-        window_id = self.view_manager.get_current_tab_id()
+        window_id = self.view_manager.get_current_tab_id() + 1
         if self.is_split is False:
             self._main_window.central_widget.removeDockWidget(self.view_manager.docks[window_id])
             dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
