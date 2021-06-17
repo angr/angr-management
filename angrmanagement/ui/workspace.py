@@ -32,7 +32,6 @@ class Workspace:
         self._instance = instance
         self.is_split = False
         self.split_tab_id = 0
-        # self.disas_tab_id = 0
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
