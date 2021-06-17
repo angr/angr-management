@@ -142,12 +142,20 @@ class ViewManager:
     def first_view_in_category(self, category) -> Optional['BaseView']:
         """
         Return the first view in a specific category.
+        If the category is disassembly, return the current
+        category view else return the first view in
+        disassembly.
 
         :param str category:    The category of the view.
         :return:                The view.
         """
 
         if self.views_by_category[category]:
+            if category == 'disassembly':
+                current_view = self.get_current_tab_id()
+                for category_view in self.views_by_category[category]:
+                    if category_view.caption == self.get_center_views()[current_view].windowTitle():
+                        return category_view
             return self.views_by_category[category][0]
         return None
 

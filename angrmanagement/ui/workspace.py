@@ -158,12 +158,16 @@ class Workspace:
             for view in self.view_manager.docks:
                 if view.windowTitle() == 'Disassembly':
                     view.setWindowTitle("Disassembly-A")
+                    self.view_manager.first_view_in_category('disassembly').caption = "Disassembly-A"
                     break
         if self.view_manager.disas_view_counter < 26:
             new_view = DisassemblyView(self, 'center')
-            self.add_view(new_view, f'Disassembly-{ascii_uppercase[self.view_manager.disas_view_counter]}', new_view.category)
+            new_view.caption = f'Disassembly-{ascii_uppercase[self.view_manager.disas_view_counter]}'
+            self.add_view(new_view, new_view.caption, new_view.category)
             self.view_manager.disas_view_counter += 1
             self.raise_view(new_view)
+            if self.instance.binary_path is not None:
+                self.on_cfg_generated()
             # TODO move new_view tab to front of dock
             if self.view_manager.disas_view_counter >= 26:
                 self.view_manager.enable_disas_button = False
