@@ -35,11 +35,11 @@ class QSimulationManagers(QFrame):
 
     @property
     def find_addrs(self):
-        return list(set([int(item.text(0), 16) for item in self._get_checked_items(self._finds_list)]))
+        return list({int(item.text(0), 16) for item in self._get_checked_items(self._finds_list)})
 
     @property
     def avoid_addrs(self):
-        return list(set([int(item.text(0), 16) for item in self._get_checked_items(self._avoids_list)]))
+        return list({int(item.text(0), 16) for item in self._get_checked_items(self._avoids_list)})
 
     def hideEvent(self, event):  # pylint: disable=unused-argument
         self.simgr.am_unsubscribe(self._watch_simgr)
@@ -64,12 +64,18 @@ class QSimulationManagers(QFrame):
     def add_find_address(self, addr):
         self.add_address_to_list(self._finds_list, addr)
 
+    def remove_find_address(self, addr):
+        self._remove_addr(self._finds_list, addr)
+
+    def remove_avoid_address(self, addr):
+        self._remove_addr(self._avoids_list, addr)
+
     @staticmethod
     def add_address_to_list(qtreelist: QTreeWidget, addr):
         for i in range(qtreelist.topLevelItemCount()):
             item = qtreelist.topLevelItem(i)  # type: QTreeWidgetItem
             if int(item.text(0), 16) == addr:
-                return # deduplicate
+                return None # deduplicate
 
         item = QTreeWidgetItem(qtreelist)
         item.setText(0, "%#x" % addr)
@@ -262,7 +268,7 @@ class QSimulationManagers(QFrame):
     def _watch_simgrs(self, **kwargs):  # pylint: disable=unused-argument
         self.refresh()
 
-    def _on_explore_addr_changed(self, item: QTreeWidgetItem):
+    def _on_explore_addr_changed(self, item: QTreeWidgetItem): #pylint: disable=unused-argument
         """Refresh the disassembly view when an address in the 'avoids' or 'finds' tab is toggled. Ensures that
         annotations next to instructions are updated."""
         self.instance.workspace.view_manager.first_view_in_category("disassembly").refresh()
@@ -305,7 +311,7 @@ class QSimulationManagers(QFrame):
             try:
                 addr = int(line, 16)
                 self.add_address_to_list(qlist, addr)
-            except ValueError as e:
+            except ValueError as e: #pylint: disable=unused-variable
                 pass
 
     @staticmethod
