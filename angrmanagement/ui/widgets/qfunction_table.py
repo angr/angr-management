@@ -265,7 +265,7 @@ class QFunctionTableView(QTableView):
     def filter(self, keyword):
         self._model.filter(keyword)
 
-    def jump_to_result(self,index=0):
+    def jump_to_result(self, index=0):
         if len(self._model.func_list) > index:
             self._selected_func.am_obj = self._model.func_list[index]
             self._selected_func.am_event(func=self._selected_func.am_obj)
