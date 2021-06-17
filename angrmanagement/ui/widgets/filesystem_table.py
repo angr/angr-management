@@ -3,7 +3,7 @@ from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView,
 
 class QFileSystemTable(QTableWidget):
     def __init__(self, items, parent):
-        super(QFileSystemTable, self).__init__(parent)
+        super().__init__(parent)
 
         header_labels = ['Mount Point', 'Host Path']
 

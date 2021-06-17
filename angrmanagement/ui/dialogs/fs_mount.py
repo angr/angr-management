@@ -4,7 +4,7 @@ from ..widgets.filesystem_table import QFileSystemTable
 
 class FilesystemMount(QDialog):
     def __init__(self, fs_config=None, instance=None, parent=None):
-        super(FilesystemMount, self).__init__(parent)
+        super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self._instance = instance
