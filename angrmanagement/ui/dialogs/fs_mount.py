@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem
-from PySide2.QtCore import QSize, Qt
+from PySide2.QtWidgets import QDialog, QVBoxLayout
+from PySide2.QtCore import Qt
 from ..widgets.filesystem_table import QFileSystemTable
 
 class FilesystemMount(QDialog):
@@ -18,6 +18,6 @@ class FilesystemMount(QDialog):
         layout.addWidget(self._table,0)
         self.setLayout(layout)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event): #pylint: disable=unused-argument
         self.fs_config = self._table.get_result()
         self.close()

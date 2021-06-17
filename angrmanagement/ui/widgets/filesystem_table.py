@@ -1,11 +1,4 @@
-import re
-
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QFileDialog, QHeaderView
-from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt
-
-import angr
-import claripy
 
 
 class QFileSystemTable(QTableWidget):
@@ -72,4 +65,3 @@ class QFileSystemTable(QTableWidget):
         for i in range(self.rowCount()):
             ret.append([self.item(i,0).text(), self.item(i,1).text()])
         return ret
-
