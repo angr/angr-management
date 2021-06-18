@@ -33,7 +33,7 @@ class RenameNode(QDialog):
 
         # initialization
         self._disasm_view = disasm_view
-        self._code_view: CodeView = code_view
+        self._code_view = code_view
         self._node = node
 
         self._name_box = None

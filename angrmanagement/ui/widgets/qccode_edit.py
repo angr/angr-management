@@ -235,7 +235,7 @@ class QCCodeEdit(api.CodeEdit):
             text)
 
         if ok:
-            exists = True if addr in cdict else False
+            exists = addr in cdict
             if text:
                 # callback
                 self.workspace.plugins.handle_comment_changed(addr, text, not exists, True)
