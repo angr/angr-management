@@ -9,5 +9,5 @@ class SamplePlugin(BasePlugin):
 
     MENU_BUTTONS = ('Add Bookmark',)
 
-    def build_context_menu_function(self, func): # pylint: disable=unused-argument
+    def build_context_menu_function(self, funcs): # pylint: disable=unused-argument
         yield ("owo", [("uwu", lambda: None), ("o_O", lambda: None)])
