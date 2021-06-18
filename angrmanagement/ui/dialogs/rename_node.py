@@ -130,23 +130,23 @@ class RenameNode(QDialog):
             if self._code_view is not None and self._node is not None:
                 # need workspace for altering callbacks of changes
                 workspace = self._code_view.workspace
+                code_kb = self._code_view.codegen.kb
 
                 if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
-                    # callback XXX
-                    workspace.plugins.handle_variable_rename(False, -1, self._node.variable.name, node_name)
-                    import ipdb; ipdb.set_trace()
+                    # callback
+                    # sanity check that we are a stack var
+                    if hasattr(self._node.variable, 'offset') and self._node.variable.offset is not None:
+                        workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
+                                                                 self._node.variable.offset, self._node.variable.name,
+                                                                 node_name)
 
                     self._node.unified_variable.name = node_name
                     self._node.unified_variable.renamed = True
                 elif isinstance(self._node, CVariable) and self._node.variable.region == '':
-                    # callback XXX
-                    workspace.plugins.handle_variable_rename(False, -1, self._node.variable.name, node_name)
-
+                    # callback not supported
                     self._code_view.workspace.instance.kb.labels[self._node.variable.addr] = node_name
                     self._node.variable.name = node_name
                 elif isinstance(self._node, CFunction):
-                    code_kb = self._code_view.codegen.kb
-
                     # callback
                     workspace.plugins.handle_function_rename(code_kb.functions[self._node.name],
                                                              self._node.name, node_name)
@@ -155,6 +155,10 @@ class RenameNode(QDialog):
                     self._node.name = node_name
                     self._node.demangled_name = node_name
                 elif isinstance(self._node, CFunctionCall):
+                    # callback
+                    workspace.plugins.handle_function_rename(code_kb.functions[self._node.callee_func.name],
+                                                             self._node.callee_func.name, node_name)
+
                     self._node.callee_func.name = node_name
 
                 self._code_view.codegen.am_event()

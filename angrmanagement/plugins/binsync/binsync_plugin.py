@@ -26,7 +26,7 @@ class BinsyncPlugin(BasePlugin):
         self.workspace.remove_view(self.sync_view)
 
     #
-    # Binsync Menus
+    # Binsync GUI Hooks
     #
 
     MENU_BUTTONS = ('Configure Binsync...',)
@@ -55,10 +55,6 @@ class BinsyncPlugin(BasePlugin):
         sync_config = SyncConfig(self.workspace.instance)
         sync_config.exec_()
 
-    #
-    # Binsync Interaction (Context Menu)
-    #
-
     def build_context_menu_function(self, func): # pylint: disable=unused-argument
         # if not connected to a repo, give no options
         if self.workspace.instance.kb.sync.connected:
@@ -78,17 +74,25 @@ class BinsyncPlugin(BasePlugin):
             yield ("Auto Pull...", auto_pull_menu)
             yield ("Pull Patches...", patch_menu)
 
+    #
+    #   Binsync Decompiler Hooks
+    #
+
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
-        print("Variable Renamed")
+        # print(f"{hex(func.addr)}: renamed variable[{hex(offset)}]: {old_name}->{new_name}")
         return False
 
     def handle_function_rename(self, func, old_name: str, new_name: str):
-        print("Function Renamed!")
+        # print(f"{hex(func.addr)}: renamed function: {old_name}->{new_name}")
         return False
 
     def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
-        print("Comment Changed!")
+        # print("Comment Changed!")
         return False
+
+    #
+    #   BinSync Interactions
+    #
 
     def pushFunction(self):
         # function
