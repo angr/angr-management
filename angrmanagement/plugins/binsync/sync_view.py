@@ -3,6 +3,7 @@ from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QPush
 
 from ...ui.views.view import BaseView
 from .qteam_table import QTeamTable
+from ...data.sync_ctrl import SyncControlStatus, STATUS_TEXT
 
 
 class SyncView(BaseView):
@@ -22,7 +23,12 @@ class SyncView(BaseView):
         self.workspace.instance.sync.users_container.am_subscribe(self._update_users)
 
     def reload(self):
-        self._status_label.setText(self.workspace.instance.sync.status_string)
+        status = self.workspace.instance.sync.status_string
+        if status == STATUS_TEXT[SyncControlStatus.CONNECTED]:
+            self._status_label.setStyleSheet("color: green")
+        else:
+            self._status_label.setStyleSheet("color: red")
+        self._status_label.setText(status)
 
     #
     # Private methods
