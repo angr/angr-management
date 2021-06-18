@@ -175,7 +175,9 @@ class QSimulationManagers(QFrame):
 
     def _on_explore_clicked(self):
         if not self.simgr.am_none:
+            plugins_step_callback = self.instance.workspace.plugins.step_callback
             def _step_callback(simgr):
+                plugins_step_callback(simgr)
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(simgr, events=False)
                 return simgr

@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_C
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
+from angr.sim_manager import SimulationManager
 
 from angrmanagement.ui.widgets.qblock import QBlock
 from angrmanagement.ui.widgets.qinstruction import QInstruction
@@ -113,4 +114,7 @@ class BasePlugin:
     URL_ACTIONS: List[str] = []
 
     def handle_url_action(self, action, kwargs):
+        pass   
+
+    def step_callback(self, simgr:SimulationManager):
         pass
