@@ -195,5 +195,8 @@ class BinsyncPlugin(BasePlugin):
         code_view.codegen.am_event()
         func_table_view.refresh()
 
-    if binsync is None:
-        del BinsyncPlugin
+
+# Don't allow binsync to init if it's not installed
+if binsync is None:
+    del BinsyncPlugin
+
