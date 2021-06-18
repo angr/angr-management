@@ -61,7 +61,7 @@ class BinsyncPlugin(BasePlugin):
         sync_config = SyncConfig(self.workspace.instance)
         sync_config.exec_()
 
-    def build_context_menu_function(self, funcs): # pylint: disable=unused-argument
+    def build_context_menu_functions(self, funcs): # pylint: disable=unused-argument
         # if not connected to a repo, give no options
         if self.workspace.instance.kb.sync.connected:
             # connection is live, get the context!

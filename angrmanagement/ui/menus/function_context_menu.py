@@ -16,4 +16,4 @@ class FunctionContextMenu(Menu):
     def qmenu(self, extra_entries=None):
         if extra_entries is None:
             extra_entries = ()
-        return super().qmenu(extra_entries=list(GlobalInfo.main_window.workspace.plugins.build_context_menu_function(self.funcs)) + list(extra_entries))
+        return super().qmenu(extra_entries=list(GlobalInfo.main_window.workspace.plugins.build_context_menu_functions(self.funcs)) + list(extra_entries))
