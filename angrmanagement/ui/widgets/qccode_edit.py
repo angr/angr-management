@@ -111,7 +111,7 @@ class QCCodeEdit(api.CodeEdit):
             # decompiled function name in selection
             self._selected_node = under_cursor
             mnu.addActions(self.function_name_actions)
-            for entry in self.workspace.plugins.build_context_menu_functions(self.workspace.instance.kb.functions[under_cursor.name]):
+            for entry in self.workspace.plugins.build_context_menu_functions([self.workspace.instance.kb.functions[under_cursor.name]]):
                 Menu.translate_element(mnu, entry)
         else:
             mnu.addActions(self.default_actions)
