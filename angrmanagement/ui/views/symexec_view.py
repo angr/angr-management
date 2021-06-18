@@ -10,7 +10,7 @@ from .view import BaseView
 
 class SymexecView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
-        super(SymexecView, self).__init__('symexec', workspace, *args, **kwargs)
+        super().__init__('symexec', workspace, *args, **kwargs)
 
         self.caption = 'Symbolic Execution'
 
@@ -57,6 +57,15 @@ class SymexecView(BaseView):
 
     def avoid_addr_in_exec(self, addr):
         self._simgrs.add_avoid_address(addr)
+
+    def find_addr_in_exec(self, addr):
+        self._simgrs.add_find_address(addr)
+
+    def remove_avoid_addr_in_exec(self, addr):
+        self._simgrs.remove_avoid_address(addr)
+
+    def remove_find_addr_in_exec(self, addr):
+        self._simgrs.remove_find_address(addr)
 
     def redraw_graph(self):
         if self.graph is not None:
