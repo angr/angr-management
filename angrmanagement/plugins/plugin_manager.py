@@ -16,6 +16,7 @@ from .base_plugin import BasePlugin
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
+
 l = logging.getLogger(__name__)
 
 # The plugin manager can be initialized in two modes:
@@ -32,7 +33,6 @@ l = logging.getLogger(__name__)
 # with before anything touches this class. There are functions to do that in the plugins package but they need to be
 # tied to the user's settings related to loading paths and activation. Presently this is split between MainWindow (the
 # first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
-
 
 class PluginManager:
     def __init__(self, workspace: Optional['Workspace']):
@@ -84,7 +84,6 @@ class PluginManager:
 
     def activate_plugin(self, plugin_cls: Type[BasePlugin]):
         self.load_plugin(plugin_cls)  # just to be sure, also perform the sanity checks
-
         if self.get_plugin_instance(plugin_cls) is not None:
             return
 
