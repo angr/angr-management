@@ -145,7 +145,7 @@ class BasePlugin:
         """
         return False
 
-    def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
         """
         A handler that is called for a variety of reasons related to changing and making a comment. All are called
         right before the operation happens:
@@ -158,8 +158,8 @@ class BasePlugin:
         dissassembly view, specified by the `decomp` boolean. If true, the comment is changed in the decompilation
         view.
 
-        @param func:        Function the comment is in
-        @param addr:        Address in func that comment is on
+        @param addr:        Address where the comment it
+        @param cmt:         The comment to be placed at the addr
         @param new:         T if a new comment
         @param decomp:      T if comment in decompilation view
         @return:

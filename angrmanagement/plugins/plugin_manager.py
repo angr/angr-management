@@ -298,8 +298,8 @@ class PluginManager:
                 return True
         return False
 
-    def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
-        for res in self._dispatch(BasePlugin.handle_comment_changed, False, func, addr, new, decomp):
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+        for res in self._dispatch(BasePlugin.handle_comment_changed, False, addr, cmt, new, decomp):
             if res:
                 return True
         return False

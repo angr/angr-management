@@ -257,13 +257,19 @@ class Workspace:
         view.setFocus()
 
     def set_comment(self, addr, comment_text):
-
         kb = self.instance.project.kb
-        if comment_text is None and addr in kb.comments:
+        exists = addr in kb.comments
+
+        # callback
+        if comment_text is None and exists:
+            self.plugins.handle_comment_changed(addr, "", False, False)
             del kb.comments[addr]
-        kb.comments[addr] = comment_text
+        else:
+            self.plugins.handle_comment_changed(addr, comment_text, not exists, False)
+            kb.comments[addr] = comment_text
 
         # callback first
+        # TODO: can this be removed?
         if self.instance.set_comment_callback:
             self.instance.set_comment_callback(addr=addr, comment_text=comment_text)
 

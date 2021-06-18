@@ -18,7 +18,7 @@ class BinsyncPlugin(BasePlugin):
         self.selected_func = None
 
     #
-    # Binsync Deinit
+    # BinSync Deinit
     #
 
     def teardown(self):
@@ -26,7 +26,7 @@ class BinsyncPlugin(BasePlugin):
         self.workspace.remove_view(self.sync_view)
 
     #
-    # Binsync GUI Hooks
+    # BinSync GUI Hooks
     #
 
     MENU_BUTTONS = ('Configure Binsync...',)
@@ -75,7 +75,7 @@ class BinsyncPlugin(BasePlugin):
             yield ("Pull Patches...", patch_menu)
 
     #
-    #   Binsync Decompiler Hooks
+    #   BinSync Decompiler Hooks
     #
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
@@ -86,8 +86,8 @@ class BinsyncPlugin(BasePlugin):
         # print(f"{hex(func.addr)}: renamed function: {old_name}->{new_name}")
         return False
 
-    def handle_comment_changed(self, func, addr: int, new: bool, decomp: bool):
-        # print("Comment Changed!")
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+        # print(f"{hex(addr)}: comment changed to {cmt} in {'decomp' if decomp else 'disass'}")
         return False
 
     #
