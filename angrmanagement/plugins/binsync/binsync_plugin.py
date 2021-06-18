@@ -199,4 +199,3 @@ class BinsyncPlugin(BasePlugin):
 # Don't allow binsync to init if it's not installed
 if binsync is None:
     del BinsyncPlugin
-
