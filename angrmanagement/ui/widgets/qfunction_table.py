@@ -293,8 +293,9 @@ class QFunctionTableView(QTableView):
         return True
 
     def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
-        row = self.currentIndex().row()
-        self._context_menu.set(self._model.func_list[row]).qmenu().popup(QCursor.pos())
+        rows = self.selectionModel().selectedRows()
+        funcs = [self.workspace.instance.kb.functions[r.data()] for r in rows]
+        self._context_menu.set(funcs).qmenu().popup(QCursor.pos())
 
 
 class QFunctionTableFilterBox(QLineEdit):

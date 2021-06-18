@@ -21,7 +21,7 @@ class BinsyncPlugin(BasePlugin):
         self.sync_view = SyncView(workspace, 'right')
         self.workspace.add_view(self.sync_view, self.sync_view.caption, self.sync_view.category)
 
-        self.selected_func = None
+        self.selected_funcs = []
 
     #
     # BinSync Deinit
@@ -61,11 +61,11 @@ class BinsyncPlugin(BasePlugin):
         sync_config = SyncConfig(self.workspace.instance)
         sync_config.exec_()
 
-    def build_context_menu_function(self, func): # pylint: disable=unused-argument
+    def build_context_menu_functions(self, funcs): # pylint: disable=unused-argument
         # if not connected to a repo, give no options
         if self.workspace.instance.kb.sync.connected:
             # connection is live, get the context!
-            self.selected_func = func
+            self.selected_funcs = funcs
 
             pull_menu = []
             auto_pull_menu = []
@@ -75,10 +75,7 @@ class BinsyncPlugin(BasePlugin):
                 auto_pull_menu.append((user.name, self.autoPullFunction))
                 patch_menu.append((user.name, self.pullPatches))
 
-            yield ("Patch", self.pushFunction)
-            yield ("Pull..", pull_menu)
-            yield ("Auto Pull...", auto_pull_menu)
-            yield ("Pull Patches...", patch_menu)
+            yield ("Binsync Action", self.pushFunction)
 
     #
     #   BinSync Decompiler Hooks
@@ -102,7 +99,7 @@ class BinsyncPlugin(BasePlugin):
 
     def pushFunction(self):
         # function
-        func = self.selected_func
+        func = self.selected_funcs
         kb = self.workspace.instance.project.kb
         kb.sync.push_function(func)
 
@@ -134,7 +131,7 @@ class BinsyncPlugin(BasePlugin):
 
     def autoPullFunction(self):
         # TODO: implement auto-pulling
-        return self.selected_func
+        return self.selected_funcs
 
     def pullPatches(self):
         func_view = self.workspace.view_manager.first_view_in_category('functions')
@@ -162,7 +159,7 @@ class BinsyncPlugin(BasePlugin):
             self.workspace.instance.generate_cfg()
 
     def _pull_func(self, user):
-        current_function = self.selected_func
+        current_function = self.selected_funcs
 
         disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         code_view = self.workspace._get_or_create_pseudocode_view()
