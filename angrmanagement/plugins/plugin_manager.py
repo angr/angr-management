@@ -293,6 +293,7 @@ class PluginManager:
                     return 0, ''
         raise IndexError("Not enough columns")
 
+
     def _create_step_callback(self, base_callback):
         """Collect a list of callback functions from each plugin. Return a new function that calls each callback in
         successive order. Each callback function should take only one argument, the simulation manager.
@@ -310,3 +311,22 @@ class PluginManager:
     @property
     def step_callback(self):
         return self._create_step_callback(BasePlugin.step_callback)
+
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+        for res in self._dispatch(BasePlugin.handle_variable_rename, False, func, offset, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_function_rename(self, func, old_name: str, new_name: str):
+        for res in self._dispatch(BasePlugin.handle_function_rename, False, func, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+        for res in self._dispatch(BasePlugin.handle_comment_changed, False, addr, cmt, new, decomp):
+            if res:
+                return True
+        return False
+
