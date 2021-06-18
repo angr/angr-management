@@ -16,6 +16,11 @@ from .base_plugin import BasePlugin
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
+# check to see if BinSync is installed
+try:
+    import binsync
+except ImportError:
+    binsync = None
 
 l = logging.getLogger(__name__)
 
@@ -33,6 +38,7 @@ l = logging.getLogger(__name__)
 # with before anything touches this class. There are functions to do that in the plugins package but they need to be
 # tied to the user's settings related to loading paths and activation. Presently this is split between MainWindow (the
 # first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
+
 
 class PluginManager:
     def __init__(self, workspace: Optional['Workspace']):
@@ -84,6 +90,13 @@ class PluginManager:
 
     def activate_plugin(self, plugin_cls: Type[BasePlugin]):
         self.load_plugin(plugin_cls)  # just to be sure, also perform the sanity checks
+
+        # a hack to remove loading of binsync in the event binsync is not installed
+        # this cant be done from within the plugin, since loading causes callbacks to
+        # be instantiated.
+        if plugin_cls.__name__ == 'BinsyncPlugin' and binsync is None:
+            return
+
         if self.get_plugin_instance(plugin_cls) is not None:
             return
 
