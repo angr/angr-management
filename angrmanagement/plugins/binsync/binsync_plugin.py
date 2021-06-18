@@ -6,6 +6,12 @@ from ...ui.workspace import Workspace
 from .sync_config import SyncConfig
 from .sync_view import SyncView
 
+# check to see if BinSync is installed
+try:
+    import binsync
+except ImportError:
+    binsync = None
+
 
 class BinsyncPlugin(BasePlugin):
     def __init__(self, workspace: Workspace):
@@ -188,3 +194,6 @@ class BinsyncPlugin(BasePlugin):
         disasm_view.refresh()
         code_view.codegen.am_event()
         func_table_view.refresh()
+
+    if binsync is None:
+        del BinsyncPlugin

@@ -16,12 +16,6 @@ from .base_plugin import BasePlugin
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
-# check to see if BinSync is installed
-try:
-    import binsync
-except ImportError:
-    binsync = None
-
 l = logging.getLogger(__name__)
 
 # The plugin manager can be initialized in two modes:
@@ -90,12 +84,6 @@ class PluginManager:
 
     def activate_plugin(self, plugin_cls: Type[BasePlugin]):
         self.load_plugin(plugin_cls)  # just to be sure, also perform the sanity checks
-
-        # a hack to remove loading of binsync in the event binsync is not installed
-        # this cant be done from within the plugin, since loading causes callbacks to
-        # be instantiated.
-        if plugin_cls.__name__ == 'BinsyncPlugin' and binsync is None:
-            return
 
         if self.get_plugin_instance(plugin_cls) is not None:
             return
