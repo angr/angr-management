@@ -4,7 +4,9 @@ from angr.sim_variable import SimStackVariable
 
 from ...ui.workspace import Workspace
 from .sync_config import SyncConfig
-from .sync_view import SyncView
+from .info_view import InfoView
+from .sync_menu import SyncMenu
+from ...data.sync_ctrl import SyncControl
 
 # check to see if BinSync is installed
 try:
@@ -18,9 +20,11 @@ class BinsyncPlugin(BasePlugin):
         super().__init__(workspace)
 
         # init the Sync View on load
-        self.sync_view = SyncView(workspace, 'right')
+        self.sync_view = InfoView(workspace, 'right')
         self.workspace.add_view(self.sync_view, self.sync_view.caption, self.sync_view.category)
 
+        self.controller = SyncControl(self.workspace.instance)
+        self.sync_menu = None
         self.selected_funcs = []
 
     #
@@ -64,18 +68,9 @@ class BinsyncPlugin(BasePlugin):
     def build_context_menu_functions(self, funcs): # pylint: disable=unused-argument
         # if not connected to a repo, give no options
         if self.workspace.instance.kb.sync.connected:
-            # connection is live, get the context!
-            self.selected_funcs = funcs
-
-            pull_menu = []
-            auto_pull_menu = []
-            patch_menu = []
-            for user in self.workspace.instance.sync.users:
-                pull_menu.append((user.name, self.pullFunction))
-                auto_pull_menu.append((user.name, self.autoPullFunction))
-                patch_menu.append((user.name, self.pullPatches))
-
-            yield ("Binsync Action", self.pushFunction)
+            print("Displaying Menu")
+            self.sync_menu = SyncMenu(self.controller, funcs)
+            yield ("Binsync Action", self.sync_menu.open_sync_menu)
 
     #
     #   BinSync Decompiler Hooks

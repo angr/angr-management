@@ -36,6 +36,7 @@ class SyncControl:
     """
     def __init__(self, instance):
         self.instance = instance
+        self.client = None
 
         self.project = None
         self.users_container = ObjectContainer([], notes="All users in the current team.")
@@ -86,8 +87,8 @@ class SyncControl:
         if binsync is None:
             raise ImportError("binsync is not installed.")
 
-        client = binsync.Client(user, repo_path, init_repo=init_repo, remote_url=remote_url, binary_hash=binary_hash)
-        self.project.kb.sync.connect(client)
+        self.client = binsync.Client(user, repo_path, init_repo=init_repo, remote_url=remote_url, binary_hash=binary_hash)
+        self.project.kb.sync.connect(self.client)
 
         # Spawn the worker thread
         thr = threading.Thread(target=self.worker_routine, daemon=True)
