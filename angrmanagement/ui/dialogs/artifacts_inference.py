@@ -94,14 +94,14 @@ class ArtifactsInference(QDialog):
 
     def _on_ok_clicked(self):
         codeview = self.workspace.view_manager.first_view_in_category("pseudocode")
-        if codeview is None or codeview._function is None:
+        if codeview is None or codeview.function.am_none:
             return
 
         if self.defs:
             for name, proto in self.defs.items():
                 if isinstance(proto, SimTypeFunction):
-                    codeview._function.name = name
-                    codeview._function.prototype = proto
+                    codeview.function.am_obj.name = name
+                    codeview.function.am_obj.prototype = proto
                     codeview.decompile(clear_prototype=False)
 
         self.close()
