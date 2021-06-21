@@ -100,6 +100,7 @@ class SyncMenu:
             if not ret:
                 return
 
+    # pylint:disable=no-self-use
     def _do_action(self, action, user, func):
         if user is None:
             print("[Binsync]: Error! No user selected for syncing.")

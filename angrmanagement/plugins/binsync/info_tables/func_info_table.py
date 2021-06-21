@@ -2,7 +2,12 @@ from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView,
 from PySide2.QtCore import Qt
 from typing import Dict
 
-from binsync.data import Function
+try:
+    import binsync
+except ImportError:
+    binsync = None
+if binsync:
+    from binsync.data import Function
 
 
 class QUserItem:
