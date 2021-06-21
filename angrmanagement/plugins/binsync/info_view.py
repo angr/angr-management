@@ -1,5 +1,4 @@
-
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QPushButton, QMessageBox, QComboBox
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QMessageBox, QComboBox
 
 from ...ui.views.view import BaseView
 from ...data.sync_ctrl import SyncControlStatus, STATUS_TEXT

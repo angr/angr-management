@@ -1,9 +1,8 @@
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QHeaderView
-from PySide2.QtCore import Qt, QItemSelectionModel
-from typing import Dict
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
+from PySide2.QtCore import Qt
 
 
-class QUserItem(object):
+class QUserItem:
     def __init__(self, struct_name, size, user):
         self.sturct_name = struct_name
         self.size = size
@@ -35,7 +34,7 @@ class QStructInfoTable(QTableWidget):
     ]
 
     def __init__(self, controller, parent=None):
-        super(QStructInfoTable, self).__init__(parent)
+        super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
@@ -91,7 +90,7 @@ class QStructInfoTable(QTableWidget):
         # First, let's see if any new homies showed up
         #self.controller._client.init_remote()
 
-        for user in self.controller.users:
+        for user in users:
             self.items.append(QUserItem("", 0, user.name))
 
         self.reload()

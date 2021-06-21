@@ -1,12 +1,11 @@
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QHeaderView
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
 from PySide2.QtCore import Qt
 from typing import Dict
 
-from ....data.sync_ctrl import SyncControl
 from binsync.data import Function
 
 
-class QUserItem(object):
+class QUserItem:
     def __init__(self, func_addr, local_name, user, last_push):
         self.func_addr = func_addr
         self.local_name = local_name
@@ -41,7 +40,7 @@ class QFuncInfoTable(QTableWidget):
     ]
 
     def __init__(self, controller, parent=None):
-        super(QFuncInfoTable, self).__init__(parent)
+        super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
@@ -100,7 +99,7 @@ class QFuncInfoTable(QTableWidget):
         # Dict to track function changes
         func_changes = {}
 
-        for user in self.controller.users:
+        for user in users:
             # Get user state. Func from user state
             #s = self.controller._client.get_state(user=user.name)
             functions: Dict[int, Function] = {} # s.functions
@@ -121,7 +120,7 @@ class QFuncInfoTable(QTableWidget):
                     stored_time = func_changes[addr][3]
                     if last_change > stored_time:
                         func_changes[addr] = (local_name, u_name, time_delta, last_change)
-                except KeyError as e:
+                except KeyError:
                     # IN this case, it probably does not exist
                     # Let's make it
                     func_changes[addr] = (local_name, u_name, time_delta, last_change)
@@ -132,4 +131,3 @@ class QFuncInfoTable(QTableWidget):
             item = func_changes[key]
             self.items.append(QUserItem(key, item[0], item[1], item[2]))
         self.reload()
-        return

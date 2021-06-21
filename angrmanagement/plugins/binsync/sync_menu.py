@@ -8,7 +8,7 @@ from PySide2.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWi
 
 class MenuDialog(QDialog):
     def __init__(self, menu_table, parent=None):
-        super(MenuDialog, self).__init__(parent)
+        super().__init__(parent)
 
         self.menu_table = menu_table
 
@@ -102,15 +102,15 @@ class SyncMenu:
 
     def _do_action(self, action, user, func):
         if user is None:
-            print(f"[Binsync]: Error! No user selected for syncing.")
+            print("[Binsync]: Error! No user selected for syncing.")
             return False
 
         if action == "Sync":
-            print(f"[Binsync]: Data has been synced from user: {user}.")
+            print(f"[Binsync]: Data has been synced from user: {user} on {hex(func)}.")
 
         elif action == "Toggle autosync":
             # TODO: implement auto-syncing
-            print(f"[Binsync]: Auto Sync not implemented yet.")
+            print("[Binsync]: Auto Sync not implemented yet.")
 
         elif action == "Sync All":
             print(f"[Binsync]: All data has been synced from user: {user}.")
@@ -119,7 +119,7 @@ class SyncMenu:
             print(f"[Binsync]: All structs have been synced from user: {user}")
 
         else:
-            print(f"[Binsync]: Error parsing sync action!")
+            print("[Binsync]: Error parsing sync action!")
             return False
 
         return True
