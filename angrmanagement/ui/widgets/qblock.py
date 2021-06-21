@@ -55,6 +55,7 @@ class QBlock(QCachedGraphicsItem):
         self._block_item_obj = None  # type: QGraphicsPathItem
         self.addr_to_insns = { }
         self.addr_to_labels = { }
+        self.qblock_annotations = { }
 
         self._init_widgets()
 
@@ -213,8 +214,18 @@ class QGraphBlock(QBlock):
 
     def layout_widgets(self):
         x, y = self.LEFT_PADDING * self.currentDevicePixelRatioF(), self.TOP_PADDING * self.currentDevicePixelRatioF()
+
+        if self.qblock_annotations and self.qblock_annotations.scene():
+            self.qblock_annotations.scene().removeItem(self.qblock_annotations)
+
+        self.qblock_annotations = self.disasm_view.fetch_qblock_annotations(self)
+
         for obj in self.objects:
-            obj.setPos(x, y)
+            obj.setPos(x + self.qblock_annotations.width + self.LEFT_PADDING, y)
+            if isinstance(obj, QInstruction) and self.qblock_annotations.get(obj.addr):
+                qinsn_annotations = self.qblock_annotations.get(obj.addr)
+                for qinsn_annotation in qinsn_annotations:
+                    qinsn_annotation.setY(obj.y())
             y += obj.boundingRect().height()
 
     def hoverEnterEvent(self, event):

@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
@@ -18,6 +19,7 @@ from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
+from ..widgets import QHookAnnotation, QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
@@ -57,6 +59,8 @@ class DisassemblyView(BaseView):
 
         self._insn_addr_on_context_menu = None
         self._label_addr_on_context_menu = None
+
+        self._annotation_callbacks = []
 
         self.width_hint = 800
         self.height_hint = 800
@@ -541,6 +545,22 @@ class DisassemblyView(BaseView):
             ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
             self._flow_graph.induction_variable_analysis = ana
         self._flow_graph.refresh()
+
+    def fetch_qblock_annotations(self, qblock):
+        addr_to_annotations = defaultdict(list)
+        # for callback in self._annotation_callbacks:
+        #     for addr, annotations in callback(qblock).items():
+        #         addr_to_annotations[addr].extend(annotations)
+        for addr in qblock.addr_to_insns.keys():
+            # if addr in self.workspace.instance.hooked_addresses:
+            #     hook_annotation = QHookAnnotation(self, addr)
+            #     addr_to_annotations[addr].append(hook_annotation)
+            qsimgrs = self.workspace.view_manager.first_view_in_category("symexec")._simgrs
+            if addr in qsimgrs.find_addrs:
+                addr_to_annotations[addr].append(QFindAddrAnnotation(self, qsimgrs, addr))
+            if addr in qsimgrs.avoid_addrs:
+                addr_to_annotations[addr].append(QAvoidAddrAnnotation(self, qsimgrs, addr))
+        return QBlockAnnotations(addr_to_annotations, parent=qblock)
 
     #
     # Initialization
