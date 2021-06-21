@@ -1,10 +1,10 @@
 from angrmanagement.plugins import BasePlugin
 
-from angr.sim_variable import SimStackVariable
-
 from ...ui.workspace import Workspace
 from .sync_config import SyncConfig
-from .sync_view import SyncView
+from .info_view import InfoView
+from .sync_menu import SyncMenu
+from ...data.sync_ctrl import SyncControl
 
 # check to see if BinSync is installed
 try:
@@ -18,9 +18,11 @@ class BinsyncPlugin(BasePlugin):
         super().__init__(workspace)
 
         # init the Sync View on load
-        self.sync_view = SyncView(workspace, 'right')
+        self.sync_view = InfoView(workspace, 'right')
         self.workspace.add_view(self.sync_view, self.sync_view.caption, self.sync_view.category)
 
+        self.controller = SyncControl(self.workspace.instance)
+        self.sync_menu = None
         self.selected_funcs = []
 
     #
@@ -64,18 +66,8 @@ class BinsyncPlugin(BasePlugin):
     def build_context_menu_functions(self, funcs): # pylint: disable=unused-argument
         # if not connected to a repo, give no options
         if self.workspace.instance.kb.sync.connected:
-            # connection is live, get the context!
-            self.selected_funcs = funcs
-
-            pull_menu = []
-            auto_pull_menu = []
-            patch_menu = []
-            for user in self.workspace.instance.sync.users:
-                pull_menu.append((user.name, self.pullFunction))
-                auto_pull_menu.append((user.name, self.autoPullFunction))
-                patch_menu.append((user.name, self.pullPatches))
-
-            yield ("Binsync Action", self.pushFunction)
+            self.sync_menu = SyncMenu(self.controller, funcs)
+            yield ("Binsync Action", self.sync_menu.open_sync_menu)
 
     #
     #   BinSync Decompiler Hooks
@@ -93,106 +85,7 @@ class BinsyncPlugin(BasePlugin):
         # print(f"{hex(addr)}: comment changed to {cmt} in {'decomp' if decomp else 'disass'}")
         return False
 
-    #
-    #   BinSync Interactions
-    #
 
-    def pushFunction(self):
-        # function
-        func = self.selected_funcs
-        kb = self.workspace.instance.project.kb
-        kb.sync.push_function(func)
-
-        # comments
-        comments = { }
-        for block in func.blocks:
-            for ins_addr in block.instruction_addrs:
-                if ins_addr in kb.comments:
-                    comments[ins_addr] = kb.comments[ins_addr]
-        kb.sync.push_comments(comments)
-
-        # stack_variables
-        # TODO: update this kb usage after decompiler has an API
-        code_view = self.workspace._get_or_create_pseudocode_view()
-        var_manager = code_view.codegen._variable_kb.variables[func.addr]
-        sim_vars = var_manager._unified_variables
-        stack_vars = set(var for var in sim_vars if isinstance(var, SimStackVariable))
-        kb.sync.push_stack_variables(stack_vars, var_manager)
-
-        # TODO: Fix this
-        kb.sync.commit()
-
-    def pullFunction(self):
-        func_view = self.workspace.view_manager.first_view_in_category('functions')
-
-        user_action = func_view.sender()
-        user = user_action.text()
-        self._pull_func(user)
-
-    def autoPullFunction(self):
-        # TODO: implement auto-pulling
-        return self.selected_funcs
-
-    def pullPatches(self):
-        func_view = self.workspace.view_manager.first_view_in_category('functions')
-
-        user_action = func_view.sender()
-        user = user_action.text()
-
-        kb = self.workspace.instance.project.kb
-        # currently we assume all patches are against the main object
-        main_object = self.workspace.instance.project.loader.main_object
-        patches = kb.sync.pull_patches(user=user)
-
-        patch_added = False
-        for patch in patches:
-            addr = main_object.mapped_base + patch.offset
-            kb.patches.add_patch(addr, patch.new_bytes)
-            patch_added = True
-
-        if patch_added:
-            # trigger a refresh
-            self.workspace.instance.patches.am_event()
-
-            # re-generate the CFG
-            # TODO: CFG refinement
-            self.workspace.instance.generate_cfg()
-
-    def _pull_func(self, user):
-        current_function = self.selected_funcs
-
-        disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
-        code_view = self.workspace._get_or_create_pseudocode_view()
-        func_table_view = self.workspace.view_manager.first_view_in_category("functions")
-
-        # sync the function
-        self.workspace.instance.project.kb.sync.fill_function(current_function, user=user)
-        code_view.codegen.cfunc.name = self.workspace.instance.kb.functions[current_function.addr].name
-        code_view.codegen.cfunc.demangled_name = code_view.codegen.cfunc.name
-
-        # TODO move this into angr once we have a decompiler API
-        # get stack variables and update internal kb
-        var_manager = code_view.codegen._variable_kb.variables[current_function.addr]
-        current_sim_vars = var_manager._unified_variables
-        current_stack_vars = set(var for var in current_sim_vars if isinstance(var, SimStackVariable))
-        stack_vars = self.workspace.instance.project.kb.sync.pull_stack_variables(current_function.addr, user=user)
-        stack_var_dict = {s[0]: s[1] for s in stack_vars}
-        for var in current_stack_vars:
-            if isinstance(var, SimStackVariable):
-                offset = var.offset
-                try:
-                    new_var = stack_var_dict[offset]
-                except KeyError:
-                    continue
-                # overwrite the variable with the new var
-                var.name = new_var.name
-
-        # trigger a refresh
-        disasm_view.refresh()
-        code_view.codegen.am_event()
-        func_table_view.refresh()
-
-
-# Don't allow binsync to init if it's not installed
+# Don't allow BinSync to init if it's not installed
 if binsync is None:
     del BinsyncPlugin
