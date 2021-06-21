@@ -7,7 +7,7 @@ try:
 except ImportError:
     binsync = None
 if binsync:
-    from binsync.data import Function
+    from binsync.data import Function  # pylint:disable=import-error
 
 
 class QUserItem:
