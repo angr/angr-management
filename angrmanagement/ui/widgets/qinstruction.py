@@ -142,7 +142,7 @@ class QInstruction(QCachedGraphicsItem):
         if self.disasm_view.show_address:
             painter.setPen(self._config.disasm_view_node_address_color)
             painter.drawText(x, y, self._addr)
-            x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
+            x += self._addr_width + self.GRAPH_ADDR_SPACING # * self.currentDevicePixelRatioF()
 
         # mnemonic
         painter.setPen(self._config.disasm_view_node_mnemonic_color)
@@ -213,15 +213,14 @@ class QInstruction(QCachedGraphicsItem):
 
     def _update_size(self):
 
-        self._addr_width = self._config.disasm_font_metrics.width(self._addr) * self.currentDevicePixelRatioF()
-        self._mnemonic_width = self._config.disasm_font_metrics.width(self._mnemonic) * self.currentDevicePixelRatioF()
+        self._addr_width = self.p2p(self._config.disasm_font_metrics.width(self._addr))
+        self._mnemonic_width = self.p2p(self._config.disasm_font_metrics.width(self._mnemonic))
         if self._string is not None:
-            self._string_width = self._config.disasm_font_metrics.width(self._string) * self.currentDevicePixelRatioF()
+            self._string_width = self.p2p(self._config.disasm_font_metrics.width(self._string))
         else:
             self._string_width = 0
         if self._comment is not None:
-            self._comment_width = self._config.disasm_font_metrics.width(self.COMMENT_PREFIX + self._comment) * \
-                                  self.currentDevicePixelRatioF()
+            self._comment_width = self.p2p(self._config.disasm_font_metrics.width(self.COMMENT_PREFIX + self._comment))
         else:
             self._comment_width = 0
 
@@ -231,8 +230,8 @@ class QInstruction(QCachedGraphicsItem):
             x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
 
         # mnemonic
-        x += self._mnemonic_width + self.GRAPH_MNEMONIC_SPACING * self.currentDevicePixelRatioF()
-        intersperse_width = self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS) * self.currentDevicePixelRatioF()
+        x += self._mnemonic_width # + self.GRAPH_MNEMONIC_SPACING * self.currentDevicePixelRatioF()
+        intersperse_width = self.p2p(self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS)) * self.currentDevicePixelRatioF()
 
         # operands
         if self._operands:

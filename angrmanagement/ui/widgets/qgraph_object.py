@@ -46,13 +46,23 @@ class QCachedGraphicsItem(QGraphicsItem):
         rect.setHeight(rect.height() * ratio)
         return rect
 
-    def currentDevicePixelRatioF(self):
+    def pixelToPoint(self, pixel):
+        return pixel / self.dpr()
+
+    p2p = pixelToPoint
+
+    def devicePixelRatioF(self):
         if self._cached_device_pixel_ratio is None:
             if self._container is None:
                 self._cached_device_pixel_ratio = 1.0
             else:
-                self._cached_device_pixel_ratio = self._container.currentDevicePixelRatioF()
+                self._cached_device_pixel_ratio = self._container.devicePixelRatioF()
         return self._cached_device_pixel_ratio
+
+    dpr = devicePixelRatioF
+
+    def currentDevicePixelRatioF(self):
+        return 1.0
 
 
 class QGraphObject:
