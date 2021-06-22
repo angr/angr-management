@@ -33,7 +33,7 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         # on MacOS with Retina displays, it seems that font widths are always in device pixels, not virtual pixels
         if sys.platform != "darwin":
             return 1.0
-        return self.devicePixelRatioF()
+        return super().devicePixelRatioF()
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 
