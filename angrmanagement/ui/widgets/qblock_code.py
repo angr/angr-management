@@ -528,7 +528,7 @@ class QBlockCode(QCachedGraphicsItem):
         super().__init__(parent=parent, container=container)
         self.addr = addr
         self._addr_str = "%08x" % self.addr
-        self._addr_width = config.disasm_font_metrics.width(self._addr_str) * self.currentDevicePixelRatioF()
+        self._addr_width = self.p2p(config.disasm_font_metrics.width(self._addr_str))
         self.obj = obj
         self._config = config
         self.parent = parent
@@ -565,7 +565,7 @@ class QBlockCode(QCachedGraphicsItem):
         if self._disasm_view.show_address:
             painter.setPen(self._config.disasm_view_node_address_color)
             painter.drawText(x, y, self._addr_str)
-            x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
 
         painter.translate(QPointF(x, 0))
         self._qtextdoc.drawContents(painter)
@@ -597,5 +597,5 @@ class QBlockCode(QCachedGraphicsItem):
         width = self._qtextdoc.size().width()
         height = self._qtextdoc.size().height()
         if self._disasm_view.show_address:
-            width += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
+            width += self._addr_width + self.GRAPH_ADDR_SPACING
         return QRectF(0, 0, width, height)

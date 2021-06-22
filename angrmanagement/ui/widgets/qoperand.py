@@ -191,7 +191,7 @@ class QOperand(QCachedGraphicsItem):
         # draw variable
         # {s_10}
         if self.disasm_view.show_variable and self._variable_label:
-            x += self.LABEL_VARIABLE_SPACING * self.currentDevicePixelRatioF()
+            x += self.LABEL_VARIABLE_SPACING
             painter.setPen(self._config.disasm_view_variable_label_color)
             painter.drawText(x, y, self._variable_label)
             painter.setPen(self._config.disasm_view_operand_color)
@@ -200,7 +200,7 @@ class QOperand(QCachedGraphicsItem):
         # draw additional branch targets
         if self._branch_targets_text:
             painter.setPen(Qt.darkYellow)
-            x += self.BRANCH_TARGETS_SPACING * self.currentDevicePixelRatioF()
+            x += self.BRANCH_TARGETS_SPACING
             painter.drawText(x, y, self._branch_targets_text)
             x += self._branch_targets_text_width
 
@@ -367,30 +367,30 @@ class QOperand(QCachedGraphicsItem):
     def _update_size(self):
 
         if self._label is not None:
-            self._label_width = self._config.disasm_font_metrics.width(self._label) * self.currentDevicePixelRatioF()
+            self._label_width = self.p2p(self._config.disasm_font_metrics.width(self._label))
         else:
             self._label_width = 0
         if self._branch_targets_text is not None:
-            self._branch_targets_text_width = self._config.disasm_font_metrics.width(self._branch_targets_text) * self.currentDevicePixelRatioF()
+            self._branch_targets_text_width = self.p2p(self._config.disasm_font_metrics.width(self._branch_targets_text))
         else:
             self._branch_targets_text_width = 0
         if self._variable_label is not None:
-            self._variable_label_width = self._config.disasm_font_metrics.width(self._variable_label) * self.currentDevicePixelRatioF()
+            self._variable_label_width = self.p2p(self._config.disasm_font_metrics.width(self._variable_label))
         else:
             self._variable_label_width = 0
         if self.variable is not None:
-            self._variable_ident_width = self._config.disasm_font_metrics.width(self._variable_ident) * self.currentDevicePixelRatioF()
+            self._variable_ident_width = self.p2p(self._config.disasm_font_metrics.width(self._variable_ident))
         else:
             self._variable_ident_width = 0
 
         self._width = self._label_width
         if self.disasm_view.show_variable and self._variable_label:
-            self._width += self.LABEL_VARIABLE_SPACING * self.currentDevicePixelRatioF() + self._variable_label_width
+            self._width += self.LABEL_VARIABLE_SPACING + self._variable_label_width
         if self.disasm_view.show_variable_identifier and self._variable_ident_width:
-            self._width += self.VARIABLE_IDENT_SPACING * self.currentDevicePixelRatioF() + self._variable_ident_width
+            self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
         if self._branch_targets_text_width:
-            self._width += self.BRANCH_TARGETS_SPACING * self.currentDevicePixelRatioF() + self._branch_targets_text_width
-        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+            self._width += self.BRANCH_TARGETS_SPACING + self._branch_targets_text_width
+        self._height = self._config.disasm_font_height
         self.recalculate_size()
 
     def _boundingRect(self):

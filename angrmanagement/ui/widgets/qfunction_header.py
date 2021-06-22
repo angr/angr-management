@@ -81,18 +81,18 @@ class QFunctionHeader(QCachedGraphicsItem):
         # args
         painter.setPen(Qt.darkBlue)
         x = 0
-        y += self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        y += self._config.disasm_font_height
         if self._arg_str_list is not None:
             prefix = 'Args: ('
             painter.drawText(x, y + font_ascent, prefix)
-            x += font_metrics.width(prefix) * self.currentDevicePixelRatioF()
+            x += self.p2p(font_metrics.width(prefix))
 
             for i, arg_str in enumerate(self._arg_str_list):
                 painter.drawText(x, y + font_ascent, arg_str)
-                x += font_metrics.width(arg_str) * self.currentDevicePixelRatioF()
+                x += self.p2p(font_metrics.width(arg_str))
                 if i < len(self._arg_str_list) - 1:
                     painter.drawText(x, y + font_ascent, ", ")
-                    x += font_metrics.width(", ") * self.currentDevicePixelRatioF()
+                    x += self.p2p(font_metrics.width(", "))
 
             painter.drawText(x, y + font_ascent, ")")
 
@@ -121,61 +121,61 @@ class QFunctionHeader(QCachedGraphicsItem):
         if self.prototype is None:
             # function name
             if painter: painter.drawText(x, y + font_ascent, self.name)
-            x += font_metrics.width(self.name) * self.currentDevicePixelRatioF()
+            x += self.p2p(font_metrics.width(self.name))
 
         else:
             # type of the return value
             rt = type2str(self.prototype.returnty)
-            self._return_type_width = font_metrics.width(rt) * self.currentDevicePixelRatioF()
+            self._return_type_width = self.p2p(font_metrics.width(rt))
             if painter: painter.drawText(x, y + font_ascent, rt)
             x += self._return_type_width
 
             # space
-            x += font_metrics.width(" ")
+            x += self.p2p(font_metrics.width(" "))
 
             # function name
             if painter: painter.drawText(x, y + font_ascent, self.name)
-            x += font_metrics.width(self.name) * self.currentDevicePixelRatioF()
+            x += self.p2p(font_metrics.width(self.name))
 
             # left parenthesis
             if painter: painter.drawText(x, y + font_ascent, "(")
-            x += font_metrics.width("(") * self.currentDevicePixelRatioF()
+            x += self.p2p(font_metrics.width("("))
 
             # arguments
             self._prototype_args = [ ]
             for i, arg_type in enumerate(self.prototype.args):
                 type_str = type2str(arg_type)
-                type_str_width = font_metrics.width(type_str) * self.currentDevicePixelRatioF()
+                type_str_width = self.p2p(font_metrics.width(type_str))
 
                 if self.prototype.arg_names and i < len(self.prototype.arg_names):
                     arg_name = self.prototype.arg_names[i]
                 else:
                     arg_name = "arg_%d" % i
-                arg_name_width = font_metrics.width(arg_name) * self.currentDevicePixelRatioF()
+                arg_name_width = self.p2p(font_metrics.width(arg_name))
 
                 proto_arg = PrototypeArgument(
                     type_str,
                     (x, y + font_ascent),
                     type_str_width,
                     arg_name,
-                    (x + type_str_width + font_metrics.width(" ") * self.currentDevicePixelRatioF(), y + font_ascent),
+                    (x + type_str_width + self.p2p(font_metrics.width(" ")), y + font_ascent),
                     arg_name_width,
                 )
                 self._prototype_args.append(proto_arg)
 
                 if painter: painter.drawText(x, y + font_ascent, type_str)
-                x += type_str_width + font_metrics.width(" ") * self.currentDevicePixelRatioF()
+                x += type_str_width + self.p2p(font_metrics.width(" "))
                 if painter: painter.drawText(x, y + font_ascent, arg_name)
                 x += arg_name_width
 
                 if i < len(self.prototype.args) - 1:
                     # splitter
                     if painter: painter.drawText(x, y + font_ascent, ", ")
-                    x += font_metrics.width(", ") * self.currentDevicePixelRatioF()
+                    x += self.p2p(font_metrics.width(", "))
 
             # right parenthesis
             if painter: painter.drawText(x, y + font_ascent, ")")
-            x += font_metrics.width(")") * self.currentDevicePixelRatioF()
+            x += self.p2p(font_metrics.width(")"))
 
         return x, y, x - _x
 
@@ -197,13 +197,13 @@ class QFunctionHeader(QCachedGraphicsItem):
         self._update_sizes()
 
     def _update_sizes(self):
-        self._args_str_width = self._config.disasm_font_metrics.width(self._args_str)
-        self._name_width = self._config.disasm_font_metrics.width(self.name) * self.currentDevicePixelRatioF()
+        self._args_str_width = self.p2p(self._config.disasm_font_metrics.width(self._args_str))
+        self._name_width = self.p2p(self._config.disasm_font_metrics.width(self.name))
 
     def _boundingRect(self):
-        height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        height = self._config.disasm_font_height
         if self._args_str:
-            height += self._config.disasm_font_height * self.currentDevicePixelRatioF()
+            height += self._config.disasm_font_height
 
         width = max(
             self._prototype_width,

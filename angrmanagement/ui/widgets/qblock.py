@@ -213,7 +213,7 @@ class QGraphBlock(QBlock):
         return 'graph'
 
     def layout_widgets(self):
-        x, y = self.LEFT_PADDING * self.currentDevicePixelRatioF(), self.TOP_PADDING * self.currentDevicePixelRatioF()
+        x, y = self.LEFT_PADDING, self.TOP_PADDING
 
         if self.qblock_annotations and self.qblock_annotations.scene():
             self.qblock_annotations.scene().removeItem(self.qblock_annotations)
@@ -321,7 +321,7 @@ class QLinearBlock(QBlock):
         max_width = 0
 
         for obj in self.objects:
-            y_offset += self.SPACING * self.currentDevicePixelRatioF()
+            y_offset += self.SPACING
             obj_start = 0
             obj.setPos(obj_start, y_offset)
             if obj_start + obj.width > max_width:

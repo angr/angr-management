@@ -1,3 +1,5 @@
+from typing import Union
+
 from PySide2.QtWidgets import QGraphicsItem
 from PySide2.QtGui import QPainter
 
@@ -40,16 +42,7 @@ class QCachedGraphicsItem(QGraphicsItem):
 
     def _boundingRectAdjusted(self):
         # adjust according to devicePixelRatioF
-        ratio = self.currentDevicePixelRatioF()
-        rect = self._boundingRect()
-        rect.setWidth(rect.width() * ratio)
-        rect.setHeight(rect.height() * ratio)
-        return rect
-
-    def pixelToPoint(self, pixel):
-        return pixel / self.dpr()
-
-    p2p = pixelToPoint
+        return self._boundingRect()
 
     def devicePixelRatioF(self):
         if self._cached_device_pixel_ratio is None:
@@ -61,8 +54,17 @@ class QCachedGraphicsItem(QGraphicsItem):
 
     dpr = devicePixelRatioF
 
-    def currentDevicePixelRatioF(self):
-        return 1.0
+    def pixelToPoint(self, pixel: Union[int,float]) -> int:
+        """
+        Convert pixels to points. Call this method in places where such conversion is necessary, e.g., for return
+        values of fontMetrics.width().
+
+        :param pixel:   The number of pixels.
+        :return:        The number of points.
+        """
+        return int(pixel // self.dpr())
+
+    p2p = pixelToPoint
 
 
 class QGraphObject:

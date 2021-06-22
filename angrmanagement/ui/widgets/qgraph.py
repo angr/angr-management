@@ -26,24 +26,14 @@ class QBaseGraphicsView(QGraphicsView):
             scene.update(self.sceneRect())
 
 
-class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
-
-    def currentDevicePixelRatioF(self) -> float:
-        # getting devicePixelRatio is currently broken in Qt 5.14
-        # see https://bugreports.qt.io/browse/QTBUG-53022
-        # before it is fixed, fall back to manually calculating the ratio using logicalDpiX()
-        if sys.platform == "darwin":
-            return self.logicalDpiX() / 72.0
-        elif sys.platform == "win32":
-            return self.logicalDpiX() / 96.0
-        else:
-            return self.devicePixelRatioF()
-
-
 class QSaveableGraphicsView(QBaseGraphicsView):
 
-    def currentDevicePixelRatioF(self) -> float:
-        return 1.0
+    def devicePixelRatioF(self) -> float:
+        # on Windows and Linux, we depend on Qt's AA_EnableHighDpiScaling
+        # on MacOS with Retina displays, it seems that font widths are always in device pixels, not virtual pixels
+        if sys.platform != "darwin":
+            return 1.0
+        return self.devicePixelRatioF()
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 

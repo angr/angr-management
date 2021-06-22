@@ -174,7 +174,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
         addr_label_x = x + self.HORIZONTAL_PADDING
         painter.setPen(Qt.black)
         painter.drawText(addr_label_x, y + self._config.symexec_font_ascent, self._instruction_str)
-        x = addr_label_x + self._config.symexec_font_metrics.width(self._instruction_str)
+        x = addr_label_x + self.p2p(self._config.symexec_font_metrics.width(self._instruction_str))
 
         # The text
         if self._text:
@@ -201,22 +201,16 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
     def _update_size(self):
         fm = self._config.symexec_font_metrics
-        dpr = self.currentDevicePixelRatioF()
         width_candidates = [
             # definition string
-            fm.width(self._definition_str) * dpr,
+            self.p2p(fm.width(self._definition_str)),
             # instruction & text
-            (self.HORIZONTAL_PADDING * 2 + fm.width(self._instruction_str) +
-             ((10 + fm.width(self._text)) if self._text else 0)
-             ) * dpr,
-            # # function string
-            # self.HORIZONTAL_PADDING * 2 * dpr +
-            # fm.width(self._function_str) * dpr,
+            self.HORIZONTAL_PADDING * 2 + self.p2p(fm.width(self._instruction_str)) +
+             ((10 + self.p2p(fm.width(self._text))) if self._text else 0),
         ]
 
         self._width = max(width_candidates)
         self._height = self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + self._config.symexec_font_height) * 2
-        self._height *= dpr
 
         self._width = max(100, self._width)
         self._height = max(50, self._height)

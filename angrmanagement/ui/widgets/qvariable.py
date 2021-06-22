@@ -77,16 +77,16 @@ class QVariable(QCachedGraphicsItem):
 
     def _update_size(self):
 
-        self._variable_name_width = len(self._variable_name) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
-        self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
-        self._variable_offset_width = len(self._variable_offset) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
+        self._variable_name_width = len(self._variable_name) * self._config.disasm_font_width
+        self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width
+        self._variable_offset_width = len(self._variable_offset) * self._config.disasm_font_width
 
         self._width = self._variable_name_width + \
-                      self.OFFSET_LEFT_PADDING * self.currentDevicePixelRatioF() + self._variable_offset_width
+                      self.OFFSET_LEFT_PADDING + self._variable_offset_width
         if self.disasm_view.show_variable_identifier:
-            self._width += self.IDENT_LEFT_PADDING * self.currentDevicePixelRatioF() + self._variable_ident_width
+            self._width += self.IDENT_LEFT_PADDING + self._variable_ident_width
 
-        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        self._height = self._config.disasm_font_height
 
         self.recalculate_size()
 

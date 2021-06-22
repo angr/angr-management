@@ -66,7 +66,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         painter.drawText(x, y + Conf.disasm_font_ascent, self._addr_text)
         x += self._addr_text_width
         # label
-        x += self.ADDRESS_LABEL_OFFSET * self.currentDevicePixelRatioF()
+        x += self.ADDRESS_LABEL_OFFSET
         lbl_text = get_label_text(self.addr, self.workspace.instance.kb)
         if lbl_text:
             painter.setFont(Conf.code_font)
@@ -113,9 +113,9 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         painter.setPen(Qt.black)
         painter.drawText(x, y + Conf.disasm_font_ascent, addr_text)
-        x += Conf.disasm_font_metrics.width(addr_text) * self.currentDevicePixelRatioF()
+        x += self.p2p(Conf.disasm_font_metrics.width(addr_text))
 
-        x += self.LINEAR_INSTRUCTION_OFFSET * self.currentDevicePixelRatioF()
+        x += self.LINEAR_INSTRUCTION_OFFSET
 
         # skip byte_offset
         x += byte_offset * (self.byte_width + self.byte_spacing)
@@ -203,15 +203,15 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
     def _update_sizes(self):
 
-        self.byte_width = Conf.disasm_font_metrics.width("aa") * self.currentDevicePixelRatioF()
-        self.byte_spacing = Conf.disasm_font_metrics.width("-") * self.currentDevicePixelRatioF()
-        self.character_width = Conf.disasm_font_metrics.width("a") * self.currentDevicePixelRatioF()
-        self._addr_text_width = Conf.disasm_font_metrics.width(self._addr_text) * self.currentDevicePixelRatioF()
+        self.byte_width = self.p2p(Conf.disasm_font_metrics.width("aa"))
+        self.byte_spacing = self.p2p(Conf.disasm_font_metrics.width("-"))
+        self.character_width = self.p2p(Conf.disasm_font_metrics.width("a"))
+        self._addr_text_width = self.p2p(Conf.disasm_font_metrics.width(self._addr_text))
 
         self._width = (self._addr_text_width +
-                       self.LINEAR_INSTRUCTION_OFFSET * self.currentDevicePixelRatioF() +
-                       self.bytes_per_line * (self.byte_width + self.byte_width * self.currentDevicePixelRatioF()) +
-                       self.BYTE_AREA_SPACING * self.currentDevicePixelRatioF() +
+                       self.LINEAR_INSTRUCTION_OFFSET +
+                       self.bytes_per_line * (self.byte_width + self.byte_width) +
+                       self.BYTE_AREA_SPACING +
                        self.bytes_per_line * self.character_width
                        )
         lines = 1 + math.ceil(((self.addr + self.memory_data.size) - (self.addr - (self.addr % self.bytes_per_line))) / self.bytes_per_line)

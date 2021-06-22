@@ -180,15 +180,13 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
 
     def _update_size(self):
         fm = self._config.symexec_font_metrics
-        dpr = self.currentDevicePixelRatioF()
 
         width_candidates = [
-            (self.HORIZONTAL_PADDING * 2 + self._config.symexec_font_metrics.width(self._text)) * dpr,
+            self.HORIZONTAL_PADDING * 2 + self.p2p(self._config.symexec_font_metrics.width(self._text)),
         ]
 
         self._width = max(width_candidates)
         self._height = self.VERTICAL_PADDING * 2 + self._config.symexec_font_height
-        self._height *= dpr
 
         self._width = max(30, self._width)
         self._height = max(10, self._height)
@@ -244,10 +242,10 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         painter.setPen(pen_color)
         # func name
         painter.drawText(x, y + self._config.symexec_font_ascent, self._func_name)
-        x += self._config.symexec_font_metrics.width(self._func_name)
+        x += self.p2p(self._config.symexec_font_metrics.width(self._func_name))
         # left parenthesis
         painter.drawText(x, y + self._config.symexec_font_ascent, "(")
-        x += self._config.symexec_font_metrics.width("(")
+        x += self.p2p(self._config.symexec_font_metrics.width("("))
 
         # arguments
         for i, (type_, arg) in enumerate(self._args):
@@ -257,32 +255,30 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
                 painter.setPen(self.INTEGER_NODE_TEXT_COLOR)
             else:
                 painter.setPen(self.CALL_NODE_TEXT_COLOR)
-            width = self._config.symexec_font_metrics.width(arg)
+            width = self.p2p(self._config.symexec_font_metrics.width(arg))
             painter.drawText(x, y + self._config.symexec_font_ascent, arg)
             x += width
             if i != len(self._args) - 1:
                 painter.setPen(pen_color)
                 painter.drawText(x, y + self._config.symexec_font_ascent, ", ")
-                x += self._config.symexec_font_metrics.width(", ")
+                x += self.p2p(self._config.symexec_font_metrics.width(", "))
 
         # right parenthesis
         painter.setPen(pen_color)
         painter.drawText(x, y + self._config.symexec_font_ascent, ")")
-        x += self._config.symexec_font_metrics.width(")")
+        x += self.p2p(self._config.symexec_font_metrics.width(")"))
 
     def _update_size(self):
         fm = self._config.symexec_font_metrics
-        dpr = self.currentDevicePixelRatioF()
 
         text = self._func_name + "(" + ", ".join(arg for _, arg in self._args) + ")"
 
         width_candidates = [
-            (self.HORIZONTAL_PADDING * 2 + self._config.symexec_font_metrics.width(text)) * dpr,
+            self.HORIZONTAL_PADDING * 2 + self.p2p(self._config.symexec_font_metrics.width(text))
         ]
 
         self._width = max(width_candidates)
         self._height = self.VERTICAL_PADDING * 2 + self._config.symexec_font_height
-        self._height *= dpr
 
         self._width = max(30, self._width)
         self._height = max(10, self._height)
@@ -309,15 +305,13 @@ class QProximityGraphStringBlock(QProximityGraphBlock):
 
     def _update_size(self):
         fm = self._config.symexec_font_metrics
-        dpr = self.currentDevicePixelRatioF()
 
         width_candidates = [
-            (self.HORIZONTAL_PADDING * 2 + self._config.symexec_font_metrics.width(self._text)) * dpr,
+            self.HORIZONTAL_PADDING * 2 + self.p2p(self._config.symexec_font_metrics.width(self._text)),
         ]
 
         self._width = max(width_candidates)
         self._height = self.VERTICAL_PADDING * 2 + self._config.symexec_font_height
-        self._height *= dpr
 
         self._width = max(30, self._width)
         self._height = max(10, self._height)

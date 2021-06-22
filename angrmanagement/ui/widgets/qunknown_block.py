@@ -55,13 +55,13 @@ class QUnknownBlock(QCachedGraphicsItem):
         painter.drawText(x, y+Conf.disasm_font_ascent, self._addr_text)
         x += self._addr_width
 
-        x += self.LINEAR_INSTRUCTION_OFFSET * self.currentDevicePixelRatioF()
+        x += self.LINEAR_INSTRUCTION_OFFSET
 
         # Content
         if self._bytes_text:
             for line in self._bytes_text:
                 painter.drawText(x, y+Conf.disasm_font_ascent, line)
-                y += Conf.disasm_font_height * self.currentDevicePixelRatioF()
+                y += Conf.disasm_font_height
         else:
             painter.drawText(x, y+Conf.disasm_font_ascent, QUnknownBlock.DEFAULT_TEXT)
 
@@ -72,14 +72,14 @@ class QUnknownBlock(QCachedGraphicsItem):
         width += self.LINEAR_INSTRUCTION_OFFSET
 
         if self._bytes_text:
-            height += Conf.disasm_font_height * len(self._bytes_text) * self.currentDevicePixelRatioF()
+            height += Conf.disasm_font_height * len(self._bytes_text)
         else:
-            height += Conf.disasm_font_height * self.currentDevicePixelRatioF()
+            height += Conf.disasm_font_height
 
         if self._bytes_text:
-            width += max(len(line) for line in self._bytes_text) * Conf.disasm_font_width * self.currentDevicePixelRatioF()
+            width += max(len(line) for line in self._bytes_text) * Conf.disasm_font_width
         else:
-            width += Conf.disasm_font_metrics.width(QUnknownBlock.DEFAULT_TEXT) * self.currentDevicePixelRatioF()
+            width += Conf.disasm_font_metrics.width(QUnknownBlock.DEFAULT_TEXT)
         return QRectF(0, 0, width, height)
 
     #
@@ -89,7 +89,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     def _init_widgets(self):
         # Address
         self._addr_text = "%08x" % self.addr
-        self._addr_width = Conf.disasm_font_width * len(self._addr_text) * self.currentDevicePixelRatioF()
+        self._addr_width = Conf.disasm_font_width * len(self._addr_text)
 
         # Bytes
         if self.bytes:
@@ -104,7 +104,7 @@ class QUnknownBlock(QCachedGraphicsItem):
             if line:
                 self._bytes_text.append(line)
 
-            self._bytes_height = Conf.disasm_font_height * len(self._bytes_text) * self.currentDevicePixelRatioF()
+            self._bytes_height = Conf.disasm_font_height * len(self._bytes_text)
 
         else:
-            self._bytes_height = Conf.disasm_font_height * self.currentDevicePixelRatioF()
+            self._bytes_height = Conf.disasm_font_height

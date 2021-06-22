@@ -46,6 +46,6 @@ class QBlockLabel(QCachedGraphicsItem):
     #
 
     def _boundingRect(self):
-        width = self._config.disasm_font_metrics.width(self.text) * self.currentDevicePixelRatioF()
-        height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        width = self.p2p(self._config.disasm_font_metrics.width(self.text))
+        height = self._config.disasm_font_height
         return QRectF(0, 0, width, height)

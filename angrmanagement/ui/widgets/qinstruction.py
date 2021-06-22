@@ -142,7 +142,7 @@ class QInstruction(QCachedGraphicsItem):
         if self.disasm_view.show_address:
             painter.setPen(self._config.disasm_view_node_address_color)
             painter.drawText(x, y, self._addr)
-            x += self._addr_width + self.GRAPH_ADDR_SPACING # * self.currentDevicePixelRatioF()
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
 
         # mnemonic
         painter.setPen(self._config.disasm_view_node_mnemonic_color)
@@ -161,13 +161,13 @@ class QInstruction(QCachedGraphicsItem):
         # comment or string - comments have precedence
         if self._comment is not None:
             lines = self._comment.split('\n')
-            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF()
+            x += self.GRAPH_COMMENT_STRING_SPACING
             for line in lines:
                 painter.setPen(Qt.darkGreen)
                 painter.drawText(x, y, self.COMMENT_PREFIX + line)
-                y += self._config.disasm_font_height * self.currentDevicePixelRatioF()
+                y += self._config.disasm_font_height
         elif self._string is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF()
+            x += self.GRAPH_COMMENT_STRING_SPACING
             painter.setPen(Qt.gray)
             painter.drawText(x, y, self._string)
 
@@ -227,11 +227,11 @@ class QInstruction(QCachedGraphicsItem):
         x = 0
         # address
         if self.disasm_view.show_address:
-            x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
+            x += self._addr_width + self.GRAPH_ADDR_SPACING
 
         # mnemonic
-        x += self._mnemonic_width # + self.GRAPH_MNEMONIC_SPACING * self.currentDevicePixelRatioF()
-        intersperse_width = self.p2p(self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS)) * self.currentDevicePixelRatioF()
+        x += self._mnemonic_width # + self.GRAPH_MNEMONIC_SPACING
+        intersperse_width = self.p2p(self._config.disasm_font_metrics.width(self.INTERSPERSE_ARGS))
 
         # operands
         if self._operands:
@@ -245,13 +245,13 @@ class QInstruction(QCachedGraphicsItem):
         # comments/string
         lines = 1
         if self._comment is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF() + self._comment_width
+            x += self.GRAPH_COMMENT_STRING_SPACING + self._comment_width
             lines = self._comment.count('\n') + 1
         elif self._string is not None:
-            x += self.GRAPH_COMMENT_STRING_SPACING * self.currentDevicePixelRatioF() + self._string_width
+            x += self.GRAPH_COMMENT_STRING_SPACING + self._string_width
 
         self._width = x
-        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF() * lines
+        self._height = self._config.disasm_font_height * lines
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
