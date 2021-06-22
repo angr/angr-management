@@ -26,14 +26,17 @@ class QBaseGraphicsView(QGraphicsView):
             scene.update(self.sceneRect())
 
 
-class QSaveableGraphicsView(QBaseGraphicsView):
+class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
 
     def devicePixelRatioF(self) -> float:
         # on Windows and Linux, we depend on Qt's AA_EnableHighDpiScaling
         # on MacOS with Retina displays, it seems that font widths are always in device pixels, not virtual pixels
         if sys.platform != "darwin":
             return 1.0
-        return super().devicePixelRatioF()
+        return 1.33
+
+
+class QSaveableGraphicsView(QDevicePixelRatioAwareGraphicsView):
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 
