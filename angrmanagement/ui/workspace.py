@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING, Optional
 import logging
 import traceback
+from string import ascii_uppercase
 
 from PySide2.QtCore import Qt, QSettings
-from string import ascii_uppercase
 
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
