@@ -133,6 +133,10 @@ def start_management(filepath=None, use_daemon=False):
         and "QT_SCREEN_SCALE_FACTORS" not in os.environ
         ):
         QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    # No more rounding
+    # https://github.com/pyqtgraph/pyqtgraph/issues/756
+    # https://lists.qt-project.org/pipermail/development/2019-September/037434.html
+    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")

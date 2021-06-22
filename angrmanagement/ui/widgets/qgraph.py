@@ -40,7 +40,10 @@ class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
             return self.devicePixelRatioF()
 
 
-class QSaveableGraphicsView(QDevicePixelRatioAwareGraphicsView):
+class QSaveableGraphicsView(QBaseGraphicsView):
+
+    def currentDevicePixelRatioF(self) -> float:
+        return 1.0
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 
