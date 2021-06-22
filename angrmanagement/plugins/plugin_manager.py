@@ -303,3 +303,7 @@ class PluginManager:
             if res:
                 return True
         return False
+
+    def handle_project_save(self, file_name: str):
+        for _ in self._dispatch(BasePlugin.handle_project_save, False, file_name):
+            pass
