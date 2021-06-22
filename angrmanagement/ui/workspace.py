@@ -153,21 +153,26 @@ class Workspace:
         :return:    None
         """
 
+        # Replace first disassembly view to appropriate naming convention 
         if self.view_manager.disas_view_counter == 1:
             for view in self.view_manager.docks:
                 if view.windowTitle() == 'Disassembly':
                     view.setWindowTitle("Disassembly-A")
                     self.view_manager.first_view_in_category('disassembly').caption = "Disassembly-A"
                     break
+                    
+        # Allow new views if view counter is less than 26 (count of letters in alphabet) 
         if self.view_manager.disas_view_counter < 26:
             new_view = DisassemblyView(self, 'center')
             new_view.caption = f'Disassembly-{ascii_uppercase[self.view_manager.disas_view_counter]}'
             self.add_view(new_view, new_view.caption, new_view.category)
             self.view_manager.disas_view_counter += 1
+            # TODO move new_view tab to front of dock
             self.raise_view(new_view)
             if self.instance.binary_path is not None:
                 self.on_cfg_generated()
-            # TODO move new_view tab to front of dock
+            
+            # If letter is 'Z', disable ability to add new views
             if self.view_manager.disas_view_counter >= 26:
                 self.view_manager.enable_disas_button = False
                 self.view_manager.toggle_new_disas_button()
