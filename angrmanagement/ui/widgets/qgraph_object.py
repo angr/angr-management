@@ -44,28 +44,6 @@ class QCachedGraphicsItem(QGraphicsItem):
         # adjust according to devicePixelRatioF
         return self._boundingRect()
 
-    def devicePixelRatioF(self):
-        if self._cached_device_pixel_ratio is None:
-            if self._container is None:
-                self._cached_device_pixel_ratio = 1.0
-            else:
-                self._cached_device_pixel_ratio = self._container.devicePixelRatioF()
-        return self._cached_device_pixel_ratio
-
-    dpr = devicePixelRatioF
-
-    def pixelToPoint(self, pixel: Union[int,float]) -> int:
-        """
-        Convert pixels to points. Call this method in places where such conversion is necessary, e.g., for return
-        values of fontMetrics.width().
-
-        :param pixel:   The number of pixels.
-        :return:        The number of points.
-        """
-        return int(pixel // self.dpr())
-
-    p2p = pixelToPoint
-
 
 class QGraphObject:
     def __init__(self):

@@ -4,6 +4,7 @@ import logging
 import PySide2.QtWidgets
 from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
+from PySide2.QtWidgets import QGraphicsSimpleTextItem
 
 from angr.knowledge_plugins.key_definitions.atoms import Atom, Register, MemoryLocation, SpOffset
 
@@ -37,9 +38,13 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         # widgets
         self._definition_str: str = None
+        self._definition_item: QGraphicsSimpleTextItem = None
         self._instruction_str: str = None
+        self._instruction_item: QGraphicsSimpleTextItem = None
         self._function_str: str = None
+        self._function_item: QGraphicsSimpleTextItem = None
         self._text: Optional[str] = None
+        self._text_item: Optional[QGraphicsSimpleTextItem] = None
 
         self.definition = definition
         self.atom = atom
@@ -105,6 +110,36 @@ class QDepGraphBlock(QCachedGraphicsItem):
                                                 max_size=60,
                                                 )
 
+        x = self.HORIZONTAL_PADDING
+        y = self.VERTICAL_PADDING
+
+        # definition
+        self._definition_item = QGraphicsSimpleTextItem(self._definition_str, self)
+        self._definition_item.setBrush(Qt.darkBlue)
+        self._definition_item.setFont(Conf.symexec_font)
+        self._definition_item.setPos(x, y)
+
+        y += self._definition_item.boundingRect().height() + self.LINE_MARGIN
+
+        # instruction
+        self._instruction_item = QGraphicsSimpleTextItem(self._instruction_str, self)
+        self._instruction_item.setBrush(Qt.black)
+        self._instruction_item.setFont(Conf.symexec_font)
+        self._instruction_item.setPos(x, y)
+
+        x += self._instruction_item.boundingRect().width()
+
+        # text
+        if self._text:
+            x += 10
+            self._text_item = QGraphicsSimpleTextItem(self._text, self)
+            self._text_item.setFont(Conf.symexec_font)
+            self._text_item.setBrush(Qt.gray)
+            self._text_item.setPos(x, y)
+
+        # y += self._instruction_item.boundingRect().height()
+        # x = self.HORIZONTAL_PADDING
+
     def refresh(self):
         self._update_size()
 
@@ -158,40 +193,6 @@ class QDepGraphBlock(QCachedGraphicsItem):
         painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
-        x = 0
-        y = 0
-
-        x += self.HORIZONTAL_PADDING
-        y += self.VERTICAL_PADDING
-
-        # definition
-        painter.setPen(Qt.darkBlue)
-        painter.drawText(x, y + self._config.symexec_font_ascent, self._definition_str)
-        y += self._config.symexec_font_height + self.LINE_MARGIN
-
-        # The instruction
-        x = 0
-        addr_label_x = x + self.HORIZONTAL_PADDING
-        painter.setPen(Qt.black)
-        painter.drawText(addr_label_x, y + self._config.symexec_font_ascent, self._instruction_str)
-        x = addr_label_x + self.p2p(self._config.symexec_font_metrics.width(self._instruction_str))
-
-        # The text
-        if self._text:
-            x += 10
-            text_label_x = x
-            painter.setPen(Qt.gray)
-            painter.drawText(text_label_x, y + self._config.symexec_font_ascent, self._text)
-
-        painter.setPen(Qt.black)
-        y += self._config.symexec_font_height + self.LINE_MARGIN
-        x = 0
-
-        # # The function label
-        # function_label_x = x + self.HORIZONTAL_PADDING
-        # function_label_y = y + self.VERTICAL_PADDING
-        # painter.drawText(function_label_x, function_label_y + self._config.symexec_font_ascent, self._function_str)
-
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
 
@@ -200,17 +201,16 @@ class QDepGraphBlock(QCachedGraphicsItem):
     #
 
     def _update_size(self):
-        fm = self._config.symexec_font_metrics
         width_candidates = [
             # definition string
-            self.p2p(fm.width(self._definition_str)),
+            self._definition_item.boundingRect().width(),
             # instruction & text
-            self.HORIZONTAL_PADDING * 2 + self.p2p(fm.width(self._instruction_str)) +
-             ((10 + self.p2p(fm.width(self._text))) if self._text else 0),
+            self.HORIZONTAL_PADDING * 2 + self._instruction_item.boundingRect().width() +
+             ((10 + self._text_item.boundingRect().width()) if self._text_item is not None else 0),
         ]
 
         self._width = max(width_candidates)
-        self._height = self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + self._config.symexec_font_height) * 2
+        self._height = self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + self._definition_item.boundingRect().height()) * 2
 
         self._width = max(100, self._width)
         self._height = max(50, self._height)
