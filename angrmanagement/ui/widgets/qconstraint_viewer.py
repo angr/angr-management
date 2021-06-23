@@ -5,6 +5,9 @@ from PySide2.QtWidgets import QFrame, QHeaderView, QSizePolicy, QVBoxLayout,QTab
 
 
 class SrcAddrAnnotation(claripy.Annotation):
+    """
+    Src Address Annotation for a constraint
+    """
     def __init__(self, addr):
         self.addr = addr
 
@@ -28,7 +31,9 @@ def attach_addr_annotation(state):
     return state
 
 class QConstraintViewer(QFrame):
-
+    """
+    `QConstraintViewer` in `StateInspector`
+    """
     COLUMNS = [ "Constraint", "Src Addr", "Cardinality", "Depth", "# Variables" ]
 
     def __init__(self, state, parent, workspace):
