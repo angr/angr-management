@@ -88,7 +88,8 @@ class QConstraintViewer(QFrame):
             self._init_widgets()
         self.reload()
 
-    def _insert_inspect_hook(self, **kwargs):
+    @staticmethod
+    def _insert_inspect_hook(**kwargs):
         if kwargs.get("src","")  == "new":
             state = kwargs.get("state")
             state.inspect.b(event_type='constraints', when=angr.BP_AFTER, action=attach_addr_annotation)
