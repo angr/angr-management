@@ -213,6 +213,10 @@ class ConfigurationManager:
             self._code_font_width,
             self._code_font_ascent)
 
+    disasm_font: QFont
+    symexec_font: QFont
+    code_font: QFont
+
     @property
     def disasm_font_metrics(self):
         self._disasm_manage_font_cache()
