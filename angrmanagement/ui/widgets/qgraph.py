@@ -1,4 +1,3 @@
-import sys
 import logging
 
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
@@ -243,7 +242,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
                                  event.buttons(),
                                  event.modifiers())
 
-            press_event = self.dispatchMouseEventToScene(pressy)
+            _ = self.dispatchMouseEventToScene(pressy)
 
             releasy = QMouseEvent(QEvent.MouseButtonRelease,
                                   event.pos(),
