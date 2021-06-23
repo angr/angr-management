@@ -5,8 +5,9 @@ from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
 from angr.sim_manager import SimulationManager
 
-from angrmanagement.ui.widgets.qblock import QBlock
-from angrmanagement.ui.widgets.qinstruction import QInstruction
+from ..ui.widgets.qblock import QBlock
+from ..ui.widgets.qinstruction import QInstruction
+from ..ui.widgets.qinst_annotation import QInstructionAnnotation
 
 _l = logging.getLogger(__name__)
 
@@ -104,7 +105,10 @@ class BasePlugin:
         return []
 
 
-    def build_context_menu_function(self, func) -> Iterator[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_functions(self, funcs) -> Iterator[Union[None, Tuple[str, Callable]]]:
+        return []
+
+    def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:
         return []
 
     # Iterable of URL actions

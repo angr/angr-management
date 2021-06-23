@@ -1,9 +1,10 @@
+from typing import Optional
 
 from PySide2.QtGui import QPainter, QCursor
 from PySide2.QtCore import Qt, QRectF
-from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
-from angr.sim_type import SimType, SimTypeFunction, SimTypePointer
+from angr.sim_type import SimTypeFunction
 from angr.calling_conventions import SimRegArg
 
 from ...utils.func import type2str
@@ -11,29 +12,10 @@ from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
 
-class PrototypeArgument:
-
-    __slots__ = ('ty', 'ty_pos', 'ty_width', 'arg', 'arg_pos', 'arg_width', )
-
-    def __init__(self, ty, ty_pos, ty_width, arg, arg_pos, arg_width):
-        self.ty = ty
-        self.ty_pos = ty_pos
-        self.ty_width = ty_width
-        self.arg = arg
-        self.arg_pos = arg_pos
-        self.arg_width = arg_width
-
-    def width(self):
-        if self.arg is not None:
-            return self.arg_pos[0] + self.arg_width - self.ty_pos[0]
-        else:
-            return self.ty_width
-
-
 class QFunctionHeader(QCachedGraphicsItem):
 
-    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None, container=None):
-        super().__init__(parent=parent, container=container)
+    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None):
+        super().__init__(parent=parent)
 
         self.workspace = workspace
         self.addr = addr
@@ -42,20 +24,24 @@ class QFunctionHeader(QCachedGraphicsItem):
         self.args = args
         self.infodock = infodock
 
+        self._width = 0
+        self._height = 0
+
         self._config = config
         self._disasm_view = disasm_view
 
-        self._name_width = None
         self._return_type_width = None
-        self._prototype_args = [ ]
         self._arg_str_list = None
         self._args_str = None
-        self._args_str_width = None
+
+        self._function_name_item: QGraphicsSimpleTextItem = None
+        self._args_str_item: QGraphicsSimpleTextItem = None
+        self._prototype_arg_item: Optional[QGraphicsSimpleTextItem] = None
 
         self._init_widgets()
 
     def refresh(self):
-        self._update_sizes()
+        pass
 
     def paint(self, painter, option, widget):
         painter.setRenderHints(
@@ -66,35 +52,6 @@ class QFunctionHeader(QCachedGraphicsItem):
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
             painter.drawRect(0, 0, self.width, self.height)
-
-        painter.setFont(self._config.code_font)
-        painter.setPen(self._config.disasm_view_function_color)
-
-        font_ascent = self._config.disasm_font_ascent
-        font_metrics = self._config.disasm_font_metrics
-
-        x = 0
-        y = 0
-
-        x, y, _ = self._paint_prototype(x, y, painter=painter)
-
-        # args
-        painter.setPen(Qt.darkBlue)
-        x = 0
-        y += self._config.disasm_font_height * self.currentDevicePixelRatioF()
-        if self._arg_str_list is not None:
-            prefix = 'Args: ('
-            painter.drawText(x, y + font_ascent, prefix)
-            x += font_metrics.width(prefix) * self.currentDevicePixelRatioF()
-
-            for i, arg_str in enumerate(self._arg_str_list):
-                painter.drawText(x, y + font_ascent, arg_str)
-                x += font_metrics.width(arg_str) * self.currentDevicePixelRatioF()
-                if i < len(self._arg_str_list) - 1:
-                    painter.drawText(x, y + font_ascent, ", ")
-                    x += font_metrics.width(", ") * self.currentDevicePixelRatioF()
-
-            painter.drawText(x, y + font_ascent, ")")
 
     #
     # Event handlers
@@ -112,75 +69,7 @@ class QFunctionHeader(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _paint_prototype(self, x, y, painter=None):
-
-        _x = x
-        font_ascent = self._config.disasm_font_ascent
-        font_metrics = self._config.disasm_font_metrics
-
-        if self.prototype is None:
-            # function name
-            if painter: painter.drawText(x, y + font_ascent, self.name)
-            x += font_metrics.width(self.name) * self.currentDevicePixelRatioF()
-
-        else:
-            # type of the return value
-            rt = type2str(self.prototype.returnty)
-            self._return_type_width = font_metrics.width(rt) * self.currentDevicePixelRatioF()
-            if painter: painter.drawText(x, y + font_ascent, rt)
-            x += self._return_type_width
-
-            # space
-            x += font_metrics.width(" ")
-
-            # function name
-            if painter: painter.drawText(x, y + font_ascent, self.name)
-            x += font_metrics.width(self.name) * self.currentDevicePixelRatioF()
-
-            # left parenthesis
-            if painter: painter.drawText(x, y + font_ascent, "(")
-            x += font_metrics.width("(") * self.currentDevicePixelRatioF()
-
-            # arguments
-            self._prototype_args = [ ]
-            for i, arg_type in enumerate(self.prototype.args):
-                type_str = type2str(arg_type)
-                type_str_width = font_metrics.width(type_str) * self.currentDevicePixelRatioF()
-
-                if self.prototype.arg_names and i < len(self.prototype.arg_names):
-                    arg_name = self.prototype.arg_names[i]
-                else:
-                    arg_name = "arg_%d" % i
-                arg_name_width = font_metrics.width(arg_name) * self.currentDevicePixelRatioF()
-
-                proto_arg = PrototypeArgument(
-                    type_str,
-                    (x, y + font_ascent),
-                    type_str_width,
-                    arg_name,
-                    (x + type_str_width + font_metrics.width(" ") * self.currentDevicePixelRatioF(), y + font_ascent),
-                    arg_name_width,
-                )
-                self._prototype_args.append(proto_arg)
-
-                if painter: painter.drawText(x, y + font_ascent, type_str)
-                x += type_str_width + font_metrics.width(" ") * self.currentDevicePixelRatioF()
-                if painter: painter.drawText(x, y + font_ascent, arg_name)
-                x += arg_name_width
-
-                if i < len(self.prototype.args) - 1:
-                    # splitter
-                    if painter: painter.drawText(x, y + font_ascent, ", ")
-                    x += font_metrics.width(", ") * self.currentDevicePixelRatioF()
-
-            # right parenthesis
-            if painter: painter.drawText(x, y + font_ascent, ")")
-            x += font_metrics.width(")") * self.currentDevicePixelRatioF()
-
-        return x, y, x - _x
-
     def _init_widgets(self):
-        _, _, self._prototype_width = self._paint_prototype(0, 0)
 
         if self.args is not None:
             self._arg_str_list = [ ]
@@ -194,20 +83,97 @@ class QFunctionHeader(QCachedGraphicsItem):
         else:
             self._args_str = ""
 
-        self._update_sizes()
+        #
+        # prototype
+        #
 
-    def _update_sizes(self):
-        self._args_str_width = self._config.disasm_font_metrics.width(self._args_str)
-        self._name_width = self._config.disasm_font_metrics.width(self.name) * self.currentDevicePixelRatioF()
+        if self.prototype is None:
+            # Just print the function name
+            self._function_name_item = QGraphicsSimpleTextItem(self.name, self)
+            self._function_name_item.setFont(self._config.code_font)
+            self._function_name_item.setBrush(self._config.disasm_view_function_color)
+
+        else:
+            # print the prototype
+
+            proto_str = ""
+
+            # type of the return value
+            rt = type2str(self.prototype.returnty)
+            proto_str += rt
+
+            # space
+            proto_str += " "
+
+            # function name
+            proto_str += self.name
+
+            # left parenthesis
+            proto_str += "("
+
+            # arguments
+            for i, arg_type in enumerate(self.prototype.args):
+                type_str = type2str(arg_type)
+                proto_str += type_str + " "
+
+                if self.prototype.arg_names and i < len(self.prototype.arg_names):
+                    arg_name = self.prototype.arg_names[i]
+                else:
+                    arg_name = "arg_%d" % i
+                proto_str += arg_name
+
+                if i < len(self.prototype.args) - 1:
+                    # splitter
+                    proto_str += ", "
+
+            # right parenthesis
+            proto_str += ")"
+
+            self._prototype_arg_item = QGraphicsSimpleTextItem(proto_str, self)
+            self._prototype_arg_item.setFont(self._config.code_font)
+            self._prototype_arg_item.setBrush(self._config.disasm_view_function_color)
+
+        # arguments
+        if self._arg_str_list is not None:
+            s = 'Args: (' + ", ".join(self._arg_str_list) + ")"
+            self._args_str_item = QGraphicsSimpleTextItem(s, self)
+            self._args_str_item.setFont(self._config.code_font)
+            self._args_str_item.setBrush(self._config.disasm_view_function_color)
+
+        self._layout_items_and_update_size()
+
+    def _layout_items_and_update_size(self):
+
+        x, y = 0, 0
+
+        if self._function_name_item is not None:
+            # function anme
+            self._function_name_item.setPos(x, y)
+            x += self._function_name_item.boundingRect().width()
+            height = self._function_name_item.boundingRect().height()
+        elif self._prototype_arg_item is not None:
+            # prototype
+            self._prototype_arg_item.setPos(x, y)
+            x += self._prototype_arg_item.boundingRect().width()
+            height = self._prototype_arg_item.boundingRect().height()
+        else:
+            height = 0
+
+        # new line
+        max_x = x
+        x = 0
+        y += height
+
+        # arguments
+        if self._args_str_item is not None:
+            self._args_str_item.setPos(x, y)
+            x += self._args_str_item.boundingRect().width()
+            y += self._args_str_item.boundingRect().height()
+
+        max_x = max(x, max_x)
+        self._width = max_x
+        self._height = y
+        self.recalculate_size()
 
     def _boundingRect(self):
-        height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
-        if self._args_str:
-            height += self._config.disasm_font_height * self.currentDevicePixelRatioF()
-
-        width = max(
-            self._prototype_width,
-            self._args_str_width,
-        )
-
-        return QRectF(0, 0, width, height)
+        return QRectF(0, 0, self._width, self._height)

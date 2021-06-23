@@ -1,4 +1,4 @@
-
+from PySide2.QtWidgets import QGraphicsSimpleTextItem
 from PySide2.QtCore import Qt, QRectF
 
 from .qgraph_object import QCachedGraphicsItem
@@ -9,8 +9,8 @@ class QVariable(QCachedGraphicsItem):
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
-    def __init__(self, workspace, disasm_view, variable, config, parent=None, container=None):
-        super(QVariable, self).__init__(parent=parent, container=container)
+    def __init__(self, workspace, disasm_view, variable, config, parent=None):
+        super(QVariable, self).__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -19,11 +19,11 @@ class QVariable(QCachedGraphicsItem):
         self._config = config
 
         self._variable_name = None
-        self._variable_name_width = None
+        self._variable_name_item: QGraphicsSimpleTextItem = None
         self._variable_ident = None
-        self._variable_ident_width = None
+        self._variable_ident_item: QGraphicsSimpleTextItem = None
         self._variable_offset = None
-        self._variable_offset_width = None
+        self._variable_offset_item: QGraphicsSimpleTextItem = None
 
         self._init_widgets()
 
@@ -32,33 +32,15 @@ class QVariable(QCachedGraphicsItem):
     #
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
-
-        x = 0
-
-        painter.setFont(self._config.disasm_font)
-
-        # variable name
-        painter.setPen(Qt.darkGreen)
-        painter.drawText(x, self._config.disasm_font_ascent, self._variable_name)
-        x += self._variable_name_width
-        x += self.IDENT_LEFT_PADDING
-
-
-        # variable ident
-        if self.disasm_view.show_variable_identifier:
-            painter.setPen(Qt.blue)
-            painter.drawText(x, self._config.disasm_font_ascent, self._variable_ident)
-            x += self._variable_ident_width
-            x += self.OFFSET_LEFT_PADDING
-
-        # variable offset
-        painter.setPen(Qt.darkYellow)
-        painter.drawText(x, self._config.disasm_font_ascent, self._variable_offset)
-        x += self._variable_offset_width
+        pass
 
     def refresh(self):
         super(QVariable, self).refresh()
-        self._update_size()
+
+        if self._variable_ident_item is not None:
+            self._variable_ident_item.setVisible(self.disasm_view.show_variable_identifier)
+
+        self._layout_items_and_update_size()
 
     #
     # Private methods
@@ -68,26 +50,46 @@ class QVariable(QCachedGraphicsItem):
 
         # variable name
         self._variable_name = "" if not self.variable.name else self.variable.name
+        self._variable_name_item = QGraphicsSimpleTextItem(self._variable_name, self)
+        self._variable_name_item.setFont(self._config.disasm_font)
+        self._variable_name_item.setBrush(Qt.darkGreen)  # TODO: Expose it as a configuration entry in Config
+
         # variable ident
         self._variable_ident = "<%s>" % ("" if not self.variable.ident else self.variable.ident)
+        self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
+        self._variable_ident_item.setFont(self._config.disasm_font)
+        self._variable_ident_item.setBrush(Qt.blue)  # TODO: Expose it as a configuration entry in Config
+        self._variable_ident_item.setVisible(self.disasm_view.show_variable_identifier)
+
         # variable offset
         self._variable_offset = "%#x" % self.variable.offset
+        self._variable_offset_item = QGraphicsSimpleTextItem(self._variable_offset, self)
+        self._variable_offset_item.setFont(self._config.disasm_font)
+        self._variable_offset_item.setBrush(Qt.darkYellow)  # TODO: Expose it as a configuration entry in Config
 
-        self._update_size()
+        self._layout_items_and_update_size()
 
-    def _update_size(self):
+    def _layout_items_and_update_size(self):
 
-        self._variable_name_width = len(self._variable_name) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
-        self._variable_ident_width = len(self._variable_ident) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
-        self._variable_offset_width = len(self._variable_offset) * self._config.disasm_font_width * self.currentDevicePixelRatioF()
+        x, y = 0, 0
 
-        self._width = self._variable_name_width + \
-                      self.OFFSET_LEFT_PADDING * self.currentDevicePixelRatioF() + self._variable_offset_width
+        # variable name
+        self._variable_name_item.setPos(x, y)
+        x += self._variable_name_item.boundingRect().width() + self.IDENT_LEFT_PADDING
+
         if self.disasm_view.show_variable_identifier:
-            self._width += self.IDENT_LEFT_PADDING * self.currentDevicePixelRatioF() + self._variable_ident_width
+            # identifier
+            x += self.IDENT_LEFT_PADDING
+            self._variable_ident_item.setPos(x, y)
+            x += self._variable_ident_item.boundingRect().width()
 
-        self._height = self._config.disasm_font_height * self.currentDevicePixelRatioF()
+        # variable offset
+        x += self.OFFSET_LEFT_PADDING
+        self._variable_offset_item.setPos(x, y)
+        x += self._variable_offset_item.boundingRect().width()
 
+        self._width = x
+        self._height = self._variable_name_item.boundingRect().height()
         self.recalculate_size()
 
     def _boundingRect(self):

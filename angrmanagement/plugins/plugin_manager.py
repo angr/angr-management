@@ -5,16 +5,17 @@ import os
 
 from PySide2.QtGui import QColor
 
-from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
-from angrmanagement.ui.toolbars.toolbar import ToolbarAction
-from angrmanagement.daemon.url_handler import register_url_action, UrlActionBinaryAware
-from angrmanagement.daemon.client import DaemonClient
+from ..ui.menus.menu import MenuEntry, MenuSeparator
+from ..ui.toolbars.toolbar import ToolbarAction
+from ..daemon.url_handler import register_url_action, UrlActionBinaryAware
+from ..daemon.client import DaemonClient
+from ..ui.widgets.qblock import QBlock
 from ..config import Conf
 from . import load_plugins_from_dir
 from .base_plugin import BasePlugin
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
+    from ..ui.workspace import Workspace
 
 
 l = logging.getLogger(__name__)
@@ -161,6 +162,7 @@ class PluginManager:
 
         try:
             plugin.teardown()
+
         except Exception: #pylint: disable=broad-except
             l.warning("Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(),
                       exc_info=True)
@@ -179,8 +181,6 @@ class PluginManager:
                     self._handle_error(plugin, func, sensitive, e)
                 else:
                     yield res
-
-        return None
 
     def _dispatch_single(self, plugin, func, sensitive, *args):
         custom = getattr(plugin, func.__name__)
@@ -243,6 +243,10 @@ class PluginManager:
                 return True
         return False
 
+    def build_qblock_annotations(self, qblock: QBlock):
+        for res in self._dispatch(BasePlugin.build_qblock_annotations, False, qblock):
+            yield from res
+
     def build_context_menu_insn(self, insn):
         for res in self._dispatch(BasePlugin.build_context_menu_insn, False, insn):
             yield from res
@@ -255,8 +259,8 @@ class PluginManager:
         for res in self._dispatch(BasePlugin.build_context_menu_node, False, node):
             yield from res
 
-    def build_context_menu_function(self, func):
-        for res in self._dispatch(BasePlugin.build_context_menu_function, False, func):
+    def build_context_menu_functions(self, funcs):
+        for res in self._dispatch(BasePlugin.build_context_menu_functions, False, funcs):
             yield from res
 
     def get_func_column(self, idx):
@@ -279,7 +283,7 @@ class PluginManager:
                     return plugin.extract_func_column(func, idx)
                 except Exception as e: #pylint: disable=broad-except
                     # this should really be a "sensitive" operation but like
-                    self.workspace.log(e)
+                    self.workspace.log(ex)
                     self.workspace.log("PLEASE FIX YOUR PLUGIN AHHHHHHHHHHHHHHHHH")
                     return 0, ''
         raise IndexError("Not enough columns")

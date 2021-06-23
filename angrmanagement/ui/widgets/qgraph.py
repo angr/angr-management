@@ -1,4 +1,3 @@
-import sys
 import logging
 
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
@@ -26,21 +25,7 @@ class QBaseGraphicsView(QGraphicsView):
             scene.update(self.sceneRect())
 
 
-class QDevicePixelRatioAwareGraphicsView(QBaseGraphicsView):
-
-    def currentDevicePixelRatioF(self) -> float:
-        # getting devicePixelRatio is currently broken in Qt 5.14
-        # see https://bugreports.qt.io/browse/QTBUG-53022
-        # before it is fixed, fall back to manually calculating the ratio using logicalDpiX()
-        if sys.platform == "darwin":
-            return self.logicalDpiX() / 72.0
-        elif sys.platform == "win32":
-            return self.logicalDpiX() / 96.0
-        else:
-            return self.devicePixelRatioF()
-
-
-class QSaveableGraphicsView(QDevicePixelRatioAwareGraphicsView):
+class QSaveableGraphicsView(QBaseGraphicsView):
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 
@@ -257,7 +242,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
                                  event.buttons(),
                                  event.modifiers())
 
-            press_event = self.dispatchMouseEventToScene(pressy)
+            _ = self.dispatchMouseEventToScene(pressy)
 
             releasy = QMouseEvent(QEvent.MouseButtonRelease,
                                   event.pos(),

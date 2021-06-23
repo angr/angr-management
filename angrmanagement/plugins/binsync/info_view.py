@@ -1,19 +1,25 @@
-
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QPushButton, QMessageBox
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QMessageBox, QComboBox
 
 from ...ui.views.view import BaseView
-from .qteam_table import QTeamTable
 from ...data.sync_ctrl import SyncControlStatus, STATUS_TEXT
+from .info_tables.func_info_table import QFuncInfoTable
+from .info_tables.struct_info_table import QStructInfoTable
 
 
-class SyncView(BaseView):
+class InfoView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('sync', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = "Sync"
+        self.caption = "BinSync: Info View"
 
         self._status_label = None  # type: QLabel
         self._team_table = None  # type: QTeamTable
+
+        # info tables
+        self._func_table = None  # type: QFuncInfoTable
+        self._struct_table = None  # type: QStructInfoTable
+        self._active_table = None  # type: QTableWidget
+        self._controller = workspace.instance.sync
 
         self._init_widgets()
 
@@ -35,63 +41,64 @@ class SyncView(BaseView):
     #
 
     def _init_widgets(self):
-
-        # status
+        # status box
         status_box = QGroupBox(self)
         status_box.setTitle("Status")
-
         self._status_label = QLabel(self)
-        self._status_label.setText(self.workspace.instance.sync.status_string)
-
+        self._status_label.setText("Not Connected")
         status_layout = QVBoxLayout()
         status_layout.addWidget(self._status_label)
-
         status_box.setLayout(status_layout)
 
-        # table
+        # info box
+        info_box = QGroupBox(self)
+        info_box.setTitle("Info Table")
+        info_layout = QVBoxLayout()
 
-        self._team_table = QTeamTable(self.workspace.instance)
-        team_box = QGroupBox(self)
-        team_box.setTitle("Team")
+        # table selector
+        combo_box = QGroupBox(self)
+        combo_layout = QHBoxLayout()
+        self.combo = QComboBox()
+        self.combo.addItems(["Functions", "Structs"])
+        self.combo.currentTextChanged.connect(self._on_combo_change)
+        combo_layout.addWidget(self.combo)
+        combo_box.setLayout(combo_layout)
+        info_layout.addWidget(combo_box)
 
-        # operations
+        # function info table
+        self._func_table = QFuncInfoTable(self._controller)
+        info_layout.addWidget(self._func_table)  # stretch=1 optional
+        self._active_table = self._func_table
 
-        # pull function button
-        pullfunc_btn = QPushButton(self)
-        pullfunc_btn.setText("Pull func")
-        pullfunc_btn.setToolTip("Pull current function from the selected user")
-        pullfunc_btn.clicked.connect(self._on_pullfunc_clicked)
+        # struct info table
+        self._struct_table = QStructInfoTable(self._controller)
+        self._struct_table.hide()
+        info_layout.addWidget(self._struct_table)
 
-        # push function button
-        pushfunc_btn = QPushButton()
-        pushfunc_btn.setText('Push func')
-        pushfunc_btn.setToolTip("Push current function to the repo")
-        pushfunc_btn.clicked.connect(self._on_pushfunc_clicked)
-
-        # pull patches button
-        pullpatches_btn = QPushButton(self)
-        pullpatches_btn.setText("Pull patches")
-        pullpatches_btn.setToolTip("Pull all patches from the selected user")
-        pullpatches_btn.clicked.connect(self._on_pullpatches_clicked)
-
-        actions_box = QGroupBox(self)
-        actions_box.setTitle("Actions")
-        actions_layout = QHBoxLayout()
-        actions_layout.addWidget(pullfunc_btn)
-        actions_layout.addWidget(pushfunc_btn)
-        actions_layout.addWidget(pullpatches_btn)
-        actions_box.setLayout(actions_layout)
-
-        team_layout = QVBoxLayout()
-        team_layout.addWidget(self._team_table)
-        team_layout.addWidget(actions_box)
-        team_box.setLayout(team_layout)
+        info_box.setLayout(info_layout)
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(status_box)
-        main_layout.addWidget(team_box)
+        main_layout.addWidget(info_box)
 
         self.setLayout(main_layout)
+        # self.setFixedWidth(500)
+
+    def _on_combo_change(self, value):
+        self._hide_all_tables()
+        if value == "Functions":
+            self._func_table.show()
+            self._active_table = self._func_table
+        elif value == "Structs":
+            self._struct_table.show()
+            self._active_table = self._struct_table
+
+    def _hide_all_tables(self):
+        self._func_table.hide()
+        self._struct_table.hide()
+
+    def _update_users(self):
+        self._active_table.update_users(self.workspace.instance.sync.users)
 
     #
     # Event callbacks
@@ -180,6 +187,3 @@ class SyncView(BaseView):
             # re-generate the CFG
             # TODO: CFG refinement
             self.workspace.instance.generate_cfg()
-
-    def _update_users(self):
-        self._team_table.update_users(self.workspace.instance.sync.users)
