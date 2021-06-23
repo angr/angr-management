@@ -1,7 +1,4 @@
-from typing import Union
-
 from PySide2.QtWidgets import QGraphicsItem
-from PySide2.QtGui import QPainter
 
 
 class QCachedGraphicsItem(QGraphicsItem):
@@ -95,10 +92,10 @@ class QGraphObject:
 
         return self.width, self.height
 
-    def paint(self, painter):
+    def paint(self, painter: 'QPainter'):
         """
 
-        :param QPainter painter: The painter object.
+        :param painter: The painter object.
         :return:                 None
         """
 
@@ -111,7 +108,6 @@ class QGraphObject:
         :param pos:
         :return:
         """
-
         pass
 
     def on_mouse_released(self, button, pos):
