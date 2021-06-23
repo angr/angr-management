@@ -3,6 +3,7 @@ from angrmanagement.ui.widgets.qblock import QBlock
 from angrmanagement.plugins import BasePlugin
 from typing import List, Iterator
 
+
 class SamplePlugin(BasePlugin):
     def __init__(self, workspace):
         super().__init__(workspace)

@@ -125,7 +125,7 @@ class PluginManager:
             for action in plugin_cls.URL_ACTIONS:
                 register_url_action(action, UrlActionBinaryAware)
 
-        except Exception: #pylint: disable=broad-except
+        except Exception:  # pylint:disable=broad-except
             l.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(),
                       exc_info=True)
         else:
@@ -162,7 +162,7 @@ class PluginManager:
 
         try:
             plugin.teardown()
-        except Exception: #pylint: disable=broad-except
+        except Exception:  # pylint:disable=broad-except
             l.warning("Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(),
                       exc_info=True)
         self.active_plugins.remove(plugin)
@@ -177,19 +177,17 @@ class PluginManager:
             if custom.__func__ is not func:
                 try:
                     res = custom(*args)
-                except Exception as e: #pylint: disable=broad-except
-                    self._handle_error(plugin, func, sensitive, e)
+                except Exception as ex:  # pylint:disable=broad-except
+                    self._handle_error(plugin, func, sensitive, ex)
                 else:
                     yield res
-
-        return None
 
     def _dispatch_single(self, plugin, func, sensitive, *args):
         custom = getattr(plugin, func.__name__)
         try:
             return custom(*args)
-        except Exception as e: #pylint: disable=broad-except
-            self._handle_error(plugin, func, sensitive, e)
+        except Exception as ex:  # pylint:disable=broad-except
+            self._handle_error(plugin, func, sensitive, ex)
             return None
 
     def _handle_error(self, plugin, func, sensitive, exc):
@@ -283,9 +281,9 @@ class PluginManager:
             else:
                 try:
                     return plugin.extract_func_column(func, idx)
-                except Exception as e: #pylint: disable=broad-except
+                except Exception as ex:  # pylint:disable=broad-except
                     # this should really be a "sensitive" operation but like
-                    self.workspace.log(e)
+                    self.workspace.log(ex)
                     self.workspace.log("PLEASE FIX YOUR PLUGIN AHHHHHHHHHHHHHHHHH")
                     return 0, ''
         raise IndexError("Not enough columns")

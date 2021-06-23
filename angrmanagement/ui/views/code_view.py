@@ -237,7 +237,7 @@ class CodeView(BaseView):
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
-                    self.workspace.jump_to(selected_node.value.value)
+                    self.workspace.jump_to(selected_node.value)
 
     def keyPressEvent(self, event):
         key = event.key()
