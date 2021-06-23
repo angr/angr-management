@@ -201,6 +201,7 @@ class QGraphBlock(QBlock):
     AIL_SHOW_CONDITIONAL_JUMP_TARGETS = False
     SHADOW_OFFSET_X = 5
     SHADOW_OFFSET_Y = 5
+    BLOCK_ANNOTATIONS_LEFT_PADDING = 2
 
     @property
     def mode(self):
@@ -215,7 +216,10 @@ class QGraphBlock(QBlock):
         self.qblock_annotations = self.disasm_view.fetch_qblock_annotations(self)
 
         for obj in self.objects:
-            obj.setPos(x + self.qblock_annotations.width + self.LEFT_PADDING, y)
+            if self.qblock_annotations.width > 0:
+                obj.setPos(self.BLOCK_ANNOTATIONS_LEFT_PADDING + self.qblock_annotations.width + x, y)
+            else:
+                obj.setPos(x, y)
             if isinstance(obj, QInstruction) and self.qblock_annotations.get(obj.addr):
                 qinsn_annotations = self.qblock_annotations.get(obj.addr)
                 for qinsn_annotation in qinsn_annotations:
