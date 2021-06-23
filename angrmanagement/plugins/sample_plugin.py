@@ -1,6 +1,6 @@
 from angr.sim_manager import SimulationManager
 from angrmanagement.plugins import BasePlugin
-from typing import List, Iterator, Union, Tuple, Callable
+from typing import List
 
 class SamplePlugin(BasePlugin):
     def __init__(self, workspace):

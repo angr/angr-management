@@ -124,7 +124,7 @@ class PluginManager:
             for action in plugin_cls.URL_ACTIONS:
                 register_url_action(action, UrlActionBinaryAware)
 
-        except Exception:
+        except Exception: #pylint: disable=broad-except
             l.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(),
                       exc_info=True)
         else:
@@ -135,7 +135,7 @@ class PluginManager:
         if not instances:
             return None
         if len(instances) > 1:
-            l.error("Somehow there is more than one instance of %s active?" % plugin_cls_name)
+            l.error("Somehow there is more than one instance of %s active?", plugin_cls_name)
         return instances[0]
 
     def get_plugin_instance(self, plugin_cls: Type[BasePlugin]) -> Optional[BasePlugin]:
@@ -143,15 +143,14 @@ class PluginManager:
         if len(instances) == 0:
             return None
         if len(instances) > 1:
-            l.error("Somehow there is more than one instance of %s active?" % plugin_cls.get_display_name())
+            l.error("Somehow there is more than one instance of %s active?", plugin_cls.get_display_name())
         return instances[0]
 
     def deactivate_plugin(self, plugin: Union[BasePlugin, Type[BasePlugin]]):
         # this method should work on both instances and classes
         if type(plugin) is type:
             plugin = self.get_plugin_instance(plugin)
-        else:
-            plugin = plugin
+
         if plugin not in self.active_plugins:
             return
 
@@ -162,7 +161,7 @@ class PluginManager:
 
         try:
             plugin.teardown()
-        except Exception:
+        except Exception: #pylint: disable=broad-except
             l.warning("Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(),
                       exc_info=True)
         self.active_plugins.remove(plugin)
@@ -170,25 +169,17 @@ class PluginManager:
     #
     # Dispatchers
     #
-
-    def _fetch_active_plugin_funcs(self, base_func):
-        """Collect a list of functions from the active plugins corresponding to the base_func from BasePlugin."""
-        funcs = []
+    def _dispatch(self, func, sensitive, *args):
         for plugin in list(self.active_plugins):
-            custom = getattr(plugin, base_func.__name__)
-            if custom.__func__ is not base_func and callable(custom):
-                funcs.append((plugin, custom))
-        return funcs
+            custom = getattr(plugin, func.__name__)
+            if custom.__func__ is not func:
+                try:
+                    res = custom(*args)
+                except Exception as e: #pylint: disable=broad-except
+                    self._handle_error(plugin, func, sensitive, e)
+                else:
+                    yield res
 
-    def _dispatch(self, base_func, sensitive, *args):
-        """Execute the function corresponding to base_func in each active plugin"""
-        for plugin, f in self._fetch_active_plugin_funcs(base_func):
-            try:
-                res = f(*args)
-            except Exception as e: #pylint: disable=broad-except
-                self._handle_error(plugin, base_func, sensitive, e)
-            else:
-                yield res
         return None
 
     def _dispatch_single(self, plugin, func, sensitive, *args):
@@ -286,27 +277,13 @@ class PluginManager:
             else:
                 try:
                     return plugin.extract_func_column(func, idx)
-                except Exception as e:
+                except Exception as e: #pylint: disable=broad-except
                     # this should really be a "sensitive" operation but like
                     self.workspace.log(e)
                     self.workspace.log("PLEASE FIX YOUR PLUGIN AHHHHHHHHHHHHHHHHH")
                     return 0, ''
         raise IndexError("Not enough columns")
 
-    def _create_step_callback(self, base_callback):
-        """Collect a list of callback functions from each plugin. Return a new function that calls each callback in
-        successive order. Each callback function should take only one argument, the simulation manager.
-
-        This is useful in case plugins need to be notified post executing a simulation manager step.
-        """
-        callbacks = [f for _, f in self._fetch_active_plugin_funcs(base_callback)]
-
-        def callback(simgr):
-            for f in callbacks:
-                f(simgr)
-
-        return callback
-
-    @property
-    def step_callback(self):
-        return self._create_step_callback(BasePlugin.step_callback)
+    def step_callback(self, simgr):
+        for _ in self._dispatch(BasePlugin.step_callback,True, simgr):
+            pass

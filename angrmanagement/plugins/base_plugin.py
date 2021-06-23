@@ -11,8 +11,8 @@ from angrmanagement.ui.widgets.qinstruction import QInstruction
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.views import disassembly_view, code_view
-
+    from ..ui.views import disassembly_view, code_view
+    from ..ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
 
@@ -21,10 +21,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-
-        from angrmanagement.ui.workspace import Workspace
-
-        self.workspace: Optional[Workspace] = workspace
+        self.workspace: 'Optional[Workspace]' = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
@@ -114,7 +111,7 @@ class BasePlugin:
     URL_ACTIONS: List[str] = []
 
     def handle_url_action(self, action, kwargs):
-        pass   
+        pass
 
     def step_callback(self, simgr:SimulationManager):
         pass
