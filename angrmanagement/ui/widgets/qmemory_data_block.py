@@ -1,8 +1,8 @@
+from typing import List, Optional, Tuple
 import math
-import string
 
 from PySide2.QtCore import Qt, QRectF
-from PySide2.QtGui import QColor
+from PySide2.QtWidgets import QGraphicsSimpleTextItem
 
 from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort, MemoryData
 
@@ -26,13 +26,18 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         self.bytes_per_line: int = bytes_per_line  # TODO: Move it to Conf
 
         self._addr_text = None
-        self._addr_text_width = None
         self._width = None
         self._height = None
 
         self._bytes = [ ]
-        self.byte_width = None
-        self.character_width = None
+
+        # widgets
+        self._addr_item: QGraphicsSimpleTextItem = None
+        self._label_item: Optional[QGraphicsSimpleTextItem] = None
+        self._line_items: List[Tuple[int,
+                                     QGraphicsSimpleTextItem,
+                                     List[QGraphicsSimpleTextItem],
+                                     List[QGraphicsSimpleTextItem]]] = None
 
         self._init_widgets()
 
@@ -52,114 +57,11 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         should_highlight = self.infodock.is_label_selected(self.addr)
 
-        x, y = 0, 0
-
         highlight_color = Conf.disasm_view_label_highlight_color
         if should_highlight:
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
             painter.drawRect(0, 0, self.width, self.height)
-
-        # address
-        painter.setFont(Conf.disasm_font)
-        painter.setPen(Qt.black)
-        painter.drawText(x, y + Conf.disasm_font_ascent, self._addr_text)
-        x += self._addr_text_width
-        # label
-        x += self.ADDRESS_LABEL_OFFSET
-        lbl_text = get_label_text(self.addr, self.workspace.instance.kb)
-        if lbl_text:
-            painter.setFont(Conf.code_font)
-            painter.setPen(Qt.blue)
-            painter.drawText(x, y + Conf.disasm_font_ascent, lbl_text)
-
-        painter.setFont(Conf.disasm_font)
-
-        y += Conf.disasm_font_height
-
-        # Content bytes
-        addr = self.addr
-        i = 0
-
-        # print("Start from %#x" % addr)
-
-        while i < len(self._bytes):
-            byte_offset = addr % self.bytes_per_line
-            if byte_offset == 0:
-                end_pos = i + self.bytes_per_line
-            else:
-                end_pos = self.bytes_per_line - byte_offset
-
-            all_bytes = self._bytes[i : end_pos]
-            # print("... print %#x, %d bytes" % (addr, len(all_bytes)))
-            self._paint_line(painter, 0, y, addr, byte_offset, all_bytes)
-
-            addr += end_pos - i
-            i = end_pos
-            y += Conf.disasm_font_height
-
-    def _paint_line(self, painter, x, y, addr, byte_offset, all_bytes):
-
-        # colors
-        printable_byte_color = Conf.disasm_view_printable_byte_color
-        printable_char_color = Conf.disasm_view_printable_character_color
-        unprintable_byte_color = Conf.disasm_view_unprintable_byte_color
-        unprintable_char_color = Conf.disasm_view_unprintable_character_color
-        unknown_byte_color = Conf.disasm_view_unknown_byte_color
-        unknown_char_color = Conf.disasm_view_unknown_character_color
-
-        # address
-        addr_text = "%08x" % addr
-
-        painter.setPen(Qt.black)
-        painter.drawText(x, y + Conf.disasm_font_ascent, addr_text)
-        x += self.p2p(Conf.disasm_font_metrics.width(addr_text))
-
-        x += self.LINEAR_INSTRUCTION_OFFSET
-
-        # skip byte_offset
-        x += byte_offset * (self.byte_width + self.byte_spacing)
-
-        # draw each byte
-        for idx, byt in enumerate(all_bytes):
-            if type(byt) is int:
-                if self._is_printable(byt):
-                    painter.setPen(printable_byte_color)
-                else:
-                    painter.setPen(unprintable_byte_color)
-                painter.drawText(x, y + Conf.disasm_font_ascent, "%02x" % byt)
-            else:  # str, usually because it is an unknown byte, in which case the str is "??"
-                painter.setPen(unknown_byte_color)
-                painter.drawText(x, y + Conf.disasm_font_ascent, byt)
-            x += self.byte_width
-            line_chars = byte_offset + idx + 1  # the number of existing characters on this line, including spaces
-            if line_chars % 8 == 0 and line_chars != self.bytes_per_line:
-                # print a deliminator
-                painter.setPen(Qt.black)
-                painter.drawText(x, y + Conf.disasm_font_ascent, "-")
-            x += self.byte_spacing
-
-        if (len(all_bytes) + addr) % self.bytes_per_line != 0:
-            more_chars = self.bytes_per_line - ((len(all_bytes) + addr) % self.bytes_per_line)
-            x += more_chars * (self.byte_width + self.byte_spacing)
-
-        x += self.BYTE_AREA_SPACING
-
-        # draw printable characters
-        x += byte_offset * self.character_width
-        for byt in all_bytes:
-            if type(byt) is int:
-                if self._is_printable(byt):
-                    painter.setPen(printable_char_color)
-                    ch = chr(byt)
-                else:
-                    painter.setPen(unprintable_char_color)
-                    ch = "."
-            else:
-                painter.setPen(unknown_char_color)
-                ch = "?"
-            painter.drawText(x, y + Conf.disasm_font_ascent, ch)
-            x += self.character_width
 
     #
     # Event handlers
@@ -183,7 +85,6 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     def _init_widgets(self):
 
         self._addr_text = "%08x" % self.addr
-
         self._bytes = [ ]
         if self.memory_data.content:
             for byt in self.memory_data.content:
@@ -199,24 +100,194 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 mem_bytes = b""
             self._bytes += [ b for b in mem_bytes ] + [ '??' ] * (size - len(mem_bytes))
 
-        self._update_sizes()
+        # address
+        self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
+        self._addr_item.setFont(Conf.disasm_font)
+        self._addr_item.setBrush(Qt.black)  # TODO: Expose it as a configuration entry in Conf
 
-    def _update_sizes(self):
+        # label
+        self._init_label_item()
 
-        self.byte_width = self.p2p(Conf.disasm_font_metrics.width("aa"))
-        self.byte_spacing = self.p2p(Conf.disasm_font_metrics.width("-"))
-        self.character_width = self.p2p(Conf.disasm_font_metrics.width("a"))
-        self._addr_text_width = self.p2p(Conf.disasm_font_metrics.width(self._addr_text))
+        # bytes
+        self._init_bytes()
 
-        self._width = (self._addr_text_width +
-                       self.LINEAR_INSTRUCTION_OFFSET +
-                       self.bytes_per_line * (self.byte_width + self.byte_width) +
-                       self.BYTE_AREA_SPACING +
-                       self.bytes_per_line * self.character_width
-                       )
-        lines = 1 + math.ceil(((self.addr + self.memory_data.size) - (self.addr - (self.addr % self.bytes_per_line))) / self.bytes_per_line)
-        # print(hex(self.addr), self.memory_data, self.memory_data.size, "lines:", lines)
-        self._height = lines * Conf.disasm_font_height
+        self._layout_items_and_update_size()
+
+    def _init_label_item(self):
+        lbl_text = get_label_text(self.addr, self.workspace.instance.kb)
+        if lbl_text:
+            self._label_item = QGraphicsSimpleTextItem(lbl_text, self)
+            self._label_item.setFont(Conf.code_font)
+            self._label_item.setBrush(Qt.blue)  # TODO: Expose it as a configuration entry in Conf
+        else:
+            if self._label_item is not None:
+                self._label_item.setParentItem(None)
+                self._label_item = None
+
+    def _init_bytes(self):
+
+        if self._line_items:
+            # remove existing items
+            for line in self._line_items:
+                for item in line:
+                    item.setParentItem(None)
+            self._line_items = None
+
+        addr = self.addr
+        i = 0
+        self._line_items = []
+
+        while i < len(self._bytes):
+
+            byte_offset = addr % self.bytes_per_line
+            if byte_offset == 0:
+                end_pos = i + self.bytes_per_line
+            else:
+                end_pos = self.bytes_per_line - byte_offset
+
+            all_bytes = self._bytes[i : end_pos]
+            # print("... print %#x, %d bytes, byte_offset %d" % (addr, len(all_bytes), byte_offset))
+            addr_item, bytes_list, character_list = self._init_line(addr, byte_offset, all_bytes)
+            self._line_items.append((byte_offset, addr_item, bytes_list, character_list))
+
+            addr += end_pos - i
+            i = end_pos
+
+    def _init_line(self, addr, byte_offset, all_bytes):
+
+        # colors
+        printable_byte_color = Conf.disasm_view_printable_byte_color
+        printable_char_color = Conf.disasm_view_printable_character_color
+        unprintable_byte_color = Conf.disasm_view_unprintable_byte_color
+        unprintable_char_color = Conf.disasm_view_unprintable_character_color
+        unknown_byte_color = Conf.disasm_view_unknown_byte_color
+        unknown_char_color = Conf.disasm_view_unknown_character_color
+
+        # address
+        addr_text = "%08x" % addr
+        addr_item = QGraphicsSimpleTextItem(addr_text, self)
+        addr_item.setBrush(Qt.black)
+        addr_item.setFont(Conf.disasm_font)
+
+        # draw each byte
+        bytes_list = [ ]
+        for idx, byt in enumerate(all_bytes):
+            if type(byt) is int:
+                if self._is_printable(byt):
+                    color = printable_byte_color
+                else:
+                    color = unprintable_byte_color
+                o = QGraphicsSimpleTextItem("%02x" % byt, self)
+                o.setFont(Conf.disasm_font)
+                o.setBrush(color)
+            else:  # str, usually because it is an unknown byte, in which case the str is "??"
+                o = QGraphicsSimpleTextItem(byt, self)
+                o.setBrush(unknown_byte_color)
+                o.setFont(Conf.disasm_font)
+            bytes_list.append(o)
+
+            line_chars = byte_offset + idx + 1  # the number of existing characters on this line, including spaces
+            if line_chars % 8 == 0 and line_chars != self.bytes_per_line:
+                # print a deliminator
+                o = QGraphicsSimpleTextItem("-", self)
+                o.setBrush(Qt.black)
+                o.setFont(Conf.disasm_font)
+                bytes_list.append(o)
+
+        # printable characters
+        character_list = [ ]
+        for byt in all_bytes:
+            if type(byt) is int:
+                if self._is_printable(byt):
+                    color = printable_char_color
+                    ch = chr(byt)
+                else:
+                    color = unprintable_char_color
+                    ch = "."
+            else:
+                color = unknown_char_color
+                ch = "?"
+            o = QGraphicsSimpleTextItem(ch, self)
+            o.setBrush(color)
+            o.setFont(Conf.disasm_font)
+            character_list.append(o)
+
+        return addr_item, bytes_list, character_list
+
+    def _layout_items_and_update_size(self):
+
+        x, y = 0, 0
+
+        #
+        # first line
+        #
+
+        # address
+        self._addr_item.setPos(x, y)
+        x += self._addr_item.boundingRect().width()
+
+        # label
+        if self._label_item:
+            x += self.ADDRESS_LABEL_OFFSET
+            self._label_item.setPos(x, y)
+
+        #
+        # the following lines: content
+        #
+
+        max_x = x
+        x = 0
+        y += self._addr_item.boundingRect().height()
+
+        for byte_offset, addr_item, bytes_line, characters_line in self._line_items:
+            addr_item.setPos(x, y)
+            x += addr_item.boundingRect().width() + self.LINEAR_INSTRUCTION_OFFSET
+
+            # skip byte offset
+            byte_width = bytes_line[0].boundingRect().width()
+            byte_spacing = byte_width // 2
+            x += byte_offset * (byte_width + byte_spacing)
+
+            all_bytes = 0
+            pos = 0
+            while pos < len(bytes_line):
+                byte_ = bytes_line[pos]
+                byte_.setPos(x, y)
+                x += byte_width
+
+                line_chars = byte_offset + all_bytes + 1  # the number of existing characters on this line, including spaces
+                if line_chars % 8 == 0 and line_chars != self.bytes_per_line:
+                    # now we get a delimiter
+                    pos += 1
+                    delimiter = bytes_line[pos]
+                    delimiter.setPos(x, y)
+
+                x += byte_spacing
+                pos += 1
+                all_bytes += 1
+
+            if (byte_offset + all_bytes) % self.bytes_per_line != 0:
+                more_chars = self.bytes_per_line - (byte_offset + all_bytes % self.bytes_per_line)
+                x += more_chars * (byte_width + byte_spacing)
+
+            x += self.BYTE_AREA_SPACING
+
+            # printable characters
+            character_width = characters_line[0].boundingRect().width()
+            x += byte_offset * character_width
+            for o in characters_line:
+                o.setPos(x, y)
+                x += character_width
+
+            max_x = max(x, max_x)
+
+            # next line!
+            x = 0
+            y += bytes_line[0].boundingRect().height()
+
+        self._width = max_x
+        self._height = y
+        self.recalculate_size()
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
