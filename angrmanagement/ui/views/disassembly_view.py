@@ -19,10 +19,10 @@ from ..dialogs.xref import XRef
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
-from ..widgets import QHookAnnotation, QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
+from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import Function
+    from angr.knowledge_plugins import Function, VariableManager
 
 
 _l = logging.getLogger(__name__)
@@ -548,18 +548,17 @@ class DisassemblyView(BaseView):
 
     def fetch_qblock_annotations(self, qblock):
         addr_to_annotations = defaultdict(list)
-        # for callback in self._annotation_callbacks:
-        #     for addr, annotations in callback(qblock).items():
-        #         addr_to_annotations[addr].extend(annotations)
+        for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
+            addr_to_annotations[annotations.addr].append(annotations)
         for addr in qblock.addr_to_insns.keys():
             # if addr in self.workspace.instance.hooked_addresses:
             #     hook_annotation = QHookAnnotation(self, addr)
             #     addr_to_annotations[addr].append(hook_annotation)
             qsimgrs = self.workspace.view_manager.first_view_in_category("symexec")._simgrs
             if addr in qsimgrs.find_addrs:
-                addr_to_annotations[addr].append(QFindAddrAnnotation(self, qsimgrs, addr))
+                addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
             if addr in qsimgrs.avoid_addrs:
-                addr_to_annotations[addr].append(QAvoidAddrAnnotation(self, qsimgrs, addr))
+                addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
         return QBlockAnnotations(addr_to_annotations, parent=qblock)
 
     #

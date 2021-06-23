@@ -1,14 +1,17 @@
-import logging
 
-from PySide2.QtGui import QColor, QPen, QPainterPath, QBrush, QFont, QCursor
-from PySide2.QtCore import QRectF, QMarginsF
-from PySide2.QtWidgets import QHBoxLayout, QLabel, QWidget, QGraphicsProxyWidget, QGraphicsItem, QGraphicsWidget, \
-    QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLinearLayout, QGraphicsSceneMouseEvent, QMenu, \
-    QGraphicsSceneMouseEvent, QInputDialog, QLineEdit
+from PySide2.QtGui import QColor, QPainterPath, QBrush, QCursor
+from PySide2.QtCore import QMarginsF
+from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, QInputDialog, QLineEdit
 
 from .qsimulation_managers import QSimulationManagers
 from ...logic import GlobalInfo
 from ...config import Conf
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..views.symexec_view import SymexecView
+    from ..views.disassembly_view import DisassemblyView
 
 
 class QInstructionAnnotation(QGraphicsSimpleTextItem):
@@ -16,10 +19,12 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
 
     background_color = None
     foreground_color = None
+    addr = None
     _config = Conf
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, addr, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.addr = addr
         self.setBrush(QBrush(self.foreground_color))
         self.setFont(self._config.disasm_font)
 
@@ -27,7 +32,7 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
         margin = QMarginsF(3, 0, 3, 0)
         box = self.boundingRect().marginsAdded(margin)
         path = QPainterPath()
-        path.addRoundedRect(box, 5, 5)
+        path.addRoundedRect(box, 3, 3)
         painter.fillPath(path, self.background_color)
         super().paint(painter, *args, **kwargs)
 
@@ -35,8 +40,8 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
 class QStatsAnnotation(QInstructionAnnotation):
     """Abstract"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, addr,  *args, **kwargs):
+        super().__init__(addr, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.disasm_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
             "disassembly")  # type: DisassemblyView
@@ -47,25 +52,22 @@ class QStatsAnnotation(QInstructionAnnotation):
     def mousePressEvent(self, event):
         pass
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self, event): #pylint: disable=unused-argument
         self.hovered = True
         self.disasm_view.redraw_current_graph()
 
-    def hoverLeaveEvent(self, event):
+    def hoverLeaveEvent(self, event): #pylint: disable=unused-argument
         self.hovered = False
         self.disasm_view.redraw_current_graph()
 
     def paint(self, painter, *args, **kwargs):
         if self.hovered:
-            margin = QMarginsF(13, 10, 13, 10)
+            margin = QMarginsF(7, 5, 7, 5)
         else:
             margin = QMarginsF(3, 0, 3, 0)
         box = self.boundingRect().marginsAdded(margin)
         path = QPainterPath()
-        if self.hovered:
-            path.addRoundedRect(box, 20, 20)
-        else:
-            path.addRoundedRect(box, 5, 5)
+        path.addRoundedRect(box, 5, 5)
         painter.fillPath(path, self.background_color)
         super().paint(painter, *args, **kwargs)
 
@@ -74,11 +76,11 @@ class QActiveCount(QStatsAnnotation):
     background_color = QColor(0, 255, 0, 30)
     foreground_color = QColor(0, 60, 0)
 
-    def __init__(self, states):
-        super().__init__(str(len(states)))
+    def __init__(self, addr, states):
+        super().__init__(addr, str(len(states)))
         self.states = states
 
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:  #pylint: disable=unused-argument
         menu = QMenu()
 
         def _select_states():
@@ -101,12 +103,11 @@ class QPassthroughCount(QStatsAnnotation):
     foreground_color = QColor(60, 0, 0)
 
     def __init__(self, addr, count):
-        super().__init__(str(count))
-        self.addr = addr
+        super().__init__(addr, str(count))
 
-    def mousePressEvent(self, event):
-        self.symexec_view.select_states_that_passed_through(self.addr)
-        self.disasm_view.workspace.raise_view(self.symexec_view)
+    # def mousePressEvent(self, event):
+    #     self.symexec_view.select_states_that_passed_through(self.addr)
+    #     self.disasm_view.workspace.raise_view(self.symexec_view)
 
 
 class QHookAnnotation(QInstructionAnnotation):
@@ -114,11 +115,10 @@ class QHookAnnotation(QInstructionAnnotation):
     foreground_color = QColor(50, 50, 50)
 
     def __init__(self, disasm_view, addr, *args, **kwargs):
-        super().__init__("hook", *args, **kwargs)
+        super().__init__(addr, "hook", *args, **kwargs)
         self.disasm_view = disasm_view
-        self.addr = addr
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event): #pylint: disable=unused-argument
         menu = QMenu()
         menu.addAction("Modify", self.modify)
         menu.addAction("Delete", self.delete)
@@ -139,13 +139,12 @@ class QExploreAnnotation(QInstructionAnnotation):
     foreground_color = QColor(230, 230, 230)
     text = None
 
-    def __init__(self, disasm_view, qsimgrs: QSimulationManagers, addr, *args, **kwargs):
-        super().__init__(self.text, *args, **kwargs)
+    def __init__(self, addr, disasm_view, qsimgrs: QSimulationManagers, *args, **kwargs):
+        super().__init__(addr, self.text, *args, **kwargs)
         self.disasm_view = disasm_view
         self.qsimgrs = qsimgrs
-        self.addr = addr
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event): #pylint: disable=unused-argument
         menu = QMenu()
         menu.addAction("Delete", self.delete)
         menu.exec_(QCursor.pos())
@@ -183,7 +182,7 @@ class QBlockAnnotations(QGraphicsItem):
         super().__init__(parent=parent)
         self.addr_to_annotations = addr_to_annotations
         max_width = 0
-        for addr, annotations in self.addr_to_annotations.items():
+        for _addr, annotations in self.addr_to_annotations.items():
             width = sum(a.boundingRect().width() + self.PADDING for a in annotations)
             max_width = max(max_width, width)
             for annotation in annotations:
@@ -194,9 +193,6 @@ class QBlockAnnotations(QGraphicsItem):
     def get(self, addr):
         return self.addr_to_annotations.get(addr)
 
-    def width(self):
-        return self.boundingRect().width()
-
     def paint(self, painter, *args, **kwargs):
         pass
 
@@ -206,9 +202,8 @@ class QBlockAnnotations(QGraphicsItem):
     def _init_widgets(self):
         # Set the x positions of all the annotations. The y positions will be set later while laying out the
         # instructions
-        for addr, annotations in self.addr_to_annotations.items():
+        for _addr, annotations in self.addr_to_annotations.items():
             x = self.width
             for annotation in annotations:
                 annotation.setX(x - annotation.boundingRect().width())
                 x -= annotation.boundingRect().width() + self.PADDING
-
