@@ -287,3 +287,21 @@ class PluginManager:
     def step_callback(self, simgr):
         for _ in self._dispatch(BasePlugin.step_callback,True, simgr):
             pass
+
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+        for res in self._dispatch(BasePlugin.handle_variable_rename, False, func, offset, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_function_rename(self, func, old_name: str, new_name: str):
+        for res in self._dispatch(BasePlugin.handle_function_rename, False, func, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+        for res in self._dispatch(BasePlugin.handle_comment_changed, False, addr, cmt, new, decomp):
+            if res:
+                return True
+        return False
