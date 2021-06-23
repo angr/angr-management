@@ -283,7 +283,7 @@ class PluginManager:
                     return plugin.extract_func_column(func, idx)
                 except Exception as e: #pylint: disable=broad-except
                     # this should really be a "sensitive" operation but like
-                    self.workspace.log(ex)
+                    self.workspace.log(e)
                     self.workspace.log("PLEASE FIX YOUR PLUGIN AHHHHHHHHHHHHHHHHH")
                     return 0, ''
         raise IndexError("Not enough columns")

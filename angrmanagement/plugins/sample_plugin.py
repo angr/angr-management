@@ -1,8 +1,9 @@
+from typing import List, Iterator
 from angr.sim_manager import SimulationManager
 from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
 from angrmanagement.ui.widgets.qblock import QBlock
 from angrmanagement.plugins import BasePlugin
-from typing import List, Iterator
+
 
 class SamplePlugin(BasePlugin):
     def __init__(self, workspace):
@@ -22,4 +23,3 @@ class SamplePlugin(BasePlugin):
         return [
             QPassthroughCount(qblock.addr,"entry")
         ]
-
