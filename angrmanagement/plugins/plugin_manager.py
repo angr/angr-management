@@ -125,7 +125,7 @@ class PluginManager:
             for action in plugin_cls.URL_ACTIONS:
                 register_url_action(action, UrlActionBinaryAware)
 
-        except Exception:  # pylint:disable=broad-except
+        except Exception: #pylint: disable=broad-except
             l.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(),
                       exc_info=True)
         else:
@@ -162,7 +162,8 @@ class PluginManager:
 
         try:
             plugin.teardown()
-        except Exception:  # pylint:disable=broad-except
+
+        except Exception: #pylint: disable=broad-except
             l.warning("Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(),
                       exc_info=True)
         self.active_plugins.remove(plugin)
@@ -170,15 +171,14 @@ class PluginManager:
     #
     # Dispatchers
     #
-
     def _dispatch(self, func, sensitive, *args):
         for plugin in list(self.active_plugins):
             custom = getattr(plugin, func.__name__)
             if custom.__func__ is not func:
                 try:
                     res = custom(*args)
-                except Exception as ex:  # pylint:disable=broad-except
-                    self._handle_error(plugin, func, sensitive, ex)
+                except Exception as e: #pylint: disable=broad-except
+                    self._handle_error(plugin, func, sensitive, e)
                 else:
                     yield res
 
@@ -186,8 +186,8 @@ class PluginManager:
         custom = getattr(plugin, func.__name__)
         try:
             return custom(*args)
-        except Exception as ex:  # pylint:disable=broad-except
-            self._handle_error(plugin, func, sensitive, ex)
+        except Exception as e:  #pylint: disable=broad-except
+            self._handle_error(plugin, func, sensitive, e)
             return None
 
     def _handle_error(self, plugin, func, sensitive, exc):
@@ -281,12 +281,16 @@ class PluginManager:
             else:
                 try:
                     return plugin.extract_func_column(func, idx)
-                except Exception as ex:  # pylint:disable=broad-except
+                except Exception as e: #pylint: disable=broad-except
                     # this should really be a "sensitive" operation but like
-                    self.workspace.log(ex)
+                    self.workspace.log(e)
                     self.workspace.log("PLEASE FIX YOUR PLUGIN AHHHHHHHHHHHHHHHHH")
                     return 0, ''
         raise IndexError("Not enough columns")
+
+    def step_callback(self, simgr):
+        for _ in self._dispatch(BasePlugin.step_callback,True, simgr):
+            pass
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
         for res in self._dispatch(BasePlugin.handle_variable_rename, False, func, offset, old_name, new_name):

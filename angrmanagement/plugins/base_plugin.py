@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_C
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
+from angr.sim_manager import SimulationManager
 
 from ..ui.widgets.qblock import QBlock
 from ..ui.widgets.qinstruction import QInstruction
@@ -21,7 +22,6 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-
         self.workspace: 'Optional[Workspace]' = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
@@ -115,6 +115,9 @@ class BasePlugin:
     URL_ACTIONS: List[str] = []
 
     def handle_url_action(self, action, kwargs):
+        pass
+
+    def step_callback(self, simgr:SimulationManager):
         pass
 
     #
