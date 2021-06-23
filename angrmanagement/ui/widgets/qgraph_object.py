@@ -5,9 +5,8 @@ from PySide2.QtGui import QPainter
 
 
 class QCachedGraphicsItem(QGraphicsItem):
-    def __init__(self, parent=None, container=None):
+    def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self._container = container
         self._cached_bounding_rect = None
         self._cached_device_pixel_ratio = None
 

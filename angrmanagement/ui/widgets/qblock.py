@@ -33,8 +33,8 @@ class QBlock(QCachedGraphicsItem):
     SHADOW_OFFSET_Y = 0
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
-                 parent=None, container=None):
-        super().__init__(parent=parent, container=container)
+                 parent=None):
+        super().__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -136,15 +136,14 @@ class QBlock(QCachedGraphicsItem):
         if bn.addr in self.disasm.kb.labels:
             label = QBlockLabel(bn.addr, get_label_text(bn.addr, self.disasm.kb),
                                 self._config, self.disasm_view, self.workspace,
-                                self.infodock, parent=self, container=self._container)
+                                self.infodock, parent=self)
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
         for stmt in bn.statements:
-            code_obj = QAilObj(stmt, self.infodock, parent=None, container=self._container,
-                options={'show_conditional_jump_targets': self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS})
+            code_obj = QAilObj(stmt, self.infodock, parent=None,
+                               options={'show_conditional_jump_targets': self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS})
             obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
-                             self.workspace, self.infodock, parent=self,
-                             container=self._container)
+                             self.workspace, self.infodock, parent=self)
             code_obj.parent = obj # Reparent
             self.objects.append(obj)
 
@@ -153,36 +152,31 @@ class QBlock(QCachedGraphicsItem):
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
                 insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
-                                    self.infodock, obj, out_branch, self._config, parent=self,
-                                    container=self._container)
+                                    self.infodock, obj, out_branch, self._config, parent=self)
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
                 label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, self.infodock,
-                                    parent=self, container=self._container)
+                                    parent=self)
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, IROp):
-                code_obj = QIROpObj(obj, self.infodock, parent=None, container=self._container)
+                code_obj = QIROpObj(obj, self.infodock, parent=None)
                 disp_obj = QBlockCode(obj.addr, code_obj, self._config, self.disasm_view,
-                                 self.workspace, self.infodock, parent=self,
-                                 container=self._container)
+                                 self.workspace, self.infodock, parent=self)
                 code_obj.parent = disp_obj # Reparent
                 self.objects.append(disp_obj)
             elif isinstance(obj, PhiVariable):
                 if not isinstance(obj.variable, SimRegisterVariable):
-                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self,
-                                               container=self._container)
+                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self)
                     self.objects.append(phivariable)
             elif isinstance(obj, Variables):
                 for var in obj.variables:
-                    variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self,
-                                         container=self._container)
+                    variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self)
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
                 self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
-                                                    self.disasm_view, self.workspace, self.infodock, parent=self,
-                                                    container=self._container))
+                                                    self.disasm_view, self.workspace, self.infodock, parent=self))
 
     def _init_widgets(self):
         if self.scene is not None:

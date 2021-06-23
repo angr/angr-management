@@ -25,9 +25,8 @@ class QInstruction(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None,
-                 container=None):
-        super().__init__(parent=parent, container=container)
+    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
+        super().__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -176,7 +175,7 @@ class QInstruction(QCachedGraphicsItem):
                         branch_targets = (operand.children[0].val,)
             qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
                                 self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets,
-                                self._config, parent=self, container=self._container)
+                                self._config, parent=self)
             self._operands.append(qoperand)
 
         # all commas

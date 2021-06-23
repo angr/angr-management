@@ -19,8 +19,8 @@ class QOperand(QCachedGraphicsItem):
     VARIABLE_IDENT_SPACING = 5
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
-                 is_branch_target, is_indirect_branch, branch_targets, config, parent=None, container=None):
-        super().__init__(parent=parent, container=container)
+                 is_branch_target, is_indirect_branch, branch_targets, config, parent=None):
+        super().__init__(parent=parent)
 
         self.workspace = workspace
         self.func_addr = func_addr

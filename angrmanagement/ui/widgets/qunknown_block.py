@@ -12,8 +12,8 @@ class QUnknownBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = 'Unknown'
 
-    def __init__(self, workspace, addr, bytes_, parent=None, container=None):
-        super().__init__(parent=parent, container=container)
+    def __init__(self, workspace, addr, bytes_, parent=None):
+        super().__init__(parent=parent)
 
         self.workspace = workspace
         self.addr = addr

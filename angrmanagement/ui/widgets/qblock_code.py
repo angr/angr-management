@@ -24,18 +24,16 @@ class QBlockCodeObj(QObject):
     obj: Any
     infodock: InfoDock
     parent: Any
-    container: Any
     options: Mapping[str, Any]
     span: Optional[Tuple[int,int]]
     subobjs: Sequence['QBlockCodeObj']
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, container:Any, options:Mapping[str, Any]=None):
+    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:Mapping[str, Any]=None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
-        self.container = container
         self.options = options or {}
         self.span = None
         self.subobjs = []
@@ -125,7 +123,7 @@ class QBlockCodeObj(QObject):
         self._add_subobj(text)
 
     def add_variable(self, var):
-        self._add_subobj(QVariableObj(var, self.infodock, parent=self, container=self.container))
+        self._add_subobj(QVariableObj(var, self.infodock, parent=self))
 
     def on_click(self):
         """
@@ -172,8 +170,7 @@ class QAilObj(QBlockCodeObj):
             ailment.expression.Convert: QAilConvertObj,
             ailment.expression.Load: QAilLoadObj,
         }.get(type(obj), QAilTextObj)
-        subobj = subobjcls(obj, self.infodock, parent=self,
-                           container=self.container, options=self.options)
+        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options)
         self._add_subobj(subobj)
 
 
@@ -340,8 +337,7 @@ class QIROpObj(QBlockCodeObj):
             VexIRTmpWrapper: QIROpVexTmpObj,
             VexIRRegWrapper: QIROpVexRegObj,
         }.get(type(obj), QIROpTextObj)
-        subobj = subobjcls(obj, self.infodock, parent=self,
-                           container=self.container, options=self.options, irobj=self.irobj)
+        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options, irobj=self.irobj)
         self._add_subobj(subobj)
 
 
@@ -520,12 +516,11 @@ class QBlockCode(QCachedGraphicsItem):
     workspace: 'Workspace'
     infodock: InfoDock
     parent: Any
-    container: Any
 
     def __init__(self, addr:int, obj:QBlockCodeObj, config:ConfigurationManager,
         disasm_view:'QDisassemblyBaseControl', workspace:'Workspace',
-        infodock:InfoDock, parent:Any=None, container:Any=None):
-        super().__init__(parent=parent, container=container)
+        infodock:InfoDock, parent:Any=None):
+        super().__init__(parent=parent)
         self.addr = addr
         self._addr_str = "%08x" % self.addr
         self._addr_item: QGraphicsSimpleTextItem = None
@@ -534,7 +529,6 @@ class QBlockCode(QCachedGraphicsItem):
         self._height = 0
         self._config = config
         self.parent = parent
-        self.container = container
         self.workspace = workspace
         self.infodock = infodock
         self._disasm_view = disasm_view
