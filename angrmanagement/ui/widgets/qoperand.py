@@ -1,7 +1,7 @@
+from typing import Optional
 import logging
 
-from PySide2.QtWidgets import QApplication
-from PySide2.QtGui import QPainter
+from PySide2.QtWidgets import QApplication, QGraphicsSimpleTextItem
 from PySide2.QtCore import Qt, QRectF, QPointF
 
 from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand, Value
@@ -35,6 +35,8 @@ class QOperand(QCachedGraphicsItem):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
+        self._branch_target: Optional[int] = None
+
         # the variable involved
         self.variable = None
 
@@ -44,15 +46,14 @@ class QOperand(QCachedGraphicsItem):
 
         # "widgets"
         self._label = None
-        self._label_width = None
+        self._label_item: Optional[QGraphicsSimpleTextItem] = None
         self._variable_label = None
-        self._variable_label_width = None
+        self._variable_label_item: Optional[QGraphicsSimpleTextItem] = None
         self._variable_ident = None
-        self._variable_ident_width = None
-        self._branch_target = None
+        self._variable_ident_item: Optional[QGraphicsSimpleTextItem] = None
         self._branch_targets = None
         self._branch_targets_text = None
-        self._branch_targets_text_width = None
+        self._branch_targets_item: Optional[QGraphicsSimpleTextItem] = None
         self._is_target_func = None
 
         self._width = None
@@ -140,10 +141,12 @@ class QOperand(QCachedGraphicsItem):
     #
 
     def refresh(self):
-        self._update_size()
+        self._layout_items_and_update_size()
         self.recalculate_size()
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
+
+        # Background
         if self.selected:
             painter.setPen(self._config.disasm_view_operand_select_color)
             painter.setBrush(self._config.disasm_view_operand_select_color)
@@ -155,63 +158,6 @@ class QOperand(QCachedGraphicsItem):
                     painter.setPen(self._config.disasm_view_operand_highlight_color)
                     painter.drawRect(0, 0, self.width, self.height)
                     break
-
-        if self._branch_target or self._branch_targets:
-            if self._is_target_func:
-                painter.setPen(self._config.disasm_view_target_addr_color)
-            else:
-                painter.setPen(self._config.disasm_view_antitarget_addr_color)
-        else:
-            if self.disasm_view.show_variable and self.variable is not None:
-                # show-variable is enabled and this operand has a linked variable
-                #fallback = True
-                #if self.infodock.induction_variable_analysis is not None:
-                #    r = self.infodock.induction_variable_analysis.variables.get(self.variable.ident, None)
-                #    if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                #        painter.setPen(Qt.darkYellow)
-                #        fallback = False
-                pass
-
-            if self.is_constant:
-                painter.setPen(self._config.disasm_view_operand_constant_color)
-            else:
-                painter.setPen(self._config.disasm_view_operand_color)
-
-        painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
-        painter.setFont(self._config.disasm_font)
-        y = self._config.disasm_font_ascent
-
-        # draw label
-        # [rax]
-        text = self._label
-        x = self._label_width
-        painter.drawText(0, y, text)
-
-        # draw variable
-        # {s_10}
-        if self.disasm_view.show_variable and self._variable_label:
-            x += self.LABEL_VARIABLE_SPACING
-            painter.setPen(self._config.disasm_view_variable_label_color)
-            painter.drawText(x, y, self._variable_label)
-            painter.setPen(self._config.disasm_view_operand_color)
-            x += self._variable_label_width
-
-        # draw additional branch targets
-        if self._branch_targets_text:
-            painter.setPen(Qt.darkYellow)
-            x += self.BRANCH_TARGETS_SPACING
-            painter.drawText(x, y, self._branch_targets_text)
-            x += self._branch_targets_text_width
-
-        if self.variable is not None and self.disasm_view.show_variable_identifier:
-            x += self.VARIABLE_IDENT_SPACING
-            painter.setPen(Qt.darkGreen)
-            painter.drawText(x, y, self._variable_ident)
-            x += self._variable_ident_width
-
-        # restores the color
-        painter.setPen(self._config.disasm_view_operand_color)
 
     #
     # Private methods
@@ -265,11 +211,11 @@ class QOperand(QCachedGraphicsItem):
             is_target_func = bool(self.branch_targets is not None
                                   and next(iter(self.branch_targets)) in self.disasm.kb.functions)
 
+            self._label = self.operand.render()[0]
+            self._is_target_func = is_target_func
+
             if self.is_indirect_branch:
                 # indirect jump
-                self._label = self.operand.render()[0]
-                self._is_target_func = is_target_func
-
                 self._branch_targets = self.branch_targets
                 first_n_targets = self._first_n_branch_targets(self._branch_targets, 3)
                 if first_n_targets:
@@ -298,9 +244,6 @@ class QOperand(QCachedGraphicsItem):
                     self._branch_target = next(iter(self._branch_targets))
 
             else:
-                self._label = self.operand.render()[0]
-                self._is_target_func = is_target_func
-
                 self._branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
 
         else:
@@ -362,36 +305,72 @@ class QOperand(QCachedGraphicsItem):
                     else:
                         self._variable_label = ''
 
-        self._update_size()
+        if self._branch_target or self._branch_targets:
+            if self._is_target_func:
+                label_color = self._config.disasm_view_target_addr_color
+            else:
+                label_color = self._config.disasm_view_antitarget_addr_color
+        else:
+            if self.is_constant:
+                label_color = self._config.disasm_view_operand_constant_color
+            else:
+                label_color = self._config.disasm_view_operand_color
 
-    def _update_size(self):
+        # label
+        # [rax]
+        self._label_item = QGraphicsSimpleTextItem(self._label, self)
+        self._label_item.setFont(self._config.disasm_font)
+        self._label_item.setBrush(label_color)
 
-        if self._label is not None:
-            self._label_width = self.p2p(self._config.disasm_font_metrics.width(self._label))
-        else:
-            self._label_width = 0
-        if self._branch_targets_text is not None:
-            self._branch_targets_text_width = self.p2p(self._config.disasm_font_metrics.width(self._branch_targets_text))
-        else:
-            self._branch_targets_text_width = 0
-        if self._variable_label is not None:
-            self._variable_label_width = self.p2p(self._config.disasm_font_metrics.width(self._variable_label))
-        else:
-            self._variable_label_width = 0
-        if self.variable is not None:
-            self._variable_ident_width = self.p2p(self._config.disasm_font_metrics.width(self._variable_ident))
-        else:
-            self._variable_ident_width = 0
-
-        self._width = self._label_width
+        # variable
+        # {s_10}
         if self.disasm_view.show_variable and self._variable_label:
-            self._width += self.LABEL_VARIABLE_SPACING + self._variable_label_width
-        if self.disasm_view.show_variable_identifier and self._variable_ident_width:
-            self._width += self.VARIABLE_IDENT_SPACING + self._variable_ident_width
-        if self._branch_targets_text_width:
-            self._width += self.BRANCH_TARGETS_SPACING + self._branch_targets_text_width
-        self._height = self._config.disasm_font_height
-        self.recalculate_size()
+            self._variable_label_item = QGraphicsSimpleTextItem(self._variable_label, self)
+            self._variable_label_item.setFont(self._config.disasm_font)
+            self._variable_label_item.setBrush(self._config.disasm_view_variable_label_color)
+
+        # additional branch targets
+        if self._branch_targets_text:
+            self._branch_targets_item = QGraphicsSimpleTextItem(self._branch_targets_text, self)
+            self._branch_targets_item.setFont(self._config.disasm_font)
+            self._branch_targets_item.setBrush(Qt.darkYellow)  # TODO: Expose as a configuration entry in Config
+
+        # variable identifier
+        if self.variable is not None and self.disasm_view.show_variable_identifier:
+            self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
+            self._variable_ident_item.setFont(self._config.disasm_font)
+            self._variable_ident_item.setBrush(Qt.darkGreen)  # TODO: Expose as a configuration entry in Config
+
+        self._layout_items_and_update_size()
+
+    def _layout_items_and_update_size(self):
+
+        x, y = 0, 0
+
+        # label
+        self._label_item.setPos(x, y)
+        x += self._label_item.boundingRect().width()
+
+        # variable
+        if self._variable_label_item is not None:
+            x += self.LABEL_VARIABLE_SPACING
+            self._variable_label_item.setPos(x, y)
+            x += self._variable_label_item.boundingRect().width()
+
+        # additional branch targets
+        if self._branch_targets_item is not None:
+            x += self.BRANCH_TARGETS_SPACING
+            self._branch_targets_item.setPos(x, y)
+            x += self._branch_targets_item.boundingRect().width()
+
+        # variable identifier
+        if self._variable_ident_item is not None:
+            x += self.VARIABLE_IDENT_SPACING
+            self._variable_ident_item.setPos(x, y)
+            x += self._variable_ident_item.boundingRect()
+
+        self._width = x
+        self._height = self._label_item.boundingRect().height()
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)

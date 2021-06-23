@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, List, Tuple, Type, Optional
+from typing import TYPE_CHECKING, List, Tuple, Type
 import logging
 
 import PySide2.QtWidgets
-from PySide2.QtGui import QColor, QPen
+from PySide2.QtGui import QColor, QPen, QPainter
 from PySide2.QtCore import Qt, QRectF
 
 from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
@@ -135,16 +135,17 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     #
 
     def _update_size(self):
-        fm = self._config.symexec_font_metrics
-        dpr = self.currentDevicePixelRatioF()
+
+        painter = QPainter(self)
+        painter.setFont(self._config.symexec_font)
+        fm = painter.fontMetrics()
 
         width_candidates = [
-            self.HORIZONTAL_PADDING * 2 * dpr,
+            self.HORIZONTAL_PADDING * 2,
         ]
 
         self._width = max(width_candidates)
-        self._height = self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + self._config.symexec_font_height) * 2
-        self._height *= dpr
+        self._height = self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + fm.height()) * 2
 
         self._width = max(100, self._width)
         self._height = max(50, self._height)
