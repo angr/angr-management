@@ -188,6 +188,7 @@ class PluginManager:
             return custom(*args)
         except Exception as ex:  # pylint:disable=broad-except
             self._handle_error(plugin, func, sensitive, ex)
+            return None
 
     def _handle_error(self, plugin, func, sensitive, exc):
         self.workspace.log("Plugin %s errored during %s" % (plugin.get_display_name(), func.__name__))
