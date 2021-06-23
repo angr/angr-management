@@ -371,6 +371,7 @@ class QOperand(QCachedGraphicsItem):
 
         self._width = x
         self._height = self._label_item.boundingRect().height()
+        self.recalculate_size()
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
@@ -440,7 +441,6 @@ class QOperand(QCachedGraphicsItem):
             l.error('_pick_variable: Unsupported operand type %s.', self.operand.__class__)
 
             return None, None
-
 
     def _variable_has_access(self, variable, ins_addr, access_type):
 

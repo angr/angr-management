@@ -50,7 +50,7 @@ class QInstruction(QCachedGraphicsItem):
         self._string = None
         self._string_item: Optional[QGraphicsSimpleTextItem] = None
         self._comment = None
-        self._comment_items: List[QGraphicsSimpleTextItem] = None  # one comment per line
+        self._comment_items: Optional[List[QGraphicsSimpleTextItem]] = None  # one comment per line
         self._legend = None
         self._width = 0
         self._height = 0
@@ -108,8 +108,11 @@ class QInstruction(QCachedGraphicsItem):
 
     def refresh(self):
         self.load_comment()
+        self._init_comments_or_string()
+
         for operand in self._operands:
             operand.refresh()
+
         self._layout_items_and_update_size()
         self.recalculate_size()
 
@@ -190,20 +193,37 @@ class QInstruction(QCachedGraphicsItem):
             if self._string is None:
                 self._string = "<Unknown>"
 
+        self._init_comments_or_string()
+
+        self._layout_items_and_update_size()
+
+    def _init_comments_or_string(self):
+
+        # remove existing comments or strings
+        if self._comment_items:
+            for comm in self._comment_items:
+                comm: QGraphicsSimpleTextItem
+                comm.setParentItem(None)
+            self._comment_items = None
+        elif self._string_item is not None:
+            self._string_item.setParentItem(None)
+            self._string_item = None
+
         # comment or string - comments have precedence
-        if self._comment is not None:
+        if self._comment:
+            self._string_item = None
             lines = self._comment.split('\n')
+            self._comment_items = [ ]
             for line in lines:
                 comment = QGraphicsSimpleTextItem(self.COMMENT_PREFIX + line, self)
                 comment.setFont(self._config.disasm_font)
                 comment.setBrush(Qt.darkGreen)  # TODO: Expose it as a setting in Config
                 self._comment_items.append(comment)
         elif self._string is not None:
+            self._comment_items = None
             self._string_item = QGraphicsSimpleTextItem(self._string, self)
             self._string_item.setFont(self._config.disasm_font)
             self._string_item.setBrush(Qt.gray)  # TODO: Expose it as a setting in Config
-
-        self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self):
 
@@ -236,16 +256,24 @@ class QInstruction(QCachedGraphicsItem):
         # comments and strings
         if self._comment_items:
             x += self.GRAPH_COMMENT_STRING_SPACING
+            max_comment_width = 0
             for comment in self._comment_items:
                 comment.setPos(x, y)
+                max_comment_width = max(comment.boundingRect().width(), max_comment_width)
                 y += comment.boundingRect().height()
+            x += max_comment_width
         elif self._string_item is not None:
             x += self.GRAPH_COMMENT_STRING_SPACING
             self._string_item.setPos(x, y)
+            x += self._string_item.boundingRect().width()
+            y += self._string_item.boundingRect().height()
+        else:
+            y = self._mnemonic_item.boundingRect().height()
 
         # update size
         self._width = x
-        self._height = self._mnemonic_item.boundingRect().height()
+        self._height = y
+        self.recalculate_size()
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)

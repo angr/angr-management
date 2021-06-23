@@ -155,7 +155,7 @@ class QFunctionHeader(QCachedGraphicsItem):
             # prototype
             self._prototype_arg_item.setPos(x, y)
             x += self._prototype_arg_item.boundingRect().width()
-            height = self._function_name_item.boundingRect().height()
+            height = self._prototype_arg_item.boundingRect().height()
         else:
             height = 0
 
@@ -173,6 +173,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         max_x = max(x, max_x)
         self._width = max_x
         self._height = y
+        self.recalculate_size()
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
