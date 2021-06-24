@@ -171,3 +171,11 @@ class BasePlugin:
         """
 
         return False
+
+    def handle_project_save(self, file_name: str):
+        """
+        A handler to notify plugins whenever the project has been saved by the user.
+
+        @param file_name:       Name in which project is saved as.
+        @return:
+        """

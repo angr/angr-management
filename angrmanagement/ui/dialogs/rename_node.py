@@ -139,6 +139,10 @@ class RenameNode(QDialog):
                         workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
                                                                  self._node.variable.offset, self._node.variable.name,
                                                                  node_name)
+                    else:
+                        workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
+                                                                 None, self._node.variable.name,
+                                                                 node_name)
 
                     self._node.unified_variable.name = node_name
                     self._node.unified_variable.renamed = True
