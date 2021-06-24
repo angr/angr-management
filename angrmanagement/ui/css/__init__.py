@@ -2,9 +2,11 @@ import sys
 
 from PySide2.QtWidgets import QApplication
 from PySide2.QtGui import QPalette
-from ...data.object_container import ObjectContainer
 
+from ..widgets.qccode_highlighter import reset_formats
+from ...data.object_container import ObjectContainer
 from ...config import Conf
+from ...logic import GlobalInfo
 
 
 def repr_color(color):
@@ -149,3 +151,13 @@ def refresh_theme():
     app.setPalette(palette)
     CSS.rebuild()
     app.setStyleSheet(CSS.global_css.am_obj)
+
+    reset_formats()
+
+    if GlobalInfo.main_window is not None:
+        for codeview in GlobalInfo.main_window.workspace.view_manager.views_by_category['pseudocode']:
+            codeview.codegen.am_event(already_regenerated=True)
+
+            if codeview._textedit is not None:
+                for panel in codeview._textedit.panels:
+                    panel.setPalette(palette)

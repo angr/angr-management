@@ -59,6 +59,10 @@ COLOR_SCHEMES = {
         'feature_map_color_unknown': QColor(0x0a, 0x0a, 0x0a),
         'feature_map_color_delimiter': QColor(0x00, 0x00, 0x00),
         'feature_map_color_data': QColor(0xc0, 0xc0, 0xc0),
+        'pseudocode_comment_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_function_color': QColor(0x00, 0x00, 0xff, 0xff),
+        'pseudocode_quotation_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_keyword_color': QColor(0x00, 0x00, 0x80, 0xff),
     },
 
     'Dark': {
@@ -118,5 +122,9 @@ COLOR_SCHEMES = {
         'feature_map_color_unknown': QColor(0x0a, 0x0a, 0x0a),
         'feature_map_color_delimiter': QColor(0x00, 0x00, 0x00),
         'feature_map_color_data': QColor(0xc0, 0xc0, 0xc0),
+        'pseudocode_comment_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_function_color': QColor(0x60, 0x80, 0xff, 0xff),
+        'pseudocode_quotation_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_keyword_color': QColor(0x00, 0xff, 0xff, 0xff),
     }
 }
