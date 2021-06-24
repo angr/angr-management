@@ -118,3 +118,7 @@ class LogFatiguePlugin(BasePlugin):
     def teardown(self):
         self._fatigue_flag = False
         self.t_log.join()
+
+
+if not Slacrs:
+    del LogFatiguePlugin
