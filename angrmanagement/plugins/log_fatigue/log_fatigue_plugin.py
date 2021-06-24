@@ -27,6 +27,10 @@ from ..base_plugin import BasePlugin
 
 class LogFatiguePlugin(BasePlugin):
     def __init__(self, workspace):
+        if not Slacrs:
+            raise Exception(
+                "Please install Slacrs to Initialize LogFatigue Plugin"
+            )
         self._fatigue_flag = True
         super().__init__(workspace)
         self._fatigue = HumanFatigue()
@@ -118,7 +122,3 @@ class LogFatiguePlugin(BasePlugin):
     def teardown(self):
         self._fatigue_flag = False
         self.t_log.join()
-
-
-if not Slacrs:
-    del LogFatiguePlugin
