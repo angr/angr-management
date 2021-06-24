@@ -22,7 +22,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
         """
-            Logic to check if the same variable has already been renamed, if not add to the current session.
+        Logic to check if the same variable has already been renamed, if not add to the current session.
         """
         if offset:
             new_name = old_name
@@ -46,7 +46,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
     #
     def handle_function_rename(self, func, old_name: str, new_name: str):
         """
-            Logic to check if the same Function has already been renamed, if not add to the current session.
+        Logic to check if the same Function has already been renamed, if not add to the current session.
         """
         function_rename = (
             self.session.query(FunctionRename)
@@ -97,20 +97,20 @@ class LogReverseEngineeringPlugin(BasePlugin):
 
     def update_function_name(self, old_name, new_name):
         """
-            To update the function names for all variable_rename if function gets renamed.
+        To update the function names for all variable_rename if function gets renamed.
         """
         variables_renamed = self.session.query(VariableRename).filter(
-            VariableRename.project == self.project,
-            VariableRename.function == old_name
+            VariableRename.project == self.project, VariableRename.function == old_name
         )
         for obj in variables_renamed:
             obj.function = new_name
 
     def get_function_rename_stats(self):
         functions_renamed = [
-            func.function for func in self.session.query(FunctionRename).filter(
-                FunctionRename.project == self.project
-            ).all()
+            func.function
+            for func in self.session.query(FunctionRename)
+            .filter(FunctionRename.project == self.project)
+            .all()
         ]
 
         functions_renamed_count = 0
@@ -124,10 +124,15 @@ class LogReverseEngineeringPlugin(BasePlugin):
                 functions_renamed_count = functions_renamed_count + 1
                 total_functions_count = total_functions_count + 1
             elif self.workspace.instance.project.kb.functions._function_map[
-                key]._name.startswith("sub"):
+                key
+            ]._name.startswith("sub"):
                 total_functions_count = total_functions_count + 1
 
         return [functions_renamed_count, total_functions_count]
 
     def teardown(self):
         self.session.close()
+
+
+if not Slacrs:
+    del LogReverseEngineeringPlugin

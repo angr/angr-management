@@ -561,11 +561,12 @@ class MainWindow(QMainWindow):
                                  'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
             return False
 
+        self.workspace.plugins.handle_project_save(file_path)
+
         angrdb = AngrDB(project=self.workspace.instance.project)
         angrdb.dump(file_path)
 
         self.workspace.instance.database_path = file_path
-        self.workspace.plugins.handle_project_save(file_path)
         return True
 
     def _recalculate_view_sizes(self, old_size):
