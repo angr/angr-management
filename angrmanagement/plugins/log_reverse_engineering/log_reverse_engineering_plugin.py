@@ -13,7 +13,9 @@ except ImportError as ex:
 class LogReverseEngineeringPlugin(BasePlugin):
     def __init__(self, workspace):
         if not Slacrs:
-            raise Exception("Please install Slacrs to Initialize LogReverseEngineering Plugin")
+            raise Exception(
+                "Please install Slacrs to Initialize LogReverseEngineering Plugin"
+            )
         super().__init__(workspace)
         self.session = Slacrs().session()
         self.project = (
@@ -134,7 +136,3 @@ class LogReverseEngineeringPlugin(BasePlugin):
 
     def teardown(self):
         self.session.close()
-
-
-if not Slacrs:
-    del LogReverseEngineeringPlugin
