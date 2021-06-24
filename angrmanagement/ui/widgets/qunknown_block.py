@@ -1,11 +1,10 @@
+from typing import List
 
-from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QGraphicsSimpleTextItem
+from PySide2.QtCore import Qt, QRectF
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
-from PySide2.QtWidgets import QGraphicsItem
-from PySide2.QtCore import QRectF
-from PySide2.QtGui import QPainter
 
 
 class QUnknownBlock(QCachedGraphicsItem):
@@ -13,18 +12,19 @@ class QUnknownBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = 'Unknown'
 
-    def __init__(self, workspace, addr, bytes_, parent=None, container=None):
-        super().__init__(parent=parent, container=container)
+    def __init__(self, workspace, addr, bytes_, parent=None):
+        super().__init__(parent=parent)
 
         self.workspace = workspace
         self.addr = addr
         self.bytes = bytes_
 
-        self._bytes_text = None
+        self._width = 0
+        self._height = 0
+
         self._addr_text = None
-        self._addr_width = None
-        self._bytes_width = None
-        self._bytes_height = None
+        self._addr_item: QGraphicsSimpleTextItem = None
+        self._byte_lines: List[QGraphicsSimpleTextItem] = None
 
         self._config = Conf
 
@@ -34,53 +34,15 @@ class QUnknownBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    @property
-    def width(self):
-        return self.boundingRect().width()
-
-    @property
-    def height(self):
-        return self.boundingRect().height()
-
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
 
-        painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
-        painter.setFont(self._config.disasm_font)
-
-        x, y = 0, 0
-
-        # Address
-        painter.setPen(Qt.black)
-        painter.drawText(x, y+Conf.disasm_font_ascent, self._addr_text)
-        x += self._addr_width
-
-        x += self.LINEAR_INSTRUCTION_OFFSET * self.currentDevicePixelRatioF()
-
-        # Content
-        if self._bytes_text:
-            for line in self._bytes_text:
-                painter.drawText(x, y+Conf.disasm_font_ascent, line)
-                y += Conf.disasm_font_height * self.currentDevicePixelRatioF()
-        else:
-            painter.drawText(x, y+Conf.disasm_font_ascent, QUnknownBlock.DEFAULT_TEXT)
+        # painter.setRenderHints(
+        #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        # painter.setFont(self._config.disasm_font)
+        pass
 
     def _boundingRect(self):
-        height, width = 0, 0
-
-        width += self._addr_width
-        width += self.LINEAR_INSTRUCTION_OFFSET
-
-        if self._bytes_text:
-            height += Conf.disasm_font_height * len(self._bytes_text) * self.currentDevicePixelRatioF()
-        else:
-            height += Conf.disasm_font_height * self.currentDevicePixelRatioF()
-
-        if self._bytes_text:
-            width += max(len(line) for line in self._bytes_text) * Conf.disasm_font_width * self.currentDevicePixelRatioF()
-        else:
-            width += Conf.disasm_font_metrics.width(QUnknownBlock.DEFAULT_TEXT) * self.currentDevicePixelRatioF()
-        return QRectF(0, 0, width, height)
+        return QRectF(0, 0, self._width, self._height)
 
     #
     # Private methods
@@ -89,11 +51,13 @@ class QUnknownBlock(QCachedGraphicsItem):
     def _init_widgets(self):
         # Address
         self._addr_text = "%08x" % self.addr
-        self._addr_width = Conf.disasm_font_width * len(self._addr_text) * self.currentDevicePixelRatioF()
+        self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
+        self._addr_item.setBrush(Qt.black)
+        self._addr_item.setFont(Conf.disasm_font)
 
         # Bytes
+        self._byte_lines = [ ]
         if self.bytes:
-            self._bytes_text = [ ]
             line = ""
             for i, b in enumerate(self.bytes):
                 line += "%02x " % b
@@ -102,9 +66,37 @@ class QUnknownBlock(QCachedGraphicsItem):
                     line = ""
 
             if line:
-                self._bytes_text.append(line)
-
-            self._bytes_height = Conf.disasm_font_height * len(self._bytes_text) * self.currentDevicePixelRatioF()
+                o = QGraphicsSimpleTextItem(line, self)
+                o.setFont(Conf.disasm_font)
+                o.setBrush(Qt.black)
+                self._byte_lines.append(o)
 
         else:
-            self._bytes_height = Conf.disasm_font_height * self.currentDevicePixelRatioF()
+            o = QGraphicsSimpleTextItem(QUnknownBlock.DEFAULT_TEXT, self)
+            o.setBrush(Qt.black)
+            o.setFont(Conf.disasm_font)
+            self._byte_lines.append(o)
+
+        self._layout_items_and_update_size()
+
+    def _layout_items_and_update_size(self):
+
+        x, y = 0, 0
+
+        # address
+        self._addr_item.setPos(x, y)
+
+        x += self._addr_item.boundingRect().width()
+        x += self.LINEAR_INSTRUCTION_OFFSET
+
+        # lines
+        max_x = x
+        for line in self._byte_lines:
+            line.setPos(x, y)
+            y += line.boundingRect().height()
+            max_x = max(max_x, line.boundingRect().width())
+
+        self._width = max_x
+        self._height = y
+
+        self.recalculate_size()

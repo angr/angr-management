@@ -440,11 +440,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                             ail_obj = n
                     assert(ail_obj is not None)
                     qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                           self.disasm_view.infodock, obj.addr, ail_obj, None, None, container=self._viewer,
+                                           self.disasm_view.infodock, obj.addr, ail_obj, None, None
                                            )
                 else:
                     qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                           self.disasm_view.infodock, obj.addr, [obj], {}, None, container=self._viewer,
+                                           self.disasm_view.infodock, obj.addr, [obj], {}, None
                                            )
             else:
                 # TODO: Get disassembly even if the function does not exist
@@ -452,10 +452,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                            func_addr, obj)
                 qobject = None
         elif isinstance(obj, MemoryData):
-            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None,
-                                       container=self._viewer)
+            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None)
         elif isinstance(obj, Unknown):
-            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes, container=self._viewer)
+            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
         else:
             qobject = None
         return qobject

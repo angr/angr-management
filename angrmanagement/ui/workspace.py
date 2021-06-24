@@ -375,6 +375,16 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_patches_view(self):
+        view = self._get_or_create_patches_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_interaction_view(self):
+        view = self._get_or_create_interaction_view()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -431,6 +441,17 @@ class Workspace:
         if view is None:
             # Create a new states view
             view = StringsView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_patches_view(self):
+        # Take the first strings view
+        view = self.view_manager.first_view_in_category("patches")
+
+        if view is None:
+            # Create a new states view
+            view = PatchesView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view
