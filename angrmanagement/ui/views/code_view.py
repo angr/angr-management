@@ -31,7 +31,6 @@ class CodeView(BaseView):
         self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(None, "The currently-displayed codegen object")
 
         self._last_function: Optional[Function] = None
-        self._codeedit = None
         self._textedit: Optional[QCCodeEdit] = None
         self._doc: Optional[QCodeDocument] = None
         self._options: Optional[QDecompilationOptions] = None

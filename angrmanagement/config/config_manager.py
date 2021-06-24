@@ -120,6 +120,10 @@ ENTRIES = [
     CE('palette_shadow', QColor, QColor(0x76, 0x76, 0x76, 0xff)),
     CE('palette_link', QColor, QColor(0x00, 0x00, 0xff, 0xff)),
     CE('palette_linkvisited', QColor, QColor(0xff, 0x00, 0xff, 0xff)),
+    CE('pseudocode_comment_color', QColor, QColor(0x00, 0x80, 0x00, 0xff)),
+    CE('pseudocode_function_color', QColor, QColor(0x00, 0x00, 0xff, 0xff)),
+    CE('pseudocode_quotation_color', QColor, QColor(0x00, 0x80, 0x00, 0xff)),
+    CE('pseudocode_keyword_color', QColor, QColor(0x00, 0x00, 0x80, 0xff)),
 
     # feature map
     CE('feature_map_color_regular_function', QColor, QColor(0x00, 0xa0, 0xe8)),
