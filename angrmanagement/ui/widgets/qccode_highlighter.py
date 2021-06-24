@@ -3,7 +3,6 @@ import re
 
 from pyqodeng.core.api import SyntaxHighlighter
 from PySide2.QtGui import QTextCharFormat, QFont, QBrush
-from PySide2.QtCore import Qt
 
 from ..documents import QCodeDocument
 from ...config import Conf
@@ -33,6 +32,10 @@ def reset_formats():
 reset_formats()
 
 class QCCodeHighlighter(SyntaxHighlighter):
+    """
+    A syntax highlighter for QCCodeEdit. Uses a custom lexing scheme to detect C constructs (functions, keywords,
+    comments, and strings) and adds styling to them based on the current color scheme.
+    """
 
     HIGHLIGHTING_RULES = [
         # quotation
@@ -110,7 +113,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         quote_status = False
         quote_mark = None
         escape_counter = 0
-        for col in range(len(text)):
+        for col, _ in enumerate(text):
             if quote_status:
                 assert not self.comment_status
                 if escape_counter:
