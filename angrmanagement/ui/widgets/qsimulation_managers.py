@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QFrame, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
-    QCheckBox, QTabWidget, QListWidget, QListWidgetItem
+from PySide2.QtWidgets import QFrame, QInputDialog, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
+    QCheckBox, QTabWidget, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
@@ -21,7 +21,8 @@ class QSimulationManagers(QFrame):
         self.state = state
 
         self._simgrs_list = None  # type: QComboBox
-        self._avoids_list = None  # type: QListWidget
+        self._avoids_list = None  # type: QTreeWidget
+        self._finds_list = None  # type: QTreeWidget
         self._simgr_viewer = None  # type: QSimulationManagerViewer
         self._oneactive_checkbox = None  # type: QCheckBox
 
@@ -31,6 +32,14 @@ class QSimulationManagers(QFrame):
         self.simgr.am_subscribe(self._watch_simgr)
         self.simgrs.am_subscribe(self._watch_simgrs)
         self.state.am_subscribe(self._watch_state)
+
+    @property
+    def find_addrs(self):
+        return list({int(item.text(0), 16) for item in self._get_checked_items(self._finds_list)})
+
+    @property
+    def avoid_addrs(self):
+        return list({int(item.text(0), 16) for item in self._get_checked_items(self._avoids_list)})
 
     def hideEvent(self, event):  # pylint: disable=unused-argument
         self.simgr.am_unsubscribe(self._watch_simgr)
@@ -50,16 +59,29 @@ class QSimulationManagers(QFrame):
                 self._simgrs_list.setCurrentIndex(i)
 
     def add_avoid_address(self, addr):
-        for i in range(self._avoids_list.count()):
-            item = self._avoids_list.item(i)  # type: QListWidgetItem
-            if int(item.text(), 16) == addr:
-                # deduplicate
-                return
+        self.add_address_to_list(self._avoids_list, addr)
 
-        item = QListWidgetItem("%#x" % addr)
-        item.setData(Qt.CheckStateRole, Qt.Checked)
+    def add_find_address(self, addr):
+        self.add_address_to_list(self._finds_list, addr)
 
-        self._avoids_list.addItem(item)
+    def remove_find_address(self, addr):
+        self._remove_addr(self._finds_list, addr)
+
+    def remove_avoid_address(self, addr):
+        self._remove_addr(self._avoids_list, addr)
+
+    @staticmethod
+    def add_address_to_list(qtreelist: QTreeWidget, addr):
+        for i in range(qtreelist.topLevelItemCount()):
+            item = qtreelist.topLevelItem(i)  # type: QTreeWidgetItem
+            if int(item.text(0), 16) == addr:
+                return None # deduplicate
+
+        item = QTreeWidgetItem(qtreelist)
+        item.setText(0, "%#x" % addr)
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+        item.setData(0, Qt.CheckStateRole, Qt.Checked)
+        return item
 
     #
     # Initialization
@@ -71,6 +93,7 @@ class QSimulationManagers(QFrame):
         self._init_simgrs_tab(tab)
         self._init_settings_tab(tab)
         self._init_avoids_tab(tab)
+        self._init_finds_tab(tab)
 
         layout = QVBoxLayout()
         layout.addWidget(tab)
@@ -150,16 +173,42 @@ class QSimulationManagers(QFrame):
         tab.addTab(frame, 'Settings')
 
     def _init_avoids_tab(self, tab):
-        avoids_list = QListWidget()
+        avoids_list = QTreeWidget()
+        avoids_list.setHeaderHidden(True)
         self._avoids_list = avoids_list
 
         layout = QVBoxLayout()
         layout.addWidget(avoids_list)
 
+        import_button = QPushButton("Import List")
+        import_button.clicked.connect(lambda: self._import_to_list(self._avoids_list))
+        layout.addWidget(import_button)
+
         frame = QFrame()
         frame.setLayout(layout)
 
         tab.addTab(frame, 'Avoids')
+
+        self._avoids_list.itemChanged.connect(self._on_explore_addr_changed)
+
+    def _init_finds_tab(self, tab):
+        finds_list = QTreeWidget()
+        finds_list.setHeaderHidden(True)
+        self._finds_list = finds_list
+
+        layout = QVBoxLayout()
+        layout.addWidget(finds_list)
+
+        frame = QFrame()
+        frame.setLayout(layout)
+
+        import_button = QPushButton("Import List")
+        import_button.clicked.connect(lambda: self._import_to_list(self._finds_list))
+        layout.addWidget(import_button)
+
+        tab.addTab(frame, 'Finds')
+
+        self._finds_list.itemChanged.connect(self._on_explore_addr_changed)
 
     #
     # Event handlers
@@ -167,27 +216,24 @@ class QSimulationManagers(QFrame):
 
     def _on_step_clicked(self):
         if not self.simgr.am_none:
-            self.instance.add_job(SimgrStepJob.create(self.simgr.am_obj, until_branch=False))
+            self.instance.add_job(SimgrStepJob.create(self.simgr.am_obj, until_branch=False,
+                step_callback=self.instance.workspace.plugins.step_callback))
 
     def _on_step_until_branch_clicked(self):
         if not self.simgr.am_none:
-            self.instance.add_job(SimgrStepJob.create(self.simgr.am_obj, until_branch=True))
+            self.instance.add_job(SimgrStepJob.create(self.simgr.am_obj, until_branch=True,
+                step_callback=self.instance.workspace.plugins.step_callback))
 
     def _on_explore_clicked(self):
         if not self.simgr.am_none:
             def _step_callback(simgr):
+                self.instance.workspace.plugins.step_callback(simgr)
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(simgr, events=False)
                 return simgr
 
-            avoids = []
-            for i in range(self._avoids_list.count()):
-                item = self._avoids_list.item(i)  # type: QListWidgetItem
-                if item.checkState() == Qt.Checked:
-                    avoids.append(int(item.text(), 16))
-
             self.instance.add_job(SimgrExploreJob.create(
-                self.simgr, avoid=avoids, find=[], step_callback=_step_callback
+                self.simgr, avoid=self.avoid_addrs, find=self.find_addrs, step_callback=_step_callback
             ))
 
     def _on_simgr_selection(self):
@@ -225,6 +271,11 @@ class QSimulationManagers(QFrame):
     def _watch_simgrs(self, **kwargs):  # pylint: disable=unused-argument
         self.refresh()
 
+    def _on_explore_addr_changed(self, item: QTreeWidgetItem): #pylint: disable=unused-argument
+        """Refresh the disassembly view when an address in the 'avoids' or 'finds' tab is toggled. Ensures that
+        annotations next to instructions are updated."""
+        self.instance.workspace.view_manager.first_view_in_category("disassembly").refresh()
+
     #
     # Private methods
     #
@@ -239,5 +290,38 @@ class QSimulationManagers(QFrame):
         simgr.stashes['stashed'].extend(stashed)
         simgr.stashes['active'] = simgr.active[:1]
         if events:
-           simgr.am_event(src='filter_actives', filtered=stashed)
+            simgr.am_event(src='filter_actives', filtered=stashed)
         return True
+
+
+    @staticmethod
+    def _get_checked_items(qlist: QTreeWidget):
+        items = []
+        for i in range(qlist.topLevelItemCount()):
+            item = qlist.topLevelItem(i)
+            if item.checkState(0) == Qt.Checked:
+                items.append(item)
+                for j in range(item.childCount()):
+                    sub_item = item.child(j)
+                    if sub_item.checkState(0) == Qt.Checked:
+                        items.append(sub_item)
+        return items
+
+    def _import_to_list(self,qlist: QTreeWidget):
+        text, ok = QInputDialog.getMultiLineText(self,"Input Address List","Address in hex (one address each line):","")
+        if not ok:
+            return
+        for line in text.splitlines(keepends=False):
+            try:
+                addr = int(line, 16)
+                self.add_address_to_list(qlist, addr)
+            except ValueError as e: #pylint: disable=unused-variable
+                pass
+
+    @staticmethod
+    def _remove_addr(qlist: QTreeWidget, addr):
+        for i in range(qlist.topLevelItemCount()):
+            qitem = qlist.topLevelItem(i)
+            if int(qitem.text(0), 16) == addr:
+                qlist.takeTopLevelItem(i)
+                return

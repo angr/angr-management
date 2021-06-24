@@ -1,14 +1,15 @@
+from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
-from PySide2.QtCore import Qt, QSize, Signal
+from PySide2.QtCore import Qt, Signal
 
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView, DisassemblyLevel
 from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
@@ -19,9 +20,10 @@ from ..dialogs.hook import HookDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
+from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import Function
+    from angr.knowledge_plugins import Function, VariableManager
 
 
 _l = logging.getLogger(__name__)
@@ -29,12 +31,14 @@ _l = logging.getLogger(__name__)
 
 class DisassemblyView(BaseView):
     view_visibility_changed = Signal()
+    disassembly_level_changed = Signal(DisassemblyLevel)
 
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('disassembly', workspace, *args, **kwargs)
 
         self.caption = 'Disassembly'
 
+        self._disassembly_level = DisassemblyLevel.MachineCode
         self._show_address = True
         self._show_variable = True
         # whether we want to show identifier or not
@@ -57,12 +61,24 @@ class DisassemblyView(BaseView):
         self._insn_addr_on_context_menu = None
         self._label_addr_on_context_menu = None
 
+        self._annotation_callbacks = []
+
         self.width_hint = 800
         self.height_hint = 800
 
         self._init_widgets()
         self._init_menus()
         self._register_events()
+
+    @property
+    def disassembly_level(self):
+        return self._disassembly_level
+    def set_disassembly_level(self, level:DisassemblyLevel):
+        self._disassembly_level = level
+        self._flow_graph.set_disassembly_level(level)
+        self._linear_viewer.set_disassembly_level(level)
+        self.disassembly_level_changed.emit(level)
+        self.redraw_current_graph()
 
     def reload(self):
 
@@ -386,6 +402,7 @@ class DisassemblyView(BaseView):
 
         self._flow_graph.setFocus()
         self.view_visibility_changed.emit()
+        self._flow_graph.refresh()
 
     def display_linear_viewer(self):
 
@@ -400,6 +417,7 @@ class DisassemblyView(BaseView):
 
         self._linear_viewer.setFocus()
         self.view_visibility_changed.emit()
+        self._linear_viewer.refresh()
 
     def display_function(self, function):
 
@@ -529,8 +547,10 @@ class DisassemblyView(BaseView):
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
-
         self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
+
+    def find_addr_in_exec(self, addr):
+        self.workspace.view_manager.first_view_in_category('symexec').find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
@@ -539,6 +559,21 @@ class DisassemblyView(BaseView):
             ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
             self._flow_graph.induction_variable_analysis = ana
         self._flow_graph.refresh()
+
+    def fetch_qblock_annotations(self, qblock):
+        addr_to_annotations = defaultdict(list)
+        for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
+            addr_to_annotations[annotations.addr].append(annotations)
+        for addr in qblock.addr_to_insns.keys():
+            # if addr in self.workspace.instance.hooked_addresses:
+            #     hook_annotation = QHookAnnotation(self, addr)
+            #     addr_to_annotations[addr].append(hook_annotation)
+            qsimgrs = self.workspace.view_manager.first_view_in_category("symexec")._simgrs
+            if addr in qsimgrs.find_addrs:
+                addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
+            if addr in qsimgrs.avoid_addrs:
+                addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
+        return QBlockAnnotations(addr_to_annotations, parent=qblock)
 
     #
     # Initialization
@@ -589,6 +624,8 @@ class DisassemblyView(BaseView):
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
 
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
+
+        self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
 
     #
     # Private methods

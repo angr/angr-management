@@ -3,15 +3,17 @@ from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_C
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
+from angr.sim_manager import SimulationManager
 
-from angrmanagement.ui.widgets.qblock import QBlock
-from angrmanagement.ui.widgets.qinstruction import QInstruction
+from ..ui.widgets.qblock import QBlock
+from ..ui.widgets.qinstruction import QInstruction
+from ..ui.widgets.qinst_annotation import QInstructionAnnotation
 
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.views import disassembly_view, code_view
-
+    from ..ui.views import disassembly_view, code_view
+    from ..ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
 
@@ -20,10 +22,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-
-        from angrmanagement.ui.workspace import Workspace
-
-        self.workspace: Optional[Workspace] = workspace
+        self.workspace: 'Optional[Workspace]' = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
@@ -38,7 +37,7 @@ class BasePlugin:
         return getattr(cls, 'DISPLAY_NAME', cls.__name__)
 
     #
-    # Callbacks
+    # UI Callbacks
     #
 
     def color_insn(self, addr, selected) -> Optional[QColor]:
@@ -106,7 +105,10 @@ class BasePlugin:
         return []
 
 
-    def build_context_menu_function(self, func) -> Iterator[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_functions(self, funcs) -> Iterator[Union[None, Tuple[str, Callable]]]:
+        return []
+
+    def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:
         return []
 
     # Iterable of URL actions
@@ -114,3 +116,58 @@ class BasePlugin:
 
     def handle_url_action(self, action, kwargs):
         pass
+
+    def step_callback(self, simgr:SimulationManager):
+        pass
+
+    #
+    # Decompiler Callbacks
+    #
+
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+        """
+        A handler that is called *right before* function stack variable is renamed. Note: this does not directly
+        allow you to intercept the call and change the results of the change. This handler is only intended to be
+        used to observe the actuall changing and act accordingly after.
+
+        @param func:        angr Function the variable is changed in
+        @param offset:      the offset of the stack variable
+        @param old_name:    name before change
+        @param new_name:    name after change
+        @return:
+        """
+        return False
+
+    def handle_function_rename(self, func, old_name: str, new_name: str):
+        """
+        A handler that is called *right before* a functions name is renamed. See the Note in handle_variable_rename
+        about how this should only be for observance.
+
+        @param func:        angr Function that is being renamed
+        @param old_name:    name before change
+        @param new_name:    name after change
+        @return:
+        """
+        return False
+
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+        """
+        A handler that is called for a variety of reasons related to changing and making a comment. All are called
+        right before the operation happens:
+        1. A comment is made for the first time
+        2. A comment is changed
+
+        `new` bool is true when it is being created for the first time.
+
+        In additon to those two cases, each comment can either be changed in the decompilation view or the
+        dissassembly view, specified by the `decomp` boolean. If true, the comment is changed in the decompilation
+        view.
+
+        @param addr:        Address where the comment it
+        @param cmt:         The comment to be placed at the addr
+        @param new:         T if a new comment
+        @param decomp:      T if comment in decompilation view
+        @return:
+        """
+
+        return False

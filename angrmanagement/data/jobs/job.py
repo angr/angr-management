@@ -14,12 +14,16 @@ class Job:
     def run(self, inst):
         raise NotImplementedError()
 
-    def finish(self, inst, result):
+    def finish(self, inst, result): #pylint: disable=unused-argument
         inst.jobs = inst.jobs[1:]
 
         gui_thread_schedule_async(self._finish_progress)
         if self._on_finish:
             gui_thread_schedule_async(self._on_finish)
+
+    def keyboard_interrupt(self):
+        """Called from the GUI thread when the user presses Ctrl+C"""
+        return
 
     def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
@@ -37,4 +41,3 @@ class Job:
 
     def _finish_progress(self):
         GlobalInfo.main_window.progress_done()
-

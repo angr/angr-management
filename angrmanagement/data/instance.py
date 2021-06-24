@@ -32,6 +32,7 @@ class Instance:
 
         self.jobs = []
         self._jobs_queue = Queue()
+        self.current_job = None
 
         self.extra_containers = {}
         self._container_defaults = {}
@@ -196,6 +197,14 @@ class Instance:
                     return insn_piece.render()[0]
         return None
 
+    def interrupt_current_job(self):
+        """Notify the current running job that the user requested an interrupt. The job may ignore it."""
+        # Due to thread scheduling, current_job reference *must* first be saved on the stack. Accessing self.current_job
+        # multiple times will lead to a race condition.
+        current_job = self.current_job
+        if current_job:
+            current_job.keyboard_interrupt()
+
     def join_all_jobs(self):
         # ...lol
         while self.jobs:
@@ -238,8 +247,11 @@ class Instance:
             gui_thread_schedule_async(self._set_status, args=("Working...",))
 
             try:
+                self.current_job = job
                 result = job.run(self)
-            except Exception as e:  # pylint: disable=broad-except
+                self.current_job = None
+            except Exception as e: # pylint: disable=broad-except
+                self.current_job = None
                 self.workspace.log('Exception while running job "%s":' % job.name)
                 self.workspace.log(e)
             else:

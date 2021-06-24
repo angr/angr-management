@@ -111,7 +111,7 @@ class QCCodeEdit(api.CodeEdit):
             # decompiled function name in selection
             self._selected_node = under_cursor
             mnu.addActions(self.function_name_actions)
-            for entry in self.workspace.plugins.build_context_menu_function(self.workspace.instance.kb.functions[under_cursor.name]):
+            for entry in self.workspace.plugins.build_context_menu_functions([self.workspace.instance.kb.functions[under_cursor.name]]):
                 Menu.translate_element(mnu, entry)
         else:
             mnu.addActions(self.default_actions)
@@ -235,13 +235,16 @@ class QCCodeEdit(api.CodeEdit):
             text)
 
         if ok:
+            exists = addr in cdict
             if text:
+                # callback
+                self.workspace.plugins.handle_comment_changed(addr, text, not exists, True)
                 cdict[addr] = text
             else:
-                try:
+                if exists:
+                    # callback
+                    self.workspace.plugins.handle_comment_changed(addr, "", False, True)
                     del cdict[addr]
-                except KeyError:
-                    pass
 
             self._code_view.codegen.am_event()
 

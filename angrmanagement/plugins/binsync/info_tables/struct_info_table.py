@@ -1,22 +1,20 @@
-
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
 from PySide2.QtCore import Qt
 
 
 class QUserItem:
-    def __init__(self, user):
-        super().__init__()
-
+    def __init__(self, struct_name, size, user):
+        self.sturct_name = struct_name
+        self.size = size
         self.user = user
 
     def widgets(self):
-
         u = self.user
 
         widgets = [
-            QTableWidgetItem(u.name),
-            QTableWidgetItem(),
-            QTableWidgetItem(),
+            QTableWidgetItem(self.sturct_name),
+            QTableWidgetItem(str(self.size)),
+            QTableWidgetItem(u),  # normally u.name
         ]
 
         for w in widgets:
@@ -24,29 +22,34 @@ class QUserItem:
 
         return widgets
 
+    def _build_table(self):
+        pass
 
-class QTeamTable(QTableWidget):
 
+class QStructInfoTable(QTableWidget):
     HEADER = [
+        'Struct Name',
+        'Size',
         'User',
-        'Last update',
-        'Auto pull',
     ]
 
-    def __init__(self, instance, parent=None):
+    def __init__(self, controller, parent=None):
         super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # so text does not get cut off
         self.setHorizontalScrollMode(self.ScrollPerPixel)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
 
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.instance = instance
+        self.verticalHeader().setDefaultSectionSize(24)
 
-        self.items = [ ]
+        self.items = []
+
+        self.controller = controller
 
     def reload(self):
         self.setRowCount(len(self.items))
@@ -55,8 +58,9 @@ class QTeamTable(QTableWidget):
             for i, it in enumerate(item.widgets()):
                 self.setItem(idx, i, it)
 
-    def selected_user(self):
+        self.viewport().update()
 
+    def selected_user(self):
         try:
             idx = next(iter(self.selectedIndexes()))
         except StopIteration:
@@ -70,22 +74,23 @@ class QTeamTable(QTableWidget):
         return user_name
 
     def select_user(self, user_name):
-
         for i, item in enumerate(self.items):
             if item.user.name == user_name:
                 self.selectRow(i)
                 break
 
     def update_users(self, users):
+        """
+        Update the status of all users within the repo.
+        """
 
-        selected_user = self.selected_user()
+        # reset the QItem list
+        self.items = []
 
-        self.items.clear()
+        # First, let's see if any new homies showed up
+        #self.controller._client.init_remote()
 
-        for u in users:
-            self.items.append(QUserItem(u))
+        for user in users:
+            self.items.append(QUserItem("", 0, user.name))
 
         self.reload()
-
-        if selected_user is not None:
-            self.select_user(selected_user)

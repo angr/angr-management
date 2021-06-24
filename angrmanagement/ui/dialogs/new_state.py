@@ -3,10 +3,12 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
     QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
+import os
 
 from ..widgets import QAddressInput, QStateComboBox
 from ...utils.namegen import NameGenerator
-
+from ...ui.dialogs.fs_mount import FilesystemMount
+from typing import List
 
 class StateMetadata(angr.SimStatePlugin):
     def __init__(self):
@@ -53,6 +55,8 @@ class NewState(QDialog):
         self._mode_combo = None  # type: QComboBox
         self._editor = None  # type: QTextEdit
         self._ok_button = None
+
+        self._fs_config = None  # type: List[(str,str)]
 
         self.setWindowTitle('New State')
 
@@ -160,6 +164,25 @@ class NewState(QDialog):
 
         layout.addWidget(base_state_label, row, 0)
         layout.addWidget(base_state_combo, row, 1)
+        row += 1
+
+        # fs_mount
+        fs_label = QLabel(self)
+        fs_label.setText('Filesystem')
+        fs_button = QPushButton(self)
+        fs_button.setText("Change")
+
+        layout.addWidget(fs_label, row, 0)
+        layout.addWidget(fs_button, row, 1)
+
+        def fs_edit_button():
+            fs_dialog = FilesystemMount(fs_config=self._fs_config, instance=self.instance, parent=self)
+            fs_dialog.exec_()
+            self._fs_config = fs_dialog.fs_config
+            fs_button.setText("{} Items".format(len(self._fs_config)))
+
+        fs_button.clicked.connect(fs_edit_button)
+
         row += 1
 
         # mode
@@ -293,6 +316,15 @@ class NewState(QDialog):
 
             if self._create_simgr:
                 self.instance.workspace.create_simulation_manager(self.state, name)
+
+            # mount fs
+            if self._fs_config:
+                for path, real in self._fs_config:
+                    if os.path.isdir(real):
+                        fs = angr.SimHostFilesystem(real)
+                        fs.set_state(self.state)
+                        self.state.fs.mount(path, fs)
+
 
             self.close()
 
