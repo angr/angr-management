@@ -12,6 +12,8 @@ except ImportError as ex:
 
 class LogReverseEngineeringPlugin(BasePlugin):
     def __init__(self, workspace):
+        if not Slacrs:
+            raise Exception("Please install Slacrs to Initialize LogReverseEngineering Plugin")
         super().__init__(workspace)
         self.session = Slacrs().session()
         self.project = (
