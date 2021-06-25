@@ -1,3 +1,4 @@
+from angrmanagement.ui.widgets.qinst_annotation import QHookAnnotation
 from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
@@ -296,7 +297,7 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
-    def popup_modify_hook_dialog(self, async_=True, addr=None):
+    def popup_hook_dialog(self, async_=True, addr=None):
         addr = addr or self._address_in_selection()
 
         if addr is None:
@@ -565,9 +566,9 @@ class DisassemblyView(BaseView):
         for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
             addr_to_annotations[annotations.addr].append(annotations)
         for addr in qblock.addr_to_insns.keys():
-            # if addr in self.workspace.instance.hooked_addresses:
-            #     hook_annotation = QHookAnnotation(self, addr)
-            #     addr_to_annotations[addr].append(hook_annotation)
+            if addr in self.workspace.instance.project._sim_procedures:
+                hook_annotation = QHookAnnotation(self, addr)
+                addr_to_annotations[addr].append(hook_annotation)
             qsimgrs = self.workspace.view_manager.first_view_in_category("symexec")._simgrs
             if addr in qsimgrs.find_addrs:
                 addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))

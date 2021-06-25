@@ -16,7 +16,7 @@ from ..daemon.client import DaemonClient
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
-
+    from ..ui.views.console_view import ConsoleView
 
 class Instance:
     project: Union[angr.Project, ObjectContainer]
@@ -24,6 +24,7 @@ class Instance:
     cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
 
     def __init__(self):
+        # pylint:disable=import-outside-toplevel)
         # delayed import
         from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
 
@@ -71,8 +72,6 @@ class Instance:
         self.img_name = None
 
         self._live = True
-
-        self._hook_code_strings = {}
 
     #
     # Properties
@@ -210,20 +209,12 @@ class Instance:
         while self.jobs:
             time.sleep(0.05)
 
-    def apply_hook(self, addr, hook_code_string):
-        self.project.unhook(addr)
-        # For the context of the exec call
-        p = self.project
-        # execute the hook definition provided by the user. This will register the hook with the project (as long as
-        # the user didn't delete the @project.hook decorator on the function)
-        exec(hook_code_string)
-        # Store the text of the hook so it could be retrieved later and modified
-        self._hook_code_strings[addr] = hook_code_string
+    def append_code_to_console(self, hook_code_string):
+        console = self.workspace.view_manager.first_view_in_category("console") # type: ConsoleView
+        console.set_input_buffer(hook_code_string)
 
     def delete_hook(self, addr):
         self.project.unhook(addr)
-        self._hook_code_strings.pop(addr)
-
 
     #
     # Private methods

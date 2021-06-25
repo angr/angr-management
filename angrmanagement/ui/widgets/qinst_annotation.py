@@ -114,21 +114,17 @@ class QHookAnnotation(QInstructionAnnotation):
     background_color = QColor(230, 230, 230)
     foreground_color = QColor(50, 50, 50)
 
-    def __init__(self, disasm_view, addr, *args, **kwargs):
+    def __init__(self, disasm_view: 'DisassemblyView', addr, *args, **kwargs):
         super().__init__(addr, "hook", *args, **kwargs)
         self.disasm_view = disasm_view
 
     def contextMenuEvent(self, event): #pylint: disable=unused-argument
         menu = QMenu()
-        menu.addAction("Modify", self.modify)
         menu.addAction("Delete", self.delete)
         menu.exec_(QCursor.pos())
 
-    def modify(self):
-        self.disasm_view.popup_modify_hook_dialog(addr=self.addr)
-
     def delete(self):
-        GlobalInfo.main_window.workspace.instance.delete_hook(self.addr)
+        self.disasm_view.workspace.instance.delete_hook(self.addr)
         self.disasm_view.refresh()
 
 

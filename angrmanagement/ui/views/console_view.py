@@ -25,7 +25,7 @@ class ConsoleView(BaseView):
         if self._ipython_widget is None:
             return
 
-        import angr, claripy, cle
+        import angr, claripy, cle # pylint: disable=import-outside-toplevel
 
         namespace = {'angr': angr,
                      'claripy': claripy,
@@ -48,12 +48,17 @@ class ConsoleView(BaseView):
 
         self._ipython_widget.print_text(msg)
 
-    def minimumSizeHint(self, *args, **kwargs):
+    def set_input_buffer(self, text):
+        if self._ipython_widget is None:
+            return
+        self._ipython_widget.input_buffer = text
+
+    def minimumSizeHint(self, *args, **kwargs): # pylint: disable=unused-argument
         return QSize(0, 50)
 
     def _init_widgets(self):
 
-        import angr, claripy, cle
+        import angr, claripy, cle # pylint: disable=import-outside-toplevel
 
         namespace = {
             'angr': angr,
@@ -69,8 +74,14 @@ class ConsoleView(BaseView):
             return
 
         self._ipython_widget = ipython_widget
+        ipython_widget.executed.connect(self.commend_executed)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(ipython_widget)
 
         self.setLayout(hlayout)
+
+    def commend_executed(self,msg):
+        if msg["msg_type"] == "execute_reply" and msg["content"]["status"] == "ok":
+            self.workspace.view_manager.first_view_in_category("disassembly").refresh()
+        print(msg)

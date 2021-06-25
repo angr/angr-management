@@ -1,22 +1,18 @@
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QRadioButton, QGroupBox, QScrollArea, QWidget, QPlainTextEdit
+    QGridLayout, QRadioButton, QGroupBox, QScrollArea, QWidget
 from PySide2.QtGui import QTextOption
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode
+from ...data.instance import Instance
 
 
 class HookDialog(QDialog):
-    def __init__(self, instance, addr=None, parent=None):
+    def __init__(self, instance: Instance, addr=None, parent=None):
         super().__init__(parent)
 
         # initialization
 
         self.instance = instance
-
-        if "hooks" not in dir(self.instance.project):
-            self.instance.project.hooks = {}
-
-        self.hooks = self.instance.project.hooks
         self.state = None  # output
         self._addr = addr
         self.templates = {}
@@ -34,37 +30,36 @@ class HookDialog(QDialog):
 
     def _add_templates(self, addr):
         self.templates['base'] = f"""\
-@p.hook(addr={addr}, length=0)
+@project.hook(addr={addr}, length=0)
 def hook(state):
-    ...
-    """
+    ..."""
 
         self.templates['assertion'] = f"""\
-@p.hook(addr={addr}, length=0)
+@project.hook(addr={addr}, length=0)
 def assertion(state):
     state.add_constraints(
         ...
     )"""
 
         self.templates['disable unicorn'] = f"""\
-@p.hook(addr={addr}, length=0)
+@project.hook(addr={addr}, length=0)
 def disable_unicorn(state):
     state.options.discard("UNICORN")
     state.options.discard("UNICORN_HANDLE_TRANSMIT_SYSCALL")
     state.options.discard("UNICORN_SYM_REGS_SUPPORT")
     state.options.discard("UNICORN_TRACK_BBL_ADDRS")
     state.options.discard("UNICORN_TRACK_STACK_POINTERS")
-    """
+"""
 
         self.templates['enable unicorn'] = f"""\
-@p.hook(addr={addr}, length=0)
+@project.hook(addr={addr}, length=0)
 def enable_unicorn(state):
     state.options.add("UNICORN")
     state.options.add("UNICORN_HANDLE_TRANSMIT_SYSCALL")
     state.options.add("UNICORN_SYM_REGS_SUPPORT")
     state.options.add("UNICORN_TRACK_BBL_ADDRS")
     state.options.add("UNICORN_TRACK_STACK_POINTERS")
-    """
+"""
 
     def update_function(self, template):
         self._function_box.setPlainText(template, mime_type="text/x-python",encoding="utf-8")
@@ -130,15 +125,11 @@ def enable_unicorn(state):
 
         # buttons
         ok_button = QPushButton(self)
-        ok_button.setText('OK')
+        ok_button.setText('Append to Console')
 
         def do_ok():
-            hook_code_string = function_box.toPlainText()
-            self.instance.apply_hook(self._addr, hook_code_string)
-            self.hooks[hex(self._addr)] = hook_code_string
-            disasm_view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
-            # So the hook icon shows up in the disasm view
-            disasm_view.refresh()
+            code = function_box.toPlainText()
+            self.instance.append_code_to_console(self._addr, code)
             self.close()
 
         ok_button.clicked.connect(do_ok)
