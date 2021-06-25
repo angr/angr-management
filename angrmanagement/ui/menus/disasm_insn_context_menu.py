@@ -1,15 +1,18 @@
 from functools import partial
 from typing import Callable
+from typing import TYPE_CHECKING
 
 from ...config import Conf
 from .menu import Menu, MenuEntry, MenuSeparator
-from ...ui.views.disassembly_view import DisassemblyView
+
+if TYPE_CHECKING:
+    from ...ui.views.disassembly_view import DisassemblyView
 
 class DisasmInsnContextMenu(Menu):
     """
     Dissembly Instruction's Context Menu
     """
-    def __init__(self, disasm_view: DisassemblyView):
+    def __init__(self, disasm_view: 'DisassemblyView'):
         super().__init__("", parent=disasm_view)
 
         self.insn_addr = None
@@ -28,12 +31,12 @@ class DisasmInsnContextMenu(Menu):
         self.entries.extend([
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
-            MenuEntry('Add &Hook...', self._add_hook),
             MenuEntry('&Find in execution...', self._find_in_execution),
+            MenuEntry('Add &Hook...', self._add_hook),
         ])
 
     @property
-    def _disasm_view(self) -> DisassemblyView:
+    def _disasm_view(self) -> 'DisassemblyView':
         return self.parent
 
     def _popup_newstate_dialog(self):

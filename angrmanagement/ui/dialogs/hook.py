@@ -117,9 +117,6 @@ def enable_unicorn(state):
         function_box.modes.append(PygmentsSyntaxHighlighter(function_box.document()))
         function_box.modes.append(AutoIndentMode())
 
-        if addr in self.hooks.keys():
-            function_box.insertPlainText(self.hooks[addr])
-
         function_box.setWordWrapMode(QTextOption.WordWrap)
         self._function_box = function_box
 
@@ -132,7 +129,7 @@ def enable_unicorn(state):
 
         def do_ok():
             code = function_box.toPlainText()
-            self.instance.append_code_to_console(self._addr, code)
+            self.instance.append_code_to_console(code)
             self.close()
 
         ok_button.clicked.connect(do_ok)
