@@ -7,6 +7,9 @@ from ...data.instance import Instance
 
 
 class HookDialog(QDialog):
+    """
+    Provide templetes of hook function.
+    """
     def __init__(self, instance: Instance, addr=None, parent=None):
         super().__init__(parent)
 
@@ -85,11 +88,11 @@ def enable_unicorn(state):
         options = QVBoxLayout()
 
         for name, template in sorted(self.templates.items()):
-                child = QRadioButton()
-                child.setText(name)
-                child.template = template
-                child.toggled.connect(self.selected)
-                options.addWidget(child)
+            child = QRadioButton()
+            child.setText(name)
+            child.template = template
+            child.toggled.connect(self.selected)
+            options.addWidget(child)
 
         scroll_area = QScrollArea(self)
         scroll_area.setWidgetResizable(True)

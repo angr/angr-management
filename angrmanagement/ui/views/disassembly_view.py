@@ -1,4 +1,4 @@
-from angrmanagement.ui.widgets.qinst_annotation import QHookAnnotation
+
 from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
@@ -10,7 +10,8 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView, DisassemblyLevel
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap,\
+    QLinearDisassemblyView, DisassemblyLevel
 from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
@@ -22,15 +23,19 @@ from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
+from ...ui.widgets.qinst_annotation import QHookAnnotation
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import Function, VariableManager
+    from angr.knowledge_plugins import VariableManager
 
 
 _l = logging.getLogger(__name__)
 
 
 class DisassemblyView(BaseView):
+    """
+    Disassembly View
+    """
     view_visibility_changed = Signal()
     disassembly_level_changed = Signal(DisassemblyLevel)
 
@@ -557,7 +562,8 @@ class DisassemblyView(BaseView):
         if self._flow_graph.induction_variable_analysis:
             self._flow_graph.induction_variable_analysis = None
         else:
-            ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
+            analyses = self.workspace.instance.project.analyses
+            ana = analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
             self._flow_graph.induction_variable_analysis = ana
         self._flow_graph.refresh()
 

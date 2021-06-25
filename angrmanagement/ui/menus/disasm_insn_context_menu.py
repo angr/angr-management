@@ -6,8 +6,11 @@ from .menu import Menu, MenuEntry, MenuSeparator
 from ...ui.views.disassembly_view import DisassemblyView
 
 class DisasmInsnContextMenu(Menu):
+    """
+    Dissembly Instruction's Context Menu
+    """
     def __init__(self, disasm_view: DisassemblyView):
-        super(DisasmInsnContextMenu, self).__init__("", parent=disasm_view)
+        super().__init__("", parent=disasm_view)
 
         self.insn_addr = None
 
@@ -27,18 +30,20 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuEntry('Add &Hook...', self._add_hook),
             MenuEntry('&Find in execution...', self._find_in_execution),
-
         ])
 
     @property
     def _disasm_view(self) -> DisassemblyView:
         return self.parent
 
-    def _popup_newstate_dialog(self): self._disasm_view.popup_newstate_dialog(async_=True)
+    def _popup_newstate_dialog(self):
+        self._disasm_view.popup_newstate_dialog(async_=True)
 
-    def _popup_dependson_dialog(self): self._disasm_view.popup_dependson_dialog(use_operand=True)
+    def _popup_dependson_dialog(self):
+        self._disasm_view.popup_dependson_dialog(use_operand=True)
 
-    def _toggle_instruction_selection(self): self._disasm_view.infodock.toggle_instruction_selection(self.insn_addr)
+    def _toggle_instruction_selection(self):
+        self._disasm_view.infodock.toggle_instruction_selection(self.insn_addr)
 
     def _avoid_in_execution(self):
         self._disasm_view.avoid_addr_in_exec(self.insn_addr)
@@ -48,7 +53,8 @@ class DisasmInsnContextMenu(Menu):
         self._disasm_view.find_addr_in_exec(self.insn_addr)
         self._disasm_view.refresh()
 
-    def _add_hook(self): self._disasm_view.popup_hook_dialog(async_=True)
+    def _add_hook(self):
+        self._disasm_view.popup_hook_dialog(async_=True)
 
     def _popup_xrefs(self):
         if self._disasm_view is None or self._disasm_view._flow_graph is None:

@@ -1,4 +1,4 @@
-
+from typing import TYPE_CHECKING
 from PySide2.QtGui import QColor, QPainterPath, QBrush, QCursor
 from PySide2.QtCore import QMarginsF
 from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, QInputDialog, QLineEdit
@@ -6,8 +6,6 @@ from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsS
 from .qsimulation_managers import QSimulationManagers
 from ...logic import GlobalInfo
 from ...config import Conf
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..views.symexec_view import SymexecView
@@ -73,6 +71,9 @@ class QStatsAnnotation(QInstructionAnnotation):
 
 
 class QActiveCount(QStatsAnnotation):
+    """
+    Active State Count
+    """
     background_color = QColor(0, 255, 0, 30)
     foreground_color = QColor(0, 60, 0)
 
@@ -99,6 +100,9 @@ class QActiveCount(QStatsAnnotation):
 
 
 class QPassthroughCount(QStatsAnnotation):
+    """
+    Passthrough State Count
+    """
     background_color = QColor(255, 0, 0, 30)
     foreground_color = QColor(60, 0, 0)
 
@@ -111,6 +115,9 @@ class QPassthroughCount(QStatsAnnotation):
 
 
 class QHookAnnotation(QInstructionAnnotation):
+    """
+    Hook Annotation
+    """
     background_color = QColor(230, 230, 230)
     foreground_color = QColor(50, 50, 50)
 
@@ -150,6 +157,9 @@ class QExploreAnnotation(QInstructionAnnotation):
 
 
 class QFindAddrAnnotation(QExploreAnnotation):
+    """
+    Find Address Annotation
+    """
     background_color = QColor(200, 230, 100)
     foreground_color = QColor(30, 80, 30)
     text = "find"
@@ -160,6 +170,9 @@ class QFindAddrAnnotation(QExploreAnnotation):
 
 
 class QAvoidAddrAnnotation(QExploreAnnotation):
+    """
+    Avoid Address Annotation
+    """
     background_color = QColor(230, 200, 100)
     foreground_color = QColor(80, 30, 30)
     text = "avoid"
