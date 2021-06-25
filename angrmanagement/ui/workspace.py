@@ -147,30 +147,25 @@ class Workspace:
     def new_disassembly_view(self):
         """
         Add a new disassembly view into the
-        central_widget and rename the views
-        accordingly
+        central_widget with a unique id
 
         :return:    None
         """
 
-        if self.view_manager.disas_view_counter == 1:
-            for view in self.view_manager.docks:
-                if view.windowTitle() == 'Disassembly':
-                    view.setWindowTitle("Disassembly-A")
-                    self.view_manager.first_view_in_category('disassembly').caption = "Disassembly-A"
-                    break
-        if self.view_manager.disas_view_counter < 26:
-            new_view = DisassemblyView(self, 'center')
-            new_view.caption = f'Disassembly-{ascii_uppercase[self.view_manager.disas_view_counter]}'
-            self.add_view(new_view, new_view.caption, new_view.category)
-            self.view_manager.disas_view_counter += 1
-            self.raise_view(new_view)
-            if self.instance.binary_path is not None:
-                self.on_cfg_generated()
+        dis_views = self.view_manager.views_by_category['disassembly']
+        dis_ids = [int(view.caption.split("-")[-1]) for view in dis_views]
+        dis_ids.sort()
+        missing_ids = sorted(set(range(dis_ids[0], dis_ids[-1])) - set(dis_ids))
+        new_view = DisassemblyView(self, 'center')
+        if missing_ids:
+            new_view.caption = f'Disassembly-{missing_ids[0]}'
+        else:
+            new_view.caption = f'Disassembly-{dis_ids[-1]+1}'
+        self.add_view(new_view, new_view.caption, new_view.category)
+        self.raise_view(new_view)
+        if self.instance.binary_path is not None:
+            self.on_cfg_generated()
             # TODO move new_view tab to front of dock
-            if self.view_manager.disas_view_counter >= 26:
-                self.view_manager.enable_disas_button = False
-                self.view_manager.toggle_new_disas_button()
 
     def split_view(self):
         """

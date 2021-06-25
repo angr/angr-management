@@ -32,7 +32,7 @@ class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('disassembly', workspace, *args, **kwargs)
 
-        self.caption = 'Disassembly'
+        self.caption = 'Disassembly-1'
 
         self._show_address = True
         self._show_variable = True
