@@ -2,21 +2,40 @@
 import re
 
 from pyqodeng.core.api import SyntaxHighlighter
-from PySide2.QtGui import QTextCharFormat, QFont
-from PySide2.QtCore import Qt
+from PySide2.QtGui import QTextCharFormat, QFont, QBrush
 
 from ..documents import QCodeDocument
+from ...config import Conf
 
+FORMATS = {}
 
-FORMATS = {
-    'keyword': None,
-    'quotation': None,
-    'function': None,
-    'comment': None,
-}
+def reset_formats():
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_keyword_color))
+    f.setFontWeight(QFont.Bold)
+    FORMATS['keyword'] = f
 
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_quotation_color))
+    FORMATS['quotation'] = f
+
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_function_color))
+    f.setFontWeight(QFont.Bold)
+    FORMATS['function'] = f
+
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_comment_color))
+    f.setFontWeight(QFont.Bold)
+    FORMATS['comment'] = f
+
+reset_formats()
 
 class QCCodeHighlighter(SyntaxHighlighter):
+    """
+    A syntax highlighter for QCCodeEdit. Uses a custom lexing scheme to detect C constructs (functions, keywords,
+    comments, and strings) and adds styling to them based on the current color scheme.
+    """
 
     HIGHLIGHTING_RULES = [
         # quotation
@@ -78,31 +97,10 @@ class QCCodeHighlighter(SyntaxHighlighter):
     ]
 
     def __init__(self, parent, color_scheme=None):
-        # TODO: Use the color scheme. it's not used right now
         super().__init__(parent, color_scheme=color_scheme)
 
         self.doc = parent  # type: QCodeDocument
         self.comment_status = False
-
-        if FORMATS['keyword'] is None:
-            f = QTextCharFormat()
-            f.setForeground(Qt.darkBlue)
-            f.setFontWeight(QFont.Bold)
-            FORMATS['keyword'] = f
-        if FORMATS['quotation'] is None:
-            f = QTextCharFormat()
-            f.setForeground(Qt.darkGreen)
-            FORMATS['quotation'] = f
-        if FORMATS['function'] is None:
-            f = QTextCharFormat()
-            f.setForeground(Qt.blue)
-            f.setFontWeight(QFont.Bold)
-            FORMATS['function'] = f
-        if FORMATS['comment'] is None:
-            f = QTextCharFormat()
-            f.setForeground(Qt.darkGreen)
-            f.setFontWeight(QFont.Bold)
-            FORMATS['comment'] = f
 
     def highlight_block(self, text, block):
         # this code makes the assumption that this function is only ever called on lines in sequence in order
@@ -115,7 +113,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         quote_status = False
         quote_mark = None
         escape_counter = 0
-        for col in range(len(text)):
+        for col, _ in enumerate(text):
             if quote_status:
                 assert not self.comment_status
                 if escape_counter:

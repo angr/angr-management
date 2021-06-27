@@ -75,7 +75,8 @@ class BinsyncPlugin(BasePlugin):
     #
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
-        # print(f"{hex(func.addr)}: renamed variable[{hex(offset)}]: {old_name}->{new_name}")
+        # if offset:
+        #     print(f"{hex(func.addr)}: renamed variable[{hex(offset)}]: {old_name}->{new_name}")
         return False
 
     def handle_function_rename(self, func, old_name: str, new_name: str):

@@ -1,5 +1,6 @@
 from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont
 from PySide2.QtCore import Qt, QPointF, QRectF, QObject
+from PySide2.QtWidgets import QGraphicsSimpleTextItem
 from typing import Any, Mapping, Sequence, Optional, Tuple
 
 import ailment
@@ -23,18 +24,16 @@ class QBlockCodeObj(QObject):
     obj: Any
     infodock: InfoDock
     parent: Any
-    container: Any
     options: Mapping[str, Any]
     span: Optional[Tuple[int,int]]
     subobjs: Sequence['QBlockCodeObj']
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, container:Any, options:Mapping[str, Any]=None):
+    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:Mapping[str, Any]=None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
-        self.container = container
         self.options = options or {}
         self.span = None
         self.subobjs = []
@@ -124,7 +123,7 @@ class QBlockCodeObj(QObject):
         self._add_subobj(text)
 
     def add_variable(self, var):
-        self._add_subobj(QVariableObj(var, self.infodock, parent=self, container=self.container))
+        self._add_subobj(QVariableObj(var, self.infodock, parent=self))
 
     def on_click(self):
         """
@@ -171,8 +170,7 @@ class QAilObj(QBlockCodeObj):
             ailment.expression.Convert: QAilConvertObj,
             ailment.expression.Load: QAilLoadObj,
         }.get(type(obj), QAilTextObj)
-        subobj = subobjcls(obj, self.infodock, parent=self,
-                           container=self.container, options=self.options)
+        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options)
         self._add_subobj(subobj)
 
 
@@ -339,8 +337,7 @@ class QIROpObj(QBlockCodeObj):
             VexIRTmpWrapper: QIROpVexTmpObj,
             VexIRRegWrapper: QIROpVexRegObj,
         }.get(type(obj), QIROpTextObj)
-        subobj = subobjcls(obj, self.infodock, parent=self,
-                           container=self.container, options=self.options, irobj=self.irobj)
+        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options, irobj=self.irobj)
         self._add_subobj(subobj)
 
 
@@ -513,34 +510,44 @@ class QBlockCode(QCachedGraphicsItem):
 
     addr: int
     _addr_str: str
-    _addr_width: int
     obj: QBlockCodeObj
     _config: ConfigurationManager
     disasm_view: 'QDisassemblyBaseControl'
     workspace: 'Workspace'
     infodock: InfoDock
     parent: Any
-    container: Any
 
     def __init__(self, addr:int, obj:QBlockCodeObj, config:ConfigurationManager,
         disasm_view:'QDisassemblyBaseControl', workspace:'Workspace',
-        infodock:InfoDock, parent:Any=None, container:Any=None):
-        super().__init__(parent=parent, container=container)
+        infodock:InfoDock, parent:Any=None):
+        super().__init__(parent=parent)
         self.addr = addr
         self._addr_str = "%08x" % self.addr
-        self._addr_width = config.disasm_font_metrics.width(self._addr_str) * self.currentDevicePixelRatioF()
+        self._addr_item: QGraphicsSimpleTextItem = None
         self.obj = obj
+        self._width = 0
+        self._height = 0
         self._config = config
         self.parent = parent
-        self.container = container
         self.workspace = workspace
         self.infodock = infodock
         self._disasm_view = disasm_view
         self._qtextdoc = QTextDocument()
         self._qtextdoc.setDefaultFont(self._config.disasm_font)
         self._qtextdoc.setDocumentMargin(0)
+
+        self._addr_item = QGraphicsSimpleTextItem(self._addr_str, self)
+        self._addr_item.setBrush(Conf.disasm_view_node_address_color)
+        self._addr_item.setFont(Conf.disasm_font)
+
         self.update_document()
         self.setToolTip("Address: " + self._addr_str)
+
+        self._layout_items_and_update_size()
+
+    def refresh(self):
+        self._addr_item.setVisible(self._disasm_view.show_address)
+        self._layout_items_and_update_size()
 
     def update_document(self):
         self._qtextdoc.clear()
@@ -560,16 +567,12 @@ class QBlockCode(QCachedGraphicsItem):
             painter.drawRect(0, 0, self.width, self.height)
 
         x = 0
-        y = self._config.disasm_font_ascent
 
         if self._disasm_view.show_address:
-            painter.setPen(self._config.disasm_view_node_address_color)
-            painter.drawText(x, y, self._addr_str)
-            x += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
+            x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
 
         painter.translate(QPointF(x, 0))
         self._qtextdoc.drawContents(painter)
-
 
     #
     # Event handlers
@@ -582,7 +585,7 @@ class QBlockCode(QCachedGraphicsItem):
             # Propagate event to rendered object
             p = event.pos()
             if self._disasm_view.show_address:
-                offset = self._addr_width + self.GRAPH_ADDR_SPACING
+                offset = self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
                 p.setX(p.x() - offset)
             if p.x() >= 0:
                 hitpos = self._qtextdoc.documentLayout().hitTest(p, Qt.HitTestAccuracy.ExactHit)
@@ -593,9 +596,18 @@ class QBlockCode(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _boundingRect(self):
-        width = self._qtextdoc.size().width()
-        height = self._qtextdoc.size().height()
+    def _layout_items_and_update_size(self):
+
+        x, y = 0, 0
         if self._disasm_view.show_address:
-            width += self._addr_width + self.GRAPH_ADDR_SPACING * self.currentDevicePixelRatioF()
-        return QRectF(0, 0, width, height)
+            self._addr_item.setPos(x, y)
+            x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
+
+        x += self._qtextdoc.size().width()
+        y += self._qtextdoc.size().height()
+        self._width = x
+        self._height = y
+        self.recalculate_size()
+
+    def _boundingRect(self):
+        return QRectF(0, 0, self._width, self._height)

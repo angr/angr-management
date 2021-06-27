@@ -130,7 +130,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         for n in self._supergraph.nodes():
             block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disasm_view, self.disasm,
-                                self.infodock, n.addr, nodefunc(n), branchfunc(n), scene, container=self)
+                                self.infodock, n.addr, nodefunc(n), branchfunc(n), scene)
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block
             scene.addItem(block)

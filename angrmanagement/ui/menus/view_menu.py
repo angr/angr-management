@@ -19,4 +19,7 @@ class ViewMenu(Menu):
             MenuEntry('Symbolic Execution', main_window.workspace.show_symexec_view),
             MenuEntry('Symbolic States', main_window.workspace.show_states_view),
             MenuEntry('Strings', main_window.workspace.show_strings_view),
+            MenuEntry('Proximity View', main_window.view_proximity_for_current_function),
+            MenuEntry('Patches', main_window.workspace.show_patches_view),
+            MenuEntry('Interaction', main_window.workspace.show_interaction_view),
         ])

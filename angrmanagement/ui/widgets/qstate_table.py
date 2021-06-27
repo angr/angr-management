@@ -86,7 +86,7 @@ class QStateTable(QTableWidget):
             return None
 
     def reload(self):
-        current_row = self.currentRow()
+        #current_row = self.currentRow()
         self.clearContents()
 
         self.items = [QStateTableItem(f) for f in self.states]
@@ -100,7 +100,7 @@ class QStateTable(QTableWidget):
         #if 0 <= current_row < len(self.items):
         #    self.setCurrentItem(current_row, 0)
 
-    def _on_state_selected(self, *args):
+    def _on_state_selected(self, *args): #pylint: disable=unused-argument
         if self._selected is not None:
             self._selected(self.current_state_record())
 
@@ -131,25 +131,25 @@ class QStateTable(QTableWidget):
         dialog.exec_()
         if dialog.state is not None:
             self.states.append(dialog.state)
-            self.states.am_event()
+            self.states.am_event(src="new", state=dialog.state)
 
     def _action_duplicate(self):
         state = self.states[self.currentRow()]
         copy = state.copy()
         copy.gui_data.name = self._get_copied_state_name(copy.gui_data.name)
         self.states.append(copy)
-        self.states.am_event()
+        self.states.am_event(src="duplicate", state=copy)
 
     def _action_delete(self):
-        self.states.pop(self.currentRow())
-        self.states.am_event()
+        tmp = self.states.pop(self.currentRow())
+        self.states.am_event(src="delete", state=tmp)
 
     def _action_new_simulation_manager(self):
         state = self.states[self.currentRow()]
         simgr_name = NameGenerator.random_name()
         self.instance.workspace.create_simulation_manager(state, simgr_name)
 
-    def _watch_states(self, **kwargs):
+    def _watch_states(self, **kwargs):  #pylint: disable=unused-argument
         self.reload()
 
     def _get_copied_state_name(self, current_name):

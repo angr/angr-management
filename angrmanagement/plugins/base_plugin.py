@@ -3,15 +3,17 @@ from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_C
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
+from angr.sim_manager import SimulationManager
 
-from angrmanagement.ui.widgets.qblock import QBlock
-from angrmanagement.ui.widgets.qinstruction import QInstruction
+from ..ui.widgets.qblock import QBlock
+from ..ui.widgets.qinstruction import QInstruction
+from ..ui.widgets.qinst_annotation import QInstructionAnnotation
 
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.views import disassembly_view, code_view
-
+    from ..ui.views import disassembly_view, code_view
+    from ..ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
 
@@ -20,10 +22,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-
-        from angrmanagement.ui.workspace import Workspace
-
-        self.workspace: Optional[Workspace] = workspace
+        self.workspace: 'Optional[Workspace]' = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
@@ -109,10 +108,16 @@ class BasePlugin:
     def build_context_menu_functions(self, funcs) -> Iterator[Union[None, Tuple[str, Callable]]]:
         return []
 
+    def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:
+        return []
+
     # Iterable of URL actions
     URL_ACTIONS: List[str] = []
 
     def handle_url_action(self, action, kwargs):
+        pass
+
+    def step_callback(self, simgr:SimulationManager):
         pass
 
     #
@@ -166,3 +171,11 @@ class BasePlugin:
         """
 
         return False
+
+    def handle_project_save(self, file_name: str):
+        """
+        A handler to notify plugins whenever the project has been saved by the user.
+
+        @param file_name:       Name in which project is saved as.
+        @return:
+        """
