@@ -1,6 +1,7 @@
 from PySide2.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWidgetItem, \
     QDialogButtonBox, QGridLayout, QHeaderView, QAbstractItemView
 
+from .sync_ctrl import Controller
 #
 #   MenuDialog Box for Binsync Actions
 #
@@ -74,7 +75,7 @@ class MenuDialog(QDialog):
 
 class SyncMenu:
     def __init__(self, controller, funcs):
-        self.controller = controller
+        self.controller: Controller = controller
         self.selected_funcs = funcs
 
     def open_sync_menu(self):

@@ -4,7 +4,8 @@ from ...ui.workspace import Workspace
 from .sync_config import SyncConfig
 from .info_view import InfoView
 from .sync_menu import SyncMenu
-from ...data.sync_ctrl import SyncControl
+
+from .sync_ctrl import Controller
 
 # check to see if BinSync is installed
 try:
@@ -21,7 +22,7 @@ class BinsyncPlugin(BasePlugin):
         self.sync_view = InfoView(workspace, 'right')
         self.workspace.add_view(self.sync_view, self.sync_view.caption, self.sync_view.category)
 
-        self.controller = SyncControl(self.workspace.instance)
+        self.controller = Controller(self.workspace)
         self.sync_menu = None
         self.selected_funcs = []
 
