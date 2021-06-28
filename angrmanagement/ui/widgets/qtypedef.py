@@ -71,7 +71,7 @@ class QCTypeDef(QWidget):
     def leaveEvent(self, event):  # pylint: disable=unused-argument
         self.highlight = None
 
-    def mouseMoveEvent(self, event):  # pylint: disable=unused-argument
+    def mouseMoveEvent(self, event):
         old_highlight = self.highlight
         self.highlight = min(max((event.pos().y() - 5) // LINE_HEIGHT, 0), len(self.lines) - 1)
         if old_highlight != self.highlight:
@@ -96,7 +96,7 @@ class QCTypeDef(QWidget):
             painter.drawText(0, y, line)
             y += 20
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event):  # pylint: disable=unused-argument
         if self.highlight is None:
             return
 
