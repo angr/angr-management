@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox, QLabel
+from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox
 
 from angr.sim_type import TypeRef, ALL_TYPES
 
@@ -33,7 +33,6 @@ class TypesView(BaseView):
         new_btn.clicked.connect(self._on_new_type)
         status_layout.addWidget(new_btn)
 
-        self._layout.addWidget(QLabel("Hello world", scroll_contents))
 
         scroll_area.setWidgetResizable(True)
         scroll_contents.setLayout(self._layout)
@@ -45,7 +44,7 @@ class TypesView(BaseView):
 
     def reload(self):
         for child in list(self._layout.parent().children()):
-            if type(child) in (QLabel, QCTypeDef):
+            if type(child) is QCTypeDef:
                 self._layout.takeAt(0)
                 self._layout.removeWidget(child)
                 child.deleteLater()
