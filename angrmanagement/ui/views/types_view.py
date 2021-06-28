@@ -8,6 +8,9 @@ from ..dialogs.type_editor import CTypeEditor
 
 
 class TypesView(BaseView):
+    """
+    The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
+    """
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('types', workspace, default_docking_position, *args, **kwargs)
 
@@ -15,7 +18,6 @@ class TypesView(BaseView):
 
         self._layout = None  # type: QVBoxLayout
         self._init_widgets()
-        #self.reload()
 
     def _init_widgets(self):
         outer_layout = QVBoxLayout()

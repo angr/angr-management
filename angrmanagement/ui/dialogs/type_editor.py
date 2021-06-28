@@ -1,6 +1,7 @@
-from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 from typing import Optional
 from collections import OrderedDict
+
+from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 
 import pycparser.plyparser
 from angr import sim_type
@@ -96,7 +97,7 @@ class CTypeEditor(QDialog):
                     typedefs.pop(k)
             result = list(typedefs.items()) + list(defs.items())
             result = [(name, ty.with_arch(self.arch)) for name, ty in result]
-        except pycparser.plyparser.ParseError as e:
+        except pycparser.plyparser.ParseError:
             pass
 
         # hack. idk why our pycparser config will accept `typedef int` as the same as `int`

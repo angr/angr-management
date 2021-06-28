@@ -68,16 +68,16 @@ class QCTypeDef(QWidget):
     def sizeHint(self):
         return QSize(self.minimumWidth(), self.minimumHeight())
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event):  # pylint: disable=unused-argument
         self.highlight = None
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event):  # pylint: disable=unused-argument
         old_highlight = self.highlight
         self.highlight = min(max((event.pos().y() - 5) // LINE_HEIGHT, 0), len(self.lines) - 1)
         if old_highlight != self.highlight:
             self.repaint()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event):  # pylint: disable=unused-argument
         painter = QPainter(self)
 
         if self.highlight is not None:
