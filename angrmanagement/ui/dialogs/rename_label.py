@@ -26,9 +26,9 @@ class RenameLabel(QDialog):
         self._disasm_view = disasm_view
         self._label_addr = label_addr
 
-        self._name_box = None
+        self._name_box: LabelNameBox = None
         self._status_label = None
-        self._ok_button = None
+        self._ok_button: QPushButton = None
 
         self.setWindowTitle('Rename Label')
 

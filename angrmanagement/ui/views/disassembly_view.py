@@ -54,6 +54,10 @@ class DisassemblyView(BaseView):
         self.variable_manager = None  # type: Optional[VariableManager]
         self._current_function = ObjectContainer(None, 'The currently selected function')
 
+        # For tests only
+        self._t_linear_viewer_visible: bool = False
+        self._t_flow_graph_visible: bool = False
+
         self._insn_menu = None  # type: Optional[DisasmInsnContextMenu]
         self._label_menu = None  # type: Optional[DisasmLabelContextMenu]
 
@@ -72,6 +76,7 @@ class DisassemblyView(BaseView):
     @property
     def disassembly_level(self):
         return self._disassembly_level
+
     def set_disassembly_level(self, level:DisassemblyLevel):
         self._disassembly_level = level
         self._flow_graph.set_disassembly_level(level)
@@ -150,7 +155,7 @@ class DisassemblyView(BaseView):
 
         :return:    Linear viewer or flow graph.
         """
-        if self._linear_viewer.isVisible():
+        if self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
             return self._linear_viewer
         else:
             return self._flow_graph
@@ -632,14 +637,14 @@ class DisassemblyView(BaseView):
         # clear existing selected instructions and operands
         self.infodock.clear_selection()
 
-        if self._flow_graph.isVisible():
+        if self._flow_graph.isVisible() or self._t_flow_graph_visible:
             if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
                 # set function graph of a new function
                 self._flow_graph.function_graph = FunctionGraph(function=the_func,
                                                                 exception_edges=self.show_exception_edges,
                                                                 )
 
-        elif self._linear_viewer.isVisible():
+        elif self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
         self.workspace.view_manager.first_view_in_category('console').push_namespace({

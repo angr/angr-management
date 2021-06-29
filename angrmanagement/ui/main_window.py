@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
-        self.workspace = None
+        self.workspace: Workspace = None
         self.central_widget = None
         self.central_widget2 = None
 
