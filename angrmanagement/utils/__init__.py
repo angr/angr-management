@@ -179,7 +179,7 @@ def should_display_string_label(cfg, insn_addr, project):
 
 
 def is_printable(ch):
-    return ch >= 32 and ch < 127
+    return 32 <= ch < 127
 
 
 def filter_string_for_display(s):
@@ -211,8 +211,10 @@ def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str
                 str_content = next_level.content.decode('utf-8')
 
     if str_content is not None:
-        if len(str_content) > max_size: return '"' + filter_string_for_display(str_content[:max_size]) + '..."'
-        else: return '"' + filter_string_for_display(str_content) + '"'
+        if len(str_content) > max_size:
+            return '"' + filter_string_for_display(str_content[:max_size]) + '..."'
+        else:
+            return '"' + filter_string_for_display(str_content) + '"'
     else:
         return None
 
