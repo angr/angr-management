@@ -187,7 +187,7 @@ def filter_string_for_display(s):
     for ch in s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t"):
         char = ord(ch)
         if not is_printable(char):
-            ch = strHex = "\\x%0.2x" % char
+            ch = "\\x%0.2x" % char
         output += ch
     return output
 
