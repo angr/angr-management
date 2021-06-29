@@ -9,7 +9,7 @@ from ...utils.cfg import categorize_edges
 from .qblock import QGraphBlock
 from .qgraph_arrow import QDisasmGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
-from .qdisasm_base_control import QDisassemblyBaseControl
+from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
 
 if TYPE_CHECKING:
     from angrmanagement.logic.disassembly import InfoDock
@@ -55,6 +55,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self.variable_manager = None
 
         self._function_graph = None
+        self._supergraph = None
         self._viewport_mover = None
 
         self._edges = None
@@ -107,19 +108,29 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         if self._function_graph is None:
             return
 
-        self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function)
-        self.workspace.view_manager.first_view_in_category('console').push_namespace({
-            'disasm': self.disasm,
-        })
-
         self.blocks.clear()
         self._insaddr_to_block.clear()
-
-        supergraph = self._function_graph.supergraph
         scene = self.scene()
-        for n in supergraph.nodes():
+
+        if self._disassembly_level is DisassemblyLevel.AIL:
+            self.disasm = self.workspace.instance.project.analyses.Clinic(
+                self._function_graph.function)
+            self._supergraph = self.disasm.graph
+            nodefunc = lambda n: n
+            branchfunc = lambda n: None
+        else:
+            include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
+            self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function, include_ir=include_ir)
+            self.workspace.view_manager.first_view_in_category('console').push_namespace({
+                'disasm': self.disasm,
+            })
+            self._supergraph = self._function_graph.supergraph
+            nodefunc = lambda n: n.cfg_nodes
+            branchfunc = get_out_branches
+
+        for n in self._supergraph.nodes():
             block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disasm_view, self.disasm,
-                                self.infodock, n.addr, n.cfg_nodes, get_out_branches(n), scene, container=self)
+                                self.infodock, n.addr, nodefunc(n), branchfunc(n), scene)
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block
             scene.addItem(block)
@@ -133,9 +144,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         # determine initial view focus point
         self._reset_view()
-
-        # show the graph
-        self.show()
 
         # select the old instructions
         for insn_addr in selected_insns:
@@ -204,10 +212,10 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         node_map = {}
         for block in self.blocks:
             node_map[block.addr] = block
-        for node in self.function_graph.supergraph.nodes():
+        for node in self._supergraph.nodes():
             block = node_map[node.addr]
             node_sizes[node] = block.width, block.height
-        gl = GraphLayouter(self.function_graph.supergraph, node_sizes)
+        gl = GraphLayouter(self._supergraph, node_sizes)
 
         nodes = { }
         for node, coords in gl.node_coordinates.items():

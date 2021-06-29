@@ -281,13 +281,19 @@ class Workspace:
         view.setFocus()
 
     def set_comment(self, addr, comment_text):
-
         kb = self.instance.project.kb
-        if comment_text is None and addr in kb.comments:
+        exists = addr in kb.comments
+
+        # callback
+        if comment_text is None and exists:
+            self.plugins.handle_comment_changed(addr, "", False, False)
             del kb.comments[addr]
-        kb.comments[addr] = comment_text
+        else:
+            self.plugins.handle_comment_changed(addr, comment_text, not exists, False)
+            kb.comments[addr] = comment_text
 
         # callback first
+        # TODO: can this be removed?
         if self.instance.set_comment_callback:
             self.instance.set_comment_callback(addr=addr, comment_text=comment_text)
 
@@ -393,6 +399,16 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_patches_view(self):
+        view = self._get_or_create_patches_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_interaction_view(self):
+        view = self._get_or_create_interaction_view()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -449,6 +465,17 @@ class Workspace:
         if view is None:
             # Create a new states view
             view = StringsView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_patches_view(self):
+        # Take the first strings view
+        view = self.view_manager.first_view_in_category("patches")
+
+        if view is None:
+            # Create a new states view
+            view = PatchesView(self, 'center')
             self.add_view(view, view.caption, view.category)
 
         return view

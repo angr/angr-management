@@ -1,21 +1,24 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QGraphicsScene, QGraphicsItem, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
+from PySide2.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
 from PySide2.QtGui import QPainter
 from PySide2.QtCore import Qt, QRectF, QRect, QEvent
 
 from angr.block import Block
-from angr.knowledge_plugins.cfg.memory_data import MemoryData, MemoryDataSort
+from angr.knowledge_plugins.cfg.memory_data import MemoryData
+from angr.knowledge_plugins import Function
 from angr.analyses.cfg.cfb import Unknown
+from angr.analyses.decompiler import Clinic
+from angr.analyses import Disassembly
 
 from ...config import Conf
 from .qblock import QLinearBlock
 from .qmemory_data_block import QMemoryDataBlock
 from .qunknown_block import QUnknownBlock
 from .qgraph import QSaveableGraphicsView
-from .qdisasm_base_control import QDisassemblyBaseControl
+from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
 
 if TYPE_CHECKING:
     from angrmanagement.logic.disassembly import InfoDock
@@ -86,6 +89,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._start_line_in_object = 0
 
         self._disasms = { }
+        self._ail_disasms = { }
         self.objects = [ ]
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
@@ -94,6 +98,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def reload(self, old_infodock: Optional['InfoDock']=None):
         self.initialize()
+        curr_offset = self._offset
+        self._offset = None  # force a re-generation of objects
+        self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
+        self.redraw()
 
     #
     # Properties
@@ -210,6 +218,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._addr_to_region_offset.clear()
         self._offset_to_region.clear()
         self._disasms.clear()
+        self._ail_disasms.clear()
         self._offset = None
         self._max_offset = None
         self._start_line_in_object = 0
@@ -224,7 +233,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self._offset_to_region[byte_offset] = mr
             byte_offset += mr.size
 
-        self._update_size()
+        self.refresh()
 
     def goto_function(self, func):
         if func.addr not in self._block_addr_map:
@@ -424,19 +433,28 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             if self.workspace.instance.kb.functions.contains_addr(func_addr):
                 func = self.workspace.instance.kb.functions[func_addr]
                 disasm = self._get_disasm(func)
-                qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                       self.disasm_view.infodock, obj.addr, [obj], {}, None, container=self._viewer,
-                                       )
+                if self._disassembly_level is DisassemblyLevel.AIL:
+                    ail_obj = None
+                    for n in disasm.graph.nodes:
+                        if n.addr == obj.addr:
+                            ail_obj = n
+                    assert(ail_obj is not None)
+                    qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                           self.disasm_view.infodock, obj.addr, ail_obj, None, None
+                                           )
+                else:
+                    qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                           self.disasm_view.infodock, obj.addr, [obj], {}, None
+                                           )
             else:
                 # TODO: Get disassembly even if the function does not exist
                 _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
                            func_addr, obj)
                 qobject = None
         elif isinstance(obj, MemoryData):
-            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None,
-                                       container=self._viewer)
+            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None)
         elif isinstance(obj, Unknown):
-            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes, container=self._viewer)
+            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
         else:
             qobject = None
         return qobject
@@ -459,13 +477,16 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _addr_from_offset(self, mr, base_offset, offset):
         return mr.addr + (offset - base_offset)
 
-    def _get_disasm(self, func):
+    def _get_disasm(self, func: Function) -> Union[Clinic, Disassembly]:
         """
-
-        :param func:
-        :return:
+        Get disassembly analysis object for a given function
         """
+        if self._disassembly_level is DisassemblyLevel.AIL:
+            if func.addr not in self._ail_disasms:
+                self._ail_disasms[func.addr] = self.workspace.instance.project.analyses.Clinic(func)
+            return self._ail_disasms[func.addr]
 
         if func.addr not in self._disasms:
-            self._disasms[func.addr] = self.workspace.instance.project.analyses.Disassembly(function=func)
+            include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
+            self._disasms[func.addr] = self.workspace.instance.project.analyses.Disassembly(function=func, include_ir=include_ir)
         return self._disasms[func.addr]

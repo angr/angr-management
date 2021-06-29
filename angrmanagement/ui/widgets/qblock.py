@@ -3,18 +3,21 @@ import logging
 from PySide2.QtGui import QPen, QPainterPath
 from PySide2.QtCore import QRectF, QMarginsF
 
-from angr.analyses.disassembly import Instruction
+from angr.analyses.disassembly import Instruction, IROp
+from angr.analyses.decompiler.clinic import Clinic
 from angr.sim_variable import SimRegisterVariable
 
-from ...utils import get_block_objects, get_out_branches_for_insn
+from ...utils import get_block_objects, get_out_branches_for_insn, get_label_text
 from ...utils.block_objects import FunctionHeader, Variables, PhiVariable, Label
 from ...config import Conf
 from .qinstruction import QInstruction
 from .qfunction_header import QFunctionHeader
 from .qblock_label import QBlockLabel
+from .qblock_code import QBlockCode, QAilObj, QIROpObj
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
 from .qgraph_object import QCachedGraphicsItem
+
 
 _l = logging.getLogger(__name__)
 
@@ -25,10 +28,13 @@ class QBlock(QCachedGraphicsItem):
     LEFT_PADDING = 10
     RIGHT_PADDING = 10
     SPACING = 0
+    AIL_SHOW_CONDITIONAL_JUMP_TARGETS = True
+    SHADOW_OFFSET_X = 0
+    SHADOW_OFFSET_Y = 0
 
     def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
-                 parent=None, container=None):
-        super().__init__(parent=parent, container=container)
+                 parent=None):
+        super().__init__(parent=parent)
 
         # initialization
         self.workspace = workspace
@@ -49,6 +55,7 @@ class QBlock(QCachedGraphicsItem):
         self._block_item_obj = None  # type: QGraphicsPathItem
         self.addr_to_insns = { }
         self.addr_to_labels = { }
+        self.qblock_annotations = { }
 
         self._init_widgets()
 
@@ -120,47 +127,69 @@ class QBlock(QCachedGraphicsItem):
             self._block_item_obj = None
 
         self._block_item = QPainterPath()
-        self._block_item.addRoundedRect(0, 0, self.width, self.height,
+        self._block_item.addRoundedRect(0, 0, self.width - self.SHADOW_OFFSET_X, self.height - self.SHADOW_OFFSET_Y,
             self._config.disasm_view_node_rounding,
             self._config.disasm_view_node_rounding)
 
-    def _init_widgets(self):
+    def _init_ail_block_widgets(self):
+        bn = self.cfg_nodes
+        if bn.addr in self.disasm.kb.labels:
+            label = QBlockLabel(bn.addr, get_label_text(bn.addr, self.disasm.kb),
+                                self._config, self.disasm_view, self.workspace,
+                                self.infodock, parent=self)
+            self.objects.append(label)
+            self.addr_to_labels[bn.addr] = label
+        for stmt in bn.statements:
+            code_obj = QAilObj(stmt, self.infodock, parent=None,
+                               options={'show_conditional_jump_targets': self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS})
+            obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
+                             self.workspace, self.infodock, parent=self)
+            code_obj.parent = obj # Reparent
+            self.objects.append(obj)
 
+    def _init_disassembly_block_widgets(self):
+        for obj in get_block_objects(self.disasm, self.cfg_nodes, self.func_addr):
+            if isinstance(obj, Instruction):
+                out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
+                insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
+                                    self.infodock, obj, out_branch, self._config, parent=self)
+                self.objects.append(insn)
+                self.addr_to_insns[obj.addr] = insn
+            elif isinstance(obj, Label):
+                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, self.infodock,
+                                    parent=self)
+                self.objects.append(label)
+                self.addr_to_labels[obj.addr] = label
+            elif isinstance(obj, IROp):
+                code_obj = QIROpObj(obj, self.infodock, parent=None)
+                disp_obj = QBlockCode(obj.addr, code_obj, self._config, self.disasm_view,
+                                 self.workspace, self.infodock, parent=self)
+                code_obj.parent = disp_obj # Reparent
+                self.objects.append(disp_obj)
+            elif isinstance(obj, PhiVariable):
+                if not isinstance(obj.variable, SimRegisterVariable):
+                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self)
+                    self.objects.append(phivariable)
+            elif isinstance(obj, Variables):
+                for var in obj.variables:
+                    variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self)
+                    self.objects.append(variable)
+            elif isinstance(obj, FunctionHeader):
+                self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
+                                                    self.disasm_view, self.workspace, self.infodock, parent=self))
+
+    def _init_widgets(self):
         if self.scene is not None:
             for obj in self.objects:
                 self.scene.removeItem(obj)
 
         self.objects.clear()
-        block_objects = get_block_objects(self.disasm, self.cfg_nodes, self.func_addr)
 
-        for obj in block_objects:
-            if isinstance(obj, Instruction):
-                out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
-                insn = QInstruction(self.workspace, self.func_addr, self.disasm_view, self.disasm,
-                                    self.infodock, obj, out_branch, self._config, parent=self,
-                                    container=self._container)
-                self.objects.append(insn)
-                self.addr_to_insns[obj.addr] = insn
-            elif isinstance(obj, Label):
-                # label
-                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.workspace, self.infodock,
-                                    parent=self, container=self._container)
-                self.objects.append(label)
-                self.addr_to_labels[obj.addr] = label
-            elif isinstance(obj, PhiVariable):
-                if not isinstance(obj.variable, SimRegisterVariable):
-                    phivariable = QPhiVariable(self.workspace, self.disasm_view, obj, self._config, parent=self,
-                                               container=self._container)
-                    self.objects.append(phivariable)
-            elif isinstance(obj, Variables):
-                for var in obj.variables:
-                    variable = QVariable(self.workspace, self.disasm_view, var, self._config, parent=self,
-                                         container=self._container)
-                    self.objects.append(variable)
-            elif isinstance(obj, FunctionHeader):
-                self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
-                                                    self.disasm_view, self.workspace, self.infodock, parent=self,
-                                                    container=self._container))
+        if isinstance(self.disasm, Clinic):
+            self._init_ail_block_widgets()
+        else:
+            self._init_disassembly_block_widgets()
+
         self.layout_widgets()
 
     def layout_widgets(self):
@@ -169,15 +198,32 @@ class QBlock(QCachedGraphicsItem):
 
 class QGraphBlock(QBlock):
     MINIMUM_DETAIL_LEVEL = 0.4
+    AIL_SHOW_CONDITIONAL_JUMP_TARGETS = False
+    SHADOW_OFFSET_X = 5
+    SHADOW_OFFSET_Y = 5
+    BLOCK_ANNOTATIONS_LEFT_PADDING = 2
 
     @property
     def mode(self):
         return 'graph'
 
     def layout_widgets(self):
-        x, y = self.LEFT_PADDING * self.currentDevicePixelRatioF(), self.TOP_PADDING * self.currentDevicePixelRatioF()
+        x, y = self.LEFT_PADDING, self.TOP_PADDING
+
+        if self.qblock_annotations and self.qblock_annotations.scene():
+            self.qblock_annotations.scene().removeItem(self.qblock_annotations)
+
+        self.qblock_annotations = self.disasm_view.fetch_qblock_annotations(self)
+
         for obj in self.objects:
-            obj.setPos(x, y)
+            if self.qblock_annotations.width > 0:
+                obj.setPos(self.BLOCK_ANNOTATIONS_LEFT_PADDING + self.qblock_annotations.width + x, y)
+            else:
+                obj.setPos(x, y)
+            if isinstance(obj, QInstruction) and self.qblock_annotations.get(obj.addr):
+                qinsn_annotations = self.qblock_annotations.get(obj.addr)
+                for qinsn_annotation in qinsn_annotations:
+                    qinsn_annotation.setY(obj.y())
             y += obj.boundingRect().height()
 
     def hoverEnterEvent(self, event):
@@ -216,7 +262,7 @@ class QGraphBlock(QBlock):
         painter.setBrush(self._config.disasm_view_node_shadow_color)
         painter.setPen(self._config.disasm_view_node_shadow_color)
         shadow_path = QPainterPath(self._block_item)
-        shadow_path.translate(5,5)
+        shadow_path.translate(self.SHADOW_OFFSET_X, self.SHADOW_OFFSET_Y)
         painter.drawPath(shadow_path)
 
         # background of the node
@@ -245,7 +291,9 @@ class QGraphBlock(QBlock):
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()
-        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING, self.RIGHT_PADDING, self.BOTTOM_PADDING)
+        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING,
+                            self.RIGHT_PADDING + self.SHADOW_OFFSET_X,
+                            self.BOTTOM_PADDING + self.SHADOW_OFFSET_Y)
         return cbr.marginsAdded(margins)
 
 
@@ -271,7 +319,7 @@ class QLinearBlock(QBlock):
         max_width = 0
 
         for obj in self.objects:
-            y_offset += self.SPACING * self.currentDevicePixelRatioF()
+            y_offset += self.SPACING
             obj_start = 0
             obj.setPos(obj_start, y_offset)
             if obj_start + obj.width > max_width:

@@ -1,23 +1,23 @@
-
 from .job import Job
 
 
 class SimgrStepJob(Job):
-    def __init__(self, simgr, callback=None, until_branch=False):
+    def __init__(self, simgr, callback=None, until_branch=False, step_callback=None):
         super(SimgrStepJob, self).__init__('Simulation manager stepping')
         self._simgr = simgr
         self._callback = callback
         self._until_branch = until_branch
+        self._step_callback = step_callback
 
     def run(self, inst):
         if self._until_branch:
             orig_len = len(self._simgr.active)
             if orig_len > 0:
                 while len(self._simgr.active) == orig_len:
-                    self._simgr.step()
+                    self._simgr.step(step_func=self._step_callback)
                     self._simgr.prune()
         else:
-            self._simgr.step()
+            self._simgr.step(step_func=self._step_callback)
             self._simgr.prune()
 
         return self._simgr
