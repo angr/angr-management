@@ -153,19 +153,19 @@ class Workspace:
         """
 
         dis_views = self.view_manager.views_by_category['disassembly']
-        dis_ids = [int(view.caption.split("-")[-1]) for view in dis_views]
+        dis_ids = [view.index for view in dis_views]
         dis_ids.sort()
         missing_ids = sorted(set(range(dis_ids[0], dis_ids[-1])) - set(dis_ids))
         new_view = DisassemblyView(self, 'center')
         if missing_ids:
-            new_view.caption = f'Disassembly-{missing_ids[0]}'
+            new_view.index = missing_ids[0]
         else:
-            new_view.caption = f'Disassembly-{dis_ids[-1]+1}'
+            new_view.index = dis_ids[-1]+1
         self.add_view(new_view, new_view.caption, new_view.category)
         self.raise_view(new_view)
         if self.instance.binary_path is not None:
             self.on_cfg_generated()
-            # TODO move new_view tab to front of dock
+        # TODO move new_view tab to front of dock
 
     def split_view(self):
         """
