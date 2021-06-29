@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QGraphicsSimpleTextItem
 
 from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort, MemoryData
 
-from ...utils import get_label_text
+from ...utils import get_label_text, is_printable
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
@@ -77,10 +77,6 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     #
     # Private methods
     #
-
-    @staticmethod
-    def _is_printable(ch):
-        return ch >= 32 and ch < 127
 
     def _init_widgets(self):
 
@@ -173,7 +169,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         bytes_list = [ ]
         for idx, byt in enumerate(all_bytes):
             if type(byt) is int:
-                if self._is_printable(byt):
+                if is_printable(byt):
                     color = printable_byte_color
                 else:
                     color = unprintable_byte_color
@@ -198,7 +194,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         character_list = [ ]
         for byt in all_bytes:
             if type(byt) is int:
-                if self._is_printable(byt):
+                if is_printable(byt):
                     color = printable_char_color
                     ch = chr(byt)
                 else:
