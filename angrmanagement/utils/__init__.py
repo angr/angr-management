@@ -178,8 +178,18 @@ def should_display_string_label(cfg, insn_addr, project):
     return False
 
 
+def is_printable(ch):
+    return ch >= 32 and ch < 127
+
+
 def filter_string_for_display(s):
-    return s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t")
+    output = ""
+    for ch in s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t"):
+        char = ord(ch)
+        if not is_printable(char):
+            ch = strHex = "\\x%0.2x" % char
+        output += ch
+    return output
 
 
 def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str]:
