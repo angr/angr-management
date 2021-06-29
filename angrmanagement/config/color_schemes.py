@@ -9,6 +9,7 @@ COLOR_SCHEMES = {
         'disasm_view_operand_highlight_color': QColor(0xfc, 0xef, 0x00),
         'disasm_view_operand_select_color': QColor(0xff, 0xff, 0x00),
         'disasm_view_function_color': QColor(0x00, 0x00, 0xff),
+        'disasm_view_ir_default_color': QColor(0x80, 0x80, 0x80),
         'disasm_view_label_color': QColor(0x00, 0x00, 0xff),
         'disasm_view_label_highlight_color': QColor(0xf0, 0xf0, 0xbf),
         'disasm_view_target_addr_color': QColor(0x00, 0x00, 0xff),
@@ -58,6 +59,10 @@ COLOR_SCHEMES = {
         'feature_map_color_unknown': QColor(0x0a, 0x0a, 0x0a),
         'feature_map_color_delimiter': QColor(0x00, 0x00, 0x00),
         'feature_map_color_data': QColor(0xc0, 0xc0, 0xc0),
+        'pseudocode_comment_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_function_color': QColor(0x00, 0x00, 0xff, 0xff),
+        'pseudocode_quotation_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_keyword_color': QColor(0x00, 0x00, 0x80, 0xff),
     },
 
     'Dark': {
@@ -67,6 +72,7 @@ COLOR_SCHEMES = {
         'disasm_view_operand_highlight_color': QColor(0x05, 0x2f, 0x50),
         'disasm_view_operand_select_color': QColor(0x09, 0x50, 0x8d),
         'disasm_view_function_color': QColor(0xc8, 0xc8, 0xc8),
+        'disasm_view_ir_default_color': QColor(0x80, 0x80, 0x80),
         'disasm_view_label_color': QColor(0x00, 0xaa, 0xff),
         'disasm_view_label_highlight_color': QColor(0x2f, 0x2f, 0x25),
         'disasm_view_target_addr_color': QColor(0x00, 0x00, 0xff),
@@ -116,5 +122,9 @@ COLOR_SCHEMES = {
         'feature_map_color_unknown': QColor(0x0a, 0x0a, 0x0a),
         'feature_map_color_delimiter': QColor(0x00, 0x00, 0x00),
         'feature_map_color_data': QColor(0xc0, 0xc0, 0xc0),
+        'pseudocode_comment_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_function_color': QColor(0x60, 0x80, 0xff, 0xff),
+        'pseudocode_quotation_color': QColor(0x00, 0x80, 0x00, 0xff),
+        'pseudocode_keyword_color': QColor(0x00, 0xff, 0xff, 0xff),
     }
 }

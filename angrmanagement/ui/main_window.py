@@ -89,9 +89,9 @@ class MainWindow(QMainWindow):
         self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
-        self._init_shortcuts()
         self._init_menus()
         self._init_plugins()
+        self._init_shortcuts()
 
         # I'm ready to show off!
         if show:
@@ -123,7 +123,6 @@ class MainWindow(QMainWindow):
     @status.setter
     def status(self, v):
         self._status = v
-
         self.statusBar().showMessage(v)
 
     @property
@@ -258,6 +257,9 @@ class MainWindow(QMainWindow):
     # Shortcuts
     #
 
+    def interrupt_current_job(self):
+        self.workspace.instance.interrupt_current_job()
+
     def _init_shortcuts(self):
         """
         Initialize shortcuts
@@ -268,6 +270,8 @@ class MainWindow(QMainWindow):
         center_dockable_views = self.workspace.view_manager.get_center_views()
         for i in range(1, len(center_dockable_views)+1):
             QShortcut(QKeySequence('Ctrl+'+str(i)), self, center_dockable_views[i-1].raise_)
+
+        QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
         center_dockable_views[0].raise_()
@@ -556,6 +560,8 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(None, 'Error',
                                  'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
             return False
+
+        self.workspace.plugins.handle_project_save(file_path)
 
         angrdb = AngrDB(project=self.workspace.instance.project)
         angrdb.dump(file_path)

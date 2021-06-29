@@ -265,6 +265,11 @@ class QFunctionTableView(QTableView):
     def filter(self, keyword):
         self._model.filter(keyword)
 
+    def jump_to_result(self, index=0):
+        if len(self._model.func_list) > index:
+            self._selected_func.am_obj = self._model.func_list[index]
+            self._selected_func.am_event(func=self._selected_func.am_obj)
+
     def load_functions(self):
         if not self.show_alignment_functions:
             self._model.func_list = [ v for v in self._functions.values() if not v.alignment ]
@@ -288,8 +293,9 @@ class QFunctionTableView(QTableView):
         return True
 
     def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
-        row = self.currentIndex().row()
-        self._context_menu.set(self._model.func_list[row]).qmenu().popup(QCursor.pos())
+        rows = self.selectionModel().selectedRows()
+        funcs = [self.workspace.instance.kb.functions[r.data()] for r in rows]
+        self._context_menu.set(funcs).qmenu().popup(QCursor.pos())
 
 
 class QFunctionTableFilterBox(QLineEdit):
@@ -427,5 +433,6 @@ class QFunctionTable(QWidget):
         self.filter_functions(text)
 
     def _on_filter_box_return_pressed(self):
+        self._table_view.jump_to_result()
         # Hide the filter box
         self.hide_filter_box()

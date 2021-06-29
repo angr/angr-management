@@ -24,7 +24,8 @@ class DisasmLabelContextMenu(Menu):
             ])
         self.entries.extend([
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
-            MenuEntry('&Avoid in execution...', self._avoid_in_execution)
+            MenuEntry('&Avoid in execution...', self._avoid_in_execution),
+            MenuEntry('&Find in execution...', self._find_in_execution),
         ])
 
     @property
@@ -39,6 +40,8 @@ class DisasmLabelContextMenu(Menu):
     def _toggle_label_selection(self): self._disasm_view.infodock.toggle_label_selection(self.addr)
 
     def _avoid_in_execution(self): self._disasm_view.avoid_addr_in_exec(self.addr)
+
+    def _find_in_execution(self): self._disasm_view.find_addr_in_exec(self.addr)
 
     def _popup_xrefs(self):
         if self._disasm_view is None or self._disasm_view._flow_graph is None:

@@ -31,7 +31,6 @@ class CodeView(BaseView):
         self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(None, "The currently-displayed codegen object")
 
         self._last_function: Optional[Function] = None
-        self._codeedit = None
         self._textedit: Optional[QCCodeEdit] = None
         self._doc: Optional[QCodeDocument] = None
         self._options: Optional[QDecompilationOptions] = None
@@ -237,7 +236,7 @@ class CodeView(BaseView):
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
-                    self.workspace.jump_to(selected_node.value.value)
+                    self.workspace.jump_to(selected_node.value)
 
     def keyPressEvent(self, event):
         key = event.key()
