@@ -5,10 +5,10 @@ import unittest
 from PySide2.QtTest import QTest
 from PySide2.QtCore import Qt
 
+import angr
 from angrmanagement.ui.main_window import MainWindow
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.rename_node import RenameNode
-import angr
 
 from common import setUp, test_location
 
@@ -25,7 +25,7 @@ class TestRenameFunctions(unittest.TestCase):
         main.workspace.instance.join_all_jobs()
 
         func = main.workspace.instance.project.kb.functions['main']
-        assert func is not None
+        self.assertIsNotNone(func)
 
         # decompile the function
         disasm_view = main.workspace._get_or_create_disassembly_view()
@@ -38,10 +38,12 @@ class TestRenameFunctions(unittest.TestCase):
         # find the node for function
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
             if isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CFunction):
+                func_node = item.obj
                 break
         else:
-            assert False, "The CFunction instance is not found."
-        assert item.obj.name == "main"
+            self.fail("The CFunction instance is not found.")
+
+        self.assertEqual(func_node.name, "main")
 
         # rename the function in the disassembly view
         rlabel = RenameLabel(disasm_view, func.addr, parent=None)
@@ -49,16 +51,16 @@ class TestRenameFunctions(unittest.TestCase):
         QTest.keyClicks(rlabel._name_box, "asdf")
         QTest.mouseClick(rlabel._ok_button, Qt.MouseButton.LeftButton)
 
-        assert func.name == "asdf"
-        assert item.obj.name == "main"
+        self.assertEqual(func.name, "asdf")
+        self.assertEqual(func_node.name, "main")
 
         # rename the function in the pseudocode view
-        rnode = RenameNode(code_view=pseudocode_view, node=item.obj)
+        rnode = RenameNode(code_view=pseudocode_view, node=func_node)
         rnode._name_box.setText("")
         QTest.keyClicks(rnode._name_box, "fdsa")
         QTest.mouseClick(rnode._ok_button, Qt.MouseButton.LeftButton)
 
-        assert func.name == "fdsa"
+        self.assertEqual(func.name, "fdsa")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,6 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.code_view import CodeView
 
 
@@ -23,7 +22,7 @@ class NodeNameBox(QLineEdit):
 
     @staticmethod
     def _is_valid_node_name(name):
-        return name and not (' ' in name.strip())
+        return name and not ' ' in name.strip()
 
 
 class RenameNode(QDialog):
@@ -159,8 +158,10 @@ class RenameNode(QDialog):
                 elif isinstance(self._node, CFunctionCall):
                     # callback
                     if self._node.callee_func is not None:
-                        workspace.plugins.handle_function_rename(code_kb.functions.get_by_addr(self._node.callee_func.addr),
-                                                                 self._node.callee_func.name, node_name)
+                        workspace.plugins.handle_function_rename(
+                            code_kb.functions.get_by_addr(self._node.callee_func.addr),
+                            self._node.callee_func.name, node_name
+                        )
 
                         self._node.callee_func.name = node_name
 
