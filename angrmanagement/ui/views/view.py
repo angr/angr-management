@@ -17,12 +17,11 @@ class BaseView(QFrame):
         self.category = category
         self.default_docking_position = default_docking_position
 
-        self.caption = None
-
         self.old_width = None
         self.old_height = None
         self.width_hint = -1
         self.height_hint = -1
+        self.index = 1
 
     def focus(self):
         self.workspace.view_manager.raise_view(self)
@@ -44,3 +43,11 @@ class BaseView(QFrame):
     def closeEvent(self, event:PySide2.QtGui.QCloseEvent):
         self.workspace.view_manager.remove_view(self)
         event.accept()
+
+    #
+    # Properties
+    #
+
+    @property
+    def caption(self):
+        return f'{self.base_caption}-{self.index}'

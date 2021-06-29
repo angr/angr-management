@@ -9,7 +9,7 @@ class SyncView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('sync', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = "Sync"
+        self.base_caption = "Sync"
 
         self._status_label = None  # type: QLabel
         self._team_table = None  # type: QTeamTable

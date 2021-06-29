@@ -32,6 +32,8 @@ class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('disassembly', workspace, *args, **kwargs)
 
+        self.base_caption = 'Disassembly'
+
         self._show_address = True
         self._show_variable = True
         # whether we want to show identifier or not
@@ -89,16 +91,6 @@ class DisassemblyView(BaseView):
     @property
     def caption(self):
         return f'{self.base_caption}-{self.index}'
-
-    @caption.setter
-    def caption(self, cap):
-        if cap:
-            base_cap, idx = cap.split('-')
-            self.base_caption = base_cap
-            self.index = int(idx)
-        else:
-            self.base_caption = 'Disassembly'
-            self.index = 1
 
     @property
     def disasm(self):

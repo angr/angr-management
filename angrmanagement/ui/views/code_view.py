@@ -23,7 +23,7 @@ class CodeView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('pseudocode', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Pseudocode'
+        self.base_caption = 'Pseudocode'
 
         self.function: Union[ObjectContainer, Function] = ObjectContainer(None, 'The function to decompile')
         self.current_node = ObjectContainer(None, 'Current selected C-code node')

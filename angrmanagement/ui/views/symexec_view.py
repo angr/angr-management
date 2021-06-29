@@ -12,7 +12,7 @@ class SymexecView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super(SymexecView, self).__init__('symexec', workspace, *args, **kwargs)
 
-        self.caption = 'Symbolic Execution'
+        self.base_caption = 'Symbolic Execution'
 
         self._pathtree = None  # type: QPathTree
         self._simgrs = None  # type: QSimulationManagers

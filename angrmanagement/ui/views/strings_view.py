@@ -13,7 +13,7 @@ class StringsView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super(StringsView, self).__init__('strings', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Strings'
+        self.base_caption = 'Strings'
 
         self._string_table = None  # type: QStringTable
         self._function_list = None  # type: QFunctionComboBox
