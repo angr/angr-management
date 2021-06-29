@@ -147,6 +147,9 @@ class RenameNode(QDialog):
                     # callback not supported
                     self._code_view.workspace.instance.kb.labels[self._node.variable.addr] = node_name
                     self._node.variable.name = node_name
+                elif isinstance(self._node, CVariable):
+                    # function argument, probably?
+                    self._node.variable.name = node_name
                 elif isinstance(self._node, CFunction):
                     # callback
                     workspace.plugins.handle_function_rename(code_kb.functions.get_by_addr(self._node.addr),
