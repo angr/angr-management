@@ -5,7 +5,7 @@ import archinfo
 from cle import Blob
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
-    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox
+    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox, QSizePolicy
 from PySide2.QtCore import Qt
 
 
@@ -18,7 +18,7 @@ class LoadBinaryError(Exception):
 
 class LoadBinary(QDialog):
     def __init__(self, partial_ld, parent=None):
-        super(LoadBinary, self).__init__(parent)
+        super().__init__(parent)
 
         # initialization
         self.file_path = partial_ld.main_object.binary
@@ -26,6 +26,7 @@ class LoadBinary(QDialog):
         self.sha256 = None
         self.option_widgets = { }
         self.is_blob = isinstance(partial_ld.main_object, Blob)
+        self.arch = partial_ld.main_object.arch
 
         # return values
         self.cfg_args = None
@@ -144,18 +145,22 @@ class LoadBinary(QDialog):
         self._init_cfg_options_tab(tab)
 
     def _init_load_options_tab(self, tab):
+        arch_layout = QHBoxLayout()
+        arch_caption = QLabel(self)
+        arch_caption.setText('Architecture:')
+        arch_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        arch_layout.addWidget(arch_caption)
+        arch_combo = QComboBox(self)
+        for arch in archinfo.all_arches:
+            addendum = ' (P-code Engine)' if hasattr(arch, 'pcode_arch') else ''
+            arch_combo.addItem(f'{arch.bits}b {arch.name} ({arch.memory_endness[-2:]}){addendum}', str(arch))
+        index = arch_combo.findData(str(self.arch))
+        arch_combo.setCurrentIndex(index)
+        arch_layout.addWidget(arch_combo)
+        self.option_widgets['arch'] = arch_combo
+
         if self.is_blob:
             blob_layout = QGridLayout()
-
-            # architecture selection
-            arch_caption = QLabel(self)
-            arch_caption.setText('Architecture:')
-            blob_layout.addWidget(arch_caption, 0, 0)
-            arch = QComboBox(self)
-            for a in archinfo.all_arches:
-                arch.addItem(f'{a.bits}b {a.name} ({a.memory_endness[-2:]})')
-            blob_layout.addWidget(arch, 0, 1)
-            self.option_widgets['arch'] = arch
 
             # load address
             base_addr_caption = QLabel(self)
@@ -201,6 +206,7 @@ class LoadBinary(QDialog):
         layout = QVBoxLayout()
         if self.is_blob:
             layout.addLayout(blob_layout)
+        layout.addLayout(arch_layout)
         layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
         layout.addWidget(dep_group)
@@ -255,11 +261,11 @@ class LoadBinary(QDialog):
         self.load_options = { }
         self.load_options['auto_load_libs'] = self.option_widgets['auto_load_libs'].isChecked()
         self.load_options['load_debug_info'] = self.option_widgets['load_debug_info'].isChecked()
+        self.load_options['arch'] = archinfo.all_arches[self.option_widgets['arch'].currentIndex()]
 
         if self.is_blob:
             self.load_options['main_opts'] = {
                 'backend': 'blob',
-                'arch': archinfo.all_arches[self.option_widgets['arch'].currentIndex()],
                 'base_addr': int(self.option_widgets['base_addr'].text(), 16),
                 'entry_point': int(self.option_widgets['entry_addr'].text(), 16),
             }
@@ -294,6 +300,13 @@ class LoadBinary(QDialog):
         except LoadBinaryError:
             pass
         return None, None
+
+    @staticmethod
+    def binary_arch_detect_failed(filename:str, archinfo_msg:str):
+        # TODO: Normalize the path for Windows
+        QMessageBox.warning(None,
+                            "Architecture selection failed",
+                            f"{archinfo_msg} for binary:\n\n{filename}")
 
     @staticmethod
     def binary_loading_failed(filename):
