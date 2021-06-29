@@ -109,13 +109,16 @@ class Workspace:
                 self.on_function_selected(the_func)
 
             # Initialize the linear viewer
-            self.view_manager.first_view_in_category('disassembly')._linear_viewer.initialize()
+            view = self.view_manager.first_view_in_category('disassembly')
+            if view is not None: view._linear_viewer.initialize()
 
             # Reload the pseudocode view
-            self.view_manager.first_view_in_category('pseudocode').reload()
+            view = self.view_manager.first_view_in_category('pseudocode')
+            if view is not None: view.reload()
 
             # Reload the strings view
-            self.view_manager.first_view_in_category('strings').reload()
+            view = self.view_manager.first_view_in_category('strings')
+            if view is not None: view.reload()
 
     def _on_prototype_found(self):
         self.instance.add_job(

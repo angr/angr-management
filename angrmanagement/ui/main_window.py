@@ -476,10 +476,10 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        self.workspace.view_manager.first_view_in_category('disassembly').variable_recovery_flavor = 'accurate'
+        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = 'accurate'
 
     def run_induction_variable_analysis(self):
-        self.workspace.view_manager.first_view_in_category('disassembly').run_induction_variable_analysis()
+        self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
 
     def run_dependency_analysis(self, func_addr: Optional[int]=None, func_arg_idx: Optional[int]=None):
         if self.workspace is None or self.workspace.instance is None:

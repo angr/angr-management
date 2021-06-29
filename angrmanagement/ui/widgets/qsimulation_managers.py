@@ -274,7 +274,8 @@ class QSimulationManagers(QFrame):
     def _on_explore_addr_changed(self, item: QTreeWidgetItem): #pylint: disable=unused-argument
         """Refresh the disassembly view when an address in the 'avoids' or 'finds' tab is toggled. Ensures that
         annotations next to instructions are updated."""
-        self.instance.workspace.view_manager.first_view_in_category("disassembly").refresh()
+        view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
+        if view is not None: view.refresh()
 
     #
     # Private methods
