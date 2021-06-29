@@ -143,7 +143,7 @@ class CodeView(BaseView):
         else:
             # try to find the right function
             block_addr, _ = self.workspace.instance.cfb.floor_item(self.addr.am_obj)
-            block = self.workspace.instance.cfg.model.get_any_node(block_addr)
+            block = self.workspace.instance.cfg.get_any_node(block_addr)
             if block is not None:
                 func = self.workspace.instance.kb.functions[block.function_address]
                 if func is not self.function.am_obj:
