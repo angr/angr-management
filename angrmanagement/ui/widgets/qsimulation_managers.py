@@ -275,7 +275,8 @@ class QSimulationManagers(QFrame):
         """Refresh the disassembly view when an address in the 'avoids' or 'finds' tab is toggled. Ensures that
         annotations next to instructions are updated."""
         view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
-        if view is not None: view.refresh()
+        if view is not None:
+            view.refresh()
 
     #
     # Private methods

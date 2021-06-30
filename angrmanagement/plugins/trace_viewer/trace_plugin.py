@@ -56,10 +56,12 @@ class TraceViewer(BasePlugin):
     def _on_trace_updated(self):
         # redraw disassembly view
         view = self.workspace.view_manager.first_view_in_category('disassembly')
-        if view is not None: view.redraw_current_graph()
+        if view is not None:
+            view.redraw_current_graph()
         # refresh function table
         view = self.workspace.view_manager.first_view_in_category('functions')
-        if view is not None: view.refresh()
+        if view is not None:
+            view.refresh()
 
     URL_ACTIONS = ['openbitmap']
 
