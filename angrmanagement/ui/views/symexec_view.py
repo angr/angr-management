@@ -47,6 +47,9 @@ class SymexecView(BaseView):
         self.current_simgr.am_obj = simgr
         self.current_simgr.am_event(src='from above')
 
+    def select_states(self, states):
+        self._simgrs.select_states(states)
+
     def view_state(self, state):
         self._state_viewer.state = state
 
