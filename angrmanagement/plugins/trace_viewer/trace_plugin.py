@@ -26,7 +26,7 @@ class TraceViewer(BasePlugin):
                                                    'The current set of multiple traces')
 
         # Register event callbacks
-        self.trace.am_subscribe(self._on_trace_updated)
+        # self.trace.am_subscribe(self._on_trace_updated)
         self.multi_trace.am_subscribe(self._on_trace_updated)
 
         self._viewers = []
@@ -95,7 +95,7 @@ class TraceViewer(BasePlugin):
         trace_viewer.hide()
 
     def color_block(self, addr):
-        if not self.multi_trace.am_none:
+        if not self.multi_trace.am_none and self.multi_trace.is_active_tab:
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
@@ -114,6 +114,8 @@ class TraceViewer(BasePlugin):
 
     def draw_insn(self, qinsn, painter):
         # legend
+        if not self.multi_trace.am_none and self.multi_trace.is_active_tab:
+            return #skip
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
@@ -146,7 +148,7 @@ class TraceViewer(BasePlugin):
     #
 
     def color_func(self, func):
-        if not self.multi_trace.am_none:
+        if (not self.multi_trace.am_none) and self.multi_trace.is_active_tab:
             return self.multi_trace.get_percent_color(func)
 
         if not self.trace.am_none:
@@ -174,19 +176,17 @@ class TraceViewer(BasePlugin):
     #
 
     MENU_BUTTONS = [
-        'Open trace...',
-        'Open MultiTrace...',
+        'Open/Add trace...',
         'Clear trace',
         'Open AFL bitmap...',
         'Open inverted AFL bitmap...',
         'Reset AFL bitmap',
     ]
-    OPEN_TRACE_ID = 0
-    OPEN_MULTITRACE_ID = 1
-    RESET_TRACE_ID = 2
-    OPEN_AFL_BITMAP_ID = 3
-    OPEN_AFL_BITMAP_INVERTED_ID = 4
-    RESET_AFL_BITMAP = 5
+    ADD_TRACE_ID = 0
+    RESET_TRACE_ID = 1
+    OPEN_AFL_BITMAP_ID = 2
+    OPEN_AFL_BITMAP_INVERTED_ID = 3
+    RESET_AFL_BITMAP = 4
 
     def handle_click_menu(self, idx):
 
@@ -197,8 +197,7 @@ class TraceViewer(BasePlugin):
             return
 
         mapping = {
-            self.OPEN_TRACE_ID: self.open_trace,
-            self.OPEN_MULTITRACE_ID: self.open_multi_trace,
+            self.ADD_TRACE_ID: self.add_trace,
             self.RESET_TRACE_ID: self.reset_trace,
             self.OPEN_AFL_BITMAP_ID: self.open_bitmap_multi_trace,
             self.OPEN_AFL_BITMAP_INVERTED_ID: self.open_inverted_bitmap_multi_trace,
@@ -207,21 +206,28 @@ class TraceViewer(BasePlugin):
 
         mapping.get(idx)()
 
-    def open_trace(self):
+    # def open_trace(self):
+    #     trace, base_addr = self._open_json_trace_dialog()
+    #     if trace is None or base_addr is None:
+    #         return
+
+    #     # self.trace.am_obj = TraceStatistics(self.workspace, trace, base_addr)
+    #     # self.trace.am_event()
+    #     self.multi_trace.am_obj = MultiTrace(self.workspace)
+    #     self.trace.am_obj = self.multi_trace.am_obj.add_trace(trace, base_addr)
+    #     self.multi_trace.am_event()
+    #     self.trace.am_event()
+
+    def add_trace(self):
         trace, base_addr = self._open_json_trace_dialog()
         if trace is None or base_addr is None:
             return
 
-        self.trace.am_obj = TraceStatistics(self.workspace, trace, base_addr)
-        self.trace.am_event()
-
-    def open_multi_trace(self):
-        trace, base_addr = self._open_json_trace_dialog()
-        if trace is None or base_addr is None:
-            return
-
-        self.multi_trace.am_obj = MultiTrace(self.workspace, trace, base_addr)
+        if self.multi_trace.am_obj == None:
+            self.multi_trace.am_obj = MultiTrace(self.workspace)
+        self.trace.am_obj = self.multi_trace.am_obj.add_trace(trace, base_addr)
         self.multi_trace.am_event()
+        self.trace.am_event()
 
     def reset_trace(self):
         self.trace.am_obj = None
@@ -310,11 +316,23 @@ class TraceViewer(BasePlugin):
         with open(trace_file_name, 'r') as f:
             trace = json.load(f)
 
-        if not isinstance(trace, list):
+        if not isinstance(trace, dict):
             QMessageBox.critical(self.workspace._main_window,
                                  "Incorrect trace format",
-                                 "Failed to open the JSON trace. We expect the JSON trace to be a list of integers.")
+                                 "Failed to open the JSON trace. We expect the JSON trace to be a dict.")
             return None, None
+        elif "bb_addrs" not in trace.keys():
+            QMessageBox.critical(self.workspace._main_window,
+                                 "Incorrect trace format",
+                                 "Failed to open the JSON trace. We expect the JSON trace to contain the field 'bb_addrs'.")
+            return None, None
+        elif not isinstance(trace["bb_addrs"], list):
+            QMessageBox.critical(self.workspace._main_window,
+                                 "Incorrect trace format",
+                                 "Failed to open the JSON trace. We expect the JSON trace bb_addrs field to be a list of integers.")
+            return None, None
+
+
 
         base_addr = self._open_baseaddr_dialog(0x4000000000)
 
