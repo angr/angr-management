@@ -182,9 +182,9 @@ class QCCodeEdit(api.CodeEdit):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
         if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.CTRL != 0:
-            self.zoom_out()
+            self.zoomOut()
         if key == Qt.Key_Equal and QApplication.keyboardModifiers() & Qt.CTRL != 0:
-            self.zoom_in()
+            self.zoomIn()
 
         if self._code_view.keyPressEvent(event):
             return True
