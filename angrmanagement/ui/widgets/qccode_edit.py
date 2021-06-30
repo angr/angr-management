@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from PySide2.QtCore import Qt, QEvent
 from PySide2.QtGui import QTextCharFormat
-from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit
+from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit, QApplication
 
 from pyqodeng.core import api
 from pyqodeng.core import modes
@@ -181,6 +181,10 @@ class QCCodeEdit(api.CodeEdit):
         if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
+        if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.CTRL != 0:
+            self.zoomOut()
+        if key == Qt.Key_Equal and QApplication.keyboardModifiers() & Qt.CTRL != 0:
+            self.zoomIn()
 
         if self._code_view.keyPressEvent(event):
             return True

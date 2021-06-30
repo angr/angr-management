@@ -54,9 +54,11 @@ class SymexecView(BaseView):
         self._state_viewer.state = state
 
         # push namespace into the console
-        self.workspace.view_manager.first_view_in_category('console').push_namespace({
-            'state': state,
-        })
+        view = self.workspace.view_manager.first_view_in_category('console')
+        if view is not None:
+            view.push_namespace({
+                'state': state,
+            })
 
     def avoid_addr_in_exec(self, addr):
         self._simgrs.add_avoid_address(addr)

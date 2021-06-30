@@ -4,7 +4,6 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.code_view import CodeView
 
 
@@ -23,22 +22,20 @@ class NodeNameBox(QLineEdit):
 
     @staticmethod
     def _is_valid_node_name(name):
-        return name and not (' ' in name.strip())
+        return name and not ' ' in name.strip()
 
 
 class RenameNode(QDialog):
-    def __init__(self, disasm_view: Optional['DisassemblyView'] = None, code_view: Optional['CodeView'] = None,
-                 node: Optional[CConstruct] = None, parent=None):
+    def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, parent=None):
         super().__init__(parent)
 
         # initialization
-        self._disasm_view = disasm_view
         self._code_view = code_view
         self._node = node
 
-        self._name_box = None
+        self._name_box: NodeNameBox = None
         self._status_label = None
-        self._ok_button = None
+        self._ok_button: QPushButton = None
 
         self.setWindowTitle('Rename Variable')
 
@@ -139,6 +136,10 @@ class RenameNode(QDialog):
                         workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
                                                                  self._node.variable.offset, self._node.variable.name,
                                                                  node_name)
+                    else:
+                        workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
+                                                                 None, self._node.variable.name,
+                                                                 node_name)
 
                     self._node.unified_variable.name = node_name
                     self._node.unified_variable.renamed = True
@@ -146,20 +147,26 @@ class RenameNode(QDialog):
                     # callback not supported
                     self._code_view.workspace.instance.kb.labels[self._node.variable.addr] = node_name
                     self._node.variable.name = node_name
+                elif isinstance(self._node, CVariable):
+                    # function argument, probably?
+                    self._node.variable.name = node_name
                 elif isinstance(self._node, CFunction):
                     # callback
-                    workspace.plugins.handle_function_rename(code_kb.functions[self._node.name],
+                    workspace.plugins.handle_function_rename(code_kb.functions.get_by_addr(self._node.addr),
                                                              self._node.name, node_name)
 
-                    code_kb.functions[self._node.name].name = node_name
+                    code_kb.functions.get_by_addr(self._node.addr).name = node_name
                     self._node.name = node_name
                     self._node.demangled_name = node_name
                 elif isinstance(self._node, CFunctionCall):
                     # callback
-                    workspace.plugins.handle_function_rename(code_kb.functions[self._node.callee_func.name],
-                                                             self._node.callee_func.name, node_name)
+                    if self._node.callee_func is not None:
+                        workspace.plugins.handle_function_rename(
+                            code_kb.functions.get_by_addr(self._node.callee_func.addr),
+                            self._node.callee_func.name, node_name
+                        )
 
-                    self._node.callee_func.name = node_name
+                        self._node.callee_func.name = node_name
 
                 self._code_view.codegen.am_event()
                 self.close()

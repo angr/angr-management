@@ -121,9 +121,11 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
             self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function, include_ir=include_ir)
-            self.workspace.view_manager.first_view_in_category('console').push_namespace({
-                'disasm': self.disasm,
-            })
+            view = self.workspace.view_manager.first_view_in_category('console')
+            if view is not None:
+                view.push_namespace({
+                    'disasm': self.disasm,
+                })
             self._supergraph = self._function_graph.supergraph
             nodefunc = lambda n: n.cfg_nodes
             branchfunc = get_out_branches

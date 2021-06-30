@@ -11,7 +11,7 @@ from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView)
+                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView)
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -109,13 +109,19 @@ class Workspace:
                 self.on_function_selected(the_func)
 
             # Initialize the linear viewer
-            self.view_manager.first_view_in_category('disassembly')._linear_viewer.initialize()
+            view = self.view_manager.first_view_in_category('disassembly')
+            if view is not None:
+                view._linear_viewer.initialize()
 
             # Reload the pseudocode view
-            self.view_manager.first_view_in_category('pseudocode').reload()
+            view = self.view_manager.first_view_in_category('pseudocode')
+            if view is not None:
+                view.reload()
 
             # Reload the strings view
-            self.view_manager.first_view_in_category('strings').reload()
+            view = self.view_manager.first_view_in_category('strings')
+            if view is not None:
+                view.reload()
 
     def _on_prototype_found(self):
         self.instance.add_job(
@@ -385,6 +391,11 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_types_view(self):
+        view = self._get_or_create_types_view()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -461,6 +472,14 @@ class Workspace:
         if view is None:
             # Create a new interaction view
             view = InteractionView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+        return view
+
+    def _get_or_create_types_view(self):
+        view = self.view_manager.first_view_in_category("types")
+        if view is None:
+            # Create a new interaction view
+            view = TypesView(self, 'center')
             self.add_view(view, view.caption, view.category)
         return view
 
