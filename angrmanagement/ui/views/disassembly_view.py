@@ -538,10 +538,10 @@ class DisassemblyView(BaseView):
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
-        self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
+        self.workspace._get_or_create_symexec_view().avoid_addr_in_exec(addr)
 
     def find_addr_in_exec(self, addr):
-        self.workspace.view_manager.first_view_in_category('symexec').find_addr_in_exec(addr)
+        self.workspace._get_or_create_symexec_view().find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
@@ -559,11 +559,13 @@ class DisassemblyView(BaseView):
             # if addr in self.workspace.instance.hooked_addresses:
             #     hook_annotation = QHookAnnotation(self, addr)
             #     addr_to_annotations[addr].append(hook_annotation)
-            qsimgrs = self.workspace.view_manager.first_view_in_category("symexec")._simgrs
-            if addr in qsimgrs.find_addrs:
-                addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
-            if addr in qsimgrs.avoid_addrs:
-                addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
+            view = self.workspace.view_manager.first_view_in_category("symexec")
+            if view is not None:
+                qsimgrs = view._simgrs
+                if addr in qsimgrs.find_addrs:
+                    addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
+                if addr in qsimgrs.avoid_addrs:
+                    addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
         return QBlockAnnotations(addr_to_annotations, parent=qblock)
 
     #
@@ -647,10 +649,12 @@ class DisassemblyView(BaseView):
         elif self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
-        self.workspace.view_manager.first_view_in_category('console').push_namespace({
-            'func': the_func,
-            'function_': the_func,
-        })
+        view = self.workspace.view_manager.first_view_in_category('console')
+        if view is not None:
+            view.push_namespace({
+                'func': the_func,
+                'function_': the_func,
+            })
 
     def _jump_to(self, addr, use_animation=False):
         function = locate_function(self.workspace.instance, addr)
