@@ -106,7 +106,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         if reset:
             zoomFactor = 1 / lod
         elif restore:
-            zoomFactor = self.zoom_factor
+            zoomFactor = self.zoom_factor if self.zoom_factor else 1 / lod
         elif not out:
             zoomFactor = zoomInFactor
         else:
