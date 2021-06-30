@@ -33,9 +33,9 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
         self._graph = None
         self.blocks = set()
         self._edges: List[Edge] = [ ]
-        self._arrows_by_src: Dict[Any,List[QGraphArrow]] = defaultdict(list)
-        self._arrows_by_dst: Dict[Any,List[QGraphArrow]] = defaultdict(list)
-        self._arrows: List[QGraphArrow] = [ ]
+        self._arrows_by_src: Dict[Any,List[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows_by_dst: Dict[Any,List[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows: List[QProximityGraphArrow] = [ ]
 
     @property
     def graph(self):
@@ -53,7 +53,9 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     def refresh(self):
         for block in self.blocks:
             block.refresh()
-        self.scene().update(self.sceneRect())
+        scene = self.scene()
+        if scene is not None:
+            self.scene().update(self.sceneRect())
 
     def request_relayout(self):
         self._reset_scene()
