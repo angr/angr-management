@@ -55,7 +55,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
             block.refresh()
         scene = self.scene()
         if scene is not None:
-            self.scene().update(self.sceneRect())
+            scene.update(self.sceneRect())
 
     def request_relayout(self):
         self._reset_scene()
