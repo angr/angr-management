@@ -23,6 +23,10 @@ except ImportError:
 #
 
 class SyncControlStatus:
+    """
+    A struct-like class to describe constant for syncing status
+
+    """
     NO_PROJECT = 0
     NO_SYNC = 1
     NO_SYNCREPO = 2
@@ -43,6 +47,13 @@ STATUS_TEXT = {
 
 class BinsyncController:
     def __init__(self, workspace):
+        """
+        The class used for all pushing/pulling and merging based actions with BinSync data.
+        This class is resposible for handling callbacks that are done by changes from the local user
+        and responsible for running a thread to get new changes from other users.
+
+        @param workspace:       AM Workspace (usually in an Instance)
+        """
         self.workspace = workspace
         self.instance = workspace.instance
         self.info_panel = None
@@ -79,7 +90,7 @@ class BinsyncController:
 
             # call it!
             func(*f_args, **f_kargs)
-            return 0
+            return
         self.queue_lock.release()
 
     def pull_routine(self):
@@ -215,7 +226,8 @@ class BinsyncController:
                 available = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
                 if available:
                     chosen_flavor = flavor if flavor in available else available[0]
-                    self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
+                    self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr,
+                                                                                      chosen_flavor)]
                     self.codegen.am_event(already_regenerated=True)
 
             # use the interface defined in data
@@ -290,4 +302,3 @@ class BinsyncController:
 
         s += " ago" if ago else " in the future"
         return s
-

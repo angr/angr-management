@@ -10,13 +10,19 @@ from .sync_ctrl import BinsyncController
 # check to see if BinSync is installed
 try:
     import binsync
-    from binsync.data import StackVariable, Comment
 except ImportError:
     binsync = None
 
 
 class BinsyncPlugin(BasePlugin):
     def __init__(self, workspace: Workspace):
+        """
+        The entry point for the BinSync plugin. This class is respobsible for both initializing the GUI and
+        deiniting it as well. The BinSync plugin also starts the BinsyncController, which is a threaded class
+        that pushes and pulls changes every so many seconds.
+
+        @param workspace:   an AM workspace (usually found in instance)
+        """
         super().__init__(workspace)
 
         # init the Sync View on load
