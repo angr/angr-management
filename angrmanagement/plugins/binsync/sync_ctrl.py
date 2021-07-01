@@ -7,7 +7,7 @@ import time
 from PySide2.QtWidgets import QMessageBox
 
 import angr
-from angr.knowledge_plugins.sync.sync_manager import SyncController
+from angr.knowledge_plugins.sync.sync_controller import SyncController
 from angr import knowledge_plugins
 from ...data.jobs import DecompileFunctionJob
 
