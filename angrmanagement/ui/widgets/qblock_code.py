@@ -1,7 +1,8 @@
+from typing import Any, Mapping, Sequence, Optional, Tuple
+
 from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
 from PySide2.QtCore import Qt, QPointF, QRectF, QObject
 from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from typing import Any, Mapping, Sequence, Optional, Tuple
 
 import ailment
 import pyvex
@@ -125,7 +126,7 @@ class QBlockCodeObj(QObject):
     def add_variable(self, var):
         self._add_subobj(QVariableObj(var, self.infodock, parent=self))
 
-    def mousePressEvent(self, event:QMouseEvent):
+    def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
 
     def mouseDoubleClickEvent(self, event:QMouseEvent):
@@ -133,6 +134,10 @@ class QBlockCodeObj(QObject):
 
 
 class QVariableObj(QBlockCodeObj):
+    """
+    Renders a variable
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -144,6 +149,10 @@ class QVariableObj(QBlockCodeObj):
 
 
 class QAilObj(QBlockCodeObj):
+    """
+    Renders an AIL object
+    """
+
     def __init__(self, obj:Any, *args, stmt=None, **kwargs):
         self.stmt = stmt or obj
         super().__init__(obj, *args, **kwargs)
@@ -175,11 +184,19 @@ class QAilObj(QBlockCodeObj):
 
 
 class QAilTextObj(QAilObj):
+    """
+    Renders an AIL object via __str__
+    """
+
     def create_subobjs(self, obj:Any):
         self.add_text(str(obj))
 
 
 class QAilAssignmentObj(QAilTextObj):
+    """
+    Renders an ailment.statement.Assignment
+    """
+
     def create_subobjs(self, obj:ailment.statement.Assignment):
         self.add_ailobj(obj.dst)
         self.add_text(' = ')
@@ -187,6 +204,10 @@ class QAilAssignmentObj(QAilTextObj):
 
 
 class QAilStoreObj(QAilTextObj):
+    """
+    Renders an ailment.statement.Store
+    """
+
     def create_subobjs(self, obj:ailment.statement.Store):
         if obj.variable is None:
             self.add_text('*(')
@@ -200,12 +221,20 @@ class QAilStoreObj(QAilTextObj):
 
 
 class QAilJumpObj(QAilTextObj):
+    """
+    Renders an ailment.statement.Jump
+    """
+
     def create_subobjs(self, obj:ailment.statement.Jump):
         self.add_text("goto ")
         self.add_ailobj(obj.target)
 
 
 class QAilConditionalJumpObj(QAilTextObj):
+    """
+    Renders an ailment.statement.ConditionalJump
+    """
+
     def create_subobjs(self, obj:ailment.statement.ConditionalJump):
         self.add_text('if ')
         self.add_ailobj(obj.condition)
@@ -218,6 +247,10 @@ class QAilConditionalJumpObj(QAilTextObj):
 
 
 class QAilReturnObj(QAilTextObj):
+    """
+    Renders an ailment.statement.Return
+    """
+
     def create_subobjs(self, obj:ailment.statement.Return):
         self.add_text('return ')
         for expr in obj.ret_exprs:
@@ -225,12 +258,20 @@ class QAilReturnObj(QAilTextObj):
 
 
 class QAilCallObj(QAilTextObj):
+    """
+    Renders an ailment.statement.Call
+    """
+
     def create_subobjs(self, obj:ailment.statement.Call):
         self.add_text('call ')
         self.add_ailobj(obj.target)
 
 
 class QAilConstObj(QAilTextObj):
+    """
+    Renders an ailment.expression.Const
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -248,9 +289,6 @@ class QAilConstObj(QAilTextObj):
         return (isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj) and
                 self.infodock.selected_qblock_code_obj.obj.value == self.obj.value)
 
-    def mousePressEvent(self, event:QMouseEvent):
-        super().mousePressEvent(event)
-
     def mouseDoubleClickEvent(self, event:QMouseEvent):
         super().mouseDoubleClickEvent(event)
         button = event.button()
@@ -262,6 +300,10 @@ class QAilConstObj(QAilTextObj):
 
 
 class QAilTmpObj(QAilTextObj):
+    """
+    Renders an ailment.expression.Tmp
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -270,6 +312,10 @@ class QAilTmpObj(QAilTextObj):
 
 
 class QAilRegisterObj(QAilTextObj):
+    """
+    Renders an ailment.expression.Register
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -291,6 +337,10 @@ class QAilRegisterObj(QAilTextObj):
 
 
 class QAilUnaryOpObj(QAilTextObj):
+    """
+    Renders an ailment.expression.UnaryOp
+    """
+
     def create_subobjs(self, obj:ailment.expression.UnaryOp):
         self.add_text('(')
         self.add_text(obj.op + ' ')
@@ -299,6 +349,10 @@ class QAilUnaryOpObj(QAilTextObj):
 
 
 class QAilBinaryOpObj(QAilTextObj):
+    """
+    Renders an ailment.expression.BinaryOp
+    """
+
     def create_subobjs(self, obj:ailment.expression.BinaryOp):
         self.add_text('(')
         self.add_ailobj(obj.operands[0])
@@ -308,6 +362,10 @@ class QAilBinaryOpObj(QAilTextObj):
 
 
 class QAilConvertObj(QAilTextObj):
+    """
+    Renders an ailment.expression.Convert
+    """
+
     def create_subobjs(self, obj:ailment.expression.Convert):
         self.add_text("Conv(%d->%d, " % (obj.from_bits, obj.to_bits))
         self.add_ailobj(obj.operand)
@@ -315,6 +373,10 @@ class QAilConvertObj(QAilTextObj):
 
 
 class QAilLoadObj(QAilTextObj):
+    """
+    Renders an ailment.expression.Load
+    """
+
     def create_subobjs(self, obj:ailment.expression.Load):
         self.add_text('*(')
         self.add_ailobj(obj.addr)
@@ -322,6 +384,10 @@ class QAilLoadObj(QAilTextObj):
 
 
 class QIROpObj(QBlockCodeObj):
+    """
+    Renders a Lifter IR object
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -354,6 +420,11 @@ class QIROpObj(QBlockCodeObj):
 
 
 class QIROpTextObj(QIROpObj):
+    """
+    Renders a Lifter IR object using the object's __str__, or as hexadecimal
+    if an integer type.
+    """
+
     def create_subobjs(self, obj:Any):
         if type(obj) is int:
             self.add_text('%#x' % obj)
@@ -362,6 +433,10 @@ class QIROpTextObj(QIROpObj):
 
 
 class QIROpVexConstObj(QIROpTextObj):
+    """
+    Renders a pyvex.expr.Const
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -374,6 +449,10 @@ class QIROpVexConstObj(QIROpTextObj):
 
 
 class VexIRTmpWrapper:
+    """
+    A wrapper class for VEX temps
+    """
+
     __slots__ = (
         'tid',
         'reg_name',
@@ -391,6 +470,10 @@ class VexIRTmpWrapper:
 
 
 class VexIRRegWrapper:
+    """
+    A wrapper class for VEX registers
+    """
+
     __slots__ = (
         'offset',
         'reg_name',
@@ -408,6 +491,10 @@ class VexIRRegWrapper:
 
 
 class QIROpVexWrTmpObj(QIROpTextObj):
+    """
+    Renders a pyvex.stmt.WrTmp
+    """
+
     def create_subobjs(self, obj:pyvex.stmt.WrTmp):
         irsb = self.irobj.irsb
         self.add_irobj(VexIRTmpWrapper(obj.tmp))
@@ -421,11 +508,19 @@ class QIROpVexWrTmpObj(QIROpTextObj):
 
 
 class QIROpVexRdTmpObj(QIROpTextObj):
+    """
+    Renders a pyvex.expr.RdTmp
+    """
+
     def create_subobjs(self, obj:pyvex.expr.RdTmp):
         self.add_irobj(VexIRTmpWrapper(obj.tmp))
 
 
 class QIROpVexTmpObj(QIROpTextObj):
+    """
+    Renders a VEX temporary
+    """
+
     @staticmethod
     def fmt() -> QTextCharFormat:
         fmt = QTextCharFormat()
@@ -437,6 +532,9 @@ class QIROpVexTmpObj(QIROpTextObj):
                 self.infodock.selected_qblock_code_obj.obj.tid == self.obj.tid)
 
 class QIROpVexRegObj(QIROpTextObj):
+    """
+    Renders a VEX register
+    """
 
     @staticmethod
     def fmt() -> QTextCharFormat:
@@ -450,6 +548,10 @@ class QIROpVexRegObj(QIROpTextObj):
 
 
 class QIROpVexStoreObj(QIROpTextObj):
+    """
+    Renders a pyvex.stmt.Store
+    """
+
     def create_subobjs(self, obj:pyvex.stmt.Store):
         # "ST%s(%s) = %s" % (self.endness[-2:].lower(), self.addr, self.data)
         self.add_text('ST%s(' % (obj.endness[-2:].lower(),))
@@ -459,6 +561,10 @@ class QIROpVexStoreObj(QIROpTextObj):
 
 
 class QIROpVexLoadObj(QIROpTextObj):
+    """
+    Renders a pyvex.expr.Load
+    """
+
     def create_subobjs(self, obj:pyvex.expr.Load):
         self.add_text('LD%s:%s(' % (obj.end[-2:].lower(), obj.ty[4:]))
         self.add_irobj(obj.addr)
@@ -466,6 +572,10 @@ class QIROpVexLoadObj(QIROpTextObj):
 
 
 class QIROpVexPutObj(QIROpTextObj):
+    """
+    Renders a pyvex.stmt.Put
+    """
+
     def create_subobjs(self, obj:pyvex.stmt.Put):
         irsb = self.irobj.irsb
         reg_name = irsb.arch.translate_register_name(obj.offset, obj.data.result_size(irsb.tyenv) // 8)
@@ -476,6 +586,10 @@ class QIROpVexPutObj(QIROpTextObj):
 
 
 class QIROpVexExitObj(QIROpTextObj):
+    """
+    Renders a pyvex.stmt.Exit
+    """
+
     def create_subobjs(self, obj:pyvex.stmt.Exit):
         irsb = self.irobj.irsb
         arch = irsb.arch
@@ -492,6 +606,10 @@ class QIROpVexExitObj(QIROpTextObj):
 
 
 class QIROpVexBinopObj(QIROpTextObj):
+    """
+    Renders a pyvex.expr.Binop
+    """
+
     def create_subobjs(self, obj:pyvex.expr.Binop):
         self.add_text(obj.op[4:])
         self.add_text('(')
@@ -502,6 +620,10 @@ class QIROpVexBinopObj(QIROpTextObj):
 
 
 class QIROpVexUnopObj(QIROpTextObj):
+    """
+    Renders a pyvex.expr.Unop
+    """
+
     def create_subobjs(self, obj:pyvex.expr.Unop):
         self.add_text(obj.op[4:])
         self.add_text('(')
