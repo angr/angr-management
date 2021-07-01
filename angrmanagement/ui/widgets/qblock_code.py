@@ -1,4 +1,4 @@
-from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont
+from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
 from PySide2.QtCore import Qt, QPointF, QRectF, QObject
 from PySide2.QtWidgets import QGraphicsSimpleTextItem
 from typing import Any, Mapping, Sequence, Optional, Tuple
@@ -125,15 +125,11 @@ class QBlockCodeObj(QObject):
     def add_variable(self, var):
         self._add_subobj(QVariableObj(var, self.infodock, parent=self))
 
-    def on_click(self):
-        """
-        Primary click handler for this object
-        """
+    def mousePressEvent(self, event:QMouseEvent):
         self.infodock.select_qblock_code_obj(self)
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.on_click()
+    def mouseDoubleClickEvent(self, event:QMouseEvent):
+        pass
 
 
 class QVariableObj(QBlockCodeObj):
@@ -148,6 +144,10 @@ class QVariableObj(QBlockCodeObj):
 
 
 class QAilObj(QBlockCodeObj):
+    def __init__(self, obj:Any, *args, stmt=None, **kwargs):
+        self.stmt = stmt or obj
+        super().__init__(obj, *args, **kwargs)
+
     def create_subobjs(self, obj:Any):
         self.add_ailobj(obj)
 
@@ -170,7 +170,7 @@ class QAilObj(QBlockCodeObj):
             ailment.expression.Convert: QAilConvertObj,
             ailment.expression.Load: QAilLoadObj,
         }.get(type(obj), QAilTextObj)
-        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options)
+        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options, stmt=self.stmt)
         self._add_subobj(subobj)
 
 
@@ -247,6 +247,18 @@ class QAilConstObj(QAilTextObj):
     def should_highlight(self) -> bool:
         return (isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj) and
                 self.infodock.selected_qblock_code_obj.obj.value == self.obj.value)
+
+    def mousePressEvent(self, event:QMouseEvent):
+        super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event:QMouseEvent):
+        super().mouseDoubleClickEvent(event)
+        button = event.button()
+        if button == Qt.LeftButton:
+            src_ins_addr = getattr(self.stmt, 'ins_addr', None)
+            self.infodock.disasm_view.jump_to(self.obj.value,
+                src_ins_addr=src_ins_addr,
+                use_animation=True)
 
 
 class QAilTmpObj(QAilTextObj):
@@ -578,19 +590,32 @@ class QBlockCode(QCachedGraphicsItem):
     # Event handlers
     #
 
+    def get_obj_for_mouse_event(self, event:QMouseEvent) -> QBlockCodeObj:
+        p = event.pos()
+
+        if self._disasm_view.show_address:
+            offset = self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
+            p.setX(p.x() - offset)
+
+        if p.x() >= 0:
+            hitpos = self._qtextdoc.documentLayout().hitTest(p, Qt.HitTestAccuracy.ExactHit)
+            if hitpos >= 0:
+                return self.obj.get_hit_obj(hitpos)
+
+        return None
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.infodock.select_instruction(self.addr)
 
-            # Propagate event to rendered object
-            p = event.pos()
-            if self._disasm_view.show_address:
-                offset = self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
-                p.setX(p.x() - offset)
-            if p.x() >= 0:
-                hitpos = self._qtextdoc.documentLayout().hitTest(p, Qt.HitTestAccuracy.ExactHit)
-                if hitpos >= 0:
-                    self.obj.get_hit_obj(hitpos).mousePressEvent(event)
+        obj = self.get_obj_for_mouse_event(event)
+        if obj is not None:
+            obj.mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        obj = self.get_obj_for_mouse_event(event)
+        if obj is not None:
+            obj.mouseDoubleClickEvent(event)
 
     #
     # Private methods
