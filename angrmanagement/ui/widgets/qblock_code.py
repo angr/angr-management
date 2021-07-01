@@ -195,6 +195,14 @@ class QAilObj(QBlockCodeObj):
             return True
         return super().should_highlight_line
 
+    def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
+        super().mousePressEvent(event)
+        button = event.button()
+        if button == Qt.LeftButton:
+            ail_obj_ins_addr = getattr(self.obj, 'ins_addr', None)
+            if ail_obj_ins_addr is not None:
+                self.infodock.select_instruction(ail_obj_ins_addr)
+
 class QAilTextObj(QAilObj):
     """
     Renders an AIL object via __str__
