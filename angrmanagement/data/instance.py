@@ -9,7 +9,6 @@ from angr.analyses.disassembly import Instruction
 
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
-from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..daemon.client import DaemonClient
