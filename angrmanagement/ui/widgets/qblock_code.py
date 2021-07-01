@@ -132,6 +132,12 @@ class QBlockCodeObj(QObject):
     def mouseDoubleClickEvent(self, event:QMouseEvent):
         pass
 
+    @property
+    def should_highlight_line(self):
+        return any(obj.should_highlight_line
+            for obj in self.subobjs
+                if isinstance(obj, QBlockCodeObj))
+
 
 class QVariableObj(QBlockCodeObj):
     """
@@ -182,6 +188,12 @@ class QAilObj(QBlockCodeObj):
         subobj = subobjcls(obj, self.infodock, parent=self, options=self.options, stmt=self.stmt)
         self._add_subobj(subobj)
 
+    @property
+    def should_highlight_line(self):
+        ail_obj_ins_addr = getattr(self.obj, 'ins_addr', None)
+        if ail_obj_ins_addr is not None and self.infodock.is_instruction_selected(ail_obj_ins_addr):
+            return True
+        return super().should_highlight_line
 
 class QAilTextObj(QAilObj):
     """
@@ -694,7 +706,9 @@ class QBlockCode(QCachedGraphicsItem):
                                | QPainter.SmoothPixmapTransform
                                | QPainter.HighQualityAntialiasing)
         painter.setFont(self._config.disasm_font)
-        if self.infodock.is_instruction_selected(self.addr):
+
+
+        if self.infodock.is_instruction_selected(self.addr) or self.obj.should_highlight_line:
             highlight_color = Conf.disasm_view_node_instruction_selected_background_color
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
