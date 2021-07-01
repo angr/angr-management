@@ -151,7 +151,9 @@ class SyncConfig(QDialog):
             traceback.print_exc()
             return
 
-        self._instance.workspace.view_manager.first_view_in_category('sync').reload()
+        view = self._instance.workspace.view_manager.first_view_in_category('sync')
+        if view is not None:
+            view.reload()
         self.close()
 
     def _on_repo_clicked(self):

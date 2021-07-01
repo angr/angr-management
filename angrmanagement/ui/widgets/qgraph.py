@@ -73,6 +73,9 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
+        # the zoom factor, for preserving the zoom
+        self.zoom_factor = None
+
         #self.setRenderHints(
                 #QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
 
@@ -82,6 +85,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def _reset_view(self):
         self.resetMatrix()
         self.centerOn(self._initial_position())
+        self.zoom(restore=True)
 
     def _reset_scene(self):
         if self.scene() is None:
@@ -93,7 +97,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
 
-    def zoom(self, out=False, at=None, reset=False):
+    def zoom(self, out=False, at=None, reset=False, restore=False):
         if at is None:
             at = self.scene().sceneRect().center().toPoint()
         lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
@@ -102,6 +106,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         if reset:
             zoomFactor = 1 / lod
+        elif restore:
+            zoomFactor = self.zoom_factor if self.zoom_factor else 1 / lod
         elif not out:
             zoomFactor = zoomInFactor
         else:
@@ -115,6 +121,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         # Zoom
         self.scale(zoomFactor, zoomFactor)
+        self.zoom_factor = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
 
         # Get the new position
         newPos = self.mapToScene(at)

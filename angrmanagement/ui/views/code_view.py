@@ -143,7 +143,7 @@ class CodeView(BaseView):
         else:
             # try to find the right function
             block_addr, _ = self.workspace.instance.cfb.floor_item(self.addr.am_obj)
-            block = self.workspace.instance.cfg.model.get_any_node(block_addr)
+            block = self.workspace.instance.cfg.get_any_node(block_addr)
             if block is not None:
                 func = self.workspace.instance.kb.functions[block.function_address]
                 if func is not self.function.am_obj:
@@ -161,11 +161,13 @@ class CodeView(BaseView):
             self.codegen.regenerate_text()
 
         old_pos: Optional[int] = None
+        old_font = None
         if self._last_function is self.function.am_obj:
             # we are re-rendering the current function (e.g., triggered by a node renaming). save the old cursor and
             # reuse it later.
             old_cursor: QTextCursor = self._textedit.textCursor()
             old_pos = old_cursor.position()
+            old_font = self._textedit.font()
 
         self._options.dirty = False
         self._doc = QCodeDocument(self.codegen)
@@ -174,6 +176,7 @@ class CodeView(BaseView):
         if old_pos is not None:
             new_cursor: QTextCursor = self._textedit.textCursor()
             new_cursor.setPosition(old_pos)
+            self._textedit.setFont(old_font)
             self._textedit.setTextCursor(new_cursor)
 
         if self.codegen.flavor == 'pseudocode':

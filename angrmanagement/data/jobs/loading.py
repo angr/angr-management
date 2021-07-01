@@ -1,6 +1,7 @@
 
 import cle
 import angr
+import archinfo
 try:
     import archr
 except ImportError:
@@ -49,7 +50,11 @@ class LoadBinaryJob(Job):
         try:
             # Try automatic loading
             partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
+        except archinfo.arch.ArchNotFound as e:
+            partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False, arch='x86')
+            gui_thread_schedule(LoadBinary.binary_arch_detect_failed, (self.fname, str(e)))
         except cle.CLECompatibilityError:
+            # Continue loading as blob
             pass
 
         if partial_ld is None:
@@ -67,7 +72,11 @@ class LoadBinaryJob(Job):
         if cfg_args is None:
             return
 
-        proj = angr.Project(self.fname, load_options=load_options)
+        engine = None
+        if hasattr(load_options['arch'], 'pcode_arch'):
+            engine = angr.engines.UberEnginePcode
+
+        proj = angr.Project(self.fname, load_options=load_options, engine=engine)
         self._progress_callback(95)
         def callback():
             inst._reset_containers()
