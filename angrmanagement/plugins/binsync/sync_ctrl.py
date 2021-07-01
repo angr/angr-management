@@ -9,6 +9,7 @@ from PySide2.QtWidgets import QMessageBox
 import angr
 from angr.knowledge_plugins.sync.sync_manager import SyncController
 from angr import knowledge_plugins
+from ...data.jobs import DecompileFunctionJob
 
 try:
     import binsync
@@ -152,8 +153,7 @@ class BinsyncController:
 
     def fill_function(self, func: knowledge_plugins.functions.Function, user):
         # re-decompile a function if needed
-        self.workspace.decompile_function(func, headless=True)
-        decompilation = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
+        decompilation = self.decompile_function(func)
 
         _func: binsync.data.Function = self.sync.pull_function(func.addr, user=user)
         if _func is None:
@@ -173,7 +173,6 @@ class BinsyncController:
                     pos = decompilation.map_addr_to_pos.get_nearest_pos(cmt.addr)
                     corrected_addr = decompilation.map_pos_to_addr.get_node(pos).tags['ins_addr']
                     decompilation.stmt_comments[corrected_addr] = cmt.comment
-
                 else:
                     self.instance.kb.comments[cmt.addr] = cmt.comment
 
@@ -186,11 +185,7 @@ class BinsyncController:
                 code_var.renamed = True
 
         decompilation.regenerate_text()
-        self.instance.workspace.decompile_function(func, headless=True)
-
-
-
-
+        self.decompile_function(func, refresh_gui=True)
 
     #
     #   Pusher Alias
@@ -200,7 +195,6 @@ class BinsyncController:
         return self.instance.kb.sync.push_stack_variable(func_addr, offset, name, type_, size_)
 
     def push_comment(self, func_addr, addr, cmt, decompiled):
-        import ipdb; ipdb.set_trace()
         return self.instance.kb.sync.push_comment(func_addr, addr, cmt, decompiled=decompiled)
 
     def push_func(self, func: knowledge_plugins.functions.Function):
@@ -209,6 +203,37 @@ class BinsyncController:
     #
     #   Utils
     #
+
+    def decompile_function(self, func, refresh_gui=False):
+        # check for known decompilation
+        available = self.instance.kb.structured_code.available_flavors(func.addr)
+        if 'pseudocode' in available:
+            decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
+        else:
+            # create a callback to save the decompilation
+            def decomp_ready():
+                available = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
+                if available:
+                    chosen_flavor = flavor if flavor in available else available[0]
+                    self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
+                    self.codegen.am_event(already_regenerated=True)
+
+            # use the interface defined in data
+            job = DecompileFunctionJob(
+                func,
+                cfg=self.workspace.instance.cfg,
+                on_finish=decomp_ready
+            )
+
+            # force a run in this thread (not UI)
+            job.run(self.instance)
+            decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
+
+        if refresh_gui:
+            self.workspace.reload()
+
+        return decomp
+
 
     def _find_stack_var_in_codegen(self, decompilation, stack_offset: int) -> angr.sim_variable.SimStackVariable:
         for var in decompilation.cfunc.variable_manager._unified_variables:
