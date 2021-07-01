@@ -5,11 +5,12 @@ from .sync_config import SyncConfig
 from .info_view import InfoView
 from .sync_menu import SyncMenu
 
-from .sync_ctrl import Controller
+from .sync_ctrl import BinsyncController
 
 # check to see if BinSync is installed
 try:
     import binsync
+    from binsync.data import StackVariable, Comment
 except ImportError:
     binsync = None
 
@@ -19,10 +20,11 @@ class BinsyncPlugin(BasePlugin):
         super().__init__(workspace)
 
         # init the Sync View on load
-        self.sync_view = InfoView(workspace, 'right')
-        self.workspace.add_view(self.sync_view, self.sync_view.caption, self.sync_view.category)
+        self.controller = BinsyncController(self.workspace)
+        self.info_view = InfoView(workspace, 'right', self.controller)
+        self.workspace.add_view(self.info_view, self.info_view.caption, self.info_view.category)
+        self.controller.info_panel = self.info_view
 
-        self.controller = Controller(self.workspace)
         self.sync_menu = None
         self.selected_funcs = []
 
@@ -32,7 +34,7 @@ class BinsyncPlugin(BasePlugin):
 
     def teardown(self):
         # destroy the sync view on deinit
-        self.workspace.remove_view(self.sync_view)
+        self.workspace.remove_view(self.info_view)
 
     #
     # BinSync GUI Hooks
@@ -74,17 +76,23 @@ class BinsyncPlugin(BasePlugin):
     #   BinSync Decompiler Hooks
     #
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
-        # if offset:
-        #     print(f"{hex(func.addr)}: renamed variable[{hex(offset)}]: {old_name}->{new_name}")
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
+        print(f"{hex(func.addr)}: renamed variable[{hex(offset)}]: {old_name}->{new_name} of type: {type_}; size {size}")
+        self.controller.make_controller_cmd(self.controller.push_stack_variable,
+                                            func.addr, offset, new_name, type_, size)
         return False
 
     def handle_function_rename(self, func, old_name: str, new_name: str):
-        # print(f"{hex(func.addr)}: renamed function: {old_name}->{new_name}")
+        print(f"{hex(func.addr)}: renamed function: {old_name}->{new_name}")
+        self.controller.make_controller_cmd(self.controller.push_func,
+                                            func)
         return False
 
     def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
-        # print(f"{hex(addr)}: comment changed to {cmt} in {'decomp' if decomp else 'disass'}")
+        print(f"{hex(addr)}: comment changed to {cmt} in {'decomp' if decomp else 'disass'}")
+
+        func_addr = self.controller.instance.cfg.get_any_node(addr, anyaddr=True).function_address
+        self.controller.make_controller_cmd(self.controller.push_comment, func_addr, addr, cmt, decomp)
         return False
 
 

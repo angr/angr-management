@@ -24,7 +24,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
             else self.workspace.instance.project.filename
         )
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str):
         """
         Logic to check if the same variable has already been renamed, if not add to the current session.
         """

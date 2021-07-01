@@ -1,13 +1,14 @@
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QMessageBox, QComboBox
 
 from ...ui.views.view import BaseView
-from ...data.sync_ctrl import SyncControlStatus, STATUS_TEXT
 from .info_tables.func_info_table import QFuncInfoTable
 from .info_tables.struct_info_table import QStructInfoTable
 
+from .sync_ctrl import BinsyncController, STATUS_TEXT, SyncControlStatus
+
 
 class InfoView(BaseView):
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
+    def __init__(self, workspace, default_docking_position, controller, *args, **kwargs):
         super().__init__('sync', workspace, default_docking_position, *args, **kwargs)
 
         self.caption = "BinSync: Info View"
@@ -19,22 +20,26 @@ class InfoView(BaseView):
         self._func_table = None  # type: QFuncInfoTable
         self._struct_table = None  # type: QStructInfoTable
         self._active_table = None  # type: QTableWidget
-        self._controller = workspace.instance.sync
+        self.controller: BinsyncController = controller
 
         self._init_widgets()
 
         self.width_hint = 250
 
         # subscribe
-        self.workspace.instance.sync.users_container.am_subscribe(self._update_users)
+        # self.workspace.instance.sync.users_container.am_subscribe(self._update_info_tables)
 
     def reload(self):
-        status = self.workspace.instance.sync.status_string
+        # reload the status
+        status = self.controller.status_string
         if status == STATUS_TEXT[SyncControlStatus.CONNECTED]:
             self._status_label.setStyleSheet("color: green")
         else:
             self._status_label.setStyleSheet("color: red")
         self._status_label.setText(status)
+
+        # reload the info tables
+        self._update_info_tables()
 
     #
     # Private methods
@@ -66,12 +71,12 @@ class InfoView(BaseView):
         info_layout.addWidget(combo_box)
 
         # function info table
-        self._func_table = QFuncInfoTable(self._controller)
+        self._func_table = QFuncInfoTable(self.controller)
         info_layout.addWidget(self._func_table)  # stretch=1 optional
         self._active_table = self._func_table
 
         # struct info table
-        self._struct_table = QStructInfoTable(self._controller)
+        self._struct_table = QStructInfoTable(self.controller)
         self._struct_table.hide()
         info_layout.addWidget(self._struct_table)
 
@@ -97,93 +102,6 @@ class InfoView(BaseView):
         self._func_table.hide()
         self._struct_table.hide()
 
-    def _update_users(self):
-        self._active_table.update_users(self.workspace.instance.sync.users)
-
-    #
-    # Event callbacks
-    #
-
-    def _on_pullfunc_clicked(self):
-        disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
-        if disasm_view is None:
-            QMessageBox.critical(None, 'Error',
-                                 "Cannot determine the current function. No disassembly view is open.")
-            return
-
-        current_function = disasm_view._current_function
-        if current_function is None:
-            QMessageBox.critical(None, 'Error',
-                                 "No function is current in the disassembly view.")
-            return
-
-        # which user?
-        u = self._team_table.selected_user()
-        if u is None:
-            QMessageBox.critical(None, 'Error',
-                                 "Cannot determine which user to pull from. "
-                                 "Please select a user in the team table first.")
-            return
-
-        self.workspace.instance.project.kb.sync.fill_function(current_function, user=u)
-
-        # trigger a refresh
-        disasm_view.refresh()
-
-    def _on_pushfunc_clicked(self):
-
-        disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
-        if disasm_view is None:
-            QMessageBox.critical(None, 'Error',
-                                 "Cannot determine the current function. No disassembly view is open.")
-            return
-
-        current_function = disasm_view._current_function
-        if current_function is None:
-            QMessageBox.critical(None, 'Error',
-                                 "No function is current in the disassembly view.")
-            return
-
-        func = current_function
-        kb = self.workspace.instance.project.kb
-        kb.sync.push_function(func)
-
-        # comments
-        comments = { }
-        for block in func.blocks:
-            for ins_addr in block.instruction_addrs:
-                if ins_addr in kb.comments:
-                    comments[ins_addr] = kb.comments[ins_addr]
-        kb.sync.push_comments(comments)
-
-        # TODO: Fix this
-        kb.sync.commit()
-
-    def _on_pullpatches_clicked(self):
-
-        # which user?
-        u = self._team_table.selected_user()
-        if u is None:
-            QMessageBox.critical(None, 'Error',
-                                 "Cannot determine which user to pull from. "
-                                 "Please select a user in the team table first.")
-            return
-
-        kb = self.workspace.instance.project.kb
-        # currently we assume all patches are against the main object
-        main_object = self.workspace.instance.project.loader.main_object
-        patches = kb.sync.pull_patches(user=u)
-
-        patch_added = False
-        for patch in patches:
-            addr = main_object.mapped_base + patch.offset
-            kb.patches.add_patch(addr, patch.new_bytes)
-            patch_added = True
-
-        if patch_added:
-            # trigger a refresh
-            self.workspace.instance.patches.am_event()
-
-            # re-generate the CFG
-            # TODO: CFG refinement
-            self.workspace.instance.generate_cfg()
+    def _update_info_tables(self):
+        self.controller.sync.client.init_remote()
+        self._active_table.update_users(self.controller.sync.users())

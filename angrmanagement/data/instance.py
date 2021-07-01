@@ -59,7 +59,6 @@ class Instance:
         self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
         self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
-        self.sync = SyncControl(self)
         self.cfg_args = None
         self._disassembly = {}
 
