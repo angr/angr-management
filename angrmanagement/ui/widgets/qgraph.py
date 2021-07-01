@@ -85,6 +85,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def _reset_view(self):
         self.resetMatrix()
         self.centerOn(self._initial_position())
+        self.zoom(restore=True)
 
     def _reset_scene(self):
         if self.scene() is None:
