@@ -1,4 +1,4 @@
-
+from typing import TYPE_CHECKING
 from PySide2.QtGui import QColor, QPainterPath, QBrush, QCursor
 from PySide2.QtCore import QMarginsF
 from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, QInputDialog, QLineEdit
@@ -7,15 +7,16 @@ from .qsimulation_managers import QSimulationManagers
 from ...logic import GlobalInfo
 from ...config import Conf
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from ..views.symexec_view import SymexecView
     from ..views.disassembly_view import DisassemblyView
 
 
 class QInstructionAnnotation(QGraphicsSimpleTextItem):
-    """Abstract"""
+    """
+    Abstract Instruction Annotation Class.
+    It must have address prop to show at the right place.
+    """
 
     background_color = None
     foreground_color = None
@@ -38,7 +39,9 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
 
 
 class QStatsAnnotation(QInstructionAnnotation):
-    """Abstract"""
+    """
+    Abstract Stats Annotation Class.
+    """
 
     def __init__(self, addr,  *args, **kwargs):
         super().__init__(addr, *args, **kwargs)
@@ -73,6 +76,11 @@ class QStatsAnnotation(QInstructionAnnotation):
 
 
 class QActiveCount(QStatsAnnotation):
+    """
+    Indicating how much active states are in these address.
+    We can select/move the set of states.
+    Used by execution_statistics_viewer plugin.
+    """
     background_color = QColor(0, 255, 0, 30)
     foreground_color = QColor(0, 60, 0)
 
@@ -88,10 +96,11 @@ class QActiveCount(QStatsAnnotation):
             self.disasm_view.workspace.raise_view(self.symexec_view)
 
         def _move_states():
-            to_stash = QInputDialog.getText(self.disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
-            if to_stash[1]:
-                self.symexec_view.current_simgr.move("active", to_stash[0], lambda s: s in self.states)
+            to_stash, ok = QInputDialog.getText(self.disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
+            if ok:
+                self.symexec_view.current_simgr.move("active", to_stash, lambda s: s in self.states)
                 self.disasm_view.refresh()
+                self.symexec_view._simgrs._simgr_viewer.refresh()
 
         menu.addAction("Select", _select_states)
         menu.addAction("Move To", _move_states)
@@ -99,6 +108,10 @@ class QActiveCount(QStatsAnnotation):
 
 
 class QPassthroughCount(QStatsAnnotation):
+    """
+    Indicating how much states passthrough address.
+    Used by execution_statistics_viewer plugin.
+    """
     background_color = QColor(255, 0, 0, 30)
     foreground_color = QColor(60, 0, 0)
 
@@ -111,29 +124,32 @@ class QPassthroughCount(QStatsAnnotation):
 
 
 class QHookAnnotation(QInstructionAnnotation):
+    """
+    An instruction annotation for an angr project hook.
+    It is added to the annotation list by fetch_qblock_annotations and
+    displays an indicator next to hooked blocks.
+    """
     background_color = QColor(230, 230, 230)
     foreground_color = QColor(50, 50, 50)
 
-    def __init__(self, disasm_view, addr, *args, **kwargs):
+    def __init__(self, disasm_view: 'DisassemblyView', addr, *args, **kwargs):
         super().__init__(addr, "hook", *args, **kwargs)
         self.disasm_view = disasm_view
 
     def contextMenuEvent(self, event): #pylint: disable=unused-argument
         menu = QMenu()
-        menu.addAction("Modify", self.modify)
         menu.addAction("Delete", self.delete)
         menu.exec_(QCursor.pos())
 
-    def modify(self):
-        self.disasm_view.popup_modify_hook_dialog(addr=self.addr)
-
     def delete(self):
-        GlobalInfo.main_window.workspace.instance.delete_hook(self.addr)
+        self.disasm_view.workspace.instance.delete_hook(self.addr)
         self.disasm_view.refresh()
 
 
 class QExploreAnnotation(QInstructionAnnotation):
-    """Abstract"""
+    """
+    Abstract Class for find and avoid
+    """
 
     background_color = None
     foreground_color = QColor(230, 230, 230)
@@ -154,6 +170,10 @@ class QExploreAnnotation(QInstructionAnnotation):
 
 
 class QFindAddrAnnotation(QExploreAnnotation):
+    """
+    An instruction annotation for explore find address.
+    It is added to the annotation list by fetch_qblock_annotations
+    """
     background_color = QColor(200, 230, 100)
     foreground_color = QColor(30, 80, 30)
     text = "find"
@@ -164,6 +184,10 @@ class QFindAddrAnnotation(QExploreAnnotation):
 
 
 class QAvoidAddrAnnotation(QExploreAnnotation):
+    """
+    An instruction annotation for explore avoid address.
+    It is added to the annotation list by fetch_qblock_annotations
+    """
     background_color = QColor(230, 200, 100)
     foreground_color = QColor(80, 30, 30)
     text = "avoid"
@@ -174,7 +198,9 @@ class QAvoidAddrAnnotation(QExploreAnnotation):
 
 
 class QBlockAnnotations(QGraphicsItem):
-    """Container for all instruction annotations in a QBlock"""
+    """
+    Container for all instruction annotations in a QBlock
+    """
 
     PADDING = 10
 
