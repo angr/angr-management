@@ -11,6 +11,10 @@ except ImportError as ex:
 
 
 class LogReverseEngineeringPlugin(BasePlugin):
+    """
+    Plugin for logging the reverse engineering of a program
+    """
+
     def __init__(self, workspace):
         if not Slacrs:
             raise Exception(
@@ -24,7 +28,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
             else self.workspace.instance.project.filename
         )
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str):
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
         Logic to check if the same variable has already been renamed, if not add to the current session.
         """

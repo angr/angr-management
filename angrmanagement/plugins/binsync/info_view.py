@@ -8,17 +8,12 @@ from .sync_ctrl import BinsyncController, STATUS_TEXT, SyncControlStatus
 
 
 class InfoView(BaseView):
-    def __init__(self, workspace, default_docking_position, controller, *args, **kwargs):
-        """
-        The class for the window that shows changes/info to BinSync data. This includes things like
-        changes to functions or structs.
+    """
+    The class for the window that shows changes/info to BinSync data. This includes things like
+    changes to functions or structs.
+    """
 
-        @param workspace:                   AM Workspace
-        @param default_docking_position:
-        @param controller:                  BinSync Controller
-        @param args:
-        @param kwargs:
-        """
+    def __init__(self, workspace, default_docking_position, controller, *args, **kwargs):
         super().__init__('sync', workspace, default_docking_position, *args, **kwargs)
 
         self.caption = "BinSync: Info View"

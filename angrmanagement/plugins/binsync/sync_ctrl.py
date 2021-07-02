@@ -13,7 +13,6 @@ from ...data.jobs import DecompileFunctionJob
 
 try:
     import binsync
-    from binsync import data
 except ImportError:
     binsync = None
 
@@ -46,14 +45,13 @@ STATUS_TEXT = {
 #
 
 class BinsyncController:
-    def __init__(self, workspace):
-        """
-        The class used for all pushing/pulling and merging based actions with BinSync data.
-        This class is resposible for handling callbacks that are done by changes from the local user
-        and responsible for running a thread to get new changes from other users.
+    """
+    The class used for all pushing/pulling and merging based actions with BinSync data.
+    This class is resposible for handling callbacks that are done by changes from the local user
+    and responsible for running a thread to get new changes from other users.
+    """
 
-        @param workspace:       AM Workspace (usually in an Instance)
-        """
+    def __init__(self, workspace):
         self.workspace = workspace
         self.instance = workspace.instance
         self.info_panel = None
@@ -63,6 +61,7 @@ class BinsyncController:
         self.cmd_queue = OrderedDict()
 
         # start the pull routine
+        # pylint:disable=consider-using-with
         self.pull_thread = threading.Thread(target=self.pull_routine)
         self.pull_thread.setDaemon(True)
         self.pull_thread.start()
@@ -72,9 +71,8 @@ class BinsyncController:
     #
 
     def make_controller_cmd(self, cmd_func, *args, **kwargs):
-        self.queue_lock.acquire()
-        self.cmd_queue[time.time()] = (cmd_func, args, kwargs)
-        self.queue_lock.release()
+        with self.queue_lock:
+            self.cmd_queue[time.time()] = (cmd_func, args, kwargs)
 
     def eval_cmd_queue(self):
         self.queue_lock.acquire()
@@ -216,19 +214,20 @@ class BinsyncController:
     #
 
     def decompile_function(self, func, refresh_gui=False):
+        # create a callback to save the decompilation
+        def decomp_ready():
+            available = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
+            if available:
+                chosen_flavor = flavor if flavor in available else available[0]
+                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr,
+                                                                                  chosen_flavor)]
+                self.codegen.am_event(already_regenerated=True)
+
         # check for known decompilation
         available = self.instance.kb.structured_code.available_flavors(func.addr)
         if 'pseudocode' in available:
             decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
         else:
-            # create a callback to save the decompilation
-            def decomp_ready():
-                available = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
-                if available:
-                    chosen_flavor = flavor if flavor in available else available[0]
-                    self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr,
-                                                                                      chosen_flavor)]
-                    self.codegen.am_event(already_regenerated=True)
 
             # use the interface defined in data
             job = DecompileFunctionJob(
@@ -246,8 +245,8 @@ class BinsyncController:
 
         return decomp
 
-
-    def _find_stack_var_in_codegen(self, decompilation, stack_offset: int) -> angr.sim_variable.SimStackVariable:
+    @staticmethod
+    def find_stack_var_in_codegen(decompilation, stack_offset: int) -> angr.sim_variable.SimStackVariable:
         for var in decompilation.cfunc.variable_manager._unified_variables:
             if hasattr(var, "offset") and var.offset == stack_offset:
                 return var

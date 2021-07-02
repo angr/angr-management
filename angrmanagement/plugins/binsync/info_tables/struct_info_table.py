@@ -3,15 +3,12 @@ from PySide2.QtCore import Qt
 
 
 class QUserItem:
-    def __init__(self, struct_name: str, size: int, user):
-        """
-        An item describing a struct update from a user. Only for internal use inside
-        QStructInfoTable
+    """
+    An item describing a struct update from a user. Only for internal use inside
+    QStructInfoTable
+    """
 
-        @param struct_name:     The name of the struct being updated
-        @param size:            The size of it
-        @param user:            The user that did the last push
-        """
+    def __init__(self, struct_name: str, size: int, user):
         self.sturct_name = struct_name
         self.size = size
         self.user = user
@@ -35,6 +32,10 @@ class QUserItem:
 
 
 class QStructInfoTable(QTableWidget):
+    """
+    An QTable that contains info relevant to updates on other users Structs.
+    """
+
     HEADER = [
         'Struct Name',
         'Size',
@@ -42,12 +43,6 @@ class QStructInfoTable(QTableWidget):
     ]
 
     def __init__(self, controller, parent=None):
-        """
-        An QTable that contains info relevant to updates on other users Structs.
-
-        @param controller:      A BinSync Controller
-        @param parent:          Parent View
-        """
         super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
@@ -93,8 +88,9 @@ class QStructInfoTable(QTableWidget):
                 self.selectRow(i)
                 break
 
+    # pylint:disable=unused-argument,no-self-use
     def update_users(self, users):
         """
-        Update the status of all users within the repo.
+        Update the status of all users within the repo for the Structs table
         """
         return False
