@@ -664,9 +664,6 @@ class DisassemblyView(BaseView):
             if instr_addr is None:
                 instr_addr = addr
             self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
-
-            # reset the zoom
-            self._flow_graph.zoom(restore=True)
             return True
 
         # it does not belong to any function - we need to switch to linear view mode
