@@ -8,6 +8,7 @@ from PySide2.QtWidgets import (
     QInputDialog,
     QMessageBox,
     QVBoxLayout,
+    QGridLayout,
     QAbstractItemView,
     QPushButton,
     QHeaderView,
@@ -57,12 +58,21 @@ class ReFuzzView(BaseView):
         self.patch_function_button.clicked.connect(self.plugin.patch_function)
         self.refresh_button = QPushButton("Refresh Listing")
         self.refresh_button.clicked.connect(self.refresh_listing)
+
+        self.patch_server_url_label = QLabel()
+        self.patch_server_url_label.setText("Patch Server URL:")
         self.patch_server_url_entry = QLineEdit()
-        self.patch_server_url_entry.setPlaceholderText("Patch Server URL")
+        self.patch_server_url_entry.setText(RefuzzPlugin.DEFAULT_SERVER)
         self.patch_server_url_entry.textChanged.connect(self.set_patch_server_url_info)
+        self.set_patch_server_url_info(RefuzzPlugin.DEFAULT_SERVER)
+
+        self.server_url_label = QLabel()
+        self.server_url_label.setText("Analysis Server URL:")
         self.server_url_entry = QLineEdit()
-        self.server_url_entry.setPlaceholderText("Analysis Server URL")
+        self.server_url_entry.setText(RefuzzPlugin.DEFAULT_SERVER)
         self.server_url_entry.textChanged.connect(self.set_server_url_info)
+        self.set_server_url_info(RefuzzPlugin.DEFAULT_SERVER)
+
         # {"func_addr":"0x400827","buf_addr":"arg_sym_reg_rdx","buf_outlen_addr":"arg_sym_reg_rcx;","buf_maxlen":"-1"}%
         self.buffer_addr_box = QLabel()
         self.buffer_outlen_addr_box = QLabel()
@@ -75,8 +85,13 @@ class ReFuzzView(BaseView):
             plugin=self.plugin,
         )
         # self.patch_function_selector_view = QFunctionTableView(parent=self.patch_function_selector, workspace=self.plugin.workspace, selection_callback=self.plugin.set_selected_function)
-        layout.addWidget(self.server_url_entry)
-        layout.addWidget(self.patch_server_url_entry)
+        g_layout = QGridLayout()
+        g_layout.addWidget(self.server_url_label, 0, 0, 1, 1)
+        g_layout.addWidget(self.server_url_entry, 0, 1, 1, 1)
+        g_layout.addWidget(self.patch_server_url_label, 1, 0, 1, 1)
+        g_layout.addWidget(self.patch_server_url_entry, 1, 1, 1, 1)
+        layout.addLayout(g_layout)
+
         layout.addWidget(self.get_suggestions_button)
         layout.addWidget(self.patch_function_button)
         layout.addWidget(self.refresh_button)
@@ -113,6 +128,7 @@ class ReFuzzView(BaseView):
 class RefuzzPlugin(BasePlugin):
     REQUIRE_WORKSPACE = True
     MENU_BUTTONS = ("Get Patch Suggestions", "Patch Function")
+    DEFAULT_SERVER = "http://44.234.64.65:12321"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,8 +143,8 @@ class RefuzzPlugin(BasePlugin):
         self.handlers = {0: self.get_patch_suggestions, 1: self.patch_function}
         self.suggested = []
         self.session = requests.Session()
-        self.server_url = ""
-        self.patch_server_url = ""
+        self.server_url = self.DEFAULT_SERVER
+        self.patch_server_url = self.DEFAULT_SERVER
         self.checking = False
         self.selected_function = 0
         self.buffer_addr = ""
@@ -228,24 +244,26 @@ class RefuzzPlugin(BasePlugin):
         while True:
             res = self.session.get(f"{self.server_url}/status")
             print(res.text)
-            # js_res = json.loads(res.text)
-            if res is not None and "finished" in res.text:
-                req = f"{self.server_url}/result?{Path(self.workspace.instance.project.filename).name}"
-                print(f"Requesting {req}")
-                fres = self.session.get(req)
-                print(fres.text)
-                js_fres = json.loads(fres.text)
-                self.last_result = js_fres
-                print(self.last_result)
-                self.suggested = [int(self.last_result["func_addr"], 16)]
-                # {"func_addr":"0x400827","buf_addr":"arg_sym_reg_rdx","buf_outlen_addr":"arg_sym_reg_rcx;","buf_maxlen":"-1"}%
-                self.buffer_addr = self.last_result["buf_addr"]
-                self.buffer_outlen = self.last_result["buf_outlen_addr"]
-                self.buffer_maxlen = self.last_result["buf_maxlen"]
-                return
-            else:
-                print("No result available. Sleeping.")
-                time.sleep(10)
+
+            if res is not None:
+                js_res = json.loads(res.text)
+                if js_res["status"] == "stage1" or js_res["status"] == "stage2" or js_res["status"] == "finished":
+                    req = f"{self.server_url}/result?{Path(self.workspace.instance.project.filename).name}"
+                    print(f"Requesting {req}")
+                    fres = self.session.get(req)
+                    print(fres.text)
+                    js_fres = json.loads(fres.text)
+                    self.last_result = js_fres
+                    print(self.last_result)
+                    self.suggested = [int(self.last_result["func_addr"], 16)]
+                    # {"func_addr":"0x400827","buf_addr":"arg_sym_reg_rdx","buf_outlen_addr":"arg_sym_reg_rcx;","buf_maxlen":"-1"}%
+                    self.buffer_addr = self.last_result["buf_addr"]
+                    self.buffer_outlen = self.last_result["buf_outlen_addr"]
+                    self.buffer_maxlen = self.last_result["buf_maxlen"]
+                    return
+
+            print("No result available. Sleeping.")
+            time.sleep(10)
 
     def patch_function(self):
         f = {"bin": open(self.workspace.instance.project.filename, "rb")}
