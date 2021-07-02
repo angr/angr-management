@@ -21,6 +21,14 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     foreground_color = None
     addr = None
     _config = Conf
+        
+    @staticmethod
+    def get_disasm_view() -> 'DisassemblyView':
+        return GlobalInfo.main_window.workspace.view_manager.first_view_in_category("disassembly")
+
+    @staticmethod
+    def get_symexec_view() -> 'SymexecView':
+        return GlobalInfo.main_window.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -43,10 +51,6 @@ class QStatsAnnotation(QInstructionAnnotation):
     def __init__(self, addr,  *args, **kwargs):
         super().__init__(addr, *args, **kwargs)
         self.setAcceptHoverEvents(True)
-        self.disasm_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
-            "disassembly")  # type: DisassemblyView
-        self.symexec_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
-            "symexec")  # type: SymexecView
         self.hovered = False
 
     def mousePressEvent(self, event):
@@ -54,11 +58,15 @@ class QStatsAnnotation(QInstructionAnnotation):
 
     def hoverEnterEvent(self, event): #pylint: disable=unused-argument
         self.hovered = True
-        self.disasm_view.redraw_current_graph()
+        disasm_view = self.get_disasm_view()
+        if disasm_view:
+            disasm_view.redraw_current_graph()
 
     def hoverLeaveEvent(self, event): #pylint: disable=unused-argument
         self.hovered = False
-        self.disasm_view.redraw_current_graph()
+        disasm_view = self.get_disasm_view()
+        if disasm_view:
+            disasm_view.redraw_current_graph()
 
     def paint(self, painter, *args, **kwargs):
         if self.hovered:
@@ -84,14 +92,24 @@ class QActiveCount(QStatsAnnotation):
         menu = QMenu()
 
         def _select_states():
-            self.symexec_view.select_states(self.states)
-            self.disasm_view.workspace.raise_view(self.symexec_view)
+            disasm_view = self.get_disasm_view()
+            if disasm_view:
+                disasm_view.redraw_current_graph()
+            
+            symexec_view = self.get_symexec_view()
+            if symexec_view:
+                symexec_view.select_states(self.states)
+                symexec_view.workspace.raise_view(symexec_view)
 
         def _move_states():
-            to_stash = QInputDialog.getText(self.disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
-            if to_stash[1]:
-                self.symexec_view.current_simgr.move("active", to_stash[0], lambda s: s in self.states)
-                self.disasm_view.refresh()
+            disasm_view = self.get_disasm_view()
+            symexec_view = self.get_symexec_view()
+            if disasm_view is None or symexec_view is None:
+                return
+            to_stash, ok = QInputDialog.getText(disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
+            if ok:
+                symexec_view.current_simgr.move("active", to_stash, lambda s: s in self.states)
+                disasm_view.refresh()
 
         menu.addAction("Select", _select_states)
         menu.addAction("Move To", _move_states)
@@ -174,7 +192,10 @@ class QAvoidAddrAnnotation(QExploreAnnotation):
 
 
 class QBlockAnnotations(QGraphicsItem):
-    """Container for all instruction annotations in a QBlock"""
+    """
+    Container for all instruction annotations in a QBlock
+    Used in `fetch_qblock_annotations`.
+    """
 
     PADDING = 10
 
