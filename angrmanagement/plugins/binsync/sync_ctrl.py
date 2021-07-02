@@ -1,15 +1,16 @@
-from typing import List
+from typing import List, Optional, Dict
 from collections import OrderedDict
 import threading
 import datetime
 import time
+import os
 
 from PySide2.QtWidgets import QMessageBox
 
-import angr
 from angr.knowledge_plugins.sync.sync_controller import SyncController
 from angr import knowledge_plugins
-from ...data.jobs import DecompileFunctionJob
+import angr
+from ...ui.views import CodeView
 
 try:
     import binsync
@@ -75,21 +76,20 @@ class BinsyncController:
             self.cmd_queue[time.time()] = (cmd_func, args, kwargs)
 
     def eval_cmd_queue(self):
-        self.queue_lock.acquire()
-        if len(self.cmd_queue) > 0:
-            # pop the first command from the queue
-            cmd = self.cmd_queue.popitem(last=False)[1]
-            self.queue_lock.release()
+        cmd = None
+        with self.queue_lock:
+            if len(self.cmd_queue) > 0:
+                # pop the first command from the queue
+                cmd = self.cmd_queue.popitem(last=False)[1]
 
-            # parse the command
+        # parse the command if present
+        if cmd:
             func = cmd[0]
             f_args = cmd[1]
             f_kargs = cmd[2]
 
             # call it!
             func(*f_args, **f_kargs)
-            return
-        self.queue_lock.release()
 
     def pull_routine(self):
         while True:
@@ -129,7 +129,7 @@ class BinsyncController:
         return self.instance.kb.sync
 
     def check_client(self, message_box=False):
-        if self.instance.kb is None or self.instance.kb.sync is None or self.instance.kb.sync.client is None:
+        if self.instance.kb is None or not hasattr(self.instance.kb, 'sync') or self.instance.kb.sync.client is None:
             if message_box:
                 QMessageBox.critical(
                     None,
@@ -175,8 +175,8 @@ class BinsyncController:
         decompilation.cfunc.demangled_name = _func.name
 
         # ==== Comments ==== #
-        all_cmts: List[binsync.data.Comment] = self.sync.pull_comments(func.addr, user=user)
-        for cmt in all_cmts:
+        sync_cmts = self.sync.pull_comments(func.addr, user=user)
+        for addr, cmt in sync_cmts:
             if cmt.comment:
                 if cmt.decompiled:
                     pos = decompilation.map_addr_to_pos.get_nearest_pos(cmt.addr)
@@ -186,9 +186,9 @@ class BinsyncController:
                     self.instance.kb.comments[cmt.addr] = cmt.comment
 
         # ==== Stack Vars ==== #
-        sync_vars= self.sync.pull_stack_variables(func.addr, user=user)
+        sync_vars = self.sync.pull_stack_variables(func.addr, user=user)
         for offset, sync_var in sync_vars:
-            code_var = self._find_stack_var_in_codegen(decompilation, offset)
+            code_var = BinsyncController.find_stack_var_in_codegen(decompilation, offset)
             if code_var:
                 code_var.name = sync_var.name
                 code_var.renamed = True
@@ -214,39 +214,33 @@ class BinsyncController:
     #
 
     def decompile_function(self, func, refresh_gui=False):
-        # create a callback to save the decompilation
-        def decomp_ready():
-            available = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
-            if available:
-                chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr,
-                                                                                  chosen_flavor)]
-                self.codegen.am_event(already_regenerated=True)
-
         # check for known decompilation
         available = self.instance.kb.structured_code.available_flavors(func.addr)
-        if 'pseudocode' in available:
-            decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
-        else:
+        if 'pseudocode' not in available:
+            # recover direct pseudocode
+            self.instance.project.analyses.Decompiler(func, flavor='pseudocode')
 
-            # use the interface defined in data
-            job = DecompileFunctionJob(
-                func,
-                cfg=self.workspace.instance.cfg,
-                on_finish=decomp_ready
-            )
+            # attempt to get source code if its available
+            source_root = None
+            if self.instance.original_binary_path:
+                source_root = os.path.dirname(self.instance.original_binary_path)
+            self.instance.project.analyses.ImportSourceCode(func, flavor='source', source_root=source_root)
 
-            # force a run in this thread (not UI)
-            job.run(self.instance)
-            decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
-
+        # grab newly cached pseudocode
+        decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
         if refresh_gui:
+            # refresh all views
             self.workspace.reload()
+
+            # re-decompile current view to cause a refresh
+            current_tab = self.workspace.view_manager.current_tab
+            if isinstance(current_tab, CodeView) and current_tab.function == func:
+                self.workspace.decompile_current_function()
 
         return decomp
 
     @staticmethod
-    def find_stack_var_in_codegen(decompilation, stack_offset: int) -> angr.sim_variable.SimStackVariable:
+    def find_stack_var_in_codegen(decompilation, stack_offset: int) -> Optional[angr.sim_variable.SimStackVariable]:
         for var in decompilation.cfunc.variable_manager._unified_variables:
             if hasattr(var, "offset") and var.offset == stack_offset:
                 return var

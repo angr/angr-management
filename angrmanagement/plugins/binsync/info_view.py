@@ -44,7 +44,8 @@ class InfoView(BaseView):
         self._status_label.setText(status)
 
         # reload the info tables
-        self._update_info_tables()
+        if self.controller.check_client():
+            self._update_info_tables()
 
     #
     # Private methods
