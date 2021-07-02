@@ -10,7 +10,10 @@ if TYPE_CHECKING:
 
 class DisasmInsnContextMenu(Menu):
     """
-    Dissembly Instruction's Context Menu
+    Dissembly Instruction's Context Menu Items and callback funcion.
+    It provides context menu for dissembly instructions in the Dissembly View.
+    For adding items in plugins, use `Workspace.add_disasm_insn_ctx_menu_entry`
+    and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
     def __init__(self, disasm_view: 'DisassemblyView'):
         super().__init__("", parent=disasm_view)

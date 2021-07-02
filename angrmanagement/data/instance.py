@@ -211,7 +211,8 @@ class Instance:
 
     def append_code_to_console(self, hook_code_string):
         console = self.workspace.view_manager.first_view_in_category("console") # type: ConsoleView
-        console.set_input_buffer(hook_code_string)
+        if console:
+            console.set_input_buffer(hook_code_string)
 
     def delete_hook(self, addr):
         self.project.unhook(addr)
