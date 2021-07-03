@@ -258,7 +258,7 @@ class TraceViewer(BasePlugin):
     def _open_bitmap_multi_trace(self, trace_path, base_addr):
 
         if trace_path is None:
-            trace_path = self._open_trace_dialog(filter='')
+            trace_path = self._open_trace_dialog(tfilter='')
             if trace_path is None:
                 return None
 
@@ -308,7 +308,7 @@ class TraceViewer(BasePlugin):
 
     def _open_json_trace_dialog(self) -> Tuple[Optional[List[int]],Optional[int]]:
         # project = self.workspace.instance.project
-        trace_file_name = self._open_trace_dialog(filter='json (*.json)')
+        trace_file_name = self._open_trace_dialog(tfilter='json (*.json)')
 
         if trace_file_name is None:
             return None, None
