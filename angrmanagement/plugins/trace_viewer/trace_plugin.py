@@ -287,8 +287,8 @@ class TraceViewer(BasePlugin):
 
         return trace, base_addr
 
-    def _open_trace_dialog(self, filter):
-        file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", filter)
+    def _open_trace_dialog(self, tfilter):
+        file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", tfilter)
         try:
             with open(file_path, 'rb') as f:
                 f.read(1)
@@ -324,12 +324,14 @@ class TraceViewer(BasePlugin):
         elif "bb_addrs" not in trace.keys():
             QMessageBox.critical(self.workspace._main_window,
                                  "Incorrect trace format",
-                                 "Failed to open the JSON trace. We expect the JSON trace to contain the field 'bb_addrs'.")
+                                 "Failed to open the JSON trace."
+                                 " We expect the JSON trace to contain the field 'bb_addrs'.")
             return None, None
         elif not isinstance(trace["bb_addrs"], list):
             QMessageBox.critical(self.workspace._main_window,
                                  "Incorrect trace format",
-                                 "Failed to open the JSON trace. We expect the JSON trace bb_addrs field to be a list of integers.")
+                                 "Failed to open the JSON trace."
+                                 "We expect the JSON trace bb_addrs field to be a list of integers.")
             return None, None
 
 

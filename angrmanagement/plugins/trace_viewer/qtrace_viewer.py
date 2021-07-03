@@ -1,5 +1,6 @@
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup, QMessageBox, QInputDialog
-from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView, QTableWidget, QTableWidgetItem, QLineEdit
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
+from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
+from PySide2.QtWidgets import  QMessageBox, QInputDialog, QTableWidget, QTableWidgetItem, QLineEdit
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
 from PySide2.QtCore import Qt, QPoint, QEvent
 
