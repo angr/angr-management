@@ -1,11 +1,32 @@
+import random
+
 from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox
 
-from angr.sim_type import TypeRef, ALL_TYPES
+from angr.sim_type import TypeRef, ALL_TYPES, SimStruct, SimUnion
 
 from .view import BaseView
 from ..widgets.qtypedef import QCTypeDef
 from ..dialogs.type_editor import CTypeEditor
 
+FRUITS = [
+    'mango',
+    'cherry',
+    'banana',
+    'papaya',
+    'apple',
+    'kiwi',
+    'pineapple',
+    'coconut',
+    'peach',
+    'honeydew',
+    'cucumber',
+    'pumpkin',
+    'cantaloupe',
+    'strawberry',
+    'watermelon',
+    'nectarine',
+    'orange',
+]
 
 class TypesView(BaseView):
     """
@@ -66,6 +87,15 @@ class TypesView(BaseView):
         dialog.exec_()
 
         for name, ty in dialog.result:
+            if name is None and type(ty) in (SimStruct, SimUnion) and ty.name != '<anon>':
+                name = ty.name
+            if name is None:
+                for fruit in FRUITS:
+                    if fruit not in self.workspace.instance.kb.types:
+                        name = fruit
+                        break
+                else:
+                    name = f'type_{random.randint(0x10000000, 0x100000000):x}'
             if name.startswith('struct '):
                 name = name[7:]
             elif name.startswith('union '):

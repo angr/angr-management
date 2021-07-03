@@ -15,7 +15,7 @@ from ..daemon.client import DaemonClient
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
-
+    from ..ui.views.console_view import ConsoleView
 
 class Instance:
     project: Union[angr.Project, ObjectContainer]
@@ -23,6 +23,7 @@ class Instance:
     cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
 
     def __init__(self):
+        # pylint:disable=import-outside-toplevel)
         # delayed import
         from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
 
@@ -205,6 +206,13 @@ class Instance:
         # ...lol
         while self.jobs:
             time.sleep(0.05)
+
+    def append_code_to_console(self, hook_code_string):
+        console = self.workspace._get_or_create_console_view()
+        console.set_input_buffer(hook_code_string)
+
+    def delete_hook(self, addr):
+        self.project.unhook(addr)
 
     #
     # Private methods
