@@ -223,7 +223,7 @@ class TraceViewer(BasePlugin):
         if trace is None or base_addr is None:
             return
 
-        if self.multi_trace.am_obj == None:
+        if self.multi_trace.am_obj is None:
             self.multi_trace.am_obj = MultiTrace(self.workspace)
         self.trace.am_obj = self.multi_trace.am_obj.add_trace(trace, base_addr)
         self.multi_trace.am_event()
@@ -307,7 +307,7 @@ class TraceViewer(BasePlugin):
             return None
 
     def _open_json_trace_dialog(self) -> Tuple[Optional[List[int]],Optional[int]]:
-        project = self.workspace.instance.project
+        # project = self.workspace.instance.project
         trace_file_name = self._open_trace_dialog(filter='json (*.json)')
 
         if trace_file_name is None:

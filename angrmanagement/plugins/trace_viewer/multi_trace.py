@@ -1,5 +1,4 @@
 import math
-import slacrs
 
 from PySide2.QtGui import QColor
 from .trace_statistics import TraceStatistics
@@ -8,7 +7,6 @@ try:
     from slacrs import Slacrs
     from slacrs.model import Input
 except ImportError as ex:
-    print("Unable to import Slacrs")
     Slacrs = None
     HumanFatigue = None
 
@@ -74,14 +72,14 @@ class MultiTrace:
 
     def get_input_id_for_trace_id(self, trace_id):
         if trace_id not in self._traces.keys():
-            print("ERROR - trace id %s not present in multitrace" % trace_id)
+            self.workspace.log("ERROR - trace id %s not present in multitrace" % trace_id)
             return None
         trace = self._traces[trace_id]
         return trace.input_id
 
     def get_trace_with_id(self, trace_id):
         if trace_id not in self._traces.keys():
-            print("ERROR - trace id %s not present in multitrace" % trace_id)
+            self.workspace.log("ERROR - trace id %s not present in multitrace" % trace_id)
             return None
         return self._traces[trace_id]
 
@@ -95,19 +93,18 @@ class MultiTrace:
         input_seed_string = "<>"
 
         if not Slacrs:
-            print("slacrs not installed, unable to retrieve trace seed inputs")
+            self.workspace.log("slacrs not installed, unable to retrieve trace seed inputs")
             return "<>"
 
-        slacrs = Slacrs(database=self.slacrs_url)
-        session = slacrs.session()
-
-        try:
-            result = session.query(Input).filter_by(id=trace_id).one()
-            input_seed_string = result.values('value')
-        except Exception as e:
-            print(e)
-            print("Unable to retrieve seed input for trace: ", trace_id)
-        session.close()
+        slacrs_instance = Slacrs(database=self.slacrs_url)
+        session = slacrs_instance.session()
+        if session:
+            result = session.query(Input).filter_by(id=trace_id).first()
+            if result:
+                input_seed_string = result.values('value')
+            session.close()
+        if input_seed_string == "<>":
+            self.workspace.log("Unable to retrieve seed input for trace: %s" % trace_id)
         return input_seed_string
 
     def clear_heatmap(self):
@@ -117,7 +114,7 @@ class MultiTrace:
         addrs_of_interest = []
         for trace_id in targets:
             if trace_id not in self._traces.keys():
-                print("%s not found in traces" % trace_id)
+                self.workspace.log("%s not found in traces" % trace_id)
                 continue
             addr_list = self._traces[trace_id].mapped_trace
             addrs_of_interest.extend(addr_list)
