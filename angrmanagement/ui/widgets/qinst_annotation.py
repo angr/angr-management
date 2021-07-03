@@ -2,7 +2,8 @@ from typing import List, TYPE_CHECKING, Dict
 
 from PySide2.QtGui import QColor, QPainterPath, QBrush, QCursor
 from PySide2.QtCore import QMarginsF
-from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, QInputDialog, QLineEdit
+from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, \
+    QInputDialog, QLineEdit
 
 from .qsimulation_managers import QSimulationManagers
 from ...config import Conf
@@ -89,7 +90,6 @@ class QActiveCount(QStatsAnnotation):
         def _select_states():
             if self.disasm_view:
                 self.disasm_view.redraw_current_graph()
-            
             symexec_view = self.symexec_view
             if symexec_view:
                 symexec_view.select_states(self.states)
@@ -191,7 +191,7 @@ class QBlockAnnotations(QGraphicsItem):
 
     PADDING = 10
     disasm_view = None # type: DisassemblyView
-    
+
     def __init__(self, addr_to_annotations: Dict[int, List[QInstructionAnnotation]], *, parent, disasm_view):
         super().__init__(parent=parent)
         self.addr_to_annotations = addr_to_annotations
