@@ -197,7 +197,7 @@ class QSimulationManagerViewer(QTreeWidget):
         self.refresh()
 
     def refresh(self, **kwargs):
-        if kwargs.get('src') != 'simgr_viewer':
+        if kwargs.get('src',"") != 'simgr_viewer':
             self._init_widgets()
 
     def current_state(self):
