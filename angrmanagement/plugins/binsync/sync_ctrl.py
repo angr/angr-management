@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict
+from typing import Optional
 from collections import OrderedDict
 import threading
 import datetime
@@ -179,7 +179,7 @@ class BinsyncController:
         for addr, cmt in sync_cmts:
             if cmt.comment:
                 if cmt.decompiled:
-                    pos = decompilation.map_addr_to_pos.get_nearest_pos(cmt.addr)
+                    pos = decompilation.map_addr_to_pos.get_nearest_pos(addr)
                     corrected_addr = decompilation.map_pos_to_addr.get_node(pos).tags['ins_addr']
                     decompilation.stmt_comments[corrected_addr] = cmt.comment
                 else:
