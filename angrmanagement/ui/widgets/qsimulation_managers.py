@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from PySide2.QtWidgets import QFrame, QInputDialog, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
     QCheckBox, QTabWidget, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
@@ -5,6 +7,10 @@ from PySide2.QtCore import Qt
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
 from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
+
+if TYPE_CHECKING:
+    from angr import SimState
+    from typing import List
 
 
 class QSimulationManagers(QFrame):
@@ -100,6 +106,14 @@ class QSimulationManagers(QFrame):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
+
+    def select_states(self, states: 'List[SimState]'):
+        stash_tree_item = self._simgr_viewer.get_stash_tree_item("active")
+        states_set = set(states)
+        for state_tree_item in stash_tree_item:
+            if state_tree_item.state in states_set:
+                state_tree_item.setSelected(True)
+        stash_tree_item.setExpanded(True)
 
     def _init_simgrs_tab(self, tab):
         # simgrs list
