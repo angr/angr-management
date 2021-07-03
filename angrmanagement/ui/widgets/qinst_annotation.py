@@ -18,15 +18,14 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     background_color = None
     foreground_color = None
     addr = None
-    container = None # type: QBlockAnnotations
 
     @property
     def disasm_view(self) -> 'DisassemblyView':
-        return self.container.disasm_view
+        return self.parentItem().disasm_view
 
     @property
     def symexec_view(self) -> 'SymexecView':
-        return self.container.disasm_view.workspace.view_manager.first_view_in_category("symexec")
+        return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -203,7 +202,6 @@ class QBlockAnnotations(QGraphicsItem):
             max_width = max(max_width, width)
             for annotation in annotations:
                 annotation.setParentItem(self)
-                annotation.container = self
         self.width = max_width
         self._init_widgets()
 
