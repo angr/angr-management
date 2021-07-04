@@ -252,8 +252,8 @@ class CodeView(BaseView):
             if addr is None:
                 self.close()
             else:
-                target_func = self.workspace.instance.kb.functions.floor_func(addr)
-                self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
+                self.addr.am_obj = addr
+                self.addr.am_event()
             return True
         elif key == Qt.Key_Space:
             if not self.codegen.am_none:
