@@ -200,6 +200,7 @@ class CodeView(BaseView):
             chosen_flavor = flavor if flavor in available else available[0]
             self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
             self.codegen.am_event()
+            self._focus_core(focus, focus_addr)
         else:
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self.function.am_obj

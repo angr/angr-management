@@ -188,7 +188,20 @@ class QCCodeEdit(api.CodeEdit):
 
         if self._code_view.keyPressEvent(event):
             return True
-        return super().keyPressEvent(event)
+
+        saved_mode = self.textInteractionFlags()
+        if key in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down, Qt.Key_PageDown, Qt.Key_PageUp, Qt.Key_Home, Qt.Key_End):
+            self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
+        result = super().keyPressEvent(event)
+        self.setTextInteractionFlags(saved_mode)
+        return result
+
+    def paintEvent(self, e):
+        saved_mode = self.textInteractionFlags()
+        self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
+        result = super().paintEvent(e)
+        self.setTextInteractionFlags(saved_mode)
+        return result
 
     def setDocument(self, document):
         super().setDocument(document)
