@@ -584,10 +584,10 @@ class DisassemblyView(BaseView):
             if view is not None:
                 qsimgrs = view._simgrs
                 if addr in qsimgrs.find_addrs:
-                    addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
+                    addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
                 if addr in qsimgrs.avoid_addrs:
-                    addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
-        return QBlockAnnotations(addr_to_annotations, parent=qblock)
+                    addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
+        return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
     #
     # Initialization
