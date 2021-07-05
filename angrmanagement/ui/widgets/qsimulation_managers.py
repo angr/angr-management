@@ -5,7 +5,7 @@ from PySide2.QtCore import Qt
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
 from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
-
+from ...logic.threads import gui_thread_schedule
 
 class QSimulationManagers(QFrame):
     def __init__(self, instance: Instance, simgr, state, parent=None):
@@ -230,6 +230,7 @@ class QSimulationManagers(QFrame):
                 self.instance.workspace.plugins.step_callback(simgr)
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(simgr, events=False)
+                gui_thread_schedule(lambda: self.simgr.am_event(src="post_step"))
                 return simgr
 
             self.instance.add_job(SimgrExploreJob.create(
@@ -254,7 +255,7 @@ class QSimulationManagers(QFrame):
             self.state.am_event(src='clicked')
 
     def _watch_simgr(self, **kwargs):
-        if kwargs.get('src') in ('clicked', 'filter_actives'):
+        if kwargs.get('src') in ('clicked', 'filter_actives', "post_step"):
             return
         elif kwargs.get('src') == 'job_done' and kwargs.get('job') == 'step':
             self._filter_actives(self.simgr)
