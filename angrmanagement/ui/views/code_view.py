@@ -20,6 +20,10 @@ from ...data.jobs import DecompileFunctionJob
 l = logging.getLogger(__name__)
 
 class CodeView(BaseView):
+    """
+    A view to display pseudocode or source code. You should control this view by manipulating and observing its four
+    ObjectContainers: .addr, .current_node, .codegen, and .function.
+    """
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('pseudocode', workspace, default_docking_position, *args, **kwargs)
 

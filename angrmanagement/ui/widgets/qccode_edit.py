@@ -34,6 +34,10 @@ class ColorSchemeIDA(api.ColorScheme):
 
 
 class QCCodeEdit(api.CodeEdit):
+    """
+    A subclass of pyqodeng's CodeEdit, specialized to handle the kinds of textual interaction expected of the pseudocode
+    view. You will typically interact with this class as code_view.textedit.
+    """
     def __init__(self, code_view):
         super().__init__(create_default_actions=True)
 
@@ -111,7 +115,8 @@ class QCCodeEdit(api.CodeEdit):
             # decompiled function name in selection
             self._selected_node = under_cursor
             mnu.addActions(self.function_name_actions)
-            for entry in self.workspace.plugins.build_context_menu_functions([self.workspace.instance.kb.functions[under_cursor.name]]):
+            for entry in self.workspace.plugins.build_context_menu_functions(
+                    [self.workspace.instance.kb.functions[under_cursor.name]]):
                 Menu.translate_element(mnu, entry)
         else:
             mnu.addActions(self.default_actions)
@@ -190,7 +195,8 @@ class QCCodeEdit(api.CodeEdit):
             return True
 
         saved_mode = self.textInteractionFlags()
-        if key in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down, Qt.Key_PageDown, Qt.Key_PageUp, Qt.Key_Home, Qt.Key_End):
+        if key in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down,
+                   Qt.Key_PageDown, Qt.Key_PageUp, Qt.Key_Home, Qt.Key_End):
             self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
         result = super().keyPressEvent(event)
         self.setTextInteractionFlags(saved_mode)
@@ -199,9 +205,8 @@ class QCCodeEdit(api.CodeEdit):
     def paintEvent(self, e):
         saved_mode = self.textInteractionFlags()
         self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
-        result = super().paintEvent(e)
+        super().paintEvent(e)
         self.setTextInteractionFlags(saved_mode)
-        return result
 
     def setDocument(self, document):
         super().setDocument(document)
@@ -230,7 +235,8 @@ class QCCodeEdit(api.CodeEdit):
                 addr = self.get_src_to_inst()
             else:
                 pos = self.textCursor().position()
-                while self.document().characterAt(pos) not in ('\n', '\u2029') and pos < self.document().characterCount():  # qt WHAT are you doing
+                while self.document().characterAt(pos) not in ('\n', '\u2029') and \
+                        pos < self.document().characterCount():  # qt WHAT are you doing
                     pos += 1
                 node = self.document().get_stmt_node_at_position(pos)
                 addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
