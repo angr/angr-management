@@ -129,7 +129,6 @@ class QHFunctionTableModel(QAbstractTableModel):
             color = self.workspace.plugins.color_func(func)
             if color is None:
                 color = QColor(0xFF, 0xFF, 0xFF)
-
             if func.addr in self.plugin.suggested:
                 color = QColor(159, 237, 228)
 
