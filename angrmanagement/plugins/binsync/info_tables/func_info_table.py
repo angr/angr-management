@@ -2,6 +2,8 @@ from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView,
 from PySide2.QtCore import Qt
 from typing import Dict
 
+from ..sync_ctrl import BinsyncController
+
 try:
     import binsync
 except ImportError:
@@ -60,7 +62,7 @@ class QFuncInfoTable(QTableWidget):
 
         self.items = []
 
-        self.controller = controller
+        self.controller: BinsyncController = controller
 
     def reload(self):
         self.setRowCount(len(self.items))
@@ -95,44 +97,32 @@ class QFuncInfoTable(QTableWidget):
         Update the status of all users within the repo.
         """
 
-        # reset the QItem list
+        # reset the items in table
         self.items = []
+        known_funcs = {}  # addr: (addr, name, user_name, push_time)
 
-        # First, let's see if any new homies showed up
-        #self.controller._client.init_remote()
-
-        # Dict to track function changes
-        func_changes = {}
-
+        # first check if any functions are unknown to the table
         for user in users:
-            # Get user state. Func from user state
-            #s = self.controller._client.get_state(user=user.name)
-            functions: Dict[int, Function] = {} # s.functions
+            state = self.controller.sync.client.get_state(user=user.name)
+            user_funcs: Dict[int, Function] = state.functions
 
-            # Per user metadata
-            u_name = user.name
+            for func_addr, sync_func in user_funcs.items():
+                func_change_time = sync_func.last_change
 
-            # Iterate over items, store last updated
-            for addr, func in functions.items():
-                # Function metadata
-                last_change = func.last_change
-                local_name = "local_func"
-                time_delta = -1
+                # check if we already know about it
+                if func_addr in known_funcs:
+                    # compare this users change time to the store change time
+                    if func_change_time < known_funcs[func_addr][3]:
+                        # don't change it if the other user is more recent
+                        continue
 
-                # Check last changes and set table
-                try:
-                    # Check if this is newer or not
-                    stored_time = func_changes[addr][3]
-                    if last_change > stored_time:
-                        func_changes[addr] = (local_name, u_name, time_delta, last_change)
-                except KeyError:
-                    # IN this case, it probably does not exist
-                    # Let's make it
-                    func_changes[addr] = (local_name, u_name, time_delta, last_change)
+                local_func_name = self.controller.get_local_func_name(func_addr)
+                known_funcs[func_addr] = [func_addr, local_func_name, user.name, func_change_time]
 
-        # Create the table
-        for key in sorted(func_changes):
-            # Assign attribute by val: <func_addr> | <local_name> | <u_name> | <time_delta>
-            item = func_changes[key]
-            self.items.append(QUserItem(key, item[0], item[1], item[2]))
+        for row in known_funcs.values():
+            # fix datetimes for the correct format
+            row[3] = BinsyncController.friendly_datetime(row[3])
+            table_row = QUserItem(*row)
+            self.items.append(table_row)
+
         self.reload()

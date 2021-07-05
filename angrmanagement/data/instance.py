@@ -9,7 +9,6 @@ from angr.analyses.disassembly import Instruction
 
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
-from .sync_ctrl import SyncControl
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..daemon.client import DaemonClient
@@ -19,6 +18,9 @@ if TYPE_CHECKING:
     from ..ui.views.console_view import ConsoleView
 
 class Instance:
+    """
+    An object to give access to normal angr project objects like a Project, CFG, and other analyses.
+    """
     project: Union[angr.Project, ObjectContainer]
     cfg: Union[angr.analyses.cfg.CFGBase, ObjectContainer]
     cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
@@ -51,7 +53,8 @@ class Instance:
         self.register_container('cfb', lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
         self.register_container('interactions', lambda: [], List[SavedInteraction], 'Saved program interactions')
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
-        self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]], 'Available interaction protocols')
+        self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]],
+                                'Available interaction protocols')
 
         self.project.am_subscribe(self.initialize)
 
@@ -60,7 +63,6 @@ class Instance:
         self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
         self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
-        self.sync = SyncControl(self)
         self.cfg_args = None
         self._disassembly = {}
 
@@ -248,6 +250,7 @@ class Instance:
             else:
                 gui_thread_schedule_async(job.finish, args=(self, result))
 
+    # pylint:disable=no-self-use
     def _set_status(self, status_text):
         GlobalInfo.main_window.status = status_text
 
@@ -266,6 +269,7 @@ class Instance:
                 break
 
     def _reset_containers(self, **kwargs):
+        # pylint:disable=consider-using-dict-items
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event(**kwargs)
