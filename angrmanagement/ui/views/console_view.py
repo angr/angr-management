@@ -84,4 +84,3 @@ class ConsoleView(BaseView):
     def commend_executed(self,msg):
         if msg["msg_type"] == "execute_reply" and msg["content"]["status"] == "ok":
             self.workspace.view_manager.first_view_in_category("disassembly").refresh()
-        print(msg)

@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Dict
 from PySide2.QtGui import QColor, QPainterPath, QBrush, QCursor
 from PySide2.QtCore import QMarginsF
-from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, QInputDialog, QLineEdit
+from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, \
+    QInputDialog, QLineEdit
 
 from .qsimulation_managers import QSimulationManagers
-from ...logic import GlobalInfo
 from ...config import Conf
 
 if TYPE_CHECKING:
@@ -21,13 +21,20 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     background_color = None
     foreground_color = None
     addr = None
-    _config = Conf
+
+    @property
+    def disasm_view(self) -> 'DisassemblyView':
+        return self.parentItem().disasm_view
+
+    @property
+    def symexec_view(self) -> 'SymexecView':
+        return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.addr = addr
         self.setBrush(QBrush(self.foreground_color))
-        self.setFont(self._config.disasm_font)
+        self.setFont(Conf.disasm_font)
 
     def paint(self, painter, *args, **kwargs):
         margin = QMarginsF(3, 0, 3, 0)
@@ -46,10 +53,6 @@ class QStatsAnnotation(QInstructionAnnotation):
     def __init__(self, addr,  *args, **kwargs):
         super().__init__(addr, *args, **kwargs)
         self.setAcceptHoverEvents(True)
-        self.disasm_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
-            "disassembly")  # type: DisassemblyView
-        self.symexec_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
-            "symexec")  # type: SymexecView
         self.hovered = False
 
     def mousePressEvent(self, event):
@@ -57,11 +60,13 @@ class QStatsAnnotation(QInstructionAnnotation):
 
     def hoverEnterEvent(self, event): #pylint: disable=unused-argument
         self.hovered = True
-        self.disasm_view.redraw_current_graph()
+        if self.disasm_view:
+            self.disasm_view.redraw_current_graph()
 
     def hoverLeaveEvent(self, event): #pylint: disable=unused-argument
         self.hovered = False
-        self.disasm_view.redraw_current_graph()
+        if self.disasm_view:
+            self.disasm_view.redraw_current_graph()
 
     def paint(self, painter, *args, **kwargs):
         if self.hovered:
@@ -92,15 +97,23 @@ class QActiveCount(QStatsAnnotation):
         menu = QMenu()
 
         def _select_states():
-            self.symexec_view.select_states(self.states)
-            self.disasm_view.workspace.raise_view(self.symexec_view)
+            if self.disasm_view:
+                self.disasm_view.redraw_current_graph()
+            symexec_view = self.symexec_view
+            if symexec_view:
+                symexec_view.select_states(self.states)
+                symexec_view.workspace.raise_view(symexec_view)
 
         def _move_states():
-            to_stash, ok = QInputDialog.getText(self.disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
+            disasm_view = self.disasm_view
+            symexec_view = self.symexec_view
+            if disasm_view is None or symexec_view is None:
+                return
+            to_stash, ok = QInputDialog.getText(disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
             if ok:
-                self.symexec_view.current_simgr.move("active", to_stash, lambda s: s in self.states)
-                self.disasm_view.refresh()
-                self.symexec_view._simgrs._simgr_viewer.refresh()
+                symexec_view.current_simgr.move("active", to_stash, lambda s: s in self.states)
+                symexec_view._simgrs._simgr_viewer.refresh()
+                disasm_view.refresh()
 
         menu.addAction("Select", _select_states)
         menu.addAction("Move To", _move_states)
@@ -132,9 +145,8 @@ class QHookAnnotation(QInstructionAnnotation):
     background_color = QColor(230, 230, 230)
     foreground_color = QColor(50, 50, 50)
 
-    def __init__(self, disasm_view: 'DisassemblyView', addr, *args, **kwargs):
+    def __init__(self, addr, *args, **kwargs):
         super().__init__(addr, "hook", *args, **kwargs)
-        self.disasm_view = disasm_view
 
     def contextMenuEvent(self, event): #pylint: disable=unused-argument
         menu = QMenu()
@@ -155,9 +167,8 @@ class QExploreAnnotation(QInstructionAnnotation):
     foreground_color = QColor(230, 230, 230)
     text = None
 
-    def __init__(self, addr, disasm_view, qsimgrs: QSimulationManagers, *args, **kwargs):
+    def __init__(self, addr, qsimgrs: QSimulationManagers, *args, **kwargs):
         super().__init__(addr, self.text, *args, **kwargs)
-        self.disasm_view = disasm_view
         self.qsimgrs = qsimgrs
 
     def contextMenuEvent(self, event): #pylint: disable=unused-argument
@@ -200,13 +211,16 @@ class QAvoidAddrAnnotation(QExploreAnnotation):
 class QBlockAnnotations(QGraphicsItem):
     """
     Container for all instruction annotations in a QBlock
+    Used in `fetch_qblock_annotations`.
     """
 
     PADDING = 10
+    disasm_view = None # type: DisassemblyView
 
-    def __init__(self, addr_to_annotations: dict, *, parent):
+    def __init__(self, addr_to_annotations: Dict[int, List[QInstructionAnnotation]], *, parent, disasm_view):
         super().__init__(parent=parent)
         self.addr_to_annotations = addr_to_annotations
+        self.disasm_view = disasm_view
         max_width = 0
         for _addr, annotations in self.addr_to_annotations.items():
             width = sum(a.boundingRect().width() + self.PADDING for a in annotations)
