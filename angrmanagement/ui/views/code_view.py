@@ -20,6 +20,10 @@ from ...data.jobs import DecompileFunctionJob
 l = logging.getLogger(__name__)
 
 class CodeView(BaseView):
+    """
+    A view to display pseudocode or source code. You should control this view by manipulating and observing its four
+    ObjectContainers: .addr, .current_node, .codegen, and .function.
+    """
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('pseudocode', workspace, default_docking_position, *args, **kwargs)
 
@@ -200,6 +204,7 @@ class CodeView(BaseView):
             chosen_flavor = flavor if flavor in available else available[0]
             self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
             self.codegen.am_event()
+            self._focus_core(focus, focus_addr)
         else:
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self.function.am_obj
@@ -252,8 +257,8 @@ class CodeView(BaseView):
             if addr is None:
                 self.close()
             else:
-                target_func = self.workspace.instance.kb.functions.floor_func(addr)
-                self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
+                self.addr.am_obj = addr
+                self.addr.am_event()
             return True
         elif key == Qt.Key_Space:
             if not self.codegen.am_none:
