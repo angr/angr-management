@@ -3,7 +3,12 @@ from PySide2.QtCore import Qt
 
 
 class QUserItem:
-    def __init__(self, struct_name, size, user):
+    """
+    An item describing a struct update from a user. Only for internal use inside
+    QStructInfoTable
+    """
+
+    def __init__(self, struct_name: str, size: int, user):
         self.sturct_name = struct_name
         self.size = size
         self.user = user
@@ -27,6 +32,10 @@ class QUserItem:
 
 
 class QStructInfoTable(QTableWidget):
+    """
+    An QTable that contains info relevant to updates on other users Structs.
+    """
+
     HEADER = [
         'Struct Name',
         'Size',
@@ -79,18 +88,9 @@ class QStructInfoTable(QTableWidget):
                 self.selectRow(i)
                 break
 
+    # pylint:disable=unused-argument,no-self-use
     def update_users(self, users):
         """
-        Update the status of all users within the repo.
+        Update the status of all users within the repo for the Structs table
         """
-
-        # reset the QItem list
-        self.items = []
-
-        # First, let's see if any new homies showed up
-        #self.controller._client.init_remote()
-
-        for user in users:
-            self.items.append(QUserItem("", 0, user.name))
-
-        self.reload()
+        return False

@@ -1,7 +1,8 @@
 from typing import Optional, TYPE_CHECKING
+from collections import OrderedDict
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall
+from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.code_view import CodeView
@@ -67,6 +68,8 @@ class RenameNode(QDialog):
                 name_box.setText(self._node.name)
             elif isinstance(self._node, CFunctionCall):
                 name_box.setText(self._node.callee_func.name)
+            elif isinstance(self._node, CStructField):
+                name_box.setText(self._node.field)
 
             name_box.selectAll()
         self._name_box = name_box
@@ -133,13 +136,14 @@ class RenameNode(QDialog):
                     # callback
                     # sanity check that we are a stack var
                     if hasattr(self._node.variable, 'offset') and self._node.variable.offset is not None:
+                        var_type = self._node.type
                         workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
-                                                                 self._node.variable.offset, self._node.variable.name,
-                                                                 node_name)
-                    else:
-                        workspace.plugins.handle_variable_rename(code_kb.functions[self._node.variable.region],
-                                                                 None, self._node.variable.name,
-                                                                 node_name)
+                                                                 self._node.variable.offset,
+                                                                 self._node.variable.name,
+                                                                 node_name,
+                                                                 var_type,
+                                                                 self._node.variable.size
+                                                                 )
 
                     self._node.unified_variable.name = node_name
                     self._node.unified_variable.renamed = True
@@ -167,6 +171,14 @@ class RenameNode(QDialog):
                         )
 
                         self._node.callee_func.name = node_name
+                elif isinstance(self._node, CStructField):
+                    # TODO add callback
+                    # TODO prevent name duplication. reuse logic from CTypeEditor?
+                    # TODO if this is a temporary struct, make it permanent and add it to kb.types
+                    fields = [(node_name if n == self._node.field else n, t) for n, t in self._node.type.fields.items()]
+                    self._node.type.fields = OrderedDict(fields)
+                    self._node.field = node_name
+
 
                 self._code_view.codegen.am_event()
                 self.close()

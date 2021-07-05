@@ -320,6 +320,7 @@ class Workspace:
         view.function.am_obj = func
         view.function.am_event(focus=True, focus_addr=curr_ins)
 
+
     def create_simulation_manager(self, state, state_name, view=None):
 
         inst = self.instance
@@ -393,6 +394,16 @@ class Workspace:
 
     def show_types_view(self):
         view = self._get_or_create_types_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_functions_view(self):
+        view = self._get_or_create_functions_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_console_view(self):
+        view = self._get_or_create_console_view()
         self.raise_view(view)
         view.setFocus()
 
@@ -490,6 +501,28 @@ class Workspace:
         if view is None:
             # Create a new proximity view
             view = ProximityView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_console_view(self) -> ConsoleView:
+        # Take the first console view
+        view = self.view_manager.first_view_in_category("console")
+
+        if view is None:
+            # Create a new console view
+            view = ConsoleView(self, 'bottom')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_functions_view(self) -> FunctionsView:
+        # Take the first functions view
+        view = self.view_manager.first_view_in_category("functions")
+
+        if view is None:
+            # Create a new functions view
+            view = FunctionsView(self, 'left')
             self.add_view(view, view.caption, view.category)
 
         return view

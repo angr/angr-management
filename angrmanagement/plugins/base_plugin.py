@@ -124,7 +124,7 @@ class BasePlugin:
     # Decompiler Callbacks
     #
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
         A handler that is called *right before* function stack variable is renamed. Note: this does not directly
         allow you to intercept the call and change the results of the change. This handler is only intended to be
@@ -134,6 +134,8 @@ class BasePlugin:
         @param offset:      the offset of the stack variable
         @param old_name:    name before change
         @param new_name:    name after change
+        @param type_:       type after change
+        @param size:        size after change
         @return:
         """
         return False

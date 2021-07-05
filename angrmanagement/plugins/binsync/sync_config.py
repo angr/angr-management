@@ -145,7 +145,7 @@ class SyncConfig(QDialog):
 
         try:
             md5 = self._instance.project.loader.main_object.md5.hex()
-            self._instance.sync.connect(user, path, init_repo=init_repo, remote_url=remote_url, binary_hash=md5)
+            self._instance.kb.sync.connect(user, path, bin_hash=md5, init_repo=init_repo, remote_url=remote_url)
         except Exception as e:
             QMessageBox(self).critical(None, "Error connecting to repository", str(e))
             traceback.print_exc()

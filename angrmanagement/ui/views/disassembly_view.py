@@ -1,3 +1,4 @@
+
 from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
@@ -9,26 +10,32 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView, DisassemblyLevel
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap,\
+    QLinearDisassemblyView, DisassemblyLevel
 from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
+from ..dialogs.hook import HookDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
+from ...ui.widgets.qinst_annotation import QHookAnnotation
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import Function, VariableManager
+    from angr.knowledge_plugins import VariableManager
 
 
 _l = logging.getLogger(__name__)
 
 
 class DisassemblyView(BaseView):
+    """
+    Disassembly View
+    """
     view_visibility_changed = Signal()
     disassembly_level_changed = Signal(DisassemblyLevel)
 
@@ -300,6 +307,19 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
+    def popup_hook_dialog(self, async_=True, addr=None):
+        addr = addr or self._address_in_selection()
+
+        if addr is None:
+            return
+
+        dialog = HookDialog(self.workspace.instance, addr=addr, parent=self)
+        if async_:
+            dialog.show()
+        else:
+            dialog.exec_()
+
+
     def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:
             r = self._flow_graph.get_selected_operand_info()
@@ -547,7 +567,8 @@ class DisassemblyView(BaseView):
         if self._flow_graph.induction_variable_analysis:
             self._flow_graph.induction_variable_analysis = None
         else:
-            ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
+            analyses = self.workspace.instance.project.analyses
+            ana = analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
             self._flow_graph.induction_variable_analysis = ana
         self._flow_graph.refresh()
 
@@ -556,17 +577,17 @@ class DisassemblyView(BaseView):
         for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
             addr_to_annotations[annotations.addr].append(annotations)
         for addr in qblock.addr_to_insns.keys():
-            # if addr in self.workspace.instance.hooked_addresses:
-            #     hook_annotation = QHookAnnotation(self, addr)
-            #     addr_to_annotations[addr].append(hook_annotation)
+            if addr in self.workspace.instance.project._sim_procedures:
+                hook_annotation = QHookAnnotation(self, addr)
+                addr_to_annotations[addr].append(hook_annotation)
             view = self.workspace.view_manager.first_view_in_category("symexec")
             if view is not None:
                 qsimgrs = view._simgrs
                 if addr in qsimgrs.find_addrs:
-                    addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
+                    addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
                 if addr in qsimgrs.avoid_addrs:
-                    addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
-        return QBlockAnnotations(addr_to_annotations, parent=qblock)
+                    addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
+        return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
     #
     # Initialization

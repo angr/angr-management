@@ -1,6 +1,7 @@
 from PySide2.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWidgetItem, \
     QDialogButtonBox, QGridLayout, QHeaderView, QAbstractItemView
 
+from .sync_ctrl import BinsyncController
 #
 #   MenuDialog Box for Binsync Actions
 #
@@ -74,7 +75,7 @@ class MenuDialog(QDialog):
 
 class SyncMenu:
     def __init__(self, controller, funcs):
-        self.controller = controller
+        self.controller: BinsyncController = controller
         self.selected_funcs = funcs
 
     def open_sync_menu(self):
@@ -107,7 +108,8 @@ class SyncMenu:
             return False
 
         if action == "Sync":
-            print(f"[Binsync]: Data has been synced from user: {user} on {hex(func)}.")
+            ret = self.controller.fill_function(func, user)
+            print(f"[Binsync]: Data sync from user {'failed' if ret else 'succeeded'}: {user} on {hex(func.addr)}.")
 
         elif action == "Toggle autosync":
             # TODO: implement auto-syncing
@@ -133,19 +135,20 @@ class SyncMenu:
         :return:
         """
         # First, let's see if any new users has joined repo
-        #self.controller.client.init_remote()
+        sync_ctrl = self.controller.instance.kb.sync
+        sync_ctrl.client.init_remote()
 
         # Build out the menu dictionary for the table
         menu_table = {}
-        for user in self.controller.users:
+        for user in sync_ctrl.users():
             last_time = int(user.last_push_time)
             last_func = int(user.last_push_func)
 
-            if last_time == -1 or last_func == -1 or last_func == 0:
+            if last_time == -1 or last_func == -1:
                 ret_string = (" ", " ", " ")
             else:
-                time_ago = 0  # BinsyncController.friendly_datetime(last_time)
-                local_name = "local_temp"  # compat.get_func_name(last_func)
+                time_ago = BinsyncController.friendly_datetime(last_time)
+                local_name = self.controller.get_local_func_name(last_func)
                 func = hex(last_func)
                 ret_string = (time_ago, func, local_name)
 
