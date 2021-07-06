@@ -181,48 +181,49 @@ class QTraceViewer(QWidget):
 
     def _on_set_trace(self):
         self._reset()
+        if self.trace.am_none:
+            return
 
-        if self.trace.am_obj is not None:
-            l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
-                    self.trace.count)
-            if self.trace.count <= 0:
-                l.warning("No valid addresses found in trace to show. Check base address offsets?")
-                self.trace.am_obj = None
-                self.trace.am_event()
-                return
-            if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
-                self.trace_func_unit_height = 15
-                show_func_tag = True
-            else:
-                self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
-                show_func_tag = True
+        l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
+                self.trace.count)
+        if self.trace.count <= 0:
+            l.warning("No valid addresses found in trace to show. Check base address offsets?")
+            self.trace.am_obj = None
+            self.trace.am_event()
+            return
+        if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
+            self.trace_func_unit_height = 15
+            show_func_tag = True
+        else:
+            self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
+            show_func_tag = True
 
-            self.legend_height = int(self.trace.count * self.trace_func_unit_height)
+        self.legend_height = int(self.trace.count * self.trace_func_unit_height)
 
-            self._show_trace_func(show_func_tag)
-            self._show_legend()
-            self._show_trace_ids()
-            self._set_mark_color()
-            self._refresh_multi_list()
+        self._show_trace_func(show_func_tag)
+        self._show_legend()
+        self._show_trace_ids()
+        self._set_mark_color()
+        self._refresh_multi_list()
 
-            boundingSize = self.traceScene.itemsBoundingRect().width()
-            windowSize = boundingSize
-            if boundingSize > self.MAX_WINDOW_SIZE:
-                windowSize = self.MAX_WINDOW_SIZE
-            self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
-            self.setFixedWidth(windowSize)
+        boundingSize = self.traceScene.itemsBoundingRect().width()
+        windowSize = boundingSize
+        if boundingSize > self.MAX_WINDOW_SIZE:
+            windowSize = self.MAX_WINDOW_SIZE
+        self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
+        self.setFixedWidth(windowSize)
 
-            # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
-            self.multiView.setFixedWidth(windowSize)
-            cellWidth = windowSize // 2
-            self.listView.setColumnWidth(0, cellWidth)
-            self.listView.setColumnWidth(1, cellWidth)
-            self.listView.setFixedHeight(self.multiView.height() // 4)
-            self.multiTraceList.setColumnWidth(0, cellWidth)
-            self.multiTraceList.setColumnWidth(1, cellWidth)
-            self.view.setFixedWidth(windowSize)
+        # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
+        self.multiView.setFixedWidth(windowSize)
+        cellWidth = windowSize // 2
+        self.listView.setColumnWidth(0, cellWidth)
+        self.listView.setColumnWidth(1, cellWidth)
+        self.listView.setFixedHeight(self.multiView.height() // 4)
+        self.multiTraceList.setColumnWidth(0, cellWidth)
+        self.multiTraceList.setColumnWidth(1, cellWidth)
+        self.view.setFixedWidth(windowSize)
 
-            self.show()
+        self.show()
 
     def _populate_trace_table(self, view, trace_ids):
         numIDs = len(trace_ids)
@@ -282,7 +283,7 @@ class QTraceViewer(QWidget):
             self._show_trace_ids()
 
     def _on_select_ins(self):
-        if self.trace is None:
+        if self.trace.am_none:
             return
 
         if self.mark is not None:
@@ -385,7 +386,7 @@ class QTraceViewer(QWidget):
 
 
     def _show_trace_ids(self):
-        trace_ids = self.multi_trace.am_obj.get_all_trace_ids()
+        trace_ids = self.multi_trace.get_all_trace_ids()
         # traceID = self.listScene.addText(id_txt, QFont("Source Code Pro", 7))
         # traceID.setPos(5,5)
         self.listView.clearContents()
@@ -394,7 +395,7 @@ class QTraceViewer(QWidget):
             for row in range(self.listView.rowCount()):
                 item = self.listView.item(row, 0)
                 inputItem = self.listView.item(row, 1)
-                if self.trace.am_obj.id in item.text():
+                if self.trace.id in item.text():
                     item.setSelected(True)
                     inputItem.setSelected(True)
                     break
