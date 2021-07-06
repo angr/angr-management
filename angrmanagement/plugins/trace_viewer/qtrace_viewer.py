@@ -282,7 +282,7 @@ class QTraceViewer(QWidget):
             self._show_trace_ids()
 
     def _on_select_ins(self, **kwargs): # pylint: disable=unused-argument
-        if self.trace.am_obj is None:
+        if self.trace.am_none:
             return
 
         if self.mark is not None:
