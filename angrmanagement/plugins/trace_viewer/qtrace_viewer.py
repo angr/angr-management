@@ -1,13 +1,18 @@
+import logging
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
 from PySide2.QtWidgets import  QMessageBox, QInputDialog, QTableWidget, QTableWidgetItem, QLineEdit
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
 from PySide2.QtCore import Qt, QPoint, QEvent
 
-import logging
 l = logging.getLogger(name=__name__)
 
 class QTraceViewer(QWidget):
+    """
+    Load a basic block trace through json and visualize it in the disassembly
+    Ref: https://github.com/angr/angr-management/pull/122
+    """
+
     TAG_SPACING = 50
     LEGEND_X = -50
     LEGEND_Y = 0
@@ -282,7 +287,6 @@ class QTraceViewer(QWidget):
             multiTrace.is_active_tab = False
             self._show_trace_ids()
 
-            
     def _on_select_ins(self, **kwargs): # pylint: disable=unused-argument
         if self.trace.am_none:
             return
@@ -346,12 +350,12 @@ class QTraceViewer(QWidget):
     def eventFilter(self, obj, event): #specifically to catch arrow keys #pylint: disable=unused-argument
         # more elegant solution to link w/ self.view's scroll bar keypressevent?
         if event.type() == QEvent.Type.KeyPress:
-            if not (event.modifiers() & Qt.ShiftModifier): #shift + arrowkeys
+            if not event.modifiers() & Qt.ShiftModifier: #shift + arrowkeys
                 return False
             key = event.key()
-            if key == Qt.Key_Up or key == Qt.Key_Left:
+            if key in [Qt.Key_Up, Qt.Key_Left]:
                 self.jump_prev_insn()
-            elif key == Qt.Key_Down or key == Qt.Key_Right:
+            elif key in [Qt.Key_Down, Qt.Key_Right]:
                 self.jump_next_insn()
             return True
 
@@ -428,7 +432,8 @@ class QTraceViewer(QWidget):
                 prev_name = func_name
             y += self.trace_func_unit_height
 
-    def _make_legend_gradient(self, x1, y1, x2, y2):
+    @staticmethod
+    def _make_legend_gradient(x1, y1, x2, y2):
         gradient = QLinearGradient(x1, y1, x2, y2)
         gradient.setColorAt(0.0, Qt.red)
         gradient.setColorAt(0.4, Qt.yellow)
