@@ -1,13 +1,18 @@
+import logging
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
 from PySide2.QtWidgets import  QMessageBox, QInputDialog, QTableWidget, QTableWidgetItem, QLineEdit
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
 from PySide2.QtCore import Qt, QPoint, QEvent
 
-import logging
 l = logging.getLogger(name=__name__)
 
 class QTraceViewer(QWidget):
+    """
+    Load a basic block trace through json and visualize it in the disassembly
+    Ref: https://github.com/angr/angr-management/pull/122
+    """
+
     TAG_SPACING = 50
     LEGEND_X = -50
     LEGEND_Y = 0
@@ -181,48 +186,49 @@ class QTraceViewer(QWidget):
 
     def _on_set_trace(self):
         self._reset()
+        if self.trace.am_none:
+            return
 
-        if self.trace.am_obj is not None:
-            l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
-                    self.trace.count)
-            if self.trace.count <= 0:
-                l.warning("No valid addresses found in trace to show. Check base address offsets?")
-                self.trace.am_obj = None
-                self.trace.am_event()
-                return
-            if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
-                self.trace_func_unit_height = 15
-                show_func_tag = True
-            else:
-                self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
-                show_func_tag = True
+        l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
+                self.trace.count)
+        if self.trace.count <= 0:
+            l.warning("No valid addresses found in trace to show. Check base address offsets?")
+            self.trace.am_obj = None
+            self.trace.am_event()
+            return
+        if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
+            self.trace_func_unit_height = 15
+            show_func_tag = True
+        else:
+            self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
+            show_func_tag = True
 
-            self.legend_height = int(self.trace.count * self.trace_func_unit_height)
+        self.legend_height = int(self.trace.count * self.trace_func_unit_height)
 
-            self._show_trace_func(show_func_tag)
-            self._show_legend()
-            self._show_trace_ids()
-            self._set_mark_color()
-            self._refresh_multi_list()
+        self._show_trace_func(show_func_tag)
+        self._show_legend()
+        self._show_trace_ids()
+        self._set_mark_color()
+        self._refresh_multi_list()
 
-            boundingSize = self.traceScene.itemsBoundingRect().width()
-            windowSize = boundingSize
-            if boundingSize > self.MAX_WINDOW_SIZE:
-                windowSize = self.MAX_WINDOW_SIZE
-            self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
-            self.setFixedWidth(windowSize)
+        boundingSize = self.traceScene.itemsBoundingRect().width()
+        windowSize = boundingSize
+        if boundingSize > self.MAX_WINDOW_SIZE:
+            windowSize = self.MAX_WINDOW_SIZE
+        self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
+        self.setFixedWidth(windowSize)
 
-            # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
-            self.multiView.setFixedWidth(windowSize)
-            cellWidth = windowSize // 2
-            self.listView.setColumnWidth(0, cellWidth)
-            self.listView.setColumnWidth(1, cellWidth)
-            self.listView.setFixedHeight(self.multiView.height() // 4)
-            self.multiTraceList.setColumnWidth(0, cellWidth)
-            self.multiTraceList.setColumnWidth(1, cellWidth)
-            self.view.setFixedWidth(windowSize)
+        # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
+        self.multiView.setFixedWidth(windowSize)
+        cellWidth = windowSize // 2
+        self.listView.setColumnWidth(0, cellWidth)
+        self.listView.setColumnWidth(1, cellWidth)
+        self.listView.setFixedHeight(self.multiView.height() // 4)
+        self.multiTraceList.setColumnWidth(0, cellWidth)
+        self.multiTraceList.setColumnWidth(1, cellWidth)
+        self.view.setFixedWidth(windowSize)
 
-            self.show()
+        self.show()
 
     def _populate_trace_table(self, view, trace_ids):
         numIDs = len(trace_ids)
@@ -344,12 +350,12 @@ class QTraceViewer(QWidget):
     def eventFilter(self, obj, event): #specifically to catch arrow keys #pylint: disable=unused-argument
         # more elegant solution to link w/ self.view's scroll bar keypressevent?
         if event.type() == QEvent.Type.KeyPress:
-            if not (event.modifiers() & Qt.ShiftModifier): #shift + arrowkeys
+            if not event.modifiers() & Qt.ShiftModifier: #shift + arrowkeys
                 return False
             key = event.key()
-            if key == Qt.Key_Up or key == Qt.Key_Left:
+            if key in [Qt.Key_Up, Qt.Key_Left]:
                 self.jump_prev_insn()
-            elif key == Qt.Key_Down or key == Qt.Key_Right:
+            elif key in [Qt.Key_Down, Qt.Key_Right]:
                 self.jump_next_insn()
             return True
 
@@ -385,7 +391,7 @@ class QTraceViewer(QWidget):
 
 
     def _show_trace_ids(self):
-        trace_ids = self.multi_trace.am_obj.get_all_trace_ids()
+        trace_ids = self.multi_trace.get_all_trace_ids()
         # traceID = self.listScene.addText(id_txt, QFont("Source Code Pro", 7))
         # traceID.setPos(5,5)
         self.listView.clearContents()
@@ -394,7 +400,7 @@ class QTraceViewer(QWidget):
             for row in range(self.listView.rowCount()):
                 item = self.listView.item(row, 0)
                 inputItem = self.listView.item(row, 1)
-                if self.trace.am_obj.id in item.text():
+                if self.trace.id in item.text():
                     item.setSelected(True)
                     inputItem.setSelected(True)
                     break
@@ -426,7 +432,8 @@ class QTraceViewer(QWidget):
                 prev_name = func_name
             y += self.trace_func_unit_height
 
-    def _make_legend_gradient(self, x1, y1, x2, y2):
+    @staticmethod
+    def _make_legend_gradient(x1, y1, x2, y2):
         gradient = QLinearGradient(x1, y1, x2, y2)
         gradient.setColorAt(0.0, Qt.red)
         gradient.setColorAt(0.4, Qt.yellow)

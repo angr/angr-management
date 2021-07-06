@@ -22,6 +22,9 @@ class QConstraintViewer(QFrame):
     #
 
     def reload(self):
+        if self._state.am_none:
+            return
+
         self.table.setRowCount(0)
         for constraint in self._state.solver.constraints:
             count = self.table.rowCount()
