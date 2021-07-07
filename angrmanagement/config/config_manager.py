@@ -127,7 +127,7 @@ ENTRIES = [
     CE('pseudocode_keyword_color', QColor, QColor(0x00, 0x00, 0x80, 0xff)),
 
     # FLIRT signatures
-    CE('flirt_signatures_root', str, ""),
+    CE('flirt_signatures_root', str, "./flirt_signatures/"),
 
     # feature map
     CE('feature_map_color_regular_function', QColor, QColor(0x00, 0xa0, 0xe8)),
