@@ -44,7 +44,6 @@ from ..utils.io import isurl, download_url
 from ..utils.env import app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
-from .. import plugins
 
 _l = logging.getLogger(name=__name__)
 
@@ -142,6 +141,8 @@ class MainWindow(QMainWindow):
     #
 
     def _open_mainfile_dialog(self):
+        # pylint: disable=assigning-non-slot
+        # https://github.com/PyCQA/pylint/issues/3793
         file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", Conf.last_used_directory,
                                                    "All executables (*);;"
                                                    "Windows PE files (*.exe);;"
@@ -250,7 +251,7 @@ class MainWindow(QMainWindow):
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
         self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
 
-        def set_caption(**kwargs):
+        def set_caption(**kwargs):  # pylint: disable=unused-argument
             if self.workspace.instance.project.am_none:
                 self.caption = ''
             elif self.workspace.instance.project.filename is None:
@@ -355,7 +356,7 @@ class MainWindow(QMainWindow):
 
             return True
 
-        return super(MainWindow, self).event(event)
+        return super().event(event)
 
     def on_screen_changed(self, screen):
         """
