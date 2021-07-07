@@ -9,6 +9,7 @@ from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
+import angr.flirt
 try:
     from angr.angrdb import AngrDB
 except ImportError as ex:
@@ -41,6 +42,7 @@ from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils.io import isurl, download_url
+from ..utils.env import app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
 from .. import plugins
@@ -92,6 +94,7 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
         self._init_shortcuts()
+        self._init_flirt_signatures()
 
         # I'm ready to show off!
         if show:
@@ -282,6 +285,19 @@ class MainWindow(QMainWindow):
 
     def _init_plugins(self):
         self.workspace.plugins.discover_and_initialize_plugins()
+
+    #
+    # FLIRT Signatures
+    #
+
+    def _init_flirt_signatures(self):
+        if Conf.flirt_signatures_root:
+            # if it's a relative path, it's relative to the angr-management package
+            if os.path.isabs(Conf.flirt_signatures_root):
+                flirt_signatures_root = Conf.flirt_signatures_root
+            else:
+                flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+            angr.flirt.load_signatures(flirt_signatures_root)
 
     #
     # Event
