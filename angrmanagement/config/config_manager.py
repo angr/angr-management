@@ -129,6 +129,9 @@ ENTRIES = [
     # FLIRT signatures
     CE('flirt_signatures_root', str, "./flirt_signatures/"),
 
+    # last-used directory
+    CE('last_used_directory', str, ''),
+
     # feature map
     CE('feature_map_color_regular_function', QColor, QColor(0x00, 0xa0, 0xe8)),
     CE('feature_map_color_unknown',          QColor, QColor(0x0a, 0x0a, 0x0a)),
