@@ -12,15 +12,14 @@ import angr
 import angr.flirt
 try:
     from angr.angrdb import AngrDB
-except ImportError as ex:
-    print(str(ex))
+except ImportError:
     AngrDB = None  # type: Optional[type]
 
 
 try:
     import archr
     import keystone
-except ImportError as e:
+except ImportError:
     archr = None
     keystone = None
 
@@ -55,7 +54,7 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
     def __init__(self, parent=None, show=True):
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
@@ -144,7 +143,10 @@ class MainWindow(QMainWindow):
 
     def _open_mainfile_dialog(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", "",
-                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
+                                                   "All executables (*);;"
+                                                   "Windows PE files (*.exe);;"
+                                                   "Core Dumps (*.core);;"
+                                                   "angr database (*.adb)",
                                                    )
         return file_path
 
@@ -152,9 +154,9 @@ class MainWindow(QMainWindow):
         try:
             prompt = LoadDockerPrompt()
         except LoadDockerPromptError:
-            return
+            return None
         if prompt.exec_() == 0:
-            return # User canceled
+            return None  # User canceled
         return prompt.textValue()
 
     def open_load_plugins_dialog(self):
@@ -303,10 +305,10 @@ class MainWindow(QMainWindow):
     # Event
     #
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent):
         """
 
-        :param QResizeEvent event:
+        :param event:
         :return:
         """
 
@@ -346,8 +348,8 @@ class MainWindow(QMainWindow):
 
             try:
                 event.result = event.execute()
-            except Exception as e:
-                event.exception = e
+            except Exception as ex:  # pylint:disable=broad-except
+                event.exception = ex
             event.event.set()
 
             return True

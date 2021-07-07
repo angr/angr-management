@@ -17,7 +17,11 @@ if TYPE_CHECKING:
     import PySide2
     from angr.knowledge_plugins.functions import Function
 
+
 class QFunctionTableModel(QAbstractTableModel):
+    """
+    The table model for QFunctionTable.
+    """
 
     Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
     NAME_COL = 0
@@ -221,6 +225,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
 
 class QFunctionTableView(QTableView):
+    """
+    The table view for QFunctionTable.
+    """
     def __init__(self, parent, workspace, selection_callback=None):
         super().__init__(parent)
         self.workspace = workspace
@@ -304,6 +311,9 @@ class QFunctionTableView(QTableView):
 
 
 class QFunctionTableFilterBox(QLineEdit):
+    """
+    The filter box for QFunctionTable.
+    """
     def __init__(self, parent):
         super().__init__()
 
@@ -326,6 +336,9 @@ class QFunctionTableFilterBox(QLineEdit):
 
 
 class QFunctionTable(QWidget):
+    """
+    Implements a table for listing function details.
+    """
 
     def __init__(self, parent, workspace, selection_callback=None):
         super().__init__(parent)
