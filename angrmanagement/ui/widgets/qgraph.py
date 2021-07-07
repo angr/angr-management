@@ -56,6 +56,8 @@ class QSaveableGraphicsView(QBaseGraphicsView):
 
 
 class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
+    ZOOM_X = True
+    ZOOM_Y = True
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -120,7 +122,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         oldPos = self.mapToScene(at)
 
         # Zoom
-        self.scale(zoomFactor, zoomFactor)
+        self.scale(zoomFactor if self.ZOOM_X else 1, zoomFactor if self.ZOOM_Y else 1)
         self.zoom_factor = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
 
         # Get the new position
