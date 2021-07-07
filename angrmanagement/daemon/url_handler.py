@@ -55,7 +55,10 @@ class UrlActionOpen(UrlActionBase):
         self.headless = headless
 
     def act(self, daemon_conn=None):
-        daemon_conn.root.open(self.bin_path)
+        if self.bin_path is not None:
+            daemon_conn.root.open(self.bin_path)
+        else:
+            print('Incomplete URL: expected `path` parameter')
 
     @classmethod
     def _from_params(cls, params):
