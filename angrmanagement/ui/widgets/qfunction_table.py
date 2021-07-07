@@ -1,6 +1,6 @@
 import os
 import string
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
@@ -15,6 +15,7 @@ from ..toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
     import PySide2
+    from angr.knowledge_plugins.functions import Function
 
 class QFunctionTableModel(QAbstractTableModel):
 
@@ -42,7 +43,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return 0
 
     @property
-    def func_list(self):
+    def func_list(self) -> List['Function']:
         if self._func_list is not None:
             return self._func_list
         return self._raw_func_list
@@ -119,6 +120,10 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = self.workspace.plugins.color_func(func)
+            if color is None:
+                # default colors
+                if func.from_signature:
+                    color = self._config.function_table_signature_bg_color
             return color
 
         elif role == Qt.FontRole:

@@ -98,6 +98,7 @@ ENTRIES = [
     CE('function_table_plt_color', QColor, QColor(0x00, 0x80, 0x00)),
     CE('function_table_simprocedure_color', QColor, QColor(0x80, 0x00, 0x00)),
     CE('function_table_alignment_color', QColor, QColor(0x80, 0x00, 0x80)),
+    CE('function_table_signature_bg_color', QColor, QColor(0xaa, 0xff, 0xff)),
     CE('palette_window', QColor, QColor(0xef, 0xef, 0xef, 0xff)),
     CE('palette_windowtext', QColor, QColor(0x00, 0x00, 0x00, 0xff)),
     CE('palette_base', QColor, QColor(0xff, 0xff, 0xff, 0xff)),
