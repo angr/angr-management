@@ -9,17 +9,17 @@ from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
+import angr.flirt
 try:
     from angr.angrdb import AngrDB
-except ImportError as ex:
-    print(str(ex))
+except ImportError:
     AngrDB = None  # type: Optional[type]
 
 
 try:
     import archr
     import keystone
-except ImportError as e:
+except ImportError:
     archr = None
     keystone = None
 
@@ -41,6 +41,7 @@ from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils.io import isurl, download_url
+from ..utils.env import app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
 from .. import plugins
@@ -53,7 +54,7 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
     def __init__(self, parent=None, show=True):
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
@@ -92,6 +93,7 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
         self._init_shortcuts()
+        self._init_flirt_signatures()
 
         # I'm ready to show off!
         if show:
@@ -141,7 +143,10 @@ class MainWindow(QMainWindow):
 
     def _open_mainfile_dialog(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", "",
-                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
+                                                   "All executables (*);;"
+                                                   "Windows PE files (*.exe);;"
+                                                   "Core Dumps (*.core);;"
+                                                   "angr database (*.adb)",
                                                    )
         return file_path
 
@@ -149,9 +154,9 @@ class MainWindow(QMainWindow):
         try:
             prompt = LoadDockerPrompt()
         except LoadDockerPromptError:
-            return
+            return None
         if prompt.exec_() == 0:
-            return # User canceled
+            return None  # User canceled
         return prompt.textValue()
 
     def open_load_plugins_dialog(self):
@@ -284,13 +289,26 @@ class MainWindow(QMainWindow):
         self.workspace.plugins.discover_and_initialize_plugins()
 
     #
+    # FLIRT Signatures
+    #
+
+    def _init_flirt_signatures(self):
+        if Conf.flirt_signatures_root:
+            # if it's a relative path, it's relative to the angr-management package
+            if os.path.isabs(Conf.flirt_signatures_root):
+                flirt_signatures_root = Conf.flirt_signatures_root
+            else:
+                flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+            angr.flirt.load_signatures(flirt_signatures_root)
+
+    #
     # Event
     #
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent):
         """
 
-        :param QResizeEvent event:
+        :param event:
         :return:
         """
 
@@ -330,8 +348,8 @@ class MainWindow(QMainWindow):
 
             try:
                 event.result = event.execute()
-            except Exception as e:
-                event.exception = e
+            except Exception as ex:  # pylint:disable=broad-except
+                event.exception = ex
             event.event.set()
 
             return True

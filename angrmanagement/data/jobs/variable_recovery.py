@@ -12,8 +12,10 @@ class VariableRecoveryJob(Job):
     Identify variables and recover calling convention for every function.
     """
 
-    def __init__(self, on_finish=None):
+    def __init__(self, on_finish=None, **kwargs):
         super().__init__(name="Variable Recovery", on_finish=on_finish)
+
+        self.variable_recovery_args = kwargs
 
         self._last_progress_callback_triggered = None
 
@@ -23,6 +25,7 @@ class VariableRecoveryJob(Job):
             low_priority=True,
             cfg=inst.cfg,
             progress_callback=self._progress_callback,
+            **self.variable_recovery_args,
         )
 
     def _progress_callback(self, percentage, text=None, cfg=None):
