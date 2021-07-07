@@ -343,13 +343,14 @@ class QAilRegisterObj(QAilTextObj):
         return fmt
 
     def create_subobjs(self, obj: ailment.expression.Register):
-        if hasattr(obj, 'reg_name'):
-            s = "%s" % (obj.reg_name,)
-        elif obj.variable is None:
-            s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
+        if obj.variable is not None:
+            self.add_variable(obj.variable)
         else:
-            s = "%s" % str(obj.variable.name)
-        self.add_text(s)
+            if hasattr(obj, 'reg_name'):
+                s = "%s" % (obj.reg_name,)
+            else:
+                s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
+            self.add_text(s)
 
     def should_highlight(self) -> bool:
         return (isinstance(self.infodock.selected_qblock_code_obj, QAilRegisterObj) and
@@ -398,9 +399,12 @@ class QAilLoadObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.expression.Load):
-        self.add_text('*(')
-        self.add_ailobj(obj.addr)
-        self.add_text(')')
+        if obj.variable is not None:
+            self.add_variable(obj.variable)
+        else:
+            self.add_text('*(')
+            self.add_ailobj(obj.addr)
+            self.add_text(')')
 
 
 class QIROpObj(QBlockCodeObj):
