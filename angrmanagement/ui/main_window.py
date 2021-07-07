@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
 
         self.status = "Ready."
 
-    def sizeHint(self, *args, **kwargs):
+    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(1200, 800)
 
     #
