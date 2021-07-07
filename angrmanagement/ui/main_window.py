@@ -142,12 +142,13 @@ class MainWindow(QMainWindow):
     #
 
     def _open_mainfile_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", "",
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", Conf.last_used_directory,
                                                    "All executables (*);;"
                                                    "Windows PE files (*.exe);;"
                                                    "Core Dumps (*.core);;"
                                                    "angr database (*.adb)",
                                                    )
+        Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
 
     def _pick_image_dialog(self):
