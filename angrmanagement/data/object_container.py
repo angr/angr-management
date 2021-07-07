@@ -22,7 +22,10 @@ class EventSentinel:
 
     def am_event(self, **kwargs):
         for listener in self.am_subscribers:
-            listener(**kwargs)
+            try:
+                listener(**kwargs)
+            except Exception as e:  # pylint: disable=broad-except
+                l.exception(f"Error raised from event of {self}")
 
 
 class ObjectContainer(EventSentinel):
