@@ -64,6 +64,7 @@ class Instance:
         self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
         self.cfg_args = None
+        self.variable_recovery_args = None
         self._disassembly = {}
 
         self._start_worker()
@@ -141,7 +142,7 @@ class Instance:
             self._container_defaults[name] = (default_val_func, ty)
             self.extra_containers[name] = ObjectContainer(default_val_func(), description)
 
-    def initialize(self, initialized=False, cfg_args=None, **kwargs):  # pylint: disable=unused-argument
+    def initialize(self, initialized=False, cfg_args=None, variable_recovery_args=None, **kwargs):  # pylint:disable=unused-argument
         if self.project.am_none:
             return
 
@@ -154,6 +155,10 @@ class Instance:
                 cfg_args = {}
             # save cfg_args
             self.cfg_args = cfg_args
+
+            if variable_recovery_args is None:
+                variable_recovery_args = {}
+            self.variable_recovery_args = variable_recovery_args
 
             # generate CFG
             cfg_job = self.generate_cfg()

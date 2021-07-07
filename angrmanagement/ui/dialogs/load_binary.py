@@ -1,3 +1,4 @@
+from typing import Tuple, Dict, Optional
 import os
 import binascii
 import logging
@@ -31,6 +32,7 @@ class LoadBinary(QDialog):
         # return values
         self.cfg_args = None
         self.load_options = None
+        self.variable_recovery_args = None
 
         self.setWindowTitle('Load a new binary')
 
@@ -142,7 +144,7 @@ class LoadBinary(QDialog):
 
     def _init_central_tab(self, tab):
         self._init_load_options_tab(tab)
-        self._init_cfg_options_tab(tab)
+        self._init_analysis_options_tab(tab)
 
     def _init_load_options_tab(self, tab):
         arch_layout = QHBoxLayout()
@@ -216,7 +218,7 @@ class LoadBinary(QDialog):
         frame.setLayout(layout)
         tab.addTab(frame, "Loading Options")
 
-    def _init_cfg_options_tab(self, tab):
+    def _init_analysis_options_tab(self, tab):
         resolve_indirect_jumps = QCheckBox(self)
         resolve_indirect_jumps.setText('Resolve indirect jumps')
         resolve_indirect_jumps.setChecked(True)
@@ -232,14 +234,20 @@ class LoadBinary(QDialog):
         xrefs.setChecked(True)
         self.option_widgets['cross_references'] = xrefs
 
+        recover_variables_on_matched_functions = QCheckBox(self)
+        recover_variables_on_matched_functions.setText("Recover variables on signature-matched functions")
+        recover_variables_on_matched_functions.setChecked(False)
+        self.option_widgets['recover_variables_on_matched_functions'] = recover_variables_on_matched_functions
+
         layout = QVBoxLayout()
         layout.addWidget(resolve_indirect_jumps)
         layout.addWidget(collect_data_refs)
         layout.addWidget(xrefs)
+        layout.addWidget(recover_variables_on_matched_functions)
         layout.addStretch(0)
         frame = QFrame(self)
         frame.setLayout(layout)
-        tab.addTab(frame, 'CFG Options')
+        tab.addTab(frame, 'Analysis Options')
 
     #
     # Event handlers
@@ -281,6 +289,11 @@ class LoadBinary(QDialog):
             'cross_references': self.option_widgets['cross_references'].isChecked(),
         }
 
+        self.variable_recovery_args = {
+            'skip_signature_matched_functions':
+                not self.option_widgets['recover_variables_on_matched_functions'].isChecked(),
+        }
+
         self.close()
 
     def _on_cancel_clicked(self):
@@ -288,7 +301,7 @@ class LoadBinary(QDialog):
         self.close()
 
     @staticmethod
-    def run(partial_ld):
+    def run(partial_ld) -> Tuple[Optional[Dict],Optional[Dict],Optional[Dict]]:
         try:
             dialog = LoadBinary(partial_ld)
             dialog.setModal(True)
@@ -296,10 +309,10 @@ class LoadBinary(QDialog):
 
             if dialog.cfg_args is not None:
                 # load the binary
-                return dialog.load_options, dialog.cfg_args
+                return dialog.load_options, dialog.cfg_args, dialog.variable_recovery_args
         except LoadBinaryError:
             pass
-        return None, None
+        return None, None, None
 
     @staticmethod
     def binary_arch_detect_failed(filename:str, archinfo_msg:str):

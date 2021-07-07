@@ -134,6 +134,7 @@ class Workspace:
         self.instance.add_job(
             VariableRecoveryJob(
                 on_finish=self.on_variable_recovered,
+                **self.instance.variable_recovery_args,
             )
         )
 
