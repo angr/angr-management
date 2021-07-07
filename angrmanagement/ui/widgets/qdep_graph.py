@@ -51,7 +51,9 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
     def refresh(self):
         for block in self.blocks:
             block.refresh()
-        self.scene().update(self.sceneRect())
+        scene = self.scene()
+        if scene is not None:
+            scene.update(self.sceneRect())
 
     def request_relayout(self):
         self._reset_scene()
@@ -77,6 +79,8 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
         min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
         scene = self.scene()
+        if scene is None:
+            return
         for node, (x, y) in gl.node_coordinates.items():
             scene.addItem(node)
             node.setPos(x, y)
@@ -102,7 +106,10 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
         self._reset_view()
 
     def _initial_position(self):
-        ibr = self.scene().itemsBoundingRect()
+        scene = self.scene()
+        if scene is None:
+            return
+        ibr = scene.itemsBoundingRect()
         return ibr.center()
 
     #
@@ -128,6 +135,8 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
         if block is None:
             return
         scene = self.scene()
+        if scene is None:
+            return
         # move all relevant arrows to the top
         if block in self._arrows_by_src:
             arrows = set(self._arrows_by_src[block])
