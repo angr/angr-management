@@ -8,3 +8,4 @@ from .prototype_finding import PrototypeFindingJob
 from .variable_recovery import VariableRecoveryJob
 from .dependency_analysis import DependencyAnalysisJob
 from .decompile_function import DecompileFunctionJob
+from .flirt_signature_recognition import FlirtSignatureRecognitionJob

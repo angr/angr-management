@@ -137,6 +137,8 @@ def start_management(filepath=None, use_daemon=False):
     # https://github.com/pyqtgraph/pyqtgraph/issues/756
     # https://lists.qt-project.org/pipermail/development/2019-September/037434.html
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    # Use highDPI pixmaps
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("angr management")

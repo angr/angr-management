@@ -9,7 +9,7 @@ from angr import StateHierarchy
 
 from ..config import Conf
 from ..data.instance import ObjectContainer
-from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob
+from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView)
 from .widgets.qsmart_dockwidget import QSmartDockWidget
@@ -94,8 +94,8 @@ class Workspace:
     def on_cfg_generated(self):
 
         self.instance.add_job(
-            PrototypeFindingJob(
-                on_finish=self._on_prototype_found,
+            FlirtSignatureRecognitionJob(
+                on_finish=self._on_flirt_signature_recognized,
             )
         )
 
@@ -123,10 +123,18 @@ class Workspace:
             if view is not None:
                 view.reload()
 
+    def _on_flirt_signature_recognized(self):
+        self.instance.add_job(
+            PrototypeFindingJob(
+                on_finish=self._on_prototype_found,
+            )
+        )
+
     def _on_prototype_found(self):
         self.instance.add_job(
             VariableRecoveryJob(
                 on_finish=self.on_variable_recovered,
+                **self.instance.variable_recovery_args,
             )
         )
 

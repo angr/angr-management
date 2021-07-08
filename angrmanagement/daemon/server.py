@@ -44,6 +44,9 @@ class ManagementService(rpyc.Service):
             del CONNECTIONS[conn]
 
     def exposed_open(self, bin_path):
+        if bin_path is None:
+            return
+
         flags = { }
         if sys.platform.startswith("win"):
             DETACHED_PROCESS = 0x00000008
