@@ -161,6 +161,7 @@ class QStringTable(QTableView):
         self._model = QStringModel(None)
         self._proxy = QSortFilterProxyModel(self)
         self._proxy.setSourceModel(self._model)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.setModel(self._proxy)
 
         self.setSortingEnabled(True)

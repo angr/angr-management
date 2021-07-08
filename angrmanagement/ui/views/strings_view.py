@@ -64,14 +64,14 @@ class StringsView(BaseView):
         self.workspace.view_manager.raise_view(disasm_view)
 
     def on_filter_change(self, **kwargs): #pylint: disable=unused-argument
-        patten = self._filter_string.text()
+        pattern = self._filter_string.text()
         regex = self._regex_checkbox.isChecked()
         if regex:
             try:
-                patten = re.compile(patten)
+                pattern = re.compile(pattern)
             except re.error as _e:
                 return
-        self._string_table.filter_string = patten
+        self._string_table.filter_string = pattern
 
     #
     # Private methods
@@ -91,7 +91,7 @@ class StringsView(BaseView):
         function_layout = QHBoxLayout()
         function_layout.addWidget(QLabel("Function:",self))
         function_layout.addWidget(self._function_list, 10)
-        function_layout.addWidget(QLabel("Find:",self))
+        function_layout.addWidget(QLabel("Filter:",self))
         function_layout.addWidget(self._filter_string, 10)
         function_layout.addWidget(self._regex_checkbox)
 
