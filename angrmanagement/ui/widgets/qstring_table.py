@@ -1,5 +1,5 @@
 from typing import Any
-from re import Pattern
+import re
 from PySide2.QtWidgets import QHeaderView, QTableView, QAbstractItemView
 from PySide2.QtCore import QSortFilterProxyModel, Qt, QAbstractTableModel
 
@@ -209,7 +209,7 @@ class QStringTable(QTableView):
     @filter_string.setter
     def filter_string(self, v):
         self._filter = v
-        if isinstance(v, Pattern):
+        if isinstance(v, re.Pattern):
             self._proxy.setFilterRegExp(self._filter.pattern)
         else:
             self._proxy.setFilterWildcard(self._filter)
