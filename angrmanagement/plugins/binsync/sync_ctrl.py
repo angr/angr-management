@@ -203,8 +203,8 @@ class BinsyncController:
     def push_stack_variable(self, func_addr, offset, name, type_, size_):
         return self.instance.kb.sync.push_stack_variable(func_addr, offset, name, type_, size_)
 
-    def push_comment(self, func_addr, addr, cmt, decompiled):
-        return self.instance.kb.sync.push_comment(func_addr, addr, cmt, decompiled=decompiled)
+    def push_comment(self, addr, cmt, decompiled):
+        return self.instance.kb.sync.push_comment(addr, cmt, decompiled=decompiled)
 
     def push_func(self, func: knowledge_plugins.functions.Function):
         return self.instance.kb.sync.push_function(func)
@@ -285,7 +285,6 @@ class BinsyncController:
 
         if diff_days >= 1:
             s = "%d days" % diff_days
-            ago = diff_days < 0
         elif diff_sec >= 60 * 60:
             s = "%d hours" % int(diff_sec / 60 / 60)
         elif diff_sec >= 60:

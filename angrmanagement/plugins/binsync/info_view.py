@@ -109,5 +109,6 @@ class InfoView(BaseView):
         self._struct_table.hide()
 
     def _update_info_tables(self):
-        self.controller.sync.client.init_remote()
-        self._active_table.update_users(self.controller.sync.users())
+        if self.controller.sync.has_remote:
+            self.controller.sync.client.init_remote()
+            self._active_table.update_users(self.controller.sync.users())
