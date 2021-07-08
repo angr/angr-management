@@ -1,8 +1,7 @@
 from typing import Any
-
-from PySide2.QtWidgets import QTableView, QTableWidgetItem, QAbstractItemView
-from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex
+import re
+from PySide2.QtWidgets import QHeaderView, QTableView, QAbstractItemView
+from PySide2.QtCore import QSortFilterProxyModel, Qt, QAbstractTableModel
 
 from angr.analyses.cfg.cfg_fast import MemoryData
 
@@ -86,13 +85,13 @@ class QStringModel(QAbstractTableModel):
     def __len__(self):
         return self.rowCount()
 
-    def rowCount(self, parent=None) -> int:
+    def rowCount(self, parent=None) -> int: #pylint: disable=unused-argument
         return len(self.values)
 
-    def columnCount(self, parent=None) -> int:
+    def columnCount(self, parent=None) -> int: #pylint: disable=unused-argument
         return len(self.HEADER)
 
-    def headerData(self, section, orientation, role=None) -> Any:
+    def headerData(self, section, orientation, role=None) -> Any: #pylint: disable=unused-argument
         if role == Qt.DisplayRole:
             if section < len(self.HEADER):
                 return self.HEADER[section]
@@ -151,6 +150,7 @@ class QStringTable(QTableView):
         super(QStringTable, self).__init__(parent)
 
         self._selected = selection_callback
+        self._filter = None
 
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setShowGrid(False)
@@ -159,10 +159,16 @@ class QStringTable(QTableView):
         self.setHorizontalScrollMode(self.ScrollPerPixel)
 
         self._model = QStringModel(None)
-        self.setModel(self._model)
+        self._proxy = QSortFilterProxyModel(self)
+        self._proxy.setSourceModel(self._model)
+        self.setModel(self._proxy)
 
         self.setSortingEnabled(True)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
+
+        # let the last colunm (string) fill table width
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.horizontalHeader().setSectionResizeMode(2,QHeaderView.Stretch)
 
         self.doubleClicked.connect(self._on_string_selected)
 
@@ -196,12 +202,25 @@ class QStringTable(QTableView):
         self._model.function = v
         self.fast_resize()
 
+    @property
+    def filter_string(self):
+        return self._filter
+
+    @filter_string.setter
+    def filter_string(self, v):
+        self._filter = v
+        if isinstance(v, re.Pattern):
+            self._proxy.setFilterRegExp(self._filter.pattern)
+        else:
+            self._proxy.setFilterWildcard(self._filter)
+        self._proxy.setFilterKeyColumn(2)
+
+
     #
     # Public methods
     #
 
     def fast_resize(self):
-
         self.setVisible(False)
         self.resizeColumnsToContents()
         self.setVisible(True)
@@ -211,6 +230,7 @@ class QStringTable(QTableView):
     #
 
     def _on_string_selected(self, model_index):
+        model_index = self._proxy.mapToSource(model_index)
         selected_index = model_index.row()
         if self._model is None:
             return
