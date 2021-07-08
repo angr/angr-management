@@ -367,7 +367,7 @@ class QOperand(QCachedGraphicsItem):
         if self._variable_ident_item is not None:
             x += self.VARIABLE_IDENT_SPACING
             self._variable_ident_item.setPos(x, y)
-            x += self._variable_ident_item.boundingRect()
+            x += self._variable_ident_item.boundingRect().width()
 
         self._width = x
         self._height = self._label_item.boundingRect().height()
