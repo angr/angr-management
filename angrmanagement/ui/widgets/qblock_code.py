@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Sequence, Optional, Tuple
+from typing import Any, Sequence, Optional, Tuple
 
 from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
 from PySide2.QtCore import Qt, QPointF, QRectF, QObject
@@ -13,6 +13,13 @@ from ...logic.disassembly.info_dock import InfoDock
 from .qgraph_object import QCachedGraphicsItem
 
 
+class QBlockCodeOptions:
+    """
+    Various options to control display of QBlockCodeObj's
+    """
+    show_conditional_jump_targets: bool = True
+
+
 class QBlockCodeObj(QObject):
     """
     Renders a generic "code" object and handles display related events.
@@ -25,17 +32,17 @@ class QBlockCodeObj(QObject):
     obj: Any
     infodock: InfoDock
     parent: Any
-    options: Mapping[str, Any]
+    options: QBlockCodeOptions
     span: Optional[Tuple[int,int]]
     subobjs: Sequence['QBlockCodeObj']
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:Mapping[str, Any]=None):
+    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:QBlockCodeOptions=None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
-        self.options = options or {}
+        self.options = options or QBlockCodeOptions()
         self.span = None
         self.subobjs = []
         self._fmt_current = None
@@ -259,7 +266,7 @@ class QAilConditionalJumpObj(QAilTextObj):
         self.add_text('if ')
         self.add_ailobj(obj.condition)
 
-        if self.options.get('show_conditional_jump_targets', True):
+        if self.options.show_conditional_jump_targets:
             self.add_text(' goto ')
             self.add_ailobj(obj.true_target)
             self.add_text(' else goto ')

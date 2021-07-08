@@ -13,7 +13,7 @@ from ...config import Conf
 from .qinstruction import QInstruction
 from .qfunction_header import QFunctionHeader
 from .qblock_label import QBlockLabel
-from .qblock_code import QBlockCode, QAilObj, QIROpObj
+from .qblock_code import QBlockCode, QBlockCodeOptions, QAilObj, QIROpObj
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
 from .qgraph_object import QCachedGraphicsItem
@@ -140,8 +140,9 @@ class QBlock(QCachedGraphicsItem):
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
         for stmt in bn.statements:
-            code_obj = QAilObj(stmt, self.infodock, parent=None,
-                               options={'show_conditional_jump_targets': self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS})
+            options = QBlockCodeOptions()
+            options.show_conditional_jump_targets = self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS
+            code_obj = QAilObj(stmt, self.infodock, parent=None, options=options)
             obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
                              self.workspace, self.infodock, parent=self)
             code_obj.parent = obj # Reparent
