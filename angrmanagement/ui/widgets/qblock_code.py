@@ -77,7 +77,6 @@ class QBlockCodeObj(QObject):
         """
         Initialize any display subobjects for this object
         """
-        raise NotImplementedError()
 
     def update(self):
         """
@@ -135,6 +134,8 @@ class QBlockCodeObj(QObject):
 
     def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
+        if event.button() == Qt.RightButton:
+            self.infodock.disasm_view.show_context_menu_for_selected_object()
 
     def mouseDoubleClickEvent(self, event:QMouseEvent):
         pass
