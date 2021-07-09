@@ -18,6 +18,8 @@ class QBlockCodeOptions:
     Various options to control display of QBlockCodeObj's
     """
     show_conditional_jump_targets: bool = True
+    show_variables: bool = True
+    show_variable_identifiers: bool = True
 
 
 class QBlockCodeObj(QObject):
@@ -71,7 +73,8 @@ class QBlockCodeObj(QObject):
         """
         Determine whether this object should be drawn with highlight
         """
-        return self.infodock.selected_qblock_code_obj is self
+        selected = self.infodock.selected_qblock_code_obj
+        return (selected is not None) and (selected is self or selected.obj is self.obj)
 
     def create_subobjs(self, obj):
         """
@@ -93,6 +96,7 @@ class QBlockCodeObj(QObject):
         Add each subobject to the document
         """
         self.update_style()
+        self.recreate_subobjs()
         span_min = cursor.position()
         for obj in self.subobjs:
             if type(obj) is str:
@@ -134,7 +138,7 @@ class QBlockCodeObj(QObject):
         self._add_subobj(text)
 
     def add_variable(self, var):
-        self._add_subobj(QVariableObj(var, self.infodock, parent=self))
+        self._add_subobj(QVariableObj(var, self.infodock, parent=self, options=self.options))
 
     def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
@@ -162,12 +166,12 @@ class QVariableObj(QBlockCodeObj):
         fmt.setForeground(Conf.disasm_view_variable_label_color)
         return fmt
 
-    def render_to_doc(self, cursor):
-        self.recreate_subobjs()
-        super().render_to_doc(cursor)
-
     def create_subobjs(self, obj):
-        self.add_text(obj.name)
+        if self.options.show_variable_identifiers:
+            ident = "<%s>" % (obj.ident if obj.ident else "")
+        else:
+            ident = ""
+        self.add_text(obj.name + ident)
 
 
 class QAilObj(QBlockCodeObj):
@@ -245,7 +249,7 @@ class QAilStoreObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.statement.Store):
-        if obj.variable is None:
+        if obj.variable is None or not self.options.show_variables:
             self.add_text('*(')
             self.add_ailobj(obj.addr)
             self.add_text(') = ')
@@ -359,7 +363,7 @@ class QAilRegisterObj(QAilTextObj):
         return fmt
 
     def create_subobjs(self, obj: ailment.expression.Register):
-        if obj.variable is not None:
+        if obj.variable is not None and self.options.show_variables:
             self.add_variable(obj.variable)
         else:
             if hasattr(obj, 'reg_name'):
@@ -415,7 +419,7 @@ class QAilLoadObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.expression.Load):
-        if obj.variable is not None:
+        if obj.variable is not None and self.options.show_variables:
             self.add_variable(obj.variable)
         else:
             self.add_text('*(')

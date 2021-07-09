@@ -57,6 +57,9 @@ class QBlock(QCachedGraphicsItem):
         self.addr_to_labels = { }
         self.qblock_annotations = { }
 
+        self._block_code_options: QBlockCodeOptions = QBlockCodeOptions()
+        self._update_block_code_options()
+
         self._init_widgets()
 
         self._objects_are_hidden = False
@@ -90,7 +93,13 @@ class QBlock(QCachedGraphicsItem):
         for obj in self.objects:
             obj.clear_cache()
 
+    def _update_block_code_options(self):
+        self._block_code_options.show_conditional_jump_targets = self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS
+        self._block_code_options.show_variables = self.disasm_view.show_variable
+        self._block_code_options.show_variable_identifiers = self.disasm_view.show_variable_identifier
+
     def refresh(self):
+        self._update_block_code_options()
         for obj in self.objects:
             obj.refresh()
         self.layout_widgets()
@@ -140,9 +149,7 @@ class QBlock(QCachedGraphicsItem):
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
         for stmt in bn.statements:
-            options = QBlockCodeOptions()
-            options.show_conditional_jump_targets = self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS
-            code_obj = QAilObj(stmt, self.infodock, parent=None, options=options)
+            code_obj = QAilObj(stmt, self.infodock, parent=None, options=self._block_code_options)
             obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
                              self.workspace, self.infodock, parent=self)
             code_obj.parent = obj # Reparent
