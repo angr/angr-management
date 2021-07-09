@@ -292,9 +292,9 @@ class QSimulationManagers(QFrame):
         annotations next to instructions are updated."""
 
         if len(self.view_manager.views_by_category['disassembly']) == 1:
-            view = self.instance.workspace.view_manager.first_view_in_category('disassembly').refresh()
+            view = self.instance.workspace.view_manager.first_view_in_category('disassembly')
         else:
-            view = self.instance.workspace.view_manager.current_view_in_category('disassembly').refresh()
+            view = self.instance.workspace.view_manager.current_view_in_category('disassembly')
         if view is not None:
             view.refresh()
 
