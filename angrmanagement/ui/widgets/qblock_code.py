@@ -382,8 +382,9 @@ class QAilRegisterObj(QAilTextObj):
             self.add_text(s)
 
     def should_highlight(self) -> bool:
-        return (isinstance(self.infodock.selected_qblock_code_obj, QAilRegisterObj) and
-                self.infodock.selected_qblock_code_obj.obj.reg_name == self.obj.reg_name)
+        sel = self.infodock.selected_qblock_code_obj
+        return (isinstance(sel, QAilRegisterObj)
+                and sel.obj == self.obj)
 
 
 class QAilUnaryOpObj(QAilTextObj):
