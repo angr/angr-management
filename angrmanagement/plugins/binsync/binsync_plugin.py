@@ -93,8 +93,7 @@ class BinsyncPlugin(BasePlugin):
         return False
 
     def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
-        func_addr = self.controller.instance.cfg.get_any_node(addr, anyaddr=True).function_address
-        self.controller.make_controller_cmd(self.controller.push_comment, func_addr, addr, cmt, decomp)
+        self.controller.make_controller_cmd(self.controller.push_comment, addr, cmt, decomp)
         return False
 
 
