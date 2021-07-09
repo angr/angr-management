@@ -786,6 +786,7 @@ class QBlockCode(QCachedGraphicsItem):
     #
 
     def _layout_items_and_update_size(self):
+        self.update_document()
 
         x, y = 0, 0
         if self._disasm_view.show_address:
