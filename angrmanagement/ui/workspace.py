@@ -10,9 +10,9 @@ from angr import StateHierarchy
 
 from ..config import Conf
 from ..data.instance import ObjectContainer
-from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob
+from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView)
+                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView)
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 
@@ -95,8 +95,8 @@ class Workspace:
     def on_cfg_generated(self):
 
         self.instance.add_job(
-            PrototypeFindingJob(
-                on_finish=self._on_prototype_found,
+            FlirtSignatureRecognitionJob(
+                on_finish=self._on_flirt_signature_recognized,
             )
         )
 
@@ -111,20 +111,34 @@ class Workspace:
 
             # Initialize the linear viewer
             if len(self.view_manager.views_by_category['disassembly']) == 1:
-                self.view_manager.first_view_in_category('disassembly')._linear_viewer.initialize()
+                view = self.view_manager.first_view_in_category('disassembly')
             else:
-                self.view_manager.current_view_in_category('disassembly')._linear_viewer.initialize()
+                view = self.view_manager.current_view_in_category('disassembly')
+            if view is not None:
+                view._linear_viewer.initialize()
 
             # Reload the pseudocode view
-            self.view_manager.first_view_in_category('pseudocode').reload()
+            view = self.view_manager.first_view_in_category('pseudocode')
+            if view is not None:
+                view.reload()
 
             # Reload the strings view
-            self.view_manager.first_view_in_category('strings').reload()
+            view = self.view_manager.first_view_in_category('strings')
+            if view is not None:
+                view.reload()
+
+    def _on_flirt_signature_recognized(self):
+        self.instance.add_job(
+            PrototypeFindingJob(
+                on_finish=self._on_prototype_found,
+            )
+        )
 
     def _on_prototype_found(self):
         self.instance.add_job(
             VariableRecoveryJob(
                 on_finish=self.on_variable_recovered,
+                **self.instance.variable_recovery_args,
             )
         )
 
@@ -345,6 +359,7 @@ class Workspace:
         view.function.am_obj = func
         view.function.am_event(focus=True, focus_addr=curr_ins)
 
+
     def create_simulation_manager(self, state, state_name, view=None):
 
         inst = self.instance
@@ -413,6 +428,21 @@ class Workspace:
 
     def show_interaction_view(self):
         view = self._get_or_create_interaction_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_types_view(self):
+        view = self._get_or_create_types_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_functions_view(self):
+        view = self._get_or_create_functions_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_console_view(self):
+        view = self._get_or_create_console_view()
         self.raise_view(view)
         view.setFocus()
 
@@ -498,6 +528,14 @@ class Workspace:
             self.add_view(view, view.caption, view.category)
         return view
 
+    def _get_or_create_types_view(self):
+        view = self.view_manager.first_view_in_category("types")
+        if view is None:
+            # Create a new interaction view
+            view = TypesView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+        return view
+
     def _get_or_create_proximity_view(self) -> ProximityView:
         # Take the first proximity view
         view = self.view_manager.first_view_in_category("proximity")
@@ -505,6 +543,28 @@ class Workspace:
         if view is None:
             # Create a new proximity view
             view = ProximityView(self, 'center')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_console_view(self) -> ConsoleView:
+        # Take the first console view
+        view = self.view_manager.first_view_in_category("console")
+
+        if view is None:
+            # Create a new console view
+            view = ConsoleView(self, 'bottom')
+            self.add_view(view, view.caption, view.category)
+
+        return view
+
+    def _get_or_create_functions_view(self) -> FunctionsView:
+        # Take the first functions view
+        view = self.view_manager.first_view_in_category("functions")
+
+        if view is None:
+            # Create a new functions view
+            view = FunctionsView(self, 'left')
             self.add_view(view, view.caption, view.category)
 
         return view

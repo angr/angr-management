@@ -1,6 +1,7 @@
 
 import cle
 import angr
+import archinfo
 try:
     import archr
 except ImportError:
@@ -24,7 +25,7 @@ class LoadTargetJob(Job):
             apb = archr.arsenal.angrProjectBow(t, dsb)
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
             self._progress_callback(50)
-            load_options, cfg_args = gui_thread_schedule(LoadBinary.run, (partial_ld,))
+            load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld,))
             partial_ld.close()
             if cfg_args is None:
                 return
@@ -34,7 +35,7 @@ class LoadTargetJob(Job):
             self._progress_callback(95)
             inst._reset_containers()
             inst.project = proj
-            inst.project.am_event(cfg_args=cfg_args)
+            inst.project.am_event(cfg_args=cfg_args, variable_recovery_args=variable_recovery_args)
 
 
 class LoadBinaryJob(Job):
@@ -49,7 +50,11 @@ class LoadBinaryJob(Job):
         try:
             # Try automatic loading
             partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
+        except archinfo.arch.ArchNotFound as e:
+            partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False, arch='x86')
+            gui_thread_schedule(LoadBinary.binary_arch_detect_failed, (self.fname, str(e)))
         except cle.CLECompatibilityError:
+            # Continue loading as blob
             pass
 
         if partial_ld is None:
@@ -62,15 +67,19 @@ class LoadBinaryJob(Job):
                 return
 
         self._progress_callback(50)
-        load_options, cfg_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
+        load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
         partial_ld.close()
         if cfg_args is None:
             return
 
-        proj = angr.Project(self.fname, load_options=load_options)
+        engine = None
+        if hasattr(load_options['arch'], 'pcode_arch'):
+            engine = angr.engines.UberEnginePcode
+
+        proj = angr.Project(self.fname, load_options=load_options, engine=engine)
         self._progress_callback(95)
         def callback():
             inst._reset_containers()
             inst.project.am_obj = proj
-            inst.project.am_event(cfg_args=cfg_args)
+            inst.project.am_event(cfg_args=cfg_args, variable_recovery_args=variable_recovery_args)
         gui_thread_schedule(callback, ())

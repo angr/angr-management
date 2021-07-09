@@ -9,17 +9,17 @@ from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
+import angr.flirt
 try:
     from angr.angrdb import AngrDB
-except ImportError as ex:
-    print(str(ex))
+except ImportError:
     AngrDB = None  # type: Optional[type]
 
 
 try:
     import archr
     import keystone
-except ImportError as e:
+except ImportError:
     archr = None
     keystone = None
 
@@ -41,9 +41,9 @@ from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
 from ..utils.io import isurl, download_url
+from ..utils.env import app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
-from .. import plugins
 
 _l = logging.getLogger(name=__name__)
 
@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
     def __init__(self, parent=None, show=True):
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
-        self.workspace = None
+        self.workspace: Workspace = None
         self.central_widget = None
         self.central_widget2 = None
 
@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
         self._init_shortcuts()
+        self._init_flirt_signatures()
 
         # I'm ready to show off!
         if show:
@@ -101,7 +102,7 @@ class MainWindow(QMainWindow):
 
         self.status = "Ready."
 
-    def sizeHint(self, *args, **kwargs):
+    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(1200, 800)
 
     #
@@ -140,18 +141,24 @@ class MainWindow(QMainWindow):
     #
 
     def _open_mainfile_dialog(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", "",
-                                                   "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
+        # pylint: disable=assigning-non-slot
+        # https://github.com/PyCQA/pylint/issues/3793
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", Conf.last_used_directory,
+                                                   "All executables (*);;"
+                                                   "Windows PE files (*.exe);;"
+                                                   "Core Dumps (*.core);;"
+                                                   "angr database (*.adb)",
                                                    )
+        Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
 
     def _pick_image_dialog(self):
         try:
             prompt = LoadDockerPrompt()
         except LoadDockerPromptError:
-            return
+            return None
         if prompt.exec_() == 0:
-            return # User canceled
+            return None  # User canceled
         return prompt.textValue()
 
     def open_load_plugins_dialog(self):
@@ -244,7 +251,7 @@ class MainWindow(QMainWindow):
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
         self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
 
-        def set_caption(**kwargs):
+        def set_caption(**kwargs):  # pylint: disable=unused-argument
             if self.workspace.instance.project.am_none:
                 self.caption = ''
             elif self.workspace.instance.project.filename is None:
@@ -284,13 +291,26 @@ class MainWindow(QMainWindow):
         self.workspace.plugins.discover_and_initialize_plugins()
 
     #
+    # FLIRT Signatures
+    #
+
+    def _init_flirt_signatures(self):
+        if Conf.flirt_signatures_root:
+            # if it's a relative path, it's relative to the angr-management package
+            if os.path.isabs(Conf.flirt_signatures_root):
+                flirt_signatures_root = Conf.flirt_signatures_root
+            else:
+                flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+            angr.flirt.load_signatures(flirt_signatures_root)
+
+    #
     # Event
     #
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent):
         """
 
-        :param QResizeEvent event:
+        :param event:
         :return:
         """
 
@@ -330,13 +350,13 @@ class MainWindow(QMainWindow):
 
             try:
                 event.result = event.execute()
-            except Exception as e:
-                event.exception = e
+            except Exception as ex:  # pylint:disable=broad-except
+                event.exception = ex
             event.event.set()
 
             return True
 
-        return super(MainWindow, self).event(event)
+        return super().event(event)
 
     def on_screen_changed(self, screen):
         """
@@ -476,16 +496,10 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            self.workspace.view_manager.first_view_in_category('disassembly').variable_recovery_flavor = 'accurate'
-        else:
-            self.workspace.view_manager.current_view_in_category('disassembly').variable_recovery_flavor = 'accurate'
+        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = 'accurate'
 
     def run_induction_variable_analysis(self):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            self.workspace.view_manager.first_view_in_category('disassembly').run_induction_variable_analysis()
-        else:
-            self.workspace.view_manager.current_view_in_category('disassembly').run_induction_variable_analysis()
+        self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
 
     def run_dependency_analysis(self, func_addr: Optional[int]=None, func_arg_idx: Optional[int]=None):
         if self.workspace is None or self.workspace.instance is None:

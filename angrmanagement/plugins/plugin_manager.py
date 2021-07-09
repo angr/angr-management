@@ -292,8 +292,9 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.step_callback,True, simgr):
             pass
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
-        for res in self._dispatch(BasePlugin.handle_variable_rename, False, func, offset, old_name, new_name):
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
+        for res in self._dispatch(BasePlugin.handle_variable_rename, False,
+                                  func, offset, old_name, new_name, type_, size):
             if res:
                 return True
         return False

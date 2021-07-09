@@ -10,9 +10,10 @@ l.setLevel('DEBUG')
 
 
 class TraceFunc:
-    def __init__(self, bbl_addr=None, func_name=None):
+    def __init__(self, bbl_addr=None, func_name=None, func=None):
         self.bbl_addr = bbl_addr
         self.func_name = func_name
+        self.func = func
 
 
 class TraceStatistics:
@@ -24,17 +25,24 @@ class TraceStatistics:
     def __init__(self, workspace, trace, baddr):
         self.workspace = workspace
         self.trace = trace
+        self.bbl_addrs = trace["bb_addrs"]
+        self.syscalls = trace["syscalls"]
+        self.id = trace["id"]
+        self.created_at = trace["created_at"]
+        self.input_id = trace["input_id"]
+        self.complete = trace["complete"]
         self.trace_func = []
         self._func_color = {}
         self.count = None
         self._mark_color = {}
         self._positions = defaultdict(list)
+        self.mapped_trace = []
 
         project = self.workspace.instance.project
         self.project_baddr = project.loader.main_object.mapped_base
         self.runtime_baddr = baddr
 
-        self._statistics(trace)
+        self._statistics(self.bbl_addrs)
 
     def get_func_color(self, func_name):
         if func_name in self._func_color:
@@ -68,16 +76,19 @@ class TraceStatistics:
     def get_func_name_from_position(self, position):
         return self.trace_func[position].func_name
 
+    def get_func_from_position(self, position):
+        return self.trace_func[position].func
+
     def _apply_trace_offset(self, addr):
         offset = self.project_baddr - self.runtime_baddr
         return addr + offset
 
-    def _statistics(self, trace):
+    def _statistics(self, trace_addrs):
         """
         :param trace: basic block address list
         """
-        mapped_trace = [self._apply_trace_offset(addr) for addr in trace]
-        bbls = filter(self._get_bbl, mapped_trace)
+        self.mapped_trace = [self._apply_trace_offset(addr) for addr in trace_addrs]
+        bbls = filter(self._get_bbl, self.mapped_trace)
 
         for p, bbl_addr in enumerate(bbls):
             block = self.workspace.instance.project.factory.block(bbl_addr)
@@ -89,16 +100,18 @@ class TraceStatistics:
                 node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
 
             func_name = hex(bbl_addr) #default to using bbl_addr as name if none is not found
+            func = None
             if node is not None:
                 func_addr = node.function_address
                 functions = self.workspace.instance.project.kb.functions
                 if func_addr in functions:
-                    func_name = functions[func_addr].name
+                    func_name = functions[func_addr].demangled_name
+                    func = functions[func_addr]
                 else:
                     func_name = "Unknown"
             else:
                 l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
-            self.trace_func.append(TraceFunc(bbl_addr, func_name))
+            self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
 
         self.count = len(self.trace_func)
 
@@ -112,7 +125,7 @@ class TraceStatistics:
         return self.workspace.instance.cfg.get_any_node(a).function_address
 
     def _func_name(self, a):
-        return self.workspace.instance.project.kb.functions[self._func_addr(a)].name
+        return self.workspace.instance.project.kb.functions[self._func_addr(a)].demangled_name
 
     @staticmethod
     def _random_color():

@@ -1,6 +1,6 @@
 import os
 import string
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
@@ -15,8 +15,13 @@ from ..toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
     import PySide2
+    from angr.knowledge_plugins.functions import Function
+
 
 class QFunctionTableModel(QAbstractTableModel):
+    """
+    The table model for QFunctionTable.
+    """
 
     Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
     NAME_COL = 0
@@ -42,7 +47,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return 0
 
     @property
-    def func_list(self):
+    def func_list(self) -> List['Function']:
         if self._func_list is not None:
             return self._func_list
         return self._raw_func_list
@@ -119,6 +124,10 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = self.workspace.plugins.color_func(func)
+            if color is None:
+                # default colors
+                if func.from_signature:
+                    color = self._config.function_table_signature_bg_color
             return color
 
         elif role == Qt.FontRole:
@@ -216,6 +225,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
 
 class QFunctionTableView(QTableView):
+    """
+    The table view for QFunctionTable.
+    """
     def __init__(self, parent, workspace, selection_callback=None):
         super().__init__(parent)
         self.workspace = workspace
@@ -299,6 +311,9 @@ class QFunctionTableView(QTableView):
 
 
 class QFunctionTableFilterBox(QLineEdit):
+    """
+    The filter box for QFunctionTable.
+    """
     def __init__(self, parent):
         super().__init__()
 
@@ -321,6 +336,9 @@ class QFunctionTableFilterBox(QLineEdit):
 
 
 class QFunctionTable(QWidget):
+    """
+    Implements a table for listing function details.
+    """
 
     def __init__(self, parent, workspace, selection_callback=None):
         super().__init__(parent)

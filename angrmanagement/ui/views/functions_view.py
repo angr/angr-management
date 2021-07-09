@@ -24,6 +24,8 @@ class FunctionsView(BaseView):
         self._function_count = None
         self._displayed_function_count = None
 
+        self.reload()
+
     #
     # Public methods
     #

@@ -1,11 +1,18 @@
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
+import logging
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
+from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
+from PySide2.QtWidgets import  QMessageBox, QInputDialog, QTableWidget, QTableWidgetItem, QLineEdit
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
 from PySide2.QtCore import Qt, QPoint, QEvent
 
-import logging
 l = logging.getLogger(name=__name__)
 
 class QTraceViewer(QWidget):
+    """
+    Load a basic block trace through json and visualize it in the disassembly
+    Ref: https://github.com/angr/angr-management/pull/122
+    """
+
     TAG_SPACING = 50
     LEGEND_X = -50
     LEGEND_Y = 0
@@ -16,6 +23,9 @@ class QTraceViewer(QWidget):
     TRACE_FUNC_WIDTH = 50
     TRACE_FUNC_MINHEIGHT = 1000
 
+    TAB_HEADER_SIZE = 40
+    MAX_WINDOW_SIZE = 500
+
     MARK_X = LEGEND_X
     MARK_WIDTH = TRACE_FUNC_X - LEGEND_X + TRACE_FUNC_WIDTH
     MARK_HEIGHT = 1
@@ -25,17 +35,32 @@ class QTraceViewer(QWidget):
         self.workspace = workspace
         self.disasm_view = disasm_view
 
+        self.mark = None
+        self.legend = None
+        self.legend_height = 0
+        self.legend_img = None
+        self.trace_func_unit_height = 0
+
+
+        self.trace_func = None
+        self.trace_id = None
+
         self.view = None
-        self.scene = None
+        self.traceView = None
+        self.traceTab = None
+        self.traceScene = None
+        self.multiView = None
+        self.listView = None
         self.mark = None
         self.curr_position = 0
         self._use_precise_position = False
+        self._selected_traces = []
 
         self._init_widgets()
 
         self.trace.am_subscribe(self._on_set_trace)
         self.selected_ins.am_subscribe(self._on_select_ins)
-        self.view.installEventFilter(self)
+        self.traceTab.installEventFilter(self)
 
     #
     # Forwarding properties
@@ -46,17 +71,63 @@ class QTraceViewer(QWidget):
         return self.workspace.instance.trace
 
     @property
+    def multi_trace(self):
+        return self.workspace.instance.multi_trace
+
+    @property
     def selected_ins(self):
         return self.disasm_view.infodock.selected_insns
 
     def _init_widgets(self):
-        self.view = QGraphicsView()
-        self.scene = QGraphicsScene()
-        self.view.setScene(self.scene)
+        self.view = QTabWidget() # QGraphicsView()
+
+        self.traceTab = QWidget()
+        tracelayout = QVBoxLayout()
+
+        self.traceView = QGraphicsView()
+        self.traceScene = QGraphicsScene()
+        self.traceView.setScene(self.traceScene)
+
+        self.listView = QTableWidget(0,2) # row, col
+        self.listView.setHorizontalHeaderItem(0, QTableWidgetItem("traceID"))
+        self.listView.setHorizontalHeaderItem(1, QTableWidgetItem("inputID"))
+        self.listView.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.listView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.listView.horizontalHeader().setStretchLastSection(True)
+        # self.listView.horizontalHeader().setSectionResizeModel(0, QHeaderView.Stretch)
+        self.listView.cellClicked.connect(self._switch_current_trace)
+
+        self.traceSeedButton = QPushButton("View Input Seed")
+        self.traceSeedButton.clicked.connect(self._view_input_seed)
+
+        tracelayout.addWidget(self.traceView)
+        tracelayout.addWidget(self.listView)
+        tracelayout.addWidget(self.traceSeedButton)
+        self.traceTab.setLayout(tracelayout)
+
+        self.multiView = QWidget()
+        multiLayout = QVBoxLayout()
+        self.multiTraceList = QTableWidget(0,2) # row, col
+        self.multiTraceList.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.multiTraceList.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.multiTraceList.setHorizontalHeaderItem(0, QTableWidgetItem("traceID"))
+        self.multiTraceList.setHorizontalHeaderItem(1, QTableWidgetItem("inputID"))
+        self.selectMultiTrace = QPushButton("Refresh Heatmap")
+        self.selectMultiTrace.clicked.connect(self._refresh_heatmap)
+        multiLayout.addWidget(self.multiTraceList)
+        multiLayout.addWidget(self.selectMultiTrace)
+        self.multiView.setLayout(multiLayout)
+
+        self.view.addTab(self.traceTab, "SingleTrace")
+        self.view.addTab(self.multiView, "MultiTrace HeatMap")
+        self.SINGLE_TRACE = 0
+        self.MULTI_TRACE = 1
+
+        self.view.currentChanged.connect(self._on_tab_change)
 
         self._reset()
 
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setAlignment(self.view, Qt.AlignLeft)
@@ -64,58 +135,170 @@ class QTraceViewer(QWidget):
         self.setLayout(layout)
 
     def _reset(self):
-        self.scene.clear() #clear items
+        self.traceScene.clear() #clear items
+        self.listView.clearContents()
+        self.multiTraceList.clearContents()
         self.mark = None
 
         self.legend = None
         self.legend_height = 0
 
         self.trace_func = QGraphicsItemGroup()
-        self.scene.addItem(self.trace_func)
+        self.trace_id = QGraphicsItemGroup()
+        self.traceScene.addItem(self.trace_func)
         self.hide()
 
-    def _on_set_trace(self, **kwargs):
+    def _view_input_seed(self):
+        current_trace_stats = self.trace.am_obj
+        input_id = current_trace_stats.input_id
+        slacrs_url = self.multi_trace.am_obj.get_last_slacrs_url()
+
+        server_url, ok = QInputDialog().getText(self, "Trace Source URL",
+                                            "Enter URL where trace was generated for seed:",
+                                            QLineEdit.Normal,
+                                            text=slacrs_url)
+        if ok:
+            self.multi_trace.am_obj.set_last_slacrs_url(server_url)
+
+            inputSeed = self.multi_trace.am_obj.get_input_seed_for_id(input_id)
+            msgText = "%s" % inputSeed
+            msgDetails = "Input for [%s]" % current_trace_stats.id
+            msgbox = QMessageBox()
+            msgbox.setWindowTitle("Seed Input")
+            msgbox.setDetailedText(msgDetails)
+            msgbox.setText(msgText)
+            msgbox.setStandardButtons(QMessageBox.Ok)
+            msgbox.exec()
+
+    def _switch_current_trace(self, row):
+        if self.listView.rowCount() <= 0:
+            return
+
+        current_trace = self.trace.am_obj.id
+        new_trace = self.multiTraceList.item(row, 0).text()
+        if current_trace == new_trace:
+            return
+
+        trace_stats = self.multi_trace.am_obj.get_trace_with_id(new_trace)
+        if trace_stats:
+            self.trace.am_obj = trace_stats
+            self._on_set_trace()
+
+    def _on_set_trace(self):
         self._reset()
+        if self.trace.am_none:
+            return
 
-        if self.trace.am_obj is not None:
-            l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
-                    self.trace.count)
-            if self.trace.count <= 0:
-                l.warning("No valid addresses found in trace to show. Check base address offsets?")
-                self.trace.am_obj = None
-                self.trace.am_event()
-                return
-            if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
-                self.trace_func_unit_height = 15
-                show_func_tag = True
-            else:
-                self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
-                show_func_tag = True
+        l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
+                self.trace.count)
+        if self.trace.count <= 0:
+            l.warning("No valid addresses found in trace to show. Check base address offsets?")
+            self.trace.am_obj = None
+            self.trace.am_event()
+            return
+        if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
+            self.trace_func_unit_height = 15
+            show_func_tag = True
+        else:
+            self.trace_func_unit_height = self.TRACE_FUNC_MINHEIGHT / self.trace.count
+            show_func_tag = True
 
-            self.legend_height = int(self.trace.count * self.trace_func_unit_height)
+        self.legend_height = int(self.trace.count * self.trace_func_unit_height)
 
-            self._show_trace_func(show_func_tag)
-            self._show_legend()
-            self._set_mark_color()
+        self._show_trace_func(show_func_tag)
+        self._show_legend()
+        self._show_trace_ids()
+        self._set_mark_color()
+        self._refresh_multi_list()
 
-            self.scene.setSceneRect(self.scene.itemsBoundingRect()) #resize
-            self.setFixedWidth(self.scene.itemsBoundingRect().width())
-            self.view.setFixedWidth(self.scene.itemsBoundingRect().width())
+        boundingSize = self.traceScene.itemsBoundingRect().width()
+        windowSize = boundingSize
+        if boundingSize > self.MAX_WINDOW_SIZE:
+            windowSize = self.MAX_WINDOW_SIZE
+        self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
+        self.setFixedWidth(windowSize)
 
-            self.show()
+        # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
+        self.multiView.setFixedWidth(windowSize)
+        cellWidth = windowSize // 2
+        self.listView.setColumnWidth(0, cellWidth)
+        self.listView.setColumnWidth(1, cellWidth)
+        self.listView.setFixedHeight(self.multiView.height() // 4)
+        self.multiTraceList.setColumnWidth(0, cellWidth)
+        self.multiTraceList.setColumnWidth(1, cellWidth)
+        self.view.setFixedWidth(windowSize)
 
-    def _on_select_ins(self, **kwargs):
-        if self.trace == None:
+        self.show()
+
+    def _populate_trace_table(self, view, trace_ids):
+        numIDs = len(trace_ids)
+        view.clearContents()
+        view.setRowCount(numIDs)
+        row = 0 #start after label row
+        for traceID in trace_ids:
+            inputID = self.multi_trace.am_obj.get_input_id_for_trace_id(traceID)
+            if inputID is None:
+                self.workspace.log("No inputID found for trace %s" % traceID)
+            view.setItem(row, 0, QTableWidgetItem(traceID))
+            view.setItem(row, 1, QTableWidgetItem(inputID))
+            row += 1
+
+    def _refresh_heatmap(self):
+        multiTrace = self.multi_trace.am_obj
+        multiTrace.clear_heatmap()
+        multiTrace.is_active_tab = True
+
+        selected_items = self.multiTraceList.selectedItems()
+        self._selected_traces.clear()
+        for row in range(self.multiTraceList.rowCount()):
+            item = self.multiTraceList.item(row, 0)
+            if item in selected_items:
+                self._selected_traces.append(item.text())
+        multiTrace.reload_heatmap(self._selected_traces)
+        self.multi_trace.am_event()
+
+    def _refresh_multi_list(self):
+        multiTrace = self.multi_trace.am_obj
+        trace_ids = multiTrace.get_all_trace_ids()
+
+        self.multiTraceList.clearContents()
+        self._populate_trace_table(self.multiTraceList, trace_ids)
+        if self._selected_traces and self.multiTraceList.rowCount() > 0:
+            self.multiTraceList.item(0,0).setSelected(True)
+            self.multiTraceList.item(0,1).setSelected(True)
+        else:
+            for row in range(self.multiTraceList.rowCount()):
+                item = self.multiTraceList.item(row, 0)
+                inputItem = self.multiTraceList.item(row, 1)
+                if item.text() in self._selected_traces:
+                    item.setSelected(True)
+                    inputItem.setSelected(True)
+        self.multi_trace.am_event()
+
+
+    def _on_tab_change(self):
+        # self._reset()
+        multiTrace = self.multi_trace.am_obj
+        if self.view.currentIndex() == self.MULTI_TRACE:
+            multiTrace.is_active_tab = True
+            self._refresh_multi_list()
+        elif self.view.currentIndex() == self.SINGLE_TRACE:
+            multiTrace = self.multi_trace.am_obj
+            multiTrace.is_active_tab = False
+            self._show_trace_ids()
+
+    def _on_select_ins(self, **kwargs): # pylint: disable=unused-argument
+        if self.trace.am_none:
             return
 
         if self.mark is not None:
             for i in self.mark.childItems():
                 self.mark.removeFromGroup(i)
-                self.scene.removeItem(i)
-            self.scene.removeItem(self.mark)
+                self.traceScene.removeItem(i)
+            self.traceScene.removeItem(self.mark)
 
         self.mark = QGraphicsItemGroup()
-        self.scene.addItem(self.mark)
+        self.traceScene.addItem(self.mark)
 
         if self.selected_ins:
             addr = next(iter(self.selected_ins))
@@ -125,58 +308,54 @@ class QTraceViewer(QWidget):
                     self.curr_position = positions[0] - self.trace.count
                 for p in positions:
                     color = self._get_mark_color(p, self.trace.count)
-                    y = self._get_mark_y(p, self.trace.count)
+                    y = self._get_mark_y(p)
 
                     if p == self.trace.count + self.curr_position: #add thicker line for 'current' mark
-                        self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                        self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
                                             self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
                     else:
-                        self.mark.addToGroup(self.scene.addRect(self.MARK_X, y, self.MARK_WIDTH,
+                        self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
                                                                 self.MARK_HEIGHT, QPen(color), QBrush(color)))
-                #y = self._get_mark_y(positions[0], self.trace.count)
-                #self.view.verticalScrollBar().setValue(y - 0.5 * self.view.size().height())
 
-                self.scene.update() #force redraw of the scene
+                self.traceScene.update() #force redraw of the traceScene
                 self.scroll_to_position(self.curr_position)
 
     def scroll_to_position(self, position):
         relative_pos = self.trace.count + position
-        y_offset = self._get_mark_y(relative_pos, self.trace.count)
+        y_offset = self._get_mark_y(relative_pos)
 
         scrollValue = 0
-        if y_offset > 0.5 * self.view.size().height():
-            scrollValue = y_offset - 0.5 * self.view.size().height()
-        scrollValue = min(scrollValue, self.view.verticalScrollBar().maximum())
-        self.view.verticalScrollBar().setValue(scrollValue)
+        if y_offset > 0.5 * self.traceView.size().height():
+            scrollValue = y_offset - 0.5 * self.traceView.size().height()
+        scrollValue = min(scrollValue, self.traceView.verticalScrollBar().maximum())
+        self.traceView.verticalScrollBar().setValue(scrollValue)
         self._use_precise_position = False
 
     def jump_next_insn(self):
         if self.curr_position + self.trace.count < self.trace.count - 1: #for some reason indexing is done backwards
             self.curr_position += 1
             self._use_precise_position = True
-            func_name = self.trace.trace_func[self.curr_position].func_name
-            func = self._get_func_from_func_name(func_name)
-            bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
+            bbl_addr = self.trace.get_bbl_from_position(self.curr_position)
+            func = self.trace.get_func_from_position(self.curr_position)
             self._jump_bbl(func, bbl_addr)
 
     def jump_prev_insn(self):
         if self.curr_position + self.trace.count > 0:
             self.curr_position -= 1
             self._use_precise_position = True
-            func_name = self.trace.trace_func[self.curr_position].func_name
-            func = self._get_func_from_func_name(func_name)
-            bbl_addr = self.trace.trace_func[self.curr_position].bbl_addr
+            bbl_addr = self.trace.get_bbl_from_position(self.curr_position)
+            func = self.trace.get_func_from_position(self.curr_position)
             self._jump_bbl(func, bbl_addr)
 
-    def eventFilter(self, object, event): #specifically to catch arrow keys
+    def eventFilter(self, obj, event): #specifically to catch arrow keys #pylint: disable=unused-argument
         # more elegant solution to link w/ self.view's scroll bar keypressevent?
         if event.type() == QEvent.Type.KeyPress:
-            if not (event.modifiers() & Qt.ShiftModifier): #shift + arrowkeys
+            if not event.modifiers() & Qt.ShiftModifier: #shift + arrowkeys
                 return False
             key = event.key()
-            if key == Qt.Key_Up or key == Qt.Key_Left:
+            if key in [Qt.Key_Up, Qt.Key_Left]:
                 self.jump_prev_insn()
-            elif key == Qt.Key_Down or key == Qt.Key_Right:
+            elif key in [Qt.Key_Down, Qt.Key_Right]:
                 self.jump_next_insn()
             return True
 
@@ -185,7 +364,7 @@ class QTraceViewer(QWidget):
     def mousePressEvent(self, event):
         button = event.button()
         pos = self._to_logical_pos(event.pos())
-        if button == Qt.LeftButton and self._at_legend(pos):
+        if button == Qt.LeftButton and self.view.currentIndex() == self.SINGLE_TRACE and self._at_legend(pos):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
             self._use_precise_position = True
@@ -207,8 +386,26 @@ class QTraceViewer(QWidget):
         return self.legend_img.pixelColor(self.LEGEND_WIDTH // 2,
                                           relative_gradient_pos)
 
-    def _get_mark_y(self, i, total):
+    def _get_mark_y(self, i):
         return self.TRACE_FUNC_Y + self.trace_func_unit_height * i
+
+
+    def _show_trace_ids(self):
+        trace_ids = self.multi_trace.get_all_trace_ids()
+        # traceID = self.listScene.addText(id_txt, QFont("Source Code Pro", 7))
+        # traceID.setPos(5,5)
+        self.listView.clearContents()
+        self._populate_trace_table(self.listView, trace_ids)
+        if len(self.listView.selectedItems()) <= 0 and not self.trace.am_none:
+            for row in range(self.listView.rowCount()):
+                item = self.listView.item(row, 0)
+                inputItem = self.listView.item(row, 1)
+                if self.trace.id in item.text():
+                    item.setSelected(True)
+                    inputItem.setSelected(True)
+                    break
+
+
 
     def _show_trace_func(self, show_func_tag):
         x = self.TRACE_FUNC_X
@@ -219,23 +416,24 @@ class QTraceViewer(QWidget):
             func_name = position.func_name
             l.debug('Draw function %x, %s', bbl_addr, func_name)
             color = self.trace.get_func_color(func_name)
-            self.trace_func.addToGroup(self.scene.addRect(x, y,
+            self.trace_func.addToGroup(self.traceScene.addRect(x, y,
                                                           self.TRACE_FUNC_WIDTH, self.trace_func_unit_height,
                                                           QPen(color), QBrush(color)))
             if show_func_tag is True and func_name != prev_name:
-                tag = self.scene.addText(func_name, QFont("Source Code Pro", 7))
+                tag = self.traceScene.addText(func_name, QFont("Source Code Pro", 7))
                 tag.setPos(x + self.TRACE_FUNC_WIDTH +
                            self.TAG_SPACING, y -
                            tag.boundingRect().height() // 2)
                 self.trace_func.addToGroup(tag)
-                anchor = self.scene.addLine(
+                anchor = self.traceScene.addLine(
                     self.TRACE_FUNC_X + self.TRACE_FUNC_WIDTH, y,
                     x + self.TRACE_FUNC_WIDTH + self.TAG_SPACING, y)
                 self.trace_func.addToGroup(anchor)
                 prev_name = func_name
             y += self.trace_func_unit_height
 
-    def _make_legend_gradient(self, x1, y1, x2, y2):
+    @staticmethod
+    def _make_legend_gradient(x1, y1, x2, y2):
         gradient = QLinearGradient(x1, y1, x2, y2)
         gradient.setColorAt(0.0, Qt.red)
         gradient.setColorAt(0.4, Qt.yellow)
@@ -251,7 +449,7 @@ class QTraceViewer(QWidget):
         gradient = self._make_legend_gradient(self.LEGEND_X, self.LEGEND_Y,
                                    self.LEGEND_X, self.LEGEND_Y + self.legend_height)
         brush = QBrush(gradient)
-        self.legend = self.scene.addRect(self.LEGEND_X, self.LEGEND_Y,
+        self.legend = self.traceScene.addRect(self.LEGEND_X, self.LEGEND_Y,
                                          self.LEGEND_WIDTH, self.legend_height, pen, brush)
 
         reference_gradient = self._make_legend_gradient(0, 0, self.LEGEND_WIDTH, 1000)
@@ -269,19 +467,16 @@ class QTraceViewer(QWidget):
     def _at_legend(self, pos):
         x = pos.x()
         y = pos.y()
-        if self.TRACE_FUNC_X + self.LEGEND_X < x < self.view.width() and \
-           self.TRACE_FUNC_Y < y < self.TRACE_FUNC_Y + self.legend_height:
-            return True
-        else:
-            return False
+        return self.TRACE_FUNC_X + self.LEGEND_X < x < self.traceView.width() and \
+           self.TRACE_FUNC_Y < y < self.TRACE_FUNC_Y + self.legend_height
 
     def _to_logical_pos(self, pos):
-        x_offset = self.view.horizontalScrollBar().value()
-        y_offset = self.view.verticalScrollBar().value()
+        x_offset = self.traceView.horizontalScrollBar().value()
+        y_offset = self.traceView.verticalScrollBar().value()
         return QPoint(pos.x() + x_offset, pos.y() + y_offset)
 
     def _get_position(self, y):
-        y_relative = y - self.legend_height
+        y_relative = y - self.legend_height - self.TAB_HEADER_SIZE
 
         return int(y_relative // self.trace_func_unit_height)
 
@@ -289,10 +484,7 @@ class QTraceViewer(QWidget):
         position = self._get_position(y)
         return self.trace.get_bbl_from_position(position)
 
-    def _get_func_from_func_name(self, func_name):
-        return self.workspace.instance.kb.functions.function(name=func_name)
-
     def _get_func_from_y(self, y):
         position = self._get_position(y)
-        func_name = self.trace.get_func_name_from_position(position)
-        return self._get_func_from_func_name(func_name)
+        func = self.trace.get_func_from_position(position)
+        return func

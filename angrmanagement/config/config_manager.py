@@ -98,6 +98,7 @@ ENTRIES = [
     CE('function_table_plt_color', QColor, QColor(0x00, 0x80, 0x00)),
     CE('function_table_simprocedure_color', QColor, QColor(0x80, 0x00, 0x00)),
     CE('function_table_alignment_color', QColor, QColor(0x80, 0x00, 0x80)),
+    CE('function_table_signature_bg_color', QColor, QColor(0xaa, 0xff, 0xff)),
     CE('palette_window', QColor, QColor(0xef, 0xef, 0xef, 0xff)),
     CE('palette_windowtext', QColor, QColor(0x00, 0x00, 0x00, 0xff)),
     CE('palette_base', QColor, QColor(0xff, 0xff, 0xff, 0xff)),
@@ -124,6 +125,12 @@ ENTRIES = [
     CE('pseudocode_function_color', QColor, QColor(0x00, 0x00, 0xff, 0xff)),
     CE('pseudocode_quotation_color', QColor, QColor(0x00, 0x80, 0x00, 0xff)),
     CE('pseudocode_keyword_color', QColor, QColor(0x00, 0x00, 0x80, 0xff)),
+
+    # FLIRT signatures
+    CE('flirt_signatures_root', str, "./flirt_signatures/"),
+
+    # last-used directory
+    CE('last_used_directory', str, ''),
 
     # feature map
     CE('feature_map_color_regular_function', QColor, QColor(0x00, 0xa0, 0xe8)),

@@ -1,7 +1,7 @@
 from typing import Set, Union, Optional
 import logging
 
-from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget
+from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget, QVBoxLayout, QWidget, QFrame, QComboBox
 from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
@@ -20,6 +20,10 @@ from ...data.jobs import DecompileFunctionJob
 l = logging.getLogger(__name__)
 
 class CodeView(BaseView):
+    """
+    A view to display pseudocode or source code. You should control this view by manipulating and observing its four
+    ObjectContainers: .addr, .current_node, .codegen, and .function.
+    """
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('pseudocode', workspace, default_docking_position, *args, **kwargs)
 
@@ -35,6 +39,7 @@ class CodeView(BaseView):
         self._doc: Optional[QCodeDocument] = None
         self._options: Optional[QDecompilationOptions] = None
         self.jump_history = JumpHistory()
+        self._view_selector: Optional[QComboBox] = None
 
         self.vars_must_struct: Set[str] = set()
 
@@ -86,7 +91,9 @@ class CodeView(BaseView):
             self.function.prototype = None
 
         def decomp_ready():
+            # this code is _partially_ duplicated from _on_new_function. be careful!
             available = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
+            self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
                 self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
@@ -143,7 +150,7 @@ class CodeView(BaseView):
         else:
             # try to find the right function
             block_addr, _ = self.workspace.instance.cfb.floor_item(self.addr.am_obj)
-            block = self.workspace.instance.cfg.model.get_any_node(block_addr)
+            block = self.workspace.instance.cfg.get_any_node(block_addr)
             if block is not None:
                 func = self.workspace.instance.kb.functions[block.function_address]
                 if func is not self.function.am_obj:
@@ -157,15 +164,18 @@ class CodeView(BaseView):
         self.addr.am_event(already_moved=True)
 
     def _on_new_codegen(self, already_regenerated=False, **kwargs):  # pylint: disable=unused-argument
+        self._view_selector.setCurrentText(self.codegen.flavor)
         if not already_regenerated:
             self.codegen.regenerate_text()
 
         old_pos: Optional[int] = None
+        old_font = None
         if self._last_function is self.function.am_obj:
             # we are re-rendering the current function (e.g., triggered by a node renaming). save the old cursor and
             # reuse it later.
             old_cursor: QTextCursor = self._textedit.textCursor()
             old_pos = old_cursor.position()
+            old_font = self._textedit.font()
 
         self._options.dirty = False
         self._doc = QCodeDocument(self.codegen)
@@ -174,6 +184,7 @@ class CodeView(BaseView):
         if old_pos is not None:
             new_cursor: QTextCursor = self._textedit.textCursor()
             new_cursor.setPosition(old_pos)
+            self._textedit.setFont(old_font)
             self._textedit.setTextCursor(new_cursor)
 
         if self.codegen.flavor == 'pseudocode':
@@ -193,10 +204,12 @@ class CodeView(BaseView):
             self._focus_core(focus, focus_addr)
             return
         available = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
+        self._update_available_views(available)
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
             self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
             self.codegen.am_event()
+            self._focus_core(focus, focus_addr)
         else:
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self.function.am_obj
@@ -249,8 +262,8 @@ class CodeView(BaseView):
             if addr is None:
                 self.close()
             else:
-                target_func = self.workspace.instance.kb.functions.floor_func(addr)
-                self.workspace.decompile_function(target_func, curr_ins=addr, view=self)
+                self.addr.am_obj = addr
+                self.addr.am_event()
             return True
         elif key == Qt.Key_Space:
             if not self.codegen.am_none:
@@ -263,6 +276,16 @@ class CodeView(BaseView):
                 return True
 
         return super().keyPressEvent(event)
+
+    def _update_available_views(self, available):
+        for _ in range(self._view_selector.count()):
+            self._view_selector.removeItem(0)
+        self._view_selector.addItems(available)
+
+    def _on_view_selector_changed(self, index):
+        key = (self.function.addr, self._view_selector.itemText(index))
+        self.codegen.am_obj = self.workspace.instance.kb.structured_code[key]
+        self.codegen.am_event()
 
     #
     # Private methods
@@ -287,10 +310,28 @@ class CodeView(BaseView):
         window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
 
-        layout = QHBoxLayout()
-        layout.addWidget(window)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(layout)
+        # status bar
+        status_bar = QFrame()
+        self._view_selector = QComboBox()
+        self._view_selector.addItems(["pseudocode"])
+        self._view_selector.activated.connect(self._on_view_selector_changed)
+        status_layout = QHBoxLayout()
+        status_layout.addStretch(0)
+        status_layout.addWidget(self._view_selector)
+        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_bar.setLayout(status_layout)
+
+        inner_layout = QHBoxLayout()
+        inner_layout.addWidget(window)
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_widget = QWidget()
+        inner_widget.setLayout(inner_layout)
+
+        outer_layout = QVBoxLayout()
+        outer_layout.addWidget(inner_widget)
+        outer_layout.addWidget(status_bar)
+
+        self.setLayout(outer_layout)
 
         self._textedit.focusWidget()
 

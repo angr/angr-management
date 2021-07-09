@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from PySide2.QtWidgets import QFrame, QInputDialog, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
     QCheckBox, QTabWidget, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
@@ -5,6 +7,11 @@ from PySide2.QtCore import Qt
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
 from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
+from ...logic.threads import gui_thread_schedule
+
+if TYPE_CHECKING:
+    from angr import SimState
+    from typing import List
 
 
 class QSimulationManagers(QFrame):
@@ -100,6 +107,14 @@ class QSimulationManagers(QFrame):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
+
+    def select_states(self, states: 'List[SimState]'):
+        stash_tree_item = self._simgr_viewer.get_stash_tree_item("active")
+        states_set = set(states)
+        for state_tree_item in stash_tree_item:
+            if state_tree_item.state in states_set:
+                state_tree_item.setSelected(True)
+        stash_tree_item.setExpanded(True)
 
     def _init_simgrs_tab(self, tab):
         # simgrs list
@@ -230,6 +245,7 @@ class QSimulationManagers(QFrame):
                 self.instance.workspace.plugins.step_callback(simgr)
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(simgr, events=False)
+                gui_thread_schedule(lambda: self.simgr.am_event(src="post_step"))
                 return simgr
 
             self.instance.add_job(SimgrExploreJob.create(
@@ -254,7 +270,7 @@ class QSimulationManagers(QFrame):
             self.state.am_event(src='clicked')
 
     def _watch_simgr(self, **kwargs):
-        if kwargs.get('src') in ('clicked', 'filter_actives'):
+        if kwargs.get('src') in ('clicked', 'filter_actives', "post_step"):
             return
         elif kwargs.get('src') == 'job_done' and kwargs.get('job') == 'step':
             self._filter_actives(self.simgr)
@@ -274,10 +290,13 @@ class QSimulationManagers(QFrame):
     def _on_explore_addr_changed(self, item: QTreeWidgetItem): #pylint: disable=unused-argument
         """Refresh the disassembly view when an address in the 'avoids' or 'finds' tab is toggled. Ensures that
         annotations next to instructions are updated."""
+
         if len(self.view_manager.views_by_category['disassembly']) == 1:
-            self.instance.workspace.view_manager.first_view_in_category('disassembly').refresh()
+            view = self.instance.workspace.view_manager.first_view_in_category('disassembly').refresh()
         else:
-            self.instance.workspace.view_manager.current_view_in_category('disassembly').refresh()
+            view = self.instance.workspace.view_manager.current_view_in_category('disassembly').refresh()
+        if view is not None:
+            view.refresh()
 
     #
     # Private methods

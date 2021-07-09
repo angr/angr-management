@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from angr.sim_variable import SimVariable, SimTemporaryVariable
-from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction
+from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, CStructField
 
 from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
@@ -34,6 +34,10 @@ class ColorSchemeIDA(api.ColorScheme):
 
 
 class QCCodeEdit(api.CodeEdit):
+    """
+    A subclass of pyqodeng's CodeEdit, specialized to handle the kinds of textual interaction expected of the pseudocode
+    view. You will typically interact with this class as code_view.textedit.
+    """
     def __init__(self, code_view):
         super().__init__(create_default_actions=True)
 
@@ -111,7 +115,8 @@ class QCCodeEdit(api.CodeEdit):
             # decompiled function name in selection
             self._selected_node = under_cursor
             mnu.addActions(self.function_name_actions)
-            for entry in self.workspace.plugins.build_context_menu_functions([self.workspace.instance.kb.functions[under_cursor.name]]):
+            for entry in self.workspace.plugins.build_context_menu_functions(
+                    [self.workspace.instance.kb.functions[under_cursor.name]]):
                 Menu.translate_element(mnu, entry)
         else:
             mnu.addActions(self.default_actions)
@@ -175,20 +180,33 @@ class QCCodeEdit(api.CodeEdit):
         node = self.node_under_cursor()
 
         if key == Qt.Key_N:
-            if isinstance(node, (CVariable, CFunction, CFunctionCall)):
+            if isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
                 self.rename_node(node=node)
             return True
         if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
         if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.CTRL != 0:
-            self.zoom_out()
+            self.zoomOut()
         if key == Qt.Key_Equal and QApplication.keyboardModifiers() & Qt.CTRL != 0:
-            self.zoom_in()
+            self.zoomIn()
 
         if self._code_view.keyPressEvent(event):
             return True
-        return super().keyPressEvent(event)
+
+        saved_mode = self.textInteractionFlags()
+        if key in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down,
+                   Qt.Key_PageDown, Qt.Key_PageUp, Qt.Key_Home, Qt.Key_End):
+            self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
+        result = super().keyPressEvent(event)
+        self.setTextInteractionFlags(saved_mode)
+        return result
+
+    def paintEvent(self, e):
+        saved_mode = self.textInteractionFlags()
+        self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
+        super().paintEvent(e)
+        self.setTextInteractionFlags(saved_mode)
 
     def setDocument(self, document):
         super().setDocument(document)
@@ -202,7 +220,7 @@ class QCCodeEdit(api.CodeEdit):
 
     def rename_node(self, *args, node=None):  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField)):
             return
         if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
             # unsupported right now..
@@ -217,7 +235,8 @@ class QCCodeEdit(api.CodeEdit):
                 addr = self.get_src_to_inst()
             else:
                 pos = self.textCursor().position()
-                while self.document().characterAt(pos) not in ('\n', '\u2029') and pos < self.document().characterCount():  # qt WHAT are you doing
+                while self.document().characterAt(pos) not in ('\n', '\u2029') and \
+                        pos < self.document().characterCount():  # qt WHAT are you doing
                     pos += 1
                 node = self.document().get_stmt_node_at_position(pos)
                 addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)

@@ -47,13 +47,18 @@ class SymexecView(BaseView):
         self.current_simgr.am_obj = simgr
         self.current_simgr.am_event(src='from above')
 
+    def select_states(self, states):
+        self._simgrs.select_states(states)
+
     def view_state(self, state):
         self._state_viewer.state = state
 
         # push namespace into the console
-        self.workspace.view_manager.first_view_in_category('console').push_namespace({
-            'state': state,
-        })
+        view = self.workspace.view_manager.first_view_in_category('console')
+        if view is not None:
+            view.push_namespace({
+                'state': state,
+            })
 
     def avoid_addr_in_exec(self, addr):
         self._simgrs.add_avoid_address(addr)

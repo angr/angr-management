@@ -1,3 +1,4 @@
+
 from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
@@ -9,26 +10,32 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap, QLinearDisassemblyView, DisassemblyLevel
+from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap,\
+    QLinearDisassemblyView, DisassemblyLevel
 from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
+from ..dialogs.hook import HookDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
+from ...ui.widgets.qinst_annotation import QHookAnnotation
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import Function, VariableManager
+    from angr.knowledge_plugins import VariableManager
 
 
 _l = logging.getLogger(__name__)
 
 
 class DisassemblyView(BaseView):
+    """
+    Disassembly View
+    """
     view_visibility_changed = Signal()
     disassembly_level_changed = Signal(DisassemblyLevel)
 
@@ -54,6 +61,10 @@ class DisassemblyView(BaseView):
         self.variable_manager = None  # type: Optional[VariableManager]
         self._current_function = ObjectContainer(None, 'The currently selected function')
 
+        # For tests only
+        self._t_linear_viewer_visible: bool = False
+        self._t_flow_graph_visible: bool = False
+
         self._insn_menu = None  # type: Optional[DisasmInsnContextMenu]
         self._label_menu = None  # type: Optional[DisasmLabelContextMenu]
 
@@ -72,6 +83,7 @@ class DisassemblyView(BaseView):
     @property
     def disassembly_level(self):
         return self._disassembly_level
+
     def set_disassembly_level(self, level:DisassemblyLevel):
         self._disassembly_level = level
         self._flow_graph.set_disassembly_level(level)
@@ -154,7 +166,7 @@ class DisassemblyView(BaseView):
 
         :return:    Linear viewer or flow graph.
         """
-        if self._linear_viewer.isVisible():
+        if self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
             return self._linear_viewer
         else:
             return self._flow_graph
@@ -298,6 +310,19 @@ class DisassemblyView(BaseView):
             dialog.show()
         else:
             dialog.exec_()
+
+    def popup_hook_dialog(self, async_=True, addr=None):
+        addr = addr or self._address_in_selection()
+
+        if addr is None:
+            return
+
+        dialog = HookDialog(self.workspace.instance, addr=addr, parent=self)
+        if async_:
+            dialog.show()
+        else:
+            dialog.exec_()
+
 
     def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:
@@ -537,16 +562,17 @@ class DisassemblyView(BaseView):
             self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
-        self.workspace.view_manager.first_view_in_category('symexec').avoid_addr_in_exec(addr)
+        self.workspace._get_or_create_symexec_view().avoid_addr_in_exec(addr)
 
     def find_addr_in_exec(self, addr):
-        self.workspace.view_manager.first_view_in_category('symexec').find_addr_in_exec(addr)
+        self.workspace._get_or_create_symexec_view().find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
             self._flow_graph.induction_variable_analysis = None
         else:
-            ana = self.workspace.instance.project.analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
+            analyses = self.workspace.instance.project.analyses
+            ana = analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
             self._flow_graph.induction_variable_analysis = ana
         self._flow_graph.refresh()
 
@@ -555,15 +581,17 @@ class DisassemblyView(BaseView):
         for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
             addr_to_annotations[annotations.addr].append(annotations)
         for addr in qblock.addr_to_insns.keys():
-            # if addr in self.workspace.instance.hooked_addresses:
-            #     hook_annotation = QHookAnnotation(self, addr)
-            #     addr_to_annotations[addr].append(hook_annotation)
-            qsimgrs = self.workspace.view_manager.first_view_in_category("symexec")._simgrs
-            if addr in qsimgrs.find_addrs:
-                addr_to_annotations[addr].append(QFindAddrAnnotation(addr, self, qsimgrs))
-            if addr in qsimgrs.avoid_addrs:
-                addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, self, qsimgrs))
-        return QBlockAnnotations(addr_to_annotations, parent=qblock)
+            if addr in self.workspace.instance.project._sim_procedures:
+                hook_annotation = QHookAnnotation(self, addr)
+                addr_to_annotations[addr].append(hook_annotation)
+            view = self.workspace.view_manager.first_view_in_category("symexec")
+            if view is not None:
+                qsimgrs = view._simgrs
+                if addr in qsimgrs.find_addrs:
+                    addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
+                if addr in qsimgrs.avoid_addrs:
+                    addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
+        return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
     #
     # Initialization
@@ -636,20 +664,22 @@ class DisassemblyView(BaseView):
         # clear existing selected instructions and operands
         self.infodock.clear_selection()
 
-        if self._flow_graph.isVisible():
+        if self._flow_graph.isVisible() or self._t_flow_graph_visible:
             if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
                 # set function graph of a new function
                 self._flow_graph.function_graph = FunctionGraph(function=the_func,
                                                                 exception_edges=self.show_exception_edges,
                                                                 )
 
-        elif self._linear_viewer.isVisible():
+        elif self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
-        self.workspace.view_manager.first_view_in_category('console').push_namespace({
-            'func': the_func,
-            'function_': the_func,
-        })
+        view = self.workspace.view_manager.first_view_in_category('console')
+        if view is not None:
+            view.push_namespace({
+                'func': the_func,
+                'function_': the_func,
+            })
 
     def _jump_to(self, addr, use_animation=False):
         function = locate_function(self.workspace.instance, addr)

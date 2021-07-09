@@ -1,4 +1,5 @@
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QLabel
+import re
+from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QLineEdit, QVBoxLayout, QLabel
 from PySide2.QtCore import QSize
 
 from angr.knowledge_plugins import Function
@@ -65,20 +66,37 @@ class StringsView(BaseView):
         disasm_view.select_label(s.addr)
         self.workspace.view_manager.raise_view(disasm_view)
 
+    def on_filter_change(self, **kwargs): #pylint: disable=unused-argument
+        pattern = self._filter_string.text()
+        regex = self._regex_checkbox.isChecked()
+        if regex:
+            try:
+                pattern = re.compile(pattern)
+            except re.error as _e:
+                return
+        self._string_table.filter_string = pattern
+
     #
     # Private methods
     #
 
     def _init_widgets(self):
-        lbl_function = QLabel(self)
-        lbl_function.setText("Function")
+
         self._function_list = QFunctionComboBox(show_all_functions=True, selection_callback=self._on_function_selected,
                                                 parent=self
                                                 )
 
+        self._filter_string = QLineEdit(self)
+        self._regex_checkbox = QCheckBox("Regex?", self)
+        self._filter_string.textChanged.connect(self.on_filter_change)
+        self._regex_checkbox.stateChanged.connect(self.on_filter_change)
+
         function_layout = QHBoxLayout()
-        function_layout.addWidget(lbl_function)
-        function_layout.addWidget(self._function_list)
+        function_layout.addWidget(QLabel("Function:",self))
+        function_layout.addWidget(self._function_list, 10)
+        function_layout.addWidget(QLabel("Filter:",self))
+        function_layout.addWidget(self._filter_string, 10)
+        function_layout.addWidget(self._regex_checkbox)
 
         self._string_table = QStringTable(self, selection_callback=self._on_string_selected)
 

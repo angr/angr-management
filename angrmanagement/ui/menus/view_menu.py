@@ -23,4 +23,7 @@ class ViewMenu(Menu):
             MenuEntry('Proximity View', main_window.view_proximity_for_current_function),
             MenuEntry('Patches', main_window.workspace.show_patches_view),
             MenuEntry('Interaction', main_window.workspace.show_interaction_view),
+            MenuEntry('Types', main_window.workspace.show_types_view),
+            MenuEntry('Functions', main_window.workspace.show_functions_view),
+            MenuEntry('Console', main_window.workspace.show_console_view),
         ])

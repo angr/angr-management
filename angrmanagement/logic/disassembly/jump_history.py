@@ -1,6 +1,10 @@
 
 
-class JumpHistory(object):
+class JumpHistory:
+    """
+    A class to store the navigation history of a reversing session. Typically found at DisassemblyView._jump_history
+    or CodeView.jump_history. Maintains a list of addresses through which the user can navigate forwards and backwards.
+    """
     def __init__(self):
         self._history = [ ]
         self._pos = -1
@@ -17,15 +21,11 @@ class JumpHistory(object):
             self._history.append(addr)
             self._pos = len(self._history) - 1
 
-    # TODO this should maybe not adjust pos and just update the most recent entry
     def record_address(self, addr):
-
-        if self._pos != len(self._history) - 1:
-            self.trim()
-
-        if not self._history or self._history[-1] != addr:
-            self._history.append(addr)
-            self._pos = len(self._history) - 1
+        if 0 <= self._pos < len(self._history):
+            self._history[self._pos] = addr
+        else:
+            self.jump_to(addr)
 
     def trim(self):
         self._history = self._history[ : self._pos + 1]
@@ -34,7 +34,7 @@ class JumpHistory(object):
         if self._pos > -1:
             self._pos -= 1
 
-        if not (0 <= self._pos < len(self._history)):
+        if not 0 <= self._pos < len(self._history):
             return None
         else:
             return self._history[self._pos]
