@@ -303,8 +303,17 @@ class QAilCallObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.statement.Call):
-        self.add_text('call ')
+        if obj.ret_expr is not None and self.stmt is self.obj:
+            self.add_ailobj(obj.ret_expr)
+            self.add_text(' = ')
         self.add_ailobj(obj.target)
+        self.add_text('(')
+        if obj.args:
+            for i, arg in enumerate(obj.args):
+                if i > 0:
+                    self.add_text(', ')
+                self.add_ailobj(arg)
+        self.add_text(')')
 
 
 class QAilConstObj(QAilTextObj):
