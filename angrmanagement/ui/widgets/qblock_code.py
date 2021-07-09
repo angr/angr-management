@@ -78,6 +78,10 @@ class QBlockCodeObj(QObject):
         Initialize any display subobjects for this object
         """
 
+    def recreate_subobjs(self):
+        self.subobjs.clear()
+        self.create_subobjs(self.obj)
+
     def update(self):
         """
         Update self and parent objects
@@ -157,6 +161,10 @@ class QVariableObj(QBlockCodeObj):
         fmt = QTextCharFormat()
         fmt.setForeground(Conf.disasm_view_variable_label_color)
         return fmt
+
+    def render_to_doc(self, cursor):
+        self.recreate_subobjs()
+        super().render_to_doc(cursor)
 
     def create_subobjs(self, obj):
         self.add_text(obj.name)
