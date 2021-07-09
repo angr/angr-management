@@ -135,22 +135,41 @@ class ViewManager:
     def first_view_in_category(self, category) -> Optional['BaseView']:
         """
         Return the first view in a specific category.
-        If the category is disassembly, return the current
-        category view else return the first view in
-        disassembly.
 
         :param str category:    The category of the view.
         :return:                The view.
         """
 
         if self.views_by_category[category]:
-            if category == 'disassembly':
-                current_view = self.get_current_tab_id()
-                for category_view in self.views_by_category[category]:
-                    if category_view.caption == self.get_center_views()[current_view].windowTitle():
-                        return category_view
             return self.views_by_category[category][0]
         return None
+
+    def current_view_in_category(self, category) -> Optional['BaseView']:
+        """
+        Return the current in a specific category.
+
+        :param str category:    The category of the view.
+        :return:                The view.
+        """
+
+        current = self.get_center_views()[self.get_current_tab_id()]
+        view = self.dock_to_view(current)
+        if category.capitalize() in view.caption and view.caption == current.windowTitle():
+            return view
+        return None
+
+    def dock_to_view(self, dock):
+        """
+        Return the view associated with provided
+        dock.
+
+        :param dock:    The dock to match a view with.
+        :return:        The view.
+        """
+
+        for view, value in self.view_to_dock.items():
+            if value == dock:
+                return view
 
     def tabify_center_views(self):
         """

@@ -44,7 +44,7 @@ class QStatsAnnotation(QInstructionAnnotation):
         super().__init__(addr, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.disasm_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
-            "disassembly")  # type: DisassemblyView
+            'disassembly')  # type: DisassemblyView
         self.symexec_view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category(
             "symexec")  # type: SymexecView
         self.hovered = False
