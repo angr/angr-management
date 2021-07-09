@@ -731,7 +731,7 @@ class QBlockCode(QCachedGraphicsItem):
         self.update_document()
         self.setToolTip("Address: " + self._addr_str)
 
-        self._layout_items_and_update_size()
+        self.refresh()
 
     def refresh(self):
         self._addr_item.setVisible(self._disasm_view.show_address)
