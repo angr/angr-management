@@ -170,6 +170,7 @@ class ViewManager:
         for view, value in self.view_to_dock.items():
             if value == dock:
                 return view
+        return None
 
     def tabify_center_views(self):
         """
