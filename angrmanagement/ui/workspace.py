@@ -1,11 +1,10 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable
 import logging
 import traceback
-import itertools
 
 from PySide2.QtCore import Qt, QSettings
-from PySide2.QtWidgets import QMessageBox
 
+from angr.knowledge_plugins.functions.function import Function as angrFunc
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
 
@@ -16,6 +15,7 @@ from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, Str
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView)
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
+from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
 from ..plugins import PluginManager
 
@@ -27,12 +27,16 @@ _l = logging.getLogger(__name__)
 
 
 class Workspace:
+    """
+    This class implements the angr management workspace.
+    """
     def __init__(self, main_window, instance):
 
         self._main_window = main_window
         self._instance = instance
         self.is_split = False
         self.split_tab_id = 0
+        self.last_unsplit_view = None
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
@@ -242,9 +246,8 @@ class Workspace:
         for view in views:
             try:
                 view.reload()
-            except Exception:
+            except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
-                pass
 
     def viz(self, obj):
         """
@@ -543,10 +546,6 @@ class Workspace:
 
     # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
 
-    from typing import Callable
-    from angr.knowledge_plugins.functions.function import Function as angrFunc
-    from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
-
     def set_cb_function_backcolor(self, callback: Callable[[angrFunc], None]):
         fv = self.view_manager.first_view_in_category('functions')  # type: FunctionsView
         if fv:
@@ -562,7 +561,8 @@ class Workspace:
         if dv:
             dv.label_rename_callback = callback
 
-    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True):
+    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None],
+                                       add_separator_first=True):
         dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback, add_separator_first)

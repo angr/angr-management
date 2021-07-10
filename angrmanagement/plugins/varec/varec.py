@@ -1,9 +1,10 @@
+from typing import Set, Tuple
 import re
 import json
 import itertools
 import random
 import string
-from typing import Set, Tuple
+from collections import defaultdict
 
 import requests
 from sortedcontainers import SortedDict
@@ -46,7 +47,8 @@ class VaRec(BasePlugin):
 
         mapping.get(idx)()
 
-    def _restore_stage(self, view):
+    @staticmethod
+    def _restore_stage(view):
         # shrug
         for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
             m = re.match(r"@@(\S+)@@(\S+)@@", v.name)
@@ -73,7 +75,8 @@ class VaRec(BasePlugin):
         if view.codegen._variable_kb is None:
             QMessageBox.critical(self.workspace._main_window,
                                  "Error in variable name prediction",
-                                 "Cannot predict variable names. The pseudocode view does not have associated variables KB.",
+                                 "Cannot predict variable names. The pseudocode view does not have associated "
+                                 "variables KB.",
                                  QMessageBox.Ok
                                  )
             return
@@ -116,8 +119,6 @@ class VaRec(BasePlugin):
             return
 
         varname_blacklist = {'UNK', 'null', "true", "false", }
-
-        from collections import defaultdict
         varname_to_predicted = defaultdict(list)
 
         # handle failure cases
@@ -165,7 +166,7 @@ class VaRec(BasePlugin):
                 var_name = m.group(1)
                 predicted = varname_to_predicted[var_name]
                 predicted = sorted(predicted, key=lambda x: x['confidence'], reverse=True)
-                v.candidate_names = set([pred['pred_name'] for pred in predicted])
+                v.candidate_names = set(pred['pred_name'] for pred in predicted)
                 for pred in predicted:
                     if pred['pred_name'] not in used_names:
                         v.name = pred['pred_name']
