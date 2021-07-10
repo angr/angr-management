@@ -6,7 +6,7 @@ from PySide2.QtCore import Qt
 
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ...data.instance import Instance
-from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
+from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer, StashTreeItem, StateTreeItem
 from ...logic.threads import gui_thread_schedule
 
 if TYPE_CHECKING:
@@ -133,7 +133,9 @@ class QSimulationManagers(QFrame):
         # simulation manager information
         viewer = QSimulationManagerViewer(self.simgr)
         self._simgr_viewer = viewer
+        viewer.itemClicked.connect(self._on_item_clicked)
         viewer.currentItemChanged.connect(self._on_state_selection)
+        viewer.itemSelectionChanged.connect(self._on_item_selection_changed)
 
         #
         # Buttons
@@ -263,11 +265,51 @@ class QSimulationManagers(QFrame):
             self.simgr.am_obj = simgr
             self.simgr.am_event(src='clicked')
 
+        if not self.simgr.am_none:
+            console = self.instance.workspace.view_manager.first_view_in_category('console')
+            if console:
+                console.push_namespace({
+                    "sm": self.simgr.am_obj,
+                    "simgr": self.simgr.am_obj
+                })
+                console.print_text(f"\nsm = simgr = {self.simgr.am_obj}\n")
+
     def _on_state_selection(self):
         state = self._simgr_viewer.current_state()
         if state != self.state:
             self.state.am_obj = state
             self.state.am_event(src='clicked')
+
+    def _on_item_selection_changed(self):
+        console = self.instance.workspace.view_manager.first_view_in_category('console')
+        if not console:
+            return
+
+        selected_items = self._simgr_viewer.selectedItems()
+        states = []
+        for item in selected_items:
+            if isinstance(item, StateTreeItem):
+                states.append(item.state)
+        if len(states) == 1:
+            console.push_namespace({
+                'state': states[0], 's': states[0]
+            })
+            console.print_text(f"\nstate = s = {states[0]}\n")
+        elif len(states) > 1:
+            console.push_namespace({
+                'states': states, 's': states
+            })
+            console.print_text(f"\nstates = s = {states}\n")
+
+    def _on_item_clicked(self, item, column): #pylint: disable=unused-argument
+        if isinstance(item, StashTreeItem):
+            console = self.instance.workspace.view_manager.first_view_in_category('console')
+            if console:
+                console.push_namespace({
+                    'states': item.states,
+                })
+                console.print_text(f"\nstates = simgr.{item.stash_name}\n")
+
 
     def _watch_simgr(self, **kwargs):
         if kwargs.get('src') in ('clicked', 'filter_actives', "post_step"):
