@@ -353,6 +353,10 @@ class PluginManager:
                 return True
         return False
 
+    def handle_project_initialization(self):
+        for _ in self._dispatch(BasePlugin.handle_project_initialization, False):
+            pass
+
     def handle_project_save(self, file_name: str):
         for _ in self._dispatch(BasePlugin.handle_project_save, False, file_name):
             pass
