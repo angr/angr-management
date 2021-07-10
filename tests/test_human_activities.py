@@ -1,5 +1,8 @@
+import hashlib
 import os
+import random
 import sys
+import string
 import unittest
 
 from PySide2.QtTest import QTest
@@ -12,10 +15,21 @@ from angrmanagement.ui.dialogs.rename_node import RenameNode
 
 from common import setUp, test_location
 
+from slacrs import Slacrs
+from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename
+
 
 class TestHumanActivities(unittest.TestCase):
     def setUp(self):
         setUp()
+        # set up a random database through environment variable SLACRS_DATABASE
+        self.db_name = ''.join([random.choice(string.ascii_letters) for _ in range(8)])
+        os.environ['SLACRS_DATABASE'] = f"sqlite:////tmp/{self.db_name}.sqlite"
+        self.session = Slacrs().session()
+
+    def tearDown(self):
+        self.session.close()
+        os.remove(f"/tmp/{self.db_name}.sqlite")
 
     def test_open_a_project(self):
         main = MainWindow(show=False)
@@ -69,6 +83,15 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(func.name, "fdsa")
 
+        with open(binpath, 'rb') as f:
+            project_md5 = hashlib.md5(f.read()).hexdigest()
+        function_rename = self.session.query(HumanActivityFunctionRename).filter(
+            HumanActivityFunctionRename.project_md5 == project_md5,
+            HumanActivityFunctionRename.old_name == "main",
+            HumanActivityFunctionRename.new_name == "fdsa",
+        ).one()
+        self.assertIsNotNone(function_rename)
+
     def test_rename_a_variable_in_pseudocode_view(self):
         main = MainWindow(show=False)
         binpath = os.path.join(test_location, "x86_64", "fauxware")
@@ -104,6 +127,13 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(variable_node.unified_variable.name, "fdsa")
 
+        with open(binpath, 'rb') as f:
+            project_md5 = hashlib.md5(f.read()).hexdigest()
+        variable_rename = self.session.query(HumanActivityVariableRename).filter(
+            HumanActivityVariableRename.project_md5 == project_md5,
+            HumanActivityVariableRename.new_name == "fdsa",
+        ).one()
+        self.assertIsNotNone(variable_rename)
 
 if __name__ == "__main__":
     unittest.main(argv=sys.argv)
