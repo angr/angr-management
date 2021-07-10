@@ -63,7 +63,19 @@ class VaRec(BasePlugin):
 
     def infer_variable_names(self):
         view = self.workspace._get_or_create_pseudocode_view()
-        if view.codegen is None:
+        if view.codegen.am_none:
+            QMessageBox.critical(self.workspace._main_window,
+                                 "Error in variable name prediction",
+                                 "Cannot predict variable names. No pseudocode exists in the pseudocode view.",
+                                 QMessageBox.Ok
+                                 )
+            return
+        if view.codegen._variable_kb is None:
+            QMessageBox.critical(self.workspace._main_window,
+                                 "Error in variable name prediction",
+                                 "Cannot predict variable names. The pseudocode view does not have associated variables KB.",
+                                 QMessageBox.Ok
+                                 )
             return
 
         if Conf.http_proxy or Conf.https_proxy:
