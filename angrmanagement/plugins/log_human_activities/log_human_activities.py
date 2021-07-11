@@ -3,11 +3,11 @@ import hashlib
 from ..base_plugin import BasePlugin
 
 l = logging.getLogger(__name__)
-l.setLevel('DEBUG')
+l.setLevel('INFO')
 
 try:
     from slacrs import Slacrs
-    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn
+    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn, HumanActivityCommentChanged
 except ImportError as ex:
     Slacrs = None  # type: Optional[type]
     HumanActivityVariableRename = None  # type: Optional[type]
@@ -82,6 +82,25 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.session.add(insn_click)
         self.session.commit()
         l.info("Instruction %x is clicked", qinsn.addr)
+        return False
+
+    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+        """
+        Log a user's activity of changing comment
+        @param new: T if a new comment. We don't log it in slacrs.
+        @param comp: T if comment is in decompiler view
+        """
+        comment_change = HumanActivityCommentChanged(
+            project=self.project_name,
+            project_md5=self.project_md5,
+            addr=addr,
+            cmt=cmt,
+            decomp=decomp,
+            created_by=TODO,
+        )
+        self.session.add(comment_change)
+        self.session.commit()
+        l.info("Comment is added at %x", addr)
         return False
 
     def handle_project_initialization(self):
