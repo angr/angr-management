@@ -7,6 +7,7 @@ import unittest
 
 from PySide2.QtTest import QTest
 from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
 
 import angr
 from angrmanagement.ui.main_window import MainWindow
@@ -16,7 +17,7 @@ from angrmanagement.ui.dialogs.rename_node import RenameNode
 from common import setUp, test_location
 
 from slacrs import Slacrs
-from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename
+from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn
 
 
 class TestHumanActivities(unittest.TestCase):
@@ -31,19 +32,22 @@ class TestHumanActivities(unittest.TestCase):
         self.session.close()
         os.remove(f"/tmp/{self.db_name}.sqlite")
 
-    def test_open_a_project(self):
+    def _open_a_project(self):
         main = MainWindow(show=False)
         binpath = os.path.join(test_location, "x86_64", "fauxware")
         main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
         main.workspace.instance.project.am_event()
         main.workspace.instance.join_all_jobs()
+        self.project = binpath
+        with open(binpath, 'rb') as f:
+            self.project_md5 = hashlib.md5(f.read()).hexdigest()
+        return main
+
+    def test_open_a_project(self):
+        self._open_a_project()
 
     def test_rename_a_function_in_disasm_and_pseudocode_views(self):
-        main = MainWindow(show=False)
-        binpath = os.path.join(test_location, "x86_64", "fauxware")
-        main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-        main.workspace.instance.project.am_event()
-        main.workspace.instance.join_all_jobs()
+        main = self._open_a_project()
 
         func = main.workspace.instance.project.kb.functions['main']
         self.assertIsNotNone(func)
@@ -83,21 +87,15 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(func.name, "fdsa")
 
-        with open(binpath, 'rb') as f:
-            project_md5 = hashlib.md5(f.read()).hexdigest()
         function_rename = self.session.query(HumanActivityFunctionRename).filter(
-            HumanActivityFunctionRename.project_md5 == project_md5,
+            HumanActivityFunctionRename.project_md5 == self.project_md5,
             HumanActivityFunctionRename.old_name == "main",
             HumanActivityFunctionRename.new_name == "fdsa",
         ).one()
         self.assertIsNotNone(function_rename)
 
     def test_rename_a_variable_in_pseudocode_view(self):
-        main = MainWindow(show=False)
-        binpath = os.path.join(test_location, "x86_64", "fauxware")
-        main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-        main.workspace.instance.project.am_event()
-        main.workspace.instance.join_all_jobs()
+        main = self._open_a_project()
 
         func = main.workspace.instance.project.kb.functions['main']
         self.assertIsNotNone(func)
@@ -127,13 +125,61 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(variable_node.unified_variable.name, "fdsa")
 
-        with open(binpath, 'rb') as f:
-            project_md5 = hashlib.md5(f.read()).hexdigest()
         variable_rename = self.session.query(HumanActivityVariableRename).filter(
-            HumanActivityVariableRename.project_md5 == project_md5,
+            HumanActivityVariableRename.project_md5 == self.project_md5,
             HumanActivityVariableRename.new_name == "fdsa",
         ).one()
         self.assertIsNotNone(variable_rename)
+
+    def test_click_block(self):
+        main_window = self._open_a_project()
+        func = main_window.workspace.instance.project.kb.functions['main']
+        self.assertIsNotNone(func)
+
+        # display function main
+        disasm_view = main_window.workspace._get_or_create_disassembly_view()
+        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_function(func)
+
+        # get and click the first bbl of function main
+        block = disasm_view.current_graph._insaddr_to_block.get(func.addr)
+        scene = QGraphicsScene()
+        scene.addItem(block)
+        view = QGraphicsView(scene)
+        QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
+
+        # assert that slacrs logged the information
+        result = self.session.query(HumanActivityClickBlock).filter(
+            HumanActivityClickBlock.project_md5 == self.project_md5,
+            HumanActivityClickBlock.addr == func.addr,
+        ).one()
+        self.assertIsNotNone(result)
+
+    def test_click_insn(self):
+        main_window = self._open_a_project()
+        func = main_window.workspace.instance.project.kb.functions['main']
+        self.assertIsNotNone(func)
+
+        # display function main
+        disasm_view = main_window.workspace._get_or_create_disassembly_view()
+        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_function(func)
+
+        # get and click the first bbl of function main
+        block = disasm_view.current_graph._insaddr_to_block.get(func.addr)
+        insn = block.addr_to_insns[func.addr]
+        scene = QGraphicsScene()
+        scene.addItem(insn)
+        view = QGraphicsView(scene)
+        QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
+
+        # assert that slacrs logged the information
+        result = self.session.query(HumanActivityClickInsn).filter(
+            HumanActivityClickInsn.project_md5 == self.project_md5,
+            HumanActivityClickInsn.addr == insn.addr,
+        ).one()
+        self.assertIsNotNone(result)
+
 
 if __name__ == "__main__":
     unittest.main(argv=sys.argv)

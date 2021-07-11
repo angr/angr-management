@@ -7,7 +7,7 @@ l.setLevel('DEBUG')
 
 try:
     from slacrs import Slacrs
-    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename
+    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn
 except ImportError as ex:
     Slacrs = None  # type: Optional[type]
     HumanActivityVariableRename = None  # type: Optional[type]
@@ -57,8 +57,32 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.session.add(function_rename)
         self.session.commit()
         l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", self.project_name, old_name, new_name)
-        result = self.session.query(HumanActivityFunctionRename).filter(HumanActivityFunctionRename.project == self.project_name).first()
-        l.info("Query result: old_name %s, new_name %s", result.old_name, result.new_name)
+        # result = self.session.query(HumanActivityFunctionRename).filter(HumanActivityFunctionRename.project == self.project_name).first()
+        # l.info("Query result: old_name %s, new_name %s", result.old_name, result.new_name)
+
+    def handle_click_block(self, qblock, event):
+        block_click = HumanActivityClickBlock(
+            project=self.project_name,
+            project_md5=self.project_md5,
+            addr=qblock.addr,
+            created_by=TODO,
+        )
+        self.session.add(block_click)
+        self.session.commit()
+        l.info("Block %x is clicked", qblock.addr)
+        return False
+
+    def handle_click_insn(self, qinsn, event):
+        insn_click = HumanActivityClickInsn(
+            project=self.project_name,
+            project_md5=self.project_md5,
+            addr=qinsn.addr,
+            created_by=TODO,
+        )
+        self.session.add(insn_click)
+        self.session.commit()
+        l.info("Instruction %x is clicked", qinsn.addr)
+        return False
 
     def handle_project_initialization(self):
         """
