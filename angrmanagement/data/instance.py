@@ -58,7 +58,6 @@ class Instance:
                                 'Available interaction protocols')
 
         self.project.am_subscribe(self.initialize)
-        self.project.am_subscribe(self._log_initialization)
 
         # Callbacks
         self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
@@ -174,6 +173,7 @@ class Instance:
 
     def initialize_pseudocode_variable_kb(self):
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
+        self.workspace.plugins.handle_project_initialization()
 
     def generate_cfg(self):
         cfg_job = CFGGenerationJob(
@@ -287,6 +287,3 @@ class Instance:
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event(**kwargs)
-
-    def _log_initialization(self, **kwargs):
-        self.workspace.plugins.handle_project_initialization()
