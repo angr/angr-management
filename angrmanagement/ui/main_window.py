@@ -543,8 +543,9 @@ class MainWindow(QMainWindow):
             return
 
         angrdb = AngrDB()
+        other_kbs = { }
         try:
-            proj = angrdb.load(file_path)
+            proj = angrdb.load(file_path, kb_names=["global", "pseudocode_variable_kb"], other_kbs=other_kbs)
         except angr.errors.AngrIncompatibleDBError as ex:
             QMessageBox.critical(None, 'Error',
                                  "Failed to load the angr database because of compatibility issues.\n"
@@ -566,6 +567,10 @@ class MainWindow(QMainWindow):
         self.workspace.instance.project = proj
         self.workspace.instance.cfg = cfg
         self.workspace.instance.cfb = cfb
+        if "pseudocode_variable_kb" in other_kbs:
+            self.workspace.instance.pseudocode_variable_kb = other_kbs["pseudocode_variable_kb"]
+        else:
+            self.workspace.instance.initialize_pseudocode_variable_kb()
         self.workspace.instance.project.am_event(initialized=True)
 
         # trigger callbacks
@@ -584,7 +589,10 @@ class MainWindow(QMainWindow):
         self.workspace.plugins.handle_project_save(file_path)
 
         angrdb = AngrDB(project=self.workspace.instance.project)
-        angrdb.dump(file_path)
+        angrdb.dump(file_path, kbs=[
+            self.workspace.instance.kb,
+            self.workspace.instance.pseudocode_variable_kb,
+        ])
 
         self.workspace.instance.database_path = file_path
         return True

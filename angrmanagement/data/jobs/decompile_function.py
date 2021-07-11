@@ -13,6 +13,7 @@ class DecompileFunctionJob(Job):
         inst.project.analyses.Decompiler(
             self.function,
             flavor='pseudocode',
+            variable_kb=inst.pseudocode_variable_kb,
             **self.kwargs,
             progress_callback=self._progress_callback,
         )
