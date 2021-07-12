@@ -7,7 +7,7 @@ l.setLevel('INFO')
 
 try:
     from slacrs import Slacrs
-    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn, HumanActivityCommentChanged
+    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn, HumanActivityCommentChanged, HumanActivityRaiseView
 except ImportError as ex:
     Slacrs = None  # type: Optional[type]
     HumanActivityVariableRename = None  # type: Optional[type]
@@ -79,10 +79,21 @@ class LogHumanActivitiesPlugin(BasePlugin):
             addr=qinsn.addr,
             created_by=TODO,
         )
-        self.session.add(insn_click)
-        self.session.commit()
+        self._submit_to_slacrs(insn_click)
         l.info("Instruction %x is clicked", qinsn.addr)
         return False
+
+    def handle_raise_view(self, view):
+        # e.g., "<class 'angrmanagement.ui.views.disassembly_view.DisassemblyView'>"
+        view_name = str(view.__class__).split('.')[-1][:-2]
+        raise_view = HumanActivityRaiseView(
+            project=self.project_name,
+            project_md5=self.project_md5,
+            view=view_name,
+            created_by=TODO,
+        )
+        self._submit_to_slacrs(raise_view)
+        l.info("View %s is raised", view_name)
 
     def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
         """
@@ -116,6 +127,10 @@ class LogHumanActivitiesPlugin(BasePlugin):
                 self.project_md5 = hashlib.md5(f.read()).hexdigest()
             l.info("Set project md5 to %s", self.project_md5)
         l.info("Set project name to %s", self.project_name)
+
+    def _submit_to_slacrs(self, activity_instance):
+        self.session.add(activity_instance)
+        self.session.commit()
 
     def teardown(self):
         self.session.close()

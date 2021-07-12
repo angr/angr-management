@@ -285,6 +285,10 @@ class PluginManager:
                 return True
         return False
 
+    def handle_raise_view(self, view):
+        for _ in self._dispatch(BasePlugin.handle_raise_view, False, view):
+            pass
+
     def build_qblock_annotations(self, qblock: QBlock):
         for res in self._dispatch(BasePlugin.build_qblock_annotations, False, qblock):
             yield from res

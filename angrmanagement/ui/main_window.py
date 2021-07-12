@@ -5,7 +5,7 @@ import sys
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
-from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
+from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QTabBar
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -267,6 +267,8 @@ class MainWindow(QMainWindow):
                 self.caption = os.path.basename(self.workspace.instance.project.filename)
         self.workspace.instance.project.am_subscribe(set_caption)
 
+        self.tab = self.central_widget.findChild(QTabBar)
+        self.tab.tabBarClicked.connect(self.on_center_tab_clicked)
     #
     # Shortcuts
     #
@@ -371,6 +373,9 @@ class MainWindow(QMainWindow):
         """
         self.workspace.current_screen.am_obj = screen
         self.workspace.current_screen.am_event()
+
+    def on_center_tab_clicked(self, index):
+        self.workspace.view_manager.handle_center_tab_click(index)
 
     #
     # Actions

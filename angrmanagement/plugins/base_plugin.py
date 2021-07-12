@@ -94,6 +94,9 @@ class BasePlugin:
     def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent):
         return False
 
+    def handle_raise_view(self, view):
+        pass
+
     # iterable of tuples (icon, tooltip)
     TOOLBAR_BUTTONS = []  # type: List[Tuple[QIcon, str]]
 
