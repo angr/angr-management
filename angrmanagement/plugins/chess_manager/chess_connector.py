@@ -1,12 +1,17 @@
-from PySide2.QtWidgets import QInputDialog, QLineEdit, QDialog
+from typing import TYPE_CHECKING
 
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.workspace import Workspace
 
 from .backend_selector_dialog import QBackendSelectorDialog
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class ChessConnector(BasePlugin):
+    """
+    Implements the CHESS connector plugin.
+    """
     DISPLAY_NAME = "CHESS Connector"
     REQUIRE_WORKSPACE = False
 

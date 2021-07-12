@@ -1,3 +1,4 @@
+# pylint:disable=unused-private-member
 import logging
 from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_CHECKING
 from PySide2.QtGui import QColor, QPainter
@@ -19,6 +20,10 @@ if TYPE_CHECKING:
 # pylint: disable=no-self-use,unused-argument
 
 class BasePlugin:
+    """
+    Implements the base class for all angr management plugins.
+    """
+
     # Override DISPLAY_NAME to specify a human-readable name for your plugin
     DISPLAY_NAME = None
     REQUIRE_WORKSPACE = True
@@ -50,7 +55,6 @@ class BasePlugin:
         """
         A handler that is called right after a workspace is initialized.
         """
-        pass
 
     #
     # UI Callbacks

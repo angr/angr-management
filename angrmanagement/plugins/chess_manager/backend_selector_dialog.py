@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 
 
 class QBackendSelectorDialog(QDialog):
+    """
+    Implements a CHESS backend URL input dialog.
+    """
     def __init__(self, workspace: 'Workspace', backend_str: Optional[str]=None, parent=None):
         super().__init__(parent)
 
@@ -59,7 +62,8 @@ class QBackendSelectorDialog(QDialog):
 
         self.setLayout(layout)
 
-    def test_connection(self, connection_str: str) -> bool:
+    @staticmethod
+    def test_connection(connection_str: str) -> bool:
         if not connection_str:
             return False
 
@@ -83,7 +87,7 @@ class QBackendSelectorDialog(QDialog):
 
         try:
             r = self.test_connection(connection_str)
-        except Exception as ex:
+        except Exception as ex:  # pylint:disable=broad-except
             self._status_label.setText(f"Failed to connect to {connection_str}. Exception: {str(ex)}.")
             r = None
 
@@ -104,7 +108,7 @@ class QBackendSelectorDialog(QDialog):
 
         try:
             r = self.test_connection(connection_str)
-        except Exception:
+        except Exception:  # pylint:disable=broad-except
             r = False
 
         if not r:
