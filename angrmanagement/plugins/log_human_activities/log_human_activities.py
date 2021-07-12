@@ -27,7 +27,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.project_name = None
         self.project_md5 = None
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str):
+    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
         Log a user's activity of variable renaming.
         """
