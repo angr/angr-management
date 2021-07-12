@@ -18,4 +18,5 @@ class AnalyzeMenu(Menu):
                       shortcut=QKeySequence(Qt.CTRL + Qt.Key_B)),
             MenuEntry('&Interact',
                 main_window.interact,
-                shortcut=QKeySequence(Qt.Key_F6)),])
+                shortcut=QKeySequence(Qt.Key_F6)),
+        ],)

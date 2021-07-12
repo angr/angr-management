@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Sequence, Optional, Tuple
+from typing import Any, Sequence, Optional, Tuple
 
 from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
 from PySide2.QtCore import Qt, QPointF, QRectF, QObject
@@ -13,6 +13,15 @@ from ...logic.disassembly.info_dock import InfoDock
 from .qgraph_object import QCachedGraphicsItem
 
 
+class QBlockCodeOptions:
+    """
+    Various options to control display of QBlockCodeObj's
+    """
+    show_conditional_jump_targets: bool = True
+    show_variables: bool = True
+    show_variable_identifiers: bool = True
+
+
 class QBlockCodeObj(QObject):
     """
     Renders a generic "code" object and handles display related events.
@@ -25,17 +34,17 @@ class QBlockCodeObj(QObject):
     obj: Any
     infodock: InfoDock
     parent: Any
-    options: Mapping[str, Any]
+    options: QBlockCodeOptions
     span: Optional[Tuple[int,int]]
     subobjs: Sequence['QBlockCodeObj']
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:Mapping[str, Any]=None):
+    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:QBlockCodeOptions=None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
-        self.options = options or {}
+        self.options = options or QBlockCodeOptions()
         self.span = None
         self.subobjs = []
         self._fmt_current = None
@@ -64,13 +73,17 @@ class QBlockCodeObj(QObject):
         """
         Determine whether this object should be drawn with highlight
         """
-        return self.infodock.selected_qblock_code_obj is self
+        selected = self.infodock.selected_qblock_code_obj
+        return (selected is not None) and (selected is self or selected.obj is self.obj)
 
     def create_subobjs(self, obj):
         """
         Initialize any display subobjects for this object
         """
-        raise NotImplementedError()
+
+    def recreate_subobjs(self):
+        self.subobjs.clear()
+        self.create_subobjs(self.obj)
 
     def update(self):
         """
@@ -83,6 +96,7 @@ class QBlockCodeObj(QObject):
         Add each subobject to the document
         """
         self.update_style()
+        self.recreate_subobjs()
         span_min = cursor.position()
         for obj in self.subobjs:
             if type(obj) is str:
@@ -124,10 +138,12 @@ class QBlockCodeObj(QObject):
         self._add_subobj(text)
 
     def add_variable(self, var):
-        self._add_subobj(QVariableObj(var, self.infodock, parent=self))
+        self._add_subobj(QVariableObj(var, self.infodock, parent=self, options=self.options))
 
     def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
+        if event.button() == Qt.RightButton:
+            self.infodock.disasm_view.show_context_menu_for_selected_object()
 
     def mouseDoubleClickEvent(self, event:QMouseEvent):
         pass
@@ -151,7 +167,11 @@ class QVariableObj(QBlockCodeObj):
         return fmt
 
     def create_subobjs(self, obj):
-        self.add_text(obj.name)
+        if self.options.show_variable_identifiers:
+            ident = "<%s>" % (obj.ident if obj.ident else "")
+        else:
+            ident = ""
+        self.add_text(obj.name + ident)
 
 
 class QAilObj(QBlockCodeObj):
@@ -229,7 +249,7 @@ class QAilStoreObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.statement.Store):
-        if obj.variable is None:
+        if obj.variable is None or not self.options.show_variables:
             self.add_text('*(')
             self.add_ailobj(obj.addr)
             self.add_text(') = ')
@@ -259,7 +279,7 @@ class QAilConditionalJumpObj(QAilTextObj):
         self.add_text('if ')
         self.add_ailobj(obj.condition)
 
-        if self.options.get('show_conditional_jump_targets', True):
+        if self.options.show_conditional_jump_targets:
             self.add_text(' goto ')
             self.add_ailobj(obj.true_target)
             self.add_text(' else goto ')
@@ -283,8 +303,17 @@ class QAilCallObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.statement.Call):
-        self.add_text('call ')
+        if obj.ret_expr is not None and self.stmt is self.obj:
+            self.add_ailobj(obj.ret_expr)
+            self.add_text(' = ')
         self.add_ailobj(obj.target)
+        self.add_text('(')
+        if obj.args:
+            for i, arg in enumerate(obj.args):
+                if i > 0:
+                    self.add_text(', ')
+                self.add_ailobj(arg)
+        self.add_text(')')
 
 
 class QAilConstObj(QAilTextObj):
@@ -343,17 +372,19 @@ class QAilRegisterObj(QAilTextObj):
         return fmt
 
     def create_subobjs(self, obj: ailment.expression.Register):
-        if hasattr(obj, 'reg_name'):
-            s = "%s" % (obj.reg_name,)
-        elif obj.variable is None:
-            s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
+        if obj.variable is not None and self.options.show_variables:
+            self.add_variable(obj.variable)
         else:
-            s = "%s" % str(obj.variable.name)
-        self.add_text(s)
+            if hasattr(obj, 'reg_name'):
+                s = "%s" % (obj.reg_name,)
+            else:
+                s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
+            self.add_text(s)
 
     def should_highlight(self) -> bool:
-        return (isinstance(self.infodock.selected_qblock_code_obj, QAilRegisterObj) and
-                self.infodock.selected_qblock_code_obj.obj.reg_name == self.obj.reg_name)
+        sel = self.infodock.selected_qblock_code_obj
+        return (isinstance(sel, QAilRegisterObj)
+                and sel.obj == self.obj)
 
 
 class QAilUnaryOpObj(QAilTextObj):
@@ -398,9 +429,12 @@ class QAilLoadObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj:ailment.expression.Load):
-        self.add_text('*(')
-        self.add_ailobj(obj.addr)
-        self.add_text(')')
+        if obj.variable is not None and self.options.show_variables:
+            self.add_variable(obj.variable)
+        else:
+            self.add_text('*(')
+            self.add_ailobj(obj.addr)
+            self.add_text(')')
 
 
 class QIROpObj(QBlockCodeObj):
@@ -697,7 +731,7 @@ class QBlockCode(QCachedGraphicsItem):
         self.update_document()
         self.setToolTip("Address: " + self._addr_str)
 
-        self._layout_items_and_update_size()
+        self.refresh()
 
     def refresh(self):
         self._addr_item.setVisible(self._disasm_view.show_address)
@@ -766,6 +800,7 @@ class QBlockCode(QCachedGraphicsItem):
     #
 
     def _layout_items_and_update_size(self):
+        self.update_document()
 
         x, y = 0, 0
         if self._disasm_view.show_address:

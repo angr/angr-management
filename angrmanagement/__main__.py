@@ -224,6 +224,7 @@ def start_management(filepath=None, use_daemon=False):
 
     file_to_open = filepath if filepath else None
     main_window = MainWindow()
+    main_window.app = app
     splash.finish(main_window)
 
     if file_to_open is not None:

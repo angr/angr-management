@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable
 import logging
 import traceback
 from string import ascii_uppercase
 
 from PySide2.QtCore import Qt, QSettings
 
+from angr.knowledge_plugins.functions.function import Function as angrFunc
 from angr.knowledge_plugins import Function
 from angr import StateHierarchy
 
@@ -15,23 +16,29 @@ from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, Str
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView)
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
+from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
 from ..plugins import PluginManager
 
 if TYPE_CHECKING:
     from ..data.instance import Instance
+    from angrmanagement.ui.main_window import MainWindow
 
 
 _l = logging.getLogger(__name__)
 
 
 class Workspace:
+    """
+    This class implements the angr management workspace.
+    """
     def __init__(self, main_window, instance):
 
-        self._main_window = main_window
+        self.main_window: 'MainWindow' = main_window
         self._instance = instance
         self.is_split = False
         self.split_tab_id = 0
+        self.last_unsplit_view = None
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
@@ -75,6 +82,10 @@ class Workspace:
     #
     # Properties
     #
+
+    @property
+    def _main_window(self) -> 'MainWindow':
+        return self.main_window
 
     @property
     def instance(self) -> 'Instance':
@@ -271,9 +282,8 @@ class Workspace:
         for view in views:
             try:
                 view.reload()
-            except Exception:
+            except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
-                pass
 
     def viz(self, obj):
         """
@@ -574,10 +584,6 @@ class Workspace:
     #
 
     # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
-
-    from typing import Callable
-    from angr.knowledge_plugins.functions.function import Function as angrFunc
-    from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
     def set_cb_function_backcolor(self, callback: Callable[[angrFunc], None]):
         fv = self.view_manager.first_view_in_category('functions')  # type: FunctionsView

@@ -104,6 +104,9 @@ class QFeatureMap(QWidget):
 
     def select_offset(self, offset):
 
+        if not self._regions_painted:
+            return
+
         addr = self._get_addr_from_pos(offset)
         if addr is None:
             return
