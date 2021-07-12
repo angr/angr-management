@@ -12,6 +12,7 @@ class ChessConnector(BasePlugin):
     """
     Implements the CHESS connector plugin.
     """
+
     DISPLAY_NAME = "CHESS Connector"
     REQUIRE_WORKSPACE = False
 
