@@ -222,7 +222,7 @@ class ChessUrlHandler(BasePlugin):
             vscode = self._vscode_path()
             if vscode:
                 cmd_line = [vscode, "-g", f"{file_path}:{line_number}:{position}"]
-                subprocess.Popen(cmd_line, shell=True, close_fds=True)
+                subprocess.Popen(cmd_line, close_fds=True)
             else:
                 tmp_app()
                 QMessageBox.critical(
