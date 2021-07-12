@@ -21,6 +21,7 @@ from ..plugins import PluginManager
 
 if TYPE_CHECKING:
     from ..data.instance import Instance
+    from angrmanagement.ui.main_window import MainWindow
 
 
 _l = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class Workspace:
     """
     def __init__(self, main_window, instance):
 
-        self._main_window = main_window
+        self.main_window: 'MainWindow' = main_window
         self._instance = instance
         self.is_split = False
         self.split_tab_id = 0
@@ -80,6 +81,10 @@ class Workspace:
     #
     # Properties
     #
+
+    @property
+    def _main_window(self) -> 'MainWindow':
+        return self.main_window
 
     @property
     def instance(self) -> 'Instance':

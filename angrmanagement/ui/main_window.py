@@ -1,7 +1,8 @@
+# pylint:disable=no-self-use
 import os
 import logging
 import sys
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
@@ -27,12 +28,15 @@ from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
 from ..data.jobs import DependencyAnalysisJob
+from ..config import IMG_LOCATION, Conf
+from ..utils.io import isurl, download_url
+from ..utils.env import app_root
+from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.help_menu import HelpMenu
 from .menus.view_menu import ViewMenu
 from .menus.plugin_menu import PluginMenu
-from ..config import IMG_LOCATION
 from .workspace import Workspace
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
@@ -40,10 +44,9 @@ from .dialogs.new_state import NewState
 from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
-from ..utils.io import isurl, download_url
-from ..utils.env import app_root
-from ..errors import InvalidURLError, UnexpectedStatusCodeError
-from ..config import Conf
+
+if TYPE_CHECKING:
+    from PySide2.QtWidgets import QApplication
 
 _l = logging.getLogger(name=__name__)
 
@@ -64,6 +67,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
+        self.app: 'QApplication' = None
         self.workspace: Workspace = None
         self.central_widget = None
         self.central_widget2 = None
@@ -91,6 +95,9 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_menus()
         self._init_plugins()
+
+        self.workspace.plugins.on_workspace_initialized(self)
+
         self._init_shortcuts()
         self._init_flirt_signatures()
 
@@ -154,7 +161,7 @@ class MainWindow(QMainWindow):
 
     def _pick_image_dialog(self):
         try:
-            prompt = LoadDockerPrompt()
+            prompt = LoadDockerPrompt(parent=self)
         except LoadDockerPromptError:
             return None
         if prompt.exec_() == 0:
