@@ -5,6 +5,7 @@ from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
 
 import angr
 from angr.block import Block
+from angr.knowledge_base import KnowledgeBase
 from angr.analyses.disassembly import Instruction
 
 from .jobs import CFGGenerationJob
@@ -15,7 +16,7 @@ from ..daemon.client import DaemonClient
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
-    from ..ui.views.console_view import ConsoleView
+
 
 class Instance:
     """
@@ -66,6 +67,7 @@ class Instance:
         self.cfg_args = None
         self.variable_recovery_args = None
         self._disassembly = {}
+        self.pseudocode_variable_kb = None
 
         self._start_worker()
 
@@ -151,6 +153,9 @@ class Instance:
                                      self.project.loader.main_object.sha256)
 
         if not initialized:
+            if self.pseudocode_variable_kb is None:
+                self.initialize_pseudocode_variable_kb()
+
             if cfg_args is None:
                 cfg_args = {}
             # save cfg_args
@@ -165,6 +170,9 @@ class Instance:
 
             # start daemon
             self._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
+
+    def initialize_pseudocode_variable_kb(self):
+        self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
 
     def generate_cfg(self):
         cfg_job = CFGGenerationJob(

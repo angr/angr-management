@@ -7,6 +7,7 @@ import os
 
 from PySide2.QtWidgets import QMessageBox
 
+from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.knowledge_plugins.sync.sync_controller import SyncController
 from angr import knowledge_plugins
 import angr
@@ -216,7 +217,15 @@ class BinsyncController:
     def decompile_function(self, func, refresh_gui=False):
         # check for known decompilation
         available = self.instance.kb.structured_code.available_flavors(func.addr)
+        should_decompile = False
         if 'pseudocode' not in available:
+            should_decompile = True
+        else:
+            cached = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
+            if isinstance(cached, DummyStructuredCodeGenerator):
+                should_decompile = True
+
+        if should_decompile:
             # recover direct pseudocode
             self.instance.project.analyses.Decompiler(func, flavor='pseudocode')
 
