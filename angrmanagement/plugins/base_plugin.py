@@ -12,12 +12,15 @@ from ..ui.widgets.qinst_annotation import QInstructionAnnotation
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
     from ..ui.views import disassembly_view, code_view
     from ..ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
 
 class BasePlugin:
+    # Override DISPLAY_NAME to specify a human-readable name for your plugin
+    DISPLAY_NAME = None
     REQUIRE_WORKSPACE = True
     __i_hold_this_abstraction_token = True
 
@@ -34,7 +37,20 @@ class BasePlugin:
 
     @classmethod
     def get_display_name(cls: 'BasePlugin'):
-        return getattr(cls, 'DISPLAY_NAME', cls.__name__)
+        display_name = getattr(cls, 'DISPLAY_NAME', None)
+        if not display_name:
+            return cls.__name__
+        return display_name
+
+    #
+    # Generic callbacks
+    #
+
+    def on_workspace_initialized(self, workspace: 'Workspace'):
+        """
+        A handler that is called right after a workspace is initialized.
+        """
+        pass
 
     #
     # UI Callbacks

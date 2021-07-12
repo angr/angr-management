@@ -68,6 +68,7 @@ class UrlActionOpenSourceFile(UrlActionBase):
 
 
 class ChessUrlHandler(BasePlugin):
+    DISPLAY_NAME = "CHESS URL Handler"
     REQUIRE_WORKSPACE = False
 
     def __init__(self, workspace):

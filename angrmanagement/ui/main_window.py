@@ -1,7 +1,7 @@
 import os
 import logging
 import sys
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
 from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
@@ -45,6 +45,9 @@ from ..utils.env import app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from ..config import Conf
 
+if TYPE_CHECKING:
+    from PySide2.QtWidgets import QApplication
+
 _l = logging.getLogger(name=__name__)
 
 
@@ -64,6 +67,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
+        self.app: 'QApplication' = None
         self.workspace: Workspace = None
         self.central_widget = None
         self.central_widget2 = None
@@ -91,6 +95,9 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_menus()
         self._init_plugins()
+
+        self.workspace.plugins.on_workspace_initialized(self)
+
         self._init_shortcuts()
         self._init_flirt_signatures()
 

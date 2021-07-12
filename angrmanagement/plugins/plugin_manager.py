@@ -314,3 +314,7 @@ class PluginManager:
     def handle_project_save(self, file_name: str):
         for _ in self._dispatch(BasePlugin.handle_project_save, False, file_name):
             pass
+
+    def on_workspace_initialized(self, workspace):
+        for _ in self._dispatch(BasePlugin.on_workspace_initialized, False, workspace):
+            pass
