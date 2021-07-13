@@ -103,26 +103,27 @@ class QBackendSelectorDialog(QDialog):
         # Test the connection
         self._ok_button.setEnabled(False)
         connection_str = self._input.text().strip(" ")
-        self._status_label.setText(f"Testing connection to {connection_str}...")
-        self.workspace.main_window.app.processEvents()
 
-        try:
-            r = self.test_connection(connection_str)
-        except Exception:  # pylint:disable=broad-except
-            r = False
+        # special case: if connection_str is empty, it means the user wants to disconnect from CHECRS
+        if connection_str:
+            self._status_label.setText(f"Testing connection to {connection_str}...")
+            self.workspace.main_window.app.processEvents()
 
-        if not r:
-            QMessageBox.critical(self,
-                                 "Connection failed",
-                                 f"Cannot connect to CHECRS backend {connection_str}. Please check if the backend "
-                                 f"string is correct.")
-            self._status_label.setText("")
-            self._ok_button.setEnabled(True)
-            return
+            try:
+                r = self.test_connection(connection_str)
+            except Exception:  # pylint:disable=broad-except
+                r = False
+
+            if not r:
+                QMessageBox.critical(self,
+                                     "Connection failed",
+                                     f"Cannot connect to CHECRS backend {connection_str}. Please check if the backend "
+                                     f"string is correct.")
+                self._status_label.setText("")
+                self._ok_button.setEnabled(True)
+                return
 
         self.backend_str = connection_str
-        # TODO: Store it in the configuration file
-
         self.close()
 
     def _on_cancel_button_clicked(self):

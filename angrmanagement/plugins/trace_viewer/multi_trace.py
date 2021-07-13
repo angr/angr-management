@@ -1,6 +1,9 @@
 import math
 
 from PySide2.QtGui import QColor
+
+from angrmanagement.config import Conf
+
 from .trace_statistics import TraceStatistics
 
 try:
@@ -96,7 +99,7 @@ class MultiTrace:
             self.workspace.log("slacrs not installed, unable to retrieve trace seed inputs")
             return "<>"
 
-        slacrs_instance = Slacrs(database=self.slacrs_url)
+        slacrs_instance = Slacrs(database=Conf.checrs_backend_str)
         session = slacrs_instance.session()
         if session:
             result = session.query(Input).filter_by(id=trace_id).first()

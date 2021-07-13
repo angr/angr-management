@@ -1,3 +1,5 @@
+from angrmanagement.config import Conf
+
 from ..base_plugin import BasePlugin
 
 try:
@@ -21,7 +23,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
                 "Please install Slacrs to Initialize LogReverseEngineering Plugin"
             )
         super().__init__(workspace)
-        self.session = Slacrs().session()
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
         self.project = (
             self.workspace.instance.img_name
             if self.workspace.instance.img_name

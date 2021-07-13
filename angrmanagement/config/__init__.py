@@ -15,6 +15,7 @@ if fc is not None:
     except FileNotFoundError:
         Conf = ConfigurationManager()
 else:
+    config_path = None
     print("Could not find configuration directory - settings will not be saved")
     Conf = ConfigurationManager()
 

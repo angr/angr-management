@@ -1,6 +1,6 @@
 # pylint:disable=unused-private-member
 import logging
-from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_CHECKING
+from typing import Optional, Tuple, Callable, Iterator, Generator, List, Any, Union, TYPE_CHECKING
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
@@ -14,6 +14,7 @@ _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.config.config_entry import ConfigurationEntry
     from ..ui.views import disassembly_view, code_view
     from ..ui.workspace import Workspace
 
@@ -50,6 +51,12 @@ class BasePlugin:
     #
     # Generic callbacks
     #
+
+    def status_bar_permanent_widgets(self) -> Optional[Generator]:
+        """
+        Yields all widgets that should be added to the right side of the status bar of the main window.
+        """
+        return None
 
     def on_workspace_initialized(self, workspace: 'Workspace'):
         """
@@ -139,6 +146,9 @@ class BasePlugin:
 
     def step_callback(self, simgr:SimulationManager):
         pass
+
+    # Custom configuration entries
+    CONFIG_ENTRIES: List['ConfigurationEntry'] = [ ]
 
     #
     # Decompiler Callbacks
