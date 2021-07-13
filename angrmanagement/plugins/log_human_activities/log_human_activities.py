@@ -4,6 +4,7 @@ from ..base_plugin import BasePlugin
 from angrmanagement.config import Conf
 import angrmanagement.ui.views as Views
 from time import sleep
+from getmac import get_mac_address as gma
 
 l = logging.getLogger(__name__)
 l.setLevel('INFO')
@@ -17,10 +18,6 @@ except ImportError as ex:
     HumanActivityFunctionRename = None  # type: Optional[type]
 
 
-# TODO: add created_by field
-TODO = "TODO"
-
-
 class LogHumanActivitiesPlugin(BasePlugin):
     def __init__(self, *args, **kwargs):
         if not Slacrs:
@@ -30,6 +27,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.project_name = None
         self.project_md5 = None
         self._log_list = list()
+        self.user = gma()
 
     def on_workspace_initialized(self, workspace):
         self.slacrs_thread = threading.Thread(target=self._commit_logs, args=(self))
@@ -47,7 +45,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             function=func._name,
             old_name=old_name,
             new_name=new_name,
-            created_by=TODO,
+            created_by=self.user,
         )
         self._log_list.append(variable_rename)
         l.info("Add variable rename sesssion to slacrs")
@@ -63,7 +61,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             addr=func.addr,
             old_name=old_name,
             new_name=new_name,
-            created_by=TODO,
+            created_by=self.user,
         )
         self._log_list.append(function_rename)
         l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", self.project_name, old_name, new_name)
@@ -74,7 +72,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             project_md5=self.project_md5,
             category=HumanActivityEnum.ClickBlock,
             addr=qblock.addr,
-            created_by=TODO,
+            created_by=self.user,
         )
         self._log_list.append(block_click)
         l.info("Block %x is clicked", qblock.addr)
@@ -86,7 +84,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             project_md5=self.project_md5,
             category=HumanActivityEnum.ClickInsn,
             addr=qinsn.addr,
-            created_by=TODO,
+            created_by=self.user,
         )
         self._log_list.append(insn_click)
         l.info("Instruction %x is clicked", qinsn.addr)
@@ -106,7 +104,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             project_md5=self.project_md5,
             category=HumanActivityEnum.RaiseView,
             view=view_name,
-            created_by=TODO,
+            created_by=self.user,
             function=func_name,
             addr=addr
         )
@@ -126,7 +124,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             addr=addr,
             cmt=cmt,
             decomp=decomp,
-            created_by=TODO,
+            created_by=self.user,
         )
         self._log_list.append(comment_change)
         l.info("Comment is added at %x", addr)

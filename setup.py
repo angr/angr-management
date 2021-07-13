@@ -43,5 +43,6 @@ setup(
         'sqlalchemy',
         'pyqodeng.core',
         'qtterm',
+        'getmac',
     ]
 )
