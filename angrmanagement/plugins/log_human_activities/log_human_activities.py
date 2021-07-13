@@ -33,6 +33,9 @@ except ImportError as ex:
 
 
 class LogHumanActivitiesPlugin(BasePlugin):
+    """
+    Log human activities
+    """
     def __init__(self, *args, **kwargs):
         if not Slacrs:
             raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs to Initialize it.")
@@ -43,6 +46,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self._log_list = list()
         self.user = gma()
         self.active = True
+        self.slacrs_thread = None
 
     def on_workspace_initialized(self, workspace):
         self.slacrs_thread = threading.Thread(target=self._commit_logs)
@@ -79,7 +83,8 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(function_rename)
-        l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", self.project_name, old_name, new_name)
+        l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", \
+                self.project_name, old_name, new_name)
 
     def handle_click_block(self, qblock, event):
         block_click = HumanActivity(
