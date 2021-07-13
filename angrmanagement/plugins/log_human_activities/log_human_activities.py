@@ -87,8 +87,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         return False
 
     def handle_raise_view(self, view):
-        # e.g., "<class 'angrmanagement.ui.views.disassembly_view.DisassemblyView'>"
-        view_name = str(view.__class__).split('.')[-1][:-2]
+        view_name = view.__class__.__name__
         raise_view = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
