@@ -170,10 +170,10 @@ class Instance:
 
             # start daemon
             self._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
+        self.workspace.plugins.handle_project_initialization()
 
     def initialize_pseudocode_variable_kb(self):
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
-        self.workspace.plugins.handle_project_initialization()
 
     def generate_cfg(self):
         cfg_job = CFGGenerationJob(
