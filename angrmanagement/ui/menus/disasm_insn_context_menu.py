@@ -36,8 +36,9 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuEntry('&Find in execution...', self._find_in_execution),
             MenuEntry('Add &Hook...', self._add_hook),
+            MenuEntry('View &Documentation...', self._view_docs)
         ])
-
+        
     @property
     def _disasm_view(self) -> 'DisassemblyView':
         return self.parent
@@ -61,6 +62,13 @@ class DisasmInsnContextMenu(Menu):
 
     def _add_hook(self):
         self._disasm_view.popup_hook_dialog(async_=True)
+
+    def _view_docs(self):
+        if self._disasm_view is None:
+            return
+        addr = self._disasm_view._address_in_selection()
+        if addr is not None:
+            self._disasm_view.popup_func_doc_dialog(addr)
 
     def _popup_xrefs(self):
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
