@@ -25,11 +25,10 @@ from angrmanagement.config import Conf
 class TestHumanActivities(unittest.TestCase):
     def setUp(self):
         setUp()
-        self.session = Slacrs(database=Conf.checrs_backend_str).session()
 
     def tearDown(self):
-        self.session.close()
-        os.remove(f"/tmp/{self.db_name}.sqlite")
+        pass
+        # os.remove(f"/tmp/{self.db_name}.sqlite")
 
     def _open_a_project(self):
         main = MainWindow(show=False)
@@ -86,12 +85,14 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(func.name, "fdsa")
 
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
         function_rename = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
             HumanActivity.category == HumanActivityEnum.FunctionRename,
             HumanActivity.old_name == "main",
             HumanActivity.new_name == "fdsa",
         ).one()
+        self.session.close()
         self.assertIsNotNone(function_rename)
 
     def test_rename_a_variable_in_pseudocode_view(self):
@@ -125,10 +126,12 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(variable_node.unified_variable.name, "fdsa")
 
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
         variable_rename = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
             HumanActivity.new_name == "fdsa",
         ).one()
+        self.session.close()
         self.assertIsNotNone(variable_rename)
 
     def test_click_block(self):
@@ -149,10 +152,12 @@ class TestHumanActivities(unittest.TestCase):
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
 
         # assert that slacrs logged the information
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
         result = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
             HumanActivity.addr == func.addr,
         ).one()
+        self.session.close()
         self.assertIsNotNone(result)
 
     def test_click_insn(self):
@@ -174,10 +179,12 @@ class TestHumanActivities(unittest.TestCase):
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
 
         # assert that slacrs logged the information
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
         result = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
             HumanActivity.addr == insn.addr,
         ).one()
+        self.session.close()
         self.assertIsNotNone(result)
 
 

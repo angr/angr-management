@@ -1,7 +1,9 @@
 import logging
+import threading
 from ..base_plugin import BasePlugin
 from angrmanagement.config import Conf
 import angrmanagement.ui.views as Views
+from time import sleep
 
 l = logging.getLogger(__name__)
 l.setLevel('INFO')
@@ -27,12 +29,12 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.session = None
         self.project_name = None
         self.project_md5 = None
-        self._commit_list = list()   # TODO: slacrs list
+        self._log_list = list()
 
     def on_workspace_initialized(self, workspace):
-        self.slacrs = Slacrs(database=Conf.checrs_backend_str)
-        self.session = self.slacrs.session()
-        print(self.session)
+        self.slacrs_thread = threading.Thread(target=self._commit_logs, args=(self))
+        self.slacrs_thread.setDaemon(True)
+        self.slacrs_thread.start()
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
@@ -47,9 +49,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             new_name=new_name,
             created_by=TODO,
         )
-        # self.slacrs.session().add(variable_rename)
-        self.session.add(variable_rename)
-        self.session.commit()
+        self._log_list.append(variable_rename)
         l.info("Add variable rename sesssion to slacrs")
 
     def handle_function_rename(self, func, old_name: str, new_name: str):
@@ -65,8 +65,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             new_name=new_name,
             created_by=TODO,
         )
-        self.session.add(function_rename)
-        self.session.commit()
+        self._log_list.append(function_rename)
         l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", self.project_name, old_name, new_name)
 
     def handle_click_block(self, qblock, event):
@@ -77,8 +76,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             addr=qblock.addr,
             created_by=TODO,
         )
-        self.session.add(block_click)
-        self.session.commit()
+        self._log_list.append(block_click)
         l.info("Block %x is clicked", qblock.addr)
         return False
 
@@ -90,7 +88,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             addr=qinsn.addr,
             created_by=TODO,
         )
-        self._submit_to_slacrs(insn_click)
+        self._log_list.append(insn_click)
         l.info("Instruction %x is clicked", qinsn.addr)
         return False
 
@@ -112,7 +110,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             function=func_name,
             addr=addr
         )
-        self._submit_to_slacrs(raise_view)
+        self._log_list.append(raise_view)
         l.info("View %s is raised with function %s", view_name, func_name)
 
     def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
@@ -130,8 +128,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             decomp=decomp,
             created_by=TODO,
         )
-        self.session.add(comment_change)
-        self.session.commit()
+        self._log_list.append(comment_change)
         l.info("Comment is added at %x", addr)
         return False
 
@@ -148,10 +145,6 @@ class LogHumanActivitiesPlugin(BasePlugin):
             l.info("Set project md5 to %s", self.project_md5)
         l.info("Set project name to %s", self.project_name)
 
-    def _submit_to_slacrs(self, activity_instance):
-        self.session.add(activity_instance)
-        self.session.commit()
-
     def _get_function_from_view(self, view):
         if isinstance(view, Views.DisassemblyView):
             return view._current_function
@@ -163,5 +156,15 @@ class LogHumanActivitiesPlugin(BasePlugin):
         else:
             return None
 
+    def _commit_logs(self):
+        while True:
+            self.slacrs = Slacrs(database=Conf.checrs_backend_str)
+            self.session = self.slacrs.session()
+            while len(self._log_list) > 0:
+                l = self._log_list.pop()
+                self.session.commit(l)
+            self.session.close()
+            sleep(5)
+
     def teardown(self):
-        self.session.close()
+        pass
