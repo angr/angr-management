@@ -1,7 +1,10 @@
 
-class ConfigurationEntry(object):
+class ConfigurationEntry:
+    """
+    Describes a configuration entry in angr management.
+    """
 
-    __slots__ = ['name', 'type_', 'value', 'default_value']
+    __slots__ = ('name', 'type_', 'value', 'default_value')
 
     def __init__(self, name, type_, value, default_value=None):
         self.name = name

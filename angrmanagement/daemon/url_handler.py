@@ -124,7 +124,7 @@ class UrlActionCommentAt(UrlActionBase):
 
 class UrlActionBinaryAware(UrlActionBase):
     """
-    The base class of all binary-aware URl actions.
+    The base class of all binary-aware URL actions.
     """
     def __init__(self, md5=None, sha256=None, action=None, kwargs=None):
         super().__init__(md5, sha256)

@@ -5,6 +5,8 @@ import os
 
 from PySide2.QtGui import QColor
 
+from ..config import config_path
+from ..config.config_manager import ENTRIES
 from ..ui.menus.menu import MenuEntry, MenuSeparator
 from ..ui.toolbars.toolbar import ToolbarAction
 from ..daemon.url_handler import register_url_action, UrlActionBinaryAware
@@ -91,36 +93,22 @@ class PluginManager:
         try:
             plugin = plugin_cls(self.workspace)
             self.active_plugins.append(plugin)
+            plugin.__cached_status_bar_widgets = []
             plugin.__cached_toolbar_actions = []  # a hack, lol. really this could be a mapping on PluginManager but idc
             plugin.__cached_menu_actions = []  # as above
 
             if self.workspace is not None:
-                for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
-                    action = ToolbarAction(icon, 'plugin %s toolbar %d' % (plugin_cls, idx), tooltip, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_toolbar, False, idx))
-                    plugin.__cached_toolbar_actions.append(action)
-                    self.workspace._main_window._file_toolbar.add(action)
-
-                if plugin_cls.MENU_BUTTONS:
-                    self.workspace._main_window._plugin_menu.add(MenuSeparator())
-                for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
-                    action = MenuEntry(text, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_menu, False, idx))
-                    plugin.__cached_menu_actions.append(action)
-                    self.workspace._main_window._plugin_menu.add(action)
+                self._register_status_bar_widgets(plugin)
+                self._register_toolbar_actions(plugin_cls, plugin)
+                self._register_menu_buttons(plugin_cls, plugin)
 
                 for dview in self.workspace.view_manager.views_by_category['disassembly']:
                     plugin.instrument_disassembly_view(dview)
                 for cview in self.workspace.view_manager.views_by_category['pseudocode']:
                     plugin.instrument_code_view(cview)
 
-                for action in plugin_cls.URL_ACTIONS:
-                    DaemonClient.register_handler(action,
-                                                  functools.partial(self._dispatch_single,
-                                                                    plugin,
-                                                                    BasePlugin.handle_url_action,
-                                                                    False,
-                                                                    action
-                                                                    )
-                                                  )
+                self._register_url_actions(plugin_cls, plugin)
+                self._register_configuration_entries(plugin_cls)
 
             for action in plugin_cls.URL_ACTIONS:
                 register_url_action(action, UrlActionBinaryAware)
@@ -130,6 +118,58 @@ class PluginManager:
                       exc_info=True)
         else:
             l.info("Activated plugin %s", plugin_cls.get_display_name())
+
+    def _register_status_bar_widgets(self, plugin: BasePlugin) -> None:
+        gen = plugin.status_bar_permanent_widgets()
+        if gen is not None:
+            for widget in gen:
+                self.workspace.main_window.statusBar().addPermanentWidget(widget)
+                widget.show()
+            plugin.__cached_status_bar_widgets.append(widget)
+
+    def _register_toolbar_actions(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
+        for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
+            action = ToolbarAction(icon, 'plugin %s toolbar %d' % (plugin_cls, idx), tooltip,
+                                   functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_toolbar,
+                                                     False, idx))
+            plugin.__cached_toolbar_actions.append(action)
+            self.workspace._main_window._file_toolbar.add(action)
+
+    def _register_menu_buttons(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
+        if plugin_cls.MENU_BUTTONS:
+            self.workspace._main_window._plugin_menu.add(MenuSeparator())
+        for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
+            action = MenuEntry(text,
+                               functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_menu, False,
+                                                 idx))
+            plugin.__cached_menu_actions.append(action)
+            self.workspace._main_window._plugin_menu.add(action)
+
+    def _register_url_actions(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
+        for action in plugin_cls.URL_ACTIONS:
+            DaemonClient.register_handler(action,
+                                          functools.partial(self._dispatch_single,
+                                                            plugin,
+                                                            BasePlugin.handle_url_action,
+                                                            False,
+                                                            action
+                                                            )
+                                          )
+
+    def _register_configuration_entries(self, plugin_cls: Type[BasePlugin]) -> None:
+        new_entries_added = False
+        for ent in plugin_cls.CONFIG_ENTRIES:
+            if ent not in ENTRIES:
+                # if a plugin is disabled and then enabled, the entry may already exist?
+                ENTRIES.append(ent)
+                new_entries_added = True
+
+        if new_entries_added:
+            # reload configuration manager so that it's aware of newly added entries
+            Conf.load_initial_entries(reset=False)
+            # reload the configuration file
+            new_conf = Conf.parse_file(config_path)
+            Conf._entries = new_conf._entries
 
     def get_plugin_instance_by_name(self, plugin_cls_name: str) -> Optional[BasePlugin]:
         instances = [plugin for plugin in self.active_plugins if plugin.__class__.__name__.split(".")[-1] == plugin_cls_name]
@@ -155,6 +195,8 @@ class PluginManager:
         if plugin not in self.active_plugins:
             return
 
+        for widget in plugin.__cached_status_bar_widgets:
+            self.workspace.main_window.statusBar().removeWidget(widget)
         for action in plugin.__cached_toolbar_actions:
             self.workspace._main_window._file_toolbar.remove(action)
         for action in plugin.__cached_menu_actions:

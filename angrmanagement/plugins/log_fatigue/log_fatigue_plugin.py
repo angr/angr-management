@@ -17,6 +17,7 @@ except ImportError as ex:
     HumanFatigue = None  # type: Optional[type]
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
+from ...config import Conf
 from ..base_plugin import BasePlugin
 
 #
@@ -48,7 +49,7 @@ class LogFatiguePlugin(BasePlugin):
 
     def _log_mouse(self):
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        session = Slacrs().session()
+        session = Slacrs(database=Conf.checrs_backend_str).session()
         with session.no_autoflush:
             while self._fatigue_flag is True:
                 sleep(2)

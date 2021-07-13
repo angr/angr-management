@@ -171,11 +171,23 @@ class ConfigurationManager:
 
         if entries is None:
             self._entries = { }
-
-            for entry in ENTRIES:
-                self._entries[entry.name] = entry.copy()
+            self.load_initial_entries(reset=True)
         else:
             self._entries = entries
+
+    def load_initial_entries(self, reset: bool=True):
+        """
+        Load configuration entries into self._entries.
+
+        :param reset:   Reset all configuration items to their default values.
+        :return:        None
+        """
+        for entry in ENTRIES:
+            if entry.name not in self._entries:
+                self._entries[entry.name] = entry.copy()
+            else:
+                if reset:
+                    self._entries[entry.name] = entry.copy()
 
     @staticmethod
     def _manage_font_cache(real_font, font, metrics, height, width, ascent):
@@ -346,8 +358,8 @@ class ConfigurationManager:
                              v, k, type(v), entry.type_)
                     continue
                 entry.value = v
-        except toml.TomlDecodeError as e:
-            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', e.msg)
+        except toml.TomlDecodeError as ex:
+            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', ex.msg)
 
         return cls(entry_map)
 
