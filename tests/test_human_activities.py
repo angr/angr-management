@@ -19,14 +19,13 @@ from common import setUp, test_location
 from slacrs import Slacrs
 from slacrs.model import HumanActivity, HumanActivityEnum
 
+from angrmanagement.config import Conf
+
 
 class TestHumanActivities(unittest.TestCase):
     def setUp(self):
         setUp()
-        # set up a random database through environment variable SLACRS_DATABASE
-        self.db_name = ''.join([random.choice(string.ascii_letters) for _ in range(8)])
-        os.environ['SLACRS_DATABASE'] = f"sqlite:////tmp/{self.db_name}.sqlite"
-        self.session = Slacrs().session()
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
 
     def tearDown(self):
         self.session.close()
