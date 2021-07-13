@@ -1,13 +1,27 @@
+import asyncio
 import logging
 import threading
+import os
 from ..base_plugin import BasePlugin
 from angrmanagement.config import Conf
 import angrmanagement.ui.views as Views
 from time import sleep
 from getmac import get_mac_address as gma
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
 
 l = logging.getLogger(__name__)
 l.setLevel('INFO')
+
+user_dir = os.path.expanduser('~')
+log_dir = os.path.join(user_dir, "am-logging")
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'human_activities.log')
+fh = logging.FileHandler(log_file)
+fh.setLevel('INFO')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+l.addHandler(fh)
 
 try:
     from slacrs import Slacrs
@@ -28,9 +42,10 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.project_md5 = None
         self._log_list = list()
         self.user = gma()
+        self.active = True
 
     def on_workspace_initialized(self, workspace):
-        self.slacrs_thread = threading.Thread(target=self._commit_logs, args=(self))
+        self.slacrs_thread = threading.Thread(target=self._commit_logs)
         self.slacrs_thread.setDaemon(True)
         self.slacrs_thread.start()
 
@@ -155,14 +170,18 @@ class LogHumanActivitiesPlugin(BasePlugin):
             return None
 
     def _commit_logs(self):
-        while True:
-            self.slacrs = Slacrs(database=Conf.checrs_backend_str)
+        l.info("database: %s", Conf.checrs_backend_str)
+        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+        self.slacrs = Slacrs(database=Conf.checrs_backend_str)
+        while self.active:
             self.session = self.slacrs.session()
-            while len(self._log_list) > 0:
-                l = self._log_list.pop()
-                self.session.commit(l)
+            with self.session.no_autoflush:
+                while len(self._log_list) > 0:
+                    log = self._log_list.pop()
+                    self.session.add(log)
+                self.session.commit()
             self.session.close()
             sleep(5)
 
     def teardown(self):
-        pass
+        self.active = False
