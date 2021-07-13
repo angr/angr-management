@@ -24,9 +24,15 @@ class LogHumanActivitiesPlugin(BasePlugin):
         if not Slacrs:
             raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs to Initialize it.")
         super().__init__(*args, **kwargs)
-        self.session = Slacrs(database=Conf.checrs_backend_str).session()
+        self.session = None
         self.project_name = None
         self.project_md5 = None
+        self._commit_list = list()   # TODO: slacrs list
+
+    def on_workspace_initialized(self, workspace):
+        self.slacrs = Slacrs(database=Conf.checrs_backend_str)
+        self.session = self.slacrs.session()
+        print(self.session)
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
@@ -41,6 +47,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             new_name=new_name,
             created_by=TODO,
         )
+        # self.slacrs.session().add(variable_rename)
         self.session.add(variable_rename)
         self.session.commit()
         l.info("Add variable rename sesssion to slacrs")
@@ -90,9 +97,9 @@ class LogHumanActivitiesPlugin(BasePlugin):
     def handle_raise_view(self, view):
         view_name = view.__class__.__name__
         func = self._get_function_from_view(view)
-        if func is not None:
+        if func is not None and not func.am_none:
             func_name = func._name
-            addr = func.addrr
+            addr = func.addr
         else:
             func_name = None
             addr = None
@@ -151,6 +158,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         elif isinstance(view, Views.CodeView):
             return view.function
         elif isinstance(view, Views.ProximityView):
+            l.info("proximity view")
             return view.function
         else:
             return None
