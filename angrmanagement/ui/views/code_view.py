@@ -6,6 +6,7 @@ from PySide2.QtGui import QTextCursor
 from PySide2.QtCore import Qt
 
 from angr.analyses.decompiler.structured_codegen.c import CFunctionCall, CConstant, CStructuredCodeGenerator
+from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.knowledge_plugins.functions.function import Function
 
 from ..widgets.qccode_edit import QCCodeEdit
@@ -205,12 +206,17 @@ class CodeView(BaseView):
             return
         available = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
         self._update_available_views(available)
+        should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
-            self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
-            self.codegen.am_event()
-            self._focus_core(focus, focus_addr)
-        else:
+            cached = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
+            if not isinstance(cached, DummyStructuredCodeGenerator):
+                should_decompile = False
+                self.codegen.am_obj = cached
+                self.codegen.am_event()
+                self._focus_core(focus, focus_addr)
+
+        if should_decompile:
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self.function.am_obj
 

@@ -3,8 +3,9 @@ from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
+from PySide2.QtGui import QCursor
 
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
@@ -14,6 +15,7 @@ from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, Q
     QLinearDisassemblyView, DisassemblyLevel
 from ..dialogs.dependson import DependsOn
 from ..dialogs.jumpto import JumpTo
+from ..dialogs.rename import RenameDialog
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
@@ -23,6 +25,7 @@ from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
+from ..widgets.qblock_code import QVariableObj
 from ...ui.widgets.qinst_annotation import QHookAnnotation
 
 if TYPE_CHECKING:
@@ -276,6 +279,40 @@ class DisassemblyView(BaseView):
         self._label_menu.addr = addr
         self._label_menu.qmenu().exec_(pos)
         self._label_addr_on_context_menu = None
+
+    def rename_selected_object(self):
+        """
+        Opens dialog for renaming the currently selected QBlockCodeObj
+        """
+        obj = self.infodock.selected_qblock_code_obj
+        if isinstance(obj, QVariableObj):
+            dlg = RenameDialog('Rename Variable', obj.obj.name, self)
+            dlg.exec_()
+            if dlg.result is not None:
+                obj.obj.name = dlg.result
+                self.current_graph.refresh()
+
+    def get_context_menu_for_selected_object(self) -> Optional[QMenu]:
+        """
+        Returns a QMenu object for the currently selected QBlockCodeObj
+        """
+        obj = self.infodock.selected_qblock_code_obj
+        if isinstance(obj, QVariableObj):
+            rename_act = QAction('Re&name', self)
+            rename_act.triggered.connect(self.rename_selected_object)
+            mnu = QMenu()
+            mnu.addActions([rename_act])
+            return mnu
+        else:
+            return None
+
+    def show_context_menu_for_selected_object(self):
+        """
+        Spawns a context menu for the currently selected QBlockCodeObj
+        """
+        mnu = self.get_context_menu_for_selected_object()
+        if mnu is not None:
+            mnu.exec_(QCursor.pos())
 
     def popup_jumpto_dialog(self):
         JumpTo(self, parent=self).exec_()
