@@ -7,7 +7,7 @@ l.setLevel('INFO')
 
 try:
     from slacrs import Slacrs
-    from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn, HumanActivityCommentChanged, HumanActivityRaiseView
+    from slacrs.model import HumanActivity, HumanActivityEnum
 except ImportError as ex:
     Slacrs = None  # type: Optional[type]
     HumanActivityVariableRename = None  # type: Optional[type]
@@ -31,9 +31,10 @@ class LogHumanActivitiesPlugin(BasePlugin):
         """
         Log a user's activity of variable renaming.
         """
-        variable_rename = HumanActivityVariableRename(
+        variable_rename = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
+            category=HumanActivityEnum.VariableRename,
             function=func._name,
             old_name=old_name,
             new_name=new_name,
@@ -47,9 +48,11 @@ class LogHumanActivitiesPlugin(BasePlugin):
         """
         Log a user's activity of function renaming.
         """
-        function_rename = HumanActivityFunctionRename(
+        function_rename = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
+            category=HumanActivityEnum.FunctionRename,
+            addr=func.addr,
             old_name=old_name,
             new_name=new_name,
             created_by=TODO,
@@ -57,13 +60,12 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.session.add(function_rename)
         self.session.commit()
         l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", self.project_name, old_name, new_name)
-        # result = self.session.query(HumanActivityFunctionRename).filter(HumanActivityFunctionRename.project == self.project_name).first()
-        # l.info("Query result: old_name %s, new_name %s", result.old_name, result.new_name)
 
     def handle_click_block(self, qblock, event):
-        block_click = HumanActivityClickBlock(
+        block_click = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
+            category=HumanActivityEnum.ClickBlock,
             addr=qblock.addr,
             created_by=TODO,
         )
@@ -73,9 +75,10 @@ class LogHumanActivitiesPlugin(BasePlugin):
         return False
 
     def handle_click_insn(self, qinsn, event):
-        insn_click = HumanActivityClickInsn(
+        insn_click = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
+            category=HumanActivityEnum.ClickInsn,
             addr=qinsn.addr,
             created_by=TODO,
         )
@@ -86,9 +89,10 @@ class LogHumanActivitiesPlugin(BasePlugin):
     def handle_raise_view(self, view):
         # e.g., "<class 'angrmanagement.ui.views.disassembly_view.DisassemblyView'>"
         view_name = str(view.__class__).split('.')[-1][:-2]
-        raise_view = HumanActivityRaiseView(
+        raise_view = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
+            category=HumanActivityEnum.RaiseView,
             view=view_name,
             created_by=TODO,
         )
@@ -101,9 +105,10 @@ class LogHumanActivitiesPlugin(BasePlugin):
         @param new: T if a new comment. We don't log it in slacrs.
         @param comp: T if comment is in decompiler view
         """
-        comment_change = HumanActivityCommentChanged(
+        comment_change = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
+            category=HumanActivityEnum.CommentChanged,
             addr=addr,
             cmt=cmt,
             decomp=decomp,
