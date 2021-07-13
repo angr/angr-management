@@ -17,7 +17,7 @@ from angrmanagement.ui.dialogs.rename_node import RenameNode
 from common import setUp, test_location
 
 from slacrs import Slacrs
-from slacrs.model import HumanActivityVariableRename, HumanActivityFunctionRename, HumanActivityClickBlock, HumanActivityClickInsn
+from slacrs.model import HumanActivity, HumanActivityEnum
 
 
 class TestHumanActivities(unittest.TestCase):
@@ -87,10 +87,11 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(func.name, "fdsa")
 
-        function_rename = self.session.query(HumanActivityFunctionRename).filter(
-            HumanActivityFunctionRename.project_md5 == self.project_md5,
-            HumanActivityFunctionRename.old_name == "main",
-            HumanActivityFunctionRename.new_name == "fdsa",
+        function_rename = self.session.query(HumanActivity).filter(
+            HumanActivity.project_md5 == self.project_md5,
+            HumanActivity.category == HumanActivityEnum.FunctionRename,
+            HumanActivity.old_name == "main",
+            HumanActivity.new_name == "fdsa",
         ).one()
         self.assertIsNotNone(function_rename)
 
@@ -125,9 +126,9 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(variable_node.unified_variable.name, "fdsa")
 
-        variable_rename = self.session.query(HumanActivityVariableRename).filter(
-            HumanActivityVariableRename.project_md5 == self.project_md5,
-            HumanActivityVariableRename.new_name == "fdsa",
+        variable_rename = self.session.query(HumanActivity).filter(
+            HumanActivity.project_md5 == self.project_md5,
+            HumanActivity.new_name == "fdsa",
         ).one()
         self.assertIsNotNone(variable_rename)
 
@@ -149,9 +150,9 @@ class TestHumanActivities(unittest.TestCase):
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
 
         # assert that slacrs logged the information
-        result = self.session.query(HumanActivityClickBlock).filter(
-            HumanActivityClickBlock.project_md5 == self.project_md5,
-            HumanActivityClickBlock.addr == func.addr,
+        result = self.session.query(HumanActivity).filter(
+            HumanActivity.project_md5 == self.project_md5,
+            HumanActivity.addr == func.addr,
         ).one()
         self.assertIsNotNone(result)
 
@@ -174,9 +175,9 @@ class TestHumanActivities(unittest.TestCase):
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
 
         # assert that slacrs logged the information
-        result = self.session.query(HumanActivityClickInsn).filter(
-            HumanActivityClickInsn.project_md5 == self.project_md5,
-            HumanActivityClickInsn.addr == insn.addr,
+        result = self.session.query(HumanActivity).filter(
+            HumanActivity.project_md5 == self.project_md5,
+            HumanActivity.addr == insn.addr,
         ).one()
         self.assertIsNotNone(result)
 
