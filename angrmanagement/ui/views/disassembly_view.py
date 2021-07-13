@@ -79,6 +79,7 @@ class DisassemblyView(BaseView):
         self._label_addr_on_context_menu = None
 
         self._annotation_callbacks = []
+        self.priority_file = "priority.txt"
         self.func_docs = self._load_func_docs(path=DOCS_LOCATION)
 
         self.width_hint = 800
@@ -715,8 +716,8 @@ class DisassemblyView(BaseView):
     # Private methods
     #
 
-    def _load_func_docs(self, path, priority_file="priority.txt"):
-        priority_path = os.path.join(path, priority_file)
+    def _load_func_docs(self, path):
+        priority_path = os.path.join(path, self.priority_file)
         docs = []
         with open(priority_path, "r") as pfile:
             for line in pfile:
