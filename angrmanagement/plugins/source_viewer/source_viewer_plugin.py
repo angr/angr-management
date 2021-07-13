@@ -42,7 +42,7 @@ class VaildLineNumberPanel(LineNumberPanel):
         pen_selected = QtGui.QPen(self._line_color_s)
         painter.setFont(font)
         # draw every visible blocks
-        for top, line, block in self.editor.visible_blocks:
+        for top, line, _block in self.editor.visible_blocks:
             if line+1 in self._valid_line:
                 painter.setPen(pen_selected)
                 painter.setFont(bold_font)
@@ -74,7 +74,7 @@ class StatePanel(Panel):
         font = self.editor.font()
         painter = QtGui.QPainter(self)
         painter.setFont(font)
-        for top, block_nbr, block in self.editor.visible_blocks:
+        for top, block_nbr, _block in self.editor.visible_blocks:
             if block_nbr+1 in self._state_counter:
                 rect = QRect()
                 rect.setX(0)
@@ -180,31 +180,6 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
             editor.set_valid_line(valid_line)
             self.tabs[fn] = editor
 
-    # def create_line_annotations(self, qblock):
-
-    #     if self.current_simgr.am_none():
-    #         # If there's no simgr selected at this moment, then there arent' any labels to show? Maybe
-    #         return {}
-
-    #     qinsns = qblock.addr_to_insns.values()
-
-    #     items = defaultdict(list)
-    #     for qinsn in qinsns:
-    #         addr = qinsn.addr
-    #         active_states = []
-    #         passthrough_count = 0
-    #         active_states += self.addr_to_active_states[addr]
-    #         passthrough_count += self.passthrough_counts[addr]
-    #         if qinsn.insn.mnemonic.opcode_string == "call":
-    #             ret_addr = qinsn.insn.addr + qinsn.insn.size
-    #             active_states += self.returning_to_here_states[ret_addr]
-    #         if len(active_states) > 0:
-    #             items[addr].append(QActiveCount(active_states))
-    #         if passthrough_count > 0:
-    #             items[addr].append(QPassthroughCount(qinsn.addr, passthrough_count))
-    #     return items
-
-
 class SourceViewer(BaseView):
     addr_to_line = None # type: SortedDict
     disasm_view = None # type: DisassemblyView
@@ -228,7 +203,7 @@ class SourceViewer(BaseView):
         main_layout.addWidget(self.main)
         self.setLayout(main_layout)
 
-    def load_from_proejct(self,**kwargs):
+    def load_from_proejct(self,**kwargs): #pylint: disable=unused-argument
         if self.instance.project.am_none:
             return
         loader = self.instance.project.loader #type: Loader
