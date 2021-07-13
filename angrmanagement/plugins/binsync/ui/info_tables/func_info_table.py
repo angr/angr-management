@@ -1,6 +1,7 @@
+from typing import Dict
+
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
 from PySide2.QtCore import Qt
-from typing import Dict
 
 from ...controller import BinsyncController
 
@@ -13,6 +14,10 @@ if binsync:
 
 
 class QUserItem:
+    """
+    A user item found inside a QFunctionTable. Should only ever be used inside
+    the QFunctionTable class.
+    """
     def __init__(self, func_addr, local_name, user, last_push):
         self.func_addr = func_addr
         self.local_name = local_name
@@ -39,6 +44,14 @@ class QUserItem:
 
 
 class QFuncInfoTable(QTableWidget):
+    """
+    A QTable that contains update information about functions in the BinSync Project.
+    The table will show:
+
+    [Func Addr, Local Name, User Name, Last Push Time]
+
+    The QUserItem class is used to fill each row of the table.
+    """
     HEADER = [
         'Changed Func',
         'Local Name',
