@@ -351,8 +351,9 @@ class ConfigurationManager:
                     else:
                         # default to a string
                         entry = CE(k, str, v)
-                else:
-                    entry = entry_map[k]
+                        entry_map[k] = entry
+
+                entry = entry_map[k]
 
                 if entry.type_ in data_serializers:
                     v = data_serializers[entry.type_][0](k, v)
