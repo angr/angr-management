@@ -119,7 +119,7 @@ class ChessConnector(BasePlugin):
                 engine = slacrs.Slacrs.connect_to_db(Conf.checrs_backend_str)
                 connection = engine.connect()
                 connection.close()  # close it immediately
-            except Exception:
+            except Exception:  # pylint:disable=broad-except
                 gui_thread_schedule_async(self.backend_disconnected)
                 continue
 
