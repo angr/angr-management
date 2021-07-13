@@ -1,8 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QRadioButton, QGroupBox, QScrollArea, QWidget
-from PySide2.QtGui import QTextOption
-from pyqodeng.core.api import CodeEdit
-from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, \
+    QGridLayout, QScrollArea, QWidget
 from ...data.instance import Instance
 
 
@@ -10,28 +7,28 @@ class FuncDocDialog(QDialog):
     """
     Provide templates of FuncDocDialog function.
     """
-    def __init__(self, instance: Instance, addr=None, name="", doc="", url="", ftype="", parent=None):
+    def __init__(self, instance: Instance, addr=None, name="", doc_tuple=None, parent=None):
         super().__init__(parent)
 
         # initialization
 
         self.instance = instance
-        self.state = None  # output
         self._addr = addr
         self._name = name
-        self._doc = doc
-        self._url = url
-        self._ftype = ftype
-        self._function_box = None
+        self._doc = doc_tuple[0]
+        self._url = doc_tuple[1]
+        self._ftype = doc_tuple[2]
         self._ok_button = None
         self.setWindowTitle('Function Documentation')
         self.main_layout = QVBoxLayout()
         self._init_widgets()
         self.setLayout(self.main_layout)
 
+    def _ok_method(self):
+        self.close()
+
     def _init_widgets(self):
         layout = QGridLayout()
-        row = 0
 
         # validation_failures = set()
         addr = hex(self._addr)
@@ -62,13 +59,8 @@ class FuncDocDialog(QDialog):
         layout_scroll.addWidget(url_label)
         layout.addWidget(scroll_area)
 
-        ok_button = QPushButton(self)
-        ok_button.setText('Ok')
-
-        def do_ok():
-            self.close()
-
-        ok_button.clicked.connect(do_ok)
+        self._ok_button = QPushButton('Ok', self)
+        self._ok_button.clicked.connect(self._ok_method)
 
         self.main_layout.addLayout(layout)
-        self.main_layout.addWidget(ok_button)
+        self.main_layout.addWidget(self._ok_button)

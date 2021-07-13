@@ -379,16 +379,15 @@ class DisassemblyView(BaseView):
             target = next(iter(out_targets))
             operand = instr.get_operand(0)
 
-            doc_string = "Unable to find doc string for libcall"
-            url = "http://"
-            ftype = "<>"
-            doc_ret = self._get_doc_string_for_func_name(funcName=operand.text)
-            if doc_ret is not None:
-                doc_string, url, ftype = r
-
+            doc_tuple = self._get_doc_string_for_func_name(func_name=operand.text)
+            if doc_tuple is None:
+                doc_string = "Unable to find doc string for libcall"
+                url = "http://"
+                ftype = "<>"
+                doc_tuple = (doc_string, url, ftype)
             dialog = FuncDocDialog(self.workspace.instance,
-                                   addr=target, name=operand.text, doc=doc_string,
-                                   url=url, ftype=ftype, parent=self)
+                                   addr=target, name=operand.text, doc_tuple=doc_tuple,
+                                   parent=self)
             dialog.show()
 
     def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
@@ -722,10 +721,10 @@ class DisassemblyView(BaseView):
         with open(priority_path, "r") as pfile:
             for line in pfile:
                 jpath = os.path.join(path, line.strip())
-                jfile = open(jpath, "r")
-                data = json.load(jfile)
+                with open(jpath, "r") as jfile:
+                    data = json.load(jfile)
+                    docs.append(data)
                 jfile.close()
-                docs.append(data)
         pfile.close()
 
         return docs

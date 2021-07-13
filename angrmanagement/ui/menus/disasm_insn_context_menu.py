@@ -38,7 +38,7 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('Add &Hook...', self._add_hook),
             MenuEntry('View &Documentation...', self._view_docs)
         ])
-        
+
     @property
     def _disasm_view(self) -> 'DisassemblyView':
         return self.parent
