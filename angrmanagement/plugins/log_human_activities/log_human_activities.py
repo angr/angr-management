@@ -1,5 +1,7 @@
 import logging
 from ..base_plugin import BasePlugin
+from angrmanagement.config import Conf
+import angrmanagement.ui.views as Views
 
 l = logging.getLogger(__name__)
 l.setLevel('INFO')
@@ -22,7 +24,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         if not Slacrs:
             raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs to Initialize it.")
         super().__init__(*args, **kwargs)
-        self.session = Slacrs().session()
+        self.session = Slacrs(database=Conf.checrs_backend_str).session()
         self.project_name = None
         self.project_md5 = None
 
@@ -87,15 +89,24 @@ class LogHumanActivitiesPlugin(BasePlugin):
 
     def handle_raise_view(self, view):
         view_name = view.__class__.__name__
+        func = self._get_function_from_view(view)
+        if func is not None:
+            func_name = func._name
+            addr = func.addrr
+        else:
+            func_name = None
+            addr = None
         raise_view = HumanActivity(
             project=self.project_name,
             project_md5=self.project_md5,
             category=HumanActivityEnum.RaiseView,
             view=view_name,
             created_by=TODO,
+            function=func_name,
+            addr=addr
         )
         self._submit_to_slacrs(raise_view)
-        l.info("View %s is raised", view_name)
+        l.info("View %s is raised with function %s", view_name, func_name)
 
     def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
         """
@@ -133,6 +144,16 @@ class LogHumanActivitiesPlugin(BasePlugin):
     def _submit_to_slacrs(self, activity_instance):
         self.session.add(activity_instance)
         self.session.commit()
+
+    def _get_function_from_view(self, view):
+        if isinstance(view, Views.DisassemblyView):
+            return view._current_function
+        elif isinstance(view, Views.CodeView):
+            return view.function
+        elif isinstance(view, Views.ProximityView):
+            return view.function
+        else:
+            return None
 
     def teardown(self):
         self.session.close()
