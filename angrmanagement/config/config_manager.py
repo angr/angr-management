@@ -335,7 +335,7 @@ class ConfigurationManager:
         return list(super().__dir__()) + list(self._entries)
 
     @classmethod
-    def parse(cls, f):
+    def parse(cls, f, ignore_unknown_entries: bool=True):
         entry_map = {}
         for entry in ENTRIES:
             entry_map[entry.name] = entry.copy()
@@ -345,9 +345,14 @@ class ConfigurationManager:
 
             for k, v in loaded.items():
                 if k not in entry_map:
-                    _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
-                    continue
-                entry = entry_map[k]
+                    if ignore_unknown_entries:
+                        _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
+                        continue
+                    else:
+                        # default to a string
+                        entry = CE(k, str, v)
+                else:
+                    entry = entry_map[k]
 
                 if entry.type_ in data_serializers:
                     v = data_serializers[entry.type_][0](k, v)
@@ -364,9 +369,9 @@ class ConfigurationManager:
         return cls(entry_map)
 
     @classmethod
-    def parse_file(cls, path:str):
+    def parse_file(cls, path: str, ignore_unknown_entries: bool=True):
         with open(path, 'r') as f:
-            return cls.parse(f)
+            return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 
     def save(self, f):
         out = {}
@@ -398,7 +403,7 @@ class ConfigurationManager:
             if os.path.isfile(initial_config_path):
                 from . import save_config  # delayed import
                 # we found it!
-                new_conf = self.__class__.parse_file(initial_config_path)
+                new_conf = self.__class__.parse_file(initial_config_path, ignore_unknown_entries=False)
                 # copy entries over
                 self._entries = new_conf._entries
                 # save it!
