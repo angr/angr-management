@@ -11,12 +11,13 @@ from pyqodeng.core import panels
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, CStructField
 
+from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 from ..menus.menu import Menu
 
 if TYPE_CHECKING:
-    from ..documents.qcodedocument import QCodeDocument
+    from PySide2.QtGui import QTextDocument
     from ..views.code_view import CodeView
 
 
@@ -73,7 +74,11 @@ class QCCodeEdit(api.CodeEdit):
         self.remove_action(self.action_swap_line_down)
 
     def node_under_cursor(self):
-        doc: 'QCodeDocument' = self.document()
+        doc: 'QTextDocument' = self.document()
+        if not isinstance(doc, QCodeDocument):
+            # this is not the qcodedocument that the decompiler generates. this means the pseudocode view is empty
+            return None
+
         # determine the current status
         cursor = self.textCursor()
         pos = cursor.position()
