@@ -1,12 +1,15 @@
 
 from collections import defaultdict
 import logging
+import json
+import os
 from typing import Union, Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
 
+from ...config import DOCS_LOCATION
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
@@ -21,6 +24,7 @@ from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..dialogs.hook import HookDialog
+from ..dialogs.func_doc import FuncDocDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
@@ -75,6 +79,7 @@ class DisassemblyView(BaseView):
         self._label_addr_on_context_menu = None
 
         self._annotation_callbacks = []
+        self.func_docs = self._load_func_docs(path=DOCS_LOCATION)
 
         self.width_hint = 800
         self.height_hint = 800
@@ -356,6 +361,35 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
+    def popup_func_doc_dialog(self, instr_addr):
+        """
+        Spawns a popup dialog for the currently selected call instruction func_docs
+        """
+        if self._flow_graph is None:
+            return
+        block = self._flow_graph._insaddr_to_block.get(instr_addr, None)
+        if block:
+            instr = block.addr_to_insns[instr_addr]
+            if instr is None or instr.insn.type != "call":
+                return
+            out_targets = instr.out_branch.targets
+            if len(out_targets) != 1:
+                return
+
+            target = next(iter(out_targets))
+            operand = instr.get_operand(0)
+
+            doc_string = "Unable to find doc string for libcall"
+            url = "http://"
+            ftype = "<>"
+            doc_ret = self._get_doc_string_for_func_name(funcName=operand.text)
+            if doc_ret is not None:
+                doc_string, url, ftype = r
+
+            dialog = FuncDocDialog(self.workspace.instance,
+                                   addr=target, name=operand.text, doc=doc_string,
+                                   url=url, ftype=ftype, parent=self)
+            dialog.show()
 
     def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:
@@ -681,6 +715,42 @@ class DisassemblyView(BaseView):
     #
     # Private methods
     #
+
+    def _load_func_docs(self, path, priority_file="priority.txt"):
+        priority_path = os.path.join(path, priority_file)
+        docs = []
+        with open(priority_path, "r") as pfile:
+            for line in pfile:
+                jpath = os.path.join(path, line.strip())
+                jfile = open(jpath, "r")
+                data = json.load(jfile)
+                jfile.close()
+                docs.append(data)
+        pfile.close()
+
+        return docs
+
+    def _get_doc_string_for_func_name(self, func_name):
+        for library in self.func_docs:
+            for func_dict in library:
+                if "name" not in func_dict.keys():
+                    continue
+                if "description" not in func_dict.keys():
+                    continue
+                names = func_dict["name"]
+                name_list = names.split(",")
+                for name in name_list:
+                    name = name.strip()
+                    if func_name == name:
+                        doc_string = func_dict["description"]
+                        url = "http://"
+                        ftype = "<>"
+                        if "url" in func_dict.keys():
+                            url = func_dict["url"]
+                        if "type" in func_dict.keys():
+                            ftype = func_dict["type"]
+                        return doc_string, url, ftype
+        return None
 
     def _display_function(self, the_func):
         self._current_function.am_obj = the_func
