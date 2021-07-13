@@ -681,10 +681,10 @@ class GraphLayouter:
             top_margin_height += self.y_margin * (row_max_ids[0] + 2)
         y += top_margin_height
 
-        for row in range(self._max_row + 2):
+        for row in range(-1, self._max_row + 2):
             x = 0
 
-            for col in range(self._max_col + 2):
+            for col in range(-1, self._max_col + 2):
                 self._grid_coordinates[(col, row)] = (x, y)
                 x += self._col_widths[col] + self.col_margin
             if self._row_heights[row] is None:
