@@ -1,5 +1,4 @@
 import logging
-import hashlib
 from ..base_plugin import BasePlugin
 
 l = logging.getLogger(__name__)
@@ -127,8 +126,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         else:
             filename = self.workspace.instance.project.filename
             self.project_name = filename
-            with open(filename, 'rb') as f:
-                self.project_md5 = hashlib.md5(f.read()).hexdigest()
+            self.project_md5 = self.workspace.instance.project.loader.main_object.md5.hex()
             l.info("Set project md5 to %s", self.project_md5)
         l.info("Set project name to %s", self.project_name)
 
