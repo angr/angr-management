@@ -172,8 +172,8 @@ class LogHumanActivitiesPlugin(BasePlugin):
     def _commit_logs(self):
         l.info("database: %s", Conf.checrs_backend_str)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        self.slacrs = Slacrs(database=Conf.checrs_backend_str)
         while self.active:
+            self.slacrs = Slacrs(database=Conf.checrs_backend_str)
             self.session = self.slacrs.session()
             with self.session.no_autoflush:
                 while len(self._log_list) > 0:
@@ -181,7 +181,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
                     self.session.add(log)
                 self.session.commit()
             self.session.close()
-            sleep(5)
+            sleep(3)
 
     def teardown(self):
         self.active = False

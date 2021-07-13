@@ -4,6 +4,7 @@ import random
 import sys
 import string
 import unittest
+from time import sleep
 
 from PySide2.QtTest import QTest
 from PySide2.QtCore import Qt
@@ -20,6 +21,11 @@ from slacrs import Slacrs
 from slacrs.model import HumanActivity, HumanActivityEnum
 
 from angrmanagement.config import Conf
+from angrmanagement.config.config_entry import ConfigurationEntry
+
+
+Conf._entries['checrs_backend_str'] = ConfigurationEntry("checrs_backend_str", str, "", default_value="")
+Conf.checrs_backend_str = "sqlite:////tmp/testtest.sqlite"
 
 
 class TestHumanActivities(unittest.TestCase):
@@ -28,7 +34,7 @@ class TestHumanActivities(unittest.TestCase):
 
     def tearDown(self):
         pass
-        # os.remove(f"/tmp/{self.db_name}.sqlite")
+        os.remove(f"/tmp/testtest.sqlite")
 
     def _open_a_project(self):
         main = MainWindow(show=False)
@@ -37,8 +43,8 @@ class TestHumanActivities(unittest.TestCase):
         main.workspace.instance.project.am_event()
         main.workspace.instance.join_all_jobs()
         self.project = binpath
-        with open(binpath, 'rb') as f:
-            self.project_md5 = hashlib.md5(f.read()).hexdigest()
+        # import ipdb; ipdb.set_trace()
+        self.project_md5 = main.workspace.instance.project.loader.main_object.md5.hex()
         return main
 
     def test_open_a_project(self):
@@ -85,6 +91,7 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(func.name, "fdsa")
 
+        sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
         function_rename = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
@@ -126,6 +133,7 @@ class TestHumanActivities(unittest.TestCase):
 
         self.assertEqual(variable_node.unified_variable.name, "fdsa")
 
+        sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
         variable_rename = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
@@ -152,6 +160,7 @@ class TestHumanActivities(unittest.TestCase):
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
 
         # assert that slacrs logged the information
+        sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
         result = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
@@ -179,6 +188,7 @@ class TestHumanActivities(unittest.TestCase):
         QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton)
 
         # assert that slacrs logged the information
+        sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
         result = self.session.query(HumanActivity).filter(
             HumanActivity.project_md5 == self.project_md5,
