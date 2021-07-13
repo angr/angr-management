@@ -223,7 +223,7 @@ def start_management(filepath=None, use_daemon=False):
         th = BgServingThread(GlobalInfo.daemon_conn)
 
     file_to_open = filepath if filepath else None
-    main_window = MainWindow(app)
+    main_window = MainWindow(app=app)
     splash.finish(main_window)
 
     if file_to_open is not None:

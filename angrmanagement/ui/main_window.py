@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-    def __init__(self, app: 'QApplication', parent=None, show=True):
+    def __init__(self, app: Optional['QApplication']=None, parent=None, show=True):
         super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
-        self.app: 'QApplication' = app
+        self.app: Optional['QApplication'] = app
         self.workspace: Workspace = None
         self.central_widget = None
         self.central_widget2 = None
