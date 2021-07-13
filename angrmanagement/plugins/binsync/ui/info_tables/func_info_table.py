@@ -2,7 +2,7 @@ from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView,
 from PySide2.QtCore import Qt
 from typing import Dict
 
-from ..sync_ctrl import BinsyncController
+from ...controller import BinsyncController
 
 try:
     import binsync

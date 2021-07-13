@@ -1,7 +1,7 @@
 from PySide2.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWidgetItem, \
     QDialogButtonBox, QGridLayout, QHeaderView, QAbstractItemView
 
-from .sync_ctrl import BinsyncController
+from ..controller import BinsyncController
 #
 #   MenuDialog Box for Binsync Actions
 #
