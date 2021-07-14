@@ -5,10 +5,6 @@ from sortedcontainers import SortedDict
 from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QMenu,QVBoxLayout
 
-from angrmanagement.ui.views import BaseView
-from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.workspace import Workspace
-
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker
 from pyqodeng.core.widgets import SplittableCodeEditTabWidget
@@ -17,6 +13,10 @@ from pyqodeng.core.api.utils import drift_color
 
 from qtpy import QtCore, QtGui
 from cle import Loader
+
+from angrmanagement.ui.views import BaseView
+from angrmanagement.plugins import BasePlugin
+from angrmanagement.ui.workspace import Workspace
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
@@ -200,7 +200,7 @@ class SourceViewer(BaseView):
     def add_point(self, fn, line, typ):
         symexec_view = self.symexec_view
         if not symexec_view:
-            return
+            return ""
         address_list = self.main.line_to_addr[(fn,line)]
 
         for addr in address_list:
