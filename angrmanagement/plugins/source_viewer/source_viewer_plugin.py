@@ -1,25 +1,33 @@
 from collections import defaultdict
+from typing import TYPE_CHECKING
 from sortedcontainers import SortedDict
 
 from PySide2.QtGui import QCursor
-from angrmanagement.ui.workspace import Workspace
 from PySide2.QtWidgets import QMenu,QVBoxLayout
-from PySide2.QtCore import QRect, QSize
+
 from angrmanagement.ui.views import BaseView
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.views.disassembly_view import DisassemblyView
+from angrmanagement.ui.workspace import Workspace
 
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker
 from pyqodeng.core.widgets import SplittableCodeEditTabWidget
 from pyqodeng.core.api.panel import Panel
-from pyqodeng.core.api.utils import drift_color, TextHelper
+from pyqodeng.core.api.utils import drift_color
 
 from qtpy import QtCore, QtGui
 from cle import Loader
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.symexec_view import SymexecView
 
 class VaildLineNumberPanel(LineNumberPanel):
+    """
+    The color of line numbers indicates if any address associated with this line.
+    The vaild lineno are black, which means we could set a breakpoint on it and
+    the invaild are grey.
+    """
     def __init__(self, valid_line=None):
         super().__init__()
         self._valid_line = valid_line or set()
@@ -53,44 +61,11 @@ class VaildLineNumberPanel(LineNumberPanel):
                                 QtCore.Qt.AlignRight, str(line + 1))
 
 
-class StatePanel(Panel):
-    _state_counter = {}
-
-    def __init__(self, dynamic=False):
-        super().__init__(dynamic=dynamic)
-
-    def updateState(self, data: map):
-        self._state_counter = data
-        self.repaint()
-
-    def sizeHint(self):
-        metrics = QtGui.QFontMetricsF(self.editor.font())
-        return QSize(30, metrics.height())
-
-    def paintEvent(self, event):
-        Panel.paintEvent(self, event)
-        if not self.isVisible():
-            return
-        font = self.editor.font()
-        painter = QtGui.QPainter(self)
-        painter.setFont(font)
-        for top, block_nbr, _block in self.editor.visible_blocks:
-            if block_nbr+1 in self._state_counter:
-                rect = QRect()
-                rect.setX(0)
-                rect.setY(top)
-                rect.setWidth(self.sizeHint().width())
-                rect.setHeight(self.sizeHint().height())
-                painter.fillRect(rect,QtGui.QColor("green"))
-                painter.drawText(rect, QtCore.Qt.AlignRight,str(self._state_counter[block_nbr+1]))
-        painter.end()
-
-    def mousePressEvent(self, event):
-        line = TextHelper(self.editor).line_nbr_from_position(event.pos().y())
-        print("mousePressEvent ",line)
-
-
 class SourceCodeViewer(CodeEdit):
+    """
+    CodeEdit for one source code file.
+    Used by SourceCodeViewerTabWidget.
+    """
     viewer = None # type: SourceViewer
     current_line = -1 # type: int
 
@@ -149,10 +124,14 @@ class SourceCodeViewer(CodeEdit):
         menu.exec_(QCursor.pos())
 
     def edit_cond(self):
-        print("edit_cond")
+        pass
 
 
 class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
+    """
+    CodeEdit for one ELF file.
+    It could contain more than one file.
+    """
     editors = {mimetype: SourceCodeViewer for mimetype in SourceCodeViewer.mimetypes}
     fallback_editor = SourceCodeViewer
     addr_to_line = None # type: SortedDict
@@ -176,25 +155,32 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
         for fn in self.file_list:
             editor = self.open_document(fn) #type: SourceCodeViewer
             editor.viewer = self.viewer
-            valid_line = set([line for (filename,line) in self.line_to_addr.keys() if filename == fn ])
+            valid_line = {line for (filename,line) in self.line_to_addr.keys() if filename == fn }
             editor.set_valid_line(valid_line)
             self.tabs[fn] = editor
 
 class SourceViewer(BaseView):
+    """
+    Main class of the Source Viewer Plugin
+    """
     addr_to_line = None # type: SortedDict
-    disasm_view = None # type: DisassemblyView
+
     main = None # type: SourceCodeViewerTabWidget
     def __init__(self, workspace :Workspace, *args, **kwargs):
-        super(SourceViewer, self).__init__(
-            "SourceViewer", workspace, *args, **kwargs
-        )
+        super().__init__("SourceViewer", workspace, *args, **kwargs)
         self.caption = "Source Viewer"
         self.workspace = workspace
         self.instance = workspace.instance
-        self.disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
-        self.symexec_view = self.workspace.view_manager.first_view_in_category('symexec')
         workspace.instance.project.am_subscribe(self.load_from_proejct)
         self._init_widgets()
+
+    @property
+    def disasm_view(self) -> 'DisassemblyView':
+        return self.workspace.view_manager.first_view_in_category("disassembly")
+
+    @property
+    def symexec_view(self) -> 'SymexecView':
+        return self.workspace.view_manager.first_view_in_category('symexec')
 
     def _init_widgets(self):
         self.main = SourceCodeViewerTabWidget()
@@ -203,7 +189,7 @@ class SourceViewer(BaseView):
         main_layout.addWidget(self.main)
         self.setLayout(main_layout)
 
-    def load_from_proejct(self,**kwargs): #pylint: disable=unused-argument
+    def load_from_proejct(self, **kwargs): #pylint: disable=unused-argument
         if self.instance.project.am_none:
             return
         loader = self.instance.project.loader #type: Loader
@@ -211,29 +197,36 @@ class SourceViewer(BaseView):
                 loader.main_object.addr_to_line is not None:
             self.main.load(loader.main_object.addr_to_line)
 
-    def add_point(self,fn,line, typ):
+    def add_point(self, fn, line, typ):
+        symexec_view = self.symexec_view
+        if not symexec_view:
+            return
         address_list = self.main.line_to_addr[(fn,line)]
 
         for addr in address_list:
             if typ == "find":
-                self.symexec_view.find_addr_in_exec(addr)
+                symexec_view.find_addr_in_exec(addr)
             else:
-                self.symexec_view.avoid_addr_in_exec(addr)
+                symexec_view.avoid_addr_in_exec(addr)
         return "\n".join([ ("0x%x" % i) for i in  address_list])
 
-    def remove_point(self,fn,line):
+    def remove_point(self, fn, line):
+        symexec_view = self.symexec_view
+        if not symexec_view:
+            return
+
         address_list = self.main.line_to_addr[(fn,line)]
         for addr in address_list:
-            self.symexec_view.remove_find_addr_in_exec(addr)
-            self.symexec_view.remove_avoid_addr_in_exec(addr)
+            symexec_view.remove_find_addr_in_exec(addr)
+            symexec_view.remove_avoid_addr_in_exec(addr)
 
 
 class SourceViewerPlugin(BasePlugin):
+    """
+    Plugin loader
+    """
     def __init__(self, workspace):
         super().__init__(workspace)
-
-        #workspace.source_viewer_plugin = types.SimpleNamespace()
-
         self.source_viewer = SourceViewer(workspace, "center")
         workspace.default_tabs += [self.source_viewer]
         workspace.add_view(
