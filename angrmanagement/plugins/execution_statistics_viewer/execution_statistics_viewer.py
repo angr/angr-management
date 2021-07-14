@@ -11,7 +11,11 @@ if TYPE_CHECKING:
 
 
 class ExecutionStatisticsViewer(BasePlugin):
-
+    """
+    Add a step_callback hook to count how many state on and passthrough of a particular address.
+    return the result in build_qblock_annotations callback and show in the disassmbly view by
+    fetch_qblock_annotations function.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.passthrough_counts = defaultdict(int)
@@ -19,11 +23,19 @@ class ExecutionStatisticsViewer(BasePlugin):
         self.returning_to_here_states = defaultdict(list)
         self.bb_addrs = None
         self.instance = self.workspace.instance
-        self.disasm_view = self.workspace.view_manager.first_view_in_category("disassembly") # type: DisassemblyView
-        self.symexec_view = self.workspace.view_manager.first_view_in_category("symexec") # type: SymexecView
-        self.current_simgr = self.symexec_view.current_simgr
-        self.current_simgr.am_subscribe(self._on_simgr_selected)
+
+        if self.symexec_view:
+            self.current_simgr = self.symexec_view.current_simgr
+            self.current_simgr.am_subscribe(self._on_simgr_selected)
         self._init_widgets()
+
+    @property
+    def disasm_view(self) -> 'DisassemblyView':
+        return self.workspace.view_manager.first_view_in_category("disassembly")
+
+    @property
+    def symexec_view(self) -> 'SymexecView':
+        return self.workspace.view_manager.first_view_in_category("symexec")
 
     def count_passthrough(self, simgr):
         """Prior to stepping the active states, increment the passthrough count on the basic block(s) that will be
