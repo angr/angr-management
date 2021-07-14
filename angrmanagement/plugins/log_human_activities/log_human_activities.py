@@ -2,12 +2,12 @@ import asyncio
 import logging
 import threading
 import os
-from ..base_plugin import BasePlugin
-from angrmanagement.config import Conf
-import angrmanagement.ui.views as Views
 from time import sleep
 from getmac import get_mac_address as gma
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+from angrmanagement.config import Conf
+import angrmanagement.ui.views as Views
+from ..base_plugin import BasePlugin
 
 
 l = logging.getLogger(__name__)
@@ -28,8 +28,6 @@ try:
     from slacrs.model import HumanActivity, HumanActivityEnum
 except ImportError as ex:
     Slacrs = None  # type: Optional[type]
-    HumanActivityVariableRename = None  # type: Optional[type]
-    HumanActivityFunctionRename = None  # type: Optional[type]
 
 
 class LogHumanActivitiesPlugin(BasePlugin):
@@ -38,7 +36,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
     """
     def __init__(self, *args, **kwargs):
         if not Slacrs:
-            raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs to Initialize it.")
+            raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs.")
         super().__init__(*args, **kwargs)
         self.session = None
         self.project_name = None
@@ -47,6 +45,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.user = gma()
         self.active = True
         self.slacrs_thread = None
+        self.slacrs = None
 
     def on_workspace_initialized(self, workspace):
         self.slacrs_thread = threading.Thread(target=self._commit_logs)
@@ -83,7 +82,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(function_rename)
-        l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s", \
+        l.info("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s",
                 self.project_name, old_name, new_name)
 
     def handle_click_block(self, qblock, event):
@@ -163,16 +162,13 @@ class LogHumanActivitiesPlugin(BasePlugin):
             l.info("Set project md5 to %s", self.project_md5)
         l.info("Set project name to %s", self.project_name)
 
-    def _get_function_from_view(self, view):
+    @staticmethod
+    def _get_function_from_view(view):
         if isinstance(view, Views.DisassemblyView):
             return view._current_function
-        elif isinstance(view, Views.CodeView):
+        if isinstance(view, (Views.CodeView, Views.ProximityView)):
             return view.function
-        elif isinstance(view, Views.ProximityView):
-            l.info("proximity view")
-            return view.function
-        else:
-            return None
+        return None
 
     def _commit_logs(self):
         l.info("database: %s", Conf.checrs_backend_str)
