@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBo
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
 
+from ...logic import GlobalInfo
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
@@ -21,6 +22,7 @@ from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
 from ..dialogs.xref import XRef
 from ..dialogs.hook import HookDialog
+from ..dialogs.func_doc import FuncDocDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import BaseView
@@ -356,6 +358,34 @@ class DisassemblyView(BaseView):
         else:
             dialog.exec_()
 
+    def popup_func_doc_dialog(self, instr_addr):
+        """
+        Spawns a popup dialog for the currently selected call instruction func_docs
+        """
+        if self._flow_graph is None:
+            return
+        block = self._flow_graph._insaddr_to_block.get(instr_addr, None)
+        if block:
+            instr = block.addr_to_insns[instr_addr]
+            if instr is None or instr.insn.type != "call":
+                return
+            out_targets = instr.out_branch.targets
+            if len(out_targets) != 1:
+                return
+
+            target = next(iter(out_targets))
+            operand = instr.get_operand(0)
+
+            doc_tuple = GlobalInfo.library_docs.get_docstring_for_func_name(operand.text)
+            if doc_tuple is None:
+                doc_string = f"Cannot find local documentation for function {operand.text}."
+                url = "http://"
+                ftype = "<>"
+                doc_tuple = (doc_string, url, ftype)
+            dialog = FuncDocDialog(self.workspace.instance,
+                                   addr=target, name=operand.text, doc_tuple=doc_tuple,
+                                   parent=self)
+            dialog.show()
 
     def popup_dependson_dialog(self, addr: Optional[int]=None, use_operand=False, func: bool=False):
         if use_operand:

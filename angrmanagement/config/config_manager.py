@@ -129,6 +129,9 @@ ENTRIES = [
     # FLIRT signatures
     CE('flirt_signatures_root', str, "./flirt_signatures/"),
 
+    # Library documentation
+    CE('library_docs_root', str, "./library_docs/"),
+
     # last-used directory
     CE('last_used_directory', str, ''),
 

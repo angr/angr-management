@@ -26,6 +26,7 @@ except ImportError:
 
 from ..logic import GlobalInfo
 from ..data.instance import Instance
+from ..data.library_docs import LibraryDocs
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
 from ..data.jobs import DependencyAnalysisJob
 from ..config import IMG_LOCATION, Conf
@@ -95,6 +96,7 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_menus()
         self._init_plugins()
+        self._init_library_docs()
 
         self.workspace.plugins.on_workspace_initialized(self)
 
@@ -318,6 +320,15 @@ class MainWindow(QMainWindow):
             flirt_signatures_root = os.path.normpath(flirt_signatures_root)
             _l.info("Loading FLIRT signatures from %s.", flirt_signatures_root)
             angr.flirt.load_signatures(flirt_signatures_root)
+
+    #
+    # Library docs
+    #
+
+    def _init_library_docs(self):
+        GlobalInfo.library_docs = LibraryDocs()
+        if Conf.library_docs_root:
+            GlobalInfo.library_docs.load_func_docs(Conf.library_docs_root)
 
     #
     # Event
