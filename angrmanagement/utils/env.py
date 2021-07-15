@@ -4,6 +4,15 @@ import sys
 import os
 
 
+def is_pyinstaller() -> bool:
+    """
+    Detect if we are currently running as a PyInstaller-packaged program.
+    :return:    True if we are running as a PyInstaller-packaged program. False if we are running in Python directly
+                (e.g., development mode).
+    """
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+
+
 def app_path(pythonw=None, as_list=False) -> Union[str,List[str]]:
     """
     Return the path of the application.
@@ -15,7 +24,7 @@ def app_path(pythonw=None, as_list=False) -> Union[str,List[str]]:
     :rtype:     str|list
     """
 
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    if is_pyinstaller():
         # running as a PyInstaller bundle
         if as_list:
             return [sys.executable]
@@ -46,10 +55,9 @@ def app_root() -> str:
     - In development mode, we return the absolute path to the directory where the angr management package is.
 
     :return:    A string that represents the path to the application that can be used to run angr management.
-    :rtype:     str|list
     """
 
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    if is_pyinstaller():
         # running as a PyInstaller bundle
         return os.path.dirname(sys.executable)
     else:

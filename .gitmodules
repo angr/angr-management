@@ -1,0 +1,3 @@
+[submodule "flirt_signatures"]
+	path = flirt_signatures
+	url = https://github.com/angr/flirt_signatures

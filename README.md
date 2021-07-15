@@ -29,11 +29,13 @@ angr-management can then be run with the command `angr-management`.
 
 ### Development Install
 
-See [angr-dev](https://github.com/angr/angr-dev) for how to set up a development enviroment for the angr suite.
+See [angr-dev](https://github.com/angr/angr-dev) for how to set up a development environment for the angr suite.
 angr-management is included by default and checked out to `angr-management` directory.
 If you encounter dependency issues, re-running `setup.sh` or `setup.bat` from angr-dev will ensure all dependencies are installed.
 
 angr-management can then be run with `angr-management` or `python start.py`.
+
+**FLIRT signatures**: For now, please manually clone FLIRT signatures by running `git clone --recurse-submodules https://github.com/angr/angr-management`, which will clone the `flirt_signatures` submodule.
 
 ## Usage
 
