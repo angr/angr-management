@@ -1,6 +1,6 @@
 # pylint:disable=unused-private-member
 import logging
-from typing import Optional, Tuple, Callable, Iterator, List, Any, Union, TYPE_CHECKING
+from typing import Optional, Tuple, Callable, Iterator, Generator, List, Any, Union, TYPE_CHECKING
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
@@ -14,6 +14,7 @@ _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.config.config_entry import ConfigurationEntry
     from ..ui.views import disassembly_view, code_view
     from ..ui.workspace import Workspace
 
@@ -51,6 +52,12 @@ class BasePlugin:
     # Generic callbacks
     #
 
+    def status_bar_permanent_widgets(self) -> Optional[Generator]:
+        """
+        Yields all widgets that should be added to the right side of the status bar of the main window.
+        """
+        return None
+
     def on_workspace_initialized(self, workspace: 'Workspace'):
         """
         A handler that is called right after a workspace is initialized.
@@ -86,6 +93,9 @@ class BasePlugin:
 
     def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent):
         return False
+
+    def handle_raise_view(self, view):
+        pass
 
     # iterable of tuples (icon, tooltip)
     TOOLBAR_BUTTONS = []  # type: List[Tuple[QIcon, str]]
@@ -139,6 +149,9 @@ class BasePlugin:
 
     def step_callback(self, simgr:SimulationManager):
         pass
+
+    # Custom configuration entries
+    CONFIG_ENTRIES: List['ConfigurationEntry'] = [ ]
 
     #
     # Decompiler Callbacks
@@ -200,4 +213,9 @@ class BasePlugin:
 
         @param file_name:       Name in which project is saved as.
         @return:
+        """
+
+    def handle_project_initialization(self):
+        """
+        A handler to set up the project name for logging.
         """

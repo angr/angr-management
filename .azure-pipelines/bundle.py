@@ -12,9 +12,10 @@ import angr
 import cle
 import z3
 import zmq
+import parso
 
 
-def make_common_options():
+def make_common_options(for_chess=False):
     """
     Create the pyinstaller command.
     """
@@ -52,7 +53,15 @@ def make_common_options():
             "angr/analyses/identifier/functions",
         ),
         (os.path.join(os.path.dirname(angr.__file__), "procedures"), "angr/procedures"),
+        (os.path.join(os.path.dirname(parso.__file__), "python"), "parso/python"),
     ]
+    if for_chess:
+        included_data.append(
+            (
+                os.path.join(os.path.dirname(angrmanagement.__file__), "flirt_signatures"),
+                "flirt_signatures"
+            )
+        )
     if sys.platform != "darwin":
         included_data.append(
             (
@@ -72,7 +81,6 @@ def make_common_options():
 
     if sys.platform == "linux":
         import keystone
-
         included_libs.append((os.path.dirname(keystone.__file__), "keystone"))
 
     all_mappings = [
@@ -81,12 +89,17 @@ def make_common_options():
     ]
 
     # include ipython because it's not autodetected for some reason
-    args = [
-        "pyinstaller",
-        "--name=angr-management",
+    hidden_import = [
         "--hidden-import=ipykernel.datapub",
         "--hidden-import=pkg_resources.py2_warn",
         "--hidden-import=sqlalchemy.sql.default_comparator",
+    ]
+    if for_chess:
+        hidden_import.append("--hidden-import=slacrs")
+    args = [
+        "pyinstaller",
+        ] + hidden_import + [
+        "--name=angr-management",
         "-w",
         "-i",
         os.path.join(
@@ -102,11 +115,11 @@ def make_common_options():
     return args
 
 
-def make_bundle(onefile=True):
+def make_bundle(onefile=True, for_chess=False):
     """
     Execute the pyinstaller command.
     """
-    args = make_common_options()
+    args = make_common_options(for_chess=for_chess)
 
     if onefile:
         args.append("--onefile")
@@ -121,10 +134,11 @@ def make_bundle(onefile=True):
 
 
 def main():
+    for_chess = "--chess" in sys.argv
     if "--onefile" in sys.argv:
-        make_bundle(onefile=True)
+        make_bundle(onefile=True, for_chess=for_chess)
     if "--onedir" in sys.argv:
-        make_bundle(onefile=False)
+        make_bundle(onefile=False, for_chess=for_chess)
 
 
 if __name__ == "__main__":

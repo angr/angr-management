@@ -42,5 +42,7 @@ setup(
         'requests[socks]',
         'sqlalchemy',
         'pyqodeng.core',
+        'qtterm',
+        'getmac',
     ]
 )

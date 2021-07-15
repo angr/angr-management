@@ -5,7 +5,7 @@ import sys
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
-from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
+from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QTabBar
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -26,11 +26,12 @@ except ImportError:
 
 from ..logic import GlobalInfo
 from ..data.instance import Instance
+from ..data.library_docs import LibraryDocs
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
 from ..data.jobs import DependencyAnalysisJob
 from ..config import IMG_LOCATION, Conf
 from ..utils.io import isurl, download_url
-from ..utils.env import app_root
+from ..utils.env import is_pyinstaller, app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
@@ -55,7 +56,7 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-    def __init__(self, parent=None, show=True):
+    def __init__(self, app: Optional['QApplication']=None, parent=None, show=True):
         super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
@@ -67,7 +68,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
-        self.app: 'QApplication' = None
+        self.app: Optional['QApplication'] = app
         self.workspace: Workspace = None
         self.central_widget = None
         self.central_widget2 = None
@@ -95,6 +96,7 @@ class MainWindow(QMainWindow):
         self._init_workspace()
         self._init_menus()
         self._init_plugins()
+        self._init_library_docs()
 
         self.workspace.plugins.on_workspace_initialized(self)
 
@@ -267,6 +269,8 @@ class MainWindow(QMainWindow):
                 self.caption = os.path.basename(self.workspace.instance.project.filename)
         self.workspace.instance.project.am_subscribe(set_caption)
 
+        self.tab = self.central_widget.findChild(QTabBar)
+        self.tab.tabBarClicked.connect(self.on_center_tab_clicked)
     #
     # Shortcuts
     #
@@ -307,8 +311,24 @@ class MainWindow(QMainWindow):
             if os.path.isabs(Conf.flirt_signatures_root):
                 flirt_signatures_root = Conf.flirt_signatures_root
             else:
-                flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+                if is_pyinstaller():
+                    flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+                else:
+                    # when running as a Python package, we should use the git submodule, which is on the same level
+                    # with (instead of inside) the angrmanagement module directory.
+                    flirt_signatures_root = os.path.join(app_root(), "..", Conf.flirt_signatures_root)
+            flirt_signatures_root = os.path.normpath(flirt_signatures_root)
+            _l.info("Loading FLIRT signatures from %s.", flirt_signatures_root)
             angr.flirt.load_signatures(flirt_signatures_root)
+
+    #
+    # Library docs
+    #
+
+    def _init_library_docs(self):
+        GlobalInfo.library_docs = LibraryDocs()
+        if Conf.library_docs_root:
+            GlobalInfo.library_docs.load_func_docs(Conf.library_docs_root)
 
     #
     # Event
@@ -371,6 +391,9 @@ class MainWindow(QMainWindow):
         """
         self.workspace.current_screen.am_obj = screen
         self.workspace.current_screen.am_event()
+
+    def on_center_tab_clicked(self, index):
+        self.workspace.view_manager.handle_center_tab_click(index)
 
     #
     # Actions

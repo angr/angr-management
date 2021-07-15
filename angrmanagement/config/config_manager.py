@@ -129,6 +129,9 @@ ENTRIES = [
     # FLIRT signatures
     CE('flirt_signatures_root', str, "./flirt_signatures/"),
 
+    # Library documentation
+    CE('library_docs_root', str, "./library_docs/"),
+
     # last-used directory
     CE('last_used_directory', str, ''),
 
@@ -145,7 +148,7 @@ ENTRIES = [
     # plugins
     CE('plugin_search_path', str, '$AM_BUILTIN_PLUGINS:~/.local/share/angr-management/plugins'),
     CE('plugin_blacklist', str, 'sample_plugin,log_fatigue_plugin,log_reverse_engineering_plugin'),
-    CE('enabled_plugins', str, 'binsync,trace_viewer,dep_viewer,'),
+    CE('enabled_plugins', str, 'binsync,trace_viewer,dep_viewer'),
 
     # configurations for individual plugins
     # TOOD: Move them to separate locations
@@ -171,11 +174,23 @@ class ConfigurationManager:
 
         if entries is None:
             self._entries = { }
-
-            for entry in ENTRIES:
-                self._entries[entry.name] = entry.copy()
+            self.load_initial_entries(reset=True)
         else:
             self._entries = entries
+
+    def load_initial_entries(self, reset: bool=True):
+        """
+        Load configuration entries into self._entries.
+
+        :param reset:   Reset all configuration items to their default values.
+        :return:        None
+        """
+        for entry in ENTRIES:
+            if entry.name not in self._entries:
+                self._entries[entry.name] = entry.copy()
+            else:
+                if reset:
+                    self._entries[entry.name] = entry.copy()
 
     @staticmethod
     def _manage_font_cache(real_font, font, metrics, height, width, ascent):
@@ -323,7 +338,7 @@ class ConfigurationManager:
         return list(super().__dir__()) + list(self._entries)
 
     @classmethod
-    def parse(cls, f):
+    def parse(cls, f, ignore_unknown_entries: bool=True):
         entry_map = {}
         for entry in ENTRIES:
             entry_map[entry.name] = entry.copy()
@@ -333,8 +348,14 @@ class ConfigurationManager:
 
             for k, v in loaded.items():
                 if k not in entry_map:
-                    _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
-                    continue
+                    if ignore_unknown_entries:
+                        _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
+                        continue
+                    else:
+                        # default to a string
+                        entry = CE(k, str, v)
+                        entry_map[k] = entry
+
                 entry = entry_map[k]
 
                 if entry.type_ in data_serializers:
@@ -346,15 +367,15 @@ class ConfigurationManager:
                              v, k, type(v), entry.type_)
                     continue
                 entry.value = v
-        except toml.TomlDecodeError as e:
-            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', e.msg)
+        except toml.TomlDecodeError as ex:
+            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', ex.msg)
 
         return cls(entry_map)
 
     @classmethod
-    def parse_file(cls, path:str):
+    def parse_file(cls, path: str, ignore_unknown_entries: bool=True):
         with open(path, 'r') as f:
-            return cls.parse(f)
+            return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 
     def save(self, f):
         out = {}
@@ -386,7 +407,7 @@ class ConfigurationManager:
             if os.path.isfile(initial_config_path):
                 from . import save_config  # delayed import
                 # we found it!
-                new_conf = self.__class__.parse_file(initial_config_path)
+                new_conf = self.__class__.parse_file(initial_config_path, ignore_unknown_entries=False)
                 # copy entries over
                 self._entries = new_conf._entries
                 # save it!
