@@ -2,7 +2,7 @@ import os
 import json
 import logging
 
-from ..utils.env import app_root
+from ..utils.env import is_pyinstaller, app_root
 
 _l = logging.getLogger(name=__name__)
 
@@ -13,7 +13,10 @@ class LibraryDocs:
 
     def load_func_docs(self, path):
         if not os.path.isabs(path):
-            path = os.path.join(app_root(), "..", path)
+            if is_pyinstaller():
+                path = os.path.join(app_root(), path)
+            else:
+                path = os.path.join(app_root(), "..", path)
         path = os.path.normpath(path)
         _l.info("Loading library docs from %s.", path)
         docs = [ ]
