@@ -94,6 +94,9 @@ class BasePlugin:
     def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent):
         return False
 
+    def handle_raise_view(self, view):
+        pass
+
     # iterable of tuples (icon, tooltip)
     TOOLBAR_BUTTONS = []  # type: List[Tuple[QIcon, str]]
 
@@ -210,4 +213,9 @@ class BasePlugin:
 
         @param file_name:       Name in which project is saved as.
         @return:
+        """
+
+    def handle_project_initialization(self):
+        """
+        A handler to set up the project name for logging.
         """

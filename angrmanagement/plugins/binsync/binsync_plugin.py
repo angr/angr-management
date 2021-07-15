@@ -1,11 +1,10 @@
 from angrmanagement.plugins import BasePlugin
 
 from ...ui.workspace import Workspace
-from .sync_config import SyncConfig
-from .info_view import InfoView
-from .sync_menu import SyncMenu
-
-from .sync_ctrl import BinsyncController
+from .ui.config_dialog import SyncConfig
+from .ui.info_panel import InfoView
+from .ui.sync_menu import SyncMenu
+from .controller import BinsyncController
 
 # check to see if BinSync is installed
 try:
@@ -69,7 +68,7 @@ class BinsyncPlugin(BasePlugin):
             # project does not exist yet
             return
 
-        sync_config = SyncConfig(self.workspace.instance)
+        sync_config = SyncConfig(self.workspace.instance, self.controller)
         sync_config.exec_()
 
     def build_context_menu_functions(self, funcs): # pylint: disable=unused-argument

@@ -148,7 +148,7 @@ ENTRIES = [
     # plugins
     CE('plugin_search_path', str, '$AM_BUILTIN_PLUGINS:~/.local/share/angr-management/plugins'),
     CE('plugin_blacklist', str, 'sample_plugin,log_fatigue_plugin,log_reverse_engineering_plugin'),
-    CE('enabled_plugins', str, 'binsync,trace_viewer,dep_viewer,'),
+    CE('enabled_plugins', str, 'binsync,trace_viewer,dep_viewer'),
 
     # configurations for individual plugins
     # TOOD: Move them to separate locations

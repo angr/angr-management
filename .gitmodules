@@ -1,3 +1,6 @@
 [submodule "library_docs"]
 	path = library_docs
 	url = https://github.com/angr/library_docs
+[submodule "flirt_signatures"]
+	path = flirt_signatures
+	url = https://github.com/angr/flirt_signatures

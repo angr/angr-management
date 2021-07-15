@@ -57,7 +57,10 @@ class QInstruction(QCachedGraphicsItem):
         self._init_widgets()
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        if event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (Qt.NoModifier, Qt.ControlModifier):
+        if self.workspace.plugins.handle_click_insn(self, event):
+            # stop handling this event if the event has been handled by a plugin
+            event.accept()
+        elif event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (Qt.NoModifier, Qt.ControlModifier):
             # toggle selection
             self.infodock.toggle_instruction_selection(
                 self.addr,
@@ -68,8 +71,6 @@ class QInstruction(QCachedGraphicsItem):
             if self.addr not in self.infodock.selected_insns:
                 self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
-            event.accept()
-        elif self.workspace.plugins.handle_click_insn(self, event):
             event.accept()
         else:
             super().mousePressEvent(event)

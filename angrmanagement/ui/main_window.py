@@ -5,7 +5,7 @@ import sys
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
-from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut
+from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QTabBar
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -31,7 +31,7 @@ from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
 from ..data.jobs import DependencyAnalysisJob
 from ..config import IMG_LOCATION, Conf
 from ..utils.io import isurl, download_url
-from ..utils.env import app_root
+from ..utils.env import is_pyinstaller, app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
@@ -269,6 +269,8 @@ class MainWindow(QMainWindow):
                 self.caption = os.path.basename(self.workspace.instance.project.filename)
         self.workspace.instance.project.am_subscribe(set_caption)
 
+        self.tab = self.central_widget.findChild(QTabBar)
+        self.tab.tabBarClicked.connect(self.on_center_tab_clicked)
     #
     # Shortcuts
     #
@@ -309,7 +311,14 @@ class MainWindow(QMainWindow):
             if os.path.isabs(Conf.flirt_signatures_root):
                 flirt_signatures_root = Conf.flirt_signatures_root
             else:
-                flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+                if is_pyinstaller():
+                    flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+                else:
+                    # when running as a Python package, we should use the git submodule, which is on the same level
+                    # with (instead of inside) the angrmanagement module directory.
+                    flirt_signatures_root = os.path.join(app_root(), "..", Conf.flirt_signatures_root)
+            flirt_signatures_root = os.path.normpath(flirt_signatures_root)
+            _l.info("Loading FLIRT signatures from %s.", flirt_signatures_root)
             angr.flirt.load_signatures(flirt_signatures_root)
 
     #
@@ -382,6 +391,9 @@ class MainWindow(QMainWindow):
         """
         self.workspace.current_screen.am_obj = screen
         self.workspace.current_screen.am_event()
+
+    def on_center_tab_clicked(self, index):
+        self.workspace.view_manager.handle_center_tab_click(index)
 
     #
     # Actions

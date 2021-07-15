@@ -1,10 +1,10 @@
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QComboBox
 
-from ...ui.views.view import BaseView
-from .info_tables.func_info_table import QFuncInfoTable
+from angrmanagement.ui.views.view import BaseView
+from .info_tables import QFuncInfoTable
 from .info_tables.struct_info_table import QStructInfoTable
 
-from .sync_ctrl import BinsyncController, STATUS_TEXT, SyncControlStatus
+from ..controller import BinsyncController, SyncControlStatus
 
 
 class InfoView(BaseView):
@@ -36,12 +36,14 @@ class InfoView(BaseView):
 
     def reload(self):
         # reload the status
-        status = self.controller.status_string
-        if status == STATUS_TEXT[SyncControlStatus.CONNECTED]:
+        status = self.controller.status
+        if status == SyncControlStatus.CONNECTED:
             self._status_label.setStyleSheet("color: green")
+        elif SyncControlStatus.CONNECTED_NO_REMOTE:
+            self._status_label.setStyleSheet("color: yellow")
         else:
             self._status_label.setStyleSheet("color: red")
-        self._status_label.setText(status)
+        self._status_label.setText(self.controller.status_string)
 
         # reload the info tables
         if self.controller.check_client():
@@ -111,4 +113,6 @@ class InfoView(BaseView):
     def _update_info_tables(self):
         if self.controller.sync.has_remote:
             self.controller.sync.client.init_remote()
-            self._active_table.update_users(self.controller.sync.users())
+
+
+        self._active_table.update_users(self.controller.sync.users())

@@ -31,13 +31,15 @@ class SyncControlStatus:
     NO_PROJECT = 0
     NO_SYNC = 1
     NO_SYNCREPO = 2
-    CONNECTED = 3
+    CONNECTED_NO_REMOTE = 3
+    CONNECTED = 4
 
 
 STATUS_TEXT = {
     SyncControlStatus.NO_PROJECT: "No angr project",
     SyncControlStatus.NO_SYNC: "The current angr (or project) does not support binsync.",
     SyncControlStatus.NO_SYNCREPO: "Not connected to a sync repo",
+    SyncControlStatus.CONNECTED_NO_REMOTE: "Connected to a sync repo (no remote)",
     SyncControlStatus.CONNECTED: "Connected to a sync repo",
 }
 
@@ -61,6 +63,8 @@ class BinsyncController:
         # command locks
         self.queue_lock = threading.Lock()
         self.cmd_queue = OrderedDict()
+
+        self._last_reload = time.time()
 
         # start the pull routine
         # pylint:disable=consider-using-with
@@ -103,17 +107,18 @@ class BinsyncController:
                 # Pull new items
                 self.instance.kb.sync.pull()
 
-                # reload the info panel if it's registered
-                if self.info_panel is not None:
+            if self.check_client():
+                # run an operation every second
+                self.eval_cmd_queue()
+
+                # reload info panel every 10 seconds
+                if self.info_panel is not None and time.time() - self._last_reload > 10:
                     try:
+                        self._last_reload = time.time()
                         self.info_panel.reload()
                     except RuntimeError:
                         # the panel has been closed
                         self.info_panel = None
-
-            # run an operation every second
-            if self.check_client() and self.instance.kb.sync.has_remote:
-                self.eval_cmd_queue()
 
             # Snooze
             time.sleep(1)
@@ -122,12 +127,14 @@ class BinsyncController:
     #   State & Status Functions
     #
 
-    def connect(self):
-        self.instance.kb.sync.connect()
-
     @property
     def sync(self) -> SyncController:
         return self.instance.kb.sync
+
+    def connect(self, user, path, bin_hash, init_repo=False, remote_url=None):
+        self.sync.connect(user, path, bin_hash=bin_hash, init_repo=init_repo, remote_url=remote_url)
+        warnings = self.sync.client.connection_warnings
+        BinsyncController._parse_and_display_connection_warnings(warnings)
 
     def check_client(self, message_box=False):
         if self.instance.kb is None or not hasattr(self.instance.kb, 'sync') or self.instance.kb.sync.client is None:
@@ -150,6 +157,8 @@ class BinsyncController:
             return SyncControlStatus.NO_SYNC
         if not self.instance.project.kb.sync.connected:
             return SyncControlStatus.NO_SYNCREPO
+        if not self.instance.project.kb.sync.has_remote:
+            return SyncControlStatus.CONNECTED_NO_REMOTE
         return SyncControlStatus.CONNECTED
 
     @property
@@ -213,6 +222,23 @@ class BinsyncController:
     #
     #   Utils
     #
+
+    @staticmethod
+    def _parse_and_display_connection_warnings(warnings):
+        warning_text = ""
+
+        for warning in warnings:
+            if warning == binsync.ConnectionWarnings.HASH_MISMATCH:
+                warning_text += "Warning: the hash stored for this BinSync project does not match"
+                warning_text += " the hash of the binary you are attempting to analyze. It's possible"
+                warning_text += " you are working on a different binary.\n"
+
+        if len(warning_text) > 0:
+            QMessageBox.warning(
+                None,
+                "BinSync: Connection Warnings",
+                warning_text
+            )
 
     def decompile_function(self, func, refresh_gui=False):
         # check for known decompilation
