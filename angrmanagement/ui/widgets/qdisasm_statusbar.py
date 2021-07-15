@@ -1,24 +1,31 @@
 import os
 import logging
+from typing import Optional
 
 from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
-from PySide2.QtCore import Qt
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
+from ..toolbars import NavToolbar
 from .qdisasm_base_control import DisassemblyLevel
 from .qdisasm_graph import QDisassemblyGraph
 from .qlinear_viewer import QLinearDisassembly
+
 
 _l = logging.getLogger(__name__)
 
 
 class QDisasmStatusBar(QFrame):
+    """
+    Status and control bar for disassembly views
+    """
+
     def __init__(self, disasm_view, parent=None):
-        super(QDisasmStatusBar, self).__init__(parent)
+        super().__init__(parent)
 
         self.disasm_view = disasm_view
 
         # widgets
+        self._nav_toolbar: Optional[NavToolbar] = None
         self._function_label: QLabel = None
         self._options_menu: DisasmOptionsMenu = None
         self._view_combo: QComboBox = None
@@ -50,6 +57,12 @@ class QDisasmStatusBar(QFrame):
     #
 
     def _init_widgets(self):
+        self._nav_toolbar = NavToolbar(
+            self.disasm_view.jump_history,
+            self.disasm_view.jump_back,
+            self.disasm_view.jump_forward,
+            self.disasm_view.jump_to_history_position,
+            True, self)
 
         # current function
         self._function_label = QLabel()
@@ -81,9 +94,12 @@ class QDisasmStatusBar(QFrame):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(2, 2, 2, 2)
+
+        layout.addWidget(self._nav_toolbar.qtoolbar())
         layout.addWidget(self._function_label)
 
         layout.addStretch(0)
+
         layout.addWidget(saveimage_btn)
         layout.addWidget(self._view_combo)
         layout.addWidget(self._disasm_level_combo)
