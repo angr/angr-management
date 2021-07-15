@@ -12,7 +12,13 @@ except ImportError:
 
 
 class SyncConfig(QDialog):
-    def __init__(self, instance, parent=None):
+    """
+    The dialog that allows a user to config a BinSync client for:
+    - initing a local repo
+    - cloning a remote
+    - using a locally pulled remote repo
+    """
+    def __init__(self, instance, controller, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle("Configure BinSync")
@@ -24,6 +30,7 @@ class SyncConfig(QDialog):
 
         # initialization
         self._instance = instance
+        self._controller = controller
 
         self._main_layout = QVBoxLayout()
         self._user_edit = None  # type:QLineEdit
@@ -90,7 +97,8 @@ class SyncConfig(QDialog):
         # initialize repo checkbox
         self._initrepo_checkbox = QCheckBox(self)
         self._initrepo_checkbox.setText("Create repository")
-        self._initrepo_checkbox.setToolTip("I'm the first user of this binsync project and I'd like to initialize it as a sync repo.")
+        self._initrepo_checkbox.setToolTip("I'm the first user of this binsync project and I'd "
+                                           "like to initialize it as a sync repo.")
         self._initrepo_checkbox.setChecked(False)
         self._initrepo_checkbox.setEnabled(False)
 
@@ -145,7 +153,8 @@ class SyncConfig(QDialog):
 
         try:
             md5 = self._instance.project.loader.main_object.md5.hex()
-            self._instance.kb.sync.connect(user, path, bin_hash=md5, init_repo=init_repo, remote_url=remote_url)
+            self._controller.connect(user, path, md5, init_repo=init_repo, remote_url=remote_url)
+        # pylint:disable=broad-except
         except Exception as e:
             QMessageBox(self).critical(None, "Error connecting to repository", str(e))
             traceback.print_exc()

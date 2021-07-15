@@ -1,13 +1,17 @@
 from PySide2.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWidgetItem, \
     QDialogButtonBox, QGridLayout, QHeaderView, QAbstractItemView
 
-from .sync_ctrl import BinsyncController
+from ..controller import BinsyncController
 #
 #   MenuDialog Box for Binsync Actions
 #
 
 
 class MenuDialog(QDialog):
+    """
+    The dialog shown when right clicking on a function in the function table. Gives direct access to the
+    SyncMenu class, which allows the user to control syncing of functions and structs.
+    """
     def __init__(self, menu_table, parent=None):
         super().__init__(parent)
 
@@ -74,6 +78,13 @@ class MenuDialog(QDialog):
 
 
 class SyncMenu:
+    """
+    The UI to directly use the controller for syncing operations.
+    Allows the user to select another user and do one of 3 options:
+    1. Sync (the selected functions)
+    2. Sync Structs
+    3. Sync All (grab every function for that user)
+    """
     def __init__(self, controller, funcs):
         self.controller: BinsyncController = controller
         self.selected_funcs = funcs
