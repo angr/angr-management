@@ -9,7 +9,7 @@ from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBo
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
 
-from ...config import DOCS_LOCATION
+from ...config import Conf
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
@@ -79,8 +79,7 @@ class DisassemblyView(BaseView):
         self._label_addr_on_context_menu = None
 
         self._annotation_callbacks = []
-        self.priority_file = "priority.txt"
-        self.func_docs = self._load_func_docs(path=DOCS_LOCATION)
+        self.func_docs = self._load_func_docs(path=Conf.library_docs_root)
 
         self.width_hint = 800
         self.height_hint = 800
@@ -717,16 +716,21 @@ class DisassemblyView(BaseView):
     #
 
     def _load_func_docs(self, path):
-        priority_path = os.path.join(path, self.priority_file)
-        docs = []
-        with open(priority_path, "r") as pfile:
-            for line in pfile:
-                jpath = os.path.join(path, line.strip())
-                with open(jpath, "r") as jfile:
-                    data = json.load(jfile)
-                    docs.append(data)
-                jfile.close()
-        pfile.close()
+        from ...utils.env import app_root
+
+        if not os.path.isabs(path):
+            path = os.path.join(app_root(), "..", path)
+        path = os.path.normpath(path)
+        _l.info("Loading library docs from %s.", path)
+        print(path)
+        docs = [ ]
+        if os.path.isdir(path):
+            for filename in os.listdir(path):
+                if filename.endswith(".json"):
+                    jpath = os.path.join(path, filename)
+                    with open(jpath, "r") as jfile:
+                        data = json.load(jfile)
+                        docs.append(data)
 
         return docs
 
