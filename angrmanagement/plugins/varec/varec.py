@@ -104,7 +104,6 @@ class VaRec(BasePlugin):
             ]
         }
         r = requests.post(f"{Conf.varec_endpoint}", data=json.dumps(d), proxies=proxies)
-        print(json.dumps(d))
         try:
             result = json.loads(r.text)
         except json.JSONDecodeError:
