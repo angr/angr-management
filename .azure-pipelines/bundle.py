@@ -56,10 +56,17 @@ def make_common_options(for_chess=False):
         (os.path.join(os.path.dirname(parso.__file__), "python"), "parso/python"),
     ]
     if for_chess:
+        repo_dir = os.path.dirname(os.path.dirname(angrmanagement.__file__))
         included_data.append(
             (
-                os.path.join(os.path.dirname(angrmanagement.__file__), "flirt_signatures"),
+                os.path.join(repo_dir, "flirt_signatures"),
                 "flirt_signatures"
+            )
+        )
+        included_data.append(
+            (
+                os.path.join(repo_dir, "library_docs"),
+                "library_docs"
             )
         )
     if sys.platform != "darwin":
