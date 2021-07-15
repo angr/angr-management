@@ -1,15 +1,13 @@
 
 from collections import defaultdict
 import logging
-import json
-import os
 from typing import Union, Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
 
-from ...config import Conf
+from ...logic import GlobalInfo
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
@@ -79,7 +77,6 @@ class DisassemblyView(BaseView):
         self._label_addr_on_context_menu = None
 
         self._annotation_callbacks = []
-        self.func_docs = self._load_func_docs(path=Conf.library_docs_root)
 
         self.width_hint = 800
         self.height_hint = 800
@@ -379,9 +376,9 @@ class DisassemblyView(BaseView):
             target = next(iter(out_targets))
             operand = instr.get_operand(0)
 
-            doc_tuple = self._get_doc_string_for_func_name(func_name=operand.text)
+            doc_tuple = GlobalInfo.library_docs.get_docstring_for_func_name(operand.text)
             if doc_tuple is None:
-                doc_string = "Unable to find doc string for libcall"
+                doc_string = f"Cannot find local documentation for function {operand.text}."
                 url = "http://"
                 ftype = "<>"
                 doc_tuple = (doc_string, url, ftype)
@@ -714,47 +711,6 @@ class DisassemblyView(BaseView):
     #
     # Private methods
     #
-
-    def _load_func_docs(self, path):
-        from ...utils.env import app_root
-
-        if not os.path.isabs(path):
-            path = os.path.join(app_root(), "..", path)
-        path = os.path.normpath(path)
-        _l.info("Loading library docs from %s.", path)
-        print(path)
-        docs = [ ]
-        if os.path.isdir(path):
-            for filename in os.listdir(path):
-                if filename.endswith(".json"):
-                    jpath = os.path.join(path, filename)
-                    with open(jpath, "r") as jfile:
-                        data = json.load(jfile)
-                        docs.append(data)
-
-        return docs
-
-    def _get_doc_string_for_func_name(self, func_name):
-        for library in self.func_docs:
-            for func_dict in library:
-                if "name" not in func_dict.keys():
-                    continue
-                if "description" not in func_dict.keys():
-                    continue
-                names = func_dict["name"]
-                name_list = names.split(",")
-                for name in name_list:
-                    name = name.strip()
-                    if func_name == name:
-                        doc_string = func_dict["description"]
-                        url = "http://"
-                        ftype = "<>"
-                        if "url" in func_dict.keys():
-                            url = func_dict["url"]
-                        if "type" in func_dict.keys():
-                            ftype = func_dict["type"]
-                        return doc_string, url, ftype
-        return None
 
     def _display_function(self, the_func):
         self._current_function.am_obj = the_func

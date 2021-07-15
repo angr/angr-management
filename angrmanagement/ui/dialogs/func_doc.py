@@ -1,16 +1,20 @@
+from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QScrollArea, QWidget
+    QGridLayout, QTextEdit
+
+from ...config import Conf
 from ...data.instance import Instance
 
 
 class FuncDocDialog(QDialog):
     """
-    Provide templates of FuncDocDialog function.
+    Implements the FuncDoc dialog.
     """
     def __init__(self, instance: Instance, addr=None, name="", doc_tuple=None, parent=None):
         super().__init__(parent)
 
         # initialization
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.instance = instance
         self._addr = addr
@@ -42,24 +46,19 @@ class FuncDocDialog(QDialog):
 
         layout.addWidget(type_label)
 
-
-        scroll_area = QScrollArea(self)
-        scroll_area.setWidgetResizable(True)
-        widget = QWidget()
-        scroll_area.setWidget(widget)
-        layout_scroll = QVBoxLayout(widget)
-
-        doc_label = QLabel(self)
-        doc_label.setText(self._doc)
+        text_edit = QTextEdit(self)
+        text_edit.setMinimumWidth(800)
+        text_edit.setMinimumHeight(450)
+        text_edit.setFont(Conf.disasm_font)
+        text_edit.setText(self._doc)
 
         url_label = QLabel(self)
         url_label.setText(self._url)
 
-        layout_scroll.addWidget(doc_label)
-        layout_scroll.addWidget(url_label)
-        layout.addWidget(scroll_area)
+        layout.addWidget(text_edit)
+        layout.addWidget(url_label)
 
-        self._ok_button = QPushButton('Ok', self)
+        self._ok_button = QPushButton('Close', self)
         self._ok_button.clicked.connect(self._ok_method)
 
         self.main_layout.addLayout(layout)

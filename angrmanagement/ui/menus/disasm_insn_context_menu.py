@@ -35,8 +35,8 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuEntry('&Find in execution...', self._find_in_execution),
-            MenuEntry('Add &Hook...', self._add_hook),
-            MenuEntry('View &Documentation...', self._view_docs)
+            MenuEntry('Add &hook...', self._add_hook),
+            MenuEntry('View function &documentation...', self._view_docs)
         ])
 
     @property
