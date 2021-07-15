@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
+
 class ViewManager:
     """
     Manages views.
@@ -30,6 +31,7 @@ class ViewManager:
         self.views = [ ]
         self.docks = [ ]
         self.view_to_dock = { }
+        self.dock_to_view = { }
         self.views_by_category: Dict[str,List[BaseView]] = defaultdict(list)
 
     @property
@@ -48,7 +50,7 @@ class ViewManager:
 
         self.views_by_category[category].append(view)
 
-        dock = QSmartDockWidget(caption, parent=view, on_close=functools.partial(self.remove_view, view))
+        dock = QSmartDockWidget(caption, parent=view, on_close=functools.partial(self.remove_view, view), on_raise=functools.partial(self._handle_raise_view, view))
         dock_area = self.DOCKING_POSITIONS.get(view.default_docking_position, Qt.RightDockWidgetArea)
         if view.default_docking_position == 'center':
             self.main_window.central_widget.addDockWidget(dock_area, dock)
@@ -61,6 +63,7 @@ class ViewManager:
         self.views.append(view)
         self.docks.append(dock)
         self.view_to_dock[view] = dock
+        self.dock_to_view[dock] = view
 
         if retab:
             self.tabify_center_views()
@@ -100,7 +103,6 @@ class ViewManager:
 
         if retab:
             self.tabify_center_views()
-
 
     def raise_view(self, view):
         """
@@ -159,10 +161,10 @@ class ViewManager:
     def get_current_tab_id(self):
         """
         Get Current Tab ID
-        
+
         :return:    Tab ID (int)
         """
-        
+
         center_dockable_views = self.get_center_views()
         for i in range(1,len(center_dockable_views)+1):
             if center_dockable_views[i-1].visibleRegion().isEmpty() is False:
@@ -197,3 +199,12 @@ class ViewManager:
     @property
     def current_tab(self):
         return self.get_center_views()[self.get_current_tab_id()].widget()
+
+    def _handle_raise_view(self, view):
+        self.workspace.plugins.handle_raise_view(view)
+
+    def handle_center_tab_click(self, index):
+        center_docks = self.get_center_views()
+        dock = center_docks[index]
+        view = self.dock_to_view[dock]
+        self._handle_raise_view(view)
