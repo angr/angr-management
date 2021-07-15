@@ -30,7 +30,7 @@ from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
 from ..data.jobs import DependencyAnalysisJob
 from ..config import IMG_LOCATION, Conf
 from ..utils.io import isurl, download_url
-from ..utils.env import app_root
+from ..utils.env import is_pyinstaller, app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
@@ -309,7 +309,14 @@ class MainWindow(QMainWindow):
             if os.path.isabs(Conf.flirt_signatures_root):
                 flirt_signatures_root = Conf.flirt_signatures_root
             else:
-                flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+                if is_pyinstaller():
+                    flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
+                else:
+                    # when running as a Python package, we should use the git submodule, which is on the same level
+                    # with (instead of inside) the angrmanagement module directory.
+                    flirt_signatures_root = os.path.join(app_root(), "..", Conf.flirt_signatures_root)
+            flirt_signatures_root = os.path.normpath(flirt_signatures_root)
+            _l.info("Loading FLIRT signatures from %s.", flirt_signatures_root)
             angr.flirt.load_signatures(flirt_signatures_root)
 
     #
