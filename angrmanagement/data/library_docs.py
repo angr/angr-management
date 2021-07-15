@@ -8,6 +8,9 @@ _l = logging.getLogger(name=__name__)
 
 
 class LibraryDocs:
+    """
+    Implements the manager of library docs.
+    """
     def __init__(self):
         self.func_docs = [ ]
 
