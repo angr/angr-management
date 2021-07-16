@@ -6,20 +6,20 @@ import unittest
 
 from PySide2.QtTest import QTest
 from PySide2.QtCore import Qt
-import git
 
+import angr
+import common
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.main_window import MainWindow
 from angrmanagement.plugins.binsync.binsync_plugin import BinsyncPlugin
 from angrmanagement.plugins.binsync.ui.config_dialog import SyncConfig
-from angrmanagement.plugins.binsync.ui.sync_menu import MenuDialog, SyncMenu
-import angr
-
-from angrmanagement.ui.widgets.qaddress_input import QAddressInput
-import common
+from angrmanagement.plugins.binsync.ui.sync_menu import SyncMenu
 
 
 class TestBinsyncPlugin(unittest.TestCase):
+    """
+    Unit Tests to test the BinSync Plugin for syncing across two users.
+    """
 
     def setUp(self):
         common.setUp()
@@ -81,6 +81,7 @@ class TestBinsyncPlugin(unittest.TestCase):
 
             # assure a new commit makes it to the repo
             time.sleep(10)
+            # reset the repo
             os.remove(sync_dir_path+"/.git/binsync.lock")
 
             # ====== USER 2 ======
