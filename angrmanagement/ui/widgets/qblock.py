@@ -63,6 +63,7 @@ class QBlock(QCachedGraphicsItem):
         self._init_widgets()
 
         self._objects_are_hidden = False
+        self._objects_are_temporarily_hidden = False
 
         self._create_block_item()
 
@@ -263,6 +264,16 @@ class QGraphBlock(QBlock):
 
         return self._config.disasm_view_node_background_color
 
+    def _set_block_objects_visibility(self, visible:bool):
+        for obj in self.objects:
+            obj.setVisible(visible)
+            obj.setEnabled(visible)
+
+    def restore_temporarily_hidden_objects(self):
+        if self._objects_are_temporarily_hidden != self._objects_are_hidden:
+            self._set_block_objects_visibility(not self._objects_are_hidden)
+            self._objects_are_temporarily_hidden = self._objects_are_hidden
+
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
@@ -286,10 +297,12 @@ class QGraphBlock(QBlock):
 
         # if we are too far zoomed out, do not draw the text
         if self._objects_are_hidden != should_omit_text:
-            for obj in self.objects:
-                obj.setVisible(not should_omit_text)
-                obj.setEnabled(not should_omit_text)
-            self._objects_are_hidden = should_omit_text
+            self._set_block_objects_visibility(not should_omit_text)
+            view = self.scene.parent()
+            if view.is_extra_render_pass:
+                self._objects_are_temporarily_hidden = should_omit_text
+            else:
+                self._objects_are_hidden = should_omit_text
 
         # extra content
         self.workspace.plugins.draw_block(self, painter)

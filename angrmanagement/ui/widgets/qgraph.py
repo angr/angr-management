@@ -27,6 +27,20 @@ class QBaseGraphicsView(QGraphicsView):
 
 class QSaveableGraphicsView(QBaseGraphicsView):
 
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self._is_extra_render_pass: bool = False
+
+    @property
+    def is_extra_render_pass(self):
+        return self._is_extra_render_pass
+
+    def set_extra_render_pass(self, is_extra_pass:bool):
+        """
+        Trigger any post-render callbacks
+        """
+        self._is_extra_render_pass = is_extra_pass
+
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
 
         margins = QMarginsF(left_margin, top_margin, right_margin, bottom_margin)
@@ -91,7 +105,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
     def _reset_scene(self):
         if self.scene() is None:
-            scene = QGraphicsScene()
+            scene = QGraphicsScene(self)
             self.setScene(scene)
         else:
             self.scene().clear()
