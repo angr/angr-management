@@ -106,17 +106,17 @@ class SyncConfig(QDialog):
         row += 1
 
         # buttons
-        ok_button = QPushButton(self)
-        ok_button.setText("OK")
-        ok_button.setDefault(True)
-        ok_button.clicked.connect(self._on_ok_clicked)
+        self._ok_button = QPushButton(self)
+        self._ok_button.setText("OK")
+        self._ok_button.setDefault(True)
+        self._ok_button.clicked.connect(self._on_ok_clicked)
 
         cancel_button = QPushButton(self)
         cancel_button.setText("Cancel")
         cancel_button.clicked.connect(self._on_cancel_clicked)
 
         buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
+        buttons_layout.addWidget(self._ok_button)
         buttons_layout.addWidget(cancel_button)
 
         # main layout
