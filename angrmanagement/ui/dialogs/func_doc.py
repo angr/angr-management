@@ -19,9 +19,9 @@ class FuncDocDialog(QDialog):
         self.instance = instance
         self._addr = addr
         self._name = name
-        self._doc = doc_tuple[0]
-        self._url = doc_tuple[1]
-        self._ftype = doc_tuple[2]
+        self._doc = doc_tuple[0].strip()
+        self._url = doc_tuple[1].strip()
+        self._ftype = doc_tuple[2].strip()
         self._ok_button = None
         self.setWindowTitle('Function Documentation')
         self.main_layout = QVBoxLayout()
@@ -53,7 +53,9 @@ class FuncDocDialog(QDialog):
         text_edit.setText(self._doc)
 
         url_label = QLabel(self)
-        url_label.setText(self._url)
+        hyperlink = "<a href=\"%s\">%s</a>" % (self._url, self._url)
+        url_label.setText(hyperlink)
+        url_label.setOpenExternalLinks(True)
 
         layout.addWidget(text_edit)
         layout.addWidget(url_label)
