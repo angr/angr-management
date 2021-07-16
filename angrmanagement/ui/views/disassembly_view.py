@@ -50,6 +50,7 @@ class DisassemblyView(BaseView):
         self.caption = 'Disassembly'
 
         self._disassembly_level = DisassemblyLevel.MachineCode
+        self._show_minimap: bool = True
         self._show_address = True
         self._show_variable = True
         # whether we want to show identifier or not
@@ -124,6 +125,10 @@ class DisassemblyView(BaseView):
     @property
     def disasm(self):
         return self._flow_graph.disasm
+
+    @property
+    def show_minimap(self):
+        return self._show_minimap
 
     @property
     def smart_highlighting(self):
@@ -511,6 +516,13 @@ class DisassemblyView(BaseView):
                 curr_ins = None
 
             self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
+
+    def toggle_show_minimap(self, show:bool):
+        """
+        Toggle minimap display preference
+        """
+        self._show_minimap = show
+        self.current_graph.refresh()
 
     def toggle_smart_highlighting(self, enabled):
         """
