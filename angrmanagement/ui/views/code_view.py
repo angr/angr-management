@@ -16,9 +16,11 @@ from .view import BaseView
 from ...data.object_container import ObjectContainer
 from ...logic.disassembly import JumpHistory
 from ...data.jobs import DecompileFunctionJob
+from ..toolbars import NavToolbar
 
 
 l = logging.getLogger(__name__)
+
 
 class CodeView(BaseView):
     """
@@ -39,7 +41,8 @@ class CodeView(BaseView):
         self._textedit: Optional[QCCodeEdit] = None
         self._doc: Optional[QCodeDocument] = None
         self._options: Optional[QDecompilationOptions] = None
-        self.jump_history = JumpHistory()
+        self.jump_history: JumpHistory = JumpHistory()
+        self._nav_toolbar: Optional[NavToolbar] = None
         self._view_selector: Optional[QComboBox] = None
 
         self.vars_must_struct: Set[str] = set()
@@ -257,6 +260,27 @@ class CodeView(BaseView):
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.workspace.jump_to(selected_node.value)
 
+    def _jump_to(self, addr:int):
+        self.addr.am_obj = addr
+        self.addr.am_event()
+
+    def jump_back(self):
+        addr = self.jump_history.backtrack()
+        if addr is None:
+            self.close()
+        else:
+            self._jump_to(addr)
+
+    def jump_forward(self):
+        addr = self.jump_history.forwardstep()
+        if addr is not None:
+            self._jump_to(addr)
+
+    def jump_to_history_position(self, pos:int):
+        addr = self.jump_history.step_position(pos)
+        if addr is not None:
+            self._jump_to(addr)
+
     def keyPressEvent(self, event):
         key = event.key()
         if key == Qt.Key_Tab:
@@ -264,12 +288,7 @@ class CodeView(BaseView):
             self.workspace.jump_to(self.addr.am_obj)
             return True
         elif key == Qt.Key_Escape:
-            addr = self.jump_history.backtrack()
-            if addr is None:
-                self.close()
-            else:
-                self.addr.am_obj = addr
-                self.addr.am_event()
+            self.jump_back()
             return True
         elif key == Qt.Key_Space:
             if not self.codegen.am_none:
@@ -318,10 +337,17 @@ class CodeView(BaseView):
 
         # status bar
         status_bar = QFrame()
+        self._nav_toolbar = NavToolbar(
+            self.jump_history,
+            self.jump_back,
+            self.jump_forward,
+            self.jump_to_history_position,
+            True, self)
         self._view_selector = QComboBox()
         self._view_selector.addItems(["pseudocode"])
         self._view_selector.activated.connect(self._on_view_selector_changed)
         status_layout = QHBoxLayout()
+        status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(0, 0, 0, 0)

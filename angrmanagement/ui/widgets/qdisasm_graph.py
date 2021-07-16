@@ -10,6 +10,7 @@ from .qblock import QGraphBlock
 from .qgraph_arrow import QDisasmGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
+from .qminimap import QMiniMap
 
 if TYPE_CHECKING:
     from angrmanagement.logic.disassembly import InfoDock
@@ -65,6 +66,11 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
+        self._minimap = QMiniMap(self, parent=self)
+        self._minimap.resize(200, 400)
+        self._minimap.move(20, 20)
+        self._minimap.setVisible(self.disasm_view.show_minimap)
 
     #
     # Properties
@@ -151,6 +157,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         for insn_addr in selected_insns:
             self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
 
+        self._minimap.update()
+
     def refresh(self):
         if not self.blocks:
             return
@@ -161,6 +169,17 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.request_relayout()
         self._update_scene_boundary()
+
+        self._minimap.update()
+        self._minimap.setVisible(self.disasm_view.show_minimap)
+
+    def set_extra_render_pass(self, is_extra_pass:bool):
+        super().set_extra_render_pass(is_extra_pass)
+        if not is_extra_pass:
+            # We hide block objects in low LoD passes. Restore them now if
+            # they were hidden.
+            for b in self.blocks:
+                b.restore_temporarily_hidden_objects()
 
     #
     # Event handlers

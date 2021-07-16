@@ -67,6 +67,7 @@ ENTRIES = [
     CE('code_font', QFont, QFont("Source Code Pro", 10)),
 
     CE('theme_name', str, "Light"),
+    CE('disasm_view_minimap_viewport_color', QColor, QColor(0xFF, 0x00, 0x00)),
     CE('disasm_view_operand_color', QColor, QColor(0x00, 0x00, 0x80)),
     CE('disasm_view_operand_constant_color', QColor, QColor(0x00, 0x00, 0x80)),
     CE('disasm_view_variable_label_color', QColor, QColor(0x00, 0x80, 0x00)),

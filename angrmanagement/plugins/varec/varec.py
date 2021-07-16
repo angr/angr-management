@@ -57,7 +57,7 @@ class VaRec(BasePlugin):
                 v.name = var_name
         # refresh the view
         view.codegen.regenerate_text()
-        view.set_codegen(view.codegen)
+        view.codegen.am_event()
 
     @staticmethod
     def randstr(n=8):
@@ -104,7 +104,6 @@ class VaRec(BasePlugin):
             ]
         }
         r = requests.post(f"{Conf.varec_endpoint}", data=json.dumps(d), proxies=proxies)
-        print(json.dumps(d))
         try:
             result = json.loads(r.text)
         except json.JSONDecodeError:
