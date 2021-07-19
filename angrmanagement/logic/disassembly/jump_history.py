@@ -9,6 +9,14 @@ class JumpHistory:
         self._history = [ ]
         self._pos = -1
 
+    @property
+    def history(self):
+        return self._history
+
+    @property
+    def pos(self):
+        return self._pos
+
     def __len__(self):
         return len(self._history)
 
@@ -31,7 +39,7 @@ class JumpHistory:
         self._history = self._history[ : self._pos + 1]
 
     def backtrack(self):
-        if self._pos > -1:
+        if self._pos > 0:
             self._pos -= 1
 
         if not 0 <= self._pos < len(self._history):
@@ -47,3 +55,8 @@ class JumpHistory:
             return self._history[self._pos]
         else:
             return None
+
+    def step_position(self, pos:int):
+        if -1 < pos < len(self._history):
+            self._pos = pos
+        return self._history[self._pos]

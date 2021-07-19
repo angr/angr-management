@@ -50,6 +50,7 @@ class DisassemblyView(BaseView):
         self.caption = 'Disassembly'
 
         self._disassembly_level = DisassemblyLevel.MachineCode
+        self._show_minimap: bool = True
         self._show_address = True
         self._show_variable = True
         # whether we want to show identifier or not
@@ -60,7 +61,7 @@ class DisassemblyView(BaseView):
         self._linear_viewer = None  # type: Optional[QLinearDisassembly]
         self._flow_graph = None  # type: Optional[QDisassemblyGraph]
         self._statusbar = None
-        self._jump_history = JumpHistory()
+        self.jump_history: JumpHistory = JumpHistory()
         self.infodock = InfoDock(self)
         self._variable_recovery_flavor = 'fast'
         self.variable_manager = None  # type: Optional[VariableManager]
@@ -124,6 +125,10 @@ class DisassemblyView(BaseView):
     @property
     def disasm(self):
         return self._flow_graph.disasm
+
+    @property
+    def show_minimap(self):
+        return self._show_minimap
 
     @property
     def smart_highlighting(self):
@@ -499,7 +504,7 @@ class DisassemblyView(BaseView):
 
     def display_function(self, function):
 
-        self._jump_history.jump_to(function.addr)
+        self.jump_history.jump_to(function.addr)
         self._display_function(function)
 
     def decompile_current_function(self):
@@ -511,6 +516,13 @@ class DisassemblyView(BaseView):
                 curr_ins = None
 
             self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
+
+    def toggle_show_minimap(self, show:bool):
+        """
+        Toggle minimap display preference
+        """
+        self._show_minimap = show
+        self.current_graph.refresh()
 
     def toggle_smart_highlighting(self, enabled):
         """
@@ -583,20 +595,25 @@ class DisassemblyView(BaseView):
 
         # Record the current instruction address first
         if src_ins_addr is not None:
-            self._jump_history.record_address(src_ins_addr)
+            self.jump_history.record_address(src_ins_addr)
 
-        self._jump_history.jump_to(addr)
+        self.jump_history.jump_to(addr)
         self._jump_to(addr, use_animation=use_animation)
 
         return True
 
     def jump_back(self):
-        addr = self._jump_history.backtrack()
+        addr = self.jump_history.backtrack()
         if addr is not None:
             self._jump_to(addr, use_animation=False)
 
     def jump_forward(self):
-        addr = self._jump_history.forwardstep()
+        addr = self.jump_history.forwardstep()
+        if addr is not None:
+            self._jump_to(addr, use_animation=False)
+
+    def jump_to_history_position(self, pos:int):
+        addr = self.jump_history.step_position(pos)
         if addr is not None:
             self._jump_to(addr, use_animation=False)
 

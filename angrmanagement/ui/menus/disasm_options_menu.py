@@ -6,6 +6,9 @@ class DisasmOptionsMenu(Menu):
     def __init__(self, disasm_view):
         super(DisasmOptionsMenu, self).__init__("", parent=disasm_view)
 
+        self._show_minimap_action = MenuEntry('Show &minimap', self._show_minimap, checkable=True,
+                                              checked=self.parent.show_minimap
+                                              )
         self._smart_highlighting_action = MenuEntry('Smart &highlighting', self._smart_highlighting, checkable=True,
                                              checked=self.parent.smart_highlighting
                                              )
@@ -24,12 +27,17 @@ class DisasmOptionsMenu(Menu):
                                                       )
 
         self.entries.extend([
+            self._show_minimap_action,
             self._smart_highlighting_action,
             self._show_address_action,
             self._show_variable_action,
             self._show_variable_ident_action,
             self._show_exception_edges_action,
         ])
+
+    def _show_minimap(self):
+        checked = self._show_minimap_action.checked
+        self.parent.toggle_show_minimap(checked)
 
     def _smart_highlighting(self):
         checked = self._smart_highlighting_action.checked
