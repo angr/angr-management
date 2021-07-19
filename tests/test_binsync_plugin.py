@@ -243,8 +243,6 @@ class TestBinsyncPlugin(unittest.TestCase):
             self.assertTrue(renamed_var.renamed)
             self.assertEqual(renamed_var.name, new_var_name)
 
-            common.app.exit(0)
-
 
 if __name__ == "__main__":
     unittest.main(argv=sys.argv)
