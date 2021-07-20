@@ -19,7 +19,7 @@ class DependencyView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('dependencies', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Dependencies'
+        self.base_caption = 'Dependencies'
         self.workspace = workspace
 
         # UI widgets

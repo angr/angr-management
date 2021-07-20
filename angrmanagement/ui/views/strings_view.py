@@ -14,7 +14,7 @@ class StringsView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super(StringsView, self).__init__('strings', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Strings'
+        self.base_caption = 'Strings'
 
         self._string_table = None  # type: QStringTable
         self._function_list = None  # type: QFunctionComboBox
@@ -58,7 +58,10 @@ class StringsView(BaseView):
         :return:
         """
 
-        disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
+        else:
+            disasm_view = self.workspace.view_manager.current_view_in_category('disassembly')
         disasm_view.jump_to(s.addr)
         disasm_view.select_label(s.addr)
         self.workspace.view_manager.raise_view(disasm_view)

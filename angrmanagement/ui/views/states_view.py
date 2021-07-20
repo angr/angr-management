@@ -9,7 +9,7 @@ class StatesView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super(StatesView, self).__init__('states', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'States'
+        self.base_caption = 'States'
         self._state_table = None  # type: QStateTable
         self.workspace = workspace
 

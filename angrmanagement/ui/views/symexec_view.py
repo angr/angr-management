@@ -12,7 +12,7 @@ class SymexecView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('symexec', workspace, *args, **kwargs)
 
-        self.caption = 'Symbolic Execution'
+        self.base_caption = 'Symbolic Execution'
 
         self._pathtree = None  # type: QPathTree
         self._simgrs = None  # type: QSimulationManagers
@@ -124,7 +124,10 @@ class SymexecView(BaseView):
     #
 
     def _switch_to_disassembly_view(self, addr):
-        disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
+        else:
+            disasm_view = self.workspace.view_manager.current_view_in_category('disassembly')
         disasm_view.jump_to(addr)
 
         self.workspace.raise_view(disasm_view)

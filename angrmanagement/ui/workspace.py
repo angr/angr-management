@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Callable
 import logging
 import traceback
+from string import ascii_uppercase
 
 from PySide2.QtCore import Qt, QSettings
 
@@ -120,7 +121,10 @@ class Workspace:
                 self.on_function_selected(the_func)
 
             # Initialize the linear viewer
-            view = self.view_manager.first_view_in_category('disassembly')
+            if len(self.view_manager.views_by_category['disassembly']) == 1:
+                view = self.view_manager.first_view_in_category('disassembly')
+            else:
+                view = self.view_manager.current_view_in_category('disassembly')
             if view is not None:
                 view._linear_viewer.initialize()
 
@@ -158,7 +162,11 @@ class Workspace:
 
     def on_function_tagged(self):
         # reload disassembly view
-        view = self.view_manager.first_view_in_category('disassembly')
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            view = self.view_manager.first_view_in_category('disassembly')
+        else:
+            view = self.view_manager.current_view_in_category('disassembly')
+
         if view is not None:
             view: DisassemblyView
             if view.current_function.am_obj is not None:
@@ -167,6 +175,29 @@ class Workspace:
     #
     # Public methods
     #
+
+    def new_disassembly_view(self):
+        """
+        Add a new disassembly view into the
+        central_widget with a unique id
+
+        :return:    None
+        """
+
+        dis_views = self.view_manager.views_by_category['disassembly']
+        dis_ids = [view.index for view in dis_views]
+        dis_ids.sort()
+        missing_ids = sorted(set(range(dis_ids[0], dis_ids[-1])) - set(dis_ids))
+        new_view = DisassemblyView(self, 'center')
+        if missing_ids:
+            new_view.index = missing_ids[0]
+        else:
+            new_view.index = dis_ids[-1]+1
+        self.add_view(new_view, new_view.caption, new_view.category)
+        self.raise_view(new_view)
+        if self.instance.binary_path is not None:
+            self.on_cfg_generated()
+        # TODO move new_view tab to front of dock
 
     def split_view(self):
         """
@@ -273,7 +304,7 @@ class Workspace:
             self.jump_to(obj.addr)
 
     def jump_to(self, addr, view=None, use_animation=False):
-        if view is None or view.category != "disassembly":
+        if view is None or view.category != 'disassembly':
             view = self._get_or_create_disassembly_view()
 
         view.jump_to(addr, use_animation=use_animation)
@@ -431,7 +462,10 @@ class Workspace:
 
     def _get_or_create_disassembly_view(self) -> DisassemblyView:
         # Take the first disassembly view
-        view = self.view_manager.first_view_in_category("disassembly")
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            view = self.view_manager.first_view_in_category('disassembly')
+        else:
+            view = self.view_manager.current_view_in_category('disassembly')
 
         if view is None:
             # Create a new disassembly view
@@ -557,27 +591,41 @@ class Workspace:
             fv.backcolor_callback = callback
 
     def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
-        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        else:
+            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
         if dv:
             dv.insn_backcolor_callback = callback
 
     def set_cb_label_rename(self, callback):
-        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        else:
+            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
         if dv:
             dv.label_rename_callback = callback
 
-    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None],
-                                       add_separator_first=True):
-        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True):
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        else:
+            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback, add_separator_first)
 
     def remove_disasm_insn_ctx_menu_entry(self, text, remove_preceding_separator=True):
-        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        else:
+            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
         if dv._insn_menu:
             dv._insn_menu.remove_menu_entry(text, remove_preceding_separator)
 
     def set_cb_set_comment(self, callback):
-        dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category['disassembly']) == 1:
+            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        else:
+            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
         if dv:
             dv.set_comment_callback = callback

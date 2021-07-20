@@ -20,7 +20,7 @@ class ProximityView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('proximity', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Proximity'
+        self.base_caption = 'Proximity'
         self.workspace = workspace
 
         self._function: Optional['Function'] = None

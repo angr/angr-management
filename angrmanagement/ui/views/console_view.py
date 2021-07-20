@@ -14,7 +14,7 @@ class ConsoleView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super(ConsoleView, self).__init__('console', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Console'
+        self.base_caption = 'Console'
         self._ipython_widget = None
 
         self._init_widgets()

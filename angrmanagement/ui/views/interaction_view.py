@@ -64,7 +64,7 @@ class InteractionState(enum.Enum):
 class InteractionView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('interaction', workspace, *args, **kwargs)
-        self.caption = 'Interaction'
+        self.base_caption = 'Interaction'
         self.current_log = []  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
                        # "in" here means it's input to the program
         self.log_controls = []

@@ -47,8 +47,7 @@ class DisassemblyView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
         super().__init__('disassembly', workspace, *args, **kwargs)
 
-        self.caption = 'Disassembly'
-
+        self.base_caption = 'Disassembly'
         self._disassembly_level = DisassemblyLevel.MachineCode
         self._show_minimap: bool = True
         self._show_address = True
@@ -121,6 +120,10 @@ class DisassemblyView(BaseView):
     #
     # Properties
     #
+
+    @property
+    def caption(self):
+        return f'{self.base_caption}-{self.index}'
 
     @property
     def disasm(self):
