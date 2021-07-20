@@ -23,6 +23,9 @@ if TYPE_CHECKING:
 
 
 class ChessTarget:
+    """
+    Models a CHESS challenge target.
+    """
     def __init__(self, description: str, target_id: str, challenge_name: str, image_id: str):
         self.description = description
         self.target_id = target_id
