@@ -63,6 +63,21 @@ class BasePlugin:
         A handler that is called right after a workspace is initialized.
         """
 
+    def angrdb_store_entries(self):
+        """
+        Yields all entries (key-value pairs) that should be persisted inside angrDb.
+        :return:
+        """
+        return None
+
+    def angrdb_load_entry(self, key: str, value: str) -> None:
+        """
+        Called for each entry (key-value pair) that is persisted in angrDb.
+
+        :param key:     Key of the entry.
+        :param value:   Value of the entry.
+        """
+
     #
     # UI Callbacks
     #

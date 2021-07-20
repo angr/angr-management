@@ -167,7 +167,7 @@ class QStringTable(QTableView):
         self.setSortingEnabled(True)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
 
-        # let the last colunm (string) fill table width
+        # let the last column (string) fill table width
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.horizontalHeader().setSectionResizeMode(2,QHeaderView.Stretch)
 
