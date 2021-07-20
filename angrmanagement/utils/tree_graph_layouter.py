@@ -148,7 +148,7 @@ class TreeGraphLayouter:
         if not self._initial_nodes:
             # use root nodes as the initial nodes
             # assuming root nodes are not within any loop
-            initial_nodes = [ n for n in self._graph.nodes() if self._graph.in_degree[n] == 0 ]
+            initial_nodes = [ n for n in self._graph.nodes() if self._graph.out_degree[n] == 0 ]
         else:
             initial_nodes = self._initial_nodes
 

@@ -95,10 +95,19 @@ class DependencyAnalysisJob(Job):
             base_progress: float = 30.0 + (depth - min_depth) * progress_chunk
             self._progress_callback(base_progress,
                                     text="Calculating reaching definitions... depth %d." % depth)
+            # generate RDA observation points
+            observation_points = set()
+            for pred in inst.cfg.am_obj.get_predecessors(inst.cfg.am_obj.get_any_node(self.func_addr)):
+                if pred.instruction_addrs:
+                    call_inst_addr = pred.instruction_addrs[-1]
+                    observation_point = ('insn', call_inst_addr, OP_BEFORE)
+                    observation_points.add(observation_point)
+
             for idx, total, dep in self._dependencies(sink, [(atom,SimType())], inst.project.kb, inst.project, depth,
-                                                      excluded_functions):
-                self._progress_callback(base_progress + idx / total * progress_chunk,
-                                        text="Computing transitive closures: %d/%d" % (idx + 1, total))
+                                                      excluded_functions, observation_points):
+                self._progress_callback(
+                    base_progress + idx / total * progress_chunk,
+                    text="Computing transitive closures: %d/%d - depth %d" % (idx + 1, total, depth))
 
                 all_defs = set()
                 # find the instructions that call this function
@@ -111,7 +120,11 @@ class DependencyAnalysisJob(Job):
                             defs_ = observed_result.get_definitions_from_atoms([atom])
                             all_defs |= defs_
 
-                cc = transitive_closures_from_defs(all_defs, dep)
+                try:
+                    cc = transitive_closures_from_defs(all_defs, dep)
+                except Exception:
+                    l.warning("Exception occurred when computing transitive clousure. Skip.")
+                    continue
 
                 # determine if there is any values are marked as coming from External. these values are not resolved
                 # within the current call-depth range
@@ -154,7 +167,8 @@ class DependencyAnalysisJob(Job):
                     dep_plugin.covered_blocks[dst] = block.size
 
     def _dependencies(self, subject, sink_atoms: List[Tuple['Atom',SimType]], kb, project, max_depth: int,
-                      excluded_funtions: Set[int]) -> Generator[Tuple[int,int,'ReachingDefinitionsAnalysis'], None, None]:
+                      excluded_funtions: Set[int],
+                      observation_points: Set[Tuple]) -> Generator[Tuple[int,int,'ReachingDefinitionsAnalysis'], None, None]:
         Handler = handler_factory([
             StdioHandlers,
             StdlibHandlers,
@@ -200,13 +214,18 @@ class DependencyAnalysisJob(Job):
 
         for idx, start in enumerate(starts):
             handler = Handler(project, False, sink_function=sink, sink_atoms=sink_atoms)
-            rda = project.analyses.ReachingDefinitions(
-                subject=CallTraceSubject(start, kb.functions[start.current_function_address()]),
-                observe_all=True,
-                function_handler=handler,
-                kb=kb,
-                dep_graph=DepGraph()
-            )
+            try:
+                rda = project.analyses.ReachingDefinitions(
+                    subject=CallTraceSubject(start, kb.functions[start.current_function_address()]),
+                    observe_all=False,
+                    observation_points=observation_points,
+                    function_handler=handler,
+                    kb=kb,
+                    dep_graph=DepGraph()
+                )
+            except Exception:
+                l.warning("Failed to compute dependencies for function %s.", start, exc_info=True)
+                continue
             yield idx, len(starts), rda
 
     @staticmethod
