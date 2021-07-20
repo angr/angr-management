@@ -156,7 +156,7 @@ class ViewManager:
         """
 
         current = self.get_center_views()[self.get_current_tab_id()]
-        view = self.dock_to_view(current)
+        view = self.dock_to_view[current]
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
         return None
