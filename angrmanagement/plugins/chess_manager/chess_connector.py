@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING
+# pylint:disable=ungrouped-imports
+from typing import Optional, TYPE_CHECKING
 import os
 import threading
 import time
 
-from PySide2.QtWidgets import QPushButton
+from PySide2.QtWidgets import QPushButton, QMessageBox
 from PySide2.QtGui import QPixmap, Qt, QIcon
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -12,6 +13,7 @@ from angrmanagement.config.config_entry import ConfigurationEntry
 from angrmanagement.plugins import BasePlugin
 
 from .backend_selector_dialog import QBackendSelectorDialog
+from .target_selector import QTargetSelectorDialog
 
 try:
     import slacrs
@@ -59,6 +61,13 @@ class ChessConnector(BasePlugin):
         self._status_button.setFlat(True)
         self._status_button.clicked.connect(self._on_status_button_clicked)
 
+        self.target_id: Optional[str] = None
+        self.target_description: Optional[str] = None
+        self._target_description_label = QPushButton()
+        self._target_description_label.setFlat(True)
+        self._target_description_label.clicked.connect(self.set_chess_target)
+        self.target_id_updated()
+
         self.connected: bool = False
         self.backend_disconnected()
 
@@ -93,7 +102,16 @@ class ChessConnector(BasePlugin):
             self._status_button.setToolTip("Connecting to CHECRS backend")
             self.workspace.main_window.app.processEvents()
 
+    def target_id_updated(self):
+        if self.target_id and self.target_description:
+            self._target_description_label.setText(self.target_description)
+            self._target_description_label.setToolTip(f"Target ID: {self.target_id}")
+        else:
+            self._target_description_label.setText("No associated CHESS target")
+            self._target_description_label.setToolTip("")
+
     def status_bar_permanent_widgets(self):
+        yield self._target_description_label
         yield self._status_button
 
     def on_workspace_initialized(self, workspace: 'Workspace'):
@@ -131,13 +149,19 @@ class ChessConnector(BasePlugin):
 
     MENU_BUTTONS = [
         'Connect to CHECRS backend...',
+        'Set associated CHESS target...'
     ]
     CONNECT_TO_BACKEND = 0
+    SET_CHESS_TARGET = 1
 
     def handle_click_menu(self, idx):
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
-        self.set_checrs_backend_str()
+        mapping = {
+            ChessConnector.CONNECT_TO_BACKEND: self.set_checrs_backend_str,
+            ChessConnector.SET_CHESS_TARGET: self.set_chess_target,
+        }
+        mapping[idx]()
 
     def set_checrs_backend_str(self):
         dialog = QBackendSelectorDialog(self.workspace,
@@ -152,6 +176,47 @@ class ChessConnector(BasePlugin):
             Conf.checrs_backend_str = server_url
             save_config()
 
+    def set_chess_target(self):
+
+        if not self.connected:
+            QMessageBox.critical(self.workspace.main_window,
+                                 "Backend is not connected",
+                                 "Your angr management instance is not connected to CHECRS backend. Please set a "
+                                 "correct connection string before setting the CHESS target.",
+                                 QMessageBox.Ok)
+            return
+
+        if self.workspace.instance.project.am_none:
+            QMessageBox.critical(self.workspace.main_window,
+                                 "No binary is loaded",
+                                 "Please load a binary before associating it to a CHESS target.",
+                                 QMessageBox.Ok)
+            return
+
+        dialog = QTargetSelectorDialog(self.workspace,
+                                       parent=self.workspace.main_window)
+        dialog.exec_()
+
+        if dialog.target_id:
+            self.target_id = dialog.target_id
+            self.target_description = dialog.target_description
+        else:
+            self.target_id = None
+            self.target_description = None
+        self.target_id_updated()
+
     CONFIG_ENTRIES = [
         ConfigurationEntry("checrs_backend_str", str, "", default_value=""),
     ]
+
+    def angrdb_store_entries(self):
+        yield "chess_target_id", self.target_id if self.target_id else ""
+        yield "chess_target_description", self.target_description if self.target_description else ""
+
+    def angrdb_load_entry(self, key, value):
+        if key == "chess_target_id":
+            self.target_id = value
+            self.target_id_updated()
+        elif key == "chess_target_description":
+            self.target_description = value
+            self.target_id_updated()

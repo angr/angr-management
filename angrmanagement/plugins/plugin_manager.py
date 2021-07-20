@@ -224,6 +224,17 @@ class PluginManager:
                 else:
                     yield res
 
+    def _dispatch_with_plugin(self, func, sensitive, *args):
+        for plugin in list(self.active_plugins):
+            custom = getattr(plugin, func.__name__)
+            if custom.__func__ is not func:
+                try:
+                    res = custom(*args)
+                except Exception as e: #pylint: disable=broad-except
+                    self._handle_error(plugin, func, sensitive, e)
+                else:
+                    yield plugin, res
+
     def _dispatch_single(self, plugin, func, sensitive, *args):
         custom = getattr(plugin, func.__name__)
         try:
@@ -368,3 +379,36 @@ class PluginManager:
     def on_workspace_initialized(self, workspace):
         for _ in self._dispatch(BasePlugin.on_workspace_initialized, False, workspace):
             pass
+
+    def angrdb_store_entries(self):
+        entries = {}
+        for plugin, res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
+            for result in res:
+                if isinstance(result, tuple) and len(result) == 2:
+                    key, value = result
+                    key = plugin.__class__.__name__.split(".")[-1] + "___" + key
+                    entries[key] = value
+        return entries
+
+    def angrdb_load_entries(self, entries):
+        plugin_name_to_plugin = {}
+        for plugin in list(self.active_plugins):
+            plugin_name_to_plugin[plugin.__class__.__name__.split(".")[-1]] = plugin
+
+        for key, value in entries.items():
+            if "___" not in key:
+                continue
+            splitted = key.split("___")
+            if len(splitted) != 2:
+                continue
+            plugin_class_name, key = splitted
+            plugin = plugin_name_to_plugin.get(plugin_class_name, None)
+            if plugin is None:
+                continue
+            # dispatch
+            custom = getattr(plugin, "angrdb_load_entry")
+            if custom is not BasePlugin.angrdb_load_entry:
+                try:
+                    custom(key, value)
+                except Exception as ex:  # pylint: disable=broad-except
+                    self._handle_error(plugin, BasePlugin.angrdb_load_entry, False, ex)
