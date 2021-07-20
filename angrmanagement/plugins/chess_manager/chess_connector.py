@@ -1,3 +1,4 @@
+# pylint:disable=ungrouped-imports
 from typing import Optional, TYPE_CHECKING
 import os
 import threading
@@ -61,6 +62,7 @@ class ChessConnector(BasePlugin):
         self._status_button.clicked.connect(self._on_status_button_clicked)
 
         self.target_id: Optional[str] = None
+        self.target_description: Optional[str] = None
         self._target_description_label = QPushButton()
         self._target_description_label.setFlat(True)
         self._target_description_label.clicked.connect(self.set_chess_target)
@@ -211,10 +213,10 @@ class ChessConnector(BasePlugin):
         yield "chess_target_id", self.target_id if self.target_id else ""
         yield "chess_target_description", self.target_description if self.target_description else ""
 
-    def angrdb_load_entry(self, k, v):
-        if k == "chess_target_id":
-            self.target_id = v
+    def angrdb_load_entry(self, key, value):
+        if key == "chess_target_id":
+            self.target_id = value
             self.target_id_updated()
-        elif k == "chess_target_description":
-            self.target_description = v
+        elif key == "chess_target_description":
+            self.target_description = value
             self.target_id_updated()

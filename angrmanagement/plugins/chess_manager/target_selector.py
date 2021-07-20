@@ -1,3 +1,4 @@
+# pylint:disable=unused-argument
 import typing
 from typing import List, Optional, TYPE_CHECKING
 import threading
@@ -186,7 +187,7 @@ class QTargetSelectorDialog(QDialog):
         self.setLayout(layout)
 
     def _load_targets(self):
-        from slacrs.model import Target, Challenge  # pylint:disable=import-outside-toplevel
+        from slacrs.model import Target, Challenge  # pylint:disable=import-outside-toplevel,import-error
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         session = slacrs.Slacrs(database=Conf.checrs_backend_str).session()
         db_targets = session.query(Target)
