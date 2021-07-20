@@ -36,6 +36,10 @@ l = logging.getLogger(name=__name__)
 
 
 class DependencyAnalysisJob(Job):
+    """
+    Implements a job for dependency analysis.
+    """
+
     def __init__(self, func_addr=None, func_arg_idx=None):
         super().__init__("DependencyAnalysis")
 
@@ -122,7 +126,7 @@ class DependencyAnalysisJob(Job):
 
                 try:
                     cc = transitive_closures_from_defs(all_defs, dep)
-                except Exception:
+                except Exception:  # pylint:disable=broad-except
                     l.warning("Exception occurred when computing transitive clousure. Skip.")
                     continue
 
@@ -151,22 +155,8 @@ class DependencyAnalysisJob(Job):
 
         return
 
-        # visualize the CFG slice
-        dep_plugin: Optional['DependencyViewer'] = inst.workspace.plugins.get_plugin_instance_by_name('DependencyViewer')
-        if dep_plugin is None:
-            l.warning("The DependencyViewer plugin is not activated.")
-            return
-        dep_plugin.covered_blocks.clear()
-        for src, dsts in slice.transitions.items():
-            if src not in dep_plugin.covered_blocks:
-                block = inst.cfg.get_any_node(src)
-                dep_plugin.covered_blocks[src] = block.size
-            for dst in dsts:
-                if dst not in dep_plugin.covered_blocks:
-                    block = inst.cfg.get_any_node(dst)
-                    dep_plugin.covered_blocks[dst] = block.size
-
-    def _dependencies(self, subject, sink_atoms: List[Tuple['Atom',SimType]], kb, project, max_depth: int,
+    @staticmethod
+    def _dependencies(subject, sink_atoms: List[Tuple['Atom',SimType]], kb, project, max_depth: int,
                       excluded_funtions: Set[int],
                       observation_points: Set[Tuple]) -> Generator[Tuple[int,int,'ReachingDefinitionsAnalysis'], None, None]:
         Handler = handler_factory([
@@ -223,7 +213,7 @@ class DependencyAnalysisJob(Job):
                     kb=kb,
                     dep_graph=DepGraph()
                 )
-            except Exception:
+            except Exception:  # pylint:disable=broad-except
                 l.warning("Failed to compute dependencies for function %s.", start, exc_info=True)
                 continue
             yield idx, len(starts), rda
@@ -240,13 +230,15 @@ class DependencyAnalysisJob(Job):
 
         return new_kb
 
-    def _display_import_error(self):
+    @staticmethod
+    def _display_import_error():
         QMessageBox.critical(None,
                              "Import error",
                              "Failed to import argument_resolver package. Is operation-mango installed?",
                              )
 
-    def _display_closures(self, inst, sink_atom: 'Atom', sink_addr: int, closures):
+    @staticmethod
+    def _display_closures(inst, sink_atom: 'Atom', sink_addr: int, closures):
         view = inst.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return
