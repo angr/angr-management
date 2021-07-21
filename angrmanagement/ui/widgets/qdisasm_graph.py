@@ -10,7 +10,7 @@ from .qblock import QGraphBlock
 from .qgraph_arrow import QDisasmGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
-from .qminimap import QMiniMap
+from .qminimap import QMiniMapView
 
 if TYPE_CHECKING:
     from angrmanagement.logic.disassembly import InfoDock
@@ -67,8 +67,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
-        self._minimap = QMiniMap(self, parent=self)
-        self._minimap.resize(200, 400)
+        self._minimap = QMiniMapView(self, parent=self)
+        self._minimap.setMaximumSize(200, 400)
         self._minimap.move(20, 20)
         self._minimap.setVisible(self.disasm_view.show_minimap)
 
@@ -157,7 +157,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         for insn_addr in selected_insns:
             self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
 
-        self._minimap.update()
+        self._minimap.reload_target_scene()
 
     def refresh(self):
         if not self.blocks:
@@ -170,7 +170,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self.request_relayout()
         self._update_scene_boundary()
 
-        self._minimap.update()
+        self._minimap.reload_target_scene()
         self._minimap.setVisible(self.disasm_view.show_minimap)
 
     def set_extra_render_pass(self, is_extra_pass:bool):
