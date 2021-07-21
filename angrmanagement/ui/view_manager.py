@@ -161,20 +161,6 @@ class ViewManager:
             return view
         return None
 
-    def dock_to_view(self, dock):
-        """
-        Return the view associated with provided
-        dock.
-
-        :param dock:    The dock to match a view with.
-        :return:        The view.
-        """
-
-        for view, value in self.view_to_dock.items():
-            if value == dock:
-                return view
-        return None
-
     def tabify_center_views(self):
         """
         Tabify all right-side dockable views.
