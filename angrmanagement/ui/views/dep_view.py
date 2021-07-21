@@ -116,6 +116,11 @@ class DependencyView(BaseView):
                 node = self._convert_node(node_, converted)
                 if node is not None:
                     g.add_node(node)
+                # this is a hack - we only want our sink as the only root of the dependency tree
+                # TODO: Figure out why
+                if graph.out_degree[node_] == 0:
+                    g.add_edge(node, source_node)
+
             for src_, dst_ in graph.edges:
                 src = self._convert_node(src_, converted)
                 dst = self._convert_node(dst_, converted)
