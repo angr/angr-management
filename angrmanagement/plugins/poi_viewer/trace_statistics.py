@@ -26,11 +26,7 @@ class TraceStatistics:
         self.workspace = workspace
         self.trace = trace
         self.bbl_addrs = trace["bbl_history"]
-        # self.syscalls = trace.get("syscalls", [])
         self.id = trace["id"]
-        # self.created_at = trace["created_at"]
-        # self.input_id = trace["input_id"]
-        # self.complete = trace["complete"]
         self.trace_func = []
         self._func_color = {}
         self.count = None

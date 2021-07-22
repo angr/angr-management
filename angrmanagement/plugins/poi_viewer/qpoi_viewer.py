@@ -1,9 +1,9 @@
 import logging
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
-from PySide2.QtWidgets import  QMessageBox, QInputDialog, QTableWidget, QTableWidgetItem, QLineEdit, QHeaderView
+from PySide2.QtWidgets import QTabWidget, QAbstractItemView
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
-from PySide2.QtCore import Qt, QPoint, QEvent
+from PySide2.QtCore import Qt, QPoint
 from .trace_statistics import TraceStatistics
 from .multi_poi import MultiPOI
 
@@ -46,9 +46,9 @@ class QPOIViewer(QWidget):
 
         self.tabView = None
         self.traceView = None
-        self.singlePOI = None
         self.traceScene = None
-        self.multiPOI = None
+        self.POITraceTab = None
+        self.multiPOITab = None
 
         self.mark = None
         self.curr_position = 0
@@ -57,10 +57,8 @@ class QPOIViewer(QWidget):
 
         self._init_widgets()
 
+        self.selected_ins.am_subscribe(self._subscribe_select_ins)
         self.poi_trace.am_subscribe(self._subscribe_set_trace)
-        # self.selected_ins.am_subscribe(self._on_select_ins)
-        self.singlePOI.installEventFilter(self)
-
         self.multi_poi.am_subscribe(self._subscribe_add_poi)
     #
     # Forwarding properties
@@ -83,12 +81,13 @@ class QPOIViewer(QWidget):
         self.tabView = QTabWidget() # QGraphicsView()
         self.tabView.setMinimumWidth(self.parent().width())
         self.tabView.setContentsMargins(0, 0, 0, 0)
+
         #
-        # singlePOI Tab
+        # POI trace Tab
         #
-        self.singlePOI = QWidget()
-        self.singlePOI.setContentsMargins(0, 0, 0, 0)
-        self.singlePOI.setMinimumWidth(self.parent().width())
+        self.POITraceTab = QWidget()
+        self.POITraceTab.setContentsMargins(0, 0, 0, 0)
+        self.POITraceTab.setMinimumWidth(self.parent().width())
         singleLayout = QVBoxLayout()
         singleLayout.setSpacing(0)
         singleLayout.setContentsMargins(0, 0, 0, 0)
@@ -98,13 +97,13 @@ class QPOIViewer(QWidget):
         self.traceView.setScene(self.traceScene)
 
         singleLayout.addWidget(self.traceView)
-        self.singlePOI.setLayout(singleLayout)
+        self.POITraceTab.setLayout(singleLayout)
 
         #
         # multiPOI Tab
         #
-        self.multiPOI = QWidget()
-        self.multiPOI.setMinimumWidth(self.parent().width())
+        self.multiPOITab = QWidget()
+        self.multiPOITab.setMinimumWidth(self.parent().width())
         multiLayout = QVBoxLayout()
         multiLayout.setSpacing(0)
         multiLayout.setContentsMargins(0, 0, 0, 0)
@@ -119,17 +118,13 @@ class QPOIViewer(QWidget):
         self.multiPOIList.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.multiPOIList.cellDoubleClicked.connect(self._on_cell_double_click)
         multiLayout.addWidget(self.multiPOIList)
-        self.multiPOI.setLayout(multiLayout)
+        self.multiPOITab.setLayout(multiLayout)
 
-        self.tabView.addTab(self.multiPOI, "POI List")
-        self.tabView.addTab(self.singlePOI, "POI Trace")
+        self.tabView.addTab(self.multiPOITab, "POI List")
+        self.tabView.addTab(self.POITraceTab, "POI Trace")
 
-        self.SINGLE_TRACE = 1
-        self.MULTI_TRACE = 0
-
-        # self.view.currentChanged.connect(self._on_tab_change)
-
-        # self._reset()
+        self.POI_TRACE = 1
+        self.MULTI_POI = 0
 
         layout = QVBoxLayout()
         layout.addWidget(self.tabView)
@@ -142,8 +137,6 @@ class QPOIViewer(QWidget):
 
     def _reset(self):
         self.traceScene.clear() #clear items
-        # self.listView.clearContents()
-        # self.multiTraceList.clearContents()
         self.mark = None
 
         self.legend = None
@@ -154,27 +147,10 @@ class QPOIViewer(QWidget):
         self.traceScene.addItem(self.trace_func)
         self.hide()
 
-
-    # def _switch_current_trace(self, row):
-    #     if self.listView.rowCount() <= 0:
-    #         return
-    #
-    #     current_trace = self.poi_trace.am_obj.id
-    #     new_trace = self.multiPOIList.item(row, 0).text()
-    #     if current_trace == new_trace:
-    #         return
-    #
-    #     trace_stats = self.multi_poi.am_obj.get_trace_with_id(new_trace)
-    #     if trace_stats:
-    #         self.poi_trace.am_obj = trace_stats
-    #         self._subscribe_set_trace()
-
-
-    # Callback
-
     def _on_cell_double_click(self, row, column):
-        _l.debug("row %d is clicked!", row)
+        _l.debug("row %d is double clicked", row)
         poi_id = int(self.multiPOIList.item(row, 0).text())
+        crash_addr = int(self.multiPOIList.item(row, 1).text(), 16)
         if self.poi_trace.am_none:
             self.poi_trace.am_obj = TraceStatistics(self.workspace, self.multi_poi.am_obj.get_poi_by_id(poi_id))
 
@@ -183,16 +159,26 @@ class QPOIViewer(QWidget):
 
         # show covered basic blocks and functions
         self.multi_poi.am_obj.reload_heatmap(poi_id)
+
+        # redraw function view
         view = self.workspace.view_manager.first_view_in_category('functions')
         if view is not None:
             view.refresh()
-        # view = self.workspace.view_manager.first_view_in_category('disassembly')
-        # if view is not None:
-        #     view.redraw_current_graph()
 
-        self.tabView.setCurrentIndex(self.SINGLE_TRACE)
-        # self.multi_poi.am_event()
+        # redraw disassembly view
+        view = self.workspace.view_manager.first_view_in_category('disassembly')
+        if view is not None:
+            view.redraw_current_graph()
+            # show the crashing address
+            crash_func = self._get_func_from_addr(crash_addr)
+            self.workspace.on_function_selected(crash_func)
+            self.selected_ins.clear()
+            self.selected_ins.update([crash_addr])
+            self.selected_ins.am_event()
+            self.disasm_view.current_graph.show_instruction(crash_addr)
 
+        # switch to POI trace tab
+        self.tabView.setCurrentIndex(self.POI_TRACE)
 
     def _subscribe_add_poi(self, **kwargs):
         _l.debug('add a poi to multi poi list')
@@ -204,25 +190,12 @@ class QPOIViewer(QWidget):
         self.multiPOIList.clearContents()
         self._populate_poi_table(self.multiPOIList, poi_ids)
         self.show()
-        # if self._selected_traces and self.multiTraceList.rowCount() > 0:
-        #     self.multiTraceList.item(0,0).setSelected(True)
-        #     self.multiTraceList.item(0,1).setSelected(True)
-        # else:
-        #     for row in range(self.multiTraceList.rowCount()):
-        #         item = self.multiTraceList.item(row, 0)
-        #         inputItem = self.multiTraceList.item(row, 1)
-        #         if item.text() in self._selected_traces:
-        #             item.setSelected(True)
-        #             inputItem.setSelected(True)
-        # self.multi_poi.am_event()
-
 
     def _subscribe_set_trace(self, **kwargs):
         _l.debug('on set trace in poi trace viewer')
         self._reset()
         if self.poi_trace.am_none:
             return
-
         _l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
                 self.poi_trace.count)
         if self.poi_trace.count <= 0:
@@ -241,7 +214,6 @@ class QPOIViewer(QWidget):
 
         self._show_trace_func(show_func_tag)
         self._show_legend()
-        self._show_trace_ids()
         self._set_mark_color()
         self._refresh_multi_list()
 
@@ -250,84 +222,12 @@ class QPOIViewer(QWidget):
         if boundingSize > self.MAX_WINDOW_SIZE:
             windowSize = self.MAX_WINDOW_SIZE
         self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
-        # self.setFixedWidth(windowSize)
-
-        # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
-        # self.multiPOI.setFixedWidth(windowSize)
-        cellWidth = windowSize // 2
-        # self.listView.setColumnWidth(0, cellWidth)
-        # self.listView.setColumnWidth(1, cellWidth)
-        # self.listView.setFixedHeight(self.multiPOI.height() // 4)
-        # self.multiTraceList.setColumnWidth(0, cellWidth)
-        # self.multiTraceList.setColumnWidth(1, cellWidth)
-        # self.tabview.setFixedWidth(windowSize)
+        if windowSize > self.width():
+            self.setMinimumWidth(windowSize)
 
         self.show()
 
-    def _populate_poi_table(self, view, poi_ids):
-
-        view.clearContents()
-        view.setRowCount(len(poi_ids))
-        row = 0 #start after label row
-        for i in poi_ids:
-            poi = self.multi_poi.am_obj.get_poi_by_id(i)
-            _l.debug("poi %d", i)
-            self._set_item(view, row, 0, str(i), editable=False)
-            self._set_item(view, row, 1, hex(poi['bbl']), editable=False)
-            self._set_item(view, row, 2, poi['tag'], editable=False)
-            self._set_item(view, row, 3, poi.get('diagnose', ''), editable=True)
-            row += 1
-
-    def _set_item(self, view, row, column, text, editable=True):
-        item = QTableWidgetItem(text)
-        if not editable:
-            item.setFlags(item.flags() ^ Qt.ItemIsEditable)
-        view.setItem(row, column, item)
-
-    def _refresh_heatmap(self):
-        multiPOI = self.multi_poi.am_obj
-        multiPOI.clear_heatmap()
-        multiPOI.is_active_tab = True
-
-        selected_items = self.multiPOIList.selectedItems()
-        self._selected_traces.clear()
-        for row in range(self.multiPOIList.rowCount()):
-            item = self.multiPOIList.item(row, 0)
-            if item in selected_items:
-                self._selected_traces.append(item.text())
-        multiPOI.reload_heatmap(self._selected_traces)
-        self.multi_poi.am_event()
-
-    def _refresh_multi_list(self):
-        multiPOI = self.multi_poi.am_obj
-        trace_ids = multiPOI.get_all_poi_ids()
-
-        self.multiPOIList.clearContents()
-        self._populate_poi_table(self.multiPOIList, trace_ids)
-        if self._selected_traces and self.multiPOIList.rowCount() > 0:
-            self.multiPOIList.item(0, 0).setSelected(True)
-            self.multiPOIList.item(0, 1).setSelected(True)
-        else:
-            for row in range(self.multiPOIList.rowCount()):
-                item = self.multiPOIList.item(row, 0)
-                inputItem = self.multiPOIList.item(row, 1)
-                if item.text() in self._selected_traces:
-                    item.setSelected(True)
-                    inputItem.setSelected(True)
-        self.multi_poi.am_event()
-
-    def _on_tab_change(self):
-        # self._reset()
-        multiPOI = self.multi_poi.am_obj
-        if self.tabView.currentIndex() == self.MULTI_TRACE:
-            multiPOI.is_active_tab = True
-            self._refresh_multi_list()
-        elif self.tabView.currentIndex() == self.SINGLE_TRACE:
-            multiPOI = self.multi_poi.am_obj
-            multiPOI.is_active_tab = False
-            self._show_trace_ids()
-
-    def _on_select_ins(self, **kwargs): # pylint: disable=unused-argument
+    def _subscribe_select_ins(self, **kwargs): # pylint: disable=unused-argument
         if self.poi_trace.am_none:
             return
 
@@ -352,13 +252,64 @@ class QPOIViewer(QWidget):
 
                     if p == self.poi_trace.count + self.curr_position: #add thicker line for 'current' mark
                         self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                            self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
+                                                                     self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
                     else:
                         self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                                self.MARK_HEIGHT, QPen(color), QBrush(color)))
+                                                                     self.MARK_HEIGHT, QPen(color), QBrush(color)))
 
                 self.traceScene.update() #force redraw of the traceScene
                 self.scroll_to_position(self.curr_position)
+
+    def _get_func_from_addr(self, addr):
+        bbl = self.workspace.instance.cfg.get_any_node(addr, anyaddr=True)
+        function_addr = bbl.function_address
+        return self.workspace.instance.project.kb.functions.get(function_addr)
+
+    def _populate_poi_table(self, view, poi_ids):
+        view.clearContents()
+        view.setRowCount(len(poi_ids))
+        row = 0 #start after label row
+        for i in poi_ids:
+            poi = self.multi_poi.am_obj.get_poi_by_id(i)
+            self._set_item(view, row, 0, str(i), editable=False)
+            self._set_item(view, row, 1, hex(poi['bbl']), editable=False)
+            self._set_item(view, row, 2, poi['tag'], editable=False)
+            self._set_item(view, row, 3, poi.get('diagnose', ''), editable=True)
+            row += 1
+
+    def _set_item(self, view, row, column, text, editable=True):
+        item = QTableWidgetItem(text)
+        if not editable:
+            item.setFlags(item.flags() ^ Qt.ItemIsEditable)
+        view.setItem(row, column, item)
+
+    def _refresh_multi_list(self):
+        multiPOI = self.multi_poi.am_obj
+        trace_ids = multiPOI.get_all_poi_ids()
+
+        self.multiPOIList.clearContents()
+        self._populate_poi_table(self.multiPOIList, trace_ids)
+        if self._selected_traces and self.multiPOIList.rowCount() > 0:
+            self.multiPOIList.item(0, 0).setSelected(True)
+            self.multiPOIList.item(0, 1).setSelected(True)
+        else:
+            for row in range(self.multiPOIList.rowCount()):
+                item = self.multiPOIList.item(row, 0)
+                inputItem = self.multiPOIList.item(row, 1)
+                if item.text() in self._selected_traces:
+                    item.setSelected(True)
+                    inputItem.setSelected(True)
+        self.multi_poi.am_event()
+
+    def _on_tab_change(self):
+        multiPOI = self.multi_poi.am_obj
+        if self.tabView.currentIndex() == self.MULTI_POI:
+            multiPOI.is_active_tab = True
+            self._refresh_multi_list()
+        elif self.tabView.currentIndex() == self.POI_TRACE:
+            multiPOI = self.multi_poi.am_obj
+            multiPOI.is_active_tab = False
+            # self._show_trace_ids()
 
     def scroll_to_position(self, position):
         relative_pos = self.poi_trace.count + position
@@ -387,25 +338,10 @@ class QPOIViewer(QWidget):
             func = self.poi_trace.get_func_from_position(self.curr_position)
             self._jump_bbl(func, bbl_addr)
 
-    def eventFilter(self, obj, event): #specifically to catch arrow keys #pylint: disable=unused-argument
-        # more elegant solution to link w/ self.view's scroll bar keypressevent?
-        if event.type() == QEvent.Type.KeyPress:
-            if not event.modifiers() & Qt.ShiftModifier: #shift + arrowkeys
-                return False
-            key = event.key()
-            if key in [Qt.Key_Up, Qt.Key_Left]:
-                self.jump_prev_insn()
-            elif key in [Qt.Key_Down, Qt.Key_Right]:
-                self.jump_next_insn()
-            return True
-
-        return False  # pass through all other events
-
     def mousePressEvent(self, event):
-        _l.debug("press")
         button = event.button()
         pos = self._to_logical_pos(event.pos())
-        if button == Qt.LeftButton and self.tabView.currentIndex() == self.SINGLE_TRACE and self._at_legend(pos):
+        if button == Qt.LeftButton and self.tabView.currentIndex() == self.POI_TRACE and self._at_legend(pos):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
             self._use_precise_position = True
@@ -430,23 +366,6 @@ class QPOIViewer(QWidget):
     def _get_mark_y(self, i):
         return self.TRACE_FUNC_Y + self.trace_func_unit_height * i
 
-
-    def _show_trace_ids(self):
-        poi_ids = self.multi_poi.get_all_poi_ids()
-        # traceID = self.listScene.addText(id_txt, QFont("Source Code Pro", 7))
-        # traceID.setPos(5,5)
-        # self.listView.clearContents()
-        # self._populate_trace_table(self.listView, poi_ids)
-        # if len(self.listView.selectedItems()) <= 0 and not self.poi_trace.am_none:
-        #     for row in range(self.listView.rowCount()):
-        #         item = self.listView.item(row, 0)
-        #         inputItem = self.listView.item(row, 1)
-        #         if self.poi_trace.id in item.text():
-        #             item.setSelected(True)
-        #             inputItem.setSelected(True)
-        #             break
-
-
     def _show_trace_func(self, show_func_tag=True):
         x = self.TRACE_FUNC_X
         y = self.TRACE_FUNC_Y
@@ -454,7 +373,6 @@ class QPOIViewer(QWidget):
         for position in self.poi_trace.trace_func:
             bbl_addr = position.bbl_addr
             func_name = position.func_name
-            _l.debug('Draw function %x, %s', bbl_addr, func_name)
             color = self.poi_trace.get_func_color(func_name)
             self.trace_func.addToGroup(self.traceScene.addRect(x, y,
                                                           self.TRACE_FUNC_WIDTH, self.trace_func_unit_height,
@@ -482,7 +400,6 @@ class QPOIViewer(QWidget):
         gradient.setColorAt(1.0, Qt.darkBlue)
         return gradient
 
-
     def _show_legend(self):
         pen = QPen(Qt.transparent)
 
@@ -497,7 +414,6 @@ class QPOIViewer(QWidget):
         p = QPainter(base_img)
         p.fillRect(base_img.rect(),reference_gradient)
         self.legend_img = base_img #reference shade
-
 
     def _set_mark_color(self):
         _l.debug('trace count: %d', self.poi_trace.count)

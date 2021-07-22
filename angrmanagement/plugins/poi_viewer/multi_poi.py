@@ -4,8 +4,6 @@ from PySide2.QtGui import QColor
 
 from angrmanagement.config import Conf
 
-from .trace_statistics import TraceStatistics
-
 import logging
 _l = logging.getLogger(__name__)
 _l.setLevel('DEBUG')
