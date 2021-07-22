@@ -152,26 +152,6 @@ def start_management(filepath=None, use_daemon=False):
 
     refresh_theme()
 
-    # URL scheme
-    from .logic.url_scheme import AngrUrlScheme
-    scheme = AngrUrlScheme()
-    registered, _ = scheme.is_url_scheme_registered()
-    supported = scheme.is_url_scheme_supported()
-    if not registered and supported:
-        btn = QMessageBox.question(None, "Setting up angr URL scheme",
-                "angr URL scheme allows \"deep linking\" from browsers and other applications by registering the "
-                "angr:// protocol to the current user. Do you want to register it? You may unregister at any "
-                "time in Preferences.",
-                defaultButton=QMessageBox.Yes)
-        if btn == QMessageBox.Yes:
-            try:
-                AngrUrlScheme().register_url_scheme()
-            except (ValueError, FileNotFoundError) as ex:
-                QMessageBox.warning(None, "Error in registering angr URL scheme",
-                        "Failed to register the angr URL scheme.\n"
-                        "The following exception occurred:\n"
-                        + str(ex))
-
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
     splash_pixmap = QPixmap(splashscreen_location)

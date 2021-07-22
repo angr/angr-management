@@ -97,6 +97,7 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
         self._init_library_docs()
+        self._init_url_scheme_handler()
 
         self.workspace.plugins.on_workspace_initialized(self)
 
@@ -329,6 +330,37 @@ class MainWindow(QMainWindow):
         GlobalInfo.library_docs = LibraryDocs()
         if Conf.library_docs_root:
             GlobalInfo.library_docs.load_func_docs(Conf.library_docs_root)
+
+    #
+    # URL scheme handler setup
+    #
+
+    def _init_url_scheme_handler(self):
+        # URL scheme
+        from ..logic.url_scheme import AngrUrlScheme  # pylint:disable=import-outside-toplevel
+
+        scheme = AngrUrlScheme()
+        registered, _ = scheme.is_url_scheme_registered()
+        supported = scheme.is_url_scheme_supported()
+        checrs_plugin = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if checrs_plugin is None:
+            return
+
+        if not registered and supported:
+            btn = QMessageBox.question(None, "Setting up angr URL scheme",
+                                       "angr URL scheme allows \"deep linking\" from browsers and other applications "
+                                       "by registering the angr:// protocol to the current user. Do you want to "
+                                       "register it? You may unregister at any "
+                                       "time in Preferences.",
+                                       defaultButton=QMessageBox.Yes)
+            if btn == QMessageBox.Yes:
+                try:
+                    AngrUrlScheme().register_url_scheme()
+                except (ValueError, FileNotFoundError) as ex:
+                    QMessageBox.warning(None, "Error in registering angr URL scheme",
+                                        "Failed to register the angr URL scheme.\n"
+                                        "The following exception occurred:\n"
+                                        + str(ex))
 
     #
     # Event
