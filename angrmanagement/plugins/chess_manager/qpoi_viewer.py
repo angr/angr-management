@@ -25,6 +25,9 @@ EMPTY_POI = {
 
 
 class QPOIViewer(QWidget):
+    """
+    POI Viewer QWidget
+    """
 
     TAG_SPACING = 50
     LEGEND_X = -50
@@ -181,7 +184,7 @@ class QPOIViewer(QWidget):
     # Event
     #
 
-    def _on_cell_double_click(self, row, column):
+    def _on_cell_double_click(self, row, _):
         _l.debug("row %d is double clicked", row)
         poi_id = self.multiPOIList.item(row, 0).text()
         trace = self.multi_poi.am_obj.get_poi_by_id(poi_id)['output']['bbl_history']
@@ -233,11 +236,10 @@ class QPOIViewer(QWidget):
         content = item.text()
         original_content = self.multi_poi.am_obj.get_content_by_id_column(poi_id, column)
         if content != original_content and not (content == '' and original_content is None):
-            poi = self.multi_poi.am_obj.get_poi_by_id(poi_id)
             updated_poi = self.multi_poi.update_poi(poi_id, column, content)
             self._diagnose_handler.submit_updated_poi(poi_id, updated_poi)
 
-    def _subscribe_add_poi(self, **kwargs):
+    def _subscribe_add_poi(self):
         _l.debug('add a poi to multi poi list')
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
@@ -247,7 +249,7 @@ class QPOIViewer(QWidget):
         self._populate_poi_table(self.multiPOIList, poi_ids)
         self.show()
 
-    def _subscribe_set_trace(self, **kwargs):
+    def _subscribe_set_trace(self):
         _l.debug('on set trace in poi trace viewer')
         self._reset()
         if self.poi_trace.am_none:
@@ -300,7 +302,8 @@ class QPOIViewer(QWidget):
             addr = next(iter(self.selected_ins))
             positions = self.poi_trace.get_positions(addr)
             if positions: #if addr is in list of positions
-                if not self._use_precise_position: #handle case where insn was selected from disas view
+                # handle case where insn was selected from disas view
+                if not self._use_precise_position:
                     self.curr_position = positions[0] - self.poi_trace.count
                 for p in positions:
                     color = self._get_mark_color(p, self.poi_trace.count)
@@ -326,8 +329,8 @@ class QPOIViewer(QWidget):
         view.clearContents()
         view.setRowCount(len(poi_ids))
         row = 0 #start after label row
-        for id in poi_ids:
-            poi = self.multi_poi.am_obj.get_poi_by_id(id)
+        for poi_id in poi_ids:
+            poi = self.multi_poi.am_obj.get_poi_by_id(poi_id)
             _l.debug('populating poi: %s', poi)
             category = poi['category']
             output = poi['output']
@@ -337,13 +340,14 @@ class QPOIViewer(QWidget):
             else:
                 crash = None
             diagnose = output.get('diagnose')
-            self._set_item(view, row, self.POIID_COLUMN, id, editable=False)
+            self._set_item(view, row, self.POIID_COLUMN, poi_id, editable=False)
             self._set_item(view, row, self.CRASH_COLUMN, crash, editable=True)
             self._set_item(view, row, self.CATEGORY_COLUMN, category, editable=True)
             self._set_item(view, row, self.DIAGNOSE_COLUMN, diagnose, editable=True)
             row += 1
 
-    def _set_item(self, view, row, column, text, editable=True):
+    @staticmethod
+    def _set_item(view, row, column, text, editable=True):
         item = QTableWidgetItem(text)
         if not editable:
             item.setFlags(item.flags() ^ Qt.ItemIsEditable)
@@ -389,7 +393,8 @@ class QPOIViewer(QWidget):
         self._use_precise_position = False
 
     def jump_next_insn(self):
-        if self.curr_position + self.poi_trace.count < self.poi_trace.count - 1: #for some reason indexing is done backwards
+        # for some reason indexing is done backwards
+        if self.curr_position + self.poi_trace.count < self.poi_trace.count - 1:
             self.curr_position += 1
             self._use_precise_position = True
             bbl_addr = self.poi_trace.get_bbl_from_position(self.curr_position)
@@ -437,7 +442,6 @@ class QPOIViewer(QWidget):
         y = self.TRACE_FUNC_Y
         prev_name = None
         for position in self.poi_trace.trace_func:
-            bbl_addr = position.bbl_addr
             func_name = position.func_name
             color = self.poi_trace.get_func_color(func_name)
             self.trace_func.addToGroup(self.traceScene.addRect(x, y,
@@ -536,6 +540,9 @@ class QPOIViewer(QWidget):
 
 
 class QMultiPOITab(QWidget):
+    """
+    The tab widget for multi POIs
+    """
     def __init__(self, poi_view : QPOIViewer):
         super().__init__()
         self.POIView = poi_view

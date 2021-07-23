@@ -1,8 +1,9 @@
 import json
+import logging
+from copy import deepcopy
 from typing import Optional, Union
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QFileDialog
-from copy import deepcopy
 
 from ...data.object_container import ObjectContainer
 from ..base_plugin import BasePlugin
@@ -12,12 +13,14 @@ from .multi_poi import MultiPOI
 from .diagnose_handler import DiagnoseHandler
 
 
-import logging
 _l = logging.getLogger(__name__)
 # _l.setLevel('DEBUG')
 
 
 class POIViewer(BasePlugin):
+    """
+    POI Viewer Plugin
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -194,12 +197,12 @@ class POIViewer(BasePlugin):
         _l.debug('adding poi')
         poi_record = self._open_poi()
         if poi_record is not None:
-            id = poi_record["id"]
+            poi_id = poi_record["id"]
             poi_json = poi_record["poi"]
             # self._pois[id] = poi_json
             if self.multi_poi.am_none:
                 self.multi_poi.am_obj = MultiPOI(self.workspace)
-            self.multi_poi.am_obj.add_poi(id, poi_json)
+            self.multi_poi.am_obj.add_poi(poi_id, poi_json)
 
             # this should call qpoi_reviewer._subscribe_add_poi asynchronisely
             self.multi_poi.am_event()
@@ -233,7 +236,8 @@ class POIViewer(BasePlugin):
 
         return None
 
-    def _open_poi_dialog(self, tfilter):
+    @staticmethod
+    def _open_poi_dialog(tfilter):
         file_path, _ = QFileDialog.getOpenFileName(None, "Open a POI", "", tfilter)
         try:
             with open(file_path, 'rb') as f:

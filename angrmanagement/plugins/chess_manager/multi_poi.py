@@ -1,10 +1,10 @@
 import math
+import logging
 
 from PySide2.QtGui import QColor
 
 from angrmanagement.config import Conf
 
-import logging
 _l = logging.getLogger(__name__)
 # _l.setLevel('DEBUG')
 
@@ -41,15 +41,15 @@ class MultiPOI:
     #     # self._make_addr_map()
     #     return traceStats
 
-    def add_poi(self, id, poi):
+    def add_poi(self, poi_id, poi):
         _l.debug("adding poi: %s", poi)
-        self._pois[id] = poi
+        self._pois[poi_id] = poi
 
-    def remove_poi(self, id):
-        self._pois.pop(id, None)
+    def remove_poi(self, poi_id):
+        self._pois.pop(poi_id, None)
 
-    def update_poi(self, id, column, content):
-        poi = self.get_poi_by_id(id)
+    def update_poi(self, poi_id, column, content):
+        poi = self.get_poi_by_id(poi_id)
         if column == 1:
             if content.isdecimal():
                 poi['output']['bbl'] = int(content, 10)
@@ -65,13 +65,13 @@ class MultiPOI:
         self._pois[id] = poi
         return poi
 
-    def get_poi_by_id(self, id):
-        return self._pois[id]
+    def get_poi_by_id(self, poi_id):
+        return self._pois[poi_id]
 
-    def get_content_by_id_column(self, id, column):
+    def get_content_by_id_column(self, poi_id, column):
         if column == 0:
-            return id
-        poi = self.get_poi_by_id(id)
+            return poi_id
+        poi = self.get_poi_by_id(poi_id)
         if column == 1:
             return poi['output'].get('bbl', '')
         if column == 2:

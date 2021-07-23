@@ -30,7 +30,10 @@ formatter: Formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s
 fh.setFormatter(formatter)
 l.addHandler(fh)
 
-class DiagnoseHandler(object):
+class DiagnoseHandler:
+    """
+    Handling POI records in slacrs
+    """
     def __init__(self, project_name=None, project_md5=None, image_id=None):
         self.project_name = project_name
         self.project_md5 = project_md5
@@ -39,6 +42,7 @@ class DiagnoseHandler(object):
         self._log_list = list()
         self.workspace = None
         self.slacrs_thread = None
+        self.session = None
         self.slacrs = Slacrs(database=Conf.checrs_backend_str)
         self.user = gma()
 
@@ -54,19 +58,19 @@ class DiagnoseHandler(object):
         if connector is not None:
             try:
                 self.image_id = connector.target_image_id
-            except Exception:
+            except (ValueError, AttributeError) as e:
                 self.image_id = None
         self._active = True
         self.slacrs_thread = threading.Thread(target=self._commit_pois)
         self.slacrs_thread.setDaemon(True)
         self.slacrs_thread.start()
 
-    def submit_updated_poi(self, id, poi_json):
+    def submit_updated_poi(self, poi_id, poi_json):
         # reference: https://github.com/checrs/slacrs7/blob/master/slacrs/plugins/arbiter.py#L81
         poi = Poi()
         poi.plugin = self.user
         poi.target_image_id = self.image_id
-        poi.id = id
+        poi.id = poi_id
         poi.poi = json.dumps(poi_json)
 
         # Additional fields according to Slacrs's Base and Poi classes.

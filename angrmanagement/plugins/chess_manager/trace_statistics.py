@@ -9,6 +9,10 @@ l = logging.getLogger(name=__name__)
 
 
 class TraceFunc:
+    """
+    Trace and Function class
+
+    """
     def __init__(self, bbl_addr=None, func_name=None, func=None):
         self.bbl_addr = bbl_addr
         self.func_name = func_name
@@ -16,15 +20,18 @@ class TraceFunc:
 
 
 class TraceStatistics:
+    """
+    Trace and color / legend record
+    """
 
     BBL_FILL_COLOR = QColor(0, 0xf0, 0xf0, 0xf)
     BBL_BORDER_COLOR = QColor(0, 0xf0, 0xf0)
     BBL_EMPTY_COLOR = QColor("white")
 
-    def __init__(self, workspace, trace, id=None, baddr=None):
+    def __init__(self, workspace, trace, trace_id=None, baddr=None):
         self.workspace = workspace
         self.bbl_addrs = trace
-        self.id = id
+        self.id = trace_id
         self.trace_func = []
         self._func_color = {}
         self.count = None
