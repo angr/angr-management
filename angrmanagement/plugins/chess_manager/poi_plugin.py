@@ -168,7 +168,7 @@ class POIViewer(BasePlugin):
     # Menu
     #
     MENU_BUTTONS = [
-        'Create a POI...',
+        'Create a POI from a JSON file...',
         'Load POIs from CHECRS',
     ]
     ADD_POI = 0

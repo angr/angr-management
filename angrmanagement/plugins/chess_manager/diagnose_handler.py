@@ -68,10 +68,12 @@ class DiagnoseHandler:
         except (ValueError, AttributeError):
             return None
 
-    def submit_updated_poi(self, poi_id, poi_json):
+    def submit_updated_poi(self, poi_id: str, poi_json):
         # reference: https://github.com/checrs/slacrs7/blob/master/slacrs/plugins/arbiter.py#L81
         image_id = self.get_image_id()
         if image_id is None:
+            l.warning("Cannot submit POI %s since the current target ID is unknown.",
+                      poi_id)
             return
 
         poi = Poi()

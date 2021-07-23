@@ -2,9 +2,8 @@ from uuid import uuid4
 from copy import deepcopy
 import logging
 
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide2.QtWidgets import QTabWidget, QAbstractItemView, QMenu
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup, QMessageBox, \
+    QTabWidget, QAbstractItemView, QMenu, QTableWidget, QTableWidgetItem, QHeaderView
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont, QContextMenuEvent
 from PySide2.QtCore import Qt, QPoint
 
@@ -190,14 +189,28 @@ class QPOIViewer(QWidget):
 
     def _on_cell_double_click(self, row, _):
         _l.debug("row %d is double clicked", row)
-        poi_id = self.multiPOIList.item(row, 0).text()
-        trace = self.multi_poi.am_obj.get_poi_by_id(poi_id)['output']['bbl_history']
+        first_cell = self.multiPOIList.item(row, 0)
+        if first_cell is None:
+            return
+        poi_id = first_cell.text()
+        poi = self.multi_poi.am_obj.get_poi_by_id(poi_id)
+        if poi is None:
+            return
+        # sanity checks
+        if not isinstance(poi, dict):
+            return
+        if 'output' not in poi or not isinstance(poi['output'], dict):
+            return
+        if 'bbl_history' not in poi['output']:
+            return
+
+        trace = poi['output']['bbl_history']
         if self._selected_poi != poi_id and trace is not None:
             # render the trace
             self.poi_trace.am_obj = TraceStatistics(self.workspace, trace, trace_id=poi_id)
 
             # show the trace statistic in POI trace
-            self.poi_trace.am_event(poi_id=poi_id)
+            self.poi_trace.am_event()
 
             # show covered basic blocks and functions
             self.multi_poi.am_obj.reload_heatmap(poi_id)
@@ -217,10 +230,13 @@ class QPOIViewer(QWidget):
             self.tabView.setCurrentIndex(self.POI_TRACE)
         self._selected_poi = poi_id
 
-        try:
-            crash_addr = int(self.multiPOIList.item(row, 1).text(), 16)
-        except ValueError:
-            crash_addr = None
+        second_cell = self.multiPOIList.item(row, 1)
+        crash_addr = None
+        if second_cell is not None:
+            try:
+                crash_addr = int(second_cell.text(), 16)
+            except ValueError:
+                pass
         if crash_addr is not None:
             # show the crashing address
             view = self.workspace.view_manager.first_view_in_category('disassembly')
@@ -359,6 +375,8 @@ class QPOIViewer(QWidget):
 
     @staticmethod
     def _set_item(view, row, column, text, editable=True):
+        if not text:
+            text = ""
         item = QTableWidgetItem(text)
         if not editable:
             item.setFlags(item.flags() ^ Qt.ItemIsEditable)
@@ -535,6 +553,15 @@ class QPOIViewer(QWidget):
 
     def menu_add_empty_poi(self):
         _l.debug('adding a new empty poi item')
+
+        if self._diagnose_handler.get_image_id() is None:
+            QMessageBox.warning(self.workspace.main_window,
+                                "No CHESS target available",
+                                "No angr project is loaded, or you did not associate the current project with a CHESS "
+                                "target. Please load a binary and associate it with a CHESS target before creating "
+                                "POIs.")
+            return
+
         poi_id = str(uuid4())
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
@@ -575,7 +602,7 @@ class QMultiPOITab(QWidget):
 
     def contextMenuEvent(self, event:QContextMenuEvent):
         menu = QMenu("", self)
-        menu.addAction('Add a new POI', self.POIView.menu_add_empty_poi)
+        menu.addAction('Add POI', self.POIView.menu_add_empty_poi)
 
         remove = menu.addAction('Remove', self.POIView.menu_remove_poi)
         if len(self.POIView.multiPOIList.selectedItems()) == 0:

@@ -65,7 +65,7 @@ class MultiPOI:
             poi['category'] = content
         if column == 3:
             poi['output']['diagnose'] = content
-        self._pois[id] = poi
+        self._pois[poi_id] = poi
         return poi
 
     def get_poi_by_id(self, poi_id):
