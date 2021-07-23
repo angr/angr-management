@@ -1,11 +1,15 @@
 from uuid import uuid4
 from copy import deepcopy
 import logging
+
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide2.QtWidgets import QTabWidget, QAbstractItemView, QMenu
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont, QContextMenuEvent
 from PySide2.QtCore import Qt, QPoint
+
+from angrmanagement.ui.views.view import BaseView
+
 from .trace_statistics import TraceStatistics
 from .multi_poi import MultiPOI
 
@@ -52,13 +56,10 @@ class QPOIViewer(QWidget):
     COLUMN_FIELD = ['id', 'bbl', 'category', 'diagnose']
 
 
-    def __init__(self, workspace, disasm_view, parent=None, diagnose_handler=None):
+    def __init__(self, workspace, parent=None, diagnose_handler=None):
         super().__init__(parent=parent)
         self.workspace = workspace
-        self.disasm_view = disasm_view
         self._diagnose_handler = diagnose_handler
-
-        self.MAX_WINDOW_SIZE = min(self.MAX_WINDOW_SIZE, disasm_view.width() * 0.3)
 
         self.mark = None
         self.legend = None
@@ -96,6 +97,16 @@ class QPOIViewer(QWidget):
     #
 
     @property
+    def disasm_view(self):
+        """
+        Get the current disassembly view (if there is one), or create a new one as needed.
+        """
+        view = self.workspace.view_manager.current_view_in_category("disassembly")
+        if view is None:
+            view = self.workspace._get_or_create_disassembly_view()
+        return view
+
+    @property
     def poi_trace(self):
         return self.workspace.instance.poi_trace
 
@@ -110,7 +121,6 @@ class QPOIViewer(QWidget):
     def _init_widgets(self):
         _l.debug("QPOI Viewer Initiating")
         self.tabView = QTabWidget() # QGraphicsView()
-        self.tabView.setMinimumWidth(self.parent().width())
         self.tabView.setContentsMargins(0, 0, 0, 0)
 
         #
@@ -118,7 +128,6 @@ class QPOIViewer(QWidget):
         #
         self.POITraceTab = QWidget()
         self.POITraceTab.setContentsMargins(0, 0, 0, 0)
-        self.POITraceTab.setMinimumWidth(self.parent().width())
         singleLayout = QVBoxLayout()
         singleLayout.setSpacing(0)
         singleLayout.setContentsMargins(0, 0, 0, 0)
@@ -135,13 +144,11 @@ class QPOIViewer(QWidget):
         #
         self.multiPOITab = QMultiPOITab(self)
         # self.multiPOITab = QWidget()
-        self.multiPOITab.setMinimumWidth(self.width())
         multiLayout = QVBoxLayout()
         multiLayout.setSpacing(0)
         multiLayout.setContentsMargins(0, 0, 0, 0)
 
         self.multiPOIList = QTableWidget(0, 4) # row, col
-        self.multiPOIList.setMinimumWidth(self.width())
         self.multiPOIList.setHorizontalHeaderItem(0, QTableWidgetItem("ID"))
         self.multiPOIList.setHorizontalHeaderItem(1, QTableWidgetItem("Crash Point"))
         self.multiPOIList.setHorizontalHeaderItem(2, QTableWidgetItem("Tag"))
@@ -161,8 +168,6 @@ class QPOIViewer(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.tabView)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.setAlignment(self.tabView, Qt.AlignLeft)
 
         self.setLayout(layout)
         self.show()
@@ -225,8 +230,7 @@ class QPOIViewer(QWidget):
                 self.selected_ins.clear()
                 self.selected_ins.update([crash_addr])
                 self.selected_ins.am_event()
-                self.disasm_view.current_graph.show_instruction(crash_addr)
-
+                view.current_graph.show_instruction(crash_addr)
 
     def _on_diagnose_change(self, item: QTableWidgetItem):
         column = item.column()
@@ -276,13 +280,13 @@ class QPOIViewer(QWidget):
         self._set_mark_color()
         self._refresh_multi_list()
 
-        boundingSize = self.traceScene.itemsBoundingRect().width()
-        windowSize = boundingSize
-        if boundingSize > self.MAX_WINDOW_SIZE:
-            windowSize = self.MAX_WINDOW_SIZE
-        self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
-        if windowSize > self.width():
-            self.setMinimumWidth(windowSize)
+        # boundingSize = self.traceScene.itemsBoundingRect().width()
+        # windowSize = boundingSize
+        # if boundingSize > self.MAX_WINDOW_SIZE:
+        #     windowSize = self.MAX_WINDOW_SIZE
+        # self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
+        # if windowSize > self.width():
+        #     self.setMinimumWidth(windowSize)
 
         self.show()
 
@@ -320,7 +324,6 @@ class QPOIViewer(QWidget):
 
                 self.traceScene.update() #force redraw of the traceScene
                 self.scroll_to_position(self.curr_position)
-
 
     def _get_func_from_addr(self, addr):
         bbl = self.workspace.instance.cfg.get_any_node(addr, anyaddr=True)
@@ -425,14 +428,16 @@ class QPOIViewer(QWidget):
             self._jump_bbl(func, bbl_addr)
 
     def _jump_bbl(self, func, bbl_addr):
-        all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
-        # TODO: replace this with am_events perhaps?
-        self.workspace.on_function_selected(func)
-        self.selected_ins.clear()
-        self.selected_ins.update(all_insn_addrs)
-        self.selected_ins.am_event()
-        # TODO: this ought to happen automatically as a result of the am_event
-        self.disasm_view.current_graph.show_instruction(bbl_addr)
+        disasm_view = self.disasm_view
+        if disasm_view is not None:
+            all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
+            # TODO: replace this with am_events perhaps?
+            self.workspace.on_function_selected(func)
+            self.selected_ins.clear()
+            self.selected_ins.update(all_insn_addrs)
+            self.selected_ins.am_event()
+            # TODO: this ought to happen automatically as a result of the am_event
+            disasm_view.current_graph.show_instruction(bbl_addr)
 
     def _get_mark_color(self, i, total):
         relative_gradient_pos = i * 1000 // total
@@ -556,6 +561,7 @@ class QPOIViewer(QWidget):
             return False
         return False
 
+
 class QMultiPOITab(QWidget):
     """
     The tab widget for multi POIs
@@ -577,3 +583,27 @@ class QMultiPOITab(QWidget):
         #     remove.setDisabled(True)
 
         menu.exec_(event.globalPos())
+
+
+class POIView(BaseView):
+    """
+    The view for displaying POIs.
+    """
+
+    def __init__(self, workspace, default_docking_position, diagnose_handler, *args, **kwargs):
+        super().__init__('poi', workspace, default_docking_position, *args, **kwargs)
+
+        self.base_caption = "Points of interest"
+        self._diagnose_handler = diagnose_handler
+
+        self._poi_viewer: QPOIViewer = None
+
+        self._init_widgets()
+
+        self.width_hint = 250
+
+    def _init_widgets(self):
+        self._poi_viewer = QPOIViewer(self.workspace, diagnose_handler=self._diagnose_handler)
+        layout = QVBoxLayout()
+        layout.addWidget(self._poi_viewer)
+        self.setLayout(layout)

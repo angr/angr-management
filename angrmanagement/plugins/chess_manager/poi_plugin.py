@@ -10,7 +10,7 @@ from PySide2.QtWidgets import QFileDialog
 from ...data.object_container import ObjectContainer
 from ..base_plugin import BasePlugin
 from .trace_statistics import TraceStatistics
-from .qpoi_viewer import QPOIViewer, EMPTY_POI
+from .qpoi_viewer import POIView, EMPTY_POI
 from .multi_poi import MultiPOI
 from .diagnose_handler import DiagnoseHandler
 
@@ -31,18 +31,19 @@ class POIViewer(BasePlugin):
         self.workspace.instance.register_container('multi_poi', lambda: None, Optional[MultiPOI],
                                                    'POI list')
 
-        self._viewers = []
-
-        # self._pois = {}
+        self._views = []
 
         self._diagnose_handler = DiagnoseHandler()
+
+        self.poi_view = POIView(self.workspace, "right", self._diagnose_handler)
+        self.workspace.add_view(self.poi_view, self.poi_view.caption, self.poi_view.category)
+        self._views.append(self.poi_view)
 
         self.multi_poi.am_subscribe(self._on_poi_selected)
 
     def teardown(self):
-        # I don't really know a better way to do this. tbh allowing arbitrary widget additions is probably intractable
-        for viewer in self._viewers:
-            viewer.hide()
+        for view in self._views:
+            view.close()
         self._diagnose_handler.deactivate()
 
     #
@@ -85,17 +86,6 @@ class POIViewer(BasePlugin):
 
     GRAPH_TRACE_LEGEND_WIDTH = 30
     GRAPH_TRACE_LEGEND_SPACING = 20
-
-    def instrument_disassembly_view(self, dview):
-        _l.debug('instrument disassembly view')
-        poi_viewer = QPOIViewer(self.workspace, dview, parent=dview, diagnose_handler=self._diagnose_handler)
-        self._viewers.append(poi_viewer)
-
-        poi_viewer.setMinimumWidth(min(500, dview.width() * 0.3))
-
-        dview.layout().addWidget(poi_viewer)
-        # TODO: recover this back when we deliver the code
-        # poi_viewer.hide()
 
     def color_block(self, addr):
         if not self.multi_poi.am_none and self.multi_poi.is_active_tab:
