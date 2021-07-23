@@ -1,8 +1,8 @@
 import logging
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide2.QtWidgets import QTabWidget, QAbstractItemView
+from PySide2.QtWidgets import QTabWidget, QAbstractItemView, QMenu
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
-from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
+from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont, QContextMenuEvent
 from PySide2.QtCore import Qt, QPoint
 from .trace_statistics import TraceStatistics
 from .multi_poi import MultiPOI
@@ -30,10 +30,16 @@ class QPOIViewer(QWidget):
     MARK_WIDTH = TRACE_FUNC_X - LEGEND_X + TRACE_FUNC_WIDTH
     MARK_HEIGHT = 1
 
-    def __init__(self, workspace, disasm_view, parent=None):
+    POIID_COLUMN = 0
+    CRASH_COLUMN = 1
+    CATEGORY_COLUMN = 2
+    DIAGNOSE_COLUMN = 3
+
+    def __init__(self, workspace, disasm_view, parent=None, diagnose_handler=None):
         super().__init__(parent=parent)
         self.workspace = workspace
         self.disasm_view = disasm_view
+        self._diagnose_handler = diagnose_handler
 
         self.mark = None
         self.legend = None
@@ -48,7 +54,8 @@ class QPOIViewer(QWidget):
         self.traceView = None
         self.traceScene = None
         self.POITraceTab = None
-        self.multiPOITab = None
+        self.multiPOITab : QWidget = None
+        self.multiPOIList : QTableWidget = None
 
         self.mark = None
         self.curr_position = 0
@@ -60,6 +67,11 @@ class QPOIViewer(QWidget):
         self.selected_ins.am_subscribe(self._subscribe_select_ins)
         self.poi_trace.am_subscribe(self._subscribe_set_trace)
         self.multi_poi.am_subscribe(self._subscribe_add_poi)
+
+        self.multiPOIList.cellDoubleClicked.connect(self._on_cell_double_click)
+        self.multiPOIList.itemChanged.connect(self._on_diagnose_change)
+        # self.multiPOITab.customContextMenuRequested.connect(self._on_context_menu)
+
     #
     # Forwarding properties
     #
@@ -107,6 +119,7 @@ class QPOIViewer(QWidget):
         multiLayout = QVBoxLayout()
         multiLayout.setSpacing(0)
         multiLayout.setContentsMargins(0, 0, 0, 0)
+
         self.multiPOIList = QTableWidget(0, 4) # row, col
         self.multiPOIList.setMinimumWidth(self.parent().width())
         self.multiPOIList.setHorizontalHeaderItem(0, QTableWidgetItem("ID"))
@@ -116,7 +129,6 @@ class QPOIViewer(QWidget):
         self.multiPOIList.horizontalHeader().setStretchLastSection(True)
         self.multiPOIList.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.multiPOIList.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.multiPOIList.cellDoubleClicked.connect(self._on_cell_double_click)
         multiLayout.addWidget(self.multiPOIList)
         self.multiPOITab.setLayout(multiLayout)
 
@@ -147,12 +159,17 @@ class QPOIViewer(QWidget):
         self.traceScene.addItem(self.trace_func)
         self.hide()
 
+    #
+    # Event
+    #
+
     def _on_cell_double_click(self, row, column):
         _l.debug("row %d is double clicked", row)
-        poi_id = int(self.multiPOIList.item(row, 0).text())
+        poi_id = self.multiPOIList.item(row, 0).text()
         crash_addr = int(self.multiPOIList.item(row, 1).text(), 16)
         if self.poi_trace.am_none:
-            self.poi_trace.am_obj = TraceStatistics(self.workspace, self.multi_poi.am_obj.get_poi_by_id(poi_id))
+            trace = self.multi_poi.am_obj.get_poi_by_id(poi_id)['output']['bbl_history']
+            self.poi_trace.am_obj = TraceStatistics(self.workspace, trace, id=poi_id)
 
         # show the trace statistic in POI trace
         self.poi_trace.am_event(poi_id=poi_id)
@@ -180,12 +197,25 @@ class QPOIViewer(QWidget):
         # switch to POI trace tab
         self.tabView.setCurrentIndex(self.POI_TRACE)
 
+    def _on_diagnose_change(self, item: QTableWidgetItem):
+        column = item.column()
+        if column == self.DIAGNOSE_COLUMN:
+            row = item.row()
+            poi_id = self.multiPOIList.item(row, self.POIID_COLUMN).text()
+            content = item.text()
+            original_poi = self.multi_poi.am_obj.get_poi_by_id(poi_id)
+            original_content = original_poi['output']['diagnose']
+            if content != original_content:
+                poi = self.multi_poi.am_obj.get_poi_by_id(poi_id)
+                poi['output']['diagnose'] = content
+                _l.debug('updated poi: %s', poi)
+                self._diagnose_handler.submit_updated_poi(poi_id, poi)
+
     def _subscribe_add_poi(self, **kwargs):
         _l.debug('add a poi to multi poi list')
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
-        multiPOI = self.multi_poi.am_obj
-        poi_ids = multiPOI.get_all_poi_ids()
+        poi_ids = self.multi_poi.am_obj.get_all_poi_ids()
 
         self.multiPOIList.clearContents()
         self._populate_poi_table(self.multiPOIList, poi_ids)
@@ -260,6 +290,20 @@ class QPOIViewer(QWidget):
                 self.traceScene.update() #force redraw of the traceScene
                 self.scroll_to_position(self.curr_position)
 
+    # def contextMenuEvent(self, event:QContextMenuEvent):
+    #     self.
+
+    def _on_context_menu(self, pos):
+        _l.debug("HERE")
+        menu = QMenu("", self)
+
+        # menu.addAction('Add a new POI', self._action_add_poi)
+        #
+        # remove = menu.addAction('Remove', self._action_remove_poi)
+        # if sr is None:
+        #     a.setDisabled(True)
+
+
     def _get_func_from_addr(self, addr):
         bbl = self.workspace.instance.cfg.get_any_node(addr, anyaddr=True)
         function_addr = bbl.function_address
@@ -269,12 +313,14 @@ class QPOIViewer(QWidget):
         view.clearContents()
         view.setRowCount(len(poi_ids))
         row = 0 #start after label row
-        for i in poi_ids:
-            poi = self.multi_poi.am_obj.get_poi_by_id(i)
-            self._set_item(view, row, 0, str(i), editable=False)
-            self._set_item(view, row, 1, hex(poi['bbl']), editable=False)
-            self._set_item(view, row, 2, poi['tag'], editable=False)
-            self._set_item(view, row, 3, poi.get('diagnose', ''), editable=True)
+        for id in poi_ids:
+            poi = self.multi_poi.am_obj.get_poi_by_id(id)
+            output = poi['output']
+            category = poi['category']
+            self._set_item(view, row, self.POIID_COLUMN, id, editable=False)
+            self._set_item(view, row, self.CRASH_COLUMN, hex(output['bbl']), editable=False)
+            self._set_item(view, row, self.CATEGORY_COLUMN, category, editable=False)
+            self._set_item(view, row, self.DIAGNOSE_COLUMN, output.get('diagnose', ''), editable=True)
             row += 1
 
     def _set_item(self, view, row, column, text, editable=True):

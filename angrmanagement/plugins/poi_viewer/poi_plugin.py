@@ -13,6 +13,8 @@ from ..base_plugin import BasePlugin
 from .trace_statistics import TraceStatistics
 from .qpoi_viewer import QPOIViewer
 from .multi_poi import MultiPOI
+from .diagnose_handler import DiagnoseHandler
+
 
 import logging
 _l = logging.getLogger(__name__)
@@ -32,12 +34,15 @@ class POIViewer(BasePlugin):
 
         self._pois = {}
 
+        self._diagnose_handler = DiagnoseHandler()
+
         self.multi_poi.am_subscribe(self._on_poi_selected)
 
     def teardown(self):
         # I don't really know a better way to do this. tbh allowing arbitrary widget additions is probably intractable
         for viewer in self._viewers:
             viewer.hide()
+        self._diagnose_handler.deactivate()
 
     #
     # Forwarding properties
@@ -67,6 +72,13 @@ class POIViewer(BasePlugin):
             view.refresh()
 
     #
+    # workspace initialiZation
+    #
+
+    def on_workspace_initialized(self, workspace):
+        self._diagnose_handler.init(workspace)
+
+    #
     # features for the disassembly view
     #
 
@@ -75,7 +87,7 @@ class POIViewer(BasePlugin):
 
     def instrument_disassembly_view(self, dview):
         _l.debug('instrument disassembly view')
-        poi_viewer = QPOIViewer(self.workspace, dview, parent=dview)
+        poi_viewer = QPOIViewer(self.workspace, dview, parent=dview, diagnose_handler=self._diagnose_handler)
         self._viewers.append(poi_viewer)
 
         poi_viewer.setMinimumWidth(500)
@@ -166,8 +178,10 @@ class POIViewer(BasePlugin):
     #
     MENU_BUTTONS = [
         'Open/Add a POI record...',
+        'Load POIs from Slacrs',
     ]
     ADD_POI = 0
+    LOAD_POI_FROM_SLACRS = 1
 
     def handle_click_menu(self, idx):
 
@@ -179,6 +193,7 @@ class POIViewer(BasePlugin):
 
         mapping = {
             self.ADD_POI: self._menu_add_poi,
+            self.LOAD_POI_FROM_SLACRS: self._menu_load_pois_from_slacrs,
         }
 
         mapping.get(idx)()
@@ -192,8 +207,23 @@ class POIViewer(BasePlugin):
                 self.multi_poi.am_obj = MultiPOI(self.workspace)
             self.multi_poi.am_obj.add_poi(poi_record)
 
-            # this should call qpoi_reviewer._on_add_poi asynchronisely
+            # this should call qpoi_reviewer._subscribe_add_poi asynchronisely
             self.multi_poi.am_event()
+
+    def _menu_load_pois_from_slacrs(self):
+        _l.debug('loading pois from slacrs')
+        pois = self._diagnose_handler.get_pois()
+        if self.multi_poi.am_none:
+            self.multi_poi.am_obj = MultiPOI(self.workspace)
+        for poi_object in pois:
+            poi_json = json.loads(poi_object.poi)
+            _l.debug('poi json: %s', poi_json)
+            self._pois[poi_object.id] =poi_json
+            self.multi_poi.am_obj.add_poi(poi_object.id, poi_json)
+
+        # this should call qpoi_reviewer._subscribe_add_poi asynchronisely
+        self.multi_poi.am_event()
+
 
     def _open_poi(self, poi_path=None):
         if poi_path is None:

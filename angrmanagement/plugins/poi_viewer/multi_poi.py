@@ -41,8 +41,8 @@ class MultiPOI:
     #     # self._make_addr_map()
     #     return traceStats
 
-    def add_poi(self, poi):
-        self._pois[poi["id"]] = poi
+    def add_poi(self, id, poi):
+        self._pois[id] = poi
 
     def get_poi_by_id(self, id):
         return self._pois[id]
@@ -125,7 +125,7 @@ class MultiPOI:
     def reload_heatmap(self, poi_id):
         _l.debug('reloading heatmap')
         addrs_of_interest = []
-        addr_list = self._pois[poi_id]['bbl_history']
+        addr_list = self._pois[poi_id]['output']['bbl_history']
         addrs_of_interest.extend(addr_list)
         self._make_addr_map(addrs_of_interest)
 

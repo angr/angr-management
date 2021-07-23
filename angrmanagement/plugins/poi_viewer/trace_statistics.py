@@ -22,11 +22,10 @@ class TraceStatistics:
     BBL_BORDER_COLOR = QColor(0, 0xf0, 0xf0)
     BBL_EMPTY_COLOR = QColor("white")
 
-    def __init__(self, workspace, trace, baddr=None):
+    def __init__(self, workspace, trace, id=None, baddr=None):
         self.workspace = workspace
-        self.trace = trace
-        self.bbl_addrs = trace["bbl_history"]
-        self.id = trace["id"]
+        self.bbl_addrs = trace
+        self.id = id
         self.trace_func = []
         self._func_color = {}
         self.count = None
