@@ -100,9 +100,13 @@ def make_common_options(for_chess=False):
         "--hidden-import=ipykernel.datapub",
         "--hidden-import=pkg_resources.py2_warn",
         "--hidden-import=sqlalchemy.sql.default_comparator",
+        "--hidden-import=pyxdg",
+        "--hidden-import=pyzmq",
     ]
     if for_chess:
         hidden_import.append("--hidden-import=slacrs")
+        hidden_import.append("--hidden-import=getmac")
+        hidden_import.append("--hidden-import=qtterm")
     args = [
         "pyinstaller",
         ] + hidden_import + [
