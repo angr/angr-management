@@ -18,7 +18,7 @@ except ImportError as _:
     Poi = None
 
 l = logging.getLogger(__name__)
-# l.setLevel('DEBUG')
+l.setLevel('DEBUG')
 
 user_dir = os.path.expanduser('~')
 log_dir = os.path.join(user_dir, 'am-logging')
@@ -52,7 +52,10 @@ class DiagnoseHandler(object):
         self.workspace = workspace
         connector = workspace.plugins.get_plugin_instance_by_name("ChessConnector")
         if connector is not None:
-            self.image_id = connector.target_image_id
+            try:
+                self.image_id = connector.target_image_id
+            except Exception:
+                self.image_id = None
         self._active = True
         self.slacrs_thread = threading.Thread(target=self._commit_pois)
         self.slacrs_thread.setDaemon(True)
@@ -78,8 +81,13 @@ class DiagnoseHandler(object):
     def get_pois(self):
         self.session = self.slacrs.session()
         if self.image_id is not None:
-            return self.session.query(Poi).filter(Poi.target_image_id==self.image_id).all()
-        return self.session.query(Poi).all()
+            result = self.session.query(Poi).filter(Poi.target_image_id==self.image_id).all()
+        else:
+            result = self.session.query(Poi).all()
+        self.session.close()
+        l.debug('result: %s', result)
+        return result
+
 
     def deactivate(self):
         self._active = False
@@ -97,9 +105,12 @@ class DiagnoseHandler(object):
                     # query first to see if the poi id already exist
                     result = self.session.query(Poi).filter(Poi.id == poi.id).first()
                     if result is None:
+                        l.info('Adding poi %s to slacrs', poi)
                         self.session.add(poi)
                     else:
+                        l.info('Updating poi %s to slacrs', poi)
                         result.poi = poi.poi
+                    l.debug('log_list: %s', self._log_list)
                 self.session.commit()
             self.session.close()
             sleep(3)

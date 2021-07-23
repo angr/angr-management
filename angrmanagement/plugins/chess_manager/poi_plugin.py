@@ -1,24 +1,20 @@
 import json
-from typing import Optional, Union, List, Tuple
-from PySide2.QtCore import Qt
+from typing import Optional, Union
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
+from PySide2.QtWidgets import QFileDialog
+from copy import deepcopy
 
 from ...data.object_container import ObjectContainer
-from ...logic import GlobalInfo
-from ...logic.threads import gui_thread_schedule_async
-from ...utils.io import isurl, download_url
-from ...errors import InvalidURLError, UnexpectedStatusCodeError
 from ..base_plugin import BasePlugin
 from .trace_statistics import TraceStatistics
-from .qpoi_viewer import QPOIViewer
+from .qpoi_viewer import QPOIViewer, EMPTY_POI
 from .multi_poi import MultiPOI
 from .diagnose_handler import DiagnoseHandler
 
 
 import logging
 _l = logging.getLogger(__name__)
-_l.setLevel('DEBUG')
+# _l.setLevel('DEBUG')
 
 
 class POIViewer(BasePlugin):
@@ -184,11 +180,7 @@ class POIViewer(BasePlugin):
     LOAD_POI_FROM_SLACRS = 1
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
-            return
-
-        if self.workspace.instance.project.am_none:
             return
 
         mapping = {
@@ -218,7 +210,11 @@ class POIViewer(BasePlugin):
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
         for poi_object in pois:
-            poi_json = json.loads(poi_object.poi)
+            _l.debug('poi: %s', poi_object.poi)
+            if poi_object.poi != '':
+                poi_json = json.loads(poi_object.poi)
+            else:
+                poi_json = deepcopy(EMPTY_POI)
             _l.debug('poi json: %s', poi_json)
             # self._pois[poi_object.id] =poi_json
             self.multi_poi.am_obj.add_poi(poi_object.id, poi_json)

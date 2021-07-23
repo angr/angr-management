@@ -10,7 +10,18 @@ from .trace_statistics import TraceStatistics
 from .multi_poi import MultiPOI
 
 _l = logging.getLogger(name=__name__)
-_l.setLevel('DEBUG')
+# _l.setLevel('DEBUG')
+
+EMPTY_POI = {
+    'category': '',
+    'output': {
+        'function': None,
+        'bbl': None,
+        'base': None,
+        'bbl_history': None,
+        'diagnose': None
+    }
+}
 
 
 class QPOIViewer(QWidget):
@@ -38,16 +49,6 @@ class QPOIViewer(QWidget):
     DIAGNOSE_COLUMN = 3
     COLUMN_FIELD = ['id', 'bbl', 'category', 'diagnose']
 
-    EMPTY_POI = {
-        'category': '',
-        'output': {
-            'function': None,
-            'bbl': None,
-            'base': None,
-            'bbl_history': None,
-            'diagnose': None
-        }
-    }
 
     def __init__(self, workspace, disasm_view, parent=None, diagnose_handler=None):
         super().__init__(parent=parent)
@@ -518,7 +519,7 @@ class QPOIViewer(QWidget):
         poi_id = str(uuid4())
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
-        empty_poi = deepcopy(self.EMPTY_POI)
+        empty_poi = deepcopy(EMPTY_POI)
         self.multi_poi.add_poi(poi_id, empty_poi)
         self.multi_poi.am_event()
         self._diagnose_handler.submit_updated_poi(poi_id, empty_poi)
