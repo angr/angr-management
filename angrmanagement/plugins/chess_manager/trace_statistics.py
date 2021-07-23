@@ -6,7 +6,6 @@ from PySide2.QtGui import QColor
 from angr.errors import SimEngineError
 
 l = logging.getLogger(name=__name__)
-l.setLevel('DEBUG')
 
 
 class TraceFunc:

@@ -86,7 +86,7 @@ class POIViewer(BasePlugin):
         poi_viewer = QPOIViewer(self.workspace, dview, parent=dview, diagnose_handler=self._diagnose_handler)
         self._viewers.append(poi_viewer)
 
-        poi_viewer.setMinimumWidth(500)
+        poi_viewer.setMinimumWidth(min(500, dview.width() * 0.3))
 
         dview.layout().addWidget(poi_viewer)
         # TODO: recover this back when we deliver the code

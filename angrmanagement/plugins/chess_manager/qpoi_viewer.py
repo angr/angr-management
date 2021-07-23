@@ -56,6 +56,8 @@ class QPOIViewer(QWidget):
         self.disasm_view = disasm_view
         self._diagnose_handler = diagnose_handler
 
+        self.MAX_WINDOW_SIZE = min(self.MAX_WINDOW_SIZE, disasm_view.width() * 0.3)
+
         self.mark = None
         self.legend = None
         self.legend_height = 0
@@ -131,13 +133,13 @@ class QPOIViewer(QWidget):
         #
         self.multiPOITab = QMultiPOITab(self)
         # self.multiPOITab = QWidget()
-        self.multiPOITab.setMinimumWidth(self.parent().width())
+        self.multiPOITab.setMinimumWidth(self.width())
         multiLayout = QVBoxLayout()
         multiLayout.setSpacing(0)
         multiLayout.setContentsMargins(0, 0, 0, 0)
 
         self.multiPOIList = QTableWidget(0, 4) # row, col
-        self.multiPOIList.setMinimumWidth(self.parent().width())
+        self.multiPOIList.setMinimumWidth(self.width())
         self.multiPOIList.setHorizontalHeaderItem(0, QTableWidgetItem("ID"))
         self.multiPOIList.setHorizontalHeaderItem(1, QTableWidgetItem("Crash Point"))
         self.multiPOIList.setHorizontalHeaderItem(2, QTableWidgetItem("Tag"))

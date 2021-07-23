@@ -6,7 +6,7 @@ from angrmanagement.config import Conf
 
 import logging
 _l = logging.getLogger(__name__)
-_l.setLevel('DEBUG')
+# _l.setLevel('DEBUG')
 
 
 try:
