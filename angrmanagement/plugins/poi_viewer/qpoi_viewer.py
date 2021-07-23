@@ -516,11 +516,10 @@ class QPOIViewer(QWidget):
     def menu_add_empty_poi(self):
         _l.debug('adding a new empty poi item')
         poi_id = str(uuid4())
-        self.multi_poi.add_poi(poi_id, self.EMPTY_POI)
+        self.multi_poi.add_poi(poi_id, EMPTY_POI.copy())
         self.multi_poi.am_event()
-        self._diagnose_handler.submit_updated_poi(poi_id, self.EMPTY_POI)
+        self._diagnose_handler.submit_updated_poi(poi_id, EMPTY_POI.copy())
         # TODO: go over table display and trace display to embrace empty POI
-        # TODO: image id!
 
     def menu_remove_poi(self):
         items = self.multiPOIList.selectedItems()

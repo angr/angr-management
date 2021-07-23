@@ -75,8 +75,8 @@ class POIViewer(BasePlugin):
     # workspace initialiZation
     #
 
-    def on_workspace_initialized(self, workspace):
-        self._diagnose_handler.init(workspace)
+    def on_workspace_initialized(self, _):
+        self._diagnose_handler.init(self.workspace)
 
     #
     # features for the disassembly view

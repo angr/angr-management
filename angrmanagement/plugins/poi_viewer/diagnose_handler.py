@@ -37,6 +37,7 @@ class DiagnoseHandler(object):
         self.image_id = image_id
 
         self._log_list = list()
+        self.workspace = None
         self.slacrs_thread = None
         self.slacrs = Slacrs(database=Conf.checrs_backend_str)
         self.user = gma()
@@ -48,6 +49,10 @@ class DiagnoseHandler(object):
 
     def init(self, workspace):
         l.debug("workspace initing")
+        self.workspace = workspace
+        connector = workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is not None:
+            self.image_id = connector.target_image_id
         self._active = True
         self.slacrs_thread = threading.Thread(target=self._commit_pois)
         self.slacrs_thread.setDaemon(True)
@@ -72,6 +77,8 @@ class DiagnoseHandler(object):
 
     def get_pois(self):
         self.session = self.slacrs.session()
+        if self.image_id is not None:
+            return self.session.query(Poi).filter(Poi.target_image_id==self.image_id).all()
         return self.session.query(Poi).all()
 
     def deactivate(self):

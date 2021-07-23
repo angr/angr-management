@@ -53,7 +53,10 @@ class MultiPOI:
             if content.isdecimal():
                 poi['output']['bbl'] = int(content, 10)
             else:
-                poi['output']['bbl'] = int(content, 16)
+                try:
+                    poi['output']['bbl'] = int(content, 16)
+                except ValueError:
+                    poi['output']['bbl'] = ''
         if column == 2:
             poi['category'] = content
         if column == 3:
