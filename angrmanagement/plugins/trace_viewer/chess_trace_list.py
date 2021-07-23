@@ -250,6 +250,4 @@ class QChessTraceListDialog(QDialog):
         self.close()
 
     def _on_cancel_button_clicked(self):
-        self.target_id = None
-        self.target_description = None
         self.close()
