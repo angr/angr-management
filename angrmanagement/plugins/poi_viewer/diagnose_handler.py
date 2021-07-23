@@ -78,7 +78,7 @@ class DiagnoseHandler(object):
         self._active = False
 
     def _commit_pois(self):
-        l.info("database: %s", Conf.checrs_backend_str)
+        l.debug("database: %s", Conf.checrs_backend_str)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while self._active:
             if self.slacrs is None:

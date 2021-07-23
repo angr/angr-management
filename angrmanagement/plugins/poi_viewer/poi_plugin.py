@@ -32,7 +32,7 @@ class POIViewer(BasePlugin):
 
         self._viewers = []
 
-        self._pois = {}
+        # self._pois = {}
 
         self._diagnose_handler = DiagnoseHandler()
 
@@ -202,10 +202,12 @@ class POIViewer(BasePlugin):
         _l.debug('adding poi')
         poi_record = self._open_poi()
         if poi_record is not None:
-            self._pois[poi_record["id"]] = poi_record
+            id = poi_record["id"]
+            poi_json = poi_record["poi"]
+            # self._pois[id] = poi_json
             if self.multi_poi.am_none:
                 self.multi_poi.am_obj = MultiPOI(self.workspace)
-            self.multi_poi.am_obj.add_poi(poi_record)
+            self.multi_poi.am_obj.add_poi(id, poi_json)
 
             # this should call qpoi_reviewer._subscribe_add_poi asynchronisely
             self.multi_poi.am_event()
@@ -218,7 +220,7 @@ class POIViewer(BasePlugin):
         for poi_object in pois:
             poi_json = json.loads(poi_object.poi)
             _l.debug('poi json: %s', poi_json)
-            self._pois[poi_object.id] =poi_json
+            # self._pois[poi_object.id] =poi_json
             self.multi_poi.am_obj.add_poi(poi_object.id, poi_json)
 
         # this should call qpoi_reviewer._subscribe_add_poi asynchronisely
@@ -233,10 +235,6 @@ class POIViewer(BasePlugin):
             with open(poi_path, 'rb') as f:
                 return json.load(f)
 
-        # This is for testing
-        # return {'id': 1, 'bbl': 0x4007d4, 'base': 0x4000, 'tag': 'buffer overflow',
-        #         'bbl_history': [0x40071d, 0x400664, 0x400550, 0x400699, 0x400560, 0x400530, 0x400550, 0x4006df,
-        #                         0x4006eb, 0x4007bd, 0x4006ed, 0x400510, 0x4007d3]}
         return None
 
     def _open_poi_dialog(self, tfilter):

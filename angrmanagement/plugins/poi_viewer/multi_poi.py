@@ -44,8 +44,37 @@ class MultiPOI:
     def add_poi(self, id, poi):
         self._pois[id] = poi
 
+    def remove_poi(self, id):
+        self._pois.pop(id, None)
+
+    def update_poi(self, id, column, content):
+        poi = self.get_poi_by_id(id)
+        if column == 1:
+            if content.isdecimal():
+                poi['output']['bbl'] = int(content, 10)
+            else:
+                poi['output']['bbl'] = int(content, 16)
+        if column == 2:
+            poi['category'] = content
+        if column == 3:
+            poi['output']['diagnose'] = content
+        self._pois[id] = poi
+        return poi
+
     def get_poi_by_id(self, id):
         return self._pois[id]
+
+    def get_content_by_id_column(self, id, column):
+        if column == 0:
+            return id
+        poi = self.get_poi_by_id(id)
+        if column == 1:
+            return poi['output'].get('bbl', '')
+        if column == 2:
+            return poi.get('category', '')
+        if column == 3:
+            return poi['output'].get('diagnose', '')
+        return ''
 
     def get_hit_miss_color(self, addr):
         # hexstr_addr = hex(addr)
