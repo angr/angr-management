@@ -58,7 +58,7 @@ class DiagnoseHandler:
         if connector is not None:
             try:
                 self.image_id = connector.target_image_id
-            except (ValueError, AttributeError) as e:
+            except (ValueError, AttributeError):
                 self.image_id = None
         self._active = True
         self.slacrs_thread = threading.Thread(target=self._commit_pois)

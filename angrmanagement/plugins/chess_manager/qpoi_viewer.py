@@ -314,7 +314,8 @@ class QPOIViewer(QWidget):
 
                     if p == self.poi_trace.count + self.curr_position: #add thicker line for 'current' mark
                         self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                                     self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
+                                                                     self.MARK_HEIGHT*4,
+                                                                     QPen(QColor('black')), QBrush(color)))
                     else:
                         self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
                                                                      self.MARK_HEIGHT, QPen(color), QBrush(color)))

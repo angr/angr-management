@@ -17,6 +17,9 @@ except ImportError as ex:
     HumanFatigue = None
 
 class MultiPOI:
+    """
+    Multiple POIs
+    """
 
     HIT_COLOR = QColor(0x00, 0x99, 0x00, 0x60)
     MISS_COLOR = QColor(0xee, 0xee, 0xee)
