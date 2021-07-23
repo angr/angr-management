@@ -40,7 +40,10 @@ class TraceStatistics:
         self.mapped_trace = []
 
         project = self.workspace.instance.project
-        self.project_baddr = project.loader.main_object.mapped_base
+        if project.am_none:
+            self.project_baddr = None
+        else:
+            self.project_baddr = project.loader.main_object.mapped_base
         if baddr is None:
             self.runtime_baddr = self.project_baddr
         else:
@@ -84,6 +87,8 @@ class TraceStatistics:
         return self.trace_func[position].func
 
     def _apply_trace_offset(self, addr):
+        if self.project_baddr is None:
+            return None
         offset = self.project_baddr - self.runtime_baddr
         return addr + offset
 
@@ -91,7 +96,12 @@ class TraceStatistics:
         """
         :param trace: basic block address list
         """
-        self.mapped_trace = [self._apply_trace_offset(addr) for addr in trace_addrs]
+        self.mapped_trace = [ ]
+        for addr in trace_addrs:
+            converted = self._apply_trace_offset(addr)
+            if converted is not None:
+                self.mapped_trace.append(converted)
+
         bbls = filter(self._get_bbl, self.mapped_trace)
 
         for p, bbl_addr in enumerate(bbls):
