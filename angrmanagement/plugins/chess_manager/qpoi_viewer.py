@@ -10,7 +10,6 @@ from .trace_statistics import TraceStatistics
 from .multi_poi import MultiPOI
 
 _l = logging.getLogger(name=__name__)
-# _l.setLevel('DEBUG')
 
 EMPTY_POI = {
     'category': '',
@@ -190,7 +189,7 @@ class QPOIViewer(QWidget):
         trace = self.multi_poi.am_obj.get_poi_by_id(poi_id)['output']['bbl_history']
         if self._selected_poi != poi_id and trace is not None:
             # render the trace
-            self.poi_trace.am_obj = TraceStatistics(self.workspace, trace, id=poi_id)
+            self.poi_trace.am_obj = TraceStatistics(self.workspace, trace, trace_id=poi_id)
 
             # show the trace statistic in POI trace
             self.poi_trace.am_event(poi_id=poi_id)
@@ -232,10 +231,14 @@ class QPOIViewer(QWidget):
     def _on_diagnose_change(self, item: QTableWidgetItem):
         column = item.column()
         row = item.row()
+
         poi_id = self.multiPOIList.item(row, self.POIID_COLUMN).text()
         content = item.text()
         original_content = self.multi_poi.am_obj.get_content_by_id_column(poi_id, column)
-        if content != original_content and not (content == '' and original_content is None):
+        _l.debug('updaing %s, content: %s, original: %s', poi_id, content, original_content)
+        if content != original_content and \
+            not (content == '' and original_content is None) and \
+            not (int(content, 16) == int(original_content)):
             updated_poi = self.multi_poi.update_poi(poi_id, column, content)
             self._diagnose_handler.submit_updated_poi(poi_id, updated_poi)
 
@@ -340,11 +343,14 @@ class QPOIViewer(QWidget):
             else:
                 crash = None
             diagnose = output.get('diagnose')
+            _l.debug('poi_ids: %s', poi_ids)
+            _l.debug('current poi id: %s', poi_id)
             self._set_item(view, row, self.POIID_COLUMN, poi_id, editable=False)
             self._set_item(view, row, self.CRASH_COLUMN, crash, editable=True)
             self._set_item(view, row, self.CATEGORY_COLUMN, category, editable=True)
             self._set_item(view, row, self.DIAGNOSE_COLUMN, diagnose, editable=True)
             row += 1
+            _l.debug('poi_ids: %s', poi_ids)
 
     @staticmethod
     def _set_item(view, row, column, text, editable=True):

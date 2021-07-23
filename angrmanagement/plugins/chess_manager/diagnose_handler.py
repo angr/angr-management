@@ -78,7 +78,7 @@ class DiagnoseHandler:
         poi.created_by = self.user # https://github.com/checrs/slacrs7/blob/master/slacrs/model/base.py#L17
 
         l.debug('adding poi: %s', poi)
-        l.info('adding poi: %s', poi)
+        l.info('adding poi: %s, id: %s, id: %s ', poi, poi.id, poi_id)
         self._log_list.append(poi)
         l.debug('current log list: %s', self._log_list)
 
