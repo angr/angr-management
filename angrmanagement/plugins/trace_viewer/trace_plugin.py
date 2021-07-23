@@ -1,10 +1,14 @@
 import json
+import os
 from typing import Optional, Union, List, Tuple
+
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
-from .qtrace_viewer import QTraceViewer
+import requests
+
+from ...config import Conf
 from ...data.object_container import ObjectContainer
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
@@ -14,6 +18,8 @@ from ..base_plugin import BasePlugin
 from .trace_statistics import TraceStatistics
 from .multi_trace import MultiTrace
 from .afl_qemu_bitmap import AFLQemuBitmap
+from .chess_trace_list import QChessTraceListDialog
+from .qtrace_viewer import QTraceViewer
 
 
 class TraceViewer(BasePlugin):
@@ -47,7 +53,6 @@ class TraceViewer(BasePlugin):
     @property
     def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace]]:
         return self.workspace.instance.multi_trace
-
 
     #
     # Event handlers
@@ -181,12 +186,14 @@ class TraceViewer(BasePlugin):
         'Open AFL bitmap...',
         'Open inverted AFL bitmap...',
         'Reset AFL bitmap',
+        'Open traces from CHECRS...',
     ]
     ADD_TRACE_ID = 0
     RESET_TRACE_ID = 1
     OPEN_AFL_BITMAP_ID = 2
     OPEN_AFL_BITMAP_INVERTED_ID = 3
     RESET_AFL_BITMAP = 4
+    OPEN_TRACES_FROM_CHECRS = 5
 
     def handle_click_menu(self, idx):
 
@@ -202,6 +209,7 @@ class TraceViewer(BasePlugin):
             self.OPEN_AFL_BITMAP_ID: self.open_bitmap_multi_trace,
             self.OPEN_AFL_BITMAP_INVERTED_ID: self.open_inverted_bitmap_multi_trace,
             self.RESET_AFL_BITMAP: self.reset_bitmap,
+            self.OPEN_TRACES_FROM_CHECRS: self.open_traces_from_checrs,
         }
 
         mapping.get(idx)()
@@ -223,11 +231,7 @@ class TraceViewer(BasePlugin):
         if trace is None or base_addr is None:
             return
 
-        if self.multi_trace.am_obj is None:
-            self.multi_trace.am_obj = MultiTrace(self.workspace)
-        self.trace.am_obj = self.multi_trace.am_obj.add_trace(trace, base_addr)
-        self.multi_trace.am_event()
-        self.trace.am_event()
+        self._add_trace(trace, base_addr)
 
     def reset_trace(self):
         self.trace.am_obj = None
@@ -334,8 +338,65 @@ class TraceViewer(BasePlugin):
                                  "We expect the JSON trace bb_addrs field to be a list of integers.")
             return None, None
 
-
-
         base_addr = self._open_baseaddr_dialog(0x4000000000)
 
         return trace, base_addr
+
+    def _add_trace(self, trace, base_addr):
+        if self.multi_trace.am_obj is None:
+            self.multi_trace.am_obj = MultiTrace(self.workspace)
+        self.trace.am_obj = self.multi_trace.am_obj.add_trace(trace, base_addr)
+        self.multi_trace.am_event()
+        self.trace.am_event()
+
+    def open_traces_from_checrs(self):
+
+        if not Conf.checrs_rest_endpoint_url:
+            QMessageBox.critical(self.workspace.main_window,
+                                 "Unspecified CHECRS REST endpoint",
+                                 "The CHECRS REST endpoint is not specified.")
+            return
+
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            return
+        target_image_id = connector.target_image_id
+        if not target_image_id:
+            return
+
+        dialog = QChessTraceListDialog(self.workspace, parent=self.workspace.main_window)
+        dialog.exec_()
+
+        traces = [ ]
+        failures: List[Tuple[str,str]] = [ ]
+
+        if dialog.trace_ids:
+            for input_id, trace_id in dialog.trace_ids:
+                # talk to the backend to get the trace
+                try:
+                    url = os.path.join(Conf.checrs_rest_endpoint_url,
+                                       f"v1/targets/{target_image_id}/seeds/{input_id}/trace")
+                    r = requests.get(url)
+                except Exception as ex:
+                    failures.append((trace_id, str(ex)))
+                    continue
+                data = r.text
+                try:
+                    trace = json.loads(data)
+                except json.JSONDecodeError as ex:
+                    failures.append((trace_id, str(ex)))
+                    continue
+                traces.append(trace)
+
+        for trace in traces:
+            self._add_trace(trace, 0x4000000000)
+
+        if failures:
+            msg = [ ]
+            for trace_id, exc in failures:
+                msg.append(f"Trace {trace_id}: {exc}.")
+            QMessageBox.warning(self.workspace.main_window,
+                                "Failed to load some traces",
+                                "angr management failed to load some traces.\n"
+                                "Details:\n"
+                                + "\n".join(msg))

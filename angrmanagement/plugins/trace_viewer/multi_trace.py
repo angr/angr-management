@@ -28,7 +28,6 @@ class MultiTrace:
         self.function_info = {}
         self.is_active_tab = False
         self.addr_color_map = dict()
-        self.slacrs_url = "sqlite://"
         # self.base_addr = base_addr
 
     def add_trace(self, trace, base_addr):
@@ -86,12 +85,6 @@ class MultiTrace:
             return None
         return self._traces[trace_id]
 
-    def get_last_slacrs_url(self):
-        return self.slacrs_url
-
-    def set_last_slacrs_url(self, url):
-        self.slacrs_url = url
-
     def get_input_seed_for_id(self, trace_id):
         input_seed_string = "<>"
 
@@ -104,7 +97,7 @@ class MultiTrace:
         if session:
             result = session.query(Input).filter_by(id=trace_id).first()
             if result:
-                input_seed_string = result.values('value')
+                input_seed_string = result.value
             session.close()
         if input_seed_string == "<>":
             self.workspace.log("Unable to retrieve seed input for trace: %s" % trace_id)
@@ -149,7 +142,6 @@ class MultiTrace:
             for addr in addrs:
                 self.addr_color_map[addr] = color
             total += len(addrs)
-
 
     def _calc_function_info(self, func):
         blocks = list(func.block_addrs)

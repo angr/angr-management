@@ -62,6 +62,7 @@ class ChessConnector(BasePlugin):
         self._status_button.clicked.connect(self._on_status_button_clicked)
 
         self.target_id: Optional[str] = None
+        self.target_image_id: Optional[str] = None
         self.target_description: Optional[str] = None
         self._target_description_label = QPushButton()
         self._target_description_label.setFlat(True)
@@ -103,10 +104,11 @@ class ChessConnector(BasePlugin):
             self.workspace.main_window.app.processEvents()
 
     def target_id_updated(self):
-        if self.target_id and self.target_description is not None:
-            desc = self.target_description if self.target_description else self.target_id
+        if self.target_id and self.target_image_id and self.target_description is not None:
+            desc = self.target_description if self.target_description else f"(no description) {self.target_id}"
             self._target_description_label.setText(desc)
-            self._target_description_label.setToolTip(f"Target ID: {self.target_id}")
+            self._target_description_label.setToolTip(f"Target ID: {self.target_id}\n"
+                                                      f"Target image ID: {self.target_image_id}")
         else:
             self._target_description_label.setText("No associated CHESS target")
             self._target_description_label.setToolTip("")
@@ -167,14 +169,19 @@ class ChessConnector(BasePlugin):
     def set_checrs_backend_str(self):
         dialog = QBackendSelectorDialog(self.workspace,
                                         backend_str=Conf.checrs_backend_str,
+                                        rest_backend_str=Conf.checrs_rest_endpoint_url,
                                         parent=self.workspace.main_window)
         dialog.exec_()
 
         server_url = dialog.backend_str
-
         if server_url is not None:
             # if it's empty, it means the user wants to disconnect from CHECRS
             Conf.checrs_backend_str = server_url
+            save_config()
+
+        rest_backend_url = dialog.rest_backend_str
+        if rest_backend_url is not None:
+            Conf.checrs_rest_endpoint_url = rest_backend_url
             save_config()
 
     def set_chess_target(self):
@@ -200,23 +207,30 @@ class ChessConnector(BasePlugin):
 
         if dialog.target_id:
             self.target_id = dialog.target_id
+            self.target_image_id = dialog.target_image_id
             self.target_description = dialog.target_description
         else:
             self.target_id = None
+            self.target_image_id = None
             self.target_description = None
         self.target_id_updated()
 
     CONFIG_ENTRIES = [
         ConfigurationEntry("checrs_backend_str", str, "", default_value=""),
+        ConfigurationEntry("checrs_rest_endpoint_url", str, "", default_value=""),
     ]
 
     def angrdb_store_entries(self):
         yield "chess_target_id", self.target_id if self.target_id else ""
         yield "chess_target_description", self.target_description if self.target_description else ""
+        yield "chess_target_image_id", self.target_image_id if self.target_image_id else ""
 
     def angrdb_load_entry(self, key, value):
         if key == "chess_target_id":
             self.target_id = value
+            self.target_id_updated()
+        elif key == "chess_target_image_id":
+            self.target_image_id = value
             self.target_id_updated()
         elif key == "chess_target_description":
             self.target_description = value
