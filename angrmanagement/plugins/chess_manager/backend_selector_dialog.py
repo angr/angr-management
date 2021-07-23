@@ -1,5 +1,8 @@
 from typing import Optional, TYPE_CHECKING
 
+import requests
+
+from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 
 try:
@@ -15,18 +18,25 @@ class QBackendSelectorDialog(QDialog):
     """
     Implements a CHESS backend URL input dialog.
     """
-    def __init__(self, workspace: 'Workspace', backend_str: Optional[str]=None, parent=None):
+    def __init__(self, workspace: 'Workspace', backend_str: Optional[str]=None, rest_backend_str: Optional[str]=None,
+                 parent=None):
         super().__init__(parent)
 
         self.workspace = workspace
 
         self._input: QLineEdit = None
+        self._rest_endpoint_input: QLineEdit = None
         self._test_button: QPushButton = None
+        self._test_rest_button: QPushButton = None
         self._ok_button: QPushButton = None
         self._cancel_button: QPushButton = None
         self._status_label: QLabel = None
 
         self.backend_str: Optional[str] = backend_str
+        self.rest_backend_str: Optional[str] = rest_backend_str
+
+        self.setWindowTitle("Connect to CHECRS backend")
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self._init_widgets()
 
@@ -34,14 +44,25 @@ class QBackendSelectorDialog(QDialog):
 
         # input
         input_label = QLabel("CHECRS backend URL:")
-        self._input = QLineEdit(self.backend_str)
-        self._input.setMinimumWidth(300)
-        self._test_button = QPushButton("Test connection")
+        self._input = QLineEdit("sqlite://" if not self.backend_str else self.backend_str)
+        self._input.setMinimumWidth(400)
+        self._test_button = QPushButton("Test...")
         self._test_button.clicked.connect(self._on_test_button_clicked)
         input_layout = QHBoxLayout()
         input_layout.addWidget(input_label)
         input_layout.addWidget(self._input)
         input_layout.addWidget(self._test_button)
+
+        # REST endpoint URL
+        rest_label = QLabel("CHECRS REST backend URL:")
+        self._rest_endpoint_input = QLineEdit("http://" if not self.rest_backend_str else self.rest_backend_str)
+        self._rest_endpoint_input.setMinimumWidth(400)
+        self._test_rest_button = QPushButton("Test...")
+        self._test_rest_button.clicked.connect(self._on_test_rest_button_clicked)
+        rest_layout = QHBoxLayout()
+        rest_layout.addWidget(rest_label)
+        rest_layout.addWidget(self._rest_endpoint_input)
+        rest_layout.addWidget(self._test_rest_button)
 
         # status
         self._status_label = QLabel()
@@ -57,6 +78,7 @@ class QBackendSelectorDialog(QDialog):
 
         layout = QVBoxLayout()
         layout.addLayout(input_layout)
+        layout.addLayout(rest_layout)
         layout.addWidget(self._status_label)
         layout.addLayout(buttons_layout)
 
@@ -73,6 +95,18 @@ class QBackendSelectorDialog(QDialog):
         _ = slacrs.Slacrs(database=connection_str, exit_on_connection_failure=False)
 
         return True
+
+    @staticmethod
+    def test_rest_connection(rest_backend: str) -> bool:
+        if not rest_backend:
+            return False
+
+        r = requests.head(rest_backend)
+        if r.status_code == 404:
+            return True
+
+        # unexpected
+        return False
 
     #
     # Events
@@ -97,6 +131,26 @@ class QBackendSelectorDialog(QDialog):
             self._status_label.setText(f"Successfully connected to {connection_str}.")
 
         self._test_button.setEnabled(True)
+
+    def _on_test_rest_button_clicked(self):
+        self._test_rest_button.setEnabled(False)
+
+        backend = self._rest_endpoint_input.text().strip(" ")
+        self._status_label.setText(f"Testing connection to REST backend {backend}...")
+        self.workspace.main_window.app.processEvents()
+
+        try:
+            r = self.test_rest_connection(backend)
+        except Exception as ex:  # pylint:disable=broad-except
+            self._status_label.setText(f"Failed to connect to REST backend {backend}. Exception: {str(ex)}.")
+            r = None
+
+        if r is False:
+            self._status_label.setText(f"Failed to connect to REST backend {backend}.")
+        elif r is True:
+            self._status_label.setText(f"Successfully connected to REST backend {backend}.")
+
+        self._test_rest_button.setEnabled(True)
 
     def _on_ok_button_clicked(self):
 
@@ -124,8 +178,15 @@ class QBackendSelectorDialog(QDialog):
                 return
 
         self.backend_str = connection_str
+
+        rest_backend_str = self._rest_endpoint_input.text()
+        if rest_backend_str and rest_backend_str[-1] != "/":
+            rest_backend_str += "/"
+
+        self.rest_backend_str = rest_backend_str
         self.close()
 
     def _on_cancel_button_clicked(self):
         self.backend_str = None
+        self.rest_backend_str = None
         self.close()

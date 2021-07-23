@@ -1,11 +1,14 @@
 import logging
+
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
-from PySide2.QtWidgets import  QMessageBox, QInputDialog, QTableWidget, QTableWidgetItem, QLineEdit
+from PySide2.QtWidgets import  QMessageBox, QTableWidget, QTableWidgetItem
 from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
 from PySide2.QtCore import Qt, QPoint, QEvent
 
+
 l = logging.getLogger(name=__name__)
+
 
 class QTraceViewer(QWidget):
     """
@@ -89,8 +92,8 @@ class QTraceViewer(QWidget):
         self.traceView.setScene(self.traceScene)
 
         self.listView = QTableWidget(0,2) # row, col
-        self.listView.setHorizontalHeaderItem(0, QTableWidgetItem("traceID"))
-        self.listView.setHorizontalHeaderItem(1, QTableWidgetItem("inputID"))
+        self.listView.setHorizontalHeaderItem(0, QTableWidgetItem("Trace ID"))
+        self.listView.setHorizontalHeaderItem(1, QTableWidgetItem("Input ID"))
         self.listView.setSelectionMode(QAbstractItemView.SingleSelection)
         self.listView.setSelectionBehavior(QAbstractItemView.SelectRows)
         # self.listView.horizontalHeader().setStretchLastSection(True)
@@ -110,8 +113,9 @@ class QTraceViewer(QWidget):
         self.multiTraceList = QTableWidget(0,2) # row, col
         self.multiTraceList.setSelectionMode(QAbstractItemView.MultiSelection)
         self.multiTraceList.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.multiTraceList.setHorizontalHeaderItem(0, QTableWidgetItem("traceID"))
-        self.multiTraceList.setHorizontalHeaderItem(1, QTableWidgetItem("inputID"))
+        self.multiTraceList.setHorizontalScrollMode(self.multiTraceList.ScrollPerPixel)
+        self.multiTraceList.setHorizontalHeaderItem(0, QTableWidgetItem("Trace ID"))
+        self.multiTraceList.setHorizontalHeaderItem(1, QTableWidgetItem("Input ID"))
         self.selectMultiTrace = QPushButton("Refresh Heatmap")
         self.selectMultiTrace.clicked.connect(self._refresh_heatmap)
         multiLayout.addWidget(self.multiTraceList)
@@ -151,24 +155,16 @@ class QTraceViewer(QWidget):
     def _view_input_seed(self):
         current_trace_stats = self.trace.am_obj
         input_id = current_trace_stats.input_id
-        slacrs_url = self.multi_trace.am_obj.get_last_slacrs_url()
 
-        server_url, ok = QInputDialog().getText(self, "Trace Source URL",
-                                            "Enter URL where trace was generated for seed:",
-                                            QLineEdit.Normal,
-                                            text=slacrs_url)
-        if ok:
-            self.multi_trace.am_obj.set_last_slacrs_url(server_url)
-
-            inputSeed = self.multi_trace.am_obj.get_input_seed_for_id(input_id)
-            msgText = "%s" % inputSeed
-            msgDetails = "Input for [%s]" % current_trace_stats.id
-            msgbox = QMessageBox()
-            msgbox.setWindowTitle("Seed Input")
-            msgbox.setDetailedText(msgDetails)
-            msgbox.setText(msgText)
-            msgbox.setStandardButtons(QMessageBox.Ok)
-            msgbox.exec()
+        inputSeed = self.multi_trace.am_obj.get_input_seed_for_id(input_id)
+        msgText = "%s" % inputSeed
+        msgDetails = "Input for [%s]" % current_trace_stats.id
+        msgbox = QMessageBox()
+        msgbox.setWindowTitle("Seed Input")
+        msgbox.setDetailedText(msgDetails)
+        msgbox.setText(msgText)
+        msgbox.setStandardButtons(QMessageBox.Ok)
+        msgbox.exec()
 
     def _switch_current_trace(self, row):
         if self.listView.rowCount() <= 0:
