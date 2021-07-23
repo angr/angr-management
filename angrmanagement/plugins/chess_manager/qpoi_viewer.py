@@ -236,9 +236,7 @@ class QPOIViewer(QWidget):
         content = item.text()
         original_content = self.multi_poi.am_obj.get_content_by_id_column(poi_id, column)
         _l.debug('updaing %s, content: %s, original: %s', poi_id, content, original_content)
-        if content != original_content and \
-            not (content == '' and original_content is None) and \
-            not (int(content, 16) == int(original_content)):
+        if not self._is_identical(content, original_content):
             updated_poi = self.multi_poi.update_poi(poi_id, column, content)
             self._diagnose_handler.submit_updated_poi(poi_id, updated_poi)
 
@@ -545,6 +543,18 @@ class QPOIViewer(QWidget):
         self.multi_poi.remove_poi(poi_id)
         self.multi_poi.am_event()
 
+    @staticmethod
+    def _is_identical(content, original_content):
+        if content == original_content:
+            return True
+        if content == '' and original_content is None:
+            return True
+        try:
+            if int(content, 16) == int(original_content):
+                return True
+        except (TypeError, ValueError):
+            return False
+        return False
 
 class QMultiPOITab(QWidget):
     """
