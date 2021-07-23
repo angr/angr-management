@@ -212,7 +212,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def initialize(self):
 
-        if self.cfb is None:
+        if self.cfb.am_none:
             return
 
         self._addr_to_region_offset.clear()
