@@ -226,11 +226,12 @@ class QPOIViewer(QWidget):
             view = self.workspace.view_manager.first_view_in_category('disassembly')
             if view is not None:
                 crash_func = self._get_func_from_addr(crash_addr)
-                self.workspace.on_function_selected(crash_func)
-                self.selected_ins.clear()
-                self.selected_ins.update([crash_addr])
-                self.selected_ins.am_event()
-                view.current_graph.show_instruction(crash_addr)
+                if crash_func is not None:
+                    self.workspace.on_function_selected(crash_func)
+                    self.selected_ins.clear()
+                    self.selected_ins.update([crash_addr])
+                    self.selected_ins.am_event()
+                    view.current_graph.show_instruction(crash_addr)
 
     def _on_diagnose_change(self, item: QTableWidgetItem):
         column = item.column()
@@ -326,6 +327,8 @@ class QPOIViewer(QWidget):
                 self.scroll_to_position(self.curr_position)
 
     def _get_func_from_addr(self, addr):
+        if self.workspace.instance.cfg.am_none:
+            return None
         bbl = self.workspace.instance.cfg.get_any_node(addr, anyaddr=True)
         function_addr = bbl.function_address
         return self.workspace.instance.project.kb.functions.get(function_addr)

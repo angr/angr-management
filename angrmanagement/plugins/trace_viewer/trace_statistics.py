@@ -64,7 +64,10 @@ class TraceStatistics:
         self.mapped_trace = []
 
         self.project = self.workspace.instance.project
-        self.project_baddr = self.project.loader.main_object.mapped_base  # only used if self.mapping is not available
+        if self.project.am_none:
+            self.project_baddr = None
+        else:
+            self.project_baddr = self.project.loader.main_object.mapped_base  # only used if self.mapping is not available
         self.runtime_baddr = baddr  # this will not be used if self.mapping is available
 
         self._cached_object_project_base_addrs: Dict[str,int] = {}
@@ -162,8 +165,12 @@ class TraceStatistics:
                     return None
 
         # fall back
-        offset = self.project_baddr - self.runtime_baddr
-        return addr + offset
+        if self.project_baddr is not None:
+            offset = self.project_baddr - self.runtime_baddr
+            return addr + offset
+        else:
+            # this object is probably created before an angr project is created. just give up.
+            return None
 
     def _statistics(self, trace_addrs):
         """

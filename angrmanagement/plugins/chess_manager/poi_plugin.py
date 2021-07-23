@@ -5,7 +5,7 @@ import os
 from typing import Optional, Union
 
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QFileDialog
+from PySide2.QtWidgets import QFileDialog, QMessageBox
 
 from ...data.object_container import ObjectContainer
 from ..base_plugin import BasePlugin
@@ -222,11 +222,17 @@ class POIViewer(BasePlugin):
 
     def _open_poi(self, poi_path=None):
         if poi_path is None:
-            poi_path = self._open_poi_dialog(tfilter='json (*.json)')
+            poi_path = self._open_poi_dialog(tfilter='JSON files (*.json)')
 
         if poi_path is not None:
             with open(poi_path, 'r') as f:
-                return json.load(f)
+                try:
+                    return json.load(f)
+                except json.JSONDecodeError as ex:
+                    QMessageBox.critical(self.workspace.main_window,
+                                         "JSON decoding error",
+                                         f"Cannot decode {poi_path} as a JSON file. Exception: {ex}")
+                    return None
 
         return None
 
