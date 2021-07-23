@@ -1,7 +1,9 @@
 import json
 import logging
 from copy import deepcopy
+import os
 from typing import Optional, Union
+
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QFileDialog
 
@@ -176,8 +178,8 @@ class POIViewer(BasePlugin):
     # Menu
     #
     MENU_BUTTONS = [
-        'Open/Add a POI record...',
-        'Load POIs from Slacrs',
+        'Create a POI...',
+        'Load POIs from CHECRS',
     ]
     ADD_POI = 0
     LOAD_POI_FROM_SLACRS = 1
@@ -225,13 +227,12 @@ class POIViewer(BasePlugin):
         # this should call qpoi_reviewer._subscribe_add_poi asynchronisely
         self.multi_poi.am_event()
 
-
     def _open_poi(self, poi_path=None):
         if poi_path is None:
             poi_path = self._open_poi_dialog(tfilter='json (*.json)')
 
         if poi_path is not None:
-            with open(poi_path, 'rb') as f:
+            with open(poi_path, 'r') as f:
                 return json.load(f)
 
         return None
@@ -239,10 +240,7 @@ class POIViewer(BasePlugin):
     @staticmethod
     def _open_poi_dialog(tfilter):
         file_path, _ = QFileDialog.getOpenFileName(None, "Open a POI", "", tfilter)
-        try:
-            with open(file_path, 'rb') as f:
-                f.read(1)
-        except FileNotFoundError:
+        if not os.path.isfile(file_path):
             return None
 
         return file_path

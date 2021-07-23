@@ -5,6 +5,8 @@ import os.path
 import threading
 from logging import Formatter
 from time import sleep
+from typing import Optional
+
 from getmac import get_mac_address as gma
 from tornado.platform.asyncio import  AnyThreadEventLoopPolicy
 
@@ -30,20 +32,18 @@ formatter: Formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s
 fh.setFormatter(formatter)
 l.addHandler(fh)
 
+
 class DiagnoseHandler:
     """
     Handling POI records in slacrs
     """
-    def __init__(self, project_name=None, project_md5=None, image_id=None):
+    def __init__(self, project_name=None, project_md5=None):
         self.project_name = project_name
         self.project_md5 = project_md5
-        self.image_id = image_id
 
-        self._log_list = list()
+        self._log_list = [ ]
         self.workspace = None
         self.slacrs_thread = None
-        self.session = None
-        self.slacrs = Slacrs(database=Conf.checrs_backend_str)
         self.user = gma()
 
         if Slacrs is None or Poi is None:
@@ -54,22 +54,29 @@ class DiagnoseHandler:
     def init(self, workspace):
         l.debug("workspace initing")
         self.workspace = workspace
-        connector = workspace.plugins.get_plugin_instance_by_name("ChessConnector")
-        if connector is not None:
-            try:
-                self.image_id = connector.target_image_id
-            except (ValueError, AttributeError):
-                self.image_id = None
         self._active = True
         self.slacrs_thread = threading.Thread(target=self._commit_pois)
         self.slacrs_thread.setDaemon(True)
         self.slacrs_thread.start()
 
+    def get_image_id(self) -> Optional[str]:
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            return None
+        try:
+            return connector.target_image_id
+        except (ValueError, AttributeError):
+            return None
+
     def submit_updated_poi(self, poi_id, poi_json):
         # reference: https://github.com/checrs/slacrs7/blob/master/slacrs/plugins/arbiter.py#L81
+        image_id = self.get_image_id()
+        if image_id is None:
+            return
+
         poi = Poi()
         poi.plugin = self.user
-        poi.target_image_id = self.image_id
+        poi.target_image_id = image_id
         poi.id = poi_id
         poi.poi = json.dumps(poi_json)
 
@@ -83,12 +90,22 @@ class DiagnoseHandler:
         l.debug('current log list: %s', self._log_list)
 
     def get_pois(self):
-        self.session = self.slacrs.session()
-        if self.image_id is not None:
-            result = self.session.query(Poi).filter(Poi.target_image_id==self.image_id).all()
+        if not Conf.checrs_backend_str:
+            return
+
+        try:
+            slacrs = Slacrs(database=Conf.checrs_backend_str)
+            session = slacrs.session()
+        except Exception:
+            # Cannot connect
+            return
+
+        image_id = self.get_image_id()
+        if image_id is not None:
+            result = session.query(Poi).filter(Poi.target_image_id==image_id).all()
         else:
-            result = self.session.query(Poi).all()
-        self.session.close()
+            result = session.query(Poi).all()
+        session.close()
         l.debug('result: %s', result)
         return result
 
@@ -100,21 +117,27 @@ class DiagnoseHandler:
         l.debug("database: %s", Conf.checrs_backend_str)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while self._active:
-            if self.slacrs is None:
-                self.slacrs = Slacrs(database=Conf.checrs_backend_str)
-            self.session = self.slacrs.session()
-            with self.session.no_autoflush:
-                while len(self._log_list) > 0:
-                    poi = self._log_list.pop()
-                    # query first to see if the poi id already exist
-                    result = self.session.query(Poi).filter(Poi.id == poi.id).first()
-                    if result is None:
-                        l.info('Adding poi %s to slacrs', poi)
-                        self.session.add(poi)
-                    else:
-                        l.info('Updating poi %s to slacrs', poi)
-                        result.poi = poi.poi
-                    l.debug('log_list: %s', self._log_list)
-                self.session.commit()
-            self.session.close()
             sleep(3)
+            if self._log_list:
+                # we have things to submit!
+                try:
+                    slacrs = Slacrs(database=Conf.checrs_backend_str)
+                    session = slacrs.session()
+                except Exception:
+                    l.error("Failed to CHECRS backend. Try again later...")
+                    continue
+
+                with session.no_autoflush:
+                    while self._log_list:
+                        poi = self._log_list.pop()
+                        # query first to see if the poi id already exist
+                        result = session.query(Poi).filter(Poi.id == poi.id).first()
+                        if result is None:
+                            l.info('Adding poi %s to slacrs', poi)
+                            session.add(poi)
+                        else:
+                            l.info('Updating poi %s to slacrs', poi)
+                            result.poi = poi.poi
+                        l.debug('log_list: %s', self._log_list)
+                    session.commit()
+                session.close()
