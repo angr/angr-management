@@ -42,6 +42,7 @@ class MultiPOI:
     #     return traceStats
 
     def add_poi(self, id, poi):
+        _l.debug("adding poi: %s", poi)
         self._pois[id] = poi
 
     def remove_poi(self, id):
@@ -112,6 +113,7 @@ class MultiPOI:
         return None
 
     def get_all_poi_ids(self):
+        _l.debug('get_all_poi_ids: current pois: %s', self._pois)
         return self._pois.keys()
 
     def get_input_id_for_trace_id(self, trace_id):

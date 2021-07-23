@@ -18,7 +18,7 @@ except ImportError as _:
     Poi = None
 
 l = logging.getLogger(__name__)
-l.setLevel('DEBUG')
+# l.setLevel('DEBUG')
 
 user_dir = os.path.expanduser('~')
 log_dir = os.path.join(user_dir, 'am-logging')

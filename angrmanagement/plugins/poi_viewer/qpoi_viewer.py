@@ -1,4 +1,5 @@
 from uuid import uuid4
+from copy import deepcopy
 import logging
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide2.QtWidgets import QTabWidget, QAbstractItemView, QMenu
@@ -10,7 +11,6 @@ from .multi_poi import MultiPOI
 
 _l = logging.getLogger(name=__name__)
 _l.setLevel('DEBUG')
-
 
 
 class QPOIViewer(QWidget):
@@ -229,10 +229,9 @@ class QPOIViewer(QWidget):
         poi_id = self.multiPOIList.item(row, self.POIID_COLUMN).text()
         content = item.text()
         original_content = self.multi_poi.am_obj.get_content_by_id_column(poi_id, column)
-        if content != original_content:
+        if content != original_content and not (content == '' and original_content is None):
             poi = self.multi_poi.am_obj.get_poi_by_id(poi_id)
             updated_poi = self.multi_poi.update_poi(poi_id, column, content)
-            _l.debug('updated poi: %s', updated_poi)
             self._diagnose_handler.submit_updated_poi(poi_id, updated_poi)
 
     def _subscribe_add_poi(self, **kwargs):
@@ -326,14 +325,15 @@ class QPOIViewer(QWidget):
         row = 0 #start after label row
         for id in poi_ids:
             poi = self.multi_poi.am_obj.get_poi_by_id(id)
+            _l.debug('populating poi: %s', poi)
             category = poi['category']
             output = poi['output']
             crash_addr = output['bbl']
             if crash_addr is not None:
                 crash = hex(crash_addr)
             else:
-                crash = ''
-            diagnose = output.get('diagnose', '')
+                crash = None
+            diagnose = output.get('diagnose')
             self._set_item(view, row, self.POIID_COLUMN, id, editable=False)
             self._set_item(view, row, self.CRASH_COLUMN, crash, editable=True)
             self._set_item(view, row, self.CATEGORY_COLUMN, category, editable=True)
@@ -516,10 +516,12 @@ class QPOIViewer(QWidget):
     def menu_add_empty_poi(self):
         _l.debug('adding a new empty poi item')
         poi_id = str(uuid4())
-        self.multi_poi.add_poi(poi_id, EMPTY_POI.copy())
+        if self.multi_poi.am_none:
+            self.multi_poi.am_obj = MultiPOI(self.workspace)
+        empty_poi = deepcopy(self.EMPTY_POI)
+        self.multi_poi.add_poi(poi_id, empty_poi)
         self.multi_poi.am_event()
-        self._diagnose_handler.submit_updated_poi(poi_id, EMPTY_POI.copy())
-        # TODO: go over table display and trace display to embrace empty POI
+        self._diagnose_handler.submit_updated_poi(poi_id, empty_poi)
 
     def menu_remove_poi(self):
         items = self.multiPOIList.selectedItems()
@@ -536,7 +538,6 @@ class QMultiPOITab(QWidget):
         self.POIView = poi_view
 
     def contextMenuEvent(self, event:QContextMenuEvent):
-        _l.debug("HERE, MENU!")
         menu = QMenu("", self)
         menu.addAction('Add a new POI', self.POIView.menu_add_empty_poi)
 
