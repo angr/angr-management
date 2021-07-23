@@ -22,7 +22,7 @@ class ConsoleView(BaseView):
         self.target = target
 
         super().__init__("interaction console", *args, **kwargs)
-        self.caption = "Interaction Console"
+        self.base_caption = "Interaction Console"
 
         main_layout = QVBoxLayout()
         main = QMainWindow()

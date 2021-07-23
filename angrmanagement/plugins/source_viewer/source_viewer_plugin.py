@@ -168,7 +168,7 @@ class SourceViewer(BaseView):
     main = None # type: SourceCodeViewerTabWidget
     def __init__(self, workspace :Workspace, *args, **kwargs):
         super().__init__("SourceViewer", workspace, *args, **kwargs)
-        self.caption = "Source Viewer"
+        self.base_caption = "Source Viewer"
         self.workspace = workspace
         self.instance = workspace.instance
         workspace.instance.project.am_subscribe(self.load_from_proejct)

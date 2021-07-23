@@ -35,7 +35,7 @@ class TypesView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('types', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = 'Types'
+        self.base_caption = 'Types'
 
         self._layout = None  # type: QVBoxLayout
         self._init_widgets()

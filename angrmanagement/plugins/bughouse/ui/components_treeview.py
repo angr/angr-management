@@ -50,7 +50,7 @@ class ComponentsView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('components', workspace, default_docking_position, *args, **kwargs)
 
-        self.caption = "Components"
+        self.base_caption = "Components"
         self.width_hint = 100
         self.height_hint = 100
 
