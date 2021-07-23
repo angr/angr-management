@@ -202,6 +202,9 @@ class POIViewer(BasePlugin):
     def _menu_load_pois_from_slacrs(self):
         _l.debug('loading pois from slacrs')
         pois = self._diagnose_handler.get_pois()
+        if not pois:
+            return
+
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
         for poi_object in pois:

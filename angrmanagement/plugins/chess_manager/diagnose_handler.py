@@ -91,14 +91,14 @@ class DiagnoseHandler:
 
     def get_pois(self):
         if not Conf.checrs_backend_str:
-            return
+            return None
 
         try:
             slacrs = Slacrs(database=Conf.checrs_backend_str)
             session = slacrs.session()
         except Exception:
             # Cannot connect
-            return
+            return None
 
         image_id = self.get_image_id()
         if image_id is not None:
