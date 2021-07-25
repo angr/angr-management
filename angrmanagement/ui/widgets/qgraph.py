@@ -3,16 +3,26 @@ import logging
 from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
     QGraphicsSceneMouseEvent
 from PySide2.QtGui import QPainter, QMouseEvent, QImage, QVector2D
-from PySide2.QtCore import Qt, QSize, QEvent, QMarginsF
+from PySide2.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF
 
 _l = logging.getLogger(__name__)
 
 
 class QBaseGraphicsView(QGraphicsView):
 
+    visible_scene_rect_changed = Signal(QRectF)
+
     #
     # Public methods
     #
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._visibile_scene_rect: QRectF = QRectF()
+
+    @property
+    def visible_scene_rect(self):
+        return self._visibile_scene_rect
 
     def redraw(self):
         """
@@ -24,6 +34,13 @@ class QBaseGraphicsView(QGraphicsView):
         if scene is not None:
             scene.update(self.sceneRect())
 
+    def viewportEvent(self, event:QEvent) -> bool:
+        visible_scene_rect = self.mapToScene(self.viewport().geometry()).boundingRect()
+        if visible_scene_rect != self._visibile_scene_rect:
+            self._visibile_scene_rect = visible_scene_rect
+            self.visible_scene_rect_changed.emit(visible_scene_rect)
+
+        return super().viewportEvent(event)
 
 class QSaveableGraphicsView(QBaseGraphicsView):
 
