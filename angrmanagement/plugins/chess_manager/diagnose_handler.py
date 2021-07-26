@@ -8,6 +8,7 @@ from time import sleep
 from typing import Optional
 
 from getmac import get_mac_address as gma
+from sqlalchemy.exc import OperationalError
 from tornado.platform.asyncio import  AnyThreadEventLoopPolicy
 
 from angrmanagement.config import Conf
@@ -22,13 +23,24 @@ except ImportError as _:
 l = logging.getLogger(__name__)
 l.setLevel('INFO')
 
+def _init_logger():
+    user_dir = os.path.expanduser('~')
+    log_dir = os.path.join(user_dir, 'am-logging')
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, 'poi_diagnose.log')
+    fh = logging.FileHandler(log_file)
+    fh.setLevel('INFO')
+    formatter: Formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    l.addHandler(fh)
+
 
 class DiagnoseHandler:
     """
     Handling POI records in slacrs
     """
     def __init__(self, project_name=None, project_md5=None):
-        self._init_logger()
+        _init_logger()
 
         self.project_name = project_name
         self.project_md5 = project_md5
@@ -42,17 +54,6 @@ class DiagnoseHandler:
             self._active = False
         else:
             self._active = True
-
-    def _init_logger(self):
-        user_dir = os.path.expanduser('~')
-        log_dir = os.path.join(user_dir, 'am-logging')
-        os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, 'poi_diagnose.log')
-        fh = logging.FileHandler(log_file)
-        fh.setLevel('INFO')
-        formatter: Formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fh.setFormatter(formatter)
-        l.addHandler(fh)
 
     def init(self, workspace):
         l.debug("workspace initing")
@@ -101,7 +102,7 @@ class DiagnoseHandler:
         try:
             slacrs = Slacrs(database=Conf.checrs_backend_str)
             session = slacrs.session()
-        except Exception:
+        except OperationalError:
             # Cannot connect
             return None
 
@@ -128,7 +129,7 @@ class DiagnoseHandler:
                 try:
                     slacrs = Slacrs(database=Conf.checrs_backend_str)
                     session = slacrs.session()
-                except Exception:
+                except OperationalError:
                     l.error("Failed to CHECRS backend. Try again later...")
                     continue
 

@@ -39,7 +39,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.slacrs_thread = None
         self.slacrs = None
 
-    def _init_logger(self):
+    def _init_logger(self): # pylint:disable=no-self-use
         user_dir = os.path.expanduser('~')
         log_dir = os.path.join(user_dir, "am-logging")
         os.makedirs(log_dir, exist_ok=True)
