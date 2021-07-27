@@ -19,3 +19,6 @@ start.spec
 __enamlcache__/
 
 *.spec
+
+
+.vscode
