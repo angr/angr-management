@@ -13,15 +13,6 @@ from ..base_plugin import BasePlugin
 l = logging.getLogger(__name__)
 l.setLevel('INFO')
 
-user_dir = os.path.expanduser('~')
-log_dir = os.path.join(user_dir, "am-logging")
-os.makedirs(log_dir, exist_ok=True)
-log_file = os.path.join(log_dir, 'human_activities.log')
-fh = logging.FileHandler(log_file)
-fh.setLevel('INFO')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-l.addHandler(fh)
 
 try:
     from slacrs import Slacrs
@@ -38,6 +29,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         if not Slacrs:
             raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs.")
         super().__init__(*args, **kwargs)
+        self._init_logger()
         self.session = None
         self.project_name = None
         self.project_md5 = None
@@ -46,6 +38,17 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.active = True
         self.slacrs_thread = None
         self.slacrs = None
+
+    def _init_logger(self): # pylint:disable=no-self-use
+        user_dir = os.path.expanduser('~')
+        log_dir = os.path.join(user_dir, "am-logging")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, 'human_activities.log')
+        fh = logging.FileHandler(log_file)
+        fh.setLevel('INFO')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        l.addHandler(fh)
 
     def on_workspace_initialized(self, workspace):
         self.slacrs_thread = threading.Thread(target=self._commit_logs)
