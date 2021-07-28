@@ -13,7 +13,7 @@ from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView)
+                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView)
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
@@ -53,6 +53,7 @@ class Workspace:
         self.default_tabs = [
             FunctionsView(self, 'left'),
             DisassemblyView(self, 'center'),
+            HexView(self, 'center'),
             ProximityView(self, 'center'),
             CodeView(self, 'center'),
         ]
@@ -416,6 +417,11 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_hex_view(self):
+        view = self._get_or_create_hex_view()
+        self.raise_view(view)
+        view.setFocus()
+
     def show_symexec_view(self):
         view = self._get_or_create_symexec_view()
         self.raise_view(view)
@@ -472,6 +478,15 @@ class Workspace:
             view = DisassemblyView(self, 'center')
             self.add_view(view, view.caption, view.category)
             view.reload()
+
+        return view
+
+    def _get_or_create_hex_view(self):
+        view = self.view_manager.first_view_in_category('hex')
+
+        if view is None:
+            view = HexView(self, 'center')
+            self.add_view(view, view.caption, view.category)
 
         return view
 
