@@ -1,7 +1,7 @@
 import threading
 
 import archr
-from PySide2.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout
+from PySide2.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QPushButton
 from PySide2.QtCore import Qt
 from qtterm import TerminalWidget
 
@@ -18,41 +18,34 @@ class ConsoleView(BaseView):
     ConsoleView
     """
 
-    def __init__(self, target, *args, **kwargs):
-        self.target = target
+    def __init__(self, workspace, *args, **kwargs):
+        super().__init__("interaction console", workspace, *args, **kwargs)
 
-        super().__init__("interaction console", *args, **kwargs)
         self.base_caption = "Interaction Console"
+        self.workspace = workspace
+        self.target = None
+        self.conversations = {}
+        self.terminal = TerminalWidget(command=None)
 
         main_layout = QVBoxLayout()
-        main = QMainWindow()
-        terminal = TerminalWidget(
-            command=[
-                "docker",
-                "exec",
-                "-it",
-                self.target.companion_container.id,
-                "bash",
-            ]
-        )
+        controls_layout = QHBoxLayout()
 
-        main.setWindowFlags(Qt.Widget)
-        main.setCentralWidget(terminal)
-        main_layout.addWidget(main)
+        connect_button = QPushButton()
+        connect_button.setText("Connect")
+        connect_button.clicked.connect(self.connect)
+        controls_layout.addWidget(connect_button)
+
+        terminal_window = QMainWindow()
+        terminal_window.setWindowFlags(Qt.Widget)
+        terminal_window.setCentralWidget(self.terminal)
+
+        main_layout.addLayout(controls_layout)
+        main_layout.addWidget(terminal_window)
 
         self.setLayout(main_layout)
 
-
-class InteractionConsole(BasePlugin):
-    """
-    InteractionConsole Plugin
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.target = None
-        self.conversations = {}
+    def connect(self):
+        self.disconnect()
 
         img_name = self.workspace.instance.img_name
         if img_name is None:
@@ -73,16 +66,17 @@ class InteractionConsole(BasePlugin):
 
         self.workspace.extract_conversations = self.analyzer.extract_conversations
 
-        self.console_view = ConsoleView(self.target, self.workspace, "center")
-        self.workspace.default_tabs += [self.console_view]
-        self.workspace.add_view(
-            self.console_view,
-            self.console_view.caption,
-            self.console_view.category,
-        )
+        self.terminal.execute([
+            "docker",
+            "exec",
+            "-it",
+            self.target.companion_container.id,
+            "bash",
+        ])
 
-    def teardown(self):
+    def disconnect(self):
         if self.target:
+            self.terminal.stop()
             self.target.__exit__()
 
     def _inotify_thread(self):
@@ -95,6 +89,11 @@ class InteractionConsole(BasePlugin):
                 archr.analyzers.TCPDumpAnalyzer.pcap_path,
             ]
         )
+
+        response = inotify.stderr.read(0x1000)
+        if b"Watches established." not in response:
+            raise Exception("Failed to setup TCPDump watcher!")
+
         while True:
             inotify.stdout.read(0x1000)
             conversations = self.analyzer.extract_conversations()
@@ -128,3 +127,25 @@ class InteractionConsole(BasePlugin):
             SavedInteraction(name, PlainTextProtocol, log)
         )
         self.workspace.instance.interactions.am_event()
+
+
+class InteractionConsole(BasePlugin):
+    """
+    InteractionConsole Plugin
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.console_view = ConsoleView(self.workspace, "center")
+        self.workspace.default_tabs += [self.console_view]
+        self.workspace.add_view(
+            self.console_view,
+            self.console_view.caption,
+            self.console_view.category,
+        )
+
+
+    def teardown(self):
+        if self.console_view.target:
+            self.console_view.target.__exit__()

@@ -175,6 +175,7 @@ class InteractionView(BaseView):
             self.widget_group_running.setHidden(True)
             self.widget_group_save.setHidden(True)
             self.widget_group_load.setHidden(False)
+            self.widget_group_upload.setHidden(True)
             self.input_hide()
             self.log_clear()
         elif state == InteractionState.RUNNING:
@@ -182,12 +183,14 @@ class InteractionView(BaseView):
             self.widget_group_running.setHidden(False)
             self.widget_group_save.setHidden(True)
             self.widget_group_load.setHidden(True)
+            self.widget_group_upload.setHidden(True)
             self.log_clear()
         elif state == InteractionState.STOPPED:
             self.widget_group_start.setHidden(False)
             self.widget_group_running.setHidden(True)
             self.widget_group_save.setHidden(False)
             self.widget_group_load.setHidden(False)
+            self.widget_group_upload.setHidden(True)
             self.input_hide()
             self.running_protocol = None
         elif state == InteractionState.VIEWING:
@@ -195,6 +198,7 @@ class InteractionView(BaseView):
             self.widget_group_running.setHidden(True)
             self.widget_group_save.setHidden(True)
             self.widget_group_load.setHidden(False)
+            self.widget_group_upload.setHidden(False)
             self.input_hide()
             self.log_clear()
         else:
@@ -205,6 +209,11 @@ class InteractionView(BaseView):
     def _save_interaction(self):
         self.workspace.instance.interactions.am_obj.append(SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log))
         self.workspace.instance.interactions.am_event()
+
+    def _upload_interaction(self):
+        interaction = self.workspace.instance.interactions[self.widget_combobox_load.currentIndex()]
+        # TODO: upload thing
+        print(interaction.name, interaction.protocol, interaction.log, flush=True)  # DEBUG
 
     def _load_interaction(self):
         if self.widget_combobox_load.currentIndex() == -1:
@@ -299,6 +308,12 @@ class InteractionView(BaseView):
         leftBox.layout().addWidget(box_load)
         self.widget_group_load = box_load
 
+        box_upload = QtWidgets.QGroupBox(leftBox)
+        box_upload.setLayout(QtWidgets.QVBoxLayout(box_upload))
+        box_upload.setTitle("Upload Interaction")
+        leftBox.layout().addWidget(box_upload)
+        self.widget_group_upload = box_upload
+
         leftBox.layout().addStretch(0)
 
         protocolBox = QtWidgets.QComboBox(box_start)
@@ -341,6 +356,11 @@ class InteractionView(BaseView):
         save_button.setText("Save")
         box_save.layout().addWidget(save_button)
         save_button.clicked.connect(self._save_interaction)
+
+        upload_button = QtWidgets.QPushButton(box_upload)
+        upload_button.setText("Upload")
+        box_upload.layout().addWidget(upload_button)
+        upload_button.clicked.connect(self._upload_interaction)
 
         scrollArea = QtWidgets.QScrollArea(self)
         scrollArea.setWidgetResizable(True)
