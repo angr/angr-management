@@ -665,7 +665,7 @@ class DisassemblyView(BaseView):
             addr_to_annotations[annotations.addr].append(annotations)
         for addr in qblock.addr_to_insns.keys():
             if addr in self.workspace.instance.project._sim_procedures:
-                hook_annotation = QHookAnnotation(self, addr)
+                hook_annotation = QHookAnnotation(addr)
                 addr_to_annotations[addr].append(hook_annotation)
             view = self.workspace.view_manager.first_view_in_category("symexec")
             if view is not None:

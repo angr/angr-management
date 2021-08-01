@@ -30,8 +30,8 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     def symexec_view(self) -> 'SymexecView':
         return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
-    def __init__(self, addr, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, addr, text, *args, **kwargs):
+        super().__init__(text, *args, **kwargs)
         self.addr = addr
         self.setBrush(QBrush(self.foreground_color))
         self.setFont(Conf.disasm_font)
@@ -50,8 +50,8 @@ class QStatsAnnotation(QInstructionAnnotation):
     Abstract Stats Annotation Class.
     """
 
-    def __init__(self, addr,  *args, **kwargs):
-        super().__init__(addr, *args, **kwargs)
+    def __init__(self, addr, text,  *args, **kwargs):
+        super().__init__(addr, text, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.hovered = False
 
