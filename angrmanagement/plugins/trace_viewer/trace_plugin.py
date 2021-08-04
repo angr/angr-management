@@ -169,9 +169,8 @@ class TraceViewer(BasePlugin):
             return self.multi_trace.get_percent_color(func)
 
         if not self.trace.am_none:
-            for itr_func in self.trace.trace_func:
-                if itr_func.bbl_addr == func.addr:
-                    return QColor(0xf0, 0xe7, 0xda)
+            if func.addr in self.trace.func_addr_in_trace:
+                return QColor(0xf0, 0xe7, 0xda)
             return QColor(0xee, 0xee, 0xee)
         return None
 
