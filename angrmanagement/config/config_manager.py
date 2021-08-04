@@ -52,9 +52,28 @@ def font_serializer(config_option, value: QFont) -> str:
     return f'{value.pointSize()}px {value.family()}'
 
 
+def bool_parser(config_option, value) -> bool:
+    if not value:
+        return False
+    if value.lower() in {"true", "1", "yes"}:
+        return True
+    if value.lower() in {"false", "0", "no"}:
+        return False
+    _l.error("Failed to parse value %r as bool for option %s. Default to False.", value, config_option)
+    return False
+
+
+def bool_serializer(config_option, value: bool) -> str:
+    if not isinstance(value, bool):
+        _l.error("Failed to serialize value %r as bool for option %s. Default to False.", value, config_option)
+        return "false"
+    return "true" if value else "false"
+
+
 data_serializers = {
     QColor: (color_parser, color_serializer),
-    QFont: (font_parser, font_serializer)
+    QFont: (font_parser, font_serializer),
+    bool: (bool_parser, bool_serializer),
 }
 
 
@@ -157,6 +176,9 @@ ENTRIES = [
 
     # VARec
     CE('varec_endpoint', str, "http://192.168.32.129:5000/varec"),
+
+    # Daemon
+    CE('use_daemon', bool, False),
 ]
 
 

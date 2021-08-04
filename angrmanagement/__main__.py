@@ -108,7 +108,7 @@ def macos_bigsur_wants_layer():
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 
-def start_management(filepath=None, use_daemon=False):
+def start_management(filepath=None, use_daemon=None):
 
     if sys.platform == "darwin":
         macos_bigsur_wants_layer()
@@ -167,8 +167,6 @@ def start_management(filepath=None, use_daemon=False):
 
     from .logic import GlobalInfo
     from .ui.main_window import MainWindow
-    from .daemon import daemon_exists, run_daemon_process, daemon_conn
-    from .daemon.client import ClientService
 
     # Load fonts
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
@@ -181,30 +179,8 @@ def start_management(filepath=None, use_daemon=False):
 
     GlobalInfo.gui_thread = threading.get_ident()
 
-    if use_daemon:
-        # connect to daemon (if there is one)
-        if not daemon_exists():
-            print("[+] Starting a new daemon.")
-            run_daemon_process()
-            time.sleep(0.2)
-        else:
-            print("[+] Connecting to an existing angr management daemon.")
-
-        while True:
-            try:
-                GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
-            except ConnectionRefusedError:
-                print("[-] Connection failed... try again.")
-                time.sleep(0.4)
-                continue
-            print("[+] Connected to daemon.")
-            break
-
-        from rpyc import BgServingThread
-        th = BgServingThread(GlobalInfo.daemon_conn)
-
     file_to_open = filepath if filepath else None
-    main_window = MainWindow(app=app)
+    main_window = MainWindow(app=app, use_daemon=use_daemon)
     splash.finish(main_window)
 
     if file_to_open is not None:
@@ -257,7 +233,7 @@ def main():
         import IPython
         IPython.embed(banner1="")
     if not args.no_gui:
-        start_management(args.binary, use_daemon=args.with_daemon)
+        start_management(args.binary, use_daemon=True if args.with_daemon else None)
 
 if __name__ == '__main__':
     main()
