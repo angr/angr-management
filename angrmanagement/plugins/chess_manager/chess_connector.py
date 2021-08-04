@@ -32,7 +32,7 @@ class ChessConnector(BasePlugin):
     """
 
     DISPLAY_NAME = "CHESS Connector"
-    REQUIRE_WORKSPACE = False
+    REQUIRE_WORKSPACE = True
 
     def __init__(self, workspace):
         super().__init__(workspace)
