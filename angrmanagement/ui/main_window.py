@@ -2,6 +2,7 @@
 import os
 import logging
 import sys
+import time
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
@@ -24,6 +25,8 @@ except ImportError:
     archr = None
     keystone = None
 
+from ..daemon import daemon_exists, run_daemon_process, daemon_conn
+from ..daemon.client import ClientService
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.library_docs import LibraryDocs
@@ -56,7 +59,7 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-    def __init__(self, app: Optional['QApplication']=None, parent=None, show=True):
+    def __init__(self, app: Optional['QApplication']=None, parent=None, show=True, use_daemon=False):
         super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
@@ -103,6 +106,8 @@ class MainWindow(QMainWindow):
 
         self._init_shortcuts()
         self._init_flirt_signatures()
+
+        self._run_daemon(use_daemon=use_daemon)
 
         # I'm ready to show off!
         if show:
@@ -330,6 +335,40 @@ class MainWindow(QMainWindow):
         GlobalInfo.library_docs = LibraryDocs()
         if Conf.library_docs_root:
             GlobalInfo.library_docs.load_func_docs(Conf.library_docs_root)
+
+    #
+    # Daemon
+    #
+
+    def _run_daemon(self, use_daemon=None):
+
+        if use_daemon is None:
+            # Load it from the configuration file
+            use_daemon = Conf.use_daemon
+
+        if not use_daemon:
+            return
+
+        # connect to daemon (if there is one)
+        if not daemon_exists():
+            print("[+] Starting a new daemon.")
+            run_daemon_process()
+            time.sleep(0.2)
+        else:
+            print("[+] Connecting to an existing angr management daemon.")
+
+        while True:
+            try:
+                GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
+            except ConnectionRefusedError:
+                print("[-] Connection failed... try again.")
+                time.sleep(0.4)
+                continue
+            print("[+] Connected to daemon.")
+            break
+
+        from rpyc import BgServingThread
+        _ = BgServingThread(GlobalInfo.daemon_conn)
 
     #
     # URL scheme handler setup
