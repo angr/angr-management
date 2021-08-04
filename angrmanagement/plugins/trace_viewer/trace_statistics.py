@@ -3,7 +3,7 @@ import os
 import random
 from collections import defaultdict
 from bisect import bisect_left
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Set, Optional
 
 from PySide2.QtGui import QColor
 
@@ -14,6 +14,9 @@ l.setLevel('DEBUG')
 
 
 class TraceFunc:
+
+    __slots__ = ('bbl_addr', 'func_name', 'func', )
+
     def __init__(self, bbl_addr=None, func_name=None, func=None):
         self.bbl_addr = bbl_addr
         self.func_name = func_name
@@ -56,7 +59,8 @@ class TraceStatistics:
             map_dict: Dict[str,int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
             self.mapping = list(sorted(self.mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
-        self.trace_func = []
+        self.trace_func: List[TraceFunc] = []
+        self.func_addr_in_trace: Set[int] = set()
         self._func_color = {}
         self.count = None
         self._mark_color = {}
@@ -208,6 +212,8 @@ class TraceStatistics:
                 continue
                 # l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
+            self.func_addr_in_trace.add(func_addr)
+
             if p % 5000 == 0:
                 print("... trace loading progress: %.02f" % (p * 100 / len(self.mapped_trace)))
 
