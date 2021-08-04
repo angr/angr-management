@@ -1,8 +1,9 @@
 import enum
 import logging
+from typing import Optional
 from threading import Thread
 from PySide2 import QtWidgets, QtCore
-from PySide2.QtWidgets import QMessageBox
+from PySide2.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 
 from .view import BaseView
 
@@ -77,6 +78,7 @@ class InteractionView(BaseView):
         self.sock = None  # type: nclib.Netcat
 
         self._state = None
+        self._last_img_name: Optional[str] = None
 
         self.widget_button_start = None
         self.widget_button_stop = None
@@ -296,8 +298,23 @@ class InteractionView(BaseView):
 
         img_name = self.workspace.instance.img_name
         if img_name is None:
-            QtWidgets.QMessageBox.critical(None, 'Nothing to run', "The project was not loaded from a docker image")
-            return
+            # Ask the user to provide a local image name
+            QtWidgets.QMessageBox.information(None,
+                                              'Docker image unspecified',
+                                              "The project was not loaded from a Docker image. You must specify a name "
+                                              "of a local Docker image to use for interaction in the next input box.")
+            img_name, ok = QInputDialog.getText(
+                None,
+                "Local Docker image name",
+                "Please specify the name of a local Docker image that you will interact with. "
+                "You can run \"docker images\" in a terminal to see all available Docker "
+                "images on your local machine.",
+                QLineEdit.Normal,
+                text="" if not self._last_img_name else self._last_img_name,
+            )
+            if not ok or not img_name:
+                return
+            self._last_img_name = img_name
 
         _l.debug('Initializing the connection to archr with image %s' % img_name)
         self._state_transition(InteractionState.RUNNING)
