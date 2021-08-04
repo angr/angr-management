@@ -257,7 +257,7 @@ class InteractionView(BaseView):
         data = b""
         for model in interaction.log:
             if model['dir'] == "in":
-                data += model["data"]
+                data += model["data"] + b"\n"
 
         if data:
             input_ = slacrs.model.Input(value=data,
