@@ -139,7 +139,7 @@ class UrlActionBinaryAware(UrlActionBase):
 
     @classmethod
     def _from_params(cls, params):
-        target_id: Optional[str] = cls._one_param(params, 'target_id'),
+        target_id: Optional[str] = cls._one_param(params, 'target_id')
         action = cls._one_param(params, 'action')
         kwargs = {}
         for k, v in params.items():
