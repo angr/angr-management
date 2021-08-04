@@ -205,7 +205,16 @@ class QChessTraceListDialog(QDialog):
         if connector is None:
             return
 
-        session = slacrs.Slacrs(database=Conf.checrs_backend_str).session()
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            # chess connector does not exist
+            return None
+        slacrs_instance = connector.slacrs_instance()
+        if slacrs_instance is None:
+            # slacrs does not exist. continue
+            return None
+
+        session = slacrs_instance.session()
         target_image_id = connector.target_image_id
         if not target_image_id:
             return

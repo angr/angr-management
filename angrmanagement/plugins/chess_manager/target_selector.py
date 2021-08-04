@@ -190,7 +190,16 @@ class QTargetSelectorDialog(QDialog):
     def _load_targets(self):
         from slacrs.model import Target, Challenge  # pylint:disable=import-outside-toplevel,import-error
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        session = slacrs.Slacrs(database=Conf.checrs_backend_str).session()
+
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            # chess connector does not exist
+            return None
+        slacrs_instance = connector.slacrs_instance()
+        if slacrs_instance is None:
+            # slacrs does not exist. continue
+            return None
+        session = slacrs_instance.session()
         db_targets = session.query(Target)
         targets: List[ChessTarget] = [ ]
 
