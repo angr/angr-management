@@ -407,7 +407,10 @@ class QAilBinaryOpObj(QAilTextObj):
     def create_subobjs(self, obj:ailment.expression.BinaryOp):
         self.add_text('(')
         self.add_ailobj(obj.operands[0])
-        self.add_text(' ' + obj.OPSTR_MAP.get(obj.verbose_op, obj.verbose_op) + ' ')
+        verbose_op = obj.OPSTR_MAP.get(obj.verbose_op, obj.verbose_op)
+        if verbose_op is None:
+            verbose_op = "unknown_op"
+        self.add_text(' ' + verbose_op + ' ')
         self.add_ailobj(obj.operands[1])
         self.add_text(')')
 
