@@ -1,8 +1,8 @@
+# pylint:disable=import-outside-toplevel,unused-argument
 import time
 import sys
 import subprocess
 import threading
-import binascii
 from typing import Callable
 
 import rpyc
@@ -19,13 +19,20 @@ TargetIDtoCONN = { }
 
 
 class ManagementService(rpyc.Service):
+    """
+    Implements a binary management service. All daemon-enabled angr management will connect to this service and
+    register the binary and target ID with this service.
+    """
+
     _conn = None
 
-    def _get_conn(self, target_id):
+    @staticmethod
+    def _get_conn(target_id):
         if target_id in TargetIDtoCONN:
             conn = TargetIDtoCONN[target_id]
         else:
-            raise Exception("The specified target %s is not open in angr management. We have the following ones: %s." % (
+            raise Exception(
+                "The specified target %s is not open in angr management. We have the following ones: %s." % (
                 target_id,
                 str(TargetIDtoCONN)))
         return conn
@@ -49,7 +56,7 @@ class ManagementService(rpyc.Service):
             flags['creationflags'] = DETACHED_PROCESS
 
         apppath = app_path(pythonw=False, as_list=True)
-        shell = True if sys.platform.startswith("win") else False
+        shell = sys.platform.startswith("win")
         # default to using daemon
         # if the user chooses to use angr URL scheme to load a binary, they are more likely to keep interacting with
         # this binary using angr URL scheme, which requires the angr management instance to run in with-daemon mode.

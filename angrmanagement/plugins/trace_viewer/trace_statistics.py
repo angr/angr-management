@@ -1,3 +1,4 @@
+# pylint:disable=missing-class-docstring
 import logging
 import os
 import random
@@ -71,7 +72,8 @@ class TraceStatistics:
         if self.project.am_none:
             self.project_baddr = None
         else:
-            self.project_baddr = self.project.loader.main_object.mapped_base  # only used if self.mapping is not available
+            # only used if self.mapping is not available
+            self.project_baddr = self.project.loader.main_object.mapped_base
         self.runtime_baddr = baddr  # this will not be used if self.mapping is available
 
         self._cached_object_project_base_addrs: Dict[str,int] = {}
@@ -214,7 +216,7 @@ class TraceStatistics:
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
 
             if p % 5000 == 0:
-                print("... trace loading progress: %.02f%" % (p * 100 / len(self.mapped_trace)))
+                print("... trace loading progress: %.02f%%" % (p * 100 / len(self.mapped_trace)))
 
         print("Trace is loaded.")
         self.count = len(self.trace_func)

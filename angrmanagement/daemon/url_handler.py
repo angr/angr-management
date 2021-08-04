@@ -5,6 +5,9 @@ import urllib.parse
 
 
 class UrlActionBase:
+    """
+    The base class for URL actions.
+    """
 
     def __init__(self, target_id: str=None):
         self.target_id = target_id
@@ -47,6 +50,9 @@ class UrlActionBase:
 
 
 class UrlActionOpen(UrlActionBase):
+    """
+    Implements the open action.
+    """
 
     def __init__(self, bin_path, target_id=None, headless=False):
         super().__init__(target_id=target_id)
@@ -69,6 +75,9 @@ class UrlActionOpen(UrlActionBase):
 
 
 class UrlActionJumpTo(UrlActionBase):
+    """
+    Implements the jump-to action.
+    """
 
     def __init__(self, addr=None, symbol=None, target_id=None):
         super().__init__(target_id=target_id)
@@ -91,6 +100,9 @@ class UrlActionJumpTo(UrlActionBase):
 
 
 class UrlActionCommentAt(UrlActionBase):
+    """
+    Implements the comment-at action.
+    """
 
     def __init__(self, addr, comment, target_id=None):
         super().__init__(target_id)
