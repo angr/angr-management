@@ -53,7 +53,7 @@ class PluginManager:
             search_dir = os.path.expandvars(search_dir)
             for plugin_or_exception in load_plugins_from_dir(search_dir):
                 if isinstance(plugin_or_exception, Exception):
-                    l.info(plugin_or_exception)
+                    l.warning("Exception occurred during plugin loading: %s", plugin_or_exception)
                 else:
                     plugin_or_exception: Type[BasePlugin]
                     plugin_conf_key = "plugin_%s_enabled" % plugin_or_exception.__name__
