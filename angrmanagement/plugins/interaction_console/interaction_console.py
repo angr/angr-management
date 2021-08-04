@@ -26,6 +26,8 @@ class ConsoleView(BaseView):
         self.target = None
         self.conversations = {}
         self.terminal = TerminalWidget(command=None)
+        self.analyzer = None
+        self.interaction_context = None
 
         main_layout = QVBoxLayout()
         controls_layout = QHBoxLayout()
@@ -60,7 +62,7 @@ class ConsoleView(BaseView):
         self.analyzer = archr.analyzers.TCPDumpAnalyzer(self.target)
 
         self.interaction_context = self.analyzer.fire_context(timeout_exception=False)
-        self.interaction_context.__enter__()
+        self.interaction_context.__enter__()  # pylint:disable=no-member
 
         threading.Thread(target=self._inotify_thread, daemon=True).start()
 
