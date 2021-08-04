@@ -17,7 +17,6 @@ except ImportError:
     slacrs = None
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
-from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -208,11 +207,11 @@ class QChessTraceListDialog(QDialog):
         connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
         if connector is None:
             # chess connector does not exist
-            return None
+            return
         slacrs_instance = connector.slacrs_instance()
         if slacrs_instance is None:
             # slacrs does not exist. continue
-            return None
+            return
 
         session = slacrs_instance.session()
         target_image_id = connector.target_image_id

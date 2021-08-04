@@ -2,8 +2,6 @@ import math
 
 from PySide2.QtGui import QColor
 
-from angrmanagement.config import Conf
-
 from .trace_statistics import TraceStatistics
 
 try:

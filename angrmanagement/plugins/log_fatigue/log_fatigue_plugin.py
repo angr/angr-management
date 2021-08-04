@@ -17,7 +17,6 @@ except ImportError as ex:
     HumanFatigue = None  # type: Optional[type]
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from ...config import Conf
 from ..base_plugin import BasePlugin
 
 #
