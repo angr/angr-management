@@ -12,7 +12,6 @@ from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
-from ..daemon.client import DaemonClient
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
@@ -147,10 +146,6 @@ class Instance:
     def initialize(self, initialized=False, cfg_args=None, variable_recovery_args=None, **kwargs):  # pylint:disable=unused-argument
         if self.project.am_none:
             return
-
-        DaemonClient.register_binary(self.project.loader.main_object.binary,
-                                     self.project.loader.main_object.md5,
-                                     self.project.loader.main_object.sha256)
 
         if not initialized:
             if self.pseudocode_variable_kb is None:

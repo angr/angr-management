@@ -11,6 +11,7 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.config import Conf, save_config
 from angrmanagement.config.config_entry import ConfigurationEntry
 from angrmanagement.plugins import BasePlugin
+from angrmanagement.daemon.client import DaemonClient
 
 from .backend_selector_dialog import QBackendSelectorDialog
 from .target_selector import QTargetSelectorDialog
@@ -131,6 +132,9 @@ class ChessConnector(BasePlugin):
             self._target_description_label.setText(desc)
             self._target_description_label.setToolTip(f"Target ID: {self.target_id}\n"
                                                       f"Target image ID: {self.target_image_id}")
+
+            DaemonClient.register_binary(self.workspace.instance.project.loader.main_object.binary,
+                                         self.target_id)
         else:
             self._target_description_label.setText("No associated CHESS target")
             self._target_description_label.setToolTip("")

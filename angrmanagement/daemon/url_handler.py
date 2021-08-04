@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Dict, Type, Optional
 import base64
 import binascii
 import urllib.parse
@@ -6,9 +6,8 @@ import urllib.parse
 
 class UrlActionBase:
 
-    def __init__(self, md5=None, sha256=None):
-        self.md5 = md5
-        self.sha256 = sha256
+    def __init__(self, target_id: str=None):
+        self.target_id = target_id
 
     def act(self, daemon_conn=None):
         raise NotImplementedError()
@@ -49,8 +48,8 @@ class UrlActionBase:
 
 class UrlActionOpen(UrlActionBase):
 
-    def __init__(self, bin_path, md5=None, sha256=None, headless=False):
-        super().__init__(md5, sha256)
+    def __init__(self, bin_path, target_id=None, headless=False):
+        super().__init__(target_id=target_id)
         self.bin_path = bin_path
         self.headless = headless
 
@@ -64,21 +63,20 @@ class UrlActionOpen(UrlActionBase):
     def _from_params(cls, params):
         return cls(
             cls._one_param(params, 'path'),
-            md5=cls._one_param(params, 'md5_checksum'),
-            sha256=cls._one_param(params, 'sha256_checksum'),
+            target_id=cls._one_param(params, 'target_id'),
             headless=cls._one_param(params, 'headless'),
         )
 
 
 class UrlActionJumpTo(UrlActionBase):
 
-    def __init__(self, addr=None, symbol=None, md5=None, sha256=None):
-        super().__init__(md5, sha256)
+    def __init__(self, addr=None, symbol=None, target_id=None):
+        super().__init__(target_id=target_id)
         self.addr = addr
         self.symbol = symbol
 
     def act(self, daemon_conn=None):
-        daemon_conn.root.jumpto(self.addr, self.symbol, self.md5, self.sha256)
+        daemon_conn.root.jumpto(self.addr, self.symbol, self.target_id)
 
     @classmethod
     def _from_params(cls, params):
@@ -88,22 +86,21 @@ class UrlActionJumpTo(UrlActionBase):
         return cls(
             addr=addr,
             symbol=cls._one_param(params, 'symbol'),
-            md5=cls._one_param(params, 'md5'),
-            sha256=cls._one_param(params, 'sha256'),
+            target_id=cls._one_param(params, 'target_id'),
         )
 
 
 class UrlActionCommentAt(UrlActionBase):
 
-    def __init__(self, addr, comment, md5=None, sha256=None):
-        super().__init__(md5, sha256)
+    def __init__(self, addr, comment, target_id=None):
+        super().__init__(target_id)
         self.addr = addr
         self.comment = comment
 
     def act(self, daemon_conn=None):
         if self.addr is None or self.comment is None:
             return
-        daemon_conn.root.commentat(self.addr, self.comment, self.md5, self.sha256)
+        daemon_conn.root.commentat(self.addr, self.comment, self.target_id)
 
     @classmethod
     def _from_params(cls, params):
@@ -117,8 +114,7 @@ class UrlActionCommentAt(UrlActionBase):
         return cls(
             addr=addr,
             comment=comment,
-            md5=cls._one_param(params, 'md5'),
-            sha256=cls._one_param(params, 'sha256'),
+            target_id=cls._one_param(params, 'target_id'),
         )
 
 
@@ -126,34 +122,33 @@ class UrlActionBinaryAware(UrlActionBase):
     """
     The base class of all binary-aware URL actions.
     """
-    def __init__(self, md5=None, sha256=None, action=None, kwargs=None):
-        super().__init__(md5, sha256)
+    def __init__(self, target_id=None, action=None, kwargs=None):
+        super().__init__(target_id)
         self.action = action
         self.kwargs = kwargs
 
-        if not self.md5 and not self.sha256:
-            raise TypeError("You must provide either MD5 or SHA256 of the target binary.")
+        if not self.target_id:
+            raise TypeError("You must provide the target ID.")
         if not self.action:
             raise TypeError("You must provide action.")
 
     def act(self, daemon_conn=None):
         daemon_conn.root.custom_binary_aware_action(
-            self.md5, self.sha256, self.action, self.kwargs
+            self.target_id, self.action, self.kwargs
         )
 
     @classmethod
     def _from_params(cls, params):
-        sha256 = cls._one_param(params, 'sha256')
-        md5 = cls._one_param(params, 'md5')
+        target_id: Optional[str] = cls._one_param(params, 'target_id'),
         action = cls._one_param(params, 'action')
         kwargs = {}
         for k, v in params.items():
-            if k not in {'sha256', 'md5', 'action'}:
+            if k not in {'target_id', 'action'}:
                 if isinstance(v, (list, tuple)):
                     kwargs[k] = v[0]
                 else:
                     kwargs[k] = v
-        return cls(md5=md5, sha256=sha256, action=action, kwargs=kwargs)
+        return cls(target_id=target_id, action=action, kwargs=kwargs)
 
 
 _ACT2CLS: Dict[str,Type[UrlActionBase]] = {
