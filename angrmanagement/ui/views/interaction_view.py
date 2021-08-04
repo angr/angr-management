@@ -1,7 +1,9 @@
 import enum
 import logging
+from typing import Optional
 from threading import Thread
 from PySide2 import QtWidgets, QtCore
+from PySide2.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 
 from .view import BaseView
 
@@ -17,6 +19,11 @@ try:
     import archr
 except ImportError:
     archr = None
+try:
+    import slacrs
+    import slacrs.model
+except ImportError:
+    slacrs = None
 
 
 _l = logging.getLogger(name=__name__)
@@ -71,6 +78,7 @@ class InteractionView(BaseView):
         self.sock = None  # type: nclib.Netcat
 
         self._state = None
+        self._last_img_name: Optional[str] = None
 
         self.widget_button_start = None
         self.widget_button_stop = None
@@ -175,6 +183,7 @@ class InteractionView(BaseView):
             self.widget_group_running.setHidden(True)
             self.widget_group_save.setHidden(True)
             self.widget_group_load.setHidden(False)
+            self.widget_group_upload.setHidden(True)
             self.input_hide()
             self.log_clear()
         elif state == InteractionState.RUNNING:
@@ -182,12 +191,14 @@ class InteractionView(BaseView):
             self.widget_group_running.setHidden(False)
             self.widget_group_save.setHidden(True)
             self.widget_group_load.setHidden(True)
+            self.widget_group_upload.setHidden(True)
             self.log_clear()
         elif state == InteractionState.STOPPED:
             self.widget_group_start.setHidden(False)
             self.widget_group_running.setHidden(True)
             self.widget_group_save.setHidden(False)
             self.widget_group_load.setHidden(False)
+            self.widget_group_upload.setHidden(True)
             self.input_hide()
             self.running_protocol = None
         elif state == InteractionState.VIEWING:
@@ -195,6 +206,7 @@ class InteractionView(BaseView):
             self.widget_group_running.setHidden(True)
             self.widget_group_save.setHidden(True)
             self.widget_group_load.setHidden(False)
+            self.widget_group_upload.setHidden(False)
             self.input_hide()
             self.log_clear()
         else:
@@ -203,8 +215,59 @@ class InteractionView(BaseView):
     # buttons
 
     def _save_interaction(self):
-        self.workspace.instance.interactions.am_obj.append(SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log))
+        self.workspace.instance.interactions.am_obj.append(
+            SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log))
         self.workspace.instance.interactions.am_event()
+
+    def _upload_interaction(self):
+        if slacrs is None:
+            QMessageBox.warning(self.workspace.main_window,
+                                "slacrs module does not exist",
+                                "Failed to import slacrs package. Please make sure it is installed.")
+            return
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            # chess connector does not exist
+            QMessageBox.warning(self.workspace.main_window,
+                                "CHESSConnector is not found",
+                                "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed "
+                                "and enabled.")
+            return
+        if not connector.target_image_id:
+            # the target image ID does not exist
+            QMessageBox.warning(self.workspace.main_window,
+                                "Target image ID is not specified",
+                                "The target image ID is unspecified. Please associate the binary with a remote "
+                                "challenge target.")
+            return
+        slacrs_instance = connector.slacrs_instance()
+        if slacrs_instance is None:
+            # slacrs does not exist
+            QMessageBox.warning(self.workspace.main_window,
+                                "CHECRS backend does not exist",
+                                "Cannot communicate with the CHECRS backend. Please make sure you have proper Internet "
+                                "access and have connected to the CHECRS backend.")
+            return
+        session = slacrs_instance.session()
+
+        # get the interaction
+        interaction: SavedInteraction = self.workspace.instance.interactions[self.widget_combobox_load.currentIndex()]
+
+        # upload it to the session
+        data = b""
+        for model in interaction.log:
+            if model['dir'] == "in":
+                data += model["data"] + b"\n"
+
+        if data:
+            input_ = slacrs.model.Input(value=data,
+                                       target_image_id=connector.target_image_id,
+                                       created_by="interaction view")
+            session.add(input_)
+            session.commit()
+
+        session.close()
+        print(interaction.name, interaction.protocol, interaction.log, flush=True)  # DEBUG
 
     def _load_interaction(self):
         if self.widget_combobox_load.currentIndex() == -1:
@@ -235,8 +298,23 @@ class InteractionView(BaseView):
 
         img_name = self.workspace.instance.img_name
         if img_name is None:
-            QtWidgets.QMessageBox.critical(None, 'Nothing to run', "The project was not loaded from a docker image")
-            return
+            # Ask the user to provide a local image name
+            QtWidgets.QMessageBox.information(None,
+                                              'Docker image unspecified',
+                                              "The project was not loaded from a Docker image. You must specify a name "
+                                              "of a local Docker image to use for interaction in the next input box.")
+            img_name, ok = QInputDialog.getText(
+                None,
+                "Local Docker image name",
+                "Please specify the name of a local Docker image that you will interact with. "
+                "You can run \"docker images\" in a terminal to see all available Docker "
+                "images on your local machine.",
+                QLineEdit.Normal,
+                text="" if not self._last_img_name else self._last_img_name,
+            )
+            if not ok or not img_name:
+                return
+            self._last_img_name = img_name
 
         _l.debug('Initializing the connection to archr with image %s' % img_name)
         self._state_transition(InteractionState.RUNNING)
@@ -299,6 +377,12 @@ class InteractionView(BaseView):
         leftBox.layout().addWidget(box_load)
         self.widget_group_load = box_load
 
+        box_upload = QtWidgets.QGroupBox(leftBox)
+        box_upload.setLayout(QtWidgets.QVBoxLayout(box_upload))
+        box_upload.setTitle("Upload Interaction")
+        leftBox.layout().addWidget(box_upload)
+        self.widget_group_upload = box_upload
+
         leftBox.layout().addStretch(0)
 
         protocolBox = QtWidgets.QComboBox(box_start)
@@ -341,6 +425,11 @@ class InteractionView(BaseView):
         save_button.setText("Save")
         box_save.layout().addWidget(save_button)
         save_button.clicked.connect(self._save_interaction)
+
+        upload_button = QtWidgets.QPushButton(box_upload)
+        upload_button.setText("Upload")
+        box_upload.layout().addWidget(upload_button)
+        upload_button.clicked.connect(self._upload_interaction)
 
         scrollArea = QtWidgets.QScrollArea(self)
         scrollArea.setWidgetResizable(True)
