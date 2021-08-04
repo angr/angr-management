@@ -124,7 +124,7 @@ class TraceStatistics:
         try:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
-        except IndexError as e:
+        except (IndexError, KeyError) as e:
             l.error(e)
             return self.BBL_EMPTY_COLOR
         return mark_color
@@ -197,9 +197,8 @@ class TraceStatistics:
             # if node is None:  # try again without assuming node is start of a basic block
             #     node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
 
+            func = None
             if node is not None:
-                func_name = hex(bbl_addr)  # default to using bbl_addr as name if none is not found
-                func = None
                 func_addr = node.function_address
                 functions = self.workspace.instance.project.kb.functions
                 if func_addr is not None and functions.contains_addr(func_addr):
@@ -207,15 +206,15 @@ class TraceStatistics:
                     func = functions[func_addr]
                 else:
                     func_name = "Unknown"
+                self.func_addr_in_trace.add(func_addr)
             else:
-                # Node is not found in the CFG. It's possible that the library is not loaded. skip this entry
-                continue
+                # Node is not found in the CFG. It's possible that the library is not loaded
+                func_name = hex(bbl_addr)  # default to using bbl_addr as name if none is not found
                 # l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
-            self.func_addr_in_trace.add(func_addr)
 
             if p % 5000 == 0:
-                print("... trace loading progress: %.02f" % (p * 100 / len(self.mapped_trace)))
+                print("... trace loading progress: %.02f%" % (p * 100 / len(self.mapped_trace)))
 
         print("Trace is loaded.")
         self.count = len(self.trace_func)

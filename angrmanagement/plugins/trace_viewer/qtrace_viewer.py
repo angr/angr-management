@@ -182,7 +182,7 @@ class QTraceViewer(QWidget):
 
     def _on_set_trace(self):
         self._reset()
-        if self.trace.am_none:
+        if self.trace.am_none or self.trace.count is None:
             return
 
         l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
