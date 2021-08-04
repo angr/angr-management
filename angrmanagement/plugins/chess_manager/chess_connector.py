@@ -22,6 +22,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+    from slacrs import Slacrs
 
 
 class ChessConnector(BasePlugin):
@@ -69,6 +70,9 @@ class ChessConnector(BasePlugin):
         self._target_description_label.clicked.connect(self.set_chess_target)
         self.target_id_updated()
 
+        self._slacrs_instance: Optional['Slacrs'] = None
+        self._slacrs_database_str: Optional[str] = None
+
         self.connected: bool = False
         self.backend_disconnected()
 
@@ -83,6 +87,24 @@ class ChessConnector(BasePlugin):
 
     def teardown(self):
         self.active = False
+
+    def slacrs_instance(self, database: Optional[str]=None):
+        if not database:
+            # load the default database str
+            database = Conf.checrs_backend_str
+
+        # again, if database_str is empty, return nothing
+        if not database:
+            return None
+
+        if database == self._slacrs_database_str and self._slacrs_instance is not None:
+            return self._slacrs_instance
+
+        self._slacrs_instance = slacrs.Slacrs(database=database)
+        # if it works out, remember the database str
+        self._slacrs_database_str = database
+
+        return self._slacrs_instance
 
     def backend_disconnected(self):
         self.connected = False
@@ -135,6 +157,7 @@ class ChessConnector(BasePlugin):
                 gui_thread_schedule_async(self.backend_disconnected)
                 continue
 
+            engine = None
             try:
                 gui_thread_schedule_async(self.backend_connecting)
                 engine = slacrs.Slacrs.connect_to_db(Conf.checrs_backend_str)
@@ -143,6 +166,9 @@ class ChessConnector(BasePlugin):
             except Exception:  # pylint:disable=broad-except
                 gui_thread_schedule_async(self.backend_disconnected)
                 continue
+            finally:
+                if engine is not None:
+                    engine.dispose()
 
             gui_thread_schedule_async(self.backend_connected)
 
@@ -170,6 +196,7 @@ class ChessConnector(BasePlugin):
         dialog = QBackendSelectorDialog(self.workspace,
                                         backend_str=Conf.checrs_backend_str,
                                         rest_backend_str=Conf.checrs_rest_endpoint_url,
+                                        chess_connector=self,
                                         parent=self.workspace.main_window)
         dialog.exec_()
 

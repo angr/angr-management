@@ -49,7 +49,16 @@ class LogFatiguePlugin(BasePlugin):
 
     def _log_mouse(self):
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        session = Slacrs(database=Conf.checrs_backend_str).session()
+
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            # chess connector does not exist
+            return None
+        slacrs_instance = connector.slacrs_instance()
+        if slacrs_instance is None:
+            # slacrs does not exist. continue
+            return None
+        session = slacrs_instance.session()
         with session.no_autoflush:
             while self._fatigue_flag is True:
                 sleep(2)

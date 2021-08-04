@@ -100,8 +100,15 @@ class DiagnoseHandler:
             return None
 
         try:
-            slacrs = Slacrs(database=Conf.checrs_backend_str)
-            session = slacrs.session()
+            connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+            if connector is None:
+                # chess connector does not exist
+                return None
+            slacrs_instance = connector.slacrs_instance()
+            if slacrs_instance is None:
+                # slacrs does not exist. continue
+                return None
+            session = slacrs_instance.session()
         except OperationalError:
             # Cannot connect
             return None
@@ -127,8 +134,15 @@ class DiagnoseHandler:
             if self._log_list:
                 # we have things to submit!
                 try:
-                    slacrs = Slacrs(database=Conf.checrs_backend_str)
-                    session = slacrs.session()
+                    connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+                    if connector is None:
+                        # chess connector does not exist
+                        continue
+                    slacrs_instance = connector.slacrs_instance()
+                    if slacrs_instance is None:
+                        # slacrs does not exist. continue
+                        continue
+                    session = slacrs_instance.session()
                 except OperationalError:
                     l.error("Failed to CHECRS backend. Try again later...")
                     continue
