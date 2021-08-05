@@ -202,7 +202,7 @@ def main():
                                                                          "automatically start a daemon if there isn't "
                                                                          "already one running.")
     parser.add_argument("-D", "--daemon", action='store_true', help="start a daemon to handle angr:// URLs.")
-    parser.add_argument("-u", "--url", type=str, help="(internal) handle angr:// URLs. the daemon must be running.")
+    parser.add_argument("-u", "--url", type=str, nargs='?', help="(internal) handle angr:// URLs. the daemon must be running.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
     args = parser.parse_args()
