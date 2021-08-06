@@ -51,7 +51,7 @@ class TraceViewer(BasePlugin):
         return self.workspace.instance.trace
 
     @property
-    def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace]]:
+    def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace], AFLQemuBitmap]:
         return self.workspace.instance.multi_trace
 
     #
@@ -112,7 +112,10 @@ class TraceViewer(BasePlugin):
         trace_viewer.hide()
 
     def color_block(self, addr):
-        if not self.multi_trace.am_none and self.multi_trace.is_active_tab:
+        if not self.multi_trace.am_none:
+            if isinstance(self.multi_trace.am_obj, MultiTrace):
+                if not self.multi_trace.is_active_tab:
+                    return None
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
@@ -131,8 +134,10 @@ class TraceViewer(BasePlugin):
 
     def draw_insn(self, qinsn, painter):
         # legend
-        if not self.multi_trace.am_none and self.multi_trace.is_active_tab:
-            return  # skip
+        if not self.multi_trace.am_none:
+            if isinstance(self.multi_trace.am_obj, MultiTrace):
+                if not self.multi_trace.is_active_tab:
+                    return  # skip
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
@@ -165,8 +170,13 @@ class TraceViewer(BasePlugin):
     #
 
     def color_func(self, func):
-        if (not self.multi_trace.am_none) and self.multi_trace.is_active_tab:
-            return self.multi_trace.get_percent_color(func)
+        if not self.multi_trace.am_none:
+            if isinstance(self.multi_trace.am_obj, MultiTrace) and self.multi_trace.is_active_tab:
+                return self.multi_trace.get_percent_color(func)
+            elif isinstance(self.multi_trace.am_obj, AFLQemuBitmap):
+                return self.multi_trace.get_percent_color(func)
+            # you should not reach here
+            raise RuntimeError("Impossible happened")
 
         if not self.trace.am_none:
             if func.addr in self.trace.func_addr_in_trace:
