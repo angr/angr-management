@@ -127,7 +127,7 @@ class ChessConnector(BasePlugin):
             self.workspace.main_window.app.processEvents()
 
     def target_id_updated(self):
-        if self.target_id and self.target_image_id and self.target_description is not None:
+        if self.target_id and self.target_image_id:
             desc = self.target_description if self.target_description else f"(no description) {self.target_id}"
             self._target_description_label.setText(desc)
             self._target_description_label.setToolTip(f"Target ID: {self.target_id}\n"
