@@ -1,9 +1,10 @@
+# pylint:disable=missing-class-docstring
 import logging
 import os
 import random
 from collections import defaultdict
 from bisect import bisect_left
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Set, Optional
 
 from PySide2.QtGui import QColor
 
@@ -14,6 +15,9 @@ l.setLevel('DEBUG')
 
 
 class TraceFunc:
+
+    __slots__ = ('bbl_addr', 'func_name', 'func', )
+
     def __init__(self, bbl_addr=None, func_name=None, func=None):
         self.bbl_addr = bbl_addr
         self.func_name = func_name
@@ -56,7 +60,8 @@ class TraceStatistics:
             map_dict: Dict[str,int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
             self.mapping = list(sorted(self.mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
-        self.trace_func = []
+        self.trace_func: List[TraceFunc] = []
+        self.func_addr_in_trace: Set[int] = set()
         self._func_color = {}
         self.count = None
         self._mark_color = {}
@@ -67,7 +72,8 @@ class TraceStatistics:
         if self.project.am_none:
             self.project_baddr = None
         else:
-            self.project_baddr = self.project.loader.main_object.mapped_base  # only used if self.mapping is not available
+            # only used if self.mapping is not available
+            self.project_baddr = self.project.loader.main_object.mapped_base
         self.runtime_baddr = baddr  # this will not be used if self.mapping is available
 
         self._cached_object_project_base_addrs: Dict[str,int] = {}
@@ -120,7 +126,7 @@ class TraceStatistics:
         try:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
-        except IndexError as e:
+        except (IndexError, KeyError) as e:
             l.error(e)
             return self.BBL_EMPTY_COLOR
         return mark_color
@@ -190,10 +196,9 @@ class TraceStatistics:
                 self._positions[addr].append(p)
 
             node = self.workspace.instance.cfg.get_any_node(bbl_addr)
-            if node is None:  # try again without asssuming node is start of a basic block
-                node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
+            # if node is None:  # try again without assuming node is start of a basic block
+            #     node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
 
-            func_name = hex(bbl_addr)  # default to using bbl_addr as name if none is not found
             func = None
             if node is not None:
                 func_addr = node.function_address
@@ -203,10 +208,17 @@ class TraceStatistics:
                     func = functions[func_addr]
                 else:
                     func_name = "Unknown"
+                self.func_addr_in_trace.add(func_addr)
             else:
-                l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
+                # Node is not found in the CFG. It's possible that the library is not loaded
+                func_name = hex(bbl_addr)  # default to using bbl_addr as name if none is not found
+                # l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
 
+            if p % 5000 == 0:
+                print("... trace loading progress: %.02f%%" % (p * 100 / len(self.mapped_trace)))
+
+        print("Trace is loaded.")
         self.count = len(self.trace_func)
 
     def _get_bbl(self, addr):

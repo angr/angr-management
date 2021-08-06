@@ -1,5 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
+import sqlalchemy
 import requests
 
 from PySide2.QtGui import Qt
@@ -12,6 +13,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+    from .chess_connector import ChessConnector
 
 
 class QBackendSelectorDialog(QDialog):
@@ -19,7 +21,7 @@ class QBackendSelectorDialog(QDialog):
     Implements a CHESS backend URL input dialog.
     """
     def __init__(self, workspace: 'Workspace', backend_str: Optional[str]=None, rest_backend_str: Optional[str]=None,
-                 parent=None):
+                 chess_connector: 'ChessConnector'=None, parent=None):
         super().__init__(parent)
 
         self.workspace = workspace
@@ -32,6 +34,7 @@ class QBackendSelectorDialog(QDialog):
         self._cancel_button: QPushButton = None
         self._status_label: QLabel = None
 
+        self.chess_connector = chess_connector
         self.backend_str: Optional[str] = backend_str
         self.rest_backend_str: Optional[str] = rest_backend_str
 
@@ -84,15 +87,21 @@ class QBackendSelectorDialog(QDialog):
 
         self.setLayout(layout)
 
-    @staticmethod
-    def test_connection(connection_str: str) -> bool:
+    def test_connection(self, connection_str: str) -> bool:
         if not connection_str:
             return False
 
         if slacrs is None:
             raise ImportError("The slacrs module is not installed")
 
-        _ = slacrs.Slacrs(database=connection_str, exit_on_connection_failure=False)
+        slacrs_instance = self.chess_connector.slacrs_instance(database=connection_str)
+        if slacrs_instance is None:
+            raise RuntimeError("Cannot create Slacrs instance.")
+
+        # test connection
+        session = slacrs_instance.session()
+        session.query(sqlalchemy.false()).filter(sqlalchemy.false())
+        session.close()
 
         return True
 

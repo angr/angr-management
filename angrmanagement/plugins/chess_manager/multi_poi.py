@@ -3,8 +3,6 @@ import logging
 
 from PySide2.QtGui import QColor
 
-from angrmanagement.config import Conf
-
 _l = logging.getLogger(__name__)
 # _l.setLevel('DEBUG')
 
@@ -145,7 +143,15 @@ class MultiPOI:
             self.workspace.log("slacrs not installed, unable to retrieve trace seed inputs")
             return "<>"
 
-        slacrs_instance = Slacrs(database=Conf.checrs_backend_str)
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            # chess connector does not exist
+            return None
+        slacrs_instance = connector.slacrs_instance()
+        if slacrs_instance is None:
+            # slacrs does not exist. continue
+            return None
+
         session = slacrs_instance.session()
         if session:
             result = session.query(Input).filter_by(id=trace_id).first()

@@ -1,8 +1,8 @@
+# pylint:disable=import-outside-toplevel,unused-argument
 import time
 import sys
 import subprocess
 import threading
-import binascii
 from typing import Callable
 
 import rpyc
@@ -15,23 +15,26 @@ from ..utils.env import app_path
 DEFAULT_PORT = 64000
 
 CONNECTIONS = { }
-MD5toCONN = { }
-SHA256toCONN = { }
+TargetIDtoCONN = { }
 
 
 class ManagementService(rpyc.Service):
+    """
+    Implements a binary management service. All daemon-enabled angr management will connect to this service and
+    register the binary and target ID with this service.
+    """
+
     _conn = None
 
-    def _get_conn(self, md5, sha256):
-        if md5 in MD5toCONN:
-            conn = MD5toCONN[md5]
-        elif sha256 in SHA256toCONN:
-            conn = SHA256toCONN[sha256]
+    @staticmethod
+    def _get_conn(target_id):
+        if target_id in TargetIDtoCONN:
+            conn = TargetIDtoCONN[target_id]
         else:
-            raise Exception("The specified binary %s/%s is not open in angr management. We have the following ones: %s." % (
-                md5,
-                sha256,
-                str(MD5toCONN)))
+            raise Exception(
+                "The specified target %s is not open in angr management. We have the following ones: %s." % (
+                target_id,
+                str(TargetIDtoCONN)))
         return conn
 
     def on_connect(self, conn):
@@ -53,7 +56,7 @@ class ManagementService(rpyc.Service):
             flags['creationflags'] = DETACHED_PROCESS
 
         apppath = app_path(pythonw=False, as_list=True)
-        shell = True if sys.platform.startswith("win") else False
+        shell = sys.platform.startswith("win")
         # default to using daemon
         # if the user chooses to use angr URL scheme to load a binary, they are more likely to keep interacting with
         # this binary using angr URL scheme, which requires the angr management instance to run in with-daemon mode.
@@ -61,26 +64,22 @@ class ManagementService(rpyc.Service):
                                 stderr=None,
                                 close_fds=True, **flags)
 
-    def exposed_jumpto(self, addr, symbol, md5, sha256):
-        conn = self._get_conn(md5, sha256)
+    def exposed_jumpto(self, addr, symbol, target_id: str):
+        conn = self._get_conn(target_id)
         conn.root.jumpto(addr, symbol)
 
-    def exposed_register_binary(self, bin_path, md5, sha256):
-        md5 = binascii.hexlify(md5).decode("ascii")
-        sha256 = binascii.hexlify(sha256).decode("ascii")
+    def exposed_register_binary(self, bin_path, target_id: str):
+        TargetIDtoCONN[target_id] = self._conn
 
-        MD5toCONN[md5] = self._conn
-        SHA256toCONN[sha256] = self._conn
-
-    def exposed_commentat(self, addr, comment, md5, sha256):
-        conn = self._get_conn(md5, sha256)
+    def exposed_commentat(self, addr, comment, target_id: str):
+        conn = self._get_conn(target_id)
         conn.root.commentat(addr, comment)
 
     def exposed_exit(self):
         pass
 
-    def exposed_custom_binary_aware_action(self, md5, sha256, action, kwargs):
-        conn = self._get_conn(md5, sha256)
+    def exposed_custom_binary_aware_action(self, target_id: str, action, kwargs):
+        conn = self._get_conn(target_id)
         conn.root.custom_binary_aware_action(action, kwargs)
 
 

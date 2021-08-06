@@ -11,6 +11,7 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.config import Conf, save_config
 from angrmanagement.config.config_entry import ConfigurationEntry
 from angrmanagement.plugins import BasePlugin
+from angrmanagement.daemon.client import DaemonClient
 
 from .backend_selector_dialog import QBackendSelectorDialog
 from .target_selector import QTargetSelectorDialog
@@ -22,6 +23,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+    from slacrs import Slacrs
 
 
 class ChessConnector(BasePlugin):
@@ -30,7 +32,7 @@ class ChessConnector(BasePlugin):
     """
 
     DISPLAY_NAME = "CHESS Connector"
-    REQUIRE_WORKSPACE = False
+    REQUIRE_WORKSPACE = True
 
     def __init__(self, workspace):
         super().__init__(workspace)
@@ -69,6 +71,9 @@ class ChessConnector(BasePlugin):
         self._target_description_label.clicked.connect(self.set_chess_target)
         self.target_id_updated()
 
+        self._slacrs_instance: Optional['Slacrs'] = None
+        self._slacrs_database_str: Optional[str] = None
+
         self.connected: bool = False
         self.backend_disconnected()
 
@@ -83,6 +88,24 @@ class ChessConnector(BasePlugin):
 
     def teardown(self):
         self.active = False
+
+    def slacrs_instance(self, database: Optional[str]=None):
+        if not database:
+            # load the default database str
+            database = Conf.checrs_backend_str
+
+        # again, if database_str is empty, return nothing
+        if not database:
+            return None
+
+        if database == self._slacrs_database_str and self._slacrs_instance is not None:
+            return self._slacrs_instance
+
+        self._slacrs_instance = slacrs.Slacrs(database=database)
+        # if it works out, remember the database str
+        self._slacrs_database_str = database
+
+        return self._slacrs_instance
 
     def backend_disconnected(self):
         self.connected = False
@@ -104,11 +127,14 @@ class ChessConnector(BasePlugin):
             self.workspace.main_window.app.processEvents()
 
     def target_id_updated(self):
-        if self.target_id and self.target_image_id and self.target_description is not None:
+        if self.target_id and self.target_image_id:
             desc = self.target_description if self.target_description else f"(no description) {self.target_id}"
             self._target_description_label.setText(desc)
             self._target_description_label.setToolTip(f"Target ID: {self.target_id}\n"
                                                       f"Target image ID: {self.target_image_id}")
+
+            DaemonClient.register_binary(self.workspace.instance.project.loader.main_object.binary,
+                                         self.target_id)
         else:
             self._target_description_label.setText("No associated CHESS target")
             self._target_description_label.setToolTip("")
@@ -135,6 +161,7 @@ class ChessConnector(BasePlugin):
                 gui_thread_schedule_async(self.backend_disconnected)
                 continue
 
+            engine = None
             try:
                 gui_thread_schedule_async(self.backend_connecting)
                 engine = slacrs.Slacrs.connect_to_db(Conf.checrs_backend_str)
@@ -143,6 +170,9 @@ class ChessConnector(BasePlugin):
             except Exception:  # pylint:disable=broad-except
                 gui_thread_schedule_async(self.backend_disconnected)
                 continue
+            finally:
+                if engine is not None:
+                    engine.dispose()
 
             gui_thread_schedule_async(self.backend_connected)
 
@@ -170,6 +200,7 @@ class ChessConnector(BasePlugin):
         dialog = QBackendSelectorDialog(self.workspace,
                                         backend_str=Conf.checrs_backend_str,
                                         rest_backend_str=Conf.checrs_rest_endpoint_url,
+                                        chess_connector=self,
                                         parent=self.workspace.main_window)
         dialog.exec_()
 

@@ -37,7 +37,6 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.user = gma()
         self.active = True
         self.slacrs_thread = None
-        self.slacrs = None
 
     def _init_logger(self): # pylint:disable=no-self-use
         user_dir = os.path.expanduser('~')
@@ -177,15 +176,25 @@ class LogHumanActivitiesPlugin(BasePlugin):
         l.info("database: %s", Conf.checrs_backend_str)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while self.active:
-            self.slacrs = Slacrs(database=Conf.checrs_backend_str)
-            self.session = self.slacrs.session()
-            with self.session.no_autoflush:
-                while len(self._log_list) > 0:
-                    log = self._log_list.pop()
-                    self.session.add(log)
-                self.session.commit()
-            self.session.close()
-            sleep(3)
+            try:
+                sleep(3)
+                connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+                if connector is None:
+                    # chess connector does not exist
+                    return None
+                slacrs_instance = connector.slacrs_instance()
+                if slacrs_instance is None:
+                    # slacrs does not exist. continue
+                    continue
+                self.session = slacrs_instance.session()
+                with self.session.no_autoflush:
+                    while len(self._log_list) > 0:
+                        log = self._log_list.pop()
+                        self.session.add(log)
+                    self.session.commit()
+                self.session.close()
+            except Exception:  # pylint:disable=broad-except
+                pass
 
     def teardown(self):
         self.active = False

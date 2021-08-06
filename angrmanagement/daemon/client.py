@@ -73,8 +73,8 @@ class DaemonClientCls:
         return GlobalInfo.daemon_conn
 
     @requires_daemon_conn
-    def register_binary(self, binary_name, md5, sha256):
-        self.conn.root.register_binary(binary_name, md5, sha256)
+    def register_binary(self, binary_name: str, target_id: str):
+        self.conn.root.register_binary(binary_name, target_id)
 
     @requires_daemon_conn
     def exit(self):

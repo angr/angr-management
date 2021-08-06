@@ -182,7 +182,7 @@ class QTraceViewer(QWidget):
 
     def _on_set_trace(self):
         self._reset()
-        if self.trace.am_none:
+        if self.trace.am_none or self.trace.count is None:
             return
 
         l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
@@ -370,6 +370,8 @@ class QTraceViewer(QWidget):
     def _jump_bbl(self, func, bbl_addr):
         all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
         # TODO: replace this with am_events perhaps?
+        if func is None:
+            return
         self.workspace.on_function_selected(func)
         self.selected_ins.clear()
         self.selected_ins.update(all_insn_addrs)
