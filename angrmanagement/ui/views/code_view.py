@@ -342,7 +342,8 @@ class CodeView(BaseView):
             self.jump_back,
             self.jump_forward,
             self.jump_to_history_position,
-            True, self)
+            True,
+            self)
         self._view_selector = QComboBox()
         self._view_selector.addItems(["pseudocode"])
         self._view_selector.activated.connect(self._on_view_selector_changed)

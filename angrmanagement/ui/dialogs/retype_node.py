@@ -1,8 +1,10 @@
 from typing import Optional, TYPE_CHECKING
-from collections import OrderedDict
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget
-from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
+from angr.analyses.decompiler.structured_codegen.c import CVariable, CConstruct
+import angr
+import pycparser
+
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.code_view import CodeView
@@ -24,10 +26,20 @@ class TypeBox(QLineEdit):
             return text.strip()
         return None
 
+    @property
+    def sim_type(self):
+        text = self.text()
+        if self._is_valid_type_str(text):
+            return angr.sim_type.parse_type(text.strip())
+        return None
+
     @staticmethod
-    def _is_valid_type_str(name):
-        # TODO: Implement type validation
-        return True
+    def _is_valid_type_str(type_str: str):
+        try:
+            angr.sim_type.parse_type(type_str)
+            return True
+        except pycparser.c_parser.ParseError:
+            return False
 
 
 class RetypeNode(QDialog):
@@ -124,13 +136,15 @@ class RetypeNode(QDialog):
         self._status_label.style().polish(self._status_label)
 
     def _on_ok_clicked(self):
-        node_type = self._type_box.type_str
+        node_type = self._type_box.sim_type
         if node_type is not None:
             if self._code_view is not None and self._node is not None:
                 # need workspace for altering callbacks of changes
                 workspace = self._code_view.workspace
                 variable_kb = self._code_view.codegen._variable_kb
                 # specify the type
+                node_type = node_type.with_arch(workspace.instance.project.arch)
+                variable_kb.variables[self._code_view.function.addr].variables_with_manual_types.add(self._variable)
                 variable_kb.variables[self._code_view.function.addr].types[self._variable] = node_type
 
                 self._code_view.codegen.am_event()
