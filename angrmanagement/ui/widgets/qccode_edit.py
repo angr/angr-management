@@ -13,6 +13,7 @@ from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, 
 
 from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
+from ..dialogs.retype_node import RetypeNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 from ..menus.menu import Menu
 
@@ -188,6 +189,13 @@ class QCCodeEdit(api.CodeEdit):
             if isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
                 self.rename_node(node=node)
             return True
+        if key == Qt.Key_Y:
+            # setting the type
+            if isinstance(node, (CVariable, )):
+                # find existing type
+                node_type = None
+                self.retype_node(node=node, node_type=node_type)
+            return True
         if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
@@ -231,6 +239,16 @@ class QCCodeEdit(api.CodeEdit):
             # unsupported right now..
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
+        dialog.exec_()
+
+    def retype_node(self, *args, node=None, node_type=None):  # pylint: disable=unused-argument
+        n = node if node is not None else self._selected_node
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField)):
+            return
+        if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
+            # unsupported right now..
+            return
+        dialog = RetypeNode(code_view=self._code_view, node=n, node_type=node_type, variable=n.variable)
         dialog.exec_()
 
     def comment(self, expr=False, node=None):
