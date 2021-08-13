@@ -323,11 +323,14 @@ class QCCodeEdit(api.CodeEdit):
 
         self.action_rename_node = QAction('Re&name variable', self)
         self.action_rename_node.triggered.connect(self.rename_node)
+        self.action_retype_node = QAction("Re&type variable", self)
+        self.action_retype_node.triggered.connect(self.retype_node)
         self.action_toggle_struct = QAction('Toggle &struct/array')
         self.action_toggle_struct.triggered.connect(self.toggle_struct)
 
         self.variable_actions = [
             self.action_rename_node,
+            self.action_retype_node,
             self.action_toggle_struct,
         ]
 
