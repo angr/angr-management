@@ -53,6 +53,8 @@ class RetypeNode(QDialog):
         self._node_type = node_type
         self._variable = variable
 
+        self.new_type = None
+
         self._type_box: TypeBox = None
         self._status_label = None
         self._ok_button: QPushButton = None
@@ -136,19 +138,9 @@ class RetypeNode(QDialog):
         self._status_label.style().polish(self._status_label)
 
     def _on_ok_clicked(self):
-        node_type = self._type_box.sim_type
-        if node_type is not None:
-            if self._code_view is not None and self._node is not None:
-                # need workspace for altering callbacks of changes
-                workspace = self._code_view.workspace
-                variable_kb = self._code_view.codegen._variable_kb
-                # specify the type
-                node_type = node_type.with_arch(workspace.instance.project.arch)
-                variable_kb.variables[self._code_view.function.addr].variables_with_manual_types.add(self._variable)
-                variable_kb.variables[self._code_view.function.addr].types[self._variable] = node_type
-
-                self._code_view.codegen.am_event()
-                self.close()
+        self.new_type = self._type_box.sim_type
+        self.close()
 
     def _on_cancel_clicked(self):
+        self.new_type = None
         self.close()

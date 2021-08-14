@@ -53,7 +53,7 @@ class CodeView(BaseView):
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
         self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
         self.function.am_subscribe(self._on_new_function)
-        self.codegen.am_subscribe(self._on_new_codegen)
+        self.codegen.am_subscribe(self._on_codegen_changes)
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
 
@@ -100,7 +100,8 @@ class CodeView(BaseView):
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
+                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr,
+                                                                                  chosen_flavor)].codegen
                 self.codegen.am_event(already_regenerated=True)
                 self._focus_core(focus, focus_addr)
                 if focus_addr is not None:
@@ -167,9 +168,43 @@ class CodeView(BaseView):
         self.addr.am_obj = self._textedit.get_src_to_inst()
         self.addr.am_event(already_moved=True)
 
-    def _on_new_codegen(self, already_regenerated=False, **kwargs):  # pylint: disable=unused-argument
+    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str]=None, **kwargs):  # pylint: disable=unused-argument
+        """
+        The callback function that triggers an update of the codegen.
+
+        :param already_regenerated: True if we only want to re-render the text and do not intend to change the text.
+                                    Setting it to True will ignore `event` and other parameters.
+        :param event:               The event to perform. For example, "retype_variable" will cause a re-flow of
+                                    variable types. Leaving it unspecified will lead to regeneration of text (which is
+                                    the default behavior).
+                                    Supported events: retype_variable
+        :param kwargs:              Keyword arguments that are required in each event.
+        :return:
+        """
         self._view_selector.setCurrentText(self.codegen.flavor)
-        if not already_regenerated:
+        if already_regenerated:
+            # do not regenerate text
+            pass
+        else:
+            if event == "retype_variable":
+                dec = self.workspace.instance.project.analyses.Decompiler(
+                    self.function,
+                    variable_kb=self.workspace.instance.pseudocode_variable_kb,
+                    decompile=False
+                )
+                dec_cache = self.workspace.instance.kb.structured_code[(self.function.addr, 'pseudocode')]
+                new_codegen = dec.reflow_variable_types(
+                    dec_cache.type_constraints,
+                    dec_cache.var_to_typevar,
+                    dec_cache.codegen,
+                )
+                # update the cache
+                dec_cache.codegen = new_codegen
+
+                # update self
+                self.codegen.am_obj = new_codegen
+
+            # regenerate text in the end
             self.codegen.regenerate_text()
 
         old_pos: Optional[int] = None
@@ -212,7 +247,7 @@ class CodeView(BaseView):
         should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
-            cached = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)]
+            cached = self.workspace.instance.kb.structured_code[(self.function.addr, chosen_flavor)].codegen
             if not isinstance(cached, DummyStructuredCodeGenerator):
                 should_decompile = False
                 self.codegen.am_obj = cached
@@ -296,7 +331,8 @@ class CodeView(BaseView):
                 flavors = self.workspace.instance.kb.structured_code.available_flavors(self.function.addr)
                 idx = flavors.index(flavor)
                 newidx = (idx + 1) % len(flavors)
-                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr, flavors[newidx])]
+                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self.function.addr,
+                                                                                  flavors[newidx])].codegen
                 self.codegen.am_event()
                 return True
 
@@ -309,7 +345,7 @@ class CodeView(BaseView):
 
     def _on_view_selector_changed(self, index):
         key = (self.function.addr, self._view_selector.itemText(index))
-        self.codegen.am_obj = self.workspace.instance.kb.structured_code[key]
+        self.codegen.am_obj = self.workspace.instance.kb.structured_code[key].codegen
         self.codegen.am_event()
 
     #

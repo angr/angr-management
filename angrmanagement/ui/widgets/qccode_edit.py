@@ -242,14 +242,28 @@ class QCCodeEdit(api.CodeEdit):
         dialog.exec_()
 
     def retype_node(self, *args, node=None, node_type=None):  # pylint: disable=unused-argument
-        n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField)):
+        if node is None:
+            node = self._selected_node
+        if not isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
             return
-        if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
+        if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
             return
-        dialog = RetypeNode(code_view=self._code_view, node=n, node_type=node_type, variable=n.variable)
+        dialog = RetypeNode(code_view=self._code_view, node=node, node_type=node_type, variable=node.variable)
         dialog.exec_()
+
+        new_node_type = dialog.new_type
+        if new_node_type is not None:
+            if self._code_view is not None and node is not None:
+                # need workspace for altering callbacks of changes
+                workspace = self._code_view.workspace
+                variable_kb = self._code_view.codegen._variable_kb
+                # specify the type
+                new_node_type = new_node_type.with_arch(workspace.instance.project.arch)
+                variable_kb.variables[self._code_view.function.addr].variables_with_manual_types.add(node.variable)
+                variable_kb.variables[self._code_view.function.addr].types[node.variable] = new_node_type
+
+                self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
     def comment(self, expr=False, node=None):
         addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
