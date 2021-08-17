@@ -30,8 +30,10 @@ class QFileDescriptorViewer(QFrame):
         self._state.am_subscribe(self._watch_state)
 
     def dump_fd(self,fd):
+        if self._state.am_none:
+            return
         self.textedit.setPlainText(
-            self._state.posix.dumps(fd).decode().replace("\x00","\\x00")
+            self._state.posix.dumps(fd).decode("ascii","ignore").replace("\x00","\\x00")
         )
 
     def _init_widgets(self):
@@ -47,6 +49,8 @@ class QFileDescriptorViewer(QFrame):
         self.setLayout(layout)
 
     def _watch_state(self, **kwargs):  #pylint: disable=unused-argument
+        if self._state.am_none:
+            return
         if self.select_fd is None:
             self._init_widgets()
         self.select_fd.clear()

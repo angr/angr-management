@@ -13,7 +13,7 @@ from ..dialogs.new_state import NewState
 
 class QStateTableItem(QTableWidgetItem):
     def __init__(self, state, *args, **kwargs):
-        super(QStateTableItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.state = state
 
@@ -55,7 +55,7 @@ class QStateTableItem(QTableWidgetItem):
 
 class QStateTable(QTableWidget):
     def __init__(self, instance, parent, selection_callback=None):
-        super(QStateTable, self).__init__(parent)
+        super().__init__(parent)
 
         self._selected = selection_callback
 
@@ -129,9 +129,6 @@ class QStateTable(QTableWidget):
     def _action_new_state(self):
         dialog = NewState(self.instance, parent=self)
         dialog.exec_()
-        if dialog.state is not None:
-            self.states.append(dialog.state)
-            self.states.am_event(src="new", state=dialog.state)
 
     def _action_duplicate(self):
         state = self.states[self.currentRow()]
