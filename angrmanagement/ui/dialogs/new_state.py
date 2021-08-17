@@ -38,7 +38,7 @@ def is_option(o):
 
 
 class NewState(QDialog):
-    def __init__(self, instance, addr=None, create_simgr=False, parent=None):
+    def __init__(self, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
         super(NewState, self).__init__(parent)
 
         # initialization
@@ -49,6 +49,7 @@ class NewState(QDialog):
         self._options = set()
         self._addr = addr
         self._create_simgr = create_simgr  # Shall we create a new simgr after clicking OK?
+        self._push_to_instance = push_to_instance # Shall we push the new state to instance.stats and call states.am_event(src="new", state=self.state)
 
         self._name_edit = None  # type: QLineEdit
         self._base_state_combo = None  # type: QStateComboBox
@@ -314,9 +315,6 @@ class NewState(QDialog):
             self.state.gui_data.name = name
             self.state.gui_data.is_original = True
 
-            if self._create_simgr:
-                self.instance.workspace.create_simulation_manager(self.state, name)
-
             # mount fs
             if self._fs_config:
                 for path, real in self._fs_config:
@@ -325,6 +323,13 @@ class NewState(QDialog):
                         fs.set_state(self.state)
                         self.state.fs.mount(path, fs)
 
+            if self._push_to_instance:
+                states_list = self.instance.states
+                states_list.append(self.state)
+                states_list.am_event(src="new", state=self.state)
+
+            if self._create_simgr:
+                self.instance.workspace.create_simulation_manager(self.state, name)
 
             self.close()
 

@@ -187,7 +187,7 @@ class MainWindow(QMainWindow):
                                  "Cannot create new states",
                                  "Please open a binary to analyze first.")
             return
-        new_state_dialog = NewState(self.workspace.instance, parent=self)
+        new_state_dialog = NewState(self.workspace.instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
     def open_doc_link(self):

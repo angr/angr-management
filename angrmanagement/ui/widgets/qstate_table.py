@@ -129,9 +129,6 @@ class QStateTable(QTableWidget):
     def _action_new_state(self):
         dialog = NewState(self.instance, parent=self)
         dialog.exec_()
-        if dialog.state is not None:
-            self.states.append(dialog.state)
-            self.states.am_event(src="new", state=dialog.state)
 
     def _action_duplicate(self):
         state = self.states[self.currentRow()]

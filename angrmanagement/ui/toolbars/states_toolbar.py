@@ -7,5 +7,5 @@ class StatesToolbar(Toolbar):
         super(StatesToolbar, self).__init__(main_window, 'States')
 
         self.actions = [
-            ToolbarAction(None, "New state", "Create a new state...", main_window.open_newstate_dialog)
+            ToolbarAction(None, "New State", "Create a new state...", main_window.open_newstate_dialog)
         ]
