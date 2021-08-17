@@ -1,24 +1,23 @@
+import os
+from typing import List
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QComboBox, \
-    QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
+    QGridLayout, QComboBox, QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
-import os
-
-from ..widgets import QAddressInput, QStateComboBox
+from ..widgets import QStateComboBox
 from ...utils.namegen import NameGenerator
 from ...ui.dialogs.fs_mount import FilesystemMount
-from typing import List
+
 
 class StateMetadata(angr.SimStatePlugin):
     def __init__(self):
-        super(StateMetadata, self).__init__()
+        super().__init__()
         self.name = None                # the state's name
         self.base_name = None           # the name of the base state this was created from
         self.is_original = False         # is this the original instanciation of this name?
         self.is_base = False             # is this state created with nothing else as a base?
 
-    def copy(self, memo=None):
+    def copy(self, memo=None): #pylint: disable=unused-argument
         c = StateMetadata()
         c.name = self.name
         c.base_name = self.base_name
@@ -38,8 +37,8 @@ def is_option(o):
 
 
 class NewState(QDialog):
-    def __init__(self, instance, addr=None, create_simgr=False, parent=None):
-        super(NewState, self).__init__(parent)
+    def __init__(self, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
+        super().__init__(parent)
 
         # initialization
 
@@ -49,6 +48,9 @@ class NewState(QDialog):
         self._options = set()
         self._addr = addr
         self._create_simgr = create_simgr  # Shall we create a new simgr after clicking OK?
+
+        # Shall we push the new state to instance.stats and call states.am_event(src="new", state=self.state)
+        self._push_to_instance = push_to_instance
 
         self._name_edit = None  # type: QLineEdit
         self._base_state_combo = None  # type: QStateComboBox
@@ -219,7 +221,7 @@ class NewState(QDialog):
         options_tree.setHeaderHidden(True)
         children_items = []
         for name, members in angr.sim_options.__dict__.items():
-            if type(members) is not set:
+            if not isinstance(members, set):
                 continue
             if name == 'resilience_options':
                 continue
@@ -293,29 +295,27 @@ class NewState(QDialog):
             addr = parse_address()
             base_state = base_state_combo.state
             mode = mode_combo.currentData()
+            factory = self.instance.project.factory
             if template in ('blank', 'call') and base_state is not None:
                 if template == 'blank':
-                    self.state = self.instance.project.factory.blank_state(addr=addr, base_state=base_state, options=self._options)
+                    self.state = factory.blank_state(addr=addr, base_state=base_state, options=self._options)
                 else:
-                    self.state = self.instance.project.factory.call_state(addr, base_state=base_state, options=self._options)
+                    self.state = factory.call_state(addr, base_state=base_state, options=self._options)
                 self.state.gui_data.base_name = base_state.gui_data.name
             else:
                 if template == 'blank':
-                    self.state = self.instance.project.factory.blank_state(addr=addr, mode=mode, options=self._options)
+                    self.state = factory.blank_state(addr=addr, mode=mode, options=self._options)
                 elif template == 'call':
-                    self.state = self.instance.project.factory.call_state(addr, mode=mode, options=self._options)
+                    self.state = factory.call_state(addr, mode=mode, options=self._options)
                 elif template == 'entry':
-                    self.state = self.instance.project.factory.entry_state(mode=mode, options=self._options)
+                    self.state = factory.entry_state(mode=mode, options=self._options)
                 else:
-                    self.state = self.instance.project.factory.full_init_state(mode=mode, options=self._options)
+                    self.state = factory.full_init_state(mode=mode, options=self._options)
                 self.state.gui_data.base_name = name
                 self.state.gui_data.is_base = True
 
             self.state.gui_data.name = name
             self.state.gui_data.is_original = True
-
-            if self._create_simgr:
-                self.instance.workspace.create_simulation_manager(self.state, name)
 
             # mount fs
             if self._fs_config:
@@ -325,6 +325,13 @@ class NewState(QDialog):
                         fs.set_state(self.state)
                         self.state.fs.mount(path, fs)
 
+            if self._push_to_instance:
+                states_list = self.instance.states
+                states_list.append(self.state)
+                states_list.am_event(src="new", state=self.state)
+
+            if self._create_simgr:
+                self.instance.workspace.create_simulation_manager(self.state, name)
 
             self.close()
 
