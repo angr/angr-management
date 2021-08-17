@@ -13,7 +13,7 @@ from ..dialogs.new_state import NewState
 
 class QStateTableItem(QTableWidgetItem):
     def __init__(self, state, *args, **kwargs):
-        super(QStateTableItem, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.state = state
 
@@ -55,7 +55,7 @@ class QStateTableItem(QTableWidgetItem):
 
 class QStateTable(QTableWidget):
     def __init__(self, instance, parent, selection_callback=None):
-        super(QStateTable, self).__init__(parent)
+        super().__init__(parent)
 
         self._selected = selection_callback
 
