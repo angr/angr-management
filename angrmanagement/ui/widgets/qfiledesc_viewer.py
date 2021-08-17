@@ -30,8 +30,10 @@ class QFileDescriptorViewer(QFrame):
         self._state.am_subscribe(self._watch_state)
 
     def dump_fd(self,fd):
+        if self._state.am_none:
+            return
         self.textedit.setPlainText(
-            self._state.posix.dumps(fd).decode("unicode-escape")
+            self._state.posix.dumps(fd).decode("ascii","ignore").replace("\x00","\\x00")
         )
 
     def _init_widgets(self):
