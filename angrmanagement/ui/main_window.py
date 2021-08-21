@@ -6,7 +6,7 @@ import time
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
-from PySide2.QtWidgets import QMessageBox, QSplitter, QShortcut, QTabBar
+from PySide2.QtWidgets import QMessageBox, QShortcut, QTabBar
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
@@ -73,8 +73,7 @@ class MainWindow(QMainWindow):
 
         self.app: Optional['QApplication'] = app
         self.workspace: Workspace = None
-        self.central_widget = None
-        self.central_widget2 = None
+        self.central_widget: QMainWindow = None
 
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
@@ -253,18 +252,13 @@ class MainWindow(QMainWindow):
 
         :return:    None
         """
-
-        self.central_widget_main = QSplitter(Qt.Horizontal)
-        self.setCentralWidget(self.central_widget_main)
         self.central_widget = QMainWindow()
-        self.central_widget2 = QMainWindow()
-        self.central_widget_main.addWidget(self.central_widget)
-        self.central_widget_main.addWidget(self.central_widget2)
+        self.setCentralWidget(self.central_widget)
         wk = Workspace(self, Instance())
         self.workspace = wk
         self.workspace.view_manager.tabify_center_views()
         self.central_widget.setTabPosition(Qt.RightDockWidgetArea, QTabWidget.North)
-        self.central_widget2.setTabPosition(Qt.LeftDockWidgetArea, QTabWidget.North)
+        self.central_widget.setDockNestingEnabled(True)
 
         def set_caption(**kwargs):  # pylint: disable=unused-argument
             if self.workspace.instance.project.am_none:
