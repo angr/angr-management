@@ -807,6 +807,7 @@ class HexView(BaseView):
         super().__init__('hex', workspace, default_docking_position, *args, **kwargs)
         self.base_caption: str = 'Hex'
         self._init_widgets()
+        self.reload_cfb()
         self.workspace.instance.cfb.am_subscribe(self.reload_cfb)
 
     def project_memory_read_func(self, addr:int) -> HexByteValue:

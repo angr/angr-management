@@ -122,10 +122,6 @@ class DisassemblyView(BaseView):
     #
 
     @property
-    def caption(self):
-        return f'{self.base_caption}-{self.index}'
-
-    @property
     def disasm(self):
         return self._flow_graph.disasm
 
