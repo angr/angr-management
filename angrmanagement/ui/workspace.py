@@ -1,9 +1,6 @@
 from typing import TYPE_CHECKING, Callable
 import logging
 import traceback
-from string import ascii_uppercase
-
-from PySide2.QtCore import Qt, QSettings
 
 from angr.knowledge_plugins.functions.function import Function as angrFunc
 from angr.knowledge_plugins import Function
@@ -14,7 +11,6 @@ from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView)
-from .widgets.qsmart_dockwidget import QSmartDockWidget
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -36,9 +32,6 @@ class Workspace:
 
         self.main_window: 'MainWindow' = main_window
         self._instance = instance
-        self.is_split = False
-        self.split_tab_id = 0
-        self.last_unsplit_view = None
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
@@ -69,13 +62,6 @@ class Workspace:
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
         ]
-
-        #
-        # Save initial splitter state
-        #
-
-        self.splitter_state = QSettings()
-        self.splitter_state.setValue("splitterSizes", self._main_window.central_widget_main.saveState())
 
         for tab in self.default_tabs:
             self.add_view(tab, tab.caption, tab.category)
@@ -200,66 +186,11 @@ class Workspace:
             self.on_cfg_generated()
         # TODO move new_view tab to front of dock
 
-    def split_view(self):
-        """
-        Split the view into two panes and shift
-        the current tab into the second pane
-
-        :return:    None
-        """
-
-        window_id = self.view_manager.get_current_tab_id() + 1
-        if self.is_split is False:
-            self._main_window.central_widget.removeDockWidget(self.view_manager.docks[window_id])
-            dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
-                                                          Qt.RightDockWidgetArea)
-            dock = QSmartDockWidget(self.default_tabs[window_id].caption, parent=self.default_tabs[window_id])
-            self._main_window.central_widget2.show()
-            self._main_window.central_widget2.addDockWidget(dock_area, dock)
-            dock.setWidget(self.default_tabs[window_id])
-            self.is_split = True
-            self.split_tab_id = window_id
-            self.last_unsplit_view = dock
-            self._main_window.central_widget_main.setStretchFactor(1,1)
-
     def add_view(self, view, caption, category):
         self.view_manager.add_view(view, caption, category)
 
     def remove_view(self, view):
         self.view_manager.remove_view(view)
-
-    def unsplit_view(self):
-        """
-        Unsplit view if it is already split
-
-        :return:    None
-        """
-
-        if self.is_split is True:
-            window_id = self.split_tab_id
-            self._main_window.central_widget2.hide()
-            self._main_window.central_widget2.removeDockWidget(self.last_unsplit_view)
-            dock_area = ViewManager.DOCKING_POSITIONS.get(self.default_tabs[window_id].default_docking_position,
-                                                          Qt.RightDockWidgetArea)
-            dock = QSmartDockWidget(self.default_tabs[window_id].caption, parent=self.default_tabs[window_id])
-            self._main_window.central_widget.addDockWidget(dock_area, dock)
-            dock.setWidget(self.default_tabs[window_id])
-            self.view_manager.docks[window_id] = dock
-            self._main_window.central_widget_main.setStretchFactor(1,0)
-            self._main_window.central_widget_main.restoreState(self.splitter_state.value("splitterSizes"))
-            self.view_manager.tabify_center_views()
-            self.is_split = False
-
-    def toggle_split(self):
-        """
-        Toggles the split state
-        :return:    None
-        """
-
-        if self.is_split is False:
-            self.split_view()
-        else:
-            self.unsplit_view()
 
     def raise_view(self, view):
         """

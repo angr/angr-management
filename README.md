@@ -49,7 +49,6 @@ angr-management can then be run with `angr-management` or `python start.py`.
 
 - Next Tab: ```Ctrl+Tab```
 - Previous Tab: ```Ctrl+Shift+Tab```
-- Split / Unsplit View: ```Ctrl+D```
 
 ## Plugins
 
