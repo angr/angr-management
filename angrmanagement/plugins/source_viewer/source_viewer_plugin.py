@@ -1,9 +1,11 @@
+from PySide2.QtCore import QEvent, Qt
+from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 from collections import defaultdict
 from typing import TYPE_CHECKING
 from sortedcontainers import SortedDict
 
 from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import QMenu,QVBoxLayout
+from PySide2.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit,QVBoxLayout
 
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker
@@ -14,6 +16,7 @@ from pyqodeng.core.api.utils import drift_color
 from qtpy import QtCore, QtGui
 from cle import Loader
 
+from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.views import BaseView
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.workspace import Workspace
@@ -71,7 +74,7 @@ class SourceCodeViewer(CodeEdit):
 
     def __init__(self, parent):
         super().__init__(parent=parent, create_default_actions=False)
-        self.setReadOnly(True)
+
         self._valid_line = None
         self.linenumber_panel = VaildLineNumberPanel()
         self.breakpoint_panel = MarkerPanel()
@@ -126,6 +129,41 @@ class SourceCodeViewer(CodeEdit):
     def edit_cond(self):
         pass
 
+    def setHighlighter(self):
+        self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
+        QPlainTextEdit.setReadOnly(self,True)
+        self.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
+
+    def event(self, event):
+        if event.type() == QEvent.KeyPress and event.key() in (Qt.Key_Slash, Qt.Key_Question):
+            event.accept()
+            self.comment()
+            return True
+
+        return super().event(event)
+
+    def comment(self):
+        doc = self.document()
+        cursor = self.textCursor()
+        cursor.clearSelection()
+        block = doc.findBlock(cursor.position())
+        text = block.text().rsplit("//",1)
+        if len(text) == 1:
+            comment = ""
+            no_comment = True
+        else:
+            text, comment = text
+            no_comment = False
+        new_comment, ok = QInputDialog.getText(None,"Comment","Comment",QLineEdit.Normal,comment)
+        if not ok:
+            return
+        cursor.movePosition(cursor.EndOfLine, cursor.MoveAnchor)
+        for _ in range(len(comment)):
+            cursor.deletePreviousChar()
+        if no_comment:
+            cursor.insertText(" // ")
+        cursor.insertText(new_comment)
+        cursor.block()
 
 class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
     """
@@ -155,6 +193,7 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
         for fn in self.file_list:
             editor = self.open_document(fn) #type: SourceCodeViewer
             editor.viewer = self.viewer
+            editor.setHighlighter()
             valid_line = {line for (filename,line) in self.line_to_addr.keys() if filename == fn }
             editor.set_valid_line(valid_line)
             self.tabs[fn] = editor
