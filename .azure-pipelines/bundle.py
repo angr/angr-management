@@ -14,6 +14,9 @@ import z3
 import zmq
 import parso
 
+if sys.platform == "linux":
+    import archr
+
 
 def make_common_options(for_chess=False):
     """
@@ -67,6 +70,13 @@ def make_common_options(for_chess=False):
             (
                 os.path.join(repo_dir, "library_docs"),
                 "library_docs"
+            )
+        )
+    if sys.platform == "linux":
+        included_data.append(
+            (
+                os.path.join(os.path.dirname(archr.__file__), "implants"),
+                "archr/implants",
             )
         )
     if sys.platform != "darwin":
