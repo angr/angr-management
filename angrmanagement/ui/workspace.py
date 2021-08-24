@@ -55,10 +55,10 @@ class Workspace:
                 DependencyView(self, 'center')
             )
         self.default_tabs += [
-            SymexecView(self, 'center'),
-            StatesView(self, 'center'),
             StringsView(self, 'center'),
             PatchesView(self, 'center'),
+            SymexecView(self, 'center'),
+            StatesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
         ]
