@@ -23,6 +23,8 @@ def make_common_options(for_chess=False):
     Create the pyinstaller command.
     """
 
+    am_repo_dir = os.path.dirname(os.path.dirname(angrmanagement.__file__))
+
     # any dynamically-loaded modules have to be explicitly added
     included_data = [
         (
@@ -57,21 +59,9 @@ def make_common_options(for_chess=False):
         ),
         (os.path.join(os.path.dirname(angr.__file__), "procedures"), "angr/procedures"),
         (os.path.join(os.path.dirname(parso.__file__), "python"), "parso/python"),
+        (os.path.join(am_repo_dir, "flirt_signatures"), "flirt_signatures"),
+        (os.path.join(am_repo_dir, "library_docs"), "library_docs"),
     ]
-    if for_chess:
-        repo_dir = os.path.dirname(os.path.dirname(angrmanagement.__file__))
-        included_data.append(
-            (
-                os.path.join(repo_dir, "flirt_signatures"),
-                "flirt_signatures"
-            )
-        )
-        included_data.append(
-            (
-                os.path.join(repo_dir, "library_docs"),
-                "library_docs"
-            )
-        )
     if sys.platform == "linux":
         included_data.append(
             (
