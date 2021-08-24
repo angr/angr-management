@@ -32,7 +32,7 @@ def get_docker_images(parent=None):
         raise LoadDockerPromptError
     except subprocess.CalledProcessError:
         _l.error('Docker images failed: Make sure you are have privileges.')
-        QMessageBox(parent).critical(None, 'docker images failed to run', 'Are you root? Docker needs root!')
+        QMessageBox(parent).critical(None, 'Docker Error', 'User not able to access docker. Are you in the docker group?')
         raise LoadDockerPromptError
 
     items = output.decode('utf-8').split('\n')
