@@ -163,8 +163,10 @@ class ViewManager:
         :param str category:    The category of the view.
         :return:                The view.
         """
-
-        current = self.get_center_views()[self.get_current_tab_id()]
+        center_views = self.get_center_views()
+        if len(center_views) == 0:
+            return None
+        current = center_views[self.get_current_tab_id()]
         view = self.dock_to_view[current]
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
