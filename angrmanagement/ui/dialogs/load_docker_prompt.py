@@ -1,7 +1,7 @@
-from PySide2.QtWidgets import QInputDialog, QMessageBox
-
-import subprocess
 import logging
+import subprocess
+
+from PySide2.QtWidgets import QInputDialog, QMessageBox
 
 
 _l = logging.getLogger(__name__)
@@ -28,12 +28,20 @@ def get_docker_images(parent=None):
         output = subprocess.check_output(['docker', 'images', '--format', '{{.Repository}}:{{.Tag}}'])
     except FileNotFoundError as e:
         _l.error('Docker not found.')
-        QMessageBox(parent).critical(None, 'Docker not found', 'Make sure docker is installed and in your path')
-        raise LoadDockerPromptError
-    except subprocess.CalledProcessError:
+        QMessageBox(parent).critical(
+            None,
+            'Docker not found',
+            'Make sure docker is installed and in your path'
+        )
+        raise LoadDockerPromptError from e
+    except subprocess.CalledProcessError as e:
         _l.error('Docker images failed: Make sure you are have privileges.')
-        QMessageBox(parent).critical(None, 'Docker Error', 'User not able to access docker. Are you in the docker group?')
-        raise LoadDockerPromptError
+        QMessageBox(parent).critical(
+            None,
+            'Docker Error',
+            'User not able to access docker. Are you in the docker group?'
+        )
+        raise LoadDockerPromptError from e
 
     items = output.decode('utf-8').split('\n')
     return [ i for i in items if i and '<none>' not in i ]
