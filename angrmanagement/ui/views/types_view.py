@@ -28,6 +28,7 @@ FRUITS = [
     'orange',
 ]
 
+
 class TypesView(BaseView):
     """
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
@@ -62,7 +63,6 @@ class TypesView(BaseView):
         outer_layout.addWidget(status_bar)
         self.setLayout(outer_layout)
 
-
     def reload(self):
         for child in list(self._layout.parent().children()):
             if type(child) is QCTypeDef:
@@ -73,8 +73,6 @@ class TypesView(BaseView):
         for ty in self.workspace.instance.kb.types.iter_own():
             widget = QCTypeDef(self._layout.parent(), ty, self.workspace.instance.kb.types)
             self._layout.addWidget(widget)
-
-
 
     def _on_new_type(self):
         dialog = CTypeEditor(
