@@ -55,13 +55,18 @@ class TypesView(BaseView):
         new_btn.clicked.connect(self._on_new_type)
         status_layout.addWidget(new_btn)
 
-
         scroll_area.setWidgetResizable(True)
         scroll_contents.setLayout(self._layout)
         scroll_area.setWidget(scroll_contents)
         outer_layout.addWidget(scroll_area)
         outer_layout.addWidget(status_bar)
         self.setLayout(outer_layout)
+
+        # add a stretch to layout so elements are top-aligned
+        self._layout.addStretch()
+        # background color
+        # TODO: Support dark mode
+        scroll_contents.setStyleSheet("background-color: white;")
 
     def reload(self):
         for child in list(self._layout.parent().children()):
@@ -72,7 +77,7 @@ class TypesView(BaseView):
 
         for ty in self.workspace.instance.kb.types.iter_own():
             widget = QCTypeDef(self._layout.parent(), ty, self.workspace.instance.kb.types)
-            self._layout.addWidget(widget)
+            self._layout.insertWidget(self._layout.count() - 1, widget)
 
     def _on_new_type(self):
         dialog = CTypeEditor(

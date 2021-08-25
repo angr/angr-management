@@ -11,6 +11,7 @@ from ...config import Conf
 LINE_HEIGHT = 20
 COL_WIDTH = 8
 
+
 class QCTypeDef(QWidget):
     """
     A widget to display a C SimType.
