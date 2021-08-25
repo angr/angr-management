@@ -6,7 +6,7 @@ from PySide2.QtCore import QSize
 from ..widgets.qcolor_option import QColorOption
 from ...config.config_manager import ENTRIES
 from ...config.color_schemes import COLOR_SCHEMES
-from ...config import Conf
+from ...config import Conf, save_config
 from ...logic.url_scheme import AngrUrlScheme
 from ..css import refresh_theme
 
@@ -14,7 +14,7 @@ from ..css import refresh_theme
 
 class Page(QWidget):
     def save_config(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     NAME = NotImplemented
 
@@ -209,6 +209,7 @@ class Preferences(QDialog):
     def _on_ok_clicked(self):
         for page in self._pages:
             page.save_config()
+        save_config()
         self.close()
 
     def _on_cancel_clicked(self):
