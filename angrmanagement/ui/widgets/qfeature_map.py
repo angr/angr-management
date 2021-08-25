@@ -162,6 +162,9 @@ class QFeatureMap(QWidget):
         l.debug("total width %d", total_width)
         for addr, obj in cfb.ceiling_items():
 
+            if obj.size is None:
+                continue
+
             # are we in a new region?
             new_region = False
             if current_region is None or not (current_region.addr <= addr < current_region.addr + current_region.size):
