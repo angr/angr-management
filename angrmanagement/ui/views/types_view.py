@@ -1,45 +1,62 @@
 import random
+from typing import TYPE_CHECKING
 
 from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox
 
 from angr.sim_type import TypeRef, ALL_TYPES, SimStruct, SimUnion
 
-from .view import BaseView
-from ..widgets.qtypedef import QCTypeDef
+from ...data.object_container import ObjectContainer
 from ..dialogs.type_editor import CTypeEditor
+from ..widgets.qtypedef import QCTypeDef
+from .view import BaseView
 
-FRUITS = [
-    'mango',
-    'cherry',
-    'banana',
-    'papaya',
-    'apple',
-    'kiwi',
-    'pineapple',
-    'coconut',
-    'peach',
-    'honeydew',
-    'cucumber',
-    'pumpkin',
-    'cantaloupe',
-    'strawberry',
-    'watermelon',
-    'nectarine',
-    'orange',
-]
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.types import TypesStore
+    from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
 
 
 class TypesView(BaseView):
     """
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
     """
+
+    FUNCTION_SPECIFIC_VIEW = True
+
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('types', workspace, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Types'
 
+        self._function = ObjectContainer(None, "Current function")
+        self._function.am_subscribe(self.reload)
+
         self._layout = None  # type: QVBoxLayout
         self._init_widgets()
+
+    #
+    # Properties
+    #
+
+    @property
+    def function(self) -> ObjectContainer:
+        return self._function
+
+    @function.setter
+    def function(self, v):
+        self._function.am_obj = v
+        self._function.am_event()
+
+    @property
+    def current_typestore(self) -> 'TypesStore':
+        if self._function.am_none:
+            return self.workspace.instance.kb.types
+        var_manager: 'VariableManagerInternal' = self.workspace.instance.pseudocode_variable_kb.variables[
+            self._function.addr]
+        return var_manager.types
+
+    #
+    # Other methods
+    #
 
     def _init_widgets(self):
         outer_layout = QVBoxLayout()
@@ -51,9 +68,13 @@ class TypesView(BaseView):
         status_layout = QHBoxLayout()
         status_bar.setLayout(status_layout)
 
-        new_btn = QPushButton("Add Types", self)
+        new_btn = QPushButton("Add types", self)
         new_btn.clicked.connect(self._on_new_type)
         status_layout.addWidget(new_btn)
+
+        global_btn = QPushButton("Persistent types", self)
+        global_btn.clicked.connect(self._on_persistent_types_clicked)
+        status_layout.addWidget(global_btn)
 
         scroll_area.setWidgetResizable(True)
         scroll_contents.setLayout(self._layout)
@@ -75,8 +96,10 @@ class TypesView(BaseView):
                 self._layout.removeWidget(child)
                 child.deleteLater()
 
-        for ty in self.workspace.instance.kb.types.iter_own():
-            widget = QCTypeDef(self._layout.parent(), ty, self.workspace.instance.kb.types)
+        # Load persistent types or function-specific types from types store
+        types_store = self.current_typestore
+        for ty in types_store.iter_own():
+            widget = QCTypeDef(self._layout.parent(), ty, types_store)
             self._layout.insertWidget(self._layout.count() - 1, widget)
 
     def _on_new_type(self):
@@ -89,27 +112,28 @@ class TypesView(BaseView):
         )
         dialog.exec_()
 
+        types_store = self.current_typestore
+
         for name, ty in dialog.result:
             if name is None and type(ty) in (SimStruct, SimUnion) and ty.name != '<anon>':
                 name = ty.name
             if name is None:
-                for fruit in FRUITS:
-                    if fruit not in self.workspace.instance.kb.types:
-                        name = fruit
-                        break
-                else:
-                    name = f'type_{random.randint(0x10000000, 0x100000000):x}'
+                name = types_store.unique_type_name()
             if name.startswith('struct '):
                 name = name[7:]
             elif name.startswith('union '):
                 name = name[6:]
-            if name in self.workspace.instance.kb.types:
+            if name in types_store:
                 if name in ALL_TYPES:
                     QMessageBox.warning(None, "Redefined builtin", f'Type {name} is a builtin and cannot be redefined')
                 else:
-                    self.workspace.instance.kb.types[name].type = ty
+                    types_store[name].type = ty
             else:
                 new_ref = TypeRef(name, ty)
-                self.workspace.instance.kb.types[name] = new_ref
+                types_store[name] = new_ref
 
+        # reload
         self.reload()
+
+    def _on_persistent_types_clicked(self):
+        self.function = None
