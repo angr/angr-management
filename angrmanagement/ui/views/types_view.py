@@ -1,7 +1,7 @@
 import random
 from typing import TYPE_CHECKING
 
-from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox
+from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox, QLabel
 
 from angr.sim_type import TypeRef, ALL_TYPES, SimStruct, SimUnion
 
@@ -30,8 +30,12 @@ class TypesView(BaseView):
         self._function = ObjectContainer(None, "Current function")
         self._function.am_subscribe(self.reload)
 
-        self._layout = None  # type: QVBoxLayout
+        self._layout: QVBoxLayout = None
+        self._caption_label: QLabel = None
         self._init_widgets()
+
+        # display global types by default
+        self.reload()
 
     #
     # Properties
@@ -64,6 +68,9 @@ class TypesView(BaseView):
         scroll_contents = QWidget()
         self._layout = QVBoxLayout()
 
+        self._caption_label = QLabel()
+        outer_layout.addWidget(self._caption_label)
+
         status_bar = QFrame()
         status_layout = QHBoxLayout()
         status_bar.setLayout(status_layout)
@@ -95,6 +102,13 @@ class TypesView(BaseView):
                 self._layout.takeAt(0)
                 self._layout.removeWidget(child)
                 child.deleteLater()
+
+        # update the display
+        if self.function.am_none:
+            self._caption_label.setText("Persistent (global) variable types")
+        else:
+            txt = f"Temporary (local) variable types for function {self.function.addr:#x}"
+            self._caption_label.setText(txt)
 
         # Load persistent types or function-specific types from types store
         types_store = self.current_typestore
