@@ -261,7 +261,7 @@ class QCCodeEdit(api.CodeEdit):
                 # specify the type
                 new_node_type = new_node_type.with_arch(workspace.instance.project.arch)
                 variable_kb.variables[self._code_view.function.addr].variables_with_manual_types.add(node.variable)
-                variable_kb.variables[self._code_view.function.addr].types[node.variable] = new_node_type
+                variable_kb.variables[self._code_view.function.addr].set_variable_type(node.variable, new_node_type)
 
                 self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
