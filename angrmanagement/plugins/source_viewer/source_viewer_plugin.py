@@ -1,11 +1,10 @@
-from PySide2.QtCore import QEvent, Qt
-from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 from collections import defaultdict
 from typing import TYPE_CHECKING
 from sortedcontainers import SortedDict
 
 from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
+from PySide2.QtCore import QEvent, Qt
 
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker
@@ -20,6 +19,7 @@ from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.views import BaseView
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.workspace import Workspace
+from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
@@ -128,7 +128,6 @@ class SourceCodeViewer(CodeEdit):
             jump_menu = menu.addMenu("Jump to")
             for addr in address_list:
                 jump_menu.addAction("0x%x" % addr, lambda addr=addr: self.jump_to(addr))
-        
         menu.exec_(QCursor.pos())
 
     def remove_marker_fn(self, line):
