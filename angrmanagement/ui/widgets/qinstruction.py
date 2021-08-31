@@ -1,6 +1,7 @@
 from typing import List, Optional
 import logging
 
+import PySide2
 from PySide2.QtGui import QPainter, QCursor, QBrush
 from PySide2.QtCore import Qt, QRectF
 from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
@@ -55,6 +56,9 @@ class QInstruction(QCachedGraphicsItem):
         self._height = 0
 
         self._init_widgets()
+
+    def contextMenuEvent(self, event:PySide2.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
+        pass
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if self.workspace.plugins.handle_click_insn(self, event):

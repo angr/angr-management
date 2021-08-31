@@ -4,12 +4,12 @@ import logging
 import PySide2
 
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
-                              QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
-                              QGraphicsSceneMouseEvent, QLabel
-from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent
+    QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
+    QGraphicsSceneMouseEvent, QLabel, QMenu
+from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor
 from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
 
-from .view import BaseView
+from .view import SynchronizedView
 from ..dialogs.jumpto import JumpTo
 from ...utils import is_printable
 from ...config import Conf
@@ -39,8 +39,7 @@ class HexGraphicsObject(QGraphicsObject):
     A graphics item providing a conventional hex-editor interface for a contiguous region of memory.
     """
 
-    cursor_changed = Signal(int)
-    context_menu_requested = Signal()
+    cursor_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -78,9 +77,9 @@ class HexGraphicsObject(QGraphicsObject):
 
         self.cursor_blink_timer: QTimer = QTimer(self)
         self.cursor_blink_timer.timeout.connect(self.toggle_cursor_blink)
-        self.restart_cursor_blink_timer()
         self.show_cursor: bool = True
         self._processing_cursor_update: bool = False
+        self.always_show_cursor: bool = False
 
         self._update_layout()
 
@@ -97,8 +96,19 @@ class HexGraphicsObject(QGraphicsObject):
         Item lost focus.
         """
         self.cursor_blink_timer.stop()
-        self.show_cursor = False
+        self.show_cursor = self.always_show_cursor
+        self.cursor_blink_state = self.always_show_cursor
         self.update()
+
+    def set_always_show_cursor(self, always_show: bool):
+        """
+        Set policy of whether the cursor should always be shown (when focus is lost) or not.
+        """
+        self.always_show_cursor = always_show
+        if not self.cursor_blink_timer.isActive():
+            self.show_cursor = self.always_show_cursor
+            self.cursor_blink_state = self.always_show_cursor
+            self.update()
 
     def _set_data_common(self):
         """
@@ -239,7 +249,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         self.cursor_blink_timer.stop()
         self.cursor_blink_state = True
-        self.cursor_blink_timer.start(1000)
+        self.cursor_blink_timer.start(750)
 
     def update_active_highlight_regions(self):
         """
@@ -276,11 +286,12 @@ class HexGraphicsObject(QGraphicsObject):
         self._processing_cursor_update = True
         if ascii_column is not None:
             self.ascii_column_active = ascii_column
-        self.restart_cursor_blink_timer()
+        if self.hasFocus():
+            self.restart_cursor_blink_timer()
         cursor_changed = self.cursor != addr
+        self.cursor = addr
+        self.cursor_changed.emit()
         if cursor_changed:
-            self.cursor = addr
-            self.cursor_changed.emit(self.cursor)
             self.update_active_highlight_regions()
             self.update()
         self._processing_cursor_update = False
@@ -301,9 +312,6 @@ class HexGraphicsObject(QGraphicsObject):
             else:
                 self.clear_selection()
             self.set_cursor(addr, ascii_column)
-            event.accept()
-        if event.button() == Qt.RightButton:
-            self.context_menu_requested.emit()
             event.accept()
 
     def mouseDoubleClickEvent(self, event:QGraphicsSceneMouseEvent):
@@ -336,7 +344,6 @@ class HexGraphicsObject(QGraphicsObject):
         """
         if event.button() == Qt.LeftButton:
             self.mouse_pressed = False
-            self.set_cursor(self.cursor)
 
     def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
         """
@@ -695,8 +702,7 @@ class HexGraphicsView(QGraphicsView):
     Container view for the HexGraphicsObject.
     """
 
-    cursor_changed = Signal(int)
-    context_menu_requested = Signal()
+    cursor_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -704,7 +710,6 @@ class HexGraphicsView(QGraphicsView):
         self._scene: QGraphicsScene = QGraphicsScene(parent=self)
         self.hex: HexGraphicsObject = HexGraphicsObject()
         self.hex.cursor_changed.connect(self.on_cursor_changed)
-        self.hex.context_menu_requested.connect(self.context_menu_requested.emit)
         self._scene.addItem(self.hex)
         self.setScene(self._scene)
 
@@ -719,13 +724,19 @@ class HexGraphicsView(QGraphicsView):
         self.hex.set_data_callback(mem, addr, size)
         self.setSceneRect(self.scene().itemsBoundingRect())
 
-    def on_cursor_changed(self, addr: HexAddress):
+    def on_cursor_changed(self):
         """
         Handle cursor change events.
         """
-        self.cursor_changed.emit(addr)
-        target = self.sender().addr_to_rect(addr)
-        target.translate(self.sender().pos())
+        self.cursor_changed.emit()
+        self.move_viewport_to_cursor()
+
+    def move_viewport_to_cursor(self):
+        """
+        Ensure cursor is visible in viewport.
+        """
+        target = self.hex.addr_to_rect(self.hex.cursor)
+        target.translate(self.hex.pos())
         current = self.mapToScene(self.viewport().geometry()).boundingRect()
 
         if target.bottomRight().x() > current.bottomRight().x():
@@ -744,7 +755,6 @@ class HexGraphicsView(QGraphicsView):
 
         if dX != 0 or dY != 0:
             self.translate(dX, dY)
-
 
     def adjust_viewport_scale(self, scale: Optional[float] = None):
         """
@@ -798,10 +808,12 @@ class HexGraphicsView(QGraphicsView):
         super().keyPressEvent(event)
 
 
-class HexView(BaseView):
+class HexView(SynchronizedView):
     """
     View and edit memory/object code in classic hex editor format.
     """
+
+    _widgets_initialized: bool = False
 
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('hex', workspace, default_docking_position, *args, **kwargs)
@@ -856,11 +868,35 @@ class HexView(BaseView):
         lyt.addWidget(status_bar)
         self.setLayout(lyt)
 
-    def on_cursor_changed(self, addr:int):
+        self._widgets_initialized = True
+
+    def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
-        Handle updates to cursor
+        Display view context menu.
         """
-        s = 'Address: %08x' % addr
+        mnu = QMenu(self)
+        mnu.addMenu(self.get_synchronize_with_submenu())
+        mnu.exec_(QCursor.pos())
+
+    def set_cursor(self, addr: int):
+        """
+        Move cursor to specific address and clear any active selection.
+        """
+        self.inner_widget.hex.clear_selection()
+        self.inner_widget.hex.set_cursor(addr)
+
+    def on_cursor_changed(self):
+        """
+        Handle updates to cursor.
+        """
+        self.update_status_text()
+        self.set_synchronized_cursor_address(self.inner_widget.hex.cursor)
+
+    def update_status_text(self):
+        """
+        Update status text with current cursor info.
+        """
+        s = 'Address: %08x' % self.inner_widget.hex.cursor
         sel = self.inner_widget.hex.get_selection()
         if sel is not None:
             minaddr, maxaddr = sel
@@ -869,7 +905,7 @@ class HexView(BaseView):
                 s = 'Address: [%08x, %08x], %d bytes selected' % (minaddr, maxaddr, bytes_selected)
         self._status_lbl.setText(s)
 
-    def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
         """
         Handle key events.
         """
@@ -880,9 +916,21 @@ class HexView(BaseView):
         super().keyPressEvent(event)
 
     def popup_jumpto_dialog(self):
+        """
+        Display 'Jump To' dialog.
+        """
         JumpTo(self, parent=self).exec_()
 
-    def jump_to(self, addr:int) -> bool:
-        self.inner_widget.hex.clear_selection()
-        self.inner_widget.hex.set_cursor(addr)
+    def jump_to(self, addr: int) -> bool:
+        """
+        Jump to a specific address.
+        """
+        self.set_cursor(addr)
         return True
+
+    def on_synchronized_view_group_changed(self):
+        """
+        Handle view being added to or removed from the view synchronization group.
+        """
+        if self._widgets_initialized:
+            self.inner_widget.hex.set_always_show_cursor(len(self.sync_state.views) > 1)

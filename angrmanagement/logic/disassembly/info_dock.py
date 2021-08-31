@@ -107,6 +107,8 @@ class InfoDock(QObject):
             self.selected_blocks.am_event()
 
     def select_instruction(self, insn_addr, unique=True, insn_pos=None, use_animation=True):
+        self.disasm_view.set_synchronized_cursor_address(insn_addr)
+
         self.unselect_all_labels()
         if insn_addr not in self.selected_insns:
             if unique:
@@ -158,6 +160,8 @@ class InfoDock(QObject):
             self.selected_operands.am_event()
 
     def select_label(self, label_addr):
+        self.disasm_view.set_synchronized_cursor_address(label_addr)
+
         # only one label can be selected at a time
         # also, clear selection of instructions and operands
         self.unselect_all_instructions()
