@@ -12,6 +12,7 @@ from ...logic import GlobalInfo
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
+from ...data.highlight_region import SynchronizedHighlightRegion
 from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap,\
     QLinearDisassemblyView, DisassemblyLevel
@@ -693,6 +694,17 @@ class DisassemblyView(SynchronizedView):
                     addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
+    def update_highlight_regions_for_synchronized_views(self, **kwargs):  # pylint: disable=unused-argument
+        """
+        Highlight each selected instruction in synchronized views.
+        """
+        regions = []
+        for addr in self.infodock.selected_insns:
+            s = self._get_instruction_size(addr)
+            if s is not None:
+                regions.append(SynchronizedHighlightRegion(addr, s))
+        self.set_synchronized_highlight_regions(regions)
+
     #
     # Initialization
     #
@@ -733,17 +745,15 @@ class DisassemblyView(SynchronizedView):
     def _register_events(self):
         # redraw the current graph if instruction/operand selection changes
         self.infodock.selected_insns.am_subscribe(self.redraw_current_graph)
+        self.infodock.selected_insns.am_subscribe(self.update_highlight_regions_for_synchronized_views)
         self.infodock.selected_operands.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_blocks.am_subscribe(self.redraw_current_graph)
         self.infodock.hovered_block.am_subscribe(self.redraw_current_graph)
         self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
-
-        self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
-
-        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
-
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
+        self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
+        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     #
     # Private methods
@@ -810,3 +820,10 @@ class DisassemblyView(SynchronizedView):
             return next(iter(self.infodock.selected_insns))
         else:
             return None
+
+    def _get_instruction_size(self, addr: int) -> Optional[int]:
+        kb = self.workspace.instance.project.kb
+        f = kb.functions.floor_func(addr)
+        if f is None:
+            return None
+        return f.instruction_size(addr)

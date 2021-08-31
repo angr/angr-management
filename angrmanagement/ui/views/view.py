@@ -1,8 +1,10 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Mapping, Sequence
 
 import PySide2.QtGui
 from PySide2.QtWidgets import QFrame, QMenu, QAction
 from PySide2.QtCore import QSize
+
+from ...data.highlight_region import SynchronizedHighlightRegion
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -68,6 +70,7 @@ class SynchronizedViewState:
     def __init__(self):
         self.views = set()
         self.cursor_address: Optional[int] = None
+        self.highlight_regions: Mapping[SynchronizedView, Sequence[SynchronizedHighlightRegion]] = {}
 
     def register_view(self, view: 'SynchronizedView'):
         """
@@ -81,6 +84,10 @@ class SynchronizedViewState:
         """
         Unregister a synchronized view.
         """
+        rgns = self.highlight_regions.pop(view, None)
+        if rgns is not None:
+            for v in self.views:
+                v.on_synchronized_highlight_regions_changed()
         self.views.remove(view)
         for v in self.views:
             v.on_synchronized_view_group_changed()
@@ -122,13 +129,8 @@ class SynchronizedView(BaseView):
         """
         Update this view to reflect the synchronized view state.
         """
-        assert not self._processing_synchronized_cursor_update
-        self._processing_synchronized_cursor_update = True
-        try:
-            if self.sync_state.cursor_address is not None:
-                self.jump_to(self.sync_state.cursor_address)
-        finally:
-            self._processing_synchronized_cursor_update = False
+        self.on_synchronized_cursor_address_changed()
+        self.on_synchronized_highlight_regions_changed()
 
     def set_synchronized_cursor_address(self, address: Optional[int]):
         """
@@ -144,7 +146,27 @@ class SynchronizedView(BaseView):
         """
         Handle synchronized cursor address change event.
         """
-        self.sync_from_state()
+        assert not self._processing_synchronized_cursor_update
+        self._processing_synchronized_cursor_update = True
+        try:
+            if self.sync_state.cursor_address is not None:
+                self.jump_to(self.sync_state.cursor_address)
+        finally:
+            self._processing_synchronized_cursor_update = False
+
+    def set_synchronized_highlight_regions(self, regions: Sequence[SynchronizedHighlightRegion]):
+        """
+        Set synchronized highlight regions for this view.
+        """
+        self.sync_state.highlight_regions[self] = regions
+        for view in self.sync_state.views:
+            if view is not self:
+                view.on_synchronized_highlight_regions_changed()
+
+    def on_synchronized_highlight_regions_changed(self):
+        """
+        Handle synchronized highlight region change event.
+        """
 
     def on_synchronized_view_group_changed(self):
         """
