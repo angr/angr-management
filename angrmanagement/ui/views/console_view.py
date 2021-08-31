@@ -11,8 +11,12 @@ _l = logging.getLogger(name=__name__)
 
 
 class ConsoleView(BaseView):
+    """
+    Console view providing IPython interactive session.
+    """
+
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super(ConsoleView, self).__init__('console', workspace, default_docking_position, *args, **kwargs)
+        super().__init__('console', workspace, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Console'
         self._ipython_widget = None
@@ -25,7 +29,7 @@ class ConsoleView(BaseView):
         if self._ipython_widget is None:
             return
 
-        import angr, claripy, cle # pylint: disable=import-outside-toplevel
+        import angr, claripy, cle # pylint: disable=import-outside-toplevel,multiple-imports
 
         namespace = {'angr': angr,
                      'claripy': claripy,
@@ -53,12 +57,13 @@ class ConsoleView(BaseView):
             return
         self._ipython_widget.input_buffer = text
 
-    def minimumSizeHint(self, *args, **kwargs): # pylint: disable=unused-argument
+    @staticmethod
+    def minimumSizeHint(*args, **kwargs): # pylint: disable=unused-argument
         return QSize(0, 50)
 
     def _init_widgets(self):
 
-        import angr, claripy, cle # pylint: disable=import-outside-toplevel
+        import angr, claripy, cle # pylint: disable=import-outside-toplevel,multiple-imports
 
         namespace = {
             'angr': angr,

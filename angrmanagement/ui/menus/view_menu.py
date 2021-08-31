@@ -4,24 +4,34 @@ from .menu import Menu, MenuEntry, MenuSeparator
 
 
 class NewViewMenu(Menu):
+    """
+    Sub-menu to construct new Views
+    """
+
     def __init__(self, main_window):
         super().__init__("&New", parent=main_window)
 
         self.entries.extend([
             MenuEntry('&Linear Disassembly', main_window.workspace.create_and_show_linear_disassembly_view),
-            MenuEntry('&Graph Disassembly', main_window.workspace.create_and_show_graph_disassembly_view, shortcut=QKeySequence("Ctrl+N")),
+            MenuEntry('&Graph Disassembly', main_window.workspace.create_and_show_graph_disassembly_view,
+                      shortcut=QKeySequence("Ctrl+N")),
             MenuSeparator(),
             MenuEntry('&Hex', main_window.workspace.create_and_show_hex_view),
         ])
 
 
 class ViewMenu(Menu):
+    """
+    Main View menu
+    """
+
     def __init__(self, main_window):
-        super(ViewMenu, self).__init__("&View", parent=main_window)
+        super().__init__("&View", parent=main_window)
 
         self.entries.extend([
             MenuEntry('Next Tab', main_window.workspace.view_manager.next_tab, shortcut=QKeySequence("Ctrl+Tab")),
-            MenuEntry('Previous Tab', main_window.workspace.view_manager.previous_tab, shortcut=QKeySequence("Ctrl+Shift+Tab")),
+            MenuEntry('Previous Tab', main_window.workspace.view_manager.previous_tab,
+                      shortcut=QKeySequence("Ctrl+Shift+Tab")),
             MenuSeparator(),
             NewViewMenu(main_window),
             MenuSeparator(),

@@ -1,13 +1,14 @@
 from collections import defaultdict
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional
 import logging
 import functools
 
 from PySide2.QtCore import Qt
 
+from angrmanagement.ui.views.view import BaseView
+
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
-from angrmanagement.ui.views.view import BaseView
 
 _l = logging.getLogger(__name__)
 
@@ -59,7 +60,9 @@ class ViewManager:
         self._update_view_index_in_category(view)
         self.views_by_category[view.category].append(view)
 
-        dock = QSmartDockWidget(view.caption, parent=view, on_close=functools.partial(self.remove_view, view), on_raise=functools.partial(self._handle_raise_view, view))
+        dock = QSmartDockWidget(view.caption, parent=view,
+                                on_close=functools.partial(self.remove_view, view),
+                                on_raise=functools.partial(self._handle_raise_view, view))
         dock_area = self.DOCKING_POSITIONS.get(view.default_docking_position, Qt.RightDockWidgetArea)
         if view.default_docking_position == 'center':
             self.main_window.central_widget.addDockWidget(dock_area, dock)
