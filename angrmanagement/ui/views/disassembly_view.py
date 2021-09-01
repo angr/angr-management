@@ -3,6 +3,7 @@ from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
+import PySide2
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
@@ -25,7 +26,7 @@ from ..dialogs.hook import HookDialog
 from ..dialogs.func_doc import FuncDocDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
-from .view import BaseView
+from .view import SynchronizedView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
 from ..widgets.qblock_code import QVariableObj
 from ...ui.widgets.qinst_annotation import QHookAnnotation
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 
-class DisassemblyView(BaseView):
+class DisassemblyView(SynchronizedView):
     """
     Disassembly View
     """
@@ -268,6 +269,21 @@ class DisassemblyView(BaseView):
     # UI
     #
 
+    def append_view_menu_actions(self, menu: QMenu):
+        """
+        Append a separator and general QActions for this view to a given context menu.
+        """
+        menu.addSeparator()
+        menu.addMenu(self.get_synchronize_with_submenu())
+
+    def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
+        """
+        Display view context menu.
+        """
+        mnu = QMenu(self)
+        mnu.addMenu(self.get_synchronize_with_submenu())
+        mnu.exec_(QCursor.pos())
+
     def instruction_context_menu(self, insn, pos):
 
         self._insn_addr_on_context_menu = insn.addr
@@ -275,7 +291,10 @@ class DisassemblyView(BaseView):
         # pass in the instruction address
         self._insn_menu.insn_addr = insn.addr
         # pop up the menu
-        self._insn_menu.qmenu(extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn))).exec_(pos)
+        mnu = self._insn_menu.qmenu(extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn)),
+                                    cached=False)
+        self.append_view_menu_actions(mnu)
+        mnu.exec_(pos)
 
         self._insn_addr_on_context_menu = None
 
@@ -283,7 +302,9 @@ class DisassemblyView(BaseView):
 
         self._label_addr_on_context_menu = addr
         self._label_menu.addr = addr
-        self._label_menu.qmenu().exec_(pos)
+        mnu = self._label_menu.qmenu(cached=False)
+        self.append_view_menu_actions(mnu)
+        mnu.exec_(pos)
         self._label_addr_on_context_menu = None
 
     def rename_selected_object(self):
@@ -318,6 +339,7 @@ class DisassemblyView(BaseView):
         """
         mnu = self.get_context_menu_for_selected_object()
         if mnu is not None:
+            self.append_view_menu_actions(mnu)
             mnu.exec_(QCursor.pos())
 
     def popup_jumpto_dialog(self):
@@ -502,7 +524,6 @@ class DisassemblyView(BaseView):
         self._linear_viewer.refresh()
 
     def display_function(self, function):
-
         self.jump_history.jump_to(function.addr)
         self._display_function(function)
 
@@ -729,6 +750,8 @@ class DisassemblyView(BaseView):
     #
 
     def _display_function(self, the_func):
+        self.set_synchronized_cursor_address(the_func.addr)
+
         self._current_function.am_obj = the_func
         self._current_function.am_event()
 

@@ -53,11 +53,11 @@ class Menu:
                     self.entries if isinstance(ent, MenuEntry))
         return self._keyed_entries.get(key, None)
 
-    def qmenu(self, extra_entries=None):
+    def qmenu(self, extra_entries=None, cached=True):
         if extra_entries is None:
             extra_entries = []
 
-        if not extra_entries and self._qmenu is not None:
+        if cached and not extra_entries and self._qmenu is not None:
             # in order to use the cached result, must not have extra entries
             return self._qmenu
 

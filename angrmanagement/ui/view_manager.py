@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 import logging
 import functools
 
@@ -80,7 +80,7 @@ class ViewManager:
         if retab:
             self.tabify_center_views()
 
-    def remove_view(self, view):
+    def remove_view(self, view: BaseView):
         """
         Remove a view from this workspace
 
@@ -116,7 +116,7 @@ class ViewManager:
         if retab:
             self.tabify_center_views()
 
-    def raise_view(self, view):
+    def raise_view(self, view: BaseView):
         """
         Find the dock widget of a view, and then bring that dock widget to front.
 
@@ -133,7 +133,7 @@ class ViewManager:
         dock.raise_()
         view.focusWidget()
 
-    def get_center_views(self):
+    def get_center_views(self) -> Sequence[QSmartDockWidget]:
         """
         Get the right dockable views
 
@@ -147,7 +147,7 @@ class ViewManager:
                     docks.append(dock)
         return docks
 
-    def first_view_in_category(self, category) -> Optional['BaseView']:
+    def first_view_in_category(self, category: str) -> Optional['BaseView']:
         """
         Return the first view in a specific category.
 
@@ -159,7 +159,7 @@ class ViewManager:
             return self.views_by_category[category][0]
         return None
 
-    def current_view_in_category(self, category) -> Optional['BaseView']:
+    def current_view_in_category(self, category: str) -> Optional['BaseView']:
         """
         Return the current in a specific category.
 
@@ -181,12 +181,11 @@ class ViewManager:
 
         :return:    None
         """
-
         center_dockable_views = self.get_center_views()
         for d0, d1 in zip(center_dockable_views, center_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
 
-    def get_current_tab_id(self):
+    def get_current_tab_id(self) -> int:
         """
         Get Current Tab ID
 
@@ -225,13 +224,13 @@ class ViewManager:
         center_dockable_views[self.get_current_tab_id()-1].raise_()
 
     @property
-    def current_tab(self):
+    def current_tab(self) -> BaseView:
         return self.get_center_views()[self.get_current_tab_id()].widget()
 
-    def _handle_raise_view(self, view):
+    def _handle_raise_view(self, view: BaseView):
         self.workspace.plugins.handle_raise_view(view)
 
-    def handle_center_tab_click(self, index):
+    def handle_center_tab_click(self, index: int):
         center_docks = self.get_center_views()
         dock = center_docks[index]
         view = self.dock_to_view[dock]
