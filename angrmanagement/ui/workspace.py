@@ -55,16 +55,16 @@ class Workspace:
                 DependencyView(self, 'center')
             )
         self.default_tabs += [
-            SymexecView(self, 'center'),
-            StatesView(self, 'center'),
             StringsView(self, 'center'),
             PatchesView(self, 'center'),
+            SymexecView(self, 'center'),
+            StatesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
         ]
 
         for tab in self.default_tabs:
-            self.add_view(tab, tab.caption, tab.category)
+            self.add_view(tab)
 
     #
     # Properties
@@ -163,31 +163,20 @@ class Workspace:
     # Public methods
     #
 
-    def new_disassembly_view(self):
+    def new_disassembly_view(self) -> DisassemblyView:
         """
-        Add a new disassembly view into the
-        central_widget with a unique id
-
-        :return:    None
+        Add a new disassembly view.
         """
-
-        dis_views = self.view_manager.views_by_category['disassembly']
-        dis_ids = [view.index for view in dis_views]
-        dis_ids.sort()
-        missing_ids = sorted(set(range(dis_ids[0], dis_ids[-1])) - set(dis_ids))
         new_view = DisassemblyView(self, 'center')
-        if missing_ids:
-            new_view.index = missing_ids[0]
-        else:
-            new_view.index = dis_ids[-1]+1
-        self.add_view(new_view, new_view.caption, new_view.category)
+        self.add_view(new_view)
         self.raise_view(new_view)
         if self.instance.binary_path is not None:
             self.on_cfg_generated()
         # TODO move new_view tab to front of dock
+        return new_view
 
-    def add_view(self, view, caption, category):
-        self.view_manager.add_view(view, caption, category)
+    def add_view(self, view):
+        self.view_manager.add_view(view)
 
     def remove_view(self, view):
         self.view_manager.remove_view(view)
@@ -348,6 +337,40 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def create_and_show_linear_disassembly_view(self):
+        """
+        Create a new disassembly view and select the Linear disassembly mode.
+        """
+        view = self.new_disassembly_view()
+        view.display_linear_viewer()
+        self.raise_view(view)
+        view.setFocus()
+
+    def create_and_show_graph_disassembly_view(self):
+        """
+        Create a new disassembly view and select the Graph disassembly mode.
+        """
+        view = self.new_disassembly_view()
+        view.display_disasm_graph()
+        self.raise_view(view)
+        view.setFocus()
+
+    def create_and_show_hex_view(self):
+        """
+        Create and show a new hex view.
+        """
+        view = self._create_hex_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_pseudocode_view(self):
+        """
+        Create code view if it does not exist, then show code view.
+        """
+        view = self._get_or_create_pseudocode_view()
+        self.raise_view(view)
+        view.setFocus()
+
     def show_hex_view(self):
         view = self._get_or_create_hex_view()
         self.raise_view(view)
@@ -398,26 +421,29 @@ class Workspace:
     #
 
     def _get_or_create_disassembly_view(self) -> DisassemblyView:
-        # Take the first disassembly view
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            view = self.view_manager.first_view_in_category('disassembly')
-        else:
-            view = self.view_manager.current_view_in_category('disassembly')
-
+        view = self.view_manager.current_view_in_category('disassembly')
         if view is None:
-            # Create a new disassembly view
+            view = self.view_manager.first_view_in_category('disassembly')
+        if view is None:
             view = DisassemblyView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
             view.reload()
 
         return view
 
-    def _get_or_create_hex_view(self):
+    def _create_hex_view(self) -> HexView:
+        """
+        Create a new hex view.
+        """
+        view = HexView(self, 'center')
+        self.add_view(view)
+        return view
+
+    def _get_or_create_hex_view(self) -> HexView:
         view = self.view_manager.first_view_in_category('hex')
 
         if view is None:
-            view = HexView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            view = self._create_hex_view()
 
         return view
 
@@ -428,7 +454,7 @@ class Workspace:
         if view is None:
             # Create a new pseudo-code view
             view = CodeView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -439,7 +465,7 @@ class Workspace:
         if view is None:
             # Create a new symexec view
             view = SymexecView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -450,7 +476,7 @@ class Workspace:
         if view is None:
             # Create a new states view
             view = StatesView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -461,7 +487,7 @@ class Workspace:
         if view is None:
             # Create a new states view
             view = StringsView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -472,7 +498,7 @@ class Workspace:
         if view is None:
             # Create a new states view
             view = PatchesView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -481,7 +507,7 @@ class Workspace:
         if view is None:
             # Create a new interaction view
             view = InteractionView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
         return view
 
     def _get_or_create_types_view(self):
@@ -489,7 +515,7 @@ class Workspace:
         if view is None:
             # Create a new interaction view
             view = TypesView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
         return view
 
     def _get_or_create_proximity_view(self) -> ProximityView:
@@ -499,7 +525,7 @@ class Workspace:
         if view is None:
             # Create a new proximity view
             view = ProximityView(self, 'center')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -510,7 +536,7 @@ class Workspace:
         if view is None:
             # Create a new console view
             view = ConsoleView(self, 'bottom')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 
@@ -521,7 +547,7 @@ class Workspace:
         if view is None:
             # Create a new functions view
             view = FunctionsView(self, 'left')
-            self.add_view(view, view.caption, view.category)
+            self.add_view(view)
 
         return view
 

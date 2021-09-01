@@ -21,7 +21,8 @@ class BaseView(QFrame):
         self.old_height = None
         self.width_hint = -1
         self.height_hint = -1
-        self.index = 1
+        self.index: int = 1
+        self.base_caption: str = 'View'
 
     def focus(self):
         self.workspace.view_manager.raise_view(self)
@@ -50,4 +51,7 @@ class BaseView(QFrame):
 
     @property
     def caption(self):
-        return f'{self.base_caption}-{self.index}'
+        s = self.base_caption
+        if self.index > 1:
+            s += f'-{self.index}'
+        return s

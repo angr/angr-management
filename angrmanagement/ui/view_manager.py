@@ -1,14 +1,14 @@
 from collections import defaultdict
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional
 import logging
 import functools
 
 from PySide2.QtCore import Qt
 
+from angrmanagement.ui.views.view import BaseView
+
 from .widgets.qsmart_dockwidget import QSmartDockWidget
 
-if TYPE_CHECKING:
-    from angrmanagement.ui.views.view import BaseView
 
 _l = logging.getLogger(__name__)
 
@@ -38,19 +38,31 @@ class ViewManager:
     def main_window(self):
         return self.workspace._main_window
 
-    def add_view(self, view, caption, category):
+    def _update_view_index_in_category(self, view: BaseView):
+        """
+        Set lowest available index value in category for a view not yet added.
+        """
+        existing_views = self.views_by_category[view.category]
+        if view in existing_views:
+            return
+        existing_ids = {view.index for view in existing_views}
+        max_id = max(existing_ids) if existing_ids else 0
+        candidates = set(range(1, max_id + 2)) - existing_ids
+        view.index = min(candidates)
+
+    def add_view(self, view: BaseView):
         """
         Add a view to this workspace.
 
         :param view:            The view to add.
-        :param str caption:     The caption of the view.
-        :param str category:    The category of the view.
         :return:                None
         """
+        self._update_view_index_in_category(view)
+        self.views_by_category[view.category].append(view)
 
-        self.views_by_category[category].append(view)
-
-        dock = QSmartDockWidget(caption, parent=view, on_close=functools.partial(self.remove_view, view), on_raise=functools.partial(self._handle_raise_view, view))
+        dock = QSmartDockWidget(view.caption, parent=view,
+                                on_close=functools.partial(self.remove_view, view),
+                                on_raise=functools.partial(self._handle_raise_view, view))
         dock_area = self.DOCKING_POSITIONS.get(view.default_docking_position, Qt.RightDockWidgetArea)
         if view.default_docking_position == 'center':
             self.main_window.central_widget.addDockWidget(dock_area, dock)
@@ -154,8 +166,10 @@ class ViewManager:
         :param str category:    The category of the view.
         :return:                The view.
         """
-
-        current = self.get_center_views()[self.get_current_tab_id()]
+        center_views = self.get_center_views()
+        if len(center_views) == 0:
+            return None
+        current = center_views[self.get_current_tab_id()]
         view = self.dock_to_view[current]
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
