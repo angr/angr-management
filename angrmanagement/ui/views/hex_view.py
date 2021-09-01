@@ -204,11 +204,15 @@ class HexGraphicsObject(QGraphicsObject):
         Get rect for address `addr` in whichever section is currently active.
         """
         if self.ascii_column_active:
-            pt = self.addr_to_point(addr, True)
-            return QRectF(pt, QSizeF(self.byte_width, self.row_height))
+            column_width = self.ascii_width
+            column_space = self.ascii_space
         else:
-            pt = self.addr_to_point(addr, False)
-            return QRectF(pt, QSizeF(self.ascii_width, self.row_height))
+            column_width = self.byte_width
+            column_space = self.byte_space
+
+        pt = self.addr_to_point(addr, self.ascii_column_active)
+        pt.setX(pt.x() - column_space / 2)
+        return QRectF(pt, QSizeF(column_width + column_space, self.row_height))
 
     def row_to_addr(self, row: int) -> int:
         """
@@ -739,7 +743,9 @@ class HexGraphicsView(QGraphicsView):
         """
         target = self.hex.addr_to_rect(self.hex.cursor)
         target.translate(self.hex.pos())
-        current = self.mapToScene(self.viewport().geometry()).boundingRect()
+        vp_rect = self.viewport().geometry()
+        vp_rect.moveTo(0, 0)
+        current = self.mapToScene(vp_rect).boundingRect()
 
         if target.bottomRight().x() > current.bottomRight().x():
             dX = current.bottomRight().x() - target.bottomRight().x()  # Scroll right
