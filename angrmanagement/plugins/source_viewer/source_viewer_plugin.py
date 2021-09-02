@@ -294,8 +294,4 @@ class SourceViewerPlugin(BasePlugin):
         super().__init__(workspace)
         self.source_viewer = SourceViewer(workspace, "center")
         workspace.default_tabs += [self.source_viewer]
-        workspace.add_view(
-            self.source_viewer,
-            self.source_viewer.caption,
-            self.source_viewer.category,
-        )
+        workspace.add_view(self.source_viewer)

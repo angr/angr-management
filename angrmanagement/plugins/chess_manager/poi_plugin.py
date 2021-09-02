@@ -36,7 +36,7 @@ class POIViewer(BasePlugin):
         self._diagnose_handler = DiagnoseHandler()
 
         self.poi_view = POIView(self.workspace, "right", self._diagnose_handler)
-        self.workspace.add_view(self.poi_view, self.poi_view.caption, self.poi_view.category)
+        self.workspace.add_view(self.poi_view)
         self._views.append(self.poi_view)
 
         self.multi_poi.am_subscribe(self._on_poi_selected)

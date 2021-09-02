@@ -27,7 +27,7 @@ class BinsyncPlugin(BasePlugin):
         # init the Sync View on load
         self.controller = BinsyncController(self.workspace)
         self.info_view = InfoView(workspace, 'right', self.controller)
-        self.workspace.add_view(self.info_view, self.info_view.caption, self.info_view.category)
+        self.workspace.add_view(self.info_view)
         self.controller.info_panel = self.info_view
 
         self.sync_menu = None

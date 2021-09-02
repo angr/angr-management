@@ -21,7 +21,7 @@ class ComponentsPlugin(BasePlugin):
             self.view: ComponentsView = ComponentsView(self.workspace, "left")
 
             # register a new view
-            self.workspace.view_manager.add_view(self.view, self.view.caption, self.view.category)
+            self.workspace.view_manager.add_view(self.view)
 
     def teardown(self):
         pass

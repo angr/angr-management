@@ -141,11 +141,7 @@ class InteractionConsole(BasePlugin):
 
         self.console_view = ConsoleView(self.workspace, "center")
         self.workspace.default_tabs += [self.console_view]
-        self.workspace.add_view(
-            self.console_view,
-            self.console_view.caption,
-            self.console_view.category,
-        )
+        self.workspace.add_view(self.console_view)
 
 
     def teardown(self):
