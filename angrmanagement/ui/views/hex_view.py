@@ -85,7 +85,7 @@ class HexGraphicsObject(QGraphicsObject):
 
         self._update_layout()
 
-    def focusInEvent(self, event:PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
+    def focusInEvent(self, event: PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
         """
         Item receives focus.
         """
@@ -93,7 +93,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.restart_cursor_blink_timer()
         self.update()
 
-    def focusOutEvent(self, event:PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
+    def focusOutEvent(self, event: PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
         """
         Item lost focus.
         """
@@ -320,7 +320,7 @@ class HexGraphicsObject(QGraphicsObject):
             self.set_cursor(addr, ascii_column)
             event.accept()
 
-    def mouseDoubleClickEvent(self, event:QGraphicsSceneMouseEvent):
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
         """
         Handle mouse double-click events (e.g. update selection)
         """
@@ -351,7 +351,7 @@ class HexGraphicsObject(QGraphicsObject):
         if event.button() == Qt.LeftButton:
             self.mouse_pressed = False
 
-    def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
         """
         Handle key press events (e.g. moving cursor around).
         """
@@ -506,7 +506,7 @@ class HexGraphicsObject(QGraphicsObject):
         spath.closeSubpath()
         return spath
 
-    def get_value_for_addr(self, addr:int) -> Union[int, str]:
+    def get_value_for_addr(self, addr: int) -> Union[int, str]:
         """
         Get the value for given address `addr`.
         """
@@ -778,7 +778,7 @@ class HexGraphicsView(QGraphicsView):
         delta = new_pos - old_pos
         self.translate(delta.x(), delta.y())
 
-    def wheelEvent(self, event:QWheelEvent):
+    def wheelEvent(self, event: QWheelEvent):
         """
         Handle wheel events, specifically for changing font size when holding Ctrl key.
         """
@@ -796,7 +796,7 @@ class HexGraphicsView(QGraphicsView):
             self.setBackgroundBrush(Conf.palette_base)
             self.update()
 
-    def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
         """
         Handle key events.
         """
