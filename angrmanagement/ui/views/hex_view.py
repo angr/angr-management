@@ -603,10 +603,10 @@ class HexGraphicsObject(QGraphicsObject):
 
             def set_pen_brush_for_active_selection(active):
                 if active:
-                    painter.setPen(QPen(Qt.red, pen_width))
+                    painter.setPen(QPen(Conf.hex_view_selection_color, pen_width))
                     painter.setBrush(QColor(255, 255, 255, 10))
                 else:
-                    painter.setPen(QPen(Qt.gray, pen_width))
+                    painter.setPen(QPen(Conf.hex_view_selection_alt_color, pen_width))
                     painter.setBrush(QColor(255, 255, 255, 10))
 
             set_pen_brush_for_active_selection(not self.ascii_column_active)
@@ -995,11 +995,11 @@ class HexView(SynchronizedView):
             return regions
 
         if isinstance(item, MemoryData):
-            color = Qt.cyan if item.sort == 'string' else Qt.blue
+            color = Conf.hex_view_string_color if item.sort == 'string' else Conf.hex_view_data_color
             regions.append(HexHighlightRegion(color, item.addr, item.size))
         elif isinstance(item, Block):
             for insn in item.disassembly.insns:
-                regions.append(HexHighlightRegion(Qt.magenta, insn.address, insn.size))
+                regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size))
 
         return regions
 
