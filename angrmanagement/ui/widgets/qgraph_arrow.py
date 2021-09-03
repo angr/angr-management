@@ -6,17 +6,18 @@ from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroke
 from PySide2.QtCore import QPointF, Qt
 
 from ...utils.edge import EdgeSort
+from ...config import Conf
 
 if TYPE_CHECKING:
     from ..views.dep_view import DependencyView
 
 
 EDGE_COLORS = {
-    EdgeSort.BACK_EDGE: QColor(0xf9, 0xd5, 0x77),  # Honey
-    EdgeSort.TRUE_BRANCH: QColor(0x79, 0xcc, 0xcd),  # Agar
-    EdgeSort.FALSE_BRANCH: QColor(0xf1, 0x66, 0x64),  # Tomato
-    EdgeSort.DIRECT_JUMP: QColor(0x56, 0x5a, 0x5c),  # Dark gray
-    EdgeSort.EXCEPTION_EDGE: QColor(0xf9, 0x91, 0x0a),  # Dark orange
+    EdgeSort.BACK_EDGE: 'disasm_view_back_edge_color',
+    EdgeSort.TRUE_BRANCH: 'disasm_view_true_edge_color',
+    EdgeSort.FALSE_BRANCH: 'disasm_view_false_edge_color',
+    EdgeSort.DIRECT_JUMP: 'disasm_view_direct_jump_edge_color',
+    EdgeSort.EXCEPTION_EDGE: 'disasm_view_exception_edge_color',
 }
 
 EDGE_STYLES = {
@@ -37,7 +38,7 @@ class QGraphArrow(QGraphicsItem):
         self.end = self.coords[-1]
         self.start = self.coords[0]
 
-        self.color = EDGE_COLORS.get(self.edge.sort, EDGE_COLORS[EdgeSort.DIRECT_JUMP])
+        self.color = getattr(Conf, EDGE_COLORS.get(self.edge.sort, EDGE_COLORS[EdgeSort.DIRECT_JUMP]))
         self.arrow = self._make_arrow(arrow_location, arrow_direction)
         self.style = EDGE_STYLES.get(self.edge.sort, EDGE_STYLES[EdgeSort.DIRECT_JUMP])
         self.path = self._make_path()
