@@ -1,7 +1,7 @@
 from typing import List
 
 from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtCore import Qt, QRectF
+from PySide2.QtCore import QRectF
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
@@ -52,7 +52,7 @@ class QUnknownBlock(QCachedGraphicsItem):
         # Address
         self._addr_text = "%08x" % self.addr
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
-        self._addr_item.setBrush(Qt.black)
+        self._addr_item.setBrush(Conf.disasm_view_node_address_color)
         self._addr_item.setFont(Conf.disasm_font)
 
         # Bytes
@@ -64,19 +64,19 @@ class QUnknownBlock(QCachedGraphicsItem):
                 if i > 0 and (i + 1) % 16 == 0:
                     o = QGraphicsSimpleTextItem(line, self)
                     o.setFont(Conf.disasm_font)
-                    o.setBrush(Qt.black)
+                    o.setBrush(Conf.disasm_view_unprintable_byte_color)
                     self._byte_lines.append(o)
                     line = ""
 
             if line:
                 o = QGraphicsSimpleTextItem(line, self)
                 o.setFont(Conf.disasm_font)
-                o.setBrush(Qt.black)
+                o.setBrush(Conf.disasm_view_unprintable_byte_color)
                 self._byte_lines.append(o)
 
         else:
             o = QGraphicsSimpleTextItem(QUnknownBlock.DEFAULT_TEXT, self)
-            o.setBrush(Qt.black)
+            o.setBrush(Conf.disasm_view_unprintable_byte_color)
             o.setFont(Conf.disasm_font)
             self._byte_lines.append(o)
 

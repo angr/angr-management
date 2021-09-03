@@ -99,7 +99,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         # address
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
         self._addr_item.setFont(Conf.disasm_font)
-        self._addr_item.setBrush(Qt.black)  # TODO: Expose it as a configuration entry in Conf
+        self._addr_item.setBrush(Conf.disasm_view_node_address_color)
 
         # label
         self._init_label_item()
@@ -114,7 +114,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         if lbl_text:
             self._label_item = QGraphicsSimpleTextItem(lbl_text, self)
             self._label_item.setFont(Conf.code_font)
-            self._label_item.setBrush(Qt.blue)  # TODO: Expose it as a configuration entry in Conf
+            self._label_item.setBrush(Conf.disasm_view_label_color)
         else:
             if self._label_item is not None:
                 self._label_item.setParentItem(None)
@@ -162,7 +162,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         # address
         addr_text = "%08x" % addr
         addr_item = QGraphicsSimpleTextItem(addr_text, self)
-        addr_item.setBrush(Qt.black)
+        addr_item.setBrush(Conf.disasm_view_node_address_color)
         addr_item.setFont(Conf.disasm_font)
 
         # draw each byte
