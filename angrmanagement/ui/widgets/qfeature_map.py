@@ -1,8 +1,8 @@
 
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QSizePolicy, QGraphicsSceneMouseEvent
-from PySide2.QtGui import QPaintEvent, QPainter, QBrush, QPen, QPolygonF
+from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsSceneMouseEvent
+from PySide2.QtGui import QBrush, QPen, QPolygonF
 from PySide2.QtCore import Qt, QRectF, QSize, QPointF
 
 import cle
