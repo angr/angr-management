@@ -1,7 +1,6 @@
+from PySide2.QtCore import QObject, Signal
 
 from ...data.object_container import ObjectContainer
-
-from PySide2.QtCore import QObject, Signal
 
 
 class OperandHighlightMode:
@@ -42,7 +41,6 @@ class InfoDock(QObject):
         self.hovered_block = ObjectContainer(None, 'The currently hovered block')
         self.hovered_edge = ObjectContainer(None, 'The currently hovered edge')
         self.selected_labels = ObjectContainer(set(), 'The currently selected labels')
-
         self.selected_qblock_code_obj = None
 
     @property

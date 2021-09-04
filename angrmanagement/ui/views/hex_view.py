@@ -2,12 +2,14 @@ from typing import Sequence, Union, Optional, Tuple, Callable
 import logging
 
 import PySide2
-
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
     QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
-    QGraphicsSceneMouseEvent, QLabel, QMenu
+    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction
 from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor
 from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
+
+from angr import Block
+from angr.knowledge_plugins.cfg import MemoryData
 
 from .view import SynchronizedView
 from ..dialogs.jumpto import JumpTo
@@ -83,7 +85,7 @@ class HexGraphicsObject(QGraphicsObject):
 
         self._update_layout()
 
-    def focusInEvent(self, event:PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
+    def focusInEvent(self, event: PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
         """
         Item receives focus.
         """
@@ -91,7 +93,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.restart_cursor_blink_timer()
         self.update()
 
-    def focusOutEvent(self, event:PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
+    def focusOutEvent(self, event: PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
         """
         Item lost focus.
         """
@@ -202,11 +204,15 @@ class HexGraphicsObject(QGraphicsObject):
         Get rect for address `addr` in whichever section is currently active.
         """
         if self.ascii_column_active:
-            pt = self.addr_to_point(addr, True)
-            return QRectF(pt, QSizeF(self.byte_width, self.row_height))
+            column_width = self.ascii_width
+            column_space = self.ascii_space
         else:
-            pt = self.addr_to_point(addr, False)
-            return QRectF(pt, QSizeF(self.ascii_width, self.row_height))
+            column_width = self.byte_width
+            column_space = self.byte_space
+
+        pt = self.addr_to_point(addr, self.ascii_column_active)
+        pt.setX(pt.x() - column_space / 2)
+        return QRectF(pt, QSizeF(column_width + column_space, self.row_height))
 
     def row_to_addr(self, row: int) -> int:
         """
@@ -314,7 +320,7 @@ class HexGraphicsObject(QGraphicsObject):
             self.set_cursor(addr, ascii_column)
             event.accept()
 
-    def mouseDoubleClickEvent(self, event:QGraphicsSceneMouseEvent):
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
         """
         Handle mouse double-click events (e.g. update selection)
         """
@@ -345,7 +351,7 @@ class HexGraphicsObject(QGraphicsObject):
         if event.button() == Qt.LeftButton:
             self.mouse_pressed = False
 
-    def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
         """
         Handle key press events (e.g. moving cursor around).
         """
@@ -500,7 +506,7 @@ class HexGraphicsObject(QGraphicsObject):
         spath.closeSubpath()
         return spath
 
-    def get_value_for_addr(self, addr:int) -> Union[int, str]:
+    def get_value_for_addr(self, addr: int) -> Union[int, str]:
         """
         Get the value for given address `addr`.
         """
@@ -597,10 +603,10 @@ class HexGraphicsObject(QGraphicsObject):
 
             def set_pen_brush_for_active_selection(active):
                 if active:
-                    painter.setPen(QPen(Qt.red, pen_width))
+                    painter.setPen(QPen(Conf.hex_view_selection_color, pen_width))
                     painter.setBrush(QColor(255, 255, 255, 10))
                 else:
-                    painter.setPen(QPen(Qt.gray, pen_width))
+                    painter.setPen(QPen(Conf.hex_view_selection_alt_color, pen_width))
                     painter.setBrush(QColor(255, 255, 255, 10))
 
             set_pen_brush_for_active_selection(not self.ascii_column_active)
@@ -737,7 +743,9 @@ class HexGraphicsView(QGraphicsView):
         """
         target = self.hex.addr_to_rect(self.hex.cursor)
         target.translate(self.hex.pos())
-        current = self.mapToScene(self.viewport().geometry()).boundingRect()
+        vp_rect = self.viewport().geometry()
+        vp_rect.moveTo(0, 0)
+        current = self.mapToScene(vp_rect).boundingRect()
 
         if target.bottomRight().x() > current.bottomRight().x():
             dX = current.bottomRight().x() - target.bottomRight().x()  # Scroll right
@@ -770,7 +778,7 @@ class HexGraphicsView(QGraphicsView):
         delta = new_pos - old_pos
         self.translate(delta.x(), delta.y())
 
-    def wheelEvent(self, event:QWheelEvent):
+    def wheelEvent(self, event: QWheelEvent):
         """
         Handle wheel events, specifically for changing font size when holding Ctrl key.
         """
@@ -788,7 +796,7 @@ class HexGraphicsView(QGraphicsView):
             self.setBackgroundBrush(Conf.palette_base)
             self.update()
 
-    def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
         """
         Handle key events.
         """
@@ -818,11 +826,14 @@ class HexView(SynchronizedView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('hex', workspace, default_docking_position, *args, **kwargs)
         self.base_caption: str = 'Hex'
+        self.smart_highlighting_enabled: bool = True
+        self._cfb_highlights: Sequence[HexHighlightRegion] = []
+        self._sync_view_highlights: Sequence[HexHighlightRegion] = []
         self._init_widgets()
         self.reload_cfb()
         self.workspace.instance.cfb.am_subscribe(self.reload_cfb)
 
-    def project_memory_read_func(self, addr:int) -> HexByteValue:
+    def project_memory_read_func(self, addr: int) -> HexByteValue:
         """
         Callback to populate hex view with bytes.
         """
@@ -849,17 +860,41 @@ class HexView(SynchronizedView):
 
         self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
 
+    def set_smart_highlighting_enabled(self, enable: bool):
+        """
+        Control whether smart highlighting is enabled or not.
+        """
+        self.smart_highlighting_enabled = enable
+        self._update_highlight_regions_under_cursor()
+
     def _init_widgets(self):
+        """
+        Initialize widgets for this view.
+        """
         window = QMainWindow()
         window.setWindowFlags(Qt.Widget)
 
         status_bar = QFrame()
         status_lyt = QHBoxLayout()
+        status_lyt.setContentsMargins(0, 0, 0, 0)
+
         self._status_lbl = QLabel()
         self._status_lbl.setText('Address: ')
+
         status_lyt.addWidget(self._status_lbl)
         status_lyt.addStretch(0)
-        status_lyt.setContentsMargins(0, 0, 0, 0)
+
+        option_btn = QPushButton()
+        option_btn.setText('Options')
+        option_mnu = QMenu(self)
+        smart_hl_act = QAction('Smart &highlighting', self)
+        smart_hl_act.setCheckable(True)
+        smart_hl_act.setChecked(self.smart_highlighting_enabled)
+        smart_hl_act.toggled.connect(self.set_smart_highlighting_enabled)
+        option_mnu.addAction(smart_hl_act)
+        option_btn.setMenu(option_mnu)
+        status_lyt.addWidget(option_btn)
+
         status_bar.setLayout(status_lyt)
 
         self.inner_widget = HexGraphicsView(parent=self)
@@ -890,6 +925,7 @@ class HexView(SynchronizedView):
         Handle updates to cursor.
         """
         self.update_status_text()
+        self._update_highlight_regions_under_cursor()
         self.set_synchronized_cursor_address(self.inner_widget.hex.cursor)
 
     def update_status_text(self):
@@ -934,3 +970,71 @@ class HexView(SynchronizedView):
         """
         if self._widgets_initialized:
             self.inner_widget.hex.set_always_show_cursor(len(self.sync_state.views) > 1)
+
+    def on_synchronized_highlight_regions_changed(self):
+        """
+        Handle synchronized highlight region change event.
+        """
+        self._update_highlight_regions_from_synchronized_views()
+
+    def _generate_highlight_regions_under_cursor(self) -> Sequence[HexHighlightRegion]:
+        """
+        Generate list of highlighted regions from CFB under cursor.
+        """
+        regions = []
+
+        try:
+            item = self.workspace.instance.cfb.floor_item(self.inner_widget.hex.cursor)
+        except KeyError:
+            item = None
+        if item is None:
+            return regions
+
+        addr, item = item
+        if self.inner_widget.hex.cursor >= (addr + item.size):
+            return regions
+
+        if isinstance(item, MemoryData):
+            color = Conf.hex_view_string_color if item.sort == 'string' else Conf.hex_view_data_color
+            regions.append(HexHighlightRegion(color, item.addr, item.size))
+        elif isinstance(item, Block):
+            for insn in item.disassembly.insns:
+                regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size))
+
+        return regions
+
+    def _update_highlight_regions_under_cursor(self):
+        """
+        Update cached list of highlight regions under cursor.
+        """
+        self._cfb_highlights = []
+        if self.smart_highlighting_enabled:
+            self._cfb_highlights.extend(self._generate_highlight_regions_under_cursor())
+        self._set_highlighted_regions()
+
+    def _generate_highlight_regions_from_synchronized_views(self) -> Sequence[HexHighlightRegion]:
+        """
+        Generate list of highlighted regions from any synchronized views.
+        """
+        regions = []
+        for v in self.sync_state.highlight_regions:
+            if v is not self:
+                for r in self.sync_state.highlight_regions[v]:
+                    regions.append(HexHighlightRegion(Qt.green, r.addr, r.size))
+        return regions
+
+    def _update_highlight_regions_from_synchronized_views(self):
+        """
+        Update cached list of highlight regions from synchronized views.
+        """
+        self._sync_view_highlights = self._generate_highlight_regions_from_synchronized_views()
+        self._set_highlighted_regions()
+
+    def _set_highlighted_regions(self):
+        """
+        Update highlighted regions, with data from CFB and synchronized views.
+        """
+        regions = []
+        regions.extend(self._cfb_highlights)
+        regions.extend(self._sync_view_highlights)
+        self.inner_widget.hex.set_highlight_regions(regions)
