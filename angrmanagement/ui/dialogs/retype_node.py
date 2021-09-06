@@ -1,9 +1,12 @@
 from typing import Optional, TYPE_CHECKING
 
+from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget
+
+import pycparser
+
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CConstruct
 import angr
-import pycparser
 
 
 if TYPE_CHECKING:
@@ -60,6 +63,7 @@ class RetypeNode(QDialog):
         self._ok_button: QPushButton = None
 
         self.setWindowTitle('Specify a type')
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.main_layout = QVBoxLayout()
 

@@ -193,8 +193,7 @@ class QCCodeEdit(api.CodeEdit):
             # setting the type
             if isinstance(node, (CVariable, )):
                 # find existing type
-                node_type = None
-                self.retype_node(node=node, node_type=node_type)
+                self.retype_node(node=node, node_type=node.variable_type)
             return True
         if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
