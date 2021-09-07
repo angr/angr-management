@@ -13,6 +13,7 @@ import cle
 import z3
 import zmq
 import parso
+import debugpy
 
 if sys.platform == "linux":
     import archr
@@ -61,6 +62,7 @@ def make_common_options(for_chess=False):
         (os.path.join(os.path.dirname(parso.__file__), "python"), "parso/python"),
         (os.path.join(am_repo_dir, "flirt_signatures"), "flirt_signatures"),
         (os.path.join(am_repo_dir, "library_docs"), "library_docs"),
+        (os.path.join(os.path.dirname(debugpy.__file__), "_vendored"), "debugpy/_vendored"),
     ]
     if sys.platform == "linux":
         included_data.append(
@@ -102,6 +104,7 @@ def make_common_options(for_chess=False):
         "--hidden-import=sqlalchemy.sql.default_comparator",
         "--hidden-import=pyxdg",
         "--hidden-import=pyzmq",
+        "--hidden-import=xmlrpc.server"
     ]
     if for_chess:
         hidden_import.append("--hidden-import=slacrs")
