@@ -166,10 +166,11 @@ class ViewManager:
         :param str category:    The category of the view.
         :return:                The view.
         """
-        center_views = self.get_center_views()
-        if len(center_views) == 0:
+        current_tab_id = self.get_current_tab_id()
+        if current_tab_id is None:
             return None
-        current = center_views[self.get_current_tab_id()]
+
+        current = self.get_center_views()[current_tab_id]
         view = self.dock_to_view[current]
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
@@ -185,18 +186,18 @@ class ViewManager:
         for d0, d1 in zip(center_dockable_views, center_dockable_views[1:]):
             self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
 
-    def get_current_tab_id(self) -> int:
+    def get_current_tab_id(self) -> Optional[int]:
         """
         Get Current Tab ID
 
-        :return:    Tab ID (int)
+        :return:    The current tab ID, or None if no current tab exists in the central view area.
         """
 
         center_dockable_views = self.get_center_views()
         for i in range(1,len(center_dockable_views)+1):
             if center_dockable_views[i-1].visibleRegion().isEmpty() is False:
                 return i-1
-        return 1
+        return None
 
     def next_tab(self):
         """
@@ -206,12 +207,14 @@ class ViewManager:
         """
 
         center_dockable_views = self.get_center_views()
-        currentTab = self.get_current_tab_id()
-        if (currentTab + 1) < len(center_dockable_views):
-            center_dockable_views[currentTab + 1].raise_()
+        current_tab_id = self.get_current_tab_id()
+        if current_tab_id is None:
+            return
+        if (current_tab_id + 1) < len(center_dockable_views):
+            center_dockable_views[current_tab_id + 1].raise_()
         else:
             # Start from 1 again to prevent Index Out Of Range error
-            center_dockable_views[(currentTab + 1) % (len(center_dockable_views))].raise_()
+            center_dockable_views[(current_tab_id + 1) % (len(center_dockable_views))].raise_()
 
     def previous_tab(self):
         """
@@ -220,12 +223,19 @@ class ViewManager:
         :return:    None
         """
 
+        current_tab_id = self.get_current_tab_id()
+        if current_tab_id is None:
+            return
+
         center_dockable_views = self.get_center_views()
-        center_dockable_views[self.get_current_tab_id()-1].raise_()
+        center_dockable_views[current_tab_id - 1].raise_()
 
     @property
-    def current_tab(self) -> BaseView:
-        return self.get_center_views()[self.get_current_tab_id()].widget()
+    def current_tab(self) -> Optional['BaseView']:
+        current_tab_id = self.get_current_tab_id()
+        if current_tab_id is None:
+            return None
+        return self.get_center_views()[current_tab_id].widget()
 
     def _handle_raise_view(self, view: BaseView):
         self.workspace.plugins.handle_raise_view(view)

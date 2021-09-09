@@ -262,7 +262,7 @@ class BinsyncController:
             self.instance.project.analyses.ImportSourceCode(func, flavor='source', source_root=source_root)
 
         # grab newly cached pseudocode
-        decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')]
+        decomp = self.instance.kb.structured_code[(func.addr, 'pseudocode')].codegen
         if refresh_gui:
             # refresh all views
             self.workspace.reload()

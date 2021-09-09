@@ -10,13 +10,15 @@ class DecompileFunctionJob(Job):
         super().__init__(name="Decompiling", on_finish=on_finish)
 
     def run(self, inst):
-        inst.project.analyses.Decompiler(
+        decompiler = inst.project.analyses.Decompiler(
             self.function,
             flavor='pseudocode',
             variable_kb=inst.pseudocode_variable_kb,
             **self.kwargs,
             progress_callback=self._progress_callback,
         )
+        # cache the result
+        inst.kb.structured_code[(self.function.addr, 'pseudocode')] = decompiler.cache
 
         source_root = None
         if inst.original_binary_path:

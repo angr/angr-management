@@ -2,7 +2,7 @@ from PySide2.QtGui import QPainter, QBrush, QColor
 from PySide2.QtWidgets import QWidget, QSizePolicy, QMessageBox
 from PySide2.QtCore import Qt, QSize
 
-from angr.sim_type import TypeRef, SimUnion, SimStruct
+from angr.sim_type import TypeRef, SimUnion, SimStruct, SimTypeBottom
 from angr.knowledge_plugins.types import TypesStore
 
 from ..dialogs.type_editor import CTypeEditor, edit_field
@@ -10,6 +10,7 @@ from ...config import Conf
 
 LINE_HEIGHT = 20
 COL_WIDTH = 8
+
 
 class QCTypeDef(QWidget):
     """
@@ -38,8 +39,9 @@ class QCTypeDef(QWidget):
         fields = None
         offsets = None
         for i, line in enumerate(self.lines):
+            type_size = self.type.size if not isinstance(self.type.type, SimTypeBottom) else 0
             if i == 0:
-                prefix = f'{self.type.size // self.type._arch.byte_width:08x}'
+                prefix = f'{type_size // self.type._arch.byte_width:08x}'
             elif isinstance(self.type.type, SimUnion):
                 prefix = '00000000'
             elif isinstance(self.type.type, SimStruct):
@@ -50,12 +52,11 @@ class QCTypeDef(QWidget):
                 if fieldno < len(fields):
                     prefix = f'{offsets[fields[fieldno]]:08x}'
                 else:
-                    prefix = f'{self.type.size // self.type._arch.byte_width:08x}'
+                    prefix = f'{type_size // self.type._arch.byte_width:08x}'
             else:
                 raise TypeError("I don't know why a %s renders with more than one line" % type(self.type.type))
 
             self.lines[i] = f'{prefix}  {line}'
-
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         height = len(self.lines) * LINE_HEIGHT + LINE_HEIGHT // 2

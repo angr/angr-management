@@ -43,6 +43,9 @@ class DisassemblyView(SynchronizedView):
     """
     Disassembly View
     """
+
+    FUNCTION_SPECIFIC_VIEW = True
+
     view_visibility_changed = Signal()
     disassembly_level_changed = Signal(DisassemblyLevel)
 
@@ -181,6 +184,15 @@ class DisassemblyView(SynchronizedView):
     @property
     def current_function(self) -> ObjectContainer:
         return self._current_function
+
+    @property
+    def function(self) -> ObjectContainer:
+        return self._current_function
+
+    @function.setter
+    def function(self, v):
+        if v is not self._current_function.am_obj:
+            self.display_function(v)
 
     #
     # Callbacks

@@ -1,6 +1,7 @@
 from typing import Optional
 from collections import OrderedDict
 
+from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 
 import pycparser.plyparser
@@ -33,6 +34,9 @@ class CTypeEditor(QDialog):
         self.text = lambda: ''
         self._ok_button = None  # type: Optional[QPushButton]
         self._init_widgets(base_text, multiline)
+
+        self.setWindowTitle("Type editor")
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.result = []
 

@@ -2,8 +2,7 @@ from typing import TYPE_CHECKING, Callable
 import logging
 import traceback
 
-from angr.knowledge_plugins.functions.function import Function as angrFunc
-from angr.knowledge_plugins import Function
+from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
 
 from ..config import Conf
@@ -82,13 +81,26 @@ class Workspace:
     # Events
     #
 
-    def on_function_selected(self, func):
+    def on_function_selected(self, func: Function):
+        """
+        Callback function triggered when a new function is selected in the function view.
 
-        self._get_or_create_disassembly_view().display_function(func)
-        codeview = self.view_manager.first_view_in_category('pseudocode')
-        if codeview is not None and codeview.is_shown():
-            codeview.function.am_obj = func
-            codeview.function.am_event(focus=True)
+        :param func:    The function that is selected.
+        :return:        None
+        """
+
+        # Ask all current views to display this function
+
+        current_view = self.view_manager.current_tab
+        if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
+            # we don't have a current view or the current view does not have function-specific content. create a
+            # disassembly view to display the selected function.
+            disasm_view = self._get_or_create_disassembly_view()
+            disasm_view.display_function(func)
+            self.view_manager.raise_view(disasm_view)
+        else:
+            # ask the current view to display this function
+            current_view.function = func
 
     def on_cfg_generated(self):
 
@@ -557,7 +569,7 @@ class Workspace:
 
     # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
 
-    def set_cb_function_backcolor(self, callback: Callable[[angrFunc], None]):
+    def set_cb_function_backcolor(self, callback: Callable[[Function], None]):
         fv = self.view_manager.first_view_in_category('functions')  # type: FunctionsView
         if fv:
             fv.backcolor_callback = callback

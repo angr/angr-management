@@ -13,6 +13,7 @@ from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, 
 
 from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
+from ..dialogs.retype_node import RetypeNode
 from ..widgets.qccode_highlighter import QCCodeHighlighter
 from ..menus.menu import Menu
 
@@ -188,6 +189,12 @@ class QCCodeEdit(api.CodeEdit):
             if isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
                 self.rename_node(node=node)
             return True
+        if key == Qt.Key_Y:
+            # setting the type
+            if isinstance(node, (CVariable, )):
+                # find existing type
+                self.retype_node(node=node, node_type=node.variable_type)
+            return True
         if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
@@ -232,6 +239,30 @@ class QCCodeEdit(api.CodeEdit):
             return
         dialog = RenameNode(code_view=self._code_view, node=n)
         dialog.exec_()
+
+    def retype_node(self, *args, node=None, node_type=None):  # pylint: disable=unused-argument
+        if node is None:
+            node = self._selected_node
+        if not isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
+            return
+        if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
+            # unsupported right now..
+            return
+        dialog = RetypeNode(code_view=self._code_view, node=node, node_type=node_type, variable=node.variable)
+        dialog.exec_()
+
+        new_node_type = dialog.new_type
+        if new_node_type is not None:
+            if self._code_view is not None and node is not None:
+                # need workspace for altering callbacks of changes
+                workspace = self._code_view.workspace
+                variable_kb = self._code_view.codegen._variable_kb
+                # specify the type
+                new_node_type = new_node_type.with_arch(workspace.instance.project.arch)
+                variable_kb.variables[self._code_view.function.addr].variables_with_manual_types.add(node.variable)
+                variable_kb.variables[self._code_view.function.addr].set_variable_type(node.variable, new_node_type)
+
+                self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
     def comment(self, expr=False, node=None):
         addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
@@ -305,11 +336,14 @@ class QCCodeEdit(api.CodeEdit):
 
         self.action_rename_node = QAction('Re&name variable', self)
         self.action_rename_node.triggered.connect(self.rename_node)
+        self.action_retype_node = QAction("Re&type variable", self)
+        self.action_retype_node.triggered.connect(self.retype_node)
         self.action_toggle_struct = QAction('Toggle &struct/array')
         self.action_toggle_struct.triggered.connect(self.toggle_struct)
 
         self.variable_actions = [
             self.action_rename_node,
+            self.action_retype_node,
             self.action_toggle_struct,
         ]
 

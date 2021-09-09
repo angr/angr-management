@@ -15,6 +15,10 @@ class BaseView(QFrame):
     Base class for all main views.
     """
 
+    # if this view has function-specific views to show. function setter must be implemented when this property is set
+    # to True.
+    FUNCTION_SPECIFIC_VIEW = False
+
     def __init__(self, category: str, workspace, default_docking_position, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -28,6 +32,14 @@ class BaseView(QFrame):
         self.height_hint = -1
         self.index: int = 1
         self.base_caption: str = 'View'
+
+    @property
+    def function(self):
+        raise NotImplementedError()
+
+    @function.setter
+    def function(self, v):
+        raise NotImplementedError()
 
     def focus(self):
         self.workspace.view_manager.raise_view(self)
