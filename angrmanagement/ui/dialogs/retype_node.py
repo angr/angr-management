@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
 
 import pycparser
 
@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 
 class TypeBox(QLineEdit):
+    """
+    Implements a line edit widget for inputting types.
+    """
     def __init__(self, textchanged_callback, parent=None):
         super().__init__(parent)
 
@@ -46,6 +49,9 @@ class TypeBox(QLineEdit):
 
 
 class RetypeNode(QDialog):
+    """
+    A dialog for retyping nodes.
+    """
     def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, node_type=None,
                  variable=None, parent=None):
         super().__init__(parent)

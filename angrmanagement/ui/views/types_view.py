@@ -1,4 +1,3 @@
-import random
 from typing import TYPE_CHECKING
 
 from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox, QLabel
