@@ -99,13 +99,20 @@ class CodeView(BaseView):
         self._options.reload(force=True)
         self.vars_must_struct = set()
 
-    def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None, flavor='pseudocode'):
+    def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None, flavor='pseudocode',
+                  reset_cache: bool=False):
         if self._function.am_none:
             return
 
         if clear_prototype:
             # clear the existing function prototype
             self._function.prototype = None
+
+        if reset_cache:
+            self.workspace.instance.kb.structured_code.discard((self._function.addr, flavor))
+            variables = self.workspace.instance.pseudocode_variable_kb.variables
+            if variables.has_function_manager(self._function.addr):
+                del variables[self._function.addr]
 
         def decomp_ready():
             # this code is _partially_ duplicated from _on_new_function. be careful!
