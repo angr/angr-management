@@ -83,7 +83,8 @@ class QDecompilationOptions(QWidget):
     def _on_apply_pressed(self):
         if self.dirty:
             self.dirty = False
-            self._code_view.decompile()
+            # clear the cached version
+            self._code_view.decompile(reset_cache=True)
         else:
             self._code_view.codegen.reapply_options(self.option_and_values)
             self._code_view.codegen.am_event()
