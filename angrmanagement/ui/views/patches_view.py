@@ -32,7 +32,7 @@ class PatchesView(BaseView):
         control_layout = QHBoxLayout()
 
         # apply patches
-        btn_apply_patches = QPushButton("Apply patches to...")
+        btn_apply_patches = QPushButton("Save patched binary as...")
         btn_apply_patches.clicked.connect(self._on_apply_patches_clicked)
         control_layout.addStretch(0)
         control_layout.addWidget(btn_apply_patches)
