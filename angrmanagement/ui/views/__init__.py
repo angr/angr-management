@@ -12,3 +12,4 @@ from .dep_view import DependencyView
 from .proximity_view import ProximityView
 from .types_view import TypesView
 from .hex_view import HexView
+from .log_view import LogView
