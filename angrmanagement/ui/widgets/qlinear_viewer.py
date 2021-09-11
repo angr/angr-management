@@ -97,8 +97,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._init_widgets()
 
     def reload(self, old_infodock: Optional['InfoDock']=None):
-        self.initialize()
         curr_offset = self._offset
+        self.initialize()
         self._offset = None  # force a re-generation of objects
         self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
         self.redraw()
@@ -392,7 +392,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
             object_lines = int(qobject.height // self._line_height)
 
-            if start_line >= object_lines:
+            if start_line > 0 and start_line >= object_lines:
                 # this object should be skipped. ignore it
                 start_line -= object_lines
                 # adjust the offset as well
@@ -414,6 +414,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                     lines += object_lines
                 self.objects.append(qobject)
                 qobject.setPos(x, y)
+                _l.debug("Adding object %s (height %s) at position %d, %d.", qobject, qobject.height, x, y)
                 scene.addItem(qobject)
                 y += qobject.height + self.OBJECT_PADDING
 
@@ -433,15 +434,19 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             if self.workspace.instance.kb.functions.contains_addr(func_addr):
                 func = self.workspace.instance.kb.functions[func_addr]
                 disasm = self._get_disasm(func)
+                qobject = None
                 if self._disassembly_level is DisassemblyLevel.AIL:
                     ail_obj = None
-                    for n in disasm.graph.nodes:
-                        if n.addr == obj.addr:
-                            ail_obj = n
-                    assert(ail_obj is not None)
-                    qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                           self.disasm_view.infodock, obj.addr, ail_obj, None, None
-                                           )
+                    if disasm.graph is not None:
+                        # Clinic may yield a None graph when the function is empty
+                        for n in disasm.graph.nodes:
+                            if n.addr == obj.addr:
+                                ail_obj = n
+                        # the corresponding AIL block may not exist
+                        if ail_obj is not None:
+                            qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                                   self.disasm_view.infodock, obj.addr, ail_obj, None, None
+                                                   )
                 else:
                     qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
                                            self.disasm_view.infodock, obj.addr, [obj], {}, None
@@ -477,7 +482,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _addr_from_offset(self, mr, base_offset, offset):
         return mr.addr + (offset - base_offset)
 
-    def _get_disasm(self, func: Function) -> Union[Clinic, Disassembly]:
+    def _get_disasm(self, func: Function) -> Optional[Union[Clinic, Disassembly]]:
         """
         Get disassembly analysis object for a given function
         """
