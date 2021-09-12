@@ -303,7 +303,6 @@ class Workspace:
         view.function.am_obj = func
         view.function.am_event(focus=True, focus_addr=curr_ins)
 
-
     def create_simulation_manager(self, state, state_name, view=None):
 
         inst = self.instance
