@@ -1,3 +1,4 @@
+# pylint:disable=unused-argument
 import os
 import logging
 from typing import List, Any, Optional
@@ -14,6 +15,9 @@ from ..menus.log_menu import LogMenu
 
 
 class QLogIcons:
+    """
+    All icons that are used in the log table.
+    """
     BENCHMARK = QIcon(os.path.join(IMG_LOCATION, 'benchmark-icon.png'))
     WARNING = QIcon(os.path.join(IMG_LOCATION, 'warning-icon.png'))
     ERROR = QIcon(os.path.join(IMG_LOCATION, 'error-icon.png'))
@@ -223,7 +227,8 @@ class QLogWidget(QTableView):
     # Private methods
     #
 
-    def _copy_to_clipboard(self, content: str) -> None:
+    @staticmethod
+    def _copy_to_clipboard(content: str) -> None:
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(content, QClipboard.Clipboard)
         if clipboard.supportsSelection():
