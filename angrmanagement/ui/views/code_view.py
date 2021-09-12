@@ -60,12 +60,12 @@ class CodeView(BaseView):
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
 
-    def _focus_core(self, focus, focus_addr):
+    def _focus_core(self, focus: bool, focus_addr: int):
         if focus:
             self.focus()
         if focus_addr is not None:
             self.addr.am_obj = focus_addr
-            self.addr.am_event()
+            self.addr.am_event(focus=True)
 
     #
     # Properties
