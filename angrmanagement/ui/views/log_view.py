@@ -27,11 +27,11 @@ class LogView(BaseView):
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs): # pylint: disable=unused-argument
+    def minimumSizeHint(*args, **kwargs):  # pylint: disable=unused-argument
         return QSize(0, 50)
 
     def _init_widgets(self):
-        self._log_widget = QLogWidget()
+        self._log_widget = QLogWidget(self)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._log_widget)

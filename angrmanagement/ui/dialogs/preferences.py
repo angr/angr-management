@@ -11,7 +11,6 @@ from ...logic.url_scheme import AngrUrlScheme
 from ..css import refresh_theme
 
 
-
 class Page(QWidget):
     def save_config(self):
         raise NotImplementedError()

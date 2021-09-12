@@ -1,4 +1,5 @@
 import time
+import logging
 from threading import Thread
 from queue import Queue
 from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
@@ -10,6 +11,7 @@ from angr.analyses.disassembly import Instruction
 
 from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
+from .log import LogRecord, LogDumpHandler
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 
@@ -24,6 +26,7 @@ class Instance:
     project: Union[angr.Project, ObjectContainer]
     cfg: Union[angr.analyses.cfg.CFGBase, ObjectContainer]
     cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
+    log: Union[List[LogRecord], ObjectContainer]
 
     def __init__(self):
         # pylint:disable=import-outside-toplevel)
@@ -55,6 +58,7 @@ class Instance:
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
         self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]],
                                 'Available interaction protocols')
+        self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages')
 
         self.project.am_subscribe(self.initialize)
 
@@ -62,6 +66,11 @@ class Instance:
         self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
         self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
         self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
+
+        self._logging_handler = LogDumpHandler(self)
+
+        # Register a root logger
+        logging.root.handlers.insert(0, self._logging_handler)
 
         self.cfg_args = None
         self.variable_recovery_args = None
