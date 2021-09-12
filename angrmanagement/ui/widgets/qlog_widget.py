@@ -13,6 +13,7 @@ from ...data.log import LogRecord
 
 
 class QLogIcons:
+    BENCHMARK = QIcon(os.path.join(IMG_LOCATION, 'benchmark-icon.png'))
     WARNING = QIcon(os.path.join(IMG_LOCATION, 'warning-icon.png'))
     ERROR = QIcon(os.path.join(IMG_LOCATION, 'error-icon.png'))
 
@@ -59,7 +60,7 @@ class QLogItemModel(QAbstractTableModel):
         log = self.log[row]
         col = index.column()
 
-        if role == Qt.DisplayRole and col != QLogItemModel.COL_ICON:
+        if role == Qt.DisplayRole:
             return self._get_column_text(log, col)
         elif role == Qt.DecorationRole and col == QLogItemModel.COL_ICON:
             return self._get_column_icon(log)
@@ -73,13 +74,18 @@ class QLogItemModel(QAbstractTableModel):
             QLogItemModel.COL_SOURCE: lambda x: str(x.source),
             QLogItemModel.COL_CONTENT: lambda x: str(x.content),
         }
-        return mapping[col](log)
+        func = mapping.get(col)
+        if func is None:
+            return None
+        return func(log)
 
     @staticmethod
     def _get_column_icon(log: LogRecord) -> Optional[QIcon]:
         mapping = {
+            1: QLogIcons.BENCHMARK,
             logging.WARNING: QLogIcons.WARNING,
             logging.ERROR: QLogIcons.ERROR,
+            logging.CRITICAL: QLogIcons.ERROR,
         }
         return mapping.get(log.level, None)
 
