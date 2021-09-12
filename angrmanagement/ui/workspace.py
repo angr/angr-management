@@ -9,7 +9,7 @@ from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView)
+                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -60,6 +60,7 @@ class Workspace:
             StatesView(self, 'center'),
             InteractionView(self, 'center'),
             ConsoleView(self, 'bottom'),
+            LogView(self, 'bottom'),
         ]
 
         for tab in self.default_tabs:
@@ -428,6 +429,11 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_log_view(self):
+        view = self._get_or_create_log_view()
+        self.raise_view(view)
+        view.setFocus()
+
     #
     # Private methods
     #
@@ -551,6 +557,18 @@ class Workspace:
             self.add_view(view)
 
         return view
+
+    def _get_or_create_log_view(self) -> LogView:
+        # Take the first log view
+        view = self.view_manager.first_view_in_category("log")
+
+        if view is None:
+            # Create a new log view
+            view = LogView(self, 'bottom')
+            self.add_view(view)
+
+        return view
+
 
     def _get_or_create_functions_view(self) -> FunctionsView:
         # Take the first functions view

@@ -108,7 +108,7 @@ def macos_bigsur_wants_layer():
         os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 
-def start_management(filepath=None, use_daemon=None):
+def start_management(filepath=None, use_daemon=None, profiling=False):
 
     if sys.platform == "darwin":
         macos_bigsur_wants_layer()
@@ -165,6 +165,10 @@ def start_management(filepath=None, use_daemon=None):
         time.sleep(0.01)
         app.processEvents()
 
+    import angr
+
+    angr.loggers.profiling_enabled = True if profiling else False
+
     from .logic import GlobalInfo
     from .ui.main_window import MainWindow
 
@@ -202,7 +206,9 @@ def main():
                                                                          "automatically start a daemon if there isn't "
                                                                          "already one running.")
     parser.add_argument("-D", "--daemon", action='store_true', help="start a daemon to handle angr:// URLs.")
-    parser.add_argument("-u", "--url", type=str, nargs='?', help="(internal) handle angr:// URLs. the daemon must be running.")
+    parser.add_argument("-u", "--url", type=str, nargs='?', help="(internal) handle angr:// URLs. "
+                                                                 "the daemon must be running.")
+    parser.add_argument("-p", "--profiling", action='store_true', help="display profiling log messages.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
     args = parser.parse_args()
@@ -233,7 +239,9 @@ def main():
         import IPython
         IPython.embed(banner1="")
     if not args.no_gui:
-        start_management(args.binary, use_daemon=True if args.with_daemon else None)
+        start_management(args.binary,
+                         use_daemon=True if args.with_daemon else None,
+                         profiling=True if args.profiling else None)
 
 if __name__ == '__main__':
     main()
