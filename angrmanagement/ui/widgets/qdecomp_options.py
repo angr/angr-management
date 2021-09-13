@@ -1,3 +1,5 @@
+from typing import Optional
+
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton
 
@@ -145,6 +147,7 @@ class QDecompilationOptions(QWidget):
 
         # search box
         self._search_box = QLineEdit()
+        self._search_box.textChanged.connect(self._on_search_box_text_changed)
 
         # tree view
         self._treewidget = QTreeWidget()
@@ -162,7 +165,7 @@ class QDecompilationOptions(QWidget):
 
         self.setLayout(layout)
 
-    def _reload_options(self):
+    def _reload_options(self, filter_by: Optional[str]=None):
 
         self._treewidget.clear()
         self._qoptions.clear()
@@ -173,6 +176,9 @@ class QDecompilationOptions(QWidget):
 
         # populate the tree widget with new options
         for option in sorted(self._options, key=lambda x: x.name):
+            if filter_by:
+                if not (filter_by in option.name or filter_by in option.category):
+                    continue
             if option.category in categories:
                 category = categories[option.category]
             else:
@@ -187,6 +193,9 @@ class QDecompilationOptions(QWidget):
 
         default_passes = set(self.get_default_passes())
         for pass_ in self._opti_passes:
+            if filter_by:
+                if not filter_by in pass_.__name__:
+                    continue
             w = QDecompilationOption(passes_category, pass_, OptionType.OPTIMIZATION_PASS,
                                      enabled=pass_ in default_passes)
             self._qoptipasses.append(w)
@@ -196,9 +205,15 @@ class QDecompilationOptions(QWidget):
 
         default_peephole_opts = self.get_default_peephole_opts()
         for opt_ in self._peephole_opts:
+            if filter_by:
+                if not (filter_by in opt_.name or filter_by in opt_.description):
+                    continue
             w = QDecompilationOption(po_category, opt_, OptionType.PEEPHOLE_OPTIMIZATION,
                                      enabled=opt_ in default_peephole_opts)
             self._qpeephole_opts.append(w)
 
         # expand all
         self._treewidget.expandAll()
+
+    def _on_search_box_text_changed(self, text: str):
+        self._reload_options(filter_by=text)
