@@ -199,13 +199,16 @@ class QLogWidget(QTableView):
     def _on_new_logrecord_core(self, log_record: LogRecord = None):
         self._before_row_insert()
 
-        self.model.layoutAboutToBeChanged.emit()
         if log_record is None:
             # reload
+            self.model.layoutAboutToBeChanged.emit()
             self.model._log = self.log_view.workspace.instance.log[::]
+            self.model.layoutChanged.emit()
         else:
+            log_records = len(self.model.log)
+            self.model.rowsAboutToBeInserted.emit(self, log_records, log_records)
             self.model.log.append(log_record)
-        self.model.layoutChanged.emit()
+            self.model.rowsInserted.emit(self, log_records, log_records)
 
         self._after_row_insert()
 
