@@ -201,6 +201,9 @@ class CodeView(BaseView):
         :param kwargs:              Keyword arguments that are required in each event.
         :return:
         """
+        if self.codegen.am_none:
+            return
+
         self._view_selector.setCurrentText(self.codegen.flavor)
         if already_regenerated:
             # do not regenerate text
