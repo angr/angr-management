@@ -4,12 +4,14 @@ import logging
 import PySide2
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
     QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
-    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction
+    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction, QMessageBox
 from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor
 from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
 
 from angr import Block
 from angr.knowledge_plugins.cfg import MemoryData
+from angr.knowledge_plugins.patches import Patch
+from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
 
 from .view import SynchronizedView
 from ..dialogs.jumpto import JumpTo
@@ -24,6 +26,7 @@ HexAddress = int
 HexDataBuffer = Union[bytes, bytearray]
 HexDataProvider = Callable[[HexAddress], HexByteValue]
 
+
 class HexHighlightRegion:
     """
     Defines a highlighted region.
@@ -34,6 +37,110 @@ class HexHighlightRegion:
         self.addr: HexAddress = addr
         self.size: int = size
         self.active: bool = False
+
+    def gen_context_menu_actions(self) -> Optional[QMenu]:  # pylint: disable=no-self-use
+        """
+        Get submenu for this highlight region.
+        """
+        return None
+
+
+class PatchHighlightRegion(HexHighlightRegion):
+    """
+    Defines a highlighted region indicating a patch.
+    """
+
+    def __init__(self, patch: Patch, view: 'HexView'):
+        super().__init__(Qt.yellow, patch.addr, len(patch))
+        self.patch: Patch = patch
+        self.view: 'HexView' = view
+
+    def gen_context_menu_actions(self) -> Optional[QMenu]:
+        """
+        Get submenu for this highlight region.
+        """
+        mnu = QMenu(f"Patch 0x{self.patch.addr:x} ({len(self.patch)} bytes)")
+        act = QAction("&Split", mnu)
+        act.triggered.connect(self.split)
+        act.setEnabled(self.can_split())
+        mnu.addAction(act)
+        act = QAction("Set &Comment...", mnu)
+        act.triggered.connect(self.comment)
+        mnu.addAction(act)
+        mnu.addSeparator()
+        act = QAction("&Revert", mnu)
+        act.triggered.connect(self.revert_with_prompt)
+        mnu.addAction(act)
+        return mnu
+
+    def revert_with_prompt(self):
+        """
+        Revert this patch. Prompt for confirmation.
+        """
+        dlg = QMessageBox()
+        dlg.setWindowTitle("Revert patch")
+        dlg.setText("Are you sure you want to revert this patch?")
+        dlg.setIcon(QMessageBox.Question)
+        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        dlg.setDefaultButton(QMessageBox.Cancel)
+        if dlg.exec_() != QMessageBox.Yes:
+            return
+        self.revert()
+
+    def revert(self):
+        """
+        Revert this patch.
+        """
+        pm = self.view.workspace.instance.patches
+        pm.remove_patch(self.patch.addr)
+        pm.am_event()
+
+    def can_split(self) -> bool:
+        """
+        Determine if this patch can be split based on current cursor location.
+        """
+        cursor = self.view.inner_widget.hex.cursor
+        return self.patch.addr < cursor < (self.patch.addr + len(self.patch))
+
+    def split(self):
+        """
+        Split this patch at view's current cursor location.
+        """
+        cursor = self.view.inner_widget.hex.cursor
+        if self.can_split():
+            o = cursor - self.patch.addr
+            new_patch = Patch(cursor, self.patch.new_bytes[o:], self.patch.comment)
+            self.patch.new_bytes = self.patch.new_bytes[0:o]
+            pm = self.view.workspace.instance.patches
+            pm.add_patch_obj(new_patch)
+            pm.am_event()
+
+    def can_merge_with(self, other: 'PatchHighlightRegion') -> bool:
+        """
+        Determine if this patch can be merged with `other`. We only consider directly adjacent patches.
+        """
+        return other.patch.addr == (self.patch.addr + len(self.patch))
+
+    def merge_with(self, other: 'PatchHighlightRegion'):
+        """
+        Merge `other` into this patch.
+        """
+        if self.can_merge_with(other):
+            self.patch.new_bytes += other.patch.new_bytes
+            pm = self.view.workspace.instance.patches
+            pm.remove_patch(other.patch.addr)
+            pm.am_event()
+
+    def comment(self):
+        """
+        Set the comment for this patch.
+        """
+        dlg = InputPromptDialog('Set Patch Comment', 'Patch comment:', self.patch.comment, parent=self.view)
+        dlg.exec_()
+        if dlg.result:
+            self.patch.comment = dlg.result
+            pm = self.view.workspace.instance.patches
+            pm.am_event()
 
 
 class HexGraphicsObject(QGraphicsObject):
@@ -51,6 +158,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.num_bytes: int = 0
         self.end_addr: HexAddress = 0  # Exclusive
         self.read_func: Optional[HexDataProvider] = None
+        self.write_func: Callable[[HexAddress, HexByteValue], bool] = None
         self.data: HexDataBuffer = b''
         self.addr_offset: int = 0
         self.addr_width: int = 0
@@ -68,6 +176,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.row_padding: int = 0
         self.section_space: int = 0
         self.cursor: HexAddress = self.start_addr
+        self.cursor_nibble: Optional[int] = None
         self.selection_start: Optional[HexAddress] = None
         self.mouse_pressed: bool = False
         self.num_rows: int = 0
@@ -131,12 +240,13 @@ class HexGraphicsObject(QGraphicsObject):
         self.read_func = None
         self._set_data_common()
 
-    def set_data_callback(self, read_func: HexDataProvider, start_addr: HexAddress, num_bytes: int):
+    def set_data_callback(self, write_func, read_func: HexDataProvider, start_addr: HexAddress, num_bytes: int):
         """
         Assign the buffer to be displayed using a callback function.
         """
         self.start_addr = start_addr
         self.num_bytes = num_bytes
+        self.write_func = write_func
         self.read_func = read_func
         self._set_data_common()
 
@@ -272,16 +382,23 @@ class HexGraphicsObject(QGraphicsObject):
             region_end = region.addr + region.size - 1
             region.active = not (region.addr > maxaddr or minaddr > region_end)
 
-    def get_highlight_region_under_cursor(self) -> Optional[HexHighlightRegion]:
+    def get_active_highlight_regions(self) -> Sequence[HexHighlightRegion]:
+        """
+        Get currently active highlight regions.
+        """
+        return [rgn for rgn in self.highlighted_regions if rgn.active]
+
+    def get_highlight_regions_under_cursor(self) -> Sequence[HexHighlightRegion]:
         """
         Return the region under the cursor, or None if there isn't a region under the cursor.
         """
+        regions = []
         for region in self.highlighted_regions:
             if region.addr <= self.cursor < (region.addr + region.size):
-                return region
-        return None
+                regions.append(region)
+        return regions
 
-    def set_cursor(self, addr: int, ascii_column: Optional[bool] = None):
+    def set_cursor(self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None):
         """
         Move cursor to address `addr`.
         """
@@ -296,6 +413,7 @@ class HexGraphicsObject(QGraphicsObject):
             self.restart_cursor_blink_timer()
         cursor_changed = self.cursor != addr
         self.cursor = addr
+        self.cursor_nibble = nibble
         self.cursor_changed.emit()
         if cursor_changed:
             self.update_active_highlight_regions()
@@ -325,8 +443,9 @@ class HexGraphicsObject(QGraphicsObject):
         Handle mouse double-click events (e.g. update selection)
         """
         if event.button() == Qt.LeftButton:
-            region = self.get_highlight_region_under_cursor()
-            if region is not None:
+            regions = sorted(self.get_highlight_regions_under_cursor(), key=lambda r: self.cursor - r.addr)
+            if len(regions) > 0:
+                region = regions[0]
                 self.set_cursor(region.addr + region.size - 1)
                 self.begin_selection()
                 self.set_cursor(region.addr)
@@ -351,33 +470,66 @@ class HexGraphicsObject(QGraphicsObject):
         if event.button() == Qt.LeftButton:
             self.mouse_pressed = False
 
+    def _set_byte_value(self, value: int):
+        """
+        Handle byte modification via user entry.
+        """
+        if not self.write_func(self.cursor, value):
+            return
+        self.set_cursor(self.cursor + 1)
+
+    def _set_nibble_value(self, value: int):
+        nibble = 1 if (self.cursor_nibble is None) else self.cursor_nibble
+        new_byte_value = self.read_func(self.cursor)
+        if not isinstance(new_byte_value, int):
+            new_byte_value = 0
+        else:
+            new_byte_value &= ~(0xF << (nibble * 4))
+        new_byte_value |= value << (nibble * 4)
+        if not self.write_func(self.cursor, new_byte_value):
+            return
+        next_nibble = 1 - nibble
+        self.set_cursor(self.cursor + next_nibble, nibble=next_nibble)
+
     def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
         """
         Handle key press events (e.g. moving cursor around).
         """
-        movement_keys = (Qt.Key_Up, Qt.Key_Down, Qt.Key_Right, Qt.Key_Left, Qt.Key_PageUp, Qt.Key_PageDown)
+        movement_keys = {
+            Qt.Key_Up: -16,
+            Qt.Key_Down: 16,
+            Qt.Key_Right: 1,
+            Qt.Key_Left: -1,
+            Qt.Key_PageUp: -8*16,
+            Qt.Key_PageDown: 8*16
+        }
         if event.key() in movement_keys:
-            if QApplication.keyboardModifiers() in (Qt.ShiftModifier,):
+            if int(QApplication.keyboardModifiers()) & Qt.ShiftModifier:
                 if self.selection_start is None:
                     self.begin_selection()
             else:
                 self.clear_selection()
-            new_cursor = self.cursor
-            if event.key() == Qt.Key_Up:
-                new_cursor -= 16
-            elif event.key() == Qt.Key_Down:
-                new_cursor += 16
-            elif event.key() == Qt.Key_Right:
-                new_cursor += 1
-            elif event.key() == Qt.Key_Left:
-                new_cursor -= 1
-            elif event.key() == Qt.Key_PageDown:
-                new_cursor += 8*16
-            elif event.key() == Qt.Key_PageUp:
-                new_cursor -= 8*16
+            new_cursor = self.cursor + movement_keys[event.key()]
             self.set_cursor(new_cursor)
             event.accept()
             return
+        elif event.key() == Qt.Key_Space and (int(QApplication.keyboardModifiers()) & Qt.ControlModifier):
+            self.set_cursor(self.cursor, ascii_column=(not self.ascii_column_active))
+            event.accept()
+            return
+        else:
+            t = event.text()
+            if len(t) == 1:
+                if self.ascii_column_active:
+                    if t.isascii() and t.isprintable():
+                        self._set_byte_value(ord(t))
+                        event.accept()
+                        return
+                else:
+                    if t in '0123456789abcdefABCDEF':
+                        self._set_nibble_value(int(t, 16))
+                        event.accept()
+                        return
         super().keyPressEvent(event)
 
     def _update_layout(self):
@@ -519,13 +671,11 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Get active selection, returning (minaddr, maxaddr) inclusive.
         """
+        if self.selection_start is None:
+            return None
         if self.start_addr <= self.cursor < self.end_addr:
-            if self.selection_start is None:
-                minaddr = self.cursor
-                maxaddr = self.cursor
-            else:
-                minaddr = min(self.cursor, self.selection_start)
-                maxaddr = max(self.cursor, self.selection_start)
+            minaddr = min(self.cursor, self.selection_start)
+            maxaddr = max(self.cursor, self.selection_start)
             return (minaddr, maxaddr)
         return None
 
@@ -691,7 +841,11 @@ class HexGraphicsObject(QGraphicsObject):
             set_pen_brush_for_active_cursor(not self.ascii_column_active)
             tl = self.addr_to_point(self.cursor)
             tl.setY(tl.y() + self.row_height - cursor_height)
-            painter.drawRect(QRectF(tl, QSizeF(self.byte_width, cursor_height)))
+            cursor_width = self.byte_width
+            if self.cursor_nibble is not None:
+                cursor_width /= 2
+                tl.setX(tl.x() + cursor_width * (1 - self.cursor_nibble))
+            painter.drawRect(QRectF(tl, QSizeF(cursor_width, cursor_height)))
 
             # ASCII cursor
             set_pen_brush_for_active_cursor(self.ascii_column_active)
@@ -724,10 +878,10 @@ class HexGraphicsView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.NoAnchor)
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
-    def set_region_callback(self, mem, addr, size):
+    def set_region_callback(self, write, mem, addr, size):
         s = self.scene().itemsBoundingRect()
         self.hex.setPos(s.bottomLeft())
-        self.hex.set_data_callback(mem, addr, size)
+        self.hex.set_data_callback(write, mem, addr, size)
         self.setSceneRect(self.scene().itemsBoundingRect())
 
     def on_cursor_changed(self):
@@ -827,35 +981,106 @@ class HexView(SynchronizedView):
         super().__init__('hex', workspace, default_docking_position, *args, **kwargs)
         self.base_caption: str = 'Hex'
         self.smart_highlighting_enabled: bool = True
+        self._clipboard = None
         self._cfb_highlights: Sequence[HexHighlightRegion] = []
         self._sync_view_highlights: Sequence[HexHighlightRegion] = []
+        self._patch_highlights: Sequence[HexHighlightRegion] = []
+
         self._init_widgets()
-        self.reload_cfb()
         self.workspace.instance.cfb.am_subscribe(self.reload_cfb)
+        self.workspace.instance.patches.am_subscribe(self._update_highlight_regions_from_patches)
+
+        self.reload_cfb()
+        self._update_highlight_regions_from_patches()
 
     def project_memory_read_func(self, addr: int) -> HexByteValue:
         """
         Callback to populate hex view with bytes.
         """
-        p = self.workspace.instance.project.am_obj
+        p = self.workspace.instance.project
+
+        patches = p.kb.patches.get_all_patches(addr, 1)
+        if len(patches) > 0:
+            patch = patches[0]
+            return patch.new_bytes[addr - patch.addr]
+
         try:
             return p.loader.memory[addr]
         except KeyError:
             return '?'
 
+    def auto_patch(self, addr: int, new_bytes: bytearray):
+        """
+        Automatically update or create patches to ensure new_bytes are patched at addr.
+        """
+        pm = self.workspace.instance.project.kb.patches
+        max_addr = addr + len(new_bytes) - 1
+
+        for p in pm.get_all_patches(addr, len(new_bytes)):
+            patch_max_addr = p.addr + len(p) - 1
+            if (p.addr <= addr) and (patch_max_addr >= max_addr):
+                # Existing patch contains new patch entirely. Update it.
+                p.new_bytes[(addr - p.addr):(max_addr - p.addr + 1)] = new_bytes
+                return
+            elif (p.addr >= addr) and (patch_max_addr <= max_addr):
+                # Patch will be entirely overwritten, remove it.
+                pm.remove_patch(p.addr)
+            elif (p.addr >= addr) and (patch_max_addr > max_addr):
+                # Lower portion of patch will be overwritten, shrink patch up.
+                pm.remove_patch(p.addr)
+                new_p_addr = max_addr + 1
+                p.new_bytes = p.new_bytes[(new_p_addr - p.addr):]
+                p.addr = new_p_addr
+                pm.add_patch_obj(p)
+            elif (p.addr < addr) and (patch_max_addr <= max_addr):
+                # Upper portion of patch will be overwritten, shrink patch down.
+                pm.remove_patch(p.addr)
+                p.new_bytes = p.new_bytes[0:(addr - p.addr)]
+                pm.add_patch_obj(p)
+            else:
+                assert False
+
+        # Check to see if we should extend an adjacent patch
+        if addr > 0:
+            p = pm.get_all_patches(addr - 1, 1)
+            if len(p) > 0:
+                p = p[0]
+                p.new_bytes += new_bytes
+                return
+
+        pm.add_patch_obj(Patch(addr, new_bytes))
+
+    def project_memory_write_bytearray(self, addr: int, value: bytearray) -> bool:
+        """
+        Callback to populate hex view with bytes.
+        """
+        self.auto_patch(addr, bytearray(value))
+        pm = self.workspace.instance.project.kb.patches
+        pm_notifier = self.workspace.instance.patches
+        if pm_notifier.am_none:
+            pm_notifier.am_obj = pm
+        pm_notifier.am_event()
+        return True
+
+    def project_memory_write_func(self, addr: int, value: int) -> bool:
+        """
+        Callback to populate hex view with bytes.
+        """
+        return self.project_memory_write_bytearray(addr, bytearray([value]))
+
     def reload_cfb(self):
         """
         Callback when project CFB changes.
         """
-        cfb = self.workspace.instance.cfb.am_obj
-        if cfb is None:
+        if self.workspace.instance.cfb.am_none:
             return
 
-        p = self.workspace.instance.project.am_obj
+        loader = self.workspace.instance.project.loader
         self.inner_widget.set_region_callback(
+            self.project_memory_write_func,
             self.project_memory_read_func,
-            p.loader.min_addr,
-            p.loader.max_addr - p.loader.min_addr + 1
+            loader.min_addr,
+            loader.max_addr - loader.min_addr + 1
         )
 
         self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
@@ -905,11 +1130,140 @@ class HexView(SynchronizedView):
 
         self._widgets_initialized = True
 
+    def revert_selected_patches(self):
+        """
+        Revert any selected patches.
+        """
+        dlg = QMessageBox()
+        dlg.setWindowTitle("Revert patches")
+        dlg.setText("Are you sure you want to revert selected patches?")
+        dlg.setIcon(QMessageBox.Question)
+        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        dlg.setDefaultButton(QMessageBox.Cancel)
+        if dlg.exec_() != QMessageBox.Yes:
+            return
+
+        selected_regions = self.inner_widget.hex.get_active_highlight_regions()
+        for r in selected_regions:
+            if isinstance(r, PatchHighlightRegion):
+                r.revert()
+
+    def _can_merge_any_selected_patches(self):
+        """
+        Determine if any of the selected patches can be merged.
+        """
+        return self._merge_selected_patches(True)
+
+    def _merge_selected_patches(self, trial_only: bool = False) -> bool:
+        """
+        Merge selected directly-adjacent patches.
+        """
+        selected_patches = [r for r in self.inner_widget.hex.get_active_highlight_regions()
+                            if isinstance(r, PatchHighlightRegion)]
+        i = 0
+        did_patch = False
+        while i < (len(selected_patches) - 1):
+            patch = selected_patches[i]
+            for j, neighbor in enumerate(selected_patches[i+1:]):
+                if patch.can_merge_with(neighbor):
+                    if trial_only:
+                        return True
+                    patch.merge_with(neighbor)
+                    did_patch = True
+                else:
+                    i = i + j + 1
+                    break
+
+        return did_patch
+
+    def _get_num_selected_bytes(self) -> int:
+        """
+        Determine whether any bytes are selected.
+        """
+        sel = self.inner_widget.hex.get_selection()
+        if sel is None:
+            return 0
+        minaddr, maxaddr = sel
+        num_bytes_selected = maxaddr - minaddr + 1
+        return num_bytes_selected
+
+    def _copy_selected_bytes(self):
+        """
+        Copy selected bytes to view-only clipboard.
+        """
+        sel = self.inner_widget.hex.get_selection()
+        if sel is None:
+            self._clipboard = None
+            return
+
+        minaddr, maxaddr = sel
+        num_bytes_selected = maxaddr - minaddr + 1
+
+        self._clipboard = bytearray(num_bytes_selected)
+        for addr in range(minaddr, maxaddr + 1):
+            d = self.project_memory_read_func(addr)  # FIXME: Support multibyte read
+            if type(d) is int:
+                self._clipboard[addr-minaddr] = d
+
+    def _paste_copied_bytes_at_cursor(self):
+        """
+        Paste the view-only clipboard contents at cursor location.
+        """
+        if self._clipboard is not None:
+            self.project_memory_write_bytearray(self.inner_widget.hex.cursor, self._clipboard)
+
     def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
         Display view context menu.
         """
         mnu = QMenu(self)
+        add_sep = False
+
+        # FIXME: This should also go into an Edit menu accessible from the main window
+        num_selected_bytes = self._get_num_selected_bytes()
+        if num_selected_bytes > 0:
+            plural = "s" if num_selected_bytes != 1 else ""
+            act = QAction(f"Copy {num_selected_bytes:d} byte{plural}", mnu)
+            act.triggered.connect(self._copy_selected_bytes)
+            mnu.addAction(act)
+            add_sep = True
+        if self._clipboard is not None:
+            plural = "s" if len(self._clipboard) != 1 else ""
+            act = QAction(f"Paste {len(self._clipboard):d} byte{plural}", mnu)
+            act.triggered.connect(self._paste_copied_bytes_at_cursor)
+            mnu.addAction(act)
+            add_sep = True
+
+        if add_sep:
+            mnu.addSeparator()
+            add_sep = False
+
+        # Get context menu for specific item under cursor
+        for rgn in self.inner_widget.hex.get_highlight_regions_under_cursor():
+            rgn_mnu = rgn.gen_context_menu_actions()
+            if rgn_mnu is not None:
+                mnu.addMenu(rgn_mnu)
+                add_sep = True
+
+        if add_sep:
+            mnu.addSeparator()
+            add_sep = False
+
+        # Get context menu for groups of items
+        selected_regions = self.inner_widget.hex.get_active_highlight_regions()
+        if any(isinstance(r, PatchHighlightRegion) for r in selected_regions):
+            act = QAction('Merge selected patches', mnu)
+            act.triggered.connect(self._merge_selected_patches)
+            act.setEnabled(self._can_merge_any_selected_patches())
+            mnu.addAction(act)
+            act = QAction('Revert selected patches', mnu)
+            act.triggered.connect(self.revert_selected_patches)
+            mnu.addAction(act)
+            add_sep = True
+
+        if add_sep:
+            mnu.addSeparator()
+
         mnu.addMenu(self.get_synchronize_with_submenu())
         mnu.exec_(QCursor.pos())
 
@@ -937,8 +1291,8 @@ class HexView(SynchronizedView):
         if sel is not None:
             minaddr, maxaddr = sel
             bytes_selected = maxaddr - minaddr + 1
-            if bytes_selected > 1:
-                s = 'Address: [%08x, %08x], %d bytes selected' % (minaddr, maxaddr, bytes_selected)
+            plural = "s" if bytes_selected != 1 else ""
+            s = f'Address: [{minaddr:08x}, {maxaddr:08x}], {bytes_selected} byte{plural} selected'
         self._status_lbl.setText(s)
 
     def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
@@ -1030,6 +1384,17 @@ class HexView(SynchronizedView):
         self._sync_view_highlights = self._generate_highlight_regions_from_synchronized_views()
         self._set_highlighted_regions()
 
+    def _update_highlight_regions_from_patches(self):
+        """
+        Updates cached list of highlight regions from patches.
+        """
+        if self.workspace.instance.project.am_none:
+            self._patch_highlights = []
+        else:
+            self._patch_highlights = [PatchHighlightRegion(patch, self)
+                                      for patch in self.workspace.instance.project.kb.patches.values()]
+        self._set_highlighted_regions()
+
     def _set_highlighted_regions(self):
         """
         Update highlighted regions, with data from CFB and synchronized views.
@@ -1037,4 +1402,5 @@ class HexView(SynchronizedView):
         regions = []
         regions.extend(self._cfb_highlights)
         regions.extend(self._sync_view_highlights)
+        regions.extend(self._patch_highlights)
         self.inner_widget.hex.set_highlight_regions(regions)
