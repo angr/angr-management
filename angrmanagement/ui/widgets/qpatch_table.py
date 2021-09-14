@@ -6,6 +6,10 @@ from PySide2.QtCore import Qt
 
 
 class QPatchTableItem:
+    """
+    Item in the patch table describing a patch.
+    """
+
     def __init__(self, patch, old_bytes):
         self.patch = patch
         self.old_bytes = old_bytes
@@ -18,6 +22,7 @@ class QPatchTableItem:
             QTableWidgetItem("%d bytes" % len(patch)),
             QTableWidgetItem(binascii.hexlify(self.old_bytes).decode("ascii") if self.old_bytes else "<unknown>"),
             QTableWidgetItem(binascii.hexlify(patch.new_bytes).decode("ascii")),
+            QTableWidgetItem(patch.comment or ''),
         ]
 
         for w in widgets:
@@ -27,11 +32,14 @@ class QPatchTableItem:
 
 
 class QPatchTable(QTableWidget):
+    """
+    Table of all patches.
+    """
 
-    HEADER = ['Address', 'Size', 'Old Bytes', 'New Bytes']
+    HEADER = ['Address', 'Size', 'Old Bytes', 'New Bytes', 'Comment']
 
     def __init__(self, instance, parent):
-        super(QPatchTable, self).__init__(parent)
+        super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
@@ -50,7 +58,6 @@ class QPatchTable(QTableWidget):
             return None
 
     def reload(self):
-        current_row = self.currentRow()
         self.clearContents()
 
         self.items = [QPatchTableItem(item,
@@ -63,14 +70,11 @@ class QPatchTable(QTableWidget):
             for i, it in enumerate(item.widgets()):
                 self.setItem(idx, i, it)
 
-        #if 0 <= current_row < len(self.items):
-        #    self.setCurrentItem(current_row, 0)
-
-    def _on_state_selected(self, *args):
+    def _on_state_selected(self, *args):  # pylint: disable=unused-argument
         if self._selected is not None:
             self._selected(self.current_state_record())
 
-    def _watch_patches(self, **kwargs):
+    def _watch_patches(self, **kwargs):  # pylint: disable=unused-argument
         if not self.instance.patches.am_none:
             self.reload()
 
