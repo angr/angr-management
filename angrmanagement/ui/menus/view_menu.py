@@ -51,4 +51,5 @@ class ViewMenu(Menu):
             MenuEntry('&Interaction', main_window.workspace.show_interaction_view),
             MenuSeparator(),
             MenuEntry('&Console', main_window.workspace.show_console_view),
+            MenuEntry('&Log', main_window.workspace.show_log_view),
         ])
