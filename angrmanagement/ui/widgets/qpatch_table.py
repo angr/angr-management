@@ -1,8 +1,11 @@
-
 import binascii
+from typing import Set
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QAction, QMessageBox
 from PySide2.QtCore import Qt
+from PySide2.QtGui import QContextMenuEvent, QCursor
+
+from angr.knowledge_plugins.patches import Patch
 
 
 class QPatchTableItem:
@@ -25,7 +28,7 @@ class QPatchTableItem:
             QTableWidgetItem(patch.comment or ''),
         ]
 
-        for w in widgets:
+        for w in widgets[:-1]:
             w.setFlags(w.flags() & ~Qt.ItemIsEditable)
 
         return widgets
@@ -49,6 +52,17 @@ class QPatchTable(QTableWidget):
         self.items = [ ]
         self.instance = instance
         self.instance.patches.am_subscribe(self._watch_patches)
+        self._reloading: bool = False
+        self.cellChanged.connect(self._on_cell_changed)
+
+    def _on_cell_changed(self, row: int, column: int):
+        """
+        Handle item change events, specifically to support editing comments.
+        """
+        if not self._reloading and column == 4:
+            comment_text = self.item(row, column).text()
+            self.items[row].patch.comment = comment_text
+            self.instance.patches.am_event()
 
     def current_patch(self):
         selected_index = self.currentRow()
@@ -58,6 +72,7 @@ class QPatchTable(QTableWidget):
             return None
 
     def reload(self):
+        self._reloading = True
         self.clearContents()
 
         self.items = [QPatchTableItem(item,
@@ -69,6 +84,8 @@ class QPatchTable(QTableWidget):
         for idx, item in enumerate(self.items):
             for i, it in enumerate(item.widgets()):
                 self.setItem(idx, i, it)
+
+        self._reloading = False
 
     def _on_state_selected(self, *args):  # pylint: disable=unused-argument
         if self._selected is not None:
@@ -84,3 +101,40 @@ class QPatchTable(QTableWidget):
             return proj.loader.memory.load(addr, size)
         except KeyError:
             return None
+
+    def get_selected_patches(self) -> Set[Patch]:
+        """
+        Get the set of selected patches.
+        """
+        return {self.items[idx.row()].patch for idx in self.selectedIndexes()}
+
+    def revert_selected_patches(self):
+        """
+        Revert any selected patches.
+        """
+        dlg = QMessageBox()
+        dlg.setWindowTitle("Revert patches")
+        dlg.setText("Are you sure you want to revert selected patches?")
+        dlg.setIcon(QMessageBox.Question)
+        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        dlg.setDefaultButton(QMessageBox.Cancel)
+        if dlg.exec_() != QMessageBox.Yes:
+            return
+
+        selected_patches = self.get_selected_patches()
+        if len(selected_patches) > 0:
+            for patch in selected_patches:
+                self.instance.patches.remove_patch(patch.addr)
+            self.instance.patches.am_event()
+
+    def contextMenuEvent(self, event: QContextMenuEvent):  # pylint: disable=unused-argument
+        """
+        Display view context menu.
+        """
+        mnu = QMenu(self)
+        selected_patches = self.get_selected_patches()
+        if len(selected_patches) > 0:
+            act = QAction('Revert selected patches', mnu)
+            act.triggered.connect(self.revert_selected_patches)
+            mnu.addAction(act)
+        mnu.exec_(QCursor.pos())
