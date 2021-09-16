@@ -4,7 +4,6 @@ import binascii
 from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
 from PySide2.QtCore import Qt
 
-
 class QPatchTableItem:
     """
     Item in the patch table describing a patch.
@@ -25,7 +24,7 @@ class QPatchTableItem:
             QTableWidgetItem(patch.comment or ''),
         ]
 
-        for w in widgets:
+        for w in widgets[:-1]:
             w.setFlags(w.flags() & ~Qt.ItemIsEditable)
 
         return widgets
@@ -49,6 +48,17 @@ class QPatchTable(QTableWidget):
         self.items = [ ]
         self.instance = instance
         self.instance.patches.am_subscribe(self._watch_patches)
+        self._reloading: bool = False
+        self.cellChanged.connect(self._on_cell_changed)
+
+    def _on_cell_changed(self, row: int, column: int):
+        """
+        Handle item change events, specifically to support editing comments.
+        """
+        if not self._reloading and column == 4:
+            comment_text = self.item(row, column).text()
+            self.items[row].patch.comment = comment_text
+            self.instance.patches.am_event()
 
     def current_patch(self):
         selected_index = self.currentRow()
@@ -58,6 +68,7 @@ class QPatchTable(QTableWidget):
             return None
 
     def reload(self):
+        self._reloading = True
         self.clearContents()
 
         self.items = [QPatchTableItem(item,
@@ -69,6 +80,8 @@ class QPatchTable(QTableWidget):
         for idx, item in enumerate(self.items):
             for i, it in enumerate(item.widgets()):
                 self.setItem(idx, i, it)
+
+        self._reloading = False
 
     def _on_state_selected(self, *args):  # pylint: disable=unused-argument
         if self._selected is not None:
