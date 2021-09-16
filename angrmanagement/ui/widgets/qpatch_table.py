@@ -1,8 +1,12 @@
-
 import binascii
+from typing import Set
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QAction, QMessageBox
 from PySide2.QtCore import Qt
+from PySide2.QtGui import QContextMenuEvent, QCursor
+
+from angr.knowledge_plugins.patches import Patch
+
 
 class QPatchTableItem:
     """
@@ -97,3 +101,40 @@ class QPatchTable(QTableWidget):
             return proj.loader.memory.load(addr, size)
         except KeyError:
             return None
+
+    def get_selected_patches(self) -> Set[Patch]:
+        """
+        Get the set of selected patches.
+        """
+        return {self.items[idx.row()].patch for idx in self.selectedIndexes()}
+
+    def revert_selected_patches(self):
+        """
+        Revert any selected patches.
+        """
+        dlg = QMessageBox()
+        dlg.setWindowTitle("Revert patches")
+        dlg.setText("Are you sure you want to revert selected patches?")
+        dlg.setIcon(QMessageBox.Question)
+        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        dlg.setDefaultButton(QMessageBox.Cancel)
+        if dlg.exec_() != QMessageBox.Yes:
+            return
+
+        selected_patches = self.get_selected_patches()
+        if len(selected_patches) > 0:
+            for patch in selected_patches:
+                self.instance.patches.remove_patch(patch.addr)
+            self.instance.patches.am_event()
+
+    def contextMenuEvent(self, event: QContextMenuEvent):  # pylint: disable=unused-argument
+        """
+        Display view context menu.
+        """
+        mnu = QMenu(self)
+        selected_patches = self.get_selected_patches()
+        if len(selected_patches) > 0:
+            act = QAction('Revert selected patches', mnu)
+            act.triggered.connect(self.revert_selected_patches)
+            mnu.addAction(act)
+        mnu.exec_(QCursor.pos())
