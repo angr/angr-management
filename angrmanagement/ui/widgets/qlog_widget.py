@@ -18,9 +18,28 @@ class QLogIcons:
     """
     All icons that are used in the log table.
     """
-    BENCHMARK = QIcon(os.path.join(IMG_LOCATION, 'benchmark-icon.png'))
-    WARNING = QIcon(os.path.join(IMG_LOCATION, 'warning-icon.png'))
-    ERROR = QIcon(os.path.join(IMG_LOCATION, 'error-icon.png'))
+
+    BENCHMARK = None
+    WARNING = None
+    ERROR = None
+
+    @classmethod
+    def benchmark(cls) -> QIcon:
+        if cls.BENCHMARK is None:
+            cls.BENCHMARK = QIcon(os.path.join(IMG_LOCATION, 'benchmark-icon.png'))
+        return cls.BENCHMARK
+
+    @classmethod
+    def warning(cls) -> QIcon:
+        if cls.WARNING is None:
+            cls.WARNING = QIcon(os.path.join(IMG_LOCATION, 'warning-icon.png'))
+        return cls.WARNING
+
+    @classmethod
+    def error(cls) -> QIcon:
+        if cls.ERROR is None:
+            cls.ERROR = QIcon(os.path.join(IMG_LOCATION, 'error-icon.png'))
+        return cls.ERROR
 
 
 class QLogTableModel(QAbstractTableModel):
@@ -87,10 +106,10 @@ class QLogTableModel(QAbstractTableModel):
     @staticmethod
     def _get_column_icon(log: LogRecord) -> Optional[QIcon]:
         mapping = {
-            1: QLogIcons.BENCHMARK,
-            logging.WARNING: QLogIcons.WARNING,
-            logging.ERROR: QLogIcons.ERROR,
-            logging.CRITICAL: QLogIcons.ERROR,
+            1: QLogIcons.benchmark(),
+            logging.WARNING: QLogIcons.warning(),
+            logging.ERROR: QLogIcons.error(),
+            logging.CRITICAL: QLogIcons.error(),
         }
         return mapping.get(log.level, None)
 
