@@ -206,6 +206,13 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         else:
             super().mousePressEvent(event)
 
+    def changeEvent(self, event: QEvent):
+        """
+        Redraw on color scheme update.
+        """
+        if event.type() == QEvent.PaletteChange:
+            self.reload()
+
     def on_background_click(self):
         pass
 
