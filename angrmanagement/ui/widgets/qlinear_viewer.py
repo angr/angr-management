@@ -170,6 +170,13 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         event.accept()
         self.viewport().update()
 
+    def changeEvent(self, event: QEvent):
+        """
+        Redraw on color scheme update.
+        """
+        if event.type() == QEvent.PaletteChange:
+            self.reload()
+
     def _on_vertical_scroll_bar_triggered(self, action):
 
         if action == QAbstractSlider.SliderSingleStepAdd:
