@@ -5,8 +5,8 @@ Launch it and analyze some binaries!
 
 Some screenshots:
 
-[![Disassembly](https://github.com/angr/angr-management/blob/master/screenshots/disassembly.png)](https://github.com/angr/angr-management/blob/master/screenshots/disassembly.png)
-[![Decompilation](https://github.com/angr/angr-management/blob/master/screenshots/decompilation.png)](https://github.com/angr/angr-management/blob/master/screenshots/decompilation.png)
+[![Disassembly](screenshots/disassembly.png)](https://github.com/angr/angr-management/blob/master/screenshots/disassembly.png)
+[![Decompilation](screenshots/decompilation.png)](https://github.com/angr/angr-management/blob/master/screenshots/decompilation.png)
 
 ## Installation
 
