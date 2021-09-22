@@ -199,10 +199,15 @@ class SynchronizedView(BaseView):
         mnu = QMenu("&Synchronize with", self)
         groups = {v.sync_state for v in self.workspace.view_manager.views
                   if (v is not self) and isinstance(v, SynchronizedView)}
-        for group in groups:
-            act = QAction(', '.join([v.caption for v in group.views if v is not self]), self)
-            act.setCheckable(True)
-            act.setChecked(group is self.sync_state)
-            act.toggled.connect(lambda checked, s=group: self.sync_with_state_object(s if checked else None))
+        if len(groups) == 0:
+            act = QAction('None available', self)
+            act.setEnabled(False)
             mnu.addAction(act)
+        else:
+            for group in groups:
+                act = QAction(', '.join([v.caption for v in group.views if v is not self]), self)
+                act.setCheckable(True)
+                act.setChecked(group is self.sync_state)
+                act.toggled.connect(lambda checked, s=group: self.sync_with_state_object(s if checked else None))
+                mnu.addAction(act)
         return mnu
