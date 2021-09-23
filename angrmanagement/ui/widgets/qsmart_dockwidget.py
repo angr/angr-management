@@ -2,8 +2,12 @@ from PySide2.QtWidgets import QDockWidget
 
 
 class QSmartDockWidget(QDockWidget):
+    """
+    Wrapper class for dock widgets.
+    """
+
     def __init__(self, caption, parent=None, on_close=None, on_raise=None):
-        super(QSmartDockWidget, self).__init__(caption, parent)
+        super().__init__(caption, parent)
 
         self.old_size = None
         self.original_min = None
@@ -21,10 +25,10 @@ class QSmartDockWidget(QDockWidget):
         self.setMaximumWidth(self.original_max.width())
         self.setMaximumHeight(self.original_max.height())
 
-    def closeEvent(self, event):
+    def closeEvent(self, event):  # pylint: disable=unused-argument
         if self._on_close is not None:
             self._on_close()
-        return super().closeEvent(event)
+        self.widget().close()
 
     def raise_(self):
         if self._on_raise is not None:
