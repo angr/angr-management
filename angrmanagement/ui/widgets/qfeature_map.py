@@ -5,7 +5,7 @@ from sortedcontainers import SortedDict
 from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsPolygonItem, QGraphicsLineItem
 from PySide2.QtGui import QBrush, QPen, QPolygonF
-from PySide2.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent
+from PySide2.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
 
 import cle
 from angr.block import Block
@@ -38,17 +38,21 @@ class FeatureMapItem(QGraphicsItem):
 
         self._map_items: Sequence[QGraphicsItem] = []
         self._map_indicator_items: Sequence[QGraphicsItem] = []
+        self._map_hover_region_item: Optional[QGraphicsItem] = None
+        self._map_hover_region: Optional[MemoryRegion] = None
         self._addr_to_region: Mapping[int, MemoryRegion] = SortedDict()
         self._regionaddr_to_offset: Mapping[int, int] = SortedDict()
         self._offset_to_regionaddr: Mapping[int, int] = SortedDict()
         self._total_size: int = 0
         self._pressed: bool = False
 
+        self.setAcceptHoverEvents(True)
         self._register_events()
         self.refresh()
 
     def refresh(self):
         self._generate_map_items()
+        self._generate_hover_region()
         self._generate_indicators()
 
     def _register_events(self):
@@ -82,7 +86,7 @@ class FeatureMapItem(QGraphicsItem):
         """
         Paint the feature map.
         """
-        # Handled by subitems
+        # Drawn by child items
 
     def boundingRect(self) -> QRectF:
         """
@@ -157,7 +161,9 @@ class FeatureMapItem(QGraphicsItem):
                 brush = QBrush(unknown_color)
 
             pen.setWidth(0)
-            item = QGraphicsRectItem(QRectF(pos, 0, length, self._height), parent=self)
+
+            r = QRectF(pos, 0, length, self._height)
+            item = QGraphicsRectItem(r, parent=self)
             item.setPen(pen)
             item.setBrush(brush)
             self._map_items.append(item)
@@ -169,8 +175,6 @@ class FeatureMapItem(QGraphicsItem):
                 item = QGraphicsLineItem(pos, pw/2, pos, self._height - pw/2, parent=self)
                 item.setPen(pen)
                 self._map_items.append(item)
-
-        self.update()
 
     def _generate_indicators(self, **kwargs):  # pylint: disable=unused-argument
         """
@@ -193,6 +197,7 @@ class FeatureMapItem(QGraphicsItem):
             item = QGraphicsRectItem(QRectF(pos, 0, 2, 5), parent=self)
             item.setPen(pen)
             item.setBrush(brush)
+            item.setZValue(2)
             self._map_indicator_items.append(item)
 
             triangle = QPolygonF()
@@ -203,9 +208,33 @@ class FeatureMapItem(QGraphicsItem):
             item = QGraphicsPolygonItem(triangle, parent=self)
             item.setPen(pen)
             item.setBrush(brush)
+            item.setZValue(2)
             self._map_indicator_items.append(item)
 
-        self.update()
+    def _generate_hover_region(self):
+        """
+        Paint the memory region indicator.
+        """
+        if self._map_hover_region_item:
+            self.scene().removeItem(self._map_hover_region_item)
+            self._map_hover_region_item = None
+
+        mr = self._map_hover_region
+        if mr is None:
+            return
+
+        # FIXME: Refactor all of this arithmetic into helper functions, along with above handlers
+        pen = QPen(Qt.red)
+        adjusted_size = self._adjust_region_size(mr)
+        pos = self._regionaddr_to_offset[mr.addr] * self._width // self._total_size
+        length = adjusted_size * self._width // self._total_size
+        hp = pen.width() / 2
+        r = QRectF(pos, 0, length, self._height)
+        r = r.marginsRemoved(QMarginsF(hp, hp, hp, hp))
+
+        item = QGraphicsRectItem(r, parent=self)
+        item.setPen(pen)
+        self._map_hover_region_item = item
 
     @staticmethod
     def _adjust_region_size(memory_region):
@@ -258,6 +287,46 @@ class FeatureMapItem(QGraphicsItem):
             pos = event.pos()
             offset = pos.x()
             self.select_offset(offset)
+        else:
+            super().mouseMoveEvent(event)
+
+    def _remove_hover_region(self):
+        if self._map_hover_region_item is not None:
+            self._map_hover_region = None
+            self.setToolTip('')
+            self._generate_hover_region()
+
+    def on_mouse_move_event_from_view(self, point: QPointF):
+        """
+        Highlight memory region under cursor.
+        """
+        self.setToolTip('')
+        offset = int(point.x() * self._total_size // self._width)
+        try:
+            base_offset = next(self._offset_to_regionaddr.irange(maximum=offset, reverse=True))
+        except StopIteration:
+            return
+
+        region_addr = self._offset_to_regionaddr[base_offset]
+        mr = self._addr_to_region[region_addr]
+
+        try:
+            addr = self._get_addr_from_pos(point.x())
+            item = self.workspace.instance.cfb.floor_item(addr)
+        except KeyError:
+            item = None
+        if item is not None:
+            addr, item = item
+            self.setToolTip(f'{str(item)} in {str(mr)}')
+
+        if mr is self._map_hover_region:
+            return
+        self._remove_hover_region()
+        self._map_hover_region = mr
+        self._generate_hover_region()
+
+    def hoverLeaveEvent(self, event):  # pylint: disable=unused-argument
+        self._remove_hover_region()
 
     def select_offset(self, offset):
         addr = self._get_addr_from_pos(offset)
@@ -276,6 +345,7 @@ class QFeatureMapView(QGraphicsView):
         super().__init__(parent)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setMouseTracking(True)
         self._scene = QGraphicsScene(parent=self)
         self.setScene(self._scene)
         self.fm: FeatureMapItem = FeatureMapItem(disasm_view)
@@ -289,6 +359,14 @@ class QFeatureMapView(QGraphicsView):
         self.update_size()
 
         self._base_width: int = 0
+
+    def mouseMoveEvent(self, event):
+        # Mouse moves *without* holding a button will apparently not be propagated down to QGraphicsItems. Do it
+        # here forcefully.
+        scene_pt = self.mapToScene(event.pos().x(), event.pos().y())
+        item_pt = self.fm.mapFromScene(scene_pt)
+        self.fm.on_mouse_move_event_from_view(item_pt)
+        super().mouseMoveEvent(event)
 
     def wheelEvent(self, event):
         """
