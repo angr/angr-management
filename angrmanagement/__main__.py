@@ -21,7 +21,8 @@ BUGGY_PYSIDE2_VERSIONS = [
     "5.14.2.1",  # deadlocks sometimes, although better than 5.14.2
 ]
 
-def check_dependencies():
+
+def check_dependencies_qt():
 
     missing_dep = False
 
@@ -48,6 +49,13 @@ def check_dependencies():
         sys.stderr.write("Cannot find the qtconsole package. You may install it via pip:\n" +
                          "    pip install qtconsole\n")
         missing_dep = True
+
+    return not missing_dep
+
+
+def check_dependencies():
+
+    missing_dep = False
 
     try:
         import sqlalchemy
@@ -113,7 +121,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     if sys.platform == "darwin":
         macos_bigsur_wants_layer()
 
-    if not check_dependencies():
+    if not check_dependencies_qt():
+        # it's likely that other dependencies are also missing. check them here before exiting.
+        check_dependencies()
         sys.exit(1)
 
     set_app_user_model_id()
@@ -124,7 +134,6 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     from PySide2.QtCore import Qt, QCoreApplication
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
-    from .ui.css import refresh_theme
 
     # Enable High-DPI support
     # https://stackoverflow.com/questions/35714837/how-to-get-sharp-ui-on-high-dpi-with-qt-5-6
@@ -150,8 +159,6 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     # try to import the initial configuration for the install
     Conf.attempt_importing_initial_config()
 
-    refresh_theme()
-
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
     splash_pixmap = QPixmap(splashscreen_location)
@@ -164,6 +171,13 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     for _ in range(5):
         time.sleep(0.01)
         app.processEvents()
+
+    if not check_dependencies():
+        sys.exit(1)
+
+    from .ui.css import refresh_theme  # import .ui after shwing the splash screen since it's going to take time
+
+    refresh_theme()
 
     import angr
 
