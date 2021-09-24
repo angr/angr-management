@@ -5,7 +5,6 @@ from PySide2.QtCore import QSize
 from traitlets.config.configurable import MultipleInstanceError
 
 from .view import BaseView
-from ..widgets.qipython_widget import QIPythonWidget
 
 _l = logging.getLogger(name=__name__)
 
@@ -71,6 +70,7 @@ class ConsoleView(BaseView):
             'cle': cle,
         }
 
+        from ..widgets.qipython_widget import QIPythonWidget  # pylint:disable=import-outside-toplevel
         try:
             ipython_widget = QIPythonWidget(namespace=namespace)
         except MultipleInstanceError:
