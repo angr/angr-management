@@ -9,7 +9,8 @@ from PySide2.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
 
 import cle
 from angr.block import Block
-from angr.analyses.cfg.cfb import Unknown, MemoryRegion
+from angr.analyses.cfg.cfb import MemoryRegion
+from angr.knowledge_plugins.cfg import MemoryData
 
 from ...config import Conf
 from ...data.object_container import ObjectContainer
@@ -24,6 +25,9 @@ class FeatureMapItem(QGraphicsItem):
 
     The feature map will be rendered horizontally, with addresses increasing from left to right.
     """
+    ZVALUE_SEPARATOR = 1
+    ZVALUE_HOVER     = 2
+    ZVALUE_INDICATOR = 3
 
     def __init__(self, disasm_view, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -94,155 +98,30 @@ class FeatureMapItem(QGraphicsItem):
         """
         return QRectF(0, 0, self._width, self._height)
 
-    def _generate_map_items(self, **kwargs):  # pylint: disable=unused-argument
+    def _calculate_memory_region_offsets(self):
         """
-        Generate the feature map items (memory region blocks, separating lines, etc).
+        Calculate all memory region offsets and lengths.
         """
-        cfb = self.instance.cfb.am_obj
-        if cfb is None:
-            return
-
-        for item in self._map_items:
-            self.scene().removeItem(item)
-        self._map_items.clear()
-
-        func_color = Conf.feature_map_color_regular_function
-        data_color = Conf.feature_map_color_data
-        unknown_color = Conf.feature_map_color_unknown
-        delimiter_color = Conf.feature_map_color_delimiter
-
         self._total_size = 0
         self._addr_to_region.clear()
         self._regionaddr_to_offset.clear()
-        for mr in cfb.regions:
+
+        if self.instance.cfb.am_none:
+            return
+
+        for mr in self.instance.cfb.regions:
             self._addr_to_region[mr.addr] = mr
             self._regionaddr_to_offset[mr.addr] = self._total_size
             self._offset_to_regionaddr[self._total_size] = mr.addr
-            self._total_size += self._adjust_region_size(mr)
-
-        offset = 0
-        current_region = None
-        for addr, obj in cfb.ceiling_items():
-            if obj.size is None:
-                continue
-
-            # are we in a new region?
-            new_region = False
-            if current_region is None or not current_region.addr <= addr < current_region.addr + current_region.size:
-                try:
-                    current_region_addr = next(self._addr_to_region.irange(maximum=addr, reverse=True))
-                except StopIteration:
-                    # FIXME: it's not within any of the known regions
-                    # we should fix this in the future. for now, let's make sure it does not crash
-                    continue
-                current_region = self._addr_to_region[current_region_addr]
-                new_region = True
-
-            # adjust size
-            adjusted_region_size = self._adjust_region_size(current_region)
-            adjusted_size = min(obj.size, current_region.addr + adjusted_region_size - addr)
-            if adjusted_size <= 0:
-                continue
-
-            pos = offset * self._width // self._total_size
-            length = adjusted_size * self._width // self._total_size
-            offset += adjusted_size
-
-            # draw a rectangle
-            if isinstance(obj, Unknown):
-                pen = QPen(data_color)
-                brush = QBrush(data_color)
-            elif isinstance(obj, Block):
-                # TODO: Check if it belongs to a function or not
-                pen = QPen(func_color)
-                brush = QBrush(func_color)
-            else:
-                pen = QPen(unknown_color)
-                brush = QBrush(unknown_color)
-
-            pen.setWidth(0)
-
-            r = QRectF(pos, 0, length, self._height)
-            item = QGraphicsRectItem(r, parent=self)
-            item.setPen(pen)
-            item.setBrush(brush)
-            self._map_items.append(item)
-
-            # if at the beginning of a new region, draw a line
-            if new_region:
-                pen = QPen(delimiter_color)
-                pw = pen.width()
-                item = QGraphicsLineItem(pos, pw/2, pos, self._height - pw/2, parent=self)
-                item.setPen(pen)
-                self._map_items.append(item)
-
-    def _generate_indicators(self, **kwargs):  # pylint: disable=unused-argument
-        """
-        Paint arrow indicators of selected instructions and labels.
-        """
-        scene = self.scene()
-        for item in self._map_indicator_items:
-            scene.removeItem(item)
-        self._map_indicator_items.clear()
-
-        for addr in list(self.disasm_view.infodock.selected_insns) + list(self.disasm_view.infodock.selected_labels):
-            pos = self._get_pos_from_addr(addr)
-            if pos is None:
-                continue
-
-            pos -= 1  # this is the top-left x coordinate of our arrow body (the rectangle)
-
-            pen = QPen(Qt.yellow)
-            brush = QBrush(Qt.yellow)
-            item = QGraphicsRectItem(QRectF(pos, 0, 2, 10), parent=self)
-            item.setPen(pen)
-            item.setBrush(brush)
-            item.setZValue(2)
-            self._map_indicator_items.append(item)
-
-            triangle = QPolygonF()
-            triangle.append(QPointF(pos - 1, 10))
-            triangle.append(QPointF(pos + 3, 10))
-            triangle.append(QPointF(pos + 1, 12))
-            triangle.append(QPointF(pos - 1, 10))
-            item = QGraphicsPolygonItem(triangle, parent=self)
-            item.setPen(pen)
-            item.setBrush(brush)
-            item.setZValue(2)
-            self._map_indicator_items.append(item)
-
-    def _generate_hover_region(self):
-        """
-        Paint the memory region indicator.
-        """
-        if self._map_hover_region_item:
-            self.scene().removeItem(self._map_hover_region_item)
-            self._map_hover_region_item = None
-
-        mr = self._map_hover_region
-        if mr is None:
-            return
-
-        # FIXME: Refactor all of this arithmetic into helper functions, along with above handlers
-        pen = QPen(Qt.red)
-        adjusted_size = self._adjust_region_size(mr)
-        pos = self._regionaddr_to_offset[mr.addr] * self._width // self._total_size
-        length = adjusted_size * self._width // self._total_size
-        hp = pen.width() / 2
-        r = QRectF(pos, 0, length, self._height)
-        r = r.marginsRemoved(QMarginsF(hp, hp, hp, hp))
-
-        item = QGraphicsRectItem(r, parent=self)
-        item.setPen(pen)
-        self._map_hover_region_item = item
+            self._total_size += self._get_adjusted_region_size(mr)
 
     @staticmethod
-    def _adjust_region_size(memory_region):
-        if isinstance(memory_region.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject)):
+    def _get_adjusted_region_size(mr: MemoryRegion):
+        if isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject)):
             return 80 # Draw unnecessary objects smaller
         else:
-            l.debug("memory_region.size: %x memory_region.object: %s", memory_region.size, memory_region.object)
-            return memory_region.size
+            l.debug("memory_region.size: %x memory_region.object: %s", mr.size, mr.object)
+            return mr.size
 
     def _get_pos_from_addr(self, addr: int) -> Optional[int]:
         """
@@ -271,6 +150,168 @@ class FeatureMapItem(QGraphicsItem):
         region_addr = self._offset_to_regionaddr[base_offset]
         return region_addr + offset - base_offset
 
+    def _get_region_from_point(self, point: QPoint) -> Optional[MemoryRegion]:
+        """
+        Get the memory region from X coordinate, or None if it could not be mapped.
+        """
+        offset = int(point.x() * self._total_size // self._width)
+        try:
+            base_offset = next(self._offset_to_regionaddr.irange(maximum=offset, reverse=True))
+        except StopIteration:
+            return None
+
+        return self._addr_to_region[self._offset_to_regionaddr[base_offset]]
+
+    def _get_offset_size_rect(self, offset: int, size: int) -> QRectF:
+        """
+        Given a byte offset `offset` and number of bytes `size`, get a rect to draw.
+        """
+        x = offset / self._total_size * self._width
+        width = size / self._total_size * self._width
+        return QRectF(x, 0, width, self._height)
+
+    def _get_region_rect(self, mr: MemoryRegion) -> QRectF:
+        """
+        Get the rect to draw this memory region.
+        """
+        return self._get_offset_size_rect(self._regionaddr_to_offset[mr.addr], self._get_adjusted_region_size(mr))
+
+    def _generate_map_items(self, **kwargs):  # pylint: disable=unused-argument
+        """
+        Generate the feature map items (memory region blocks, separating lines, etc).
+        """
+        cfb = self.instance.cfb.am_obj
+        if cfb is None:
+            return
+
+        for item in self._map_items:
+            self.scene().removeItem(item)
+        self._map_items.clear()
+        self._calculate_memory_region_offsets()
+
+        func_color = Conf.feature_map_color_regular_function
+        data_color = Conf.feature_map_color_data
+        unknown_color = Conf.feature_map_color_unknown
+        delimiter_color = Conf.feature_map_color_delimiter
+        offset = 0
+        current_region = None
+
+        for addr, obj in cfb.ceiling_items():
+            if obj.size is None:
+                continue
+
+            # Are we in a new region?
+            new_region = False
+            if current_region is None or not current_region.addr <= addr < current_region.addr + current_region.size:
+                try:
+                    current_region_addr = next(self._addr_to_region.irange(maximum=addr, reverse=True))
+                except StopIteration:
+                    # FIXME: it's not within any of the known regions
+                    # we should fix this in the future. for now, let's make sure it does not crash
+                    continue
+                current_region = self._addr_to_region[current_region_addr]
+                new_region = True
+
+            if new_region:
+                r = self._get_region_rect(current_region)
+                pos = r.topLeft().x()
+                pen = QPen(delimiter_color)
+                hpw = pen.width() / 2
+                item = QGraphicsLineItem(pos, hpw, pos, self._height - hpw, parent=self)
+                item.setPen(pen)
+                item.setZValue(self.ZVALUE_SEPARATOR)
+                self._map_items.append(item)
+
+            # Clip item to possibly truncated region size
+            adjusted_region_size = self._get_adjusted_region_size(current_region)
+            adjusted_size = min(obj.size, current_region.addr + adjusted_region_size - addr)
+            if adjusted_size <= 0:
+                # Item falls outside truncated region. Drop the item.
+                continue
+
+            r = self._get_offset_size_rect(offset, adjusted_size)
+            offset += adjusted_size
+
+            if isinstance(obj, MemoryData):
+                brush = QBrush(data_color)
+            elif isinstance(obj, Block):
+                # TODO: Check if it belongs to a function or not
+                brush = QBrush(func_color)
+            else:
+                brush = QBrush(unknown_color)
+
+            item = QGraphicsRectItem(r, parent=self)
+            item.setPen(Qt.NoPen)
+            item.setBrush(brush)
+            self._map_items.append(item)
+
+    def _generate_indicators(self, **kwargs):  # pylint: disable=unused-argument
+        """
+        Paint arrow indicators of selected instructions and labels.
+        """
+        scene = self.scene()
+        for item in self._map_indicator_items:
+            scene.removeItem(item)
+        self._map_indicator_items.clear()
+
+        for addr in list(self.disasm_view.infodock.selected_insns) + list(self.disasm_view.infodock.selected_labels):
+            pos = self._get_pos_from_addr(addr)
+            if pos is None:
+                continue
+
+            pos -= 1  # this is the top-left x coordinate of our arrow body (the rectangle)
+
+            pen = QPen(Qt.yellow)
+            brush = QBrush(Qt.yellow)
+            item = QGraphicsRectItem(QRectF(pos, 0, 2, 10), parent=self)
+            item.setPen(pen)
+            item.setBrush(brush)
+            item.setZValue(self.ZVALUE_INDICATOR)
+            self._map_indicator_items.append(item)
+
+            triangle = QPolygonF()
+            triangle.append(QPointF(pos - 1, 10))
+            triangle.append(QPointF(pos + 3, 10))
+            triangle.append(QPointF(pos + 1, 12))
+            triangle.append(QPointF(pos - 1, 10))
+            item = QGraphicsPolygonItem(triangle, parent=self)
+            item.setPen(pen)
+            item.setBrush(brush)
+            item.setZValue(self.ZVALUE_INDICATOR)
+            self._map_indicator_items.append(item)
+
+    def _generate_hover_region(self):
+        """
+        Paint the memory region indicator.
+        """
+        if self._map_hover_region_item:
+            self.scene().removeItem(self._map_hover_region_item)
+            self._map_hover_region_item = None
+
+        mr = self._map_hover_region
+        if mr is None:
+            return
+
+        pw = 1.0
+        hpw = pw / 2
+        pen = QPen(Qt.red)
+        pen.setWidth(pw)
+        r = self._get_region_rect(mr)
+        r = r.marginsRemoved(QMarginsF(hpw, hpw, hpw, hpw))
+        item = QGraphicsRectItem(r, parent=self)
+        item.setPen(pen)
+        item.setZValue(self.ZVALUE_HOVER)
+        self._map_hover_region_item = item
+
+    def _remove_hover_region(self):
+        """
+        Remove active hover region, if set.
+        """
+        if self._map_hover_region_item is not None:
+            self._map_hover_region = None
+            self._generate_hover_region()
+            self.setToolTip('')
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             pos = event.pos()
@@ -290,37 +331,28 @@ class FeatureMapItem(QGraphicsItem):
         else:
             super().mouseMoveEvent(event)
 
-    def _remove_hover_region(self):
-        if self._map_hover_region_item is not None:
-            self._map_hover_region = None
-            self.setToolTip('')
-            self._generate_hover_region()
-
     def on_mouse_move_event_from_view(self, point: QPointF):
         """
         Highlight memory region under cursor.
         """
         self.setToolTip('')
-        offset = int(point.x() * self._total_size // self._width)
-        try:
-            base_offset = next(self._offset_to_regionaddr.irange(maximum=offset, reverse=True))
-        except StopIteration:
+        mr = self._get_region_from_point(point)
+        if mr is None:
+            self._remove_hover_region()
             return
-
-        region_addr = self._offset_to_regionaddr[base_offset]
-        mr = self._addr_to_region[region_addr]
 
         try:
             addr = self._get_addr_from_pos(point.x())
             item = self.workspace.instance.cfb.floor_item(addr)
+            if item is not None:
+                _, item = item
+                self.setToolTip(f'{str(item)} in {str(mr)}')
         except KeyError:
-            item = None
-        if item is not None:
-            addr, item = item
-            self.setToolTip(f'{str(item)} in {str(mr)}')
+            pass
 
         if mr is self._map_hover_region:
             return
+
         self._remove_hover_region()
         self._map_hover_region = mr
         self._generate_hover_region()
@@ -329,6 +361,9 @@ class FeatureMapItem(QGraphicsItem):
         self._remove_hover_region()
 
     def select_offset(self, offset):
+        """
+        Update listeners with new desired location.
+        """
         addr = self._get_addr_from_pos(offset)
         if addr is None:
             return
@@ -361,8 +396,12 @@ class QFeatureMapView(QGraphicsView):
         self._base_width: int = 0
 
     def mouseMoveEvent(self, event):
-        # Mouse moves *without* holding a button will apparently not be propagated down to QGraphicsItems. Do it
-        # here forcefully.
+        """
+        Handle mouse move events.
+
+        Mouse move events whilst not holding a mouse button will not be propagated down to QGraphicsItems, so we catch
+        the movement events here in the view and forward them to the feature map item.
+        """
         scene_pt = self.mapToScene(event.pos().x(), event.pos().y())
         item_pt = self.fm.mapFromScene(scene_pt)
         self.fm.on_mouse_move_event_from_view(item_pt)
@@ -380,6 +419,9 @@ class QFeatureMapView(QGraphicsView):
             super().wheelEvent(event)
 
     def resizeEvent(self, event):  # pylint: disable=unused-argument
+        """
+        Handle view resize events, updating the feature map size accordingly.
+        """
         self.update_size()
 
     def adjust_viewport_scale(self, scale: Optional[float] = None, point: Optional[QPoint] = None):
