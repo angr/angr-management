@@ -7,6 +7,7 @@ import PySide2
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
+from angr.knowledge_plugins.cfg import MemoryData
 
 from ...logic import GlobalInfo
 from ...data.instance import ObjectContainer
@@ -814,6 +815,17 @@ class DisassemblyView(SynchronizedView):
                 instr_addr = addr
             self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
             return True
+        else:
+            try:
+                item = self.workspace.instance.cfb.floor_item(addr)
+            except KeyError:
+                item = None
+
+            if item is not None:
+                addr, item = item
+                if isinstance(item, MemoryData):
+                    self.infodock.select_label(item.addr)
+
 
         # it does not belong to any function - we need to switch to linear view mode
         if self.current_graph is not self._linear_viewer:
