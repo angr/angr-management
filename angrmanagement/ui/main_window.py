@@ -47,7 +47,8 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
-from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
+from .dialogs.run_target import RunTargetDialog
+from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar, DebugToolbar
 
 if TYPE_CHECKING:
     from PySide2.QtWidgets import QApplication
@@ -78,6 +79,7 @@ class MainWindow(QMainWindow):
         self._file_toolbar = None  # type: FileToolbar
         self._states_toolbar = None  # type: StatesToolbar
         self._analysis_toolbar = None  # type: AnalysisToolbar
+        self._debug_toolbar: DebugToolbar = None
         self._progressbar = None  # type: QProgressBar
         self._load_binary_dialog = None
 
@@ -215,10 +217,12 @@ class MainWindow(QMainWindow):
         self._file_toolbar = FileToolbar(self)
         self._states_toolbar = StatesToolbar(self)
         self._analysis_toolbar = AnalysisToolbar(self)
+        self._debug_toolbar = DebugToolbar(self)
 
         self.addToolBar(Qt.TopToolBarArea, self._file_toolbar.qtoolbar())
         self.addToolBar(Qt.TopToolBarArea, self._states_toolbar.qtoolbar())
         self.addToolBar(Qt.TopToolBarArea, self._analysis_toolbar.qtoolbar())
+        self.addToolBar(Qt.TopToolBarArea, self._debug_toolbar.qtoolbar())
 
     #
     # Menus
@@ -612,6 +616,29 @@ class MainWindow(QMainWindow):
 
     def interact(self):
         self.workspace.interact_program(self.workspace.instance.img_name)
+
+    #
+    # Debugging actions
+    #
+
+    def run_process(self):
+        dialog = RunTargetDialog()
+        dialog.exec_()
+
+    def attach_process(self):
+        pass
+
+    def detach_process(self):
+        pass
+
+    def stop_process(self):
+        pass
+
+    def single_step(self):
+        pass
+
+    def step_over(self):
+        pass
 
     #
     # Other public methods
