@@ -19,7 +19,11 @@ from ...logic.threads import gui_thread_schedule_async
 try:
     import argument_resolver
     from argument_resolver.handlers import handler_factory, StdioHandlers, StdlibHandlers, StringHandlers
-    from argument_resolver.transitive_closure import transitive_closures_from_defs
+    from argument_resolver.transitive_closure import (
+        transitive_closures_from_defs,
+        contains_an_external_definition,
+        represents_constant_data
+    )
     from argument_resolver.call_trace_visitor import CallTraceSubject
 except ImportError:
     argument_resolver = None
@@ -132,20 +136,30 @@ class DependencyAnalysisJob(Job):
 
                 # determine if there is any values are marked as coming from External. these values are not resolved
                 # within the current call-depth range
-                has_external = False
-                for def_, graph in closures.items():
-                    for node in graph.nodes():
-                        if isinstance(node.codeloc, ExternalCodeLocation):
-                            # yes!
-                            has_external = True
-                            break
-                    if has_external:
-                        break
+                unresolved_closures = {}
+                for definition, d_graph in closures.items():
+                    for addr, livedef in dep.observed_results.items():
+                        if (
+                            addr[1] == definition.codeloc.block_addr
+                            or addr[1] == definition.codeloc.ins_addr
+                        ):
+                            mv = livedef.get_value_from_atom(definition.atom)
+                            l.info(f"Multivalue: {mv.values}")
+                            if not represents_constant_data(definition, mv, livedef, d_graph):
+                                unresolved_closures[definition] = d_graph
+
+                has_external = contains_an_external_definition(unresolved_closures)
+
                 if not has_external:
                     # fully resolved - we should exclude this function for future exploration
-                    current_function_address = dep.subject.content.current_function_address()
-                    l.info("Exclude function %#x from future slices since the data dependencies are fully resolved.",
-                           current_function_address)
+                    current_function_address = (
+                        dep.subject.content.current_function_address()
+                    )
+
+                    l.info(
+                        "Exclude function %#x from future slices since the data dependencies are fully resolved.",
+                        current_function_address,
+                    )
                     excluded_functions.add(current_function_address)
 
                 closures.update(cc)
