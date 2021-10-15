@@ -47,7 +47,7 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
-from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
+from .toolbars import FileToolbar, SimgrToolbar
 
 if TYPE_CHECKING:
     from PySide2.QtWidgets import QApplication
@@ -76,8 +76,7 @@ class MainWindow(QMainWindow):
         self.central_widget: QMainWindow = None
 
         self._file_toolbar = None  # type: FileToolbar
-        self._states_toolbar = None  # type: StatesToolbar
-        self._analysis_toolbar = None  # type: AnalysisToolbar
+        self._simgr_toolbar = None  # type: SimgrToolbar
         self._progressbar = None  # type: QProgressBar
         self._load_binary_dialog = None
 
@@ -211,14 +210,10 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self._progressbar)
 
     def _init_toolbars(self):
-
         self._file_toolbar = FileToolbar(self)
-        self._states_toolbar = StatesToolbar(self)
-        self._analysis_toolbar = AnalysisToolbar(self)
-
+        self._simgr_toolbar = SimgrToolbar(self)
         self.addToolBar(Qt.TopToolBarArea, self._file_toolbar.qtoolbar())
-        self.addToolBar(Qt.TopToolBarArea, self._states_toolbar.qtoolbar())
-        self.addToolBar(Qt.TopToolBarArea, self._analysis_toolbar.qtoolbar())
+        self.addToolBar(Qt.TopToolBarArea, self._simgr_toolbar.qtoolbar())
 
     #
     # Menus
