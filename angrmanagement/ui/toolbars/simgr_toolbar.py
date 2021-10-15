@@ -13,14 +13,16 @@ class SimgrToolbar(Toolbar):
     def __init__(self, main_window: 'MainWindow'):
         super().__init__(main_window, 'Simgr')
         self.main_window = main_window
+        # pylint: disable=unnecessary-lambda
+        # lambda added for late bind to simulation_managers which is not ready yet
         self.actions = [
-            ToolbarAction(qta.icon("fa5s.plus"),"New", "Start a new Simulation...", \
+            ToolbarAction(qta.icon("fa5s.plus"),"New", "Start a new Simulation...",
                 self.main_window.open_newstate_dialog),
-            ToolbarAction(qta.icon("fa5s.play"),"Explore", "", lambda : \
-                self.simulation_managers._on_explore_clicked()),
-            ToolbarAction(qta.icon("fa5s.step-forward"), "Step", "", lambda : \
-                self.simulation_managers._on_step_clicked()),
-            ToolbarAction(qta.icon("fa5s.code-branch"),"Step Until Branch", "", \
+            ToolbarAction(qta.icon("fa5s.play"),"Explore", "", 
+                lambda : self.simulation_managers._on_explore_clicked()),
+            ToolbarAction(qta.icon("fa5s.step-forward"), "Step", "",
+                lambda : self.simulation_managers._on_step_clicked()),
+            ToolbarAction(qta.icon("fa5s.code-branch"),"Step Until Branch", "",
                 lambda : self.simulation_managers._on_step_until_branch_clicked()),
             ToolbarAction(qta.icon("fa5s.pause"), "Interrupt", "", main_window.interrupt_current_job),
         ]
