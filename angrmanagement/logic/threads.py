@@ -139,7 +139,11 @@ def gui_thread_schedule(callable, args=None):
     except RuntimeError:
         # the application is exiting and the main window has been destroyed. just let it go
         return None
-    event.event.wait()  # TODO: unsafe. to be fixed later.
+    event.event.wait(timeout=1.0)  # TODO: unsafe. to be fixed later.
+
+    if not event.event.is_set():
+        # it timed out without getting scheduled to execute...
+        return None
 
     if event.exception is not None:
         raise event.exception
