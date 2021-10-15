@@ -1,8 +1,5 @@
 from typing import TYPE_CHECKING
-
-from angrmanagement.ui import main_window
 from .toolbar import Toolbar, ToolbarAction
-
 import qtawesome as qta
 
 if TYPE_CHECKING:
