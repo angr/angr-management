@@ -44,7 +44,6 @@ setup(
         'pyqodeng.core',
         'qtterm',
         'getmac',
-        "pypcode",
         'QtAwesome',
     ]
 )
