@@ -18,7 +18,7 @@ class SimgrToolbar(Toolbar):
         self.actions = [
             ToolbarAction(qta.icon("fa5s.plus"),"New", "Start a new Simulation...",
                 self.main_window.open_newstate_dialog),
-            ToolbarAction(qta.icon("fa5s.play"),"Explore", "", 
+            ToolbarAction(qta.icon("fa5s.play"),"Explore", "",
                 lambda : self.simulation_managers._on_explore_clicked()),
             ToolbarAction(qta.icon("fa5s.step-forward"), "Step", "",
                 lambda : self.simulation_managers._on_step_clicked()),
