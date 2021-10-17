@@ -7,7 +7,7 @@ from . import GlobalInfo
 
 class ExecuteCodeEvent(QEvent):
     def __init__(self, callable, args=None, kwargs=None):
-        super(ExecuteCodeEvent, self).__init__(QEvent.User)
+        super().__init__(QEvent.User)
         self.callable = callable
         self.args = args
         self.kwargs = kwargs
@@ -28,7 +28,7 @@ class ExecuteCodeEvent(QEvent):
                 return self.callable(*self.args, **self.kwargs)
 
 
-class GUIObjProxy(object):
+class GUIObjProxy:
     """
     Derived from http://code.activestate.com/recipes/496741-object-proxying/
     """
@@ -139,8 +139,8 @@ def gui_thread_schedule(callable, args=None):
     except RuntimeError:
         # the application is exiting and the main window has been destroyed. just let it go
         return None
-    event.event.wait(timeout=1.0)  # TODO: unsafe. to be fixed later.
 
+    event.event.wait(timeout=10)  # TODO: unsafe. to be fixed later.
     if not event.event.is_set():
         # it timed out without getting scheduled to execute...
         return None

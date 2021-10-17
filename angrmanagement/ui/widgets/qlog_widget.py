@@ -9,7 +9,7 @@ from PySide2.QtCore import QAbstractTableModel, Qt
 from PySide2.QtGui import QIcon, QCursor, QGuiApplication, QClipboard, QKeySequence
 
 from ...config import IMG_LOCATION
-from ...logic.threads import gui_thread_schedule
+from ...logic.threads import gui_thread_schedule_async
 from ...data.log import LogRecord
 from ..menus.log_menu import LogMenu
 
@@ -213,7 +213,7 @@ class QLogWidget(QTableView):
         self._context_menu.popup(QCursor.pos())
 
     def _on_new_logrecord(self, log_record: LogRecord = None):
-        gui_thread_schedule(self._on_new_logrecord_core, (log_record,))
+        gui_thread_schedule_async(self._on_new_logrecord_core, (log_record,))
 
     def _on_new_logrecord_core(self, log_record: LogRecord = None):
         self._before_row_insert()
