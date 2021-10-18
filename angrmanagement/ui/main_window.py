@@ -47,7 +47,7 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
-from .toolbars import StatesToolbar, AnalysisToolbar, FileToolbar
+from .toolbars import FileToolbar, SimgrToolbar
 
 if TYPE_CHECKING:
     from PySide2.QtWidgets import QApplication
@@ -76,8 +76,7 @@ class MainWindow(QMainWindow):
         self.central_widget: QMainWindow = None
 
         self._file_toolbar = None  # type: FileToolbar
-        self._states_toolbar = None  # type: StatesToolbar
-        self._analysis_toolbar = None  # type: AnalysisToolbar
+        self._simgr_toolbar = None  # type: SimgrToolbar
         self._progressbar = None  # type: QProgressBar
         self._load_binary_dialog = None
 
@@ -211,14 +210,10 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self._progressbar)
 
     def _init_toolbars(self):
-
         self._file_toolbar = FileToolbar(self)
-        self._states_toolbar = StatesToolbar(self)
-        self._analysis_toolbar = AnalysisToolbar(self)
-
+        self._simgr_toolbar = SimgrToolbar(self)
         self.addToolBar(Qt.TopToolBarArea, self._file_toolbar.qtoolbar())
-        self.addToolBar(Qt.TopToolBarArea, self._states_toolbar.qtoolbar())
-        self.addToolBar(Qt.TopToolBarArea, self._analysis_toolbar.qtoolbar())
+        self.addToolBar(Qt.TopToolBarArea, self._simgr_toolbar.qtoolbar())
 
     #
     # Menus
@@ -361,7 +356,7 @@ class MainWindow(QMainWindow):
             print("[+] Connected to daemon.")
             break
 
-        from rpyc import BgServingThread
+        from rpyc import BgServingThread  # pylint:disable=import-outside-toplevel
         _ = BgServingThread(GlobalInfo.daemon_conn)
 
     #
@@ -507,14 +502,13 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.critical(self,
                                      "File not found",
-                                     "angr management cannot open file %s. "
-                                     "Please make sure that the file exists." % file_path)
+                                     f"angr management cannot open file {file_path}. "
+                                     "Please make sure that the file exists.")
         else:
             # url
             r = QMessageBox.question(self,
                                      "Downloading a file",
-                                     "Do you want to download a file from %s and open it in angr management?" %
-                                     file_path,
+                                     f"Do you want to download a file from {file_path} and open it in angr management?",
                                      defaultButton=QMessageBox.Yes)
             if r == QMessageBox.Yes:
                 try:
@@ -528,7 +522,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.critical(self,
                                          "Downloading failed",
                                          "angr management failed to retrieve the header of the file. "
-                                         "The HTTP request returned an unexpected status code %d." % ex.status_code)
+                                         f"The HTTP request returned an unexpected status code {ex.status_code}.")
                     return
 
                 if target_path:
@@ -646,12 +640,12 @@ class MainWindow(QMainWindow):
         except angr.errors.AngrIncompatibleDBError as ex:
             QMessageBox.critical(None, 'Error',
                                  "Failed to load the angr database because of compatibility issues.\n"
-                                 "Details: %s" % str(ex))
+                                 f"Details: {ex}")
             return
         except angr.errors.AngrDBError as ex:
             QMessageBox.critical(None, 'Error',
                                  'Failed to load the angr database.\n'
-                                 'Details: %s' % str(ex))
+                                 f'Details: {ex}')
             _l.critical("Failed to load the angr database.", exc_info=True)
             return
 
