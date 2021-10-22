@@ -25,6 +25,7 @@ class VariableRecoveryJob(Job):
             low_priority=True,
             cfg=inst.cfg,
             progress_callback=self._progress_callback,
+            analyze_callsites=True,
             **self.variable_recovery_args,
         )
 
