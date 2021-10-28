@@ -31,7 +31,7 @@ class Instance:
     def __init__(self):
         # pylint:disable=import-outside-toplevel)
         # delayed import
-        from ..ui.views.interaction_view import PlainTextProtocol, ProtocolInteractor, SavedInteraction
+        from ..ui.views.interaction_view import PlainTextProtocol, BackslashTextProtocol, ProtocolInteractor, SavedInteraction
 
         self._live = False
         self.workspace: Optional['Workspace'] = None
@@ -56,7 +56,9 @@ class Instance:
         self.register_container('cfb', lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
         self.register_container('interactions', lambda: [], List[SavedInteraction], 'Saved program interactions')
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
-        self.register_container('interaction_protocols', lambda: [PlainTextProtocol], List[Type[ProtocolInteractor]],
+        self.register_container('interaction_protocols',
+                                lambda: [PlainTextProtocol, BackslashTextProtocol],
+                                List[Type[ProtocolInteractor]],
                                 'Available interaction protocols')
         self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages')
 
