@@ -15,6 +15,7 @@ from angrmanagement.daemon.client import DaemonClient
 
 from .backend_selector_dialog import QBackendSelectorDialog
 from .target_selector import QTargetSelectorDialog
+from .summary_view import SummaryView
 
 try:
     import slacrs
@@ -85,6 +86,9 @@ class ChessConnector(BasePlugin):
         )
         th.setDaemon(True)
         th.start()
+
+        self.summary_view = SummaryView(self.workspace, "center", self)
+        self.workspace.add_view(self.summary_view)
 
     def teardown(self):
         self.active = False
