@@ -1,11 +1,10 @@
 import json
 import threading
-import time
 from time import sleep
 
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QComboBox, QTableWidget, QHeaderView, \
-    QAbstractItemView, QTableWidgetItem, QWidget, QPushButton, QTabWidget, QFrame, QGridLayout
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, \
+    QAbstractItemView, QTableWidgetItem, QWidget, QTabWidget
 
 from angrmanagement.ui.views.view import BaseView
 
@@ -333,6 +332,7 @@ class SummaryView(BaseView):
                     continue
 
                 return [msg]
+        return None
 
     def _update_tables(self, session):
         res = session.query(PluginMessage)
