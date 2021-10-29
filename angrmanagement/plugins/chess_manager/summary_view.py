@@ -232,9 +232,14 @@ class SummaryView(BaseView):
         self._init_widgets()
 
         # start the worker routine
+        self.should_work = True
         self.worker_thread = threading.Thread(target=self.worker_routine)
         self.worker_thread.setDaemon(True)
         self.worker_thread.start()
+
+    def teardown(self):
+        self.should_work = False
+        self.close()
 
     #
     # UI
@@ -284,7 +289,7 @@ class SummaryView(BaseView):
     #
 
     def worker_routine(self):
-        while True:
+        while self.should_work and True:
             if self.connector is None or self.session is None:
                 sleep(10)
             else:

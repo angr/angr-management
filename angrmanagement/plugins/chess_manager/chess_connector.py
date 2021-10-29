@@ -92,6 +92,7 @@ class ChessConnector(BasePlugin):
 
     def teardown(self):
         self.active = False
+        self.summary_view.teardown()
 
     def slacrs_instance(self, database: Optional[str]=None):
         if not database:
