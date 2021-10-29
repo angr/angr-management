@@ -335,8 +335,6 @@ class SummaryView(BaseView):
                 return [msg]
 
     def _update_tables(self, session):
-        print(f"updating table {time.time()}")
-
         res = session.query(PluginMessage)
         if not res:
             return
