@@ -5,7 +5,7 @@ import networkx
 from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtCore import QSize
 
-from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode
+from angr.analyses.new_prox_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode
 
 from .view import BaseView
 from ..widgets.qproximity_graph import QProximityGraph
@@ -61,12 +61,11 @@ class ProximityView(BaseView):
         dec = self.get_decompilation()
 
         inst = self.workspace.instance
-        prox = inst.project.analyses.Proximity(
+        prox = inst.project.analyses.NewProximity(
             self.function,
             inst.cfg,
             inst.kb.xrefs,
             decompilation=dec,
-            expand_funcs=self._expand_function_addrs,
         )
         self._proximity_graph = prox.graph
 
@@ -142,6 +141,8 @@ class ProximityView(BaseView):
             new_node = QProximityGraphFunctionBlock(False, self, node)
         elif isinstance(node, CallProxiNode):
             new_node = QProximityGraphCallBlock(False, self, node)
+        elif isinstance(node, BaseProxiNode):
+            new_node = QProximityGraphBlock(False, self, node)
         else:
             raise TypeError("Unsupported type of proximity node %s." % type(node))
         converted[node] = new_node
