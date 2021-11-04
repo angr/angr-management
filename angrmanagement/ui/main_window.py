@@ -12,6 +12,9 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 import angr.flirt
+
+from .toolbar_manager import ToolbarManager
+
 try:
     from angr.angrdb import AngrDB
 except ImportError:
@@ -75,8 +78,7 @@ class MainWindow(QMainWindow):
         self.workspace: Workspace = None
         self.central_widget: QMainWindow = None
 
-        self._file_toolbar = None  # type: FileToolbar
-        self._simgr_toolbar = None  # type: SimgrToolbar
+        self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar = None  # type: QProgressBar
         self._load_binary_dialog = None
 
@@ -210,10 +212,8 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self._progressbar)
 
     def _init_toolbars(self):
-        self._file_toolbar = FileToolbar(self)
-        self._simgr_toolbar = SimgrToolbar(self)
-        self.addToolBar(Qt.TopToolBarArea, self._file_toolbar.qtoolbar())
-        self.addToolBar(Qt.TopToolBarArea, self._simgr_toolbar.qtoolbar())
+        for cls in (FileToolbar, SimgrToolbar):
+            self.toolbar_manager.show_toolbar_by_class(cls)
 
     #
     # Menus
