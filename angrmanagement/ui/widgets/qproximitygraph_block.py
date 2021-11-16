@@ -7,7 +7,7 @@ from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
 from angr.analyses.new_prox_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
-    IntegerProxiNode, UnknownProxiNode
+    IntegerProxiNode, UnknownProxiNode, VariableProxiNode
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
@@ -255,6 +255,8 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
             return str, '"' + arg.content.decode("utf-8") + '"'
         elif isinstance(arg, IntegerProxiNode):
             return int, str(arg.value)
+        elif isinstance(arg, VariableProxiNode):
+            return object, str(arg.name)
         elif isinstance(arg, UnknownProxiNode):
             return object, str(arg.dummy_value)
         return object, "Unknown"
