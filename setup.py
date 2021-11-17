@@ -30,7 +30,7 @@ setup(
         ]
     },
     install_requires=[
-        'angr==9.0.gitrolling',
+        'angr[angrDB]==9.0.gitrolling',
         'websocket-client',
         'qtconsole',
         'ipython',
@@ -40,7 +40,6 @@ setup(
         'pyxdg',
         'jupyter-client',
         'requests[socks]',
-        'sqlalchemy',
         'pyqodeng.core',
         'qtterm',
         'getmac',
