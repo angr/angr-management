@@ -66,6 +66,7 @@ class ProximityView(BaseView):
             inst.cfg,
             inst.kb.xrefs,
             decompilation=dec,
+            expand_funcs=self._expand_function_addrs,
         )
         self._proximity_graph = prox.graph
 
