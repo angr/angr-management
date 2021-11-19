@@ -252,7 +252,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
     def _argument_text(self, arg) -> Tuple[Type,str]:
         if isinstance(arg, StringProxiNode):
-            return str, '"' + arg.content.decode("utf-8") + '"'
+            return str, '"' + arg.content.decode("utf-8").replace("\n", "\\n") + '"'
         elif isinstance(arg, IntegerProxiNode):
             return int, str(arg.value)
         elif isinstance(arg, VariableProxiNode):
