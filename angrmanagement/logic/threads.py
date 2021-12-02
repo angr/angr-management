@@ -126,7 +126,7 @@ def is_gui_thread():
     return threading.get_ident() == GlobalInfo.gui_thread or GlobalInfo.gui_thread is None
 
 
-def gui_thread_schedule(callable, args=None):
+def gui_thread_schedule(callable, timeout=None, args=None):
     if is_gui_thread():
         if args is None:
             return callable()
@@ -140,7 +140,7 @@ def gui_thread_schedule(callable, args=None):
         # the application is exiting and the main window has been destroyed. just let it go
         return None
 
-    event.event.wait(timeout=10)  # TODO: unsafe. to be fixed later.
+    event.event.wait(timeout=timeout)  # TODO: unsafe. to be fixed later.
     if not event.event.is_set():
         # it timed out without getting scheduled to execute...
         return None
