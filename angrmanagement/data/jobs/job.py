@@ -1,7 +1,18 @@
+import logging
 
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
 
+try:
+    from IPython.extensions.autoreload import ModuleReloader
+    m = ModuleReloader()
+    m.enabled = True
+    m.check_all = True
+    m.check()
+except ImportError:
+    m = None
+
+l = logging.getLogger(__name__)
 
 class Job:
     def __init__(self, name, on_finish=None):
@@ -10,6 +21,13 @@ class Job:
 
         # callbacks
         self._on_finish = on_finish
+
+        if m is not None and GlobalInfo.autoreload:
+            prestate = dict(m.modules_mtimes)
+            m.check()
+            poststate = dict(m.modules_mtimes)
+            if prestate != poststate:
+                l.warning("Autoreload found changed modules")
 
     def run(self, inst):
         raise NotImplementedError()
