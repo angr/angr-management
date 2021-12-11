@@ -23,6 +23,10 @@ class ConsoleView(BaseView):
         self._init_widgets()
         self.reload()
 
+    @property
+    def ipython_widget_available(self):
+        return self._ipython_widget is not None
+
     def reload(self):
 
         if self._ipython_widget is None:
