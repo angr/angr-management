@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QGraphicsSimpleTextItem
 from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
-from angr.analyses.new_prox_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
+from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
     IntegerProxiNode, UnknownProxiNode, VariableProxiNode
 
 from ...config import Conf

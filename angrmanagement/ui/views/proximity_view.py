@@ -5,7 +5,7 @@ import networkx
 from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtCore import QSize
 
-from angr.analyses.new_prox_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode, VariableProxiNode
+from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode, VariableProxiNode
 
 from .view import BaseView
 from ..widgets.qproximity_graph import QProximityGraph
@@ -61,7 +61,7 @@ class ProximityView(BaseView):
         dec = self.get_decompilation()
 
         inst = self.workspace.instance
-        prox = inst.project.analyses.NewProximity(
+        prox = inst.project.analyses.Proximity(
             self.function,
             inst.cfg,
             inst.kb.xrefs,
