@@ -331,7 +331,7 @@ class Workspace:
             msg = ''.join(traceback.format_exception(type(msg), msg, msg.__traceback__))
 
         console = self.view_manager.first_view_in_category('console')
-        if console is None:
+        if console is None or not console.ipython_widget_available:
             print(msg)
         else:
             console.print_text(msg)
