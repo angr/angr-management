@@ -11,7 +11,8 @@ from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
 from angr.knowledge_plugins.key_definitions.atoms import Register, MemoryLocation, SpOffset
 from angr.knowledge_plugins import Function
-from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg, SimStackArg, SimType
+from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg, SimStackArg
+from angr.sim_type import SimType
 
 from .job import Job
 from ...logic.threads import gui_thread_schedule_async
