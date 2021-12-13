@@ -13,7 +13,7 @@ if platform.python_implementation() != 'CPython':
 
 setup(
     name='angr-management',
-    version='9.0.gitrolling',
+    version='9.1.gitrolling',
     python_requires='>=3.6',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
@@ -30,7 +30,7 @@ setup(
         ]
     },
     install_requires=[
-        'angr[angrDB]==9.0.gitrolling',
+        'angr[angrDB]==9.1.gitrolling',
         'websocket-client',
         'qtconsole',
         'ipython',
