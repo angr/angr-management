@@ -72,8 +72,8 @@ def get_block_objects(disasm, nodes, func_addr):
         # function header
         func = disasm.kb.functions.get_by_addr(func_addr)
         if func is not None:
-            func_header = FunctionHeader(func.demangled_name, func.prototype,
-                                         func.calling_convention.args if func.calling_convention is not None else None)
+            args = func.calling_convention.arg_locs(func.prototype)
+            func_header = FunctionHeader(func.demangled_name, func.prototype, args)
             lst.append(func_header)
 
         # stack variables
