@@ -284,7 +284,7 @@ class Instance:
                                                                              }
                                               )
 
-            time.sleep(0.3)
+            time.sleep(0.1)
             if cfg_job not in self.jobs:
                 break
 
