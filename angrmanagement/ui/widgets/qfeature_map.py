@@ -55,6 +55,8 @@ class FeatureMapItem(QGraphicsItem):
         self.refresh()
 
     def refresh(self):
+        # temporarily disable the auto-refresh of QFeatureMap until we have a more performant solution
+        return
         self._generate_map_items()
         self._generate_hover_region()
         self._generate_indicators()
