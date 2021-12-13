@@ -225,13 +225,13 @@ class LoadBinary(QDialog):
         self.option_widgets['resolve_indirect_jumps'] = resolve_indirect_jumps
 
         collect_data_refs = QCheckBox(self)
-        collect_data_refs.setText('Collect data references (one per data item) and guess data types')
+        collect_data_refs.setText('Collect cross references and guess data types')
         collect_data_refs.setChecked(True)
         self.option_widgets['data_references'] = collect_data_refs
 
         xrefs = QCheckBox(self)
-        xrefs.setText('Collect cross references')
-        xrefs.setChecked(True)
+        xrefs.setText('Deep analysis on cross references (slow)')
+        xrefs.setChecked(False)
         self.option_widgets['cross_references'] = xrefs
 
         recover_variables_on_matched_functions = QCheckBox(self)
