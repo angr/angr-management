@@ -296,7 +296,12 @@ class QOperand(QCachedGraphicsItem):
 
                         formatting['custom_values_str'][ident] = custom_value_str
 
-                        if 'values_style' not in formatting: formatting['values_style'] = { }
+                        if 'show_prefix' not in formatting:
+                            formatting['show_prefix'] = { }
+                        formatting['show_prefix'][ident] = 'False'
+
+                        if 'values_style' not in formatting:
+                            formatting['values_style'] = { }
                         formatting['values_style'][ident] = 'curly'
 
                     # with variable displayed
@@ -324,7 +329,7 @@ class QOperand(QCachedGraphicsItem):
 
         # variable
         # {s_10}
-        if self.disasm_view.show_variable and self._variable_label:
+        if self._variable_label:
             self._variable_label_item = QGraphicsSimpleTextItem(self._variable_label, self)
             self._variable_label_item.setFont(self._config.disasm_font)
             self._variable_label_item.setBrush(self._config.disasm_view_variable_label_color)
@@ -353,9 +358,13 @@ class QOperand(QCachedGraphicsItem):
 
         # variable
         if self._variable_label_item is not None:
-            x += self.LABEL_VARIABLE_SPACING
-            self._variable_label_item.setPos(x, y)
-            x += self._variable_label_item.boundingRect().width()
+            if self.disasm_view.show_variable:
+                x += self.LABEL_VARIABLE_SPACING
+                self._variable_label_item.setPos(x, y)
+                x += self._variable_label_item.boundingRect().width()
+                self._variable_label_item.show()
+            else:
+                self._variable_label_item.hide()
 
         # additional branch targets
         if self._branch_targets_item is not None:
