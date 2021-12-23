@@ -95,6 +95,8 @@ class ViewMenu(Menu):
             MenuEntry('Symbolic &Execution', main_window.workspace.show_symexec_view),
             MenuEntry('S&ymbolic States', main_window.workspace.show_states_view),
             MenuEntry('&Interaction', main_window.workspace.show_interaction_view),
+            MenuEntry('&Registers', main_window.workspace.show_registers_view),
+            MenuEntry('&Stack', main_window.workspace.show_stack_view),
             MenuSeparator(),
             MenuEntry('&Console', main_window.workspace.show_console_view),
             MenuEntry('&Log', main_window.workspace.show_log_view),

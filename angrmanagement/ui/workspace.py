@@ -5,11 +5,13 @@ import traceback
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
 
+from ..logic.debugger import DebuggerWatcher
 from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView)
+                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
+                    RegistersView, StackView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -66,6 +68,9 @@ class Workspace:
         for tab in self.default_tabs:
             self.add_view(tab)
 
+        self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.instance.debugger_mgr.debugger)
+        self.on_debugger_state_updated()
+
     #
     # Properties
     #
@@ -81,6 +86,23 @@ class Workspace:
     #
     # Events
     #
+
+    def on_debugger_state_updated(self):
+        """
+        Jump to debugger target PC in active disassembly view.
+        """
+        # FIXME: the disassembly view should subscribe to debugger updates, but for that we will need to expose
+        #        a mechanism for the view to select between states. For now we simply have a global debugger
+        #        selection.
+        dbg = self._dbg_watcher.debugger
+        if not dbg.am_none:
+            state = dbg.simstate
+            if state is not None:
+                addr = state.solver.eval(state.regs.pc)
+                view = self.view_manager.current_view_in_category('disassembly') or \
+                       self.view_manager.first_view_in_category('disassembly')
+                if view:
+                    view.jump_to(addr, True)
 
     def on_function_selected(self, func: Function):
         """
@@ -423,6 +445,16 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_registers_view(self):
+        view = self._get_or_create_registers_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_stack_view(self):
+        view = self._get_or_create_stack_view()
+        self.raise_view(view)
+        view.setFocus()
+
     def show_console_view(self):
         view = self._get_or_create_console_view()
         self.raise_view(view)
@@ -568,7 +600,6 @@ class Workspace:
 
         return view
 
-
     def _get_or_create_functions_view(self) -> FunctionsView:
         # Take the first functions view
         view = self.view_manager.first_view_in_category("functions")
@@ -576,6 +607,26 @@ class Workspace:
         if view is None:
             # Create a new functions view
             view = FunctionsView(self, 'left')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_registers_view(self) -> RegistersView:
+        # Take the first registers view
+        view = self.view_manager.first_view_in_category("registers")
+
+        if view is None:
+            view = RegistersView(self, 'right')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_stack_view(self) -> RegistersView:
+        # Take the first stack view
+        view = self.view_manager.first_view_in_category("stack")
+
+        if view is None:
+            view = StackView(self, 'right')
             self.add_view(view)
 
         return view
