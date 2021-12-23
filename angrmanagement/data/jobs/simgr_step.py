@@ -17,7 +17,7 @@ class SimgrStepJob(Job):
                     self._simgr.step(step_func=self._step_callback)
                     self._simgr.prune()
         else:
-            self._simgr.step(step_func=self._step_callback)
+            self._simgr.step(step_func=self._step_callback, num_inst=1)
             self._simgr.prune()
 
         return self._simgr
