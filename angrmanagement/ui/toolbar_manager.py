@@ -1,7 +1,7 @@
 from typing import Type, Mapping
 
 from PySide2.QtCore import Qt
-from angrmanagement.ui.toolbars import FileToolbar, SimgrToolbar
+from angrmanagement.ui.toolbars import FileToolbar, DebugToolbar
 from angrmanagement.ui.toolbars.toolbar import Toolbar
 
 
@@ -13,13 +13,13 @@ class ToolbarManager:
     def __init__(self, main_window):
         self._main_window: 'MainWindow' = main_window
         self.active: Mapping[Type[Toolbar], Toolbar] = {}
-        self.all_toolbars = [FileToolbar, SimgrToolbar]
+        self.all_toolbars = [FileToolbar, DebugToolbar]
 
     @staticmethod
     def get_name_for_toolbar_class(toolbar_cls: Type[Toolbar]) -> str:
         return {
             FileToolbar: 'File',
-            SimgrToolbar: 'Symbolic Execution'
+            DebugToolbar: 'Debug'
         }[toolbar_cls]
 
     def show_toolbar_by_class(self, cls: Type[Toolbar]):
