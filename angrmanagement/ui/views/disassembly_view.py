@@ -4,11 +4,12 @@ import logging
 from typing import Union, Optional, TYPE_CHECKING
 
 import PySide2
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction, QDialog
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
+from ..dialogs.conf_data_dep import ConfigureDataDep
 
 from ...logic import GlobalInfo
 from ...data.instance import ObjectContainer
@@ -375,6 +376,18 @@ class DisassemblyView(SynchronizedView):
 
         dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
+
+    def popup_conf_data_dep_dialog(self):
+        addr = self._address_in_selection()
+        if addr is None:
+            return
+
+        data_dep_conf = ConfigureDataDep(self, self.workspace.instance, addr)
+        dialog_code = data_dep_conf.exec_()
+
+        if dialog_code == QDialog.Accepted:
+            # Proceed with creating data dependency graph
+            self.workspace.view_data_dependency_graph(data_dep_conf.analysis_params)
 
     def popup_newstate_dialog(self, async_=True):
         addr = self._address_in_selection()

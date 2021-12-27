@@ -36,6 +36,7 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuEntry('&Find in execution...', self._find_in_execution),
             MenuEntry('Add &hook...', self._add_hook),
+            MenuEntry('View data dependency &graph...', self._view_data_dep),
             MenuEntry('View function &documentation...', self._view_docs)
         ])
 
@@ -62,6 +63,11 @@ class DisasmInsnContextMenu(Menu):
 
     def _add_hook(self):
         self._disasm_view.popup_hook_dialog(async_=True)
+
+    def _view_data_dep(self):
+        if self._disasm_view is None:
+            return
+        self._disasm_view.popup_conf_data_dep_dialog()
 
     def _view_docs(self):
         if self._disasm_view is None:

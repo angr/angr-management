@@ -11,7 +11,7 @@ from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
-                    RegistersView, StackView)
+                    DataDepView, RegistersView, StackView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -327,6 +327,10 @@ class Workspace:
             view = self._get_or_create_disassembly_view()
             view.decompile_current_function()
 
+    def view_data_dependency_graph(self, analysis_params: dict):
+        view = self._get_or_create_data_dependency_graph(analysis_params)
+        self.raise_view(view)
+
     def view_proximity_for_current_function(self, view=None):
         if view is None or view.category != "proximity":
             view = self._get_or_create_proximity_view()
@@ -595,6 +599,20 @@ class Workspace:
             # Create a new interaction view
             view = TypesView(self, 'center')
             self.add_view(view)
+        return view
+
+    def _get_or_create_data_dependency_graph(self, analysis_params: dict) -> Optional[DataDepView]:
+        # Take the first data dependency view
+        view = self.view_manager.first_view_in_category('data_dependency')
+
+        if view is None:
+            # Create a new data dependency view
+            view = DataDepView(self, 'center')
+            self.add_view(view)
+
+        # Update DataDepView to utilize new analysis params
+        view.analysis_params = analysis_params
+
         return view
 
     def _get_or_create_proximity_view(self) -> ProximityView:
