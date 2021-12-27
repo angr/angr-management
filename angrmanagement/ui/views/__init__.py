@@ -13,3 +13,4 @@ from .proximity_view import ProximityView
 from .types_view import TypesView
 from .hex_view import HexView
 from .log_view import LogView
+from .data_dep_view import DataDepView
