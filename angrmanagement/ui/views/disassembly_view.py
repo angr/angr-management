@@ -381,10 +381,15 @@ class DisassemblyView(SynchronizedView):
         if addr is None:
             return
 
-        data_dep_conf = ConfigureDataDep(self, self.workspace.instance, addr)
+        data_dep_conf = ConfigureDataDep(self, self.disasm.block_to_insn_addrs, self.workspace.instance, addr)
+
         dialog_code = data_dep_conf.exec_()
 
         if dialog_code == QDialog.Accepted:
+            # In order to include Sim
+            curr_block_addr = data_dep_conf.analysis_params['end_state'].block().addr
+            next_addr = self.disasm.block_to_insn_addrs
+
             # Proceed with creating data dependency graph
             self.workspace.view_data_dependency_graph(data_dep_conf.analysis_params)
 
