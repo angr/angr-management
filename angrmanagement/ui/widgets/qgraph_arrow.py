@@ -10,7 +10,7 @@ from ...config import Conf
 
 if TYPE_CHECKING:
     from ..views.dep_view import DependencyView
-
+    from ..views.data_dep_view import DataDepView
 
 EDGE_COLORS = {
     EdgeSort.BACK_EDGE: 'disasm_view_back_edge_color',
@@ -61,10 +61,10 @@ class QGraphArrow(QGraphicsItem):
 
         if direction == "down":
             return [QPointF(coord.x() - 3, coord.y()), QPointF(coord.x() + 3, coord.y()),
-                     QPointF(coord.x(), coord.y() + 6)]
+                    QPointF(coord.x(), coord.y() + 6)]
         elif direction == "right":
             return [QPointF(coord.x(), coord.y() - 3), QPointF(coord.x(), coord.y() + 3),
-                 QPointF(coord.x() + 6, coord.y())]
+                    QPointF(coord.x() + 6, coord.y())]
         elif direction == "left":
             return [QPointF(coord.x(), coord.y() - 3), QPointF(coord.x(), coord.y() + 3),
                     QPointF(coord.x() - 6, coord.y())]
@@ -134,8 +134,8 @@ class QDisasmGraphArrow(QGraphArrow):
 
     def _should_highlight(self) -> bool:
         return self.infodock.is_edge_hovered(self.edge.src.addr, self.edge.dst.addr) or \
-                self.infodock.is_block_hovered(self.edge.src.addr) or \
-                self.infodock.is_block_hovered(self.edge.dst.addr)
+               self.infodock.is_block_hovered(self.edge.src.addr) or \
+               self.infodock.is_block_hovered(self.edge.dst.addr)
 
     #
     # Event handlers
@@ -171,7 +171,7 @@ class QGraphArrowBezier(QGraphArrow):
 
     def _get_line_start(self, i: int) -> QPointF:
         pt0 = self.coords[i]
-        pt1 = self.coords[i+1] if i+1<len(self.coords) else self.coords[0]
+        pt1 = self.coords[i + 1] if i + 1 < len(self.coords) else self.coords[0]
         rat = self._radius / self._get_distance(pt0, pt1)
         if rat > 0.5:
             rat = 0.5
@@ -228,3 +228,15 @@ class QProximityGraphArrow(QGraphArrow):
         return self._proximity_view.hovered_block is self.edge.src or \
                self._proximity_view.hovered_block is self.edge.dst
 
+
+class QDataDepGraphArrow(QGraphArrow):
+    """Used to represent an edge between two QDataDepGraphBlocks"""
+
+    def __init__(self, data_dep_view: 'DataDepView', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._data_dep_view = data_dep_view
+
+    def _should_highlight(self) -> bool:
+        # Should be highlighted if in trace path
+        return self.edge.dst in self._data_dep_view.traced_ancestors \
+            or self.edge.src in self._data_dep_view.traced_descendants

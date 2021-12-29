@@ -1,4 +1,4 @@
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import Optional, TYPE_CHECKING, Dict, Any, List
 import logging
 
 from PySide2 import QtWidgets, QtCore
@@ -38,17 +38,19 @@ class ConfigureDataDep(QtWidgets.QDialog):
     Depending on context, different parameters will be asked for.
     """
 
-    def __init__(self, parent: QtWidgets.QWidget, instance: 'Instance', addr: int, ):
+    def __init__(self, parent: QtWidgets.QWidget, block_to_addrs: Dict[int, List[int]], instance: 'Instance',
+                 addr: int, ):
         super().__init__(parent)
 
         # Initialization
         self._instance = instance
         self._analysis_params = {  # Output
-            'end_state': None,
+            'end_state': self._instance.project.factory.entry_state(),
             'start_addr': 0,
             'end_addr': addr,
             'block_addrs': [],
         }
+        self._block_to_addrs = block_to_addrs
 
         self._go_btn: Optional[QtWidgets.QPushButton] = None
         self._cancel_btn: Optional[QtWidgets.QPushButton] = None
@@ -67,11 +69,15 @@ class ConfigureDataDep(QtWidgets.QDialog):
 
     @property
     def start_addr(self) -> int:
-        return self._analysis_params.setdefault('start_addr', self._instance.project.entry)
+        return self._analysis_params.get('start_addr', 0)
 
     @property
-    def end_addr(self) -> int:
+    def _end_addr(self) -> int:
         return self._analysis_params.get('end_addr', 0)
+
+    @_end_addr.setter
+    def _end_addr(self, new_end_addr: int):
+        self._analysis_params['end_addr'] = new_end_addr
 
     @Slot()
     def _prepare_for_accept(self):
@@ -82,17 +88,23 @@ class ConfigureDataDep(QtWidgets.QDialog):
         try:
             self._analysis_params['start_addr'] = int(unwrap_line_edit_text(self._start_addr_line_edit), 16)
 
-            # TODO: Create a simulation manager and use find=end_addr?
             start_state = prepare_state(self._instance.project, self.start_addr)
             simgr = self._instance.project.factory.simgr(start_state)
-            simgr.explore(find=self.end_addr)
 
+            simgr.explore(find=self._end_addr)
             if not simgr.found:
                 # This isn't a reachable state, no point in proceeding
-                _l.error("Unable to reach %s from %s in symbolic exec!", hex(self.end_addr), hex(self.start_addr))
+                _l.error("Unable to reach %s from %s in symbolic exec!", hex(self._end_addr), hex(self.start_addr))
                 self.reject()
+                return
+            found_state: 'SimState' = simgr.found[0]
+            # In order to include the SimActions of the end instruction, must provide following instruction
+            sim_successor = found_state.step(num_inst=1)
 
-            self._analysis_params['end_state'] = simgr.found[0]
+            # Ensure this wasn't the last executable instruction
+            if successors := sim_successor.successors:
+                found_state = successors[0]
+            self._analysis_params['end_state'] = found_state
 
             self.accept()
         except KeyError:
@@ -118,7 +130,7 @@ class ConfigureDataDep(QtWidgets.QDialog):
             value = int(sender_text, 16)
 
             # Ensure end_addr >= start_addr if applicable
-            if sender is self._start_addr_line_edit and value > self.end_addr:
+            if sender is self._start_addr_line_edit and value > self._end_addr:
                 raise ValueError()
 
         except ValueError:
@@ -146,7 +158,7 @@ class ConfigureDataDep(QtWidgets.QDialog):
 
         # Create read-only line edit containing hex string of ending address
         self._end_addr_line_edit = QtWidgets.QLineEdit(self)
-        self._end_addr_line_edit.setText(hex(self.end_addr))
+        self._end_addr_line_edit.setText(hex(self._end_addr))
         self._end_addr_line_edit.setEnabled(False)
         form_layout.addRow('Ending Address', self._end_addr_line_edit)
 
