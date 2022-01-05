@@ -44,6 +44,9 @@ class BaseView(QFrame):
     def focus(self):
         self.workspace.view_manager.raise_view(self)
 
+    def refresh(self):
+        pass
+
     def reload(self):
         pass
 

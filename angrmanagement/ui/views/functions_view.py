@@ -21,7 +21,7 @@ class FunctionsView(BaseView):
         self.height_hint = 0
         self.updateGeometry()
 
-        self._function_count = None
+        self.function_count = None
         self._displayed_function_count = None
 
         self.reload()
@@ -34,7 +34,7 @@ class FunctionsView(BaseView):
         self._function_table.refresh()
 
     def set_function_count(self, count):
-        self._function_count = count
+        self.function_count = count
         self._refresh_status_label()
 
     def set_displayed_function_count(self, count):
@@ -42,7 +42,6 @@ class FunctionsView(BaseView):
         self._refresh_status_label()
 
     def reload(self):
-        # TODO: this is such a shitshow. all the sub-elements should sync on the cfg directly.
         if not self.workspace.instance.cfg.am_none:
             self._function_table.function_manager = self.workspace.instance.kb.functions
 
@@ -82,7 +81,7 @@ class FunctionsView(BaseView):
 
     def _refresh_status_label(self):
         if self._status_label is not None:
-            function_count = 0 if self._function_count is None else self._function_count
+            function_count = 0 if self.function_count is None else self.function_count
             if self._displayed_function_count is not None:
                 self._status_label.setText("%d/%d functions" % (self._displayed_function_count, function_count))
             else:

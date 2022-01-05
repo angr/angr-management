@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional, List
 import logging
 import traceback
 
@@ -226,7 +226,13 @@ class Workspace:
 
         self.view_manager.raise_view(view)
 
-    def reload(self, categories=None):
+    def reload(self, categories: Optional[List[str]]=None):
+        """
+        Ask all or specified views to reload the underlying data and regenerate the UI. This is usually expensive.
+
+        :param categories:  Specify a list of view categories that should be reloaded.
+        :return:            None
+        """
 
         if categories is None:
             views = self.view_manager.views
@@ -238,6 +244,28 @@ class Workspace:
         for view in views:
             try:
                 view.reload()
+            except Exception:  # pylint:disable=broad-except
+                _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
+
+    def refresh(self, categories: Optional[List[str]]=None):
+        """
+        Ask all or specified views to refresh based on changes in the underlying data and refresh the UI if needed. This
+        may be called frequently so it must be extremely fast.
+
+        :param categories:  Specify a list of view categories that should be reloaded.
+        :return:            None
+        """
+
+        if categories is None:
+            views = self.view_manager.views
+        else:
+            views = [ ]
+            for category in categories:
+                views.extend(self.view_manager.views_by_category.get(category, [ ]))
+
+        for view in views:
+            try:
+                view.refresh()
             except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
 

@@ -1,6 +1,6 @@
 import os
 import string
-from typing import List, TYPE_CHECKING
+from typing import List, Set, Tuple, Optional, TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
@@ -15,7 +15,8 @@ from ..toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
     import PySide2
-    from angr.knowledge_plugins.functions import Function
+    from ..views.functions_view import FunctionsView
+    from angr.knowledge_plugins.functions import Function, FunctionManager
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -259,7 +260,19 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
         self.doubleClicked.connect(self._on_function_selected)
 
-    def refresh(self):
+    def refresh(self, added_funcs: Optional[Set[int]]=None, removed_funcs: Optional[Set[int]]=None):
+        if added_funcs:
+            new_funcs = [ ]
+            for addr in added_funcs:
+                try:
+                    f_ = self._functions[addr]
+                except KeyError:
+                    continue
+                if self.show_alignment_functions or (not self.show_alignment_functions and not f_.alignment):
+                    new_funcs.append(f_)
+            self._model.func_list += new_funcs
+        if removed_funcs:
+            self._model.func_list = [ f_ for f_ in self._model.func_list if f_.addr not in removed_funcs ]
         self.viewport().update()
 
     @property
@@ -344,10 +357,12 @@ class QFunctionTable(QWidget):
         super().__init__(parent)
         self.workspace = workspace
 
-        self._view = parent  # type: 'FunctionsView'
+        self._view: 'FunctionsView' = parent
         self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
         self._toolbar = None  # type: FunctionTableToolbar
+
+        self._last_known_func_addrs: Set[int] = set()
 
         self._init_widgets(selection_callback)
 
@@ -356,7 +371,7 @@ class QFunctionTable(QWidget):
         return self._table_view.show_alignment_functions
 
     @property
-    def function_manager(self):
+    def function_manager(self) -> Optional['FunctionManager']:
         if self._table_view is not None:
             return self._table_view.function_manager
         return None
@@ -369,6 +384,7 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
+        self._last_known_func_addrs = set(func.addr for func in self._table_view._model.func_list)
         self.filter_functions(self._filter_box.text())
         self.update_displayed_function_count()
 
@@ -377,7 +393,18 @@ class QFunctionTable(QWidget):
     #
 
     def refresh(self):
-        self._table_view.refresh()
+        if self.function_manager is None:
+            return
+
+        if self._view.function_count != len(self.function_manager):
+            # the number of functions has increased - we need to update the table
+            added_funcs, removed_funcs = self._updated_functions(self.function_manager)
+        else:
+            added_funcs, removed_funcs = None, None
+
+        self._table_view.refresh(added_funcs=added_funcs, removed_funcs=removed_funcs)
+        self._view.set_function_count(len(self._last_known_func_addrs))
+        self.update_displayed_function_count()
 
     def show_filter_box(self, prefix=""):
         if prefix:
@@ -442,6 +469,15 @@ class QFunctionTable(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
+
+    def _updated_functions(self, function_manager: 'FunctionManager') -> Tuple[Set[int],Set[int]]:
+        if len(self._last_known_func_addrs) == len(function_manager.function_addrs_set):
+            return set(), set()
+        new_func_addrs_set = function_manager.function_addrs_set.copy()
+        added = new_func_addrs_set.difference(self._last_known_func_addrs)
+        removed = self._last_known_func_addrs.difference(new_func_addrs_set)
+        self._last_known_func_addrs = new_func_addrs_set
+        return added, removed
 
     #
     # Events
