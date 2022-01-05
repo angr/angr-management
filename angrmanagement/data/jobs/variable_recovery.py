@@ -27,7 +27,7 @@ class VariableRecoveryJob(Job):
             progress_callback=self._progress_callback,
             analyze_callsites=True,
             max_function_blocks=150,
-            max_function_size=3000,
+            max_function_size=4096,
             **self.variable_recovery_args,
         )
 
