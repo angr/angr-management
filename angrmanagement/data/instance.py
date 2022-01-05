@@ -281,16 +281,22 @@ class Instance:
         GlobalInfo.main_window.status = status_text
 
     def _refresh_cfg(self, cfg_job):
-        time.sleep(1.0)
+        # reload once and then refresh in a loop
+        reloaded = False
         while True:
-            if self.cfg is not None:
+            if not self.cfg.am_none:
                 if self.workspace is not None:
-                    gui_thread_schedule_async(self.workspace.reload, kwargs={
-                                                                             'categories': ['disassembly', 'functions'],
-                                                                             }
-                                              )
+                    if reloaded:
+                        gui_thread_schedule_async(self.workspace.refresh,
+                                                  kwargs={'categories': ['disassembly', 'functions'],}
+                                                  )
+                    else:
+                        gui_thread_schedule_async(self.workspace.reload,
+                                                  kwargs={'categories': ['disassembly', 'functions'],}
+                                                  )
+                        reloaded = True
 
-            time.sleep(0.1)
+            time.sleep(0.3)
             if cfg_job not in self.jobs:
                 break
 
