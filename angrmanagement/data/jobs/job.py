@@ -1,4 +1,6 @@
 import logging
+import time
+import datetime
 
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
@@ -18,6 +20,7 @@ class Job:
     def __init__(self, name, on_finish=None):
         self.name = name
         self.progress_percentage = 0.
+        self.start_at: float = 0.
 
         # callbacks
         self._on_finish = on_finish
@@ -29,7 +32,15 @@ class Job:
             if prestate != poststate:
                 l.warning("Autoreload found changed modules")
 
+    @property
+    def time_elapsed(self) -> str:
+        return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
+
     def run(self, inst):
+        self.start_at = time.time()
+        return self._run(inst)
+
+    def _run(self, inst):
         raise NotImplementedError()
 
     def finish(self, inst, result): #pylint: disable=unused-argument
@@ -52,9 +63,9 @@ class Job:
 
     def _set_progress(self, text=None):
         if text:
-            GlobalInfo.main_window.status = "Working... %s: %s" % (self.name, text)
+            GlobalInfo.main_window.status = f"Working... {self.name}: {text} - {self.time_elapsed}"
         else:
-            GlobalInfo.main_window.status = "Working... %s" % self.name
+            GlobalInfo.main_window.status = f"Working... {self.name} - {self.time_elapsed}"
         GlobalInfo.main_window.progress = self.progress_percentage
 
     def _finish_progress(self):

@@ -7,7 +7,7 @@ class VFGGenerationJob(Job):
         super(VFGGenerationJob, self).__init__('VFG generation')
         self._addr = addr
 
-    def run(self, inst):
+    def _run(self, inst):
         return inst.project.analyses.VFG(function_start=self._addr)
 
     def finish(self, inst, result):

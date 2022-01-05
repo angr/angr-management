@@ -74,12 +74,12 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def run(self, inst: 'Instance'):
+    def _run(self, inst: 'Instance'):
         self._progress_callback(0.0)
-        self._run(inst)
+        self._perform(inst)
         self._progress_callback(100.0)
 
-    def _run(self, inst: 'Instance'):
+    def _perform(self, inst: 'Instance'):
         if not argument_resolver:
             gui_thread_schedule_async(self._display_import_error)
             return

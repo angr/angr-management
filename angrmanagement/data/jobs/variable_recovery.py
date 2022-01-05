@@ -19,7 +19,7 @@ class VariableRecoveryJob(Job):
 
         self._last_progress_callback_triggered = None
 
-    def run(self, inst: 'Instance'):
+    def _run(self, inst: 'Instance'):
         inst.project.analyses.CompleteCallingConventions(
             recover_variables=True,
             low_priority=True,
