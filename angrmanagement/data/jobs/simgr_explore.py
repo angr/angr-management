@@ -13,7 +13,7 @@ class SimgrExploreJob(Job):
         self._until_callback = until_callback
         self._interrupted = False
 
-    def run(self, inst):
+    def _run(self, inst):
         """Run the job. Runs in the worker thread."""
         def until_callback(*args, **kwargs):
             return self._interrupted or callable(self._until_callback) and self._until_callback(*args, **kwargs)

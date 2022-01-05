@@ -9,7 +9,7 @@ class DecompileFunctionJob(Job):
         self.function = function
         super().__init__(name="Decompiling", on_finish=on_finish)
 
-    def run(self, inst):
+    def _run(self, inst):
         decompiler = inst.project.analyses.Decompiler(
             self.function,
             flavor='pseudocode',

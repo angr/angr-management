@@ -9,7 +9,7 @@ class SimgrStepJob(Job):
         self._until_branch = until_branch
         self._step_callback = step_callback
 
-    def run(self, inst):
+    def _run(self, inst):
         if self._until_branch:
             orig_len = len(self._simgr.active)
             if orig_len > 0:
