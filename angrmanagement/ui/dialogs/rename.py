@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.code_view import CodeView
@@ -70,21 +70,13 @@ class RenameDialog(QDialog):
         self.main_layout.addWidget(status_label)
         self._status_label = status_label
 
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.setEnabled(False)
-        ok_button.clicked.connect(self._on_ok_clicked)
-        self._ok_button = ok_button
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button.setEnabled(False)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
@@ -113,6 +105,3 @@ class RenameDialog(QDialog):
         if node_name is not None:
             self.result = node_name
             self.close()
-
-    def _on_cancel_clicked(self):
-        self.close()
