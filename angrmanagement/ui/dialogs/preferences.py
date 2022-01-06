@@ -1,6 +1,7 @@
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
-    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, QSizePolicy
+    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, \
+    QSizePolicy, QDialogButtonBox
 from PySide2.QtCore import QSize
 
 from ..widgets.qcolor_option import QColorOption
@@ -185,14 +186,11 @@ class Preferences(QDialog):
             contents.addItem(list_item)
 
         # buttons
-        ok_button = QPushButton("OK")
-        ok_button.clicked.connect(self._on_ok_clicked)
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(ok_button)
-        button_layout.addWidget(cancel_button)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Close | QDialogButtonBox.StandardButton.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText('Save')
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
 
         # layout
         top_layout = QHBoxLayout()
@@ -201,7 +199,7 @@ class Preferences(QDialog):
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_layout)
-        main_layout.addLayout(button_layout)
+        main_layout.addWidget(buttons)
 
         self.setLayout(main_layout)
 
@@ -209,7 +207,4 @@ class Preferences(QDialog):
         for page in self._pages:
             page.save_config()
         save_config()
-        self.close()
-
-    def _on_cancel_clicked(self):
         self.close()
