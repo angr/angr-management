@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QPlainTextEdit, QApplication
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox, QPlainTextEdit, QApplication
 from PySide2.QtCore import Qt
 
 
@@ -62,19 +62,11 @@ class SetComment(QDialog):
         self.main_layout.addLayout(comment_layout)
 
         # buttons
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.clicked.connect(self._on_ok_clicked)
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
@@ -83,7 +75,4 @@ class SetComment(QDialog):
     def _on_ok_clicked(self):
         comment_txt = self._comment_textbox.text
         self._workspace.set_comment(self._comment_addr, comment_txt)
-        self.close()
-
-    def _on_cancel_clicked(self):
         self.close()
