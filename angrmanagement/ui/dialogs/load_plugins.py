@@ -2,7 +2,7 @@ import logging
 from typing import Type, List
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
-    QListWidget, QFileDialog, QMessageBox
+    QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
 from PySide2.QtCore import Qt
 
 from angrmanagement.plugins import load_plugins_from_file
@@ -72,20 +72,11 @@ class LoadPlugins(QDialog):
 
         self._init_plugin_list()
 
-        # buttons
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.clicked.connect(self._on_ok_clicked)
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
@@ -102,9 +93,6 @@ class LoadPlugins(QDialog):
                 self._pm.deactivate_plugin(i.plugin_class)
 
         self._pm.save_enabled_plugins_to_config()
-        self.close()
-
-    def _on_cancel_clicked(self):
         self.close()
 
     def _on_load_clicked(self):
