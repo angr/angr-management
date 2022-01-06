@@ -1,9 +1,11 @@
 import os
 from typing import List
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QComboBox, QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
+
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, \
+    QComboBox, QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
+
 from ..widgets import QStateComboBox
 from ...utils.namegen import NameGenerator
 from ...ui.dialogs.fs_mount import FilesystemMount
@@ -287,8 +289,8 @@ class NewState(QDialog):
 
         # buttons
 
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         def do_ok():
             name = name_box.text()
             template = template_combo.currentData()
@@ -335,19 +337,12 @@ class NewState(QDialog):
 
             self.close()
 
-        ok_button.clicked.connect(do_ok)
+        ok_button = buttons.button(QDialogButtonBox.Ok)
+        buttons.accepted.connect(do_ok)
         def validation_update():
             ok_button.setDisabled(bool(validation_failures))
 
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        def do_cancel():
-            self.close()
-        cancel_button.clicked.connect(do_cancel)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
+        buttons.rejected.connect(self.close)
 
         self.main_layout.addLayout(layout)
-        self.main_layout.addLayout(buttons_layout)
+        self.main_layout.addWidget(buttons)
