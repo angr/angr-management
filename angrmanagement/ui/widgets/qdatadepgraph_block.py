@@ -1,15 +1,16 @@
-from typing import List, Tuple, Type, TYPE_CHECKING, Optional
 import logging
+from typing import TYPE_CHECKING, Optional
 
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from angr.analyses.data_dependency import MemDepNode, VarDepNode, ConstantDepNode
-from ...config import Conf
+from angr.analyses.data_dependency import VarDepNode, ConstantDepNode, MemDepNode
 from .qgraph_object import QCachedGraphicsItem
+from ...config import Conf
 
 if TYPE_CHECKING:
     from angr.analyses.data_dependency import BaseDepNode
     from angrmanagement.ui.views.data_dep_view import DataDepView
+    from capstone import CsInsn
 
 _l = logging.getLogger(__name__)
 
@@ -25,17 +26,21 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     CONSTANT_BACKGROUND = QtGui.QColor(0x87, 0xFF, 0x65)  # Green
     TMP_BACKGROUND = QtGui.QColor(0xEF, 0x47, 0x6F)  # Pink
 
-    def __init__(self, is_selected: bool, data_dep_view: 'DataDepView', node: 'BaseDepNode'):
+    def __init__(self, is_selected: bool, data_dep_view: 'DataDepView', node: 'BaseDepNode', instr: Optional['CsInsn']):
         super().__init__()
-        self.setFlags(self.ItemIsFocusable | self.ItemIsMovable)
+        self.setFlags(self.ItemIsFocusable)
 
         self._selected = is_selected
         self._data_dep_view = data_dep_view
         self._workspace = self._data_dep_view.workspace
         self._node: 'BaseDepNode' = node
+        self._instr = instr
 
-        self._text: Optional[str] = None
-        self._text_item: Optional[QtWidgets.QGraphicsSimpleTextItem] = None
+        self._header_text: Optional[str] = None
+        self._instruction_text: Optional[str] = None
+        self._y_off = 0  # Used to track height
+        self._header_text_item: Optional[QtWidgets.QGraphicsSimpleTextItem] = None
+        self._instruction_text_item: Optional[QtWidgets.QGraphicsSimpleTextItem] = None
 
         self._init_widgets()
         self._update_size()
@@ -43,15 +48,48 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self.setAcceptHoverEvents(True)
 
     @property
+    def selected(self) -> bool:
+        return self._selected
+
+    @selected.setter
+    def selected(self, new_val: bool):
+        self._selected = new_val
+        self.update()
+
+    @property
     def node(self) -> 'BaseDepNode':
         return self._node
 
+    def _build_simple_text_item(self, text: str) -> QtWidgets.QGraphicsSimpleTextItem:
+        text_item = QtWidgets.QGraphicsSimpleTextItem(text, self)
+        text_item.setFont(Conf.symexec_font)
+        text_item.setBrush(QtCore.Qt.black)
+        text_item.setPos(self.HORIZONTAL_PADDING, self.VERTICAL_PADDING + self._y_off)
+        return text_item
+
     def _init_widgets(self):
-        self._text = str(self._node)
-        self._text_item = QtWidgets.QGraphicsSimpleTextItem(self._text, self)
-        self._text_item.setFont(Conf.symexec_font)
-        self._text_item.setBrush(QtCore.Qt.black)
-        self._text_item.setPos(self.HORIZONTAL_PADDING, self.VERTICAL_PADDING)
+        self._y_off = 0
+
+        if not isinstance(self._node, ConstantDepNode):
+            # ConstantDepNodes already display their value, by default
+            self.setToolTip(f"Value: {hex(self._node.value)}")
+
+        # Display the instruction, if applicable
+        self._header_text = str(self._node)
+        self._header_text_item = self._build_simple_text_item(self._header_text)
+        self._y_off += self._header_text_item.boundingRect().height() + 3
+        # Make header bold
+        header_font = self._header_text_item.font()
+
+        header_font.setBold(True)
+        self._header_text_item.setFont(header_font)
+
+        self._instruction_text = f"{hex(self._instr.address)}: {self._instr.mnemonic} {self._instr.op_str}" \
+            if self._instr else ''
+        self._instruction_text_item = self._build_simple_text_item(self._instruction_text)
+        if self._instruction_text:
+            self._y_off += self._instruction_text_item.boundingRect().height() + 3
+
 
     def refresh(self):
         self._update_size()
@@ -72,7 +110,11 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
             color = color.darker(150)
         painter.setBrush(color)
 
-        painter.setPen(QtGui.QPen(QtGui.QColor(0xf0, 0xf0, 0xf0), 1.5))
+        if self._selected:
+            border_color = QtGui.QColor(0, 0xfe, 0xfe)
+        else:
+            border_color = QtGui.QColor(0xf0, 0xf0, 0xf0)
+        painter.setPen(QtGui.QPen(border_color, 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
     def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem,
@@ -83,8 +125,13 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         return QtCore.QRectF(0, 0, self._width, self._height)
 
     def _update_size(self):
-        self._width = self.HORIZONTAL_PADDING * 2 + self._text_item.boundingRect().width()
-        self._height = self.VERTICAL_PADDING * 2 + self._text_item.boundingRect().width()
+        max_text_item_width = max(
+            self._header_text_item.boundingRect().width(),
+            self._instruction_text_item.boundingRect().width(),
+        )
+
+        self._width = self.HORIZONTAL_PADDING * 2 + max_text_item_width
+        self._height = self.VERTICAL_PADDING * 2 + self._y_off
 
         self._width = max(30, self._width)
         self._height = max(10, self._height)
@@ -94,15 +141,15 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     # Event Handlers
     #
     def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent):
-        _l.warning("HoverEnterEvent called!")
         self._selected = True
+        self.refresh()
         self.setFocus(QtCore.Qt.MouseFocusReason)
         self.grabKeyboard()
         self._data_dep_view.hover_enter_block(self, event.modifiers())
 
     def hoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent):
-        _l.warning("HoverLeaveEvent called!")
         self._selected = False
+        self.refresh()
         self.ungrabKeyboard()
         self.clearFocus()
         self._data_dep_view.hover_leave_block()
@@ -115,7 +162,6 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle change from ancestor to descendant tracing"""
-        _l.warning("KeyPressEvent called with key: %r!", event.key())
         if self._selected and event.key() == QtCore.Qt.Key_Control:
             self._data_dep_view.update_descendants(self)
         else:
@@ -123,7 +169,6 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle change form descendant to ancestor tracing"""
-        _l.warning("KeyReleaseEvent called!")
         if self._selected and event.key() == QtCore.Qt.Key_Control:
             self._data_dep_view.update_ancestors(self)
         else:

@@ -85,6 +85,7 @@ class QGraphArrow(QGraphicsItem):
             pen = QPen(QColor(0, 0xfe, 0xfe), 2, self.style)
         else:
             pen = QPen(self.color, 2, self.style)
+
         painter.setPen(pen)
 
         painter.drawPath(self.path)
@@ -235,8 +236,19 @@ class QDataDepGraphArrow(QGraphArrow):
     def __init__(self, data_dep_view: 'DataDepView', *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._data_dep_view = data_dep_view
+        self.is_hovered = False
 
     def _should_highlight(self) -> bool:
         # Should be highlighted if in trace path
-        return self.edge.dst in self._data_dep_view.traced_ancestors \
+        return self.is_hovered or self.edge.dst in self._data_dep_view.traced_ancestors \
             or self.edge.src in self._data_dep_view.traced_descendants
+
+    def hoverEnterEvent(self, event):
+        self.is_hovered = True
+        self.update() # Must trigger repaint to highlight
+        self._data_dep_view.graph_widget.handle_preview_request(self)
+
+    def hoverLeaveEvent(self, event):
+        self.is_hovered = False
+        self.update() # Must trigger repaint to unhighlight
+        self._data_dep_view.graph_widget.hide_preview()

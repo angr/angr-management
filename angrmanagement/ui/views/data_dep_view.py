@@ -1,14 +1,16 @@
-from typing import Optional, Dict, List, TYPE_CHECKING, Set
 import logging
+from typing import Optional, Dict, List, TYPE_CHECKING, Set
+
 # noinspection PyPackageRequirements
 from PySide2 import QtCore, QtWidgets, QtGui
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 
+from angr.analyses.data_dependency import VarDepNode, MemDepNode
 from .view import BaseView
+from ..dialogs.data_dep_graph_search import QDataDepGraphSearch
 from ..widgets.qdatadep_graph import QDataDepGraph
 from ..widgets.qdatadepgraph_block import QDataDepGraphBlock
-from angr.analyses.data_dependency import MemDepNode, VarDepNode
 
 if TYPE_CHECKING:
     from angr.analyses.data_dependency import BaseDepNode
@@ -31,6 +33,11 @@ class DataDepView(BaseView):
 
         self.base_caption = 'Data Dependency'
         self.workspace = workspace
+
+        disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
+        if not disasm_view or not disasm_view.disasm or not disasm_view.disasm.raw_result_map:
+            raise Exception("Cannot generate a data dependency graph without a disassembly view!")
+        self._instructions = disasm_view.disasm.raw_result_map['instructions']
 
         self._end_state: Optional['SimState'] = None
         self._start_addr: Optional[int] = None
@@ -67,6 +74,10 @@ class DataDepView(BaseView):
         self._traced_ancestors.clear()
         self._traced_descendants = self._graph_widget.get_descendants(block)
         self.redraw_graph()
+
+    @property
+    def graph_widget(self) -> Optional['QDataDepGraph']:
+        return self._graph_widget
 
     @property
     def analysis_params(self) -> dict:
@@ -114,8 +125,8 @@ class DataDepView(BaseView):
         else:
             self._traced_ancestors = self._graph_widget.get_ancestors(block)
 
-        if self._graph_widget is not None:
-            self._graph_widget.on_block_hovered(block)
+        # if self._graph_widget is not None:
+        #     self._graph_widget.on_block_hovered(block)
         self.redraw_graph()
 
     def hover_leave_block(self):
@@ -160,7 +171,11 @@ class DataDepView(BaseView):
 
     def _convert_node(self, node: 'BaseDepNode',
                       converted: Dict['BaseDepNode', QDataDepGraphBlock]) -> Optional[QDataDepGraphBlock]:
-        return converted.setdefault(node, QDataDepGraphBlock(False, self, node))
+        if isinstance(node, MemDepNode) or (isinstance(node, VarDepNode) and not node.is_tmp):
+            instr = self._instructions[node.ins_addr].insn
+        else:
+            instr = None
+        return converted.setdefault(node, QDataDepGraphBlock(False, self, node, instr))
 
     def _create_ui_graph(self) -> DiGraph:
         g = DiGraph()
@@ -206,6 +221,21 @@ class DataDepView(BaseView):
     #
     # Events
     #
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        """
+        Allow for searching for a node
+        """
+        key = event.key()
+        modifiers = event.modifiers()
+
+        if key == QtCore.Qt.Key_F and modifiers & QtCore.Qt.ControlModifier:
+            # User would like to search
+            search_dialog = QDataDepGraphSearch(self, self.graph_widget)
+            search_dialog.setModal(False)
+            search_dialog.show()
+        else:
+            super().keyPressEvent(event)
+
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         button = event.button()
 
