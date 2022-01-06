@@ -160,6 +160,10 @@ class ThemeAndColors(Page):
 
 
 class Preferences(QDialog):
+    """
+    Application preferences dialog.
+    """
+
     def __init__(self, workspace, parent=None):
         super().__init__(parent)
 
