@@ -1,10 +1,10 @@
-import angr
-
 import os
 
 from PySide2.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
 from PySide2.QtGui import QIcon, QPixmap, QFont
 from PySide2.QtCore import Qt
+import angr
+
 from ...config import IMG_LOCATION
 
 
