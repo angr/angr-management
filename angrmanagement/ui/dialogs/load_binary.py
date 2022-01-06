@@ -5,8 +5,8 @@ import logging
 import archinfo
 from cle import Blob
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
-    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox, QSizePolicy
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QCheckBox, QFrame, QGroupBox, \
+    QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox, QSizePolicy, QDialogButtonBox
 from PySide2.QtCore import Qt
 
 
@@ -128,19 +128,11 @@ class LoadBinary(QDialog):
 
         # buttons
 
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.clicked.connect(self._on_ok_clicked)
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self._on_cancel_clicked)
+        self.main_layout.addWidget(buttons)
 
     def _init_central_tab(self, tab):
         self._init_load_options_tab(tab)
