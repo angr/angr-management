@@ -1,12 +1,15 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox, QLineEdit
-from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
 
 from ..widgets import QAddressInput
 
 
 class JumpTo(QDialog):
+    """
+    Dialog to jump to an address.
+    """
+
     def __init__(self, disasm_view, parent=None):
-        super(JumpTo, self).__init__(parent)
+        super().__init__(parent)
 
         # initialization
         self._disasm_view = disasm_view
@@ -62,7 +65,7 @@ class JumpTo(QDialog):
     # Event handlers
     #
 
-    def _on_address_changed(self, new_text):
+    def _on_address_changed(self, new_text):  # pylint: disable=unused-argument
 
         if self._address_box.target is None:
             # the address is invalid
