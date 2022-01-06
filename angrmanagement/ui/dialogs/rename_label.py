@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox
 
 
 class LabelNameBox(QLineEdit):
@@ -66,22 +66,13 @@ class RenameLabel(QDialog):
         self._status_label = status_label
 
         # buttons
-
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.setEnabled(False)
-        ok_button.clicked.connect(self._on_ok_clicked)
-        self._ok_button = ok_button
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button.setEnabled(False)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
@@ -112,6 +103,3 @@ class RenameLabel(QDialog):
         if label is not None:
             self._disasm_view.rename_label(self._label_addr, label)
             self.close()
-
-    def _on_cancel_clicked(self):
-        self.close()
