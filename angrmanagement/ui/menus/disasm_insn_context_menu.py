@@ -65,7 +65,7 @@ class DisasmInsnContextMenu(Menu):
         self._disasm_view.popup_hook_dialog(async_=True)
 
     def _view_data_dep(self):
-        if self._disasm_view is None:
+        if self._disasm_view is None or not self._disasm_view.disasm or not self._disasm_view.disasm.raw_result_map:
             return
         self._disasm_view.popup_conf_data_dep_dialog()
 
