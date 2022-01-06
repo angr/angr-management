@@ -10,6 +10,10 @@ if TYPE_CHECKING:
 
 
 class NodeNameBox(QLineEdit):
+    """
+    QLineEdit that validates node names.
+    """
+
     def __init__(self, textchanged_callback, parent=None):
         super().__init__(parent)
 
@@ -28,6 +32,10 @@ class NodeNameBox(QLineEdit):
 
 
 class RenameNode(QDialog):
+    """
+    Dialog for renaming a node.
+    """
+
     def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, parent=None):
         super().__init__(parent)
 
