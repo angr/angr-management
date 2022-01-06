@@ -177,7 +177,7 @@ ENTRIES = [
 
     # plugins
     CE('plugin_search_path', str, '$AM_BUILTIN_PLUGINS:~/.local/share/angr-management/plugins'),
-    CE('enabled_plugins', str, 'binsync,trace_viewer,dep_viewer'),
+    CE('enabled_plugins', str, ''),
 
     # configurations for individual plugins
     # TOOD: Move them to separate locations
