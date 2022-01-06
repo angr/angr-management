@@ -1,7 +1,7 @@
 import logging
 from typing import Type, List
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
     QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
 from PySide2.QtCore import Qt
 
@@ -11,6 +11,10 @@ _l = logging.getLogger(__name__)
 
 
 class QPluginListWidgetItem(QListWidgetItem):
+    """
+    Plugin list item.
+    """
+
     def __init__(self, plugin_cls, **kwargs):
         super().__init__(**kwargs)
         self.plugin_class = plugin_cls  # type: Type[BasePlugin]
@@ -20,8 +24,12 @@ class QPluginListWidgetItem(QListWidgetItem):
 # TODO: Add plugin settings, reloading, etc.
 
 class LoadPlugins(QDialog):
+    """
+    Dialog to display loaded plugins, enable/disable plugins, and load new plugins.
+    """
+
     def __init__(self, plugin_mgr, parent=None):
-        super(LoadPlugins, self).__init__(parent)
+        super().__init__(parent)
 
         self._pm = plugin_mgr  # type: PluginManager
         self._installed_plugin_list = None  # type: QListWidget
