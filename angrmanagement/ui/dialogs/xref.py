@@ -48,29 +48,11 @@ class XRef(QDialog):
             instance=self._instance, disassembly_view=self._disassembly_view, parent=self,
         )
 
-        # buttons
-        btn_ok = QPushButton('OK')
-
-        btn_close = QPushButton('Close')
-        btn_close.clicked.connect(self._on_close_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(btn_ok)
-        buttons_layout.addWidget(btn_close)
-
         layout = QVBoxLayout()
         layout.addWidget(xref_viewer)
-        layout.addLayout(buttons_layout)
 
         self.setLayout(layout)
 
     def jump_to(self, addr):
         self._disassembly_view.jump_to(addr, src_ins_addr=self._addr)
-        self.close()
-
-    #
-    # Event handlers
-    #
-
-    def _on_close_clicked(self):
         self.close()
