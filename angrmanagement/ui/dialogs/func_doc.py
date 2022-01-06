@@ -1,6 +1,5 @@
 from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QTextEdit
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QGridLayout, QTextEdit
 
 from ...config import Conf
 from ...data.instance import Instance
@@ -22,14 +21,10 @@ class FuncDocDialog(QDialog):
         self._doc = doc_tuple[0].strip()
         self._url = doc_tuple[1].strip()
         self._ftype = doc_tuple[2].strip()
-        self._ok_button = None
         self.setWindowTitle('Function Documentation')
         self.main_layout = QVBoxLayout()
         self._init_widgets()
         self.setLayout(self.main_layout)
-
-    def _ok_method(self):
-        self.close()
 
     def _init_widgets(self):
         layout = QGridLayout()
@@ -60,8 +55,4 @@ class FuncDocDialog(QDialog):
         layout.addWidget(text_edit)
         layout.addWidget(url_label)
 
-        self._ok_button = QPushButton('Close', self)
-        self._ok_button.clicked.connect(self._ok_method)
-
         self.main_layout.addLayout(layout)
-        self.main_layout.addWidget(self._ok_button)
