@@ -100,8 +100,6 @@ class LoadPlugins(QDialog):
                 self._pm.activate_plugin(i.plugin_class)
             elif not checked and self._pm.get_plugin_instance(i.plugin_class) is not None:
                 self._pm.deactivate_plugin(i.plugin_class)
-            else:
-                self._pm.load_plugin(i.plugin_class)
 
         self.close()
 
@@ -127,4 +125,5 @@ class LoadPlugins(QDialog):
         for plugin in plugins:
             plugin_item = QPluginListWidgetItem(plugin_cls=plugin)
             plugin_item.setCheckState(Qt.Unchecked)
+            self._pm.load_plugin(plugin)
             self._installed_plugin_list.addItem(plugin_item)
