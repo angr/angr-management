@@ -1,10 +1,14 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox, QPlainTextEdit, QApplication
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QPlainTextEdit, QApplication
 from PySide2.QtCore import Qt
 
 
 class QCommentTextBox(QPlainTextEdit):
+    """
+    Multiline text box for comment entry.
+    """
+
     def __init__(self, textchanged_callback=None, textconfirmed_callback=None, parent=None):
-        super(QCommentTextBox, self).__init__(parent)
+        super().__init__(parent)
         if textchanged_callback is not None:
             self.textChanged.connect(textchanged_callback)
         self._textconfirmed_callback = textconfirmed_callback
@@ -25,8 +29,12 @@ class QCommentTextBox(QPlainTextEdit):
 
 
 class SetComment(QDialog):
+    """
+    Dialog for setting comment.
+    """
+
     def __init__(self, workspace, comment_addr, parent=None):
-        super(SetComment, self).__init__(parent)
+        super().__init__(parent)
 
         # initialization
         self._workspace = workspace

@@ -1,8 +1,8 @@
 import os
 from typing import List
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, \
-    QComboBox, QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, QComboBox, \
+    QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
 
@@ -12,6 +12,10 @@ from ...ui.dialogs.fs_mount import FilesystemMount
 
 
 class StateMetadata(angr.SimStatePlugin):
+    """
+    Helper class for metadata.
+    """
+
     def __init__(self):
         super().__init__()
         self.name = None                # the state's name
@@ -39,6 +43,10 @@ def is_option(o):
 
 
 class NewState(QDialog):
+    """
+    Dialog to create a new simulation state.
+    """
+
     def __init__(self, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
         super().__init__(parent)
 

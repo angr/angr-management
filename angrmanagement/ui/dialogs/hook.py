@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QRadioButton, QGroupBox, \
-    QScrollArea, QWidget, QDialogButtonBox
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QGridLayout, QRadioButton, QGroupBox, QScrollArea, \
+    QWidget, QDialogButtonBox
 from PySide2.QtGui import QTextOption
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode

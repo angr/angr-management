@@ -2,6 +2,10 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
 
 
 class LabelNameBox(QLineEdit):
+    """
+    A QLineEdit that sanitizes label names.
+    """
+
     def __init__(self, textchanged_callback, parent=None):
         super().__init__(parent)
 
@@ -15,12 +19,16 @@ class LabelNameBox(QLineEdit):
         return None
 
     def _is_valid_label_name(self, input_):  # pylint: disable=no-self-use
-        return input_ and not (' ' in input_.strip())
+        return input_ and not ' ' in input_.strip()
 
 
 class RenameLabel(QDialog):
+    """
+    Dialog to rename labels.
+    """
+
     def __init__(self, disasm_view, label_addr, parent=None):
-        super(RenameLabel, self).__init__(parent)
+        super().__init__(parent)
 
         # initialization
         self._disasm_view = disasm_view

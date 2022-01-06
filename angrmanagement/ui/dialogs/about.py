@@ -2,15 +2,19 @@ import angr
 
 import os
 
-from PySide2.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout, QApplication
-from PySide2.QtGui import QIcon, QDesktopServices, QPixmap, QFont
-from PySide2.QtCore import Qt, QSize, QEvent, QUrl
+from PySide2.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
+from PySide2.QtGui import QIcon, QPixmap, QFont
+from PySide2.QtCore import Qt
 from ...config import IMG_LOCATION
 
 
 class LoadAboutDialog(QDialog):
+    """
+    Dialog that shows application version, credits, etc.
+    """
+
     def __init__(self):
-        super(LoadAboutDialog, self).__init__()
+        super().__init__()
         self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
         self.setWindowTitle('About')
         #mdiIcon

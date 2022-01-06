@@ -13,6 +13,10 @@ from ..css import refresh_theme
 
 
 class Page(QWidget):
+    """
+    Base class for pages.
+    """
+
     def save_config(self):
         raise NotImplementedError()
 
@@ -23,6 +27,7 @@ class Integration(Page):
     """
     The integration page.
     """
+
     NAME = 'OS Integration'
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -80,6 +85,10 @@ class Integration(Page):
 
 
 class ThemeAndColors(Page):
+    """
+    Theme and Colors preferences page.
+    """
+
     NAME = "Theme and Colors"
 
     def __init__(self, parent=None):
@@ -143,6 +152,7 @@ class ThemeAndColors(Page):
         self.save_config()
 
     def save_config(self):
+        # pylint: disable=assigning-non-slot
         Conf.theme_name = self._schemes_combo.currentText()
         for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
