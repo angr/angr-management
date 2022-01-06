@@ -101,6 +101,7 @@ class LoadPlugins(QDialog):
             elif not checked and self._pm.get_plugin_instance(i.plugin_class) is not None:
                 self._pm.deactivate_plugin(i.plugin_class)
 
+        self._pm.save_enabled_plugins_to_config()
         self.close()
 
     def _on_cancel_clicked(self):
