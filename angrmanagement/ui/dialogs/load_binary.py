@@ -14,10 +14,16 @@ l = logging.getLogger('dialogs.load_binary')
 
 
 class LoadBinaryError(Exception):
-    pass
+    """
+    An error loading the binary.
+    """
 
 
 class LoadBinary(QDialog):
+    """
+    Dialog displaying loading options for a binary.
+    """
+
     def __init__(self, partial_ld, parent=None):
         super().__init__(parent)
 
@@ -318,4 +324,4 @@ class LoadBinary(QDialog):
         # TODO: Normalize the path for Windows
         QMessageBox.critical(None,
                              "Failed to load binary",
-                             "angr failed to load binary %s." % filename)
+                             f"angr failed to load binary {filename}.")
