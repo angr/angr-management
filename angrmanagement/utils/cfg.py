@@ -1,6 +1,9 @@
 
 import logging
 from collections import defaultdict
+
+from ailment.statement import ConditionalJump, Jump
+from ailment.expression import Const
 from angr.analyses.decompiler.clinic import Clinic
 
 from .edge import EdgeSort
@@ -64,7 +67,18 @@ def categorize_edges(disassembly, edges):
             edge_a, edge_b = items
 
             if isinstance(disassembly, Clinic):
-                fallthrough = edge_a.src.statements[-1].false_target.value
+                last_stmt = edge_a.src.statements
+                fallthrough = None
+                if isinstance(last_stmt, ConditionalJump):
+                    fallthrough = last_stmt.false_target.value
+                elif isinstance(last_stmt, Jump):
+                    # this is unexpected since this block has two successors somehow, but the last statement is a Jump
+                    # anyway we pick the current value as the fallthrough value
+                    if isinstance(last_stmt.target, Const):
+                        fallthrough = last_stmt.target.value
+                else:
+                    # a block whose last statement is not a jump or a conditional jump but has two successors?
+                    fallthrough = None
             else:
                 fallthrough = src_node.addr + src_node.size
 
