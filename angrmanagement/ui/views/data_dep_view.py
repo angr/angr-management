@@ -188,7 +188,8 @@ class DataDepView(BaseView):
     def _convert_node(self, node: 'BaseDepNode',
                       converted: Dict['BaseDepNode', QDataDepGraphBlock]) -> Optional[QDataDepGraphBlock]:
         if isinstance(node, (MemDepNode, RegDepNode)):
-            if cs_instr := self._instructions.get(node.ins_addr, None):
+            cs_instr = self._instructions.get(node.ins_addr, None)
+            if cs_instr:
                 instr = cs_instr.insn
             else:
                 instr = None
@@ -201,7 +202,8 @@ class DataDepView(BaseView):
 
         converted = {}
         for dep_node in self._data_dep_graph.nodes():
-            if node := self._convert_node(dep_node, converted):
+            node = self._convert_node(dep_node, converted)
+            if node:
                 g.add_node(node)
 
         for n0, n1 in self._data_dep_graph.edges():

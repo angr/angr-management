@@ -39,7 +39,8 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
             return None
 
     def _on_close_click(self):
-        if curr_search_node := self._safe_node_retrieval():
+        curr_search_node = self._safe_node_retrieval()
+        if curr_search_node:
             curr_search_node.selected = False
         self.accept()
 
@@ -85,8 +86,8 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
             self._error_lbl.setText("No nodes match the given search criteria.")
             self._error_lbl.show()
             return
-
-        if curr_search_node := self._safe_node_retrieval():
+        curr_search_node = self._safe_node_retrieval()
+        if curr_search_node:
             # Deselect previous search node
             curr_search_node.selected = False
 

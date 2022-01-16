@@ -54,11 +54,13 @@ class QDataDepPreviewGraph(QZoomableDraggableGraphicsView):
 
     def refresh(self):
         self._display_node.refresh()
-        if scene := self.scene():
+        scene = self.scene()
+        if scene:
             scene.update(self.sceneRect())
 
     def _initial_position(self):
-        if scene := self.scene():
+        scene = self.scene()
+        if scene:
             return scene.itemsBoundingRect().center()
         return QtCore.QPointF(0, 0)
 
@@ -136,7 +138,8 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
     def refresh(self):
         for node in self.nodes:
             node.refresh()
-        if scene := self.scene():
+        scene = self.scene()
+        if scene:
             scene.update(self.sceneRect())
 
     def request_relayout(self):
@@ -197,7 +200,8 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         self._reset_view()
 
     def _initial_position(self):
-        if scene := self.scene():
+        scene = self.scene()
+        if scene:
             return scene.itemsBoundingRect().center()
         return QtCore.QPointF(0, 0)
 
