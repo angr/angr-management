@@ -12,6 +12,7 @@ class FileMenu(Menu):
         self.entries.extend([
             MenuEntry('L&oad a new binary...', main_window.open_file_button, shortcut=QKeySequence(Qt.CTRL + Qt.Key_O)),
             MenuEntry('Loa&d a new docker target...', main_window.open_docker_button, shortcut=QKeySequence(Qt.SHIFT + (Qt.CTRL + Qt.Key_O))),
+            MenuEntry('Load a &trace file...', main_window.open_trace_file_button, shortcut=QKeySequence(Qt.SHIFT + (Qt.CTRL + Qt.Key_T))),
             MenuSeparator(),
             MenuEntry('&Load angr database...', main_window.load_database, shortcut=QKeySequence(Qt.CTRL + Qt.Key_L)),
             MenuEntry('&Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL + Qt.Key_S)),

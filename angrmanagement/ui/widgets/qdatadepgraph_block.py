@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from angr.analyses.data_dependency import VarDepNode, ConstantDepNode, MemDepNode
+from angr.analyses.data_dependency import RegDepNode, ConstantDepNode, MemDepNode, TmpDepNode
 from .qgraph_object import QCachedGraphicsItem
 from ...config import Conf
 
@@ -85,11 +85,10 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self._header_text_item.setFont(header_font)
 
         self._instruction_text = f"{hex(self._instr.address)}: {self._instr.mnemonic} {self._instr.op_str}" \
-            if self._instr else ''
+            if self._instr else f"{hex(self._node.ins_addr)}:{self._node.stmt_idx}"  # TODO: Reset else to ''
         self._instruction_text_item = self._build_simple_text_item(self._instruction_text)
         if self._instruction_text:
             self._y_off += self._instruction_text_item.boundingRect().height() + 3
-
 
     def refresh(self):
         self._update_size()
@@ -100,7 +99,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         # Pick background color based on node type
         if isinstance(self._node, ConstantDepNode):
             color = QDataDepGraphBlock.CONSTANT_BACKGROUND
-        elif isinstance(self._node, VarDepNode) and self._node.is_tmp:
+        elif isinstance(self._node, TmpDepNode):
             color = QDataDepGraphBlock.TMP_BACKGROUND
         else:
             color = QDataDepGraphBlock.DEFAULT_BACKGROUND
@@ -156,8 +155,8 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
 
     def contextMenuEvent(self, event: QtWidgets.QGraphicsSceneContextMenuEvent):
         ctxt_menu = QtWidgets.QMenu("")
-        ctxt_menu.addAction("Trace backward", lambda: self._data_dep_view.use_subgraph(self))
-        ctxt_menu.addAction("Trace forward", lambda: None)
+        ctxt_menu.addAction("Trace backward", lambda: self._data_dep_view.use_subgraph(self, True))
+        ctxt_menu.addAction("Trace forward", lambda: self._data_dep_view.use_subgraph(self, False))
         ctxt_menu.exec_(event.screenPos())
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:

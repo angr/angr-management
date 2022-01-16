@@ -6,7 +6,7 @@ from PySide2 import QtCore, QtWidgets, QtGui
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 
-from angr.analyses.data_dependency import VarDepNode, MemDepNode
+from angr.analyses.data_dependency import RegDepNode, MemDepNode, TmpDepNode
 from .view import BaseView
 from ..dialogs.data_dep_graph_search import QDataDepGraphSearch
 from ..widgets.qdatadep_graph import QDataDepGraph
@@ -16,8 +16,9 @@ if TYPE_CHECKING:
     from angr.analyses.data_dependency import BaseDepNode
     from angr.analyses.data_dependency import DataDependencyGraphAnalysis
     from angr import SimState
-
+    from capstone import CsInsn
 _l = logging.getLogger(__name__)
+
 
 class DataDepView(BaseView):
     """Workspace view used to display a data dependency graph on the screen"""
@@ -34,10 +35,14 @@ class DataDepView(BaseView):
         self.base_caption = 'Data Dependency'
         self.workspace = workspace
 
-        disasm_view = self.workspace.view_manager.first_view_in_category('disassembly')
-        if not disasm_view or not disasm_view.disasm or not disasm_view.disasm.raw_result_map:
-            raise Exception("Cannot generate a data dependency graph without a disassembly view!")
-        self._instructions = disasm_view.disasm.raw_result_map['instructions']
+        # Get all instructions in the program
+        self._instructions: Dict[int, 'CsInsn'] = {}
+        inst = self.workspace.instance
+        for func_addr, func in inst.kb.functions.items():
+            for block in func.blocks:
+                disass = block.disassembly
+                for ins in disass.insns:
+                    self._instructions[ins.address] = ins
 
         self._end_state: Optional['SimState'] = None
         self._start_addr: Optional[int] = None
@@ -49,13 +54,22 @@ class DataDepView(BaseView):
 
         # Data
         self._data_dep: Optional['DataDependencyGraphAnalysis'] = None
-        self._data_dep_graph: Optional['DiGraph'] = None  # Derived from analysis, can be full, simplified, or subgraph
+        self._ddg: Optional['DiGraph'] = None  # Derived from analysis, can be full, simplified, or subgraph
         self._graph: Optional['DiGraph'] = None
         self._traced_ancestors: Set[QDataDepGraphBlock] = set()
         self._traced_descendants: Set[QDataDepGraphBlock] = set()
 
         self._init_widgets()
         self._register_events()
+
+    @property
+    def _data_dep_graph(self) -> Optional['DiGraph']:
+        return self._ddg
+
+    @_data_dep_graph.setter
+    def _data_dep_graph(self, new_ddg: 'DiGraph'):
+        self._ddg = new_ddg
+        self._graph_widget.ref_graph = new_ddg
 
     @property
     def traced_ancestors(self) -> Set[QDataDepGraphBlock]:
@@ -101,8 +115,10 @@ class DataDepView(BaseView):
             self._block_addrs = new_params['block_addrs']
 
             self.run_analysis()
-        except KeyError:
-            _l.error("Unable to generate data dependency graph with provided parameters!")
+        except OSError:
+            pass
+        # except KeyError:
+        #     _l.error("Unable to generate data dependency graph with provided parameters!")
 
     def run_analysis(self):
         inst = self.workspace.instance
@@ -171,8 +187,11 @@ class DataDepView(BaseView):
 
     def _convert_node(self, node: 'BaseDepNode',
                       converted: Dict['BaseDepNode', QDataDepGraphBlock]) -> Optional[QDataDepGraphBlock]:
-        if isinstance(node, MemDepNode) or (isinstance(node, VarDepNode) and not node.is_tmp):
-            instr = self._instructions[node.ins_addr].insn
+        if isinstance(node, (MemDepNode, RegDepNode)):
+            if cs_instr := self._instructions.get(node.ins_addr, None):
+                instr = cs_instr.insn
+            else:
+                instr = None
         else:
             instr = None
         return converted.setdefault(node, QDataDepGraphBlock(False, self, node, instr))
@@ -199,12 +218,12 @@ class DataDepView(BaseView):
         """
         if not self._data_dep_graph:
             return False
-        return any(node for node in self._data_dep_graph.nodes if isinstance(node, VarDepNode) and node.is_tmp)
+        return any(node for node in self._data_dep_graph.nodes if isinstance(node, TmpDepNode))
 
-    def use_subgraph(self, block: QDataDepGraphBlock):
+    def use_subgraph(self, block: QDataDepGraphBlock, backwards: bool):
         dep_node = block.node
         # Determine if any temp nodes exist in the graph and, if so, include them in subgraph
-        self._data_dep_graph = self._data_dep.get_data_dep(dep_node, None, self._graph_has_tmp_nodes())
+        self._data_dep_graph = self._data_dep.get_data_dep(dep_node, self._graph_has_tmp_nodes(), backwards)
         self.reload()
 
     def _toggle_graph(self):

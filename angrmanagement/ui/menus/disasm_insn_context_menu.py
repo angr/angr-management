@@ -8,6 +8,7 @@ from .menu import Menu, MenuEntry, MenuSeparator
 if TYPE_CHECKING:
     from ...ui.views.disassembly_view import DisassemblyView
 
+
 class DisasmInsnContextMenu(Menu):
     """
     Dissembly Instruction's Context Menu Items and callback funcion.
@@ -15,6 +16,7 @@ class DisasmInsnContextMenu(Menu):
     For adding items in plugins, use `Workspace.add_disasm_insn_ctx_menu_entry`
     and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
+
     def __init__(self, disasm_view: 'DisassemblyView'):
         super().__init__("", parent=disasm_view)
 
@@ -36,7 +38,6 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuEntry('&Find in execution...', self._find_in_execution),
             MenuEntry('Add &hook...', self._add_hook),
-            MenuEntry('View data dependency &graph...', self._view_data_dep),
             MenuEntry('View function &documentation...', self._view_docs)
         ])
 
@@ -63,11 +64,6 @@ class DisasmInsnContextMenu(Menu):
 
     def _add_hook(self):
         self._disasm_view.popup_hook_dialog(async_=True)
-
-    def _view_data_dep(self):
-        if self._disasm_view is None or not self._disasm_view.disasm or not self._disasm_view.disasm.raw_result_map:
-            return
-        self._disasm_view.popup_conf_data_dep_dialog()
 
     def _view_docs(self):
         if self._disasm_view is None:
@@ -100,4 +96,4 @@ class DisasmInsnContextMenu(Menu):
             if m.caption == text:
                 self.entries.remove(m)
                 if remove_preceding_separator:
-                    self.entries.pop(idx-1)
+                    self.entries.pop(idx - 1)

@@ -1,6 +1,7 @@
 # pylint:disable=no-self-use
 import os
 import logging
+import pickle
 import sys
 import time
 from typing import Optional, TYPE_CHECKING
@@ -468,6 +469,16 @@ class MainWindow(QMainWindow):
             return
         self.load_file(file_path)
 
+    def open_trace_file_button(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace file", Conf.last_used_directory,
+                                                   "All files (*);;"
+                                                   "Trace files (*.trace);;",
+                                                   )
+        Conf.last_used_directory = os.path.dirname(file_path)
+        if not file_path:
+            return
+        self.load_trace_file(file_path)
+
     def open_docker_button(self):
         required = {
             'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
@@ -487,6 +498,35 @@ class MainWindow(QMainWindow):
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
         self.workspace.instance.add_job(LoadTargetJob(target))
         self.workspace.instance.img_name = img_name
+
+    def load_trace_file(self, file_path):
+        if isurl(file_path):
+           QMessageBox.critical(self,
+                                "Unsupported Action",
+                                "Downloading trace files is not yet supported."
+                                "Please specify a path to a file on disk.")
+        else:
+            # File
+            if os.path.isfile(file_path):
+                try:
+                    with open(file_path, 'rb') as f:
+                        loaded_sim_state = pickle.load(f)
+                        analysis_params = {
+                            'end_state': loaded_sim_state,
+                            'start_addr': None,
+                            'end_addr': None,
+                            'block_addrs': None,
+                        }
+                        self.workspace.view_data_dependency_graph(analysis_params)
+                except pickle.PickleError:
+                    QMessageBox.critical(self,
+                                         "Unable to load trace file",
+                                         "Trace file must contain a serialized SimState.")
+            else:
+                QMessageBox.critical(self,
+                                     "File not found",
+                                     f"angr management cannot open file {file_path}. "
+                                     "Please make sure that the file exists.")
 
     def load_file(self, file_path):
 

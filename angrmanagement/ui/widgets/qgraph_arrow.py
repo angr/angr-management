@@ -1,8 +1,8 @@
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
-from PySide2.QtWidgets import QGraphicsItem, QApplication
-from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker
+from PySide2.QtWidgets import QGraphicsItem, QApplication, QToolTip
+from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker, QKeyEvent
 from PySide2.QtCore import QPointF, Qt
 
 from ...utils.edge import EdgeSort
@@ -46,6 +46,11 @@ class QGraphArrow(QGraphicsItem):
         self._hovered = False
 
         self.setAcceptHoverEvents(True)
+
+    @staticmethod
+    def _get_distance(pt0: QPointF, pt1: QPointF) -> float:
+        d = (pt1.x() - pt0.x()) ** 2 + (pt1.y() - pt0.y()) ** 2
+        return math.sqrt(d)
 
     def _make_path(self):
         path = QPainterPath(self.coords[0])
@@ -165,10 +170,6 @@ class QGraphArrowBezier(QGraphArrow):
         self._radius = radius
         super().__init__(edge, arrow_location=arrow_location, arrow_direction=arrow_direction, parent=parent)
 
-    @staticmethod
-    def _get_distance(pt0: QPointF, pt1: QPointF) -> float:
-        d = (pt1.x() - pt0.x()) ** 2 + (pt1.y() - pt0.y()) ** 2
-        return math.sqrt(d)
 
     def _get_line_start(self, i: int) -> QPointF:
         pt0 = self.coords[i]
@@ -235,20 +236,87 @@ class QDataDepGraphArrow(QGraphArrow):
 
     def __init__(self, data_dep_view: 'DataDepView', *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setFlags(self.ItemIsFocusable)
         self._data_dep_view = data_dep_view
         self.is_hovered = False
 
     def _should_highlight(self) -> bool:
         # Should be highlighted if in trace path
         return self.is_hovered or self.edge.dst in self._data_dep_view.traced_ancestors \
-            or self.edge.src in self._data_dep_view.traced_descendants
+               or self.edge.src in self._data_dep_view.traced_descendants
 
     def hoverEnterEvent(self, event):
         self.is_hovered = True
-        self.update() # Must trigger repaint to highlight
-        self._data_dep_view.graph_widget.handle_preview_request(self)
+        self.update()  # Must trigger repaint to highlight
+        self.setFocus(Qt.MouseFocusReason)
+        self.grabKeyboard()
+        self._data_dep_view.graph_widget.handle_preview_request(self, event.modifiers() & Qt.ControlModifier)
 
     def hoverLeaveEvent(self, event):
         self.is_hovered = False
-        self.update() # Must trigger repaint to unhighlight
+        self.update()  # Must trigger repaint to unhighlight
+        self.ungrabKeyboard()
+        self.clearFocus()
         self._data_dep_view.graph_widget.hide_preview()
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if self.is_hovered and event.key() == Qt.Key_Control:
+            self._data_dep_view.graph_widget.handle_preview_request(self, True)
+        else:
+            super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
+        if self.is_hovered and event.key() == Qt.Key_Control:
+            self._data_dep_view.graph_widget.handle_preview_request(self, False)
+        else:
+            super().keyPressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        """
+        A double click on an arrow should center the data-dep view on the arrow's destination or source node
+        If the control modifier is held, then the jump will be made to the destination. Otherwise, the source.
+        """
+        jump_to_dst = event.modifiers() & Qt.ControlModifier
+        self._data_dep_view.graph_widget.jump_to_neighbor(self, jump_to_dst, self.mapToParent(event.pos().toPoint()))
+
+
+class QDataDepGraphAncestorLine(QDataDepGraphArrow):
+    """
+    Dashed line to differentiate between value dependencies and ancestor linking
+    """
+    dash_len = 5.0
+
+    def _calculate_dash_pattern(self) -> List[float]:
+        """
+        Builds dash pattern list dynamically, ensuring the correct number of dashes and spacing per each distance that
+        must be covered
+        """
+        dash_len = self.dash_len
+        distance = self._get_distance(self.start, self.end)
+        dash_count = distance // dash_len
+
+        dash_count = 19 if dash_count < 20 else dash_count - 1
+        dash_len = (distance - dash_len) / dash_count
+
+        # Must have an even amount of dashes
+        if dash_count % 2 != 0:
+            dash_count -= 1
+            dash_len = distance / dash_count
+
+        pattern = [dash_len] * int(dash_count)
+        pattern.append(distance - (dash_len * dash_count))  # Remaining width is last tick
+        pattern.append(0.0)
+        return pattern
+
+    def paint(self, painter, option, widget):
+        should_highlight = self._should_highlight()
+
+        if should_highlight:
+            pen = QPen(QColor(0, 0xfe, 0xfe), 2, self.style)
+        else:
+            pen = QPen(self.color, 2, self.style)
+
+        pen.setDashPattern(self._calculate_dash_pattern())
+
+        painter.setPen(pen)
+        painter.drawPath(self.path)
