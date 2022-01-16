@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from angr.analyses.data_dependency import BaseDepNode
     from ..widgets.qdatadepgraph_block import QDataDepGraphBlock
 
+
 class QDataDepGraphSearch(QtWidgets.QDialog):
     def __init__(self, parent: QtWidgets.QWidget, data_dep_graph):
         super().__init__(parent)
@@ -12,9 +13,11 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._data_dep_graph = data_dep_graph
         self._curr_value_text = ""
         self._curr_addr_text = ""
+        self._curr_name_text = ""
         self._rel_nodes: List['QDataDepGraphBlock'] = []
         self._curr_search_idx = -1
 
+        self._name_line_edit = QtWidgets.QLineEdit(self)
         self._value_line_edit = QtWidgets.QLineEdit(self)
         self._address_line_edit = QtWidgets.QLineEdit(self)
 
@@ -44,24 +47,30 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         """
         Iterate through matching nodes
         """
+
         def _node_predicate(node: 'BaseDepNode'):
             nonlocal val_as_int
             nonlocal addr_as_int
+
             matches = True
 
             if val_as_int:
                 matches &= node.value == val_as_int
             if addr_as_int:
                 matches &= node.ins_addr == addr_as_int
+            if self._curr_name_text:
+                matches &= self._curr_name_text in str(node)
             return matches
 
         self._error_lbl.hide()
 
         if self._curr_value_text != self._value_line_edit.text() \
-                or self._curr_addr_text != self._address_line_edit.text():
+                or self._curr_addr_text != self._address_line_edit.text() \
+                or self._curr_name_text != self._name_line_edit.text():
             # Change in search criteria since last click, update matching nodes
             self._curr_addr_text = self._address_line_edit.text() if self._address_line_edit.text() else ''
             self._curr_value_text = self._value_line_edit.text() if self._value_line_edit.text() else ''
+            self._curr_name_text = self._name_line_edit.text() if self._name_line_edit.text() else ''
             try:
                 val_as_int = int(self._curr_value_text, 16) if self._curr_value_text else None
                 addr_as_int = int(self._curr_addr_text, 16) if self._curr_addr_text else None
@@ -85,6 +94,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         search_node: 'QDataDepGraphBlock' = self._rel_nodes[self._curr_search_idx]
         search_node.selected = True
 
+        self._data_dep_graph.zoom(reset=True)
         self._data_dep_graph.centerOn(search_node)
         self._data_dep_graph.zoom(restore=True)
         self._data_dep_graph.refresh()
@@ -94,6 +104,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._error_lbl.setStyleSheet(self._error_lbl.styleSheet() + "color: red;")
 
         form_layout = QtWidgets.QFormLayout()
+        form_layout.addRow("Name", self._name_line_edit)
         form_layout.addRow("Value", self._value_line_edit)
         form_layout.addRow("Instruction address", self._address_line_edit)
 
