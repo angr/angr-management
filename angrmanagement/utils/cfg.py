@@ -67,7 +67,7 @@ def categorize_edges(disassembly, edges):
             edge_a, edge_b = items
 
             if isinstance(disassembly, Clinic):
-                last_stmt = edge_a.src.statements[-1]
+                last_stmt = edge_a.src.statements[-1] if edge_a.src.statements else None
                 fallthrough = None
                 if isinstance(last_stmt, ConditionalJump):
                     fallthrough = last_stmt.false_target.value
