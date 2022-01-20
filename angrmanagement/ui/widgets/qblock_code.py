@@ -10,6 +10,7 @@ from archinfo import RegisterOffset, TmpVar
 
 from ...config import Conf, ConfigurationManager
 from ...logic.disassembly.info_dock import InfoDock
+from ...utils import string_at_addr
 from .qgraph_object import QCachedGraphicsItem
 
 
@@ -179,8 +180,9 @@ class QAilObj(QBlockCodeObj):
     Renders an AIL object
     """
 
-    def __init__(self, obj:Any, *args, stmt=None, **kwargs):
+    def __init__(self, obj:Any, workspace, *args, stmt=None, **kwargs):
         self.stmt = stmt or obj
+        self.workspace = workspace
         super().__init__(obj, *args, **kwargs)
 
     def create_subobjs(self, obj:Any):
@@ -205,7 +207,7 @@ class QAilObj(QBlockCodeObj):
             ailment.expression.Convert: QAilConvertObj,
             ailment.expression.Load: QAilLoadObj,
         }.get(type(obj), QAilTextObj)
-        subobj = subobjcls(obj, self.infodock, parent=self, options=self.options, stmt=self.stmt)
+        subobj = subobjcls(obj, self.workspace, self.infodock, parent=self, options=self.options, stmt=self.stmt)
         self._add_subobj(subobj)
 
     @property
@@ -328,9 +330,19 @@ class QAilConstObj(QAilTextObj):
         return fmt
 
     def create_subobjs(self, obj:ailment.expression.Const):
+        # take care of labels first
         kb = self.infodock.disasm_view.disasm.kb
         if obj.value in kb.labels:
             self.add_text(kb.labels[obj.value])
+            return
+
+        data_str = string_at_addr(
+            self.workspace.instance.cfg,
+            obj.value,
+            self.workspace.instance.project,
+         )
+        if data_str:
+            self.add_text(data_str)
         else:
             self.add_text("%#x" % (obj.value,))
 
