@@ -3,6 +3,8 @@ import logging
 
 from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
 
+from angr.analyses.decompiler.utils import to_ail_supergraph
+
 from ...utils import get_out_branches
 from ...utils.graph_layouter import GraphLayouter
 from ...utils.cfg import categorize_edges
@@ -121,9 +123,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         if self._disassembly_level is DisassemblyLevel.AIL:
             self.disasm = self.workspace.instance.project.analyses.Clinic(
                 self._function_graph.function)
-            self._supergraph = self.disasm.graph
+            self._supergraph = to_ail_supergraph(self.disasm.graph)
             nodefunc = lambda n: n
-            branchfunc = lambda n: None
+            branchfunc = get_out_branches
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
             self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function, include_ir=include_ir)

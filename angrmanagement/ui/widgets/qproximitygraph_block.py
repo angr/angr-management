@@ -7,7 +7,7 @@ from PySide2.QtGui import QColor, QPen
 from PySide2.QtCore import Qt, QRectF
 
 from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
-    IntegerProxiNode, UnknownProxiNode
+    IntegerProxiNode, UnknownProxiNode, VariableProxiNode
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
@@ -54,7 +54,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
         self.setAcceptHoverEvents(True)
 
     def _init_widgets(self):
-        raise NotImplementedError()
+        pass
 
     def refresh(self):
         self._update_size()
@@ -120,9 +120,9 @@ class QProximityGraphBlock(QCachedGraphicsItem):
         y += self.VERTICAL_PADDING
 
         # text
-        text_label_x = x
-        painter.setPen(Qt.gray)
-        painter.drawText(text_label_x, y + self._config.symexec_font_ascent, "Unknown block")
+        # text_label_x = x
+        # painter.setPen(Qt.gray)
+        # painter.drawText(text_label_x, y + self._config.symexec_font_ascent, "Unknown block")
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
@@ -132,8 +132,8 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     #
 
     def _update_size(self):
-        self._width = 100
-        self._height = 50
+        self._width = 25
+        self._height = 25
         self.recalculate_size()
 
 
@@ -252,9 +252,11 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
     def _argument_text(self, arg) -> Tuple[Type,str]:
         if isinstance(arg, StringProxiNode):
-            return str, '"' + arg.content.decode("utf-8") + '"'
+            return str, '"' + arg.content.decode("utf-8").replace("\n", "\\n") + '"'
         elif isinstance(arg, IntegerProxiNode):
             return int, str(arg.value)
+        elif isinstance(arg, VariableProxiNode):
+            return object, str(arg.name)
         elif isinstance(arg, UnknownProxiNode):
             return object, str(arg.dummy_value)
         return object, "Unknown"

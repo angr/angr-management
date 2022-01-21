@@ -158,6 +158,37 @@ def fast_memory_load_pointer(project, addr, size=None):
         return None
 
 
+def string_at_addr(cfg, addr, project, max_size=50):
+    try:
+        mem_data = cfg.memory_data[addr]
+    except KeyError:
+        return None
+
+    if mem_data.sort == "string":
+        str_content = mem_data.content.decode("utf-8")
+    elif mem_data.sort == 'pointer-array':
+        ptr = fast_memory_load_pointer(project, mem_data.address)
+        try:
+            next_level = cfg.memory_data[ptr]
+        except KeyError:
+            return None
+
+        if next_level.sort != 'string':
+            return None
+
+        str_content = next_level.content.decode('utf-8')
+    else:
+        return None
+
+    if str_content is not None:
+        if len(str_content) > max_size:
+            return '"' + filter_string_for_display(str_content[:max_size]) + '..."'
+        else:
+            return '"' + filter_string_for_display(str_content) + '"'
+    else:
+        return None
+
+
 def should_display_string_label(cfg, insn_addr, project):
 
     if not insn_addr in cfg.insn_addr_to_memory_data:
