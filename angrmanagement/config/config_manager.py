@@ -188,6 +188,9 @@ ENTRIES = [
 
     # Daemon
     CE('use_daemon', bool, False),
+    
+    #Tabs
+    CE("enabled_tabs", str, ""),
 ]
 
 
