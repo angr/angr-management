@@ -23,6 +23,10 @@ class ConsoleView(BaseView):
         self._init_widgets()
         self.reload()
 
+    @property
+    def ipython_widget_available(self):
+        return self._ipython_widget is not None
+
     def reload(self):
 
         if self._ipython_widget is None:
@@ -79,14 +83,14 @@ class ConsoleView(BaseView):
             return
 
         self._ipython_widget = ipython_widget
-        ipython_widget.executed.connect(self.commend_executed)
+        ipython_widget.executed.connect(self.command_executed)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(ipython_widget)
 
         self.setLayout(hlayout)
 
-    def commend_executed(self,msg):
+    def command_executed(self,msg):
         if msg["msg_type"] == "execute_reply" and msg["content"]["status"] == "ok":
             view = self.workspace.view_manager.first_view_in_category("disassembly")
             if view is not None:

@@ -291,6 +291,10 @@ class QXRefViewer(QTableView):
         self.setSortingEnabled(True)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
 
+        hheader = self.horizontalHeader()
+        hheader.setStretchLastSection(True)
+        hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+
         self.doubleClicked.connect(self._on_item_doubleclicked)
 
     def _reload(self):

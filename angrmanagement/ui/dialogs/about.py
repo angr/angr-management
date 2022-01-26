@@ -1,16 +1,20 @@
-import angr
-
 import os
 
-from PySide2.QtWidgets import QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QPushButton, QApplication
-from PySide2.QtGui import QIcon, QDesktopServices, QPixmap, QFont
-from PySide2.QtCore import Qt, QSize, QEvent, QUrl
+from PySide2.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
+from PySide2.QtGui import QIcon, QPixmap, QFont
+from PySide2.QtCore import Qt
+import angr
+
 from ...config import IMG_LOCATION
 
 
 class LoadAboutDialog(QDialog):
+    """
+    Dialog that shows application version, credits, etc.
+    """
+
     def __init__(self):
-        super(LoadAboutDialog, self).__init__()
+        super().__init__()
         self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
         self.setWindowTitle('About')
         #mdiIcon
@@ -36,18 +40,11 @@ class LoadAboutDialog(QDialog):
         credits_text.setTextFormat(Qt.RichText)
         credits_text.setTextInteractionFlags(Qt.TextBrowserInteraction)
         credits_text.setOpenExternalLinks(True)
-        # buttons
-        btn_ok = QPushButton('OK')
-        btn_ok.clicked.connect(self._on_close_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(btn_ok)
 
         structure = QVBoxLayout()
         structure.addWidget(angr_text)
         structure.addWidget(version_text)
         structure.addWidget(credits_text)
-        structure.addLayout(buttons_layout)
 
         layout = QHBoxLayout()
         layout.addWidget(icon_label)
@@ -58,6 +55,3 @@ class LoadAboutDialog(QDialog):
         #
         # Event handlers
         #
-
-    def _on_close_clicked(self):
-        self.close()

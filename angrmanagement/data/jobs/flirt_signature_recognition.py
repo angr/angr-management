@@ -19,7 +19,7 @@ class FlirtSignatureRecognitionJob(Job):
     def __init__(self, on_finish=None):
         super().__init__(name="Applying FLIRT signatures", on_finish=on_finish)
 
-    def run(self, inst: 'Instance'):
+    def _run(self, inst: 'Instance'):
         if inst.project.arch.name.lower() in angr.flirt.FLIRT_SIGNATURES_BY_ARCH:
             inst.project.analyses.Flirt()
         else:

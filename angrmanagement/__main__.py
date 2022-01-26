@@ -223,9 +223,14 @@ def main():
     parser.add_argument("-u", "--url", type=str, nargs='?', help="(internal) handle angr:// URLs. "
                                                                  "the daemon must be running.")
     parser.add_argument("-p", "--profiling", action='store_true', help="display profiling log messages.")
+    parser.add_argument('-R', '--autoreload', action='store_true', help="Reload all python modules on each job start.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
     args = parser.parse_args()
+
+    if args.autoreload:
+        from .logic import GlobalInfo
+        GlobalInfo.autoreload = True
 
     if args.daemon:
         from .daemon import start_daemon

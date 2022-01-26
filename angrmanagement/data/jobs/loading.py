@@ -17,7 +17,7 @@ class LoadTargetJob(Job):
         super().__init__("Loading target", on_finish=on_finish)
         self.target = target
 
-    def run(self, inst):
+    def _run(self, inst):
         self._progress_callback(5)
         with self.target.build().start() as t:
             self._progress_callback(10)
@@ -43,7 +43,7 @@ class LoadBinaryJob(Job):
         super().__init__("Loading file", on_finish=on_finish)
         self.fname = fname
 
-    def run(self, inst):
+    def _run(self, inst):
         self._progress_callback(5)
 
         partial_ld = None

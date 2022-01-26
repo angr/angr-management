@@ -62,11 +62,13 @@ class ProtocolInteractor:
         # render a model from the log into a QWidget
         raise NotImplementedError
 
+
 class InteractionState(enum.Enum):
     BEGINNING = 1
     RUNNING = 2
     STOPPED = 3
     VIEWING = 4
+
 
 class InteractionView(BaseView):
     def __init__(self, workspace, *args, **kwargs):
@@ -486,11 +488,33 @@ class PlainTextProtocol(ProtocolInteractor):
     def render_log_entry(self, model):
         # will be called to render the entries added to the log
         txt = QtWidgets.QLabel()
+        txt.setTextFormat(QtCore.Qt.PlainText)
         txt.setText(model['data'].decode('latin-1'))
         return txt
 
     def _send_callback(self):
         data_bytes = self.view.widget_input.toPlainText().encode('latin-1')
+        self.sock.send(data_bytes)
+        self.view.log_add({"dir": "in", "data": data_bytes})
+        self.view.widget_input.setPlainText('')
+
+
+class BackslashTextProtocol(PlainTextProtocol):
+    def render_log_entry(self, model):
+        txt = QtWidgets.QLabel()
+        txt.setTextFormat(QtCore.Qt.PlainText)
+        data = "\n".join(line.decode('latin-1').encode("unicode_escape").decode("latin-1")
+                         for line in model['data'].split(b"\n"))
+        txt.setText(data)
+        return txt
+
+    def _send_callback(self):
+        data_bytes = self.view.widget_input.toPlainText()
+        try:
+            data_bytes = data_bytes.encode('latin-1').decode('unicode_escape').encode('latin-1')
+        except UnicodeDecodeError as e:
+            _l.error(e)
+            return
         self.sock.send(data_bytes)
         self.view.log_add({"dir": "in", "data": data_bytes})
         self.view.widget_input.setPlainText('')

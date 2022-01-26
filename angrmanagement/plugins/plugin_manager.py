@@ -12,7 +12,7 @@ from ..ui.toolbars.toolbar import ToolbarAction
 from ..daemon.url_handler import register_url_action, UrlActionBinaryAware
 from ..daemon.client import DaemonClient
 from ..ui.widgets.qblock import QBlock
-from ..config import Conf
+from ..config import Conf, save_config
 from . import load_plugins_from_dir
 from .base_plugin import BasePlugin
 
@@ -118,6 +118,11 @@ class PluginManager:
                       exc_info=True)
         else:
             l.info("Activated plugin %s", plugin_cls.get_display_name())
+
+    def save_enabled_plugins_to_config(self):
+        # pylint: disable=assigning-non-slot
+        Conf.enabled_plugins = ','.join(p.__class__.__name__ for p in self.active_plugins)
+        save_config()
 
     def _register_status_bar_widgets(self, plugin: BasePlugin) -> None:
         gen = plugin.status_bar_permanent_widgets()

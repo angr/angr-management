@@ -1,8 +1,8 @@
 import logging
 from typing import Type, List
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
-    QListWidget, QFileDialog, QMessageBox
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
+    QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
 from PySide2.QtCore import Qt
 
 from angrmanagement.plugins import load_plugins_from_file
@@ -11,6 +11,10 @@ _l = logging.getLogger(__name__)
 
 
 class QPluginListWidgetItem(QListWidgetItem):
+    """
+    Plugin list item.
+    """
+
     def __init__(self, plugin_cls, **kwargs):
         super().__init__(**kwargs)
         self.plugin_class = plugin_cls  # type: Type[BasePlugin]
@@ -20,8 +24,12 @@ class QPluginListWidgetItem(QListWidgetItem):
 # TODO: Add plugin settings, reloading, etc.
 
 class LoadPlugins(QDialog):
+    """
+    Dialog to display loaded plugins, enable/disable plugins, and load new plugins.
+    """
+
     def __init__(self, plugin_mgr, parent=None):
-        super(LoadPlugins, self).__init__(parent)
+        super().__init__(parent)
 
         self._pm = plugin_mgr  # type: PluginManager
         self._installed_plugin_list = None  # type: QListWidget
@@ -72,20 +80,11 @@ class LoadPlugins(QDialog):
 
         self._init_plugin_list()
 
-        # buttons
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.clicked.connect(self._on_ok_clicked)
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
@@ -100,12 +99,8 @@ class LoadPlugins(QDialog):
                 self._pm.activate_plugin(i.plugin_class)
             elif not checked and self._pm.get_plugin_instance(i.plugin_class) is not None:
                 self._pm.deactivate_plugin(i.plugin_class)
-            else:
-                self._pm.load_plugin(i.plugin_class)
 
-        self.close()
-
-    def _on_cancel_clicked(self):
+        self._pm.save_enabled_plugins_to_config()
         self.close()
 
     def _on_load_clicked(self):
@@ -127,4 +122,5 @@ class LoadPlugins(QDialog):
         for plugin in plugins:
             plugin_item = QPluginListWidgetItem(plugin_cls=plugin)
             plugin_item.setCheckState(Qt.Unchecked)
+            self._pm.load_plugin(plugin)
             self._installed_plugin_list.addItem(plugin_item)

@@ -1,12 +1,15 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
-from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
 
 from ..widgets import QAddressInput
 
 
 class JumpTo(QDialog):
+    """
+    Dialog to jump to an address.
+    """
+
     def __init__(self, disasm_view, parent=None):
-        super(JumpTo, self).__init__(parent)
+        super().__init__(parent)
 
         # initialization
         self._disasm_view = disasm_view
@@ -50,28 +53,19 @@ class JumpTo(QDialog):
         self._status_label = status_label
 
         # buttons
-
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.setEnabled(False)
-        ok_button.clicked.connect(self._on_ok_clicked)
-        self._ok_button = ok_button
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button.setEnabled(False)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
     #
 
-    def _on_address_changed(self, new_text):
+    def _on_address_changed(self, new_text):  # pylint: disable=unused-argument
 
         if self._address_box.target is None:
             # the address is invalid
@@ -93,7 +87,3 @@ class JumpTo(QDialog):
             r = self._disasm_view.jump_to(addr)
             if r:
                 self.close()
-
-    def _on_cancel_clicked(self):
-        self.cfg_args = None
-        self.close()

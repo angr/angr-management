@@ -5,7 +5,6 @@ from PySide2.QtWidgets import QFrame, QInputDialog, QLabel, QComboBox, QHBoxLayo
 from PySide2.QtCore import Qt
 
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
-from ...data.instance import Instance
 from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 from ...logic.threads import gui_thread_schedule
 
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class QSimulationManagers(QFrame):
-    def __init__(self, instance: Instance, simgr, state, parent=None):
+    def __init__(self, instance: 'Instance', simgr, state, parent=None):
         """
         :param instance:                The data source for this project
         :param object parent:           The parent widget.
