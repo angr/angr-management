@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from angr.analyses.data_dependency import RegDepNode, ConstantDepNode, MemDepNode, TmpDepNode
+from angr.analyses.data_dependency import ConstantDepNode, TmpDepNode  # pylint: disable=import-error
 from .qgraph_object import QCachedGraphicsItem
 from ...config import Conf
 
@@ -116,8 +116,9 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         painter.setPen(QtGui.QPen(border_color, 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
-    def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionGraphicsItem,
-              widget: Optional[QtWidgets.QWidget] = ...) -> None:
+    def paint(self, painter: QtGui.QPainter,
+              option: QtWidgets.QStyleOptionGraphicsItem,  # pylint: disable=unused-argument
+              widget: Optional[QtWidgets.QWidget] = ...):  # pylint: disable=unused-argument
         self._paint_boundary(painter)
 
     def _boundingRect(self):
@@ -146,7 +147,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self.grabKeyboard()
         self._data_dep_view.hover_enter_block(self, event.modifiers())
 
-    def hoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverLeaveEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent):  # pylint: disable=unused-argument
         self._selected = False
         self.refresh()
         self.ungrabKeyboard()
@@ -173,5 +174,5 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         else:
             super().keyReleaseEvent(event)
 
-    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+    def mousePressEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent):  # pylint:disable=no-self-use
         event.accept()

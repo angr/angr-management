@@ -6,7 +6,7 @@ from PySide2 import QtCore, QtWidgets, QtGui
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 
-from angr.analyses.data_dependency import RegDepNode, MemDepNode, TmpDepNode
+from angr.analyses.data_dependency import RegDepNode, MemDepNode, TmpDepNode  # pylint: disable=import-error
 from .view import BaseView
 from ..dialogs.data_dep_graph_search import QDataDepGraphSearch
 from ..widgets.qdatadep_graph import QDataDepGraph
@@ -38,7 +38,7 @@ class DataDepView(BaseView):
         # Get all instructions in the program
         self._instructions: Dict[int, 'CsInsn'] = {}
         inst = self.workspace.instance
-        for func_addr, func in inst.kb.functions.items():
+        for _, func in inst.kb.functions.items():
             for block in func.blocks:
                 disass = block.disassembly
                 for ins in disass.insns:
