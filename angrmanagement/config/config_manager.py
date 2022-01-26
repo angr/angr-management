@@ -194,7 +194,7 @@ ENTRIES = [
 ]
 
 
-class ConfigurationManager: # pylint: disalbe=assigning-non-slot
+class ConfigurationManager: # pylint: disable=assigning-non-slot
     '''
     Globe Configuration Manager for UI configuration with save/load function
     '''
@@ -204,7 +204,7 @@ class ConfigurationManager: # pylint: disalbe=assigning-non-slot
                  '_symexec_font', '_symexec_font_metrics', '_symexec_font_height',
                  '_symexec_font_width', '_symexec_font_ascent',
                  '_code_font', '_code_font_metrics', '_code_font_height',
-                 '_code_font_width', '_code_font_ascent', 
+                 '_code_font_width', '_code_font_ascent',
                  )
 
     def __init__(self, entries=None):
@@ -405,8 +405,8 @@ class ConfigurationManager: # pylint: disalbe=assigning-non-slot
                 if v is None:
                     continue
                 if type(v) is not entry.type_:
-                    _l.warning(
-                        'Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. Ignoring...',
+                    _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '\
+                        ' expected type \'%s\'. Ignoring...',
                         v, k, type(v), entry.type_
                     )
                     continue
@@ -449,7 +449,7 @@ class ConfigurationManager: # pylint: disalbe=assigning-non-slot
         for _ in range(4):
             initial_config_path = os.path.join(base, "am_initial_config")
             if os.path.isfile(initial_config_path):
-                from . import save_config  # delayed import # pylint: disalbe=import-outside-toplevel
+                from . import save_config  # delayed import # pylint: disable=import-outside-toplevel
                 # we found it!
                 new_conf = self.__class__.parse_file(initial_config_path, ignore_unknown_entries=False)
                 # copy entries over
@@ -463,7 +463,7 @@ class ConfigurationManager: # pylint: disalbe=assigning-non-slot
                     os.remove(initial_config_path)
                 except (IsADirectoryError, FileNotFoundError):
                     pass
-                except Exception: #pylint: disalbe=broad-except
+                except Exception: #pylint: disable=broad-except
                     QMessageBox.warning(None,
                                         "Failed to remove the initial configuration file",
                                         f"angr management imported the initial configuration but failed to remove the"
