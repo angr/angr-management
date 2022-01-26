@@ -197,12 +197,14 @@ class ConfigurationManager:
                  '_disasm_font', '_disasm_font_metrics', '_disasm_font_height', '_disasm_font_width', '_disasm_font_ascent',
                  '_symexec_font', '_symexec_font_metrics', '_symexec_font_height', '_symexec_font_width', '_symexec_font_ascent',
                  '_code_font', '_code_font_metrics', '_code_font_height', '_code_font_width', '_code_font_ascent',
+                 '_last_used_directory'
                  )
 
     def __init__(self, entries=None):
         self._disasm_font = self._disasm_font_metrics = self._disasm_font_height = self._disasm_font_width = self._disasm_font_ascent = None
         self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = self._symexec_font_width = self._symexec_font_ascent = None
         self._code_font = self._code_font_metrics = self._code_font_height = self._code_font_width = self._code_font_ascent = None
+        self._last_used_directory = None
 
         if entries is None:
             self._entries = { }
@@ -337,6 +339,14 @@ class ConfigurationManager:
     def code_font_ascent(self):
         self._code_manage_font_cache()
         return self._code_font_ascent
+
+    @property
+    def last_used_directory(self):
+        return self._last_used_directory
+
+    @last_used_directory.setter
+    def last_used_directory(self, new_dir):
+        self._last_used_directory = new_dir
 
     def init_font_config(self):
         if self.ui_default_font is None:

@@ -7,6 +7,9 @@ if TYPE_CHECKING:
 
 
 class QDataDepGraphSearch(QtWidgets.QDialog):
+    """
+    Dialog that allows the user to search for a DepNode based on its value, architecture name, or instruction address.
+    """
     def __init__(self, parent: QtWidgets.QWidget, data_dep_graph):
         super().__init__(parent)
         self.setWindowTitle("Data Dependency Node Search")

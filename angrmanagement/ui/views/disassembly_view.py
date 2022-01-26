@@ -4,7 +4,7 @@ import logging
 from typing import Union, Optional, TYPE_CHECKING
 
 import PySide2
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction, QDialog
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
 from angr.block import Block

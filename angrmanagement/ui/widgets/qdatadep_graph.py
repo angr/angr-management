@@ -93,6 +93,7 @@ class QDataDepPreview(QtWidgets.QFrame):
 
 
 class QDataDepGraph(QZoomableDraggableGraphicsView):
+    """Graph that displays a collection of QDataDepGraphBlocks"""
     LEFT_PADDING = 4000
     TOP_PADDING = 4000
 
