@@ -194,7 +194,7 @@ ENTRIES = [
 ]
 
 
-class ConfigurationManager:
+class ConfigurationManager: # pylint: disalbe=assigning-non-slot
     '''
     Globe Configuration Manager for UI configuration with save/load function
     '''
@@ -205,7 +205,6 @@ class ConfigurationManager:
                  '_symexec_font_width', '_symexec_font_ascent',
                  '_code_font', '_code_font_metrics', '_code_font_height',
                  '_code_font_width', '_code_font_ascent', 
-                 'ui_default_font', 'tabular_view_font'
                  )
 
     def __init__(self, entries=None):
