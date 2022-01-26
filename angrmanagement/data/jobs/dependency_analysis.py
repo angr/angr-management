@@ -61,7 +61,7 @@ class DependencyAnalysisJob(Job):
 
             # TODO: Handle stack-passing arguments
             # TODO: Handle variadic arguments
-            arg_locs = cc.arg_locs(None)
+            arg_locs = cc.arg_locs(sink.prototype)
             arg = arg_locs[self.func_arg_idx]
 
             # convert arg into atom
