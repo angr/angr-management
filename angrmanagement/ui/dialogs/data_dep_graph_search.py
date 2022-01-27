@@ -2,7 +2,7 @@ from typing import Optional, List, TYPE_CHECKING
 from PySide2 import QtWidgets
 
 if TYPE_CHECKING:
-    from angr.analyses.data_dependency import BaseDepNode
+    from angr.analyses.data_dep import BaseDepNode
     from ..widgets.qdatadepgraph_block import QDataDepGraphBlock
 
 
