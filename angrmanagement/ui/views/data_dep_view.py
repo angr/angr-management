@@ -6,15 +6,15 @@ from PySide2 import QtCore, QtWidgets, QtGui
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 
-from angr.analyses.data_dependency import RegDepNode, MemDepNode, TmpDepNode  # pylint: disable=import-error
+from angr.analyses.data_dep import MemDepNode, RegDepNode, TmpDepNode
 from .view import BaseView
 from ..dialogs.data_dep_graph_search import QDataDepGraphSearch
 from ..widgets.qdatadep_graph import QDataDepGraph
 from ..widgets.qdatadepgraph_block import QDataDepGraphBlock
 
 if TYPE_CHECKING:
-    from angr.analyses.data_dependency import BaseDepNode
-    from angr.analyses.data_dependency import DataDependencyGraphAnalysis
+    from angr.analyses.data_dep import BaseDepNode
+    from angr.analyses import DataDependencyGraphAnalysis
     from angr import SimState
     from capstone import CsInsn
 _l = logging.getLogger(__name__)

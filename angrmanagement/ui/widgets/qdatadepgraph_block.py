@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING, Optional
 
 from PySide2 import QtWidgets, QtCore, QtGui
 
-from angr.analyses.data_dependency import ConstantDepNode, TmpDepNode  # pylint: disable=import-error
+
+from angr.analyses.data_dep import ConstantDepNode, TmpDepNode
 from .qgraph_object import QCachedGraphicsItem
 from ...config import Conf
 
 if TYPE_CHECKING:
-    from angr.analyses.data_dependency import BaseDepNode
+    from angr.analyses.data_dep import BaseDepNode
     from angrmanagement.ui.views.data_dep_view import DataDepView
     from capstone import CsInsn
 
