@@ -65,8 +65,10 @@ class Workspace:
             LogView(self, 'bottom'),
         ]
 
+        enabled_tabs =[x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
         for tab in self.default_tabs:
-            self.add_view(tab)
+            if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs)==0:
+                self.add_view(tab)
 
         self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.instance.debugger_mgr.debugger)
         self.on_debugger_state_updated()

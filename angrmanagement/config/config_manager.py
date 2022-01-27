@@ -1,11 +1,11 @@
 import os
 import logging
 import re
+from typing import Union
 
 import toml
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication, QMessageBox
-from typing import Union
 
 from ..utils.env import app_root
 from .config_entry import ConfigurationEntry as CE
@@ -188,23 +188,32 @@ ENTRIES = [
 
     # Daemon
     CE('use_daemon', bool, False),
+
+    #Tabs
+    CE("enabled_tabs", str, ""),
 ]
 
 
-class ConfigurationManager:
-
+class ConfigurationManager: # pylint: disable=assigning-non-slot
+    '''
+    Globe Configuration Manager for UI configuration with save/load function
+    '''
     __slots__ = ('_entries',
-                 '_disasm_font', '_disasm_font_metrics', '_disasm_font_height', '_disasm_font_width', '_disasm_font_ascent',
-                 '_symexec_font', '_symexec_font_metrics', '_symexec_font_height', '_symexec_font_width', '_symexec_font_ascent',
-                 '_code_font', '_code_font_metrics', '_code_font_height', '_code_font_width', '_code_font_ascent',
-                 '_last_used_directory'
+                 '_disasm_font', '_disasm_font_metrics', '_disasm_font_height',
+                 '_disasm_font_width', '_disasm_font_ascent',
+                 '_symexec_font', '_symexec_font_metrics', '_symexec_font_height',
+                 '_symexec_font_width', '_symexec_font_ascent',
+                 '_code_font', '_code_font_metrics', '_code_font_height',
+                 '_code_font_width', '_code_font_ascent', '_last_used_directory'
                  )
 
     def __init__(self, entries=None):
-        self._disasm_font = self._disasm_font_metrics = self._disasm_font_height = self._disasm_font_width = self._disasm_font_ascent = None
-        self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = self._symexec_font_width = self._symexec_font_ascent = None
-        self._code_font = self._code_font_metrics = self._code_font_height = self._code_font_width = self._code_font_ascent = None
-        self._last_used_directory = None
+        self._disasm_font = self._disasm_font_metrics = self._disasm_font_height = None
+        self._disasm_font_width = self._disasm_font_ascent = None
+        self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = None
+        self._symexec_font_width = self._symexec_font_ascent = None
+        self._code_font = self._code_font_metrics = self._code_font_height = None
+        self._code_font_width = self._code_font_ascent = self._last_used_directory = None
 
         if entries is None:
             self._entries = { }
@@ -367,7 +376,7 @@ class ConfigurationManager:
     def __setattr__(self, key, value):
 
         if key in self.__slots__ or key in type(self).__dict__:
-            super(ConfigurationManager, self).__setattr__(key, value)
+            super().__setattr__(key, value)
             return
 
         if key in self._entries:
@@ -393,10 +402,9 @@ class ConfigurationManager:
                     if ignore_unknown_entries:
                         _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
                         continue
-                    else:
-                        # default to a string
-                        entry = CE(k, str, v)
-                        entry_map[k] = entry
+                    # default to a string
+                    entry = CE(k, str, v)
+                    entry_map[k] = entry
 
                 entry = entry_map[k]
 
@@ -405,8 +413,10 @@ class ConfigurationManager:
                 if v is None:
                     continue
                 if type(v) is not entry.type_:
-                    _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. Ignoring...',
-                             v, k, type(v), entry.type_)
+                    _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '\
+                        ' expected type \'%s\'. Ignoring...',
+                        v, k, type(v), entry.type_
+                    )
                     continue
                 entry.value = v
         except toml.TomlDecodeError as ex:
@@ -416,7 +426,7 @@ class ConfigurationManager:
 
     @classmethod
     def parse_file(cls, path: str, ignore_unknown_entries: bool=True):
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding="utf-8") as f:
             return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 
     def save(self, f):
@@ -430,7 +440,7 @@ class ConfigurationManager:
         toml.dump(out, f)
 
     def save_file(self, path:str):
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding="utf-8") as f:
             self.save(f)
 
     def attempt_importing_initial_config(self) -> bool:
@@ -444,10 +454,10 @@ class ConfigurationManager:
         loaded = False
 
         base = app_root()
-        for i in range(4):
+        for _ in range(4):
             initial_config_path = os.path.join(base, "am_initial_config")
             if os.path.isfile(initial_config_path):
-                from . import save_config  # delayed import
+                from . import save_config  # delayed import # pylint: disable=import-outside-toplevel
                 # we found it!
                 new_conf = self.__class__.parse_file(initial_config_path, ignore_unknown_entries=False)
                 # copy entries over
@@ -461,7 +471,7 @@ class ConfigurationManager:
                     os.remove(initial_config_path)
                 except (IsADirectoryError, FileNotFoundError):
                     pass
-                except Exception:
+                except Exception: #pylint: disable=broad-except
                     QMessageBox.warning(None,
                                         "Failed to remove the initial configuration file",
                                         f"angr management imported the initial configuration but failed to remove the"
@@ -484,7 +494,7 @@ class ConfigurationManager:
     @property
     def has_operation_mango(self) -> bool:
         try:
-            import argument_resolver
+            import argument_resolver # pylint:disable=import-outside-toplevel,unused-import
             return True
         except ImportError:
             return False

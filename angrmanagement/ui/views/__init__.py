@@ -16,3 +16,4 @@ from .log_view import LogView
 from .data_dep_view import DataDepView
 from .registers_view import RegistersView
 from .stack_view import StackView
+from .data_dep_view import DataDepView
