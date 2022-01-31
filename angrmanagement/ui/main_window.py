@@ -12,6 +12,7 @@ from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 import angr.flirt
+
 try:
     from angr.angrdb import AngrDB
 except ImportError:
@@ -47,7 +48,8 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.new_state import NewState
 from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
-from .toolbars import FileToolbar, SimgrToolbar
+from .toolbars import FileToolbar, DebugToolbar
+from .toolbar_manager import ToolbarManager
 
 if TYPE_CHECKING:
     from PySide2.QtWidgets import QApplication
@@ -75,8 +77,7 @@ class MainWindow(QMainWindow):
         self.workspace: Workspace = None
         self.central_widget: QMainWindow = None
 
-        self._file_toolbar = None  # type: FileToolbar
-        self._simgr_toolbar = None  # type: SimgrToolbar
+        self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar = None  # type: QProgressBar
         self._load_binary_dialog = None
 
@@ -92,9 +93,9 @@ class MainWindow(QMainWindow):
         self._help_menu = None
         self._plugin_menu = None
 
-        self._init_toolbars()
         self._init_statusbar()
         self._init_workspace()
+        self._init_toolbars()
         self._init_menus()
         self._init_plugins()
         self._init_library_docs()
@@ -210,10 +211,8 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self._progressbar)
 
     def _init_toolbars(self):
-        self._file_toolbar = FileToolbar(self)
-        self._simgr_toolbar = SimgrToolbar(self)
-        self.addToolBar(Qt.TopToolBarArea, self._file_toolbar.qtoolbar())
-        self.addToolBar(Qt.TopToolBarArea, self._simgr_toolbar.qtoolbar())
+        for cls in (FileToolbar, DebugToolbar):
+            self.toolbar_manager.show_toolbar_by_class(cls)
 
     #
     # Menus

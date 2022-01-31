@@ -5,8 +5,8 @@ import logging
 import archinfo
 from cle import Blob
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QPushButton, QCheckBox, QFrame, \
-    QGroupBox, QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox, QSizePolicy
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QCheckBox, QFrame, QGroupBox, \
+    QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox, QSizePolicy, QDialogButtonBox
 from PySide2.QtCore import Qt
 
 
@@ -14,10 +14,16 @@ l = logging.getLogger('dialogs.load_binary')
 
 
 class LoadBinaryError(Exception):
-    pass
+    """
+    An error loading the binary.
+    """
 
 
 class LoadBinary(QDialog):
+    """
+    Dialog displaying loading options for a binary.
+    """
+
     def __init__(self, partial_ld, parent=None):
         super().__init__(parent)
 
@@ -128,19 +134,11 @@ class LoadBinary(QDialog):
 
         # buttons
 
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.clicked.connect(self._on_ok_clicked)
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self._on_cancel_clicked)
+        self.main_layout.addWidget(buttons)
 
     def _init_central_tab(self, tab):
         self._init_load_options_tab(tab)
@@ -225,13 +223,13 @@ class LoadBinary(QDialog):
         self.option_widgets['resolve_indirect_jumps'] = resolve_indirect_jumps
 
         collect_data_refs = QCheckBox(self)
-        collect_data_refs.setText('Collect data references (one per data item) and guess data types')
+        collect_data_refs.setText('Collect cross references and guess data types')
         collect_data_refs.setChecked(True)
         self.option_widgets['data_references'] = collect_data_refs
 
         xrefs = QCheckBox(self)
-        xrefs.setText('Collect cross references')
-        xrefs.setChecked(True)
+        xrefs.setText('Deep analysis on cross references (slow)')
+        xrefs.setChecked(False)
         self.option_widgets['cross_references'] = xrefs
 
         recover_variables_on_matched_functions = QCheckBox(self)
@@ -326,4 +324,4 @@ class LoadBinary(QDialog):
         # TODO: Normalize the path for Windows
         QMessageBox.critical(None,
                              "Failed to load binary",
-                             "angr failed to load binary %s." % filename)
+                             f"angr failed to load binary {filename}.")

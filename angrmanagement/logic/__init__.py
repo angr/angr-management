@@ -12,3 +12,4 @@ class GlobalInfo:
     daemon_conn = None
     headless_plugin_manager: 'PluginManager' = None
     library_docs: 'LibraryDocs' = None
+    autoreload = False

@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, \
-    QGridLayout, QRadioButton, QGroupBox, QScrollArea, QWidget
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QGridLayout, QRadioButton, QGroupBox, QScrollArea, \
+    QWidget, QDialogButtonBox
 from PySide2.QtGui import QTextOption
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode
@@ -123,28 +123,15 @@ def enable_unicorn(state):
         layout.addWidget(function_box, row, 0)
         row += 1
 
-        # buttons
-        ok_button = QPushButton(self)
-        ok_button.setText('Append to Console')
+        self.main_layout.addLayout(layout)
 
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.button(QDialogButtonBox.Ok).setText('Append to Console')
         def do_ok():
             code = function_box.toPlainText()
             self.instance.append_code_to_console(code)
             self.close()
-
-        ok_button.clicked.connect(do_ok)
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-
-        def do_cancel():
-            self.close()
-
-        cancel_button.clicked.connect(do_cancel)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(layout)
-        self.main_layout.addLayout(buttons_layout)
+        buttons.accepted.connect(do_ok)
+        buttons.rejected.connect(self.close)
+        self.main_layout.addWidget(buttons)

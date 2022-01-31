@@ -14,6 +14,8 @@ from .object_container import ObjectContainer
 from .log import LogRecord, LogDumpHandler
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
+from ..logic.debugger import DebuggerListManager, DebuggerManager
+from ..logic.debugger.simgr import SimulationDebugger
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
@@ -62,6 +64,10 @@ class Instance:
                                 'Available interaction protocols')
         self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages')
 
+        self.debugger_list_mgr = DebuggerListManager()
+        self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
+
+        self.simgrs.am_subscribe(self._update_simgr_debuggers)
         self.project.am_subscribe(self.initialize)
 
         # Callbacks
@@ -275,14 +281,20 @@ class Instance:
         GlobalInfo.main_window.status = status_text
 
     def _refresh_cfg(self, cfg_job):
-        time.sleep(1.0)
+        # reload once and then refresh in a loop
+        reloaded = False
         while True:
-            if self.cfg is not None:
+            if not self.cfg.am_none:
                 if self.workspace is not None:
-                    gui_thread_schedule_async(self.workspace.reload, kwargs={
-                                                                             'categories': ['disassembly', 'functions'],
-                                                                             }
-                                              )
+                    if reloaded:
+                        gui_thread_schedule_async(self.workspace.refresh,
+                                                  kwargs={'categories': ['disassembly', 'functions'],}
+                                                  )
+                    else:
+                        gui_thread_schedule_async(self.workspace.reload,
+                                                  kwargs={'categories': ['disassembly', 'functions'],}
+                                                  )
+                        reloaded = True
 
             time.sleep(0.3)
             if cfg_job not in self.jobs:
@@ -293,3 +305,19 @@ class Instance:
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event(**kwargs)
+
+    def _update_simgr_debuggers(self, **kwargs):  # pylint:disable=unused-argument
+        sim_dbg = None
+        for dbg in self.debugger_list_mgr.debugger_list:
+            if isinstance(dbg, SimulationDebugger):
+                sim_dbg = dbg
+                break
+
+        if len(self.simgrs) > 0:
+            if sim_dbg is None:
+                view = self.workspace._get_or_create_symexec_view()._simgrs
+                dbg = SimulationDebugger(view, self.workspace)
+                self.debugger_list_mgr.add_debugger(dbg)
+                self.debugger_mgr.set_debugger(dbg)
+        elif sim_dbg is not None:
+            self.debugger_list_mgr.remove_debugger(sim_dbg)

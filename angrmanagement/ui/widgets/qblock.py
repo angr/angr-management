@@ -150,7 +150,7 @@ class QBlock(QCachedGraphicsItem):
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
         for stmt in bn.statements:
-            code_obj = QAilObj(stmt, self.infodock, parent=None, options=self._block_code_options)
+            code_obj = QAilObj(stmt, self.workspace, self.infodock, parent=None, options=self._block_code_options)
             obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
                              self.workspace, self.infodock, parent=self)
             code_obj.parent = obj # Reparent

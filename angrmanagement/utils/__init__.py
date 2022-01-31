@@ -71,9 +71,9 @@ def get_block_objects(disasm, nodes, func_addr):
     if block_addr == func_addr:
         # function header
         func = disasm.kb.functions.get_by_addr(func_addr)
-        if func is not None:
-            func_header = FunctionHeader(func.demangled_name, func.prototype,
-                                         func.calling_convention.args if func.calling_convention is not None else None)
+        if func is not None and func.calling_convention is not None:
+            args = func.calling_convention.arg_locs(func.prototype)
+            func_header = FunctionHeader(func.demangled_name, func.prototype, args)
             lst.append(func_header)
 
         # stack variables
@@ -155,6 +155,37 @@ def fast_memory_load_pointer(project, addr, size=None):
     try:
         return project.loader.memory.unpack_word(addr, size=size)
     except KeyError:
+        return None
+
+
+def string_at_addr(cfg, addr, project, max_size=50):
+    try:
+        mem_data = cfg.memory_data[addr]
+    except KeyError:
+        return None
+
+    if mem_data.sort == "string":
+        str_content = mem_data.content.decode("utf-8")
+    elif mem_data.sort == 'pointer-array':
+        ptr = fast_memory_load_pointer(project, mem_data.address)
+        try:
+            next_level = cfg.memory_data[ptr]
+        except KeyError:
+            return None
+
+        if next_level.sort != 'string':
+            return None
+
+        str_content = next_level.content.decode('utf-8')
+    else:
+        return None
+
+    if str_content is not None:
+        if len(str_content) > max_size:
+            return '"' + filter_string_for_display(str_content[:max_size]) + '..."'
+        else:
+            return '"' + filter_string_for_display(str_content) + '"'
+    else:
         return None
 
 

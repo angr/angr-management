@@ -32,7 +32,7 @@ class CFGGenerationJob(Job):
         self._cfb = None
         self._last_progress_callback_triggered = None
 
-    def run(self, inst):
+    def _run(self, inst):
         exclude_region_types = {'kernel', 'tls'}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
         temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)

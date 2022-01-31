@@ -1,7 +1,8 @@
 from typing import Optional, TYPE_CHECKING
 from collections import OrderedDict
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
+    QDialogButtonBox
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
 if TYPE_CHECKING:
@@ -9,6 +10,10 @@ if TYPE_CHECKING:
 
 
 class NodeNameBox(QLineEdit):
+    """
+    QLineEdit that validates node names.
+    """
+
     def __init__(self, textchanged_callback, parent=None):
         super().__init__(parent)
 
@@ -27,6 +32,10 @@ class NodeNameBox(QLineEdit):
 
 
 class RenameNode(QDialog):
+    """
+    Dialog for renaming a node.
+    """
+
     def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, parent=None):
         super().__init__(parent)
 
@@ -107,21 +116,13 @@ class RenameNode(QDialog):
         self._status_label = status_label
 
         # buttons
-        ok_button = QPushButton(self)
-        ok_button.setText('OK')
-        ok_button.setEnabled(False)
-        ok_button.clicked.connect(self._on_ok_clicked)
-        self._ok_button = ok_button
-
-        cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
-        cancel_button.clicked.connect(self._on_cancel_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(ok_button)
-        buttons_layout.addWidget(cancel_button)
-
-        self.main_layout.addLayout(buttons_layout)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_clicked)
+        buttons.rejected.connect(self.close)
+        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button.setEnabled(False)
+        self.main_layout.addWidget(buttons)
 
     #
     # Event handlers
@@ -206,6 +207,3 @@ class RenameNode(QDialog):
 
                 self._code_view.codegen.am_event()
                 self.close()
-
-    def _on_cancel_clicked(self):
-        self.close()

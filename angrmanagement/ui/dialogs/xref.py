@@ -1,13 +1,17 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide2.QtWidgets import QDialog, QVBoxLayout
 from PySide2.QtCore import QSize, Qt
 
-from ..widgets.qxref_viewer import QXRefViewer, XRefMode
+from ..widgets.qxref_viewer import QXRefViewer
 
 
 class XRef(QDialog):
+    """
+    Dialog displaying cross-references.
+    """
+
     def __init__(self, addr=None, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None,
                  instance=None, parent=None):
-        super(XRef, self).__init__(parent)
+        super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
@@ -20,7 +24,7 @@ class XRef(QDialog):
         self._disassembly_view = parent
 
         if variable is not None:
-            self.setWindowTitle('XRefs to variable %s(%s)' % (variable.name, variable.ident))
+            self.setWindowTitle(f'XRefs to variable {variable.name}({variable.ident})')
         elif dst_addr is not None:
             # is there a label for it?
             try:
@@ -28,15 +32,15 @@ class XRef(QDialog):
             except KeyError:
                 lbl = None
             if lbl is not None:
-                self.setWindowTitle('XRefs to %s' % lbl)
+                self.setWindowTitle(f'XRefs to {lbl}')
             else:
-                self.setWindowTitle('XRefs to address %#x' % dst_addr)
+                self.setWindowTitle(f'XRefs to address {dst_addr:#x}')
         else:
             raise ValueError("Either variable or dst_addr must be specified.")
 
         self._init_widgets()
 
-    def sizeHint(self, *args, **kwargs):
+    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(600, 400)
 
     def _init_widgets(self):
@@ -48,29 +52,11 @@ class XRef(QDialog):
             instance=self._instance, disassembly_view=self._disassembly_view, parent=self,
         )
 
-        # buttons
-        btn_ok = QPushButton('OK')
-
-        btn_close = QPushButton('Close')
-        btn_close.clicked.connect(self._on_close_clicked)
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(btn_ok)
-        buttons_layout.addWidget(btn_close)
-
         layout = QVBoxLayout()
         layout.addWidget(xref_viewer)
-        layout.addLayout(buttons_layout)
 
         self.setLayout(layout)
 
     def jump_to(self, addr):
         self._disassembly_view.jump_to(addr, src_ins_addr=self._addr)
-        self.close()
-
-    #
-    # Event handlers
-    #
-
-    def _on_close_clicked(self):
         self.close()

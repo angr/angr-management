@@ -2,7 +2,7 @@ from typing import Optional
 from collections import OrderedDict
 
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QDialogButtonBox
 
 import pycparser.plyparser
 from angr import sim_type
@@ -41,12 +41,11 @@ class CTypeEditor(QDialog):
         self.result = []
 
     def _init_widgets(self, base_text, multiline):
-        self._ok_button = QPushButton(self)
-        self._ok_button.setText("Ok")
-        self._ok_button.pressed.connect(self._on_ok_pressed)
-        cancel_button = QPushButton(self)
-        cancel_button.setText("Cancel")
-        cancel_button.pressed.connect(self._on_cancel_pressed)
+        buttons = QDialogButtonBox(parent=self)
+        buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        buttons.accepted.connect(self._on_ok_pressed)
+        buttons.rejected.connect(self._on_cancel_pressed)
+        self._ok_button = buttons.button(QDialogButtonBox.Ok)
 
         if multiline:
             editor = QCommentTextBox(parent=self,
@@ -69,14 +68,9 @@ class CTypeEditor(QDialog):
             editor.setFocus()
             editor.selectAll()
 
-
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self._ok_button)
-        buttons_layout.addWidget(cancel_button)
-
         layout = QVBoxLayout()
         layout.addWidget(editor)
-        layout.addLayout(buttons_layout)
+        layout.addWidget(buttons)
 
         self.setLayout(layout)
 

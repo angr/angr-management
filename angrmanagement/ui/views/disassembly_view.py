@@ -7,6 +7,7 @@ import PySide2
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtGui import QCursor
+from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
 
 from ...logic import GlobalInfo
@@ -807,29 +808,31 @@ class DisassemblyView(SynchronizedView):
             })
 
     def _jump_to(self, addr, use_animation=False):
-        function = locate_function(self.workspace.instance, addr)
-        if function is not None:
-            self._display_function(function)
-            instr_addr = function.addr_to_instruction_addr(addr)
-            if instr_addr is None:
-                instr_addr = addr
-            self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
-            return True
-        else:
-            try:
-                item = self.workspace.instance.cfb.floor_item(addr)
-            except KeyError:
-                item = None
-
-            if item is not None:
-                addr, item = item
-                if isinstance(item, MemoryData):
-                    self.infodock.select_label(item.addr)
-
-
-        # it does not belong to any function - we need to switch to linear view mode
         if self.current_graph is not self._linear_viewer:
+            function = locate_function(self.workspace.instance, addr)
+            if function is not None:
+                self._display_function(function)
+                instr_addr = function.addr_to_instruction_addr(addr)
+                if instr_addr is None:
+                    instr_addr = addr
+                self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
+                return True
+
+            # it does not belong to any function - we need to switch to linear view mode
             self.display_linear_viewer()
+
+        try:
+            item = self.workspace.instance.cfb.floor_item(addr)
+            _, item = item
+            if isinstance(item, MemoryData) and addr < (item.addr + item.size):
+                self.infodock.select_label(item.addr)
+            elif isinstance(item, Block) and item.size and addr < (item.addr + item.size):
+                addr = max(a for a in item.instruction_addrs if a <= addr)
+                self.infodock.select_instruction(addr, unique=True, use_animation=use_animation)
+                return True  # select_instruction will navigate
+        except KeyError:
+            pass
+
         self._linear_viewer.navigate_to_addr(addr)
         return True
 

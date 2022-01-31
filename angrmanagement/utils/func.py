@@ -1,15 +1,19 @@
+from typing import Optional
+
 from angr.sim_type import SimType, SimTypePointer
 from angr.knowledge_plugins import Function
 
 
-def type2str(ty: SimType) -> str:
+def type2str(ty: Optional[SimType]) -> str:
     """
     Convert a SimType instance to a string that can be displayed.
 
-    :param ty:      The SimType instance.
+    :param ty:      The SimType instance, or None if it's for void.
     :return:        A string.
     """
 
+    if ty is None:
+        return "void"
     if isinstance(ty, SimTypePointer):
         return "{}*".format(type2str(ty.pts_to))
     if ty.label:

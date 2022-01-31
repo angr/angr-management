@@ -1,15 +1,17 @@
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional, List
 import logging
 import traceback
 
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
 
+from ..logic.debugger import DebuggerWatcher
 from ..config import Conf
 from ..data.instance import ObjectContainer
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView)
+                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
+                    RegistersView, StackView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -63,8 +65,13 @@ class Workspace:
             LogView(self, 'bottom'),
         ]
 
+        enabled_tabs =[x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
         for tab in self.default_tabs:
-            self.add_view(tab)
+            if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs)==0:
+                self.add_view(tab)
+
+        self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.instance.debugger_mgr.debugger)
+        self.on_debugger_state_updated()
 
     #
     # Properties
@@ -81,6 +88,23 @@ class Workspace:
     #
     # Events
     #
+
+    def on_debugger_state_updated(self):
+        """
+        Jump to debugger target PC in active disassembly view.
+        """
+        # FIXME: the disassembly view should subscribe to debugger updates, but for that we will need to expose
+        #        a mechanism for the view to select between states. For now we simply have a global debugger
+        #        selection.
+        dbg = self._dbg_watcher.debugger
+        if not dbg.am_none:
+            state = dbg.simstate
+            if state is not None:
+                addr = state.solver.eval(state.regs.pc)
+                view = self.view_manager.current_view_in_category('disassembly') or \
+                       self.view_manager.first_view_in_category('disassembly')
+                if view:
+                    view.jump_to(addr, True)
 
     def on_function_selected(self, func: Function):
         """
@@ -204,7 +228,13 @@ class Workspace:
 
         self.view_manager.raise_view(view)
 
-    def reload(self, categories=None):
+    def reload(self, categories: Optional[List[str]]=None):
+        """
+        Ask all or specified views to reload the underlying data and regenerate the UI. This is usually expensive.
+
+        :param categories:  Specify a list of view categories that should be reloaded.
+        :return:            None
+        """
 
         if categories is None:
             views = self.view_manager.views
@@ -216,6 +246,28 @@ class Workspace:
         for view in views:
             try:
                 view.reload()
+            except Exception:  # pylint:disable=broad-except
+                _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
+
+    def refresh(self, categories: Optional[List[str]]=None):
+        """
+        Ask all or specified views to refresh based on changes in the underlying data and refresh the UI if needed. This
+        may be called frequently so it must be extremely fast.
+
+        :param categories:  Specify a list of view categories that should be reloaded.
+        :return:            None
+        """
+
+        if categories is None:
+            views = self.view_manager.views
+        else:
+            views = [ ]
+            for category in categories:
+                views.extend(self.view_manager.views_by_category.get(category, [ ]))
+
+        for view in views:
+            try:
+                view.refresh()
             except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
 
@@ -331,7 +383,7 @@ class Workspace:
             msg = ''.join(traceback.format_exception(type(msg), msg, msg.__traceback__))
 
         console = self.view_manager.first_view_in_category('console')
-        if console is None:
+        if console is None or not console.ipython_widget_available:
             print(msg)
         else:
             console.print_text(msg)
@@ -420,6 +472,16 @@ class Workspace:
 
     def show_functions_view(self):
         view = self._get_or_create_functions_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_registers_view(self):
+        view = self._get_or_create_registers_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_stack_view(self):
+        view = self._get_or_create_stack_view()
         self.raise_view(view)
         view.setFocus()
 
@@ -568,7 +630,6 @@ class Workspace:
 
         return view
 
-
     def _get_or_create_functions_view(self) -> FunctionsView:
         # Take the first functions view
         view = self.view_manager.first_view_in_category("functions")
@@ -576,6 +637,26 @@ class Workspace:
         if view is None:
             # Create a new functions view
             view = FunctionsView(self, 'left')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_registers_view(self) -> RegistersView:
+        # Take the first registers view
+        view = self.view_manager.first_view_in_category("registers")
+
+        if view is None:
+            view = RegistersView(self, 'right')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_stack_view(self) -> RegistersView:
+        # Take the first stack view
+        view = self.view_manager.first_view_in_category("stack")
+
+        if view is None:
+            view = StackView(self, 'right')
             self.add_view(view)
 
         return view
