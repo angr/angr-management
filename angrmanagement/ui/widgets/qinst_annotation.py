@@ -203,8 +203,9 @@ class QBreakAnnotation(QInstructionAnnotation):
     foreground_color = QColor(220, 220, 220)
     text = "break"
 
-    def __init__(self, addr, *args, **kwargs):
-        super().__init__(addr, self.text, *args, **kwargs)
+    def __init__(self, bp, *args, **kwargs):
+        super().__init__(bp.addr, self.text, *args, **kwargs)
+        self.bp = bp
 
     def contextMenuEvent(self, event): #pylint: disable=unused-argument
         menu = QMenu()
@@ -212,8 +213,7 @@ class QBreakAnnotation(QInstructionAnnotation):
         menu.exec_(QCursor.pos())
 
     def delete(self):
-        self.disasm_view.workspace.instance.breakpoints.remove(self.addr)
-        self.disasm_view.refresh()
+        self.disasm_view.workspace.instance.breakpoint_mgr.remove_breakpoint(self.bp)
 
 
 class QAvoidAddrAnnotation(QExploreAnnotation):

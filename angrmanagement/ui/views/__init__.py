@@ -16,3 +16,4 @@ from .log_view import LogView
 from .registers_view import RegistersView
 from .stack_view import StackView
 from .traces_view import TracesView
+from .breakpoints_view import BreakpointsView

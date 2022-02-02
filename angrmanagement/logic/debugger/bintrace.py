@@ -10,6 +10,7 @@ except ImportError as e:
     bintrace = None
 
 from ...data.trace import BintraceTrace
+from ...data.breakpoint import BreakpointType
 from .debugger import Debugger
 
 
@@ -45,7 +46,15 @@ class BintraceDebugger(Debugger):
         """
         Synchronize breakpoints set in Workspace with trace debugger.
         """
-        self._trace_dbg.breakpoints = self.workspace.instance.breakpoints
+        bp_type_map = {
+            BreakpointType.Execute: bintrace.debugger.BreakpointType.Execute,
+            BreakpointType.Read: bintrace.debugger.BreakpointType.Read,
+            BreakpointType.Write: bintrace.debugger.BreakpointType.Write,
+        }
+        self._trace_dbg.breakpoints = {
+            bintrace.debugger.Breakpoint(bp_type_map[bp.type], addr=bp.addr, length=bp.length)
+            for bp in self.workspace.instance.breakpoint_mgr.breakpoints
+        }
 
     @property
     def simstate(self) -> SimState:

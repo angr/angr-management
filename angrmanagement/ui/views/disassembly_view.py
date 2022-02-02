@@ -15,6 +15,7 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...data.highlight_region import SynchronizedHighlightRegion
+from ...data.breakpoint import Breakpoint, BreakpointType
 from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap,\
     QLinearDisassemblyView, DisassemblyLevel
@@ -274,7 +275,6 @@ class DisassemblyView(SynchronizedView):
 
         :return:    None
         """
-
         self.current_graph.redraw()
 
     def on_screen_changed(self):
@@ -682,9 +682,6 @@ class DisassemblyView(SynchronizedView):
     def find_addr_in_exec(self, addr):
         self.workspace._get_or_create_symexec_view().find_addr_in_exec(addr)
 
-    def add_breakpoint(self, addr):
-        self.workspace.instance.breakpoints.add(addr)
-
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
             self._flow_graph.induction_variable_analysis = None
@@ -709,8 +706,8 @@ class DisassemblyView(SynchronizedView):
                     addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
                 if addr in qsimgrs.avoid_addrs:
                     addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
-                if addr in self.workspace.instance.breakpoints:
-                    addr_to_annotations[addr].append(QBreakAnnotation(addr))
+                for bp in self.workspace.instance.breakpoint_mgr.get_breakpoints_at(addr):
+                    addr_to_annotations[addr].append(QBreakAnnotation(bp))
 
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
@@ -774,6 +771,7 @@ class DisassemblyView(SynchronizedView):
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.workspace.instance.breakpoint_mgr.breakpoints.am_subscribe(lambda **kwargs: self.refresh())
 
     #
     # Private methods
