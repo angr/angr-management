@@ -43,7 +43,7 @@ class Breakpoint:
 
 class BreakpointManager:
     """
-    Manager of breakpoins.
+    Manager of breakpoints.
     """
 
     def __init__(self):
