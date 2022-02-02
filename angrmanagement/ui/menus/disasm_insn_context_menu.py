@@ -36,7 +36,8 @@ class DisasmInsnContextMenu(Menu):
             MenuEntry('&Avoid in execution...', self._avoid_in_execution),
             MenuEntry('&Find in execution...', self._find_in_execution),
             MenuEntry('Add &hook...', self._add_hook),
-            MenuEntry('View function &documentation...', self._view_docs)
+            MenuEntry('View function &documentation...', self._view_docs),
+            MenuEntry('Add &breakpoint...', self._add_breakpoint)
         ])
 
     @property
@@ -58,6 +59,10 @@ class DisasmInsnContextMenu(Menu):
 
     def _find_in_execution(self):
         self._disasm_view.find_addr_in_exec(self.insn_addr)
+        self._disasm_view.refresh()
+
+    def _add_breakpoint(self):
+        self._disasm_view.add_breakpoint(self.insn_addr)
         self._disasm_view.refresh()
 
     def _add_hook(self):

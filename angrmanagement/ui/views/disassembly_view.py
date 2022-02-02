@@ -32,7 +32,7 @@ from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import SynchronizedView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
 from ..widgets.qblock_code import QVariableObj
-from ...ui.widgets.qinst_annotation import QHookAnnotation
+from ...ui.widgets.qinst_annotation import QHookAnnotation, QBreakAnnotation
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins import VariableManager
@@ -682,6 +682,9 @@ class DisassemblyView(SynchronizedView):
     def find_addr_in_exec(self, addr):
         self.workspace._get_or_create_symexec_view().find_addr_in_exec(addr)
 
+    def add_breakpoint(self, addr):
+        self.workspace.instance.breakpoints.add(addr)
+
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
             self._flow_graph.induction_variable_analysis = None
@@ -706,6 +709,9 @@ class DisassemblyView(SynchronizedView):
                     addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
                 if addr in qsimgrs.avoid_addrs:
                     addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
+                if addr in self.workspace.instance.breakpoints:
+                    addr_to_annotations[addr].append(QBreakAnnotation(addr))
+
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
     def update_highlight_regions_for_synchronized_views(self, **kwargs):  # pylint: disable=unused-argument

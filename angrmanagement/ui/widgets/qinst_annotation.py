@@ -194,6 +194,28 @@ class QFindAddrAnnotation(QExploreAnnotation):
         self.disasm_view.refresh()
 
 
+class QBreakAnnotation(QInstructionAnnotation):
+    """
+    An instruction annotation for address breakpoint.
+    It is added to the annotation list by fetch_qblock_annotations
+    """
+    background_color = QColor(200, 10, 10)
+    foreground_color = QColor(220, 220, 220)
+    text = "break"
+
+    def __init__(self, addr, *args, **kwargs):
+        super().__init__(addr, self.text, *args, **kwargs)
+
+    def contextMenuEvent(self, event): #pylint: disable=unused-argument
+        menu = QMenu()
+        menu.addAction("Delete", self.delete)
+        menu.exec_(QCursor.pos())
+
+    def delete(self):
+        self.disasm_view.workspace.instance.breakpoints.remove(self.addr)
+        self.disasm_view.refresh()
+
+
 class QAvoidAddrAnnotation(QExploreAnnotation):
     """
     An instruction annotation for explore avoid address.

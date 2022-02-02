@@ -2,7 +2,7 @@ import time
 import logging
 from threading import Thread
 from queue import Queue
-from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
+from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING, Set
 
 import angr
 from angr.block import Block
@@ -16,6 +16,7 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..logic.debugger import DebuggerListManager, DebuggerManager
 from ..logic.debugger.simgr import SimulationDebugger
+from ..data.trace import Trace
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
@@ -63,6 +64,9 @@ class Instance:
                                 List[Type[ProtocolInteractor]],
                                 'Available interaction protocols')
         self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages')
+        self.register_container('current_trace', lambda: None, Type[Trace], 'Currently selected trace')
+        self.register_container('traces', lambda: [], List[Trace], 'Global traces list')
+        self.register_container('breakpoints', lambda: set(), Set[int], 'Breakpoints')
 
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)

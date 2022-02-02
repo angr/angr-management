@@ -1,17 +1,23 @@
+import os
 from typing import TYPE_CHECKING, Callable, Optional, List
 import logging
 import traceback
 
+from PySide2.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
 
 from ..logic.debugger import DebuggerWatcher
+from ..logic.debugger.bintrace import BintraceDebugger
+
 from ..config import Conf
+from ..data.trace import BintraceTrace, Trace
 from ..data.instance import ObjectContainer
+from ..data.jobs.loading import LoadBinaryJob
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
-                    RegistersView, StackView)
+                    RegistersView, StackView, TracesView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -370,6 +376,79 @@ class Workspace:
 
         self.raise_view(view)
 
+    def create_trace_debugger(self):
+        if self.instance.current_trace.am_none:
+            _l.error('No trace available')
+            return
+
+        if isinstance(self.instance.current_trace.am_obj, BintraceTrace):
+            dbg = BintraceDebugger(self.instance.current_trace.am_obj, self)
+            dbg.init()
+            self.instance.debugger_list_mgr.add_debugger(dbg)
+            self.instance.debugger_mgr.set_debugger(dbg)
+
+    def is_current_trace(self, trace: Optional[Trace]) -> bool:
+        return self.instance.current_trace.am_obj is trace
+
+    def set_current_trace(self, trace: Optional[Trace]):
+        self.instance.current_trace.am_obj = trace
+        self.instance.current_trace.am_event()
+
+    def remove_trace(self, trace: Trace):
+        if self.is_current_trace(trace):
+            self.set_current_trace(None)
+        self.instance.traces.remove(trace)
+        self.instance.traces.am_event(trace_removed=trace)
+        # Note: Debuggers and other objects may retain trace
+
+    def load_trace_from_path(self, path: str):
+        if not BintraceTrace.trace_backend_enabled():
+            QMessageBox.critical(None, "Error", "bintrace is not installed. Please install the bintrace package.")
+            return
+
+        _l.info("Opening trace %s", path)
+        trace = BintraceTrace.load_trace(path)
+
+        def on_complete():
+            if not self.instance.project.am_none:
+                self.instance.traces.append(trace)
+                self.instance.traces.am_event(trace_added=trace)
+                self.instance.current_trace.am_obj = trace
+                self.instance.current_trace.am_event()
+                self.show_traces_view()
+
+        if self.instance.project.am_none:
+            QMessageBox.information(None, "Creating project", "Creating new project from trace.")
+            self.create_project_from_trace(trace, on_complete)
+        else:
+            on_complete()
+
+    def create_project_from_trace(self, trace: Trace, on_complete: Callable):
+        thing = None
+        load_options = trace.get_project_load_options()
+
+        if load_options is None:
+            QMessageBox.warning(None, "Error", "Failed to determine load options for binary from trace. "
+                                      "Please select binary.")
+            load_options = {}
+        else:
+            thing = load_options["thing"]
+            load_options = load_options["load_options"]
+            if not os.path.exists(thing):
+                QMessageBox.warning(None, "Unable to find target binary!",
+                                          f"Unable to find the traced binary at: \n\n{thing}\n\n"
+                                          "Please select target binary.")
+
+        if not thing:
+            thing = self.main_window.open_mainfile_dialog()
+
+        if not thing:
+            on_complete()
+            return
+
+        job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
+        self.instance.add_job(job)
+
     def interact_program(self, img_name, view=None):
         if view is None or view.category != 'interaction':
             view = self._get_or_create_interaction_view()
@@ -472,6 +551,11 @@ class Workspace:
 
     def show_functions_view(self):
         view = self._get_or_create_functions_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_traces_view(self):
+        view = self._get_or_create_traces_view()
         self.raise_view(view)
         view.setFocus()
 
@@ -657,6 +741,16 @@ class Workspace:
 
         if view is None:
             view = StackView(self, 'right')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_traces_view(self) -> TracesView:
+        # Take the first traces view
+        view = self.view_manager.first_view_in_category("traces")
+
+        if view is None:
+            view = TracesView(self, 'center')
             self.add_view(view)
 
         return view
