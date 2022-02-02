@@ -27,7 +27,6 @@ class TraceMapItem(QGraphicsItem):
         self.workspace = workspace
         self.instance = self.workspace.instance
 
-        self.scale: float = 1.0
         self._width: int = 1
         self._height: int = 1
 
@@ -149,7 +148,7 @@ class TraceMapItem(QGraphicsItem):
         pos_x = int(pos_x - tri_width / 2)  # Center drawing
         center = pos_x + int(tri_width / 2)
         pos_y = 0
-        frontier_width = 200 * self.scale
+        frontier_width = int(0.15 * max(self.width, self.height))
 
         if show_frontier:
             # Draw frontier gradients
@@ -428,7 +427,6 @@ class QTraceMapView(QGraphicsView):
             # Only resize to map to viewport width if scale is at base level to not disturb preferred size
             self._base_width = w
 
-        self.fm.scale = self._scale
         self.fm.set_width(int(self._base_width * self._scale))
         self.fm.set_height(h)
         self.fm.refresh()
