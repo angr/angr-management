@@ -6,6 +6,7 @@ import traceback
 from PySide2.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
+from cle import SymbolType
 
 from ..logic.debugger import DebuggerWatcher
 from ..logic.debugger.bintrace import BintraceDebugger
@@ -304,7 +305,7 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
-    def add_breakpoint(self, obj: Union[str, int], type_: str = 'execute', size: Optional[int] = None):
+    def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
         """
         Convenience function to add a breakpoint.
         """
@@ -318,8 +319,15 @@ class Workspace:
             addr = sym.rebased_addr
             if not size:
                 size = sym.size
+            if not type_:
+                if sym.type == SymbolType.TYPE_FUNCTION:
+                    type_ = 'execute'
+                else:
+                    type_ = 'write'
         elif type(obj) is Function:
             addr = obj.addr
+            if not type_:
+                type_ = 'execute'
         else:
             _l.error('Unexpected target object type. Expected int | str | Function')
             return
@@ -328,6 +336,7 @@ class Workspace:
             size = 1
 
         bp_type_map = {
+            None: BreakpointType.Execute,
             'execute': BreakpointType.Execute,
             'write': BreakpointType.Write,
             'read': BreakpointType.Read,
