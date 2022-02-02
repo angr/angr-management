@@ -56,7 +56,7 @@ class BreakpointDialog(QDialog):
         layout.addWidget(self._address_box, row, 1)
         row += 1
 
-        layout.addWidget(QLabel('size:', self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel('Size:', self), row, 0, Qt.AlignRight)
         self._size_box = QLineEdit(self)
         self._size_box.setText(f'{self.breakpoint.size:#x}')
         self._size_box.textChanged.connect(self._on_size_changed)
