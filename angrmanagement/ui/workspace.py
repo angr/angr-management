@@ -308,6 +308,12 @@ class Workspace:
     def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
         """
         Convenience function to add a breakpoint.
+
+        Examples:
+        - `workspace.add_breakpoint(0x1234)` sets an execution breakpoint on address 0x1234
+        - `workspace.add_breakpoint('main')` sets an execution breakpoint on `main` function
+        - `workspace.add_breakpoint('global_value')` sets a write breakpoint on `global_value`
+        - `workspace.add_breakpoint('global_value', 'read', 1)` sets a 1-byte read breakpoint on `global_value`
         """
         if type(obj) is int:
             addr = obj
