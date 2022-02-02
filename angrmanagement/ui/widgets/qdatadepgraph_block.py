@@ -141,6 +141,12 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     #
     # Event Handlers
     #
+
+    def mouseDoubleClickEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        if event.button() == QtCore.Qt.LeftButton:
+            if self._node.ins_addr:
+                self._workspace.viz(self._node.ins_addr)
+
     def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent):
         self._selected = True
         self.refresh()
