@@ -18,10 +18,10 @@ class QBreakpointTableModel(QAbstractTableModel):
     Breakpoint table model.
     """
 
-    Headers = ['Type', 'Address', 'Length', 'Comment']
+    Headers = ['Type', 'Address', 'Size', 'Comment']
     COL_TYPE = 0
     COL_ADDR = 1
-    COL_LENGTH = 2
+    COL_SIZE = 2
     COL_COMMENT = 3
 
     def __init__(self, breakpoint_mgr: BreakpointManager):
@@ -67,8 +67,8 @@ class QBreakpointTableModel(QAbstractTableModel):
             }.get(bp.type)
         elif column == self.COL_ADDR:
             return f'{bp.addr:#08x}'
-        elif column == self.COL_LENGTH:
-            return f'{bp.length:#x}'
+        elif column == self.COL_SIZE:
+            return f'{bp.size:#x}'
         elif column == self.COL_COMMENT:
             return bp.comment
         else:

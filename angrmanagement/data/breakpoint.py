@@ -20,14 +20,25 @@ class Breakpoint:
     """
 
     __slots__ = (
-        'type', 'addr', 'length', 'comment'
+        'type', 'addr', '_size', 'comment'
     )
 
-    def __init__(self, type_: BreakpointType, addr: int, length: int = 1, comment: str = ''):
+    def __init__(self, type_: BreakpointType, addr: int, size: int = 1, comment: str = ''):
         self.type: BreakpointType = type_
         self.addr: int = addr
-        self.length: int = length
+        self._size: int = 1
+        self.size = size
         self.comment: str = comment
+
+    @property
+    def size(self):
+        if self.type == BreakpointType.Execute:
+            return 1
+        return self._size
+
+    @size.setter
+    def size(self, v: int):
+        self._size = v
 
 
 class BreakpointManager:
@@ -55,4 +66,4 @@ class BreakpointManager:
 
     def get_breakpoints_at(self, addr: int) -> Sequence[Breakpoint]:
         return [bp for bp in self.breakpoints
-                     if bp.addr <= addr < (bp.addr + bp.length)]
+                     if bp.addr <= addr < (bp.addr + bp.size)]

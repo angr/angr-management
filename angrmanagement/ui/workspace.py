@@ -304,7 +304,7 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
-    def add_breakpoint(self, obj: Union[str, int], type_: str = 'execute', length: Optional[int] = None):
+    def add_breakpoint(self, obj: Union[str, int], type_: str = 'execute', size: Optional[int] = None):
         """
         Convenience function to add a breakpoint.
         """
@@ -316,16 +316,16 @@ class Workspace:
                 _l.error("Couldn't resolve '%s'", obj)
                 return
             addr = sym.rebased_addr
-            if not length:
-                length = sym.size
+            if not size:
+                size = sym.size
         elif type(obj) is Function:
             addr = obj.addr
         else:
             _l.error('Unexpected target object type. Expected int | str | Function')
             return
 
-        if not length:
-            length = 1
+        if not size:
+            size = 1
 
         bp_type_map = {
             'execute': BreakpointType.Execute,
@@ -337,7 +337,7 @@ class Workspace:
                      type_, ' | '.join(bp_type_map.keys()))
             return
 
-        bp = Breakpoint(bp_type_map[type_], addr, length)
+        bp = Breakpoint(bp_type_map[type_], addr, size)
         self.instance.breakpoint_mgr.add_breakpoint(bp)
 
     def set_comment(self, addr, comment_text):

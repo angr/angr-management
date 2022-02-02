@@ -52,7 +52,7 @@ class BintraceDebugger(Debugger):
             BreakpointType.Write: bintrace.debugger.BreakpointType.Write,
         }
         self._trace_dbg.breakpoints = {
-            bintrace.debugger.Breakpoint(bp_type_map[bp.type], addr=bp.addr, length=bp.length)
+            bintrace.debugger.Breakpoint(bp_type_map[bp.type], bp.addr, bp.size)
             for bp in self.workspace.instance.breakpoint_mgr.breakpoints
         }
 

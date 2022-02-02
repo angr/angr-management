@@ -21,7 +21,7 @@ class BreakpointDialog(QDialog):
         self.main_layout: QVBoxLayout = QVBoxLayout()
         self._type_radio_group: Optional[QButtonGroup] = None
         self._address_box: Optional[QAddressInput] = None
-        self._length_box: Optional[QLineEdit] = None
+        self._size_box: Optional[QLineEdit] = None
         self._comment_box: Optional[QLineEdit] = None
         self._status_label: Optional[QLabel] = None
         self._ok_button: Optional[QPushButton] = None
@@ -56,11 +56,11 @@ class BreakpointDialog(QDialog):
         layout.addWidget(self._address_box, row, 1)
         row += 1
 
-        layout.addWidget(QLabel('Length:', self), row, 0, Qt.AlignRight)
-        self._length_box = QLineEdit(self)
-        self._length_box.setText(f'{self.breakpoint.length:#x}')
-        self._length_box.textChanged.connect(self._on_length_changed)
-        layout.addWidget(self._length_box, row, 1)
+        layout.addWidget(QLabel('size:', self), row, 0, Qt.AlignRight)
+        self._size_box = QLineEdit(self)
+        self._size_box.setText(f'{self.breakpoint.size:#x}')
+        self._size_box.textChanged.connect(self._on_size_changed)
+        layout.addWidget(self._size_box, row, 1)
         row += 1
 
         layout.addWidget(QLabel('Comment:', self), row, 0, Qt.AlignRight)
@@ -91,9 +91,9 @@ class BreakpointDialog(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _get_length(self):
+    def _get_size(self):
         try:
-            return int(self._length_box.text(), 0)
+            return int(self._size_box.text(), 0)
         except ValueError:
             pass
         return None
@@ -104,18 +104,18 @@ class BreakpointDialog(QDialog):
 
 
     def _validate(self):
-        self._set_valid(bool(self._address_box.target is not None and self._get_length()))
+        self._set_valid(bool(self._address_box.target is not None and self._get_size()))
 
     def _on_address_changed(self, new_text):  # pylint: disable=unused-argument
         self._validate()
 
-    def _on_length_changed(self, new_text):  # pylint: disable=unused-argument
+    def _on_size_changed(self, new_text):  # pylint: disable=unused-argument
         self._validate()
 
     def _on_ok_clicked(self):
         self.breakpoint.type = BreakpointType(self._type_radio_group.checkedId())
         self.breakpoint.addr = self._address_box.target
-        self.breakpoint.length = self._get_length()
+        self.breakpoint.size = self._get_size()
         self.breakpoint.comment = self._comment_box.text()
         self.workspace.instance.breakpoint_mgr.breakpoints.am_event()
         self.accept()
