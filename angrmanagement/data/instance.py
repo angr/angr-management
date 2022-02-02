@@ -310,6 +310,9 @@ class Instance:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event(**kwargs)
 
+        for dbg in list(self.debugger_list_mgr.debugger_list):
+            self.debugger_list_mgr.remove_debugger(dbg)
+
     def _update_simgr_debuggers(self, **kwargs):  # pylint:disable=unused-argument
         sim_dbg = None
         for dbg in self.debugger_list_mgr.debugger_list:
