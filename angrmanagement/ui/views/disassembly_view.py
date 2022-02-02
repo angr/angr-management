@@ -15,7 +15,6 @@ from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
 from ...data.highlight_region import SynchronizedHighlightRegion
-from ...data.breakpoint import Breakpoint, BreakpointType
 from ...logic.disassembly import JumpHistory, InfoDock
 from ..widgets import QDisassemblyGraph, QDisasmStatusBar, QLinearDisassembly, QFeatureMap,\
     QLinearDisassemblyView, DisassemblyLevel

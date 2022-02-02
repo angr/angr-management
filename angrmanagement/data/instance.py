@@ -2,7 +2,7 @@ import time
 import logging
 from threading import Thread
 from queue import Queue
-from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING, Set
+from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
 
 import angr
 from angr.block import Block
@@ -17,7 +17,7 @@ from ..logic.threads import gui_thread_schedule_async
 from ..logic.debugger import DebuggerListManager, DebuggerManager
 from ..logic.debugger.simgr import SimulationDebugger
 from ..data.trace import Trace
-from ..data.breakpoint import Breakpoint, BreakpointManager
+from ..data.breakpoint import BreakpointManager
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace

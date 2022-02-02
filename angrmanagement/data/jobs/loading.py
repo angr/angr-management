@@ -13,6 +13,10 @@ from ...ui.dialogs import LoadBinary
 
 
 class LoadTargetJob(Job):
+    """
+    Job to load archr target and angr project.
+    """
+
     def __init__(self, target, on_finish=None):
         super().__init__("Loading target", on_finish=on_finish)
         self.target = target
@@ -39,9 +43,13 @@ class LoadTargetJob(Job):
 
 
 class LoadBinaryJob(Job):
-    def __init__(self, fname, load_options={}, on_finish=None):
+    """
+    Job to display binary load dialog and create angr project.
+    """
+
+    def __init__(self, fname, load_options=None, on_finish=None):
         super().__init__("Loading file", on_finish=on_finish)
-        self.load_options = load_options
+        self.load_options = load_options or {}
         self.fname = fname
 
     def _run(self, inst):
