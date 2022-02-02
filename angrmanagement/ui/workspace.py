@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Callable, Optional, List
+from typing import TYPE_CHECKING, Callable, Optional, List, Union
 import logging
 import traceback
 
@@ -11,6 +11,7 @@ from ..logic.debugger import DebuggerWatcher
 from ..logic.debugger.bintrace import BintraceDebugger
 
 from ..config import Conf
+from ..data.breakpoint import Breakpoint, BreakpointType
 from ..data.trace import BintraceTrace, Trace
 from ..data.instance import ObjectContainer
 from ..data.jobs.loading import LoadBinaryJob
@@ -302,6 +303,42 @@ class Workspace:
         view.jump_to(addr, use_animation=use_animation)
         self.raise_view(view)
         view.setFocus()
+
+    def add_breakpoint(self, obj: Union[str, int], type_: str = 'execute', length: Optional[int] = None):
+        """
+        Convenience function to add a breakpoint.
+        """
+        if type(obj) is int:
+            addr = obj
+        elif type(obj) is str:
+            sym = self.instance.project.loader.find_symbol(obj)
+            if sym is None:
+                _l.error("Couldn't resolve '%s'", obj)
+                return
+            addr = sym.rebased_addr
+            if not length:
+                length = sym.size
+        elif type(obj) is Function:
+            addr = obj.addr
+        else:
+            _l.error('Unexpected target object type. Expected int | str | Function')
+            return
+
+        if not length:
+            length = 1
+
+        bp_type_map = {
+            'execute': BreakpointType.Execute,
+            'write': BreakpointType.Write,
+            'read': BreakpointType.Read,
+        }
+        if type_ not in bp_type_map:
+            _l.error("Unknown breakpoint type '%s'. Expected %s",
+                     type_, ' | '.join(bp_type_map.keys()))
+            return
+
+        bp = Breakpoint(bp_type_map[type_], addr, length)
+        self.instance.breakpoint_mgr.add_breakpoint(bp)
 
     def set_comment(self, addr, comment_text):
         kb = self.instance.project.kb
