@@ -490,6 +490,7 @@ class Workspace:
                 QMessageBox.warning(None, "Unable to find target binary!",
                                           f"Unable to find the traced binary at: \n\n{thing}\n\n"
                                           "Please select target binary.")
+                thing = None
 
         if not thing:
             thing = self.main_window.open_mainfile_dialog()
