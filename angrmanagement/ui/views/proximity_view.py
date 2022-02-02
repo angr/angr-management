@@ -116,8 +116,9 @@ class ProximityView(BaseView):
         self._graph = self._create_ui_graph()
         self._graph_widget.graph = self._graph
 
-    def empty_graph(self):
+    def clear(self):
         self._proximity_graph = None
+        self.reload()
 
     def redraw_graph(self):
         if self._graph_widget is not None:

@@ -165,8 +165,7 @@ class Workspace:
             # Clear the proximity view
             view = self.view_manager.first_view_in_category('proximity')
             if view is not None:
-                view.empty_graph()
-                view.reload()
+                view.clear()
 
     def _on_flirt_signature_recognized(self):
         self.instance.add_job(
