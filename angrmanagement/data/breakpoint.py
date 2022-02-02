@@ -9,9 +9,9 @@ class BreakpointType(Enum):
     Type of breakpoint.
     """
 
-    Execute = 1
-    Read = 2
-    Write = 4
+    Execute = 0
+    Read = 1
+    Write = 2
 
 
 class Breakpoint:
