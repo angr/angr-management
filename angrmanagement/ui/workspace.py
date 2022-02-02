@@ -17,7 +17,7 @@ from ..data.jobs.loading import LoadBinaryJob
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
-                    RegistersView, StackView, TracesView, BreakpointsView)
+                    RegistersView, StackView, TracesView, TraceMapView, BreakpointsView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -559,6 +559,11 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_trace_map_view(self):
+        view = self._get_or_create_trace_map_view()
+        self.raise_view(view)
+        view.setFocus()
+
     def show_registers_view(self):
         view = self._get_or_create_registers_view()
         self.raise_view(view)
@@ -756,6 +761,16 @@ class Workspace:
 
         if view is None:
             view = TracesView(self, 'center')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_trace_map_view(self) -> TraceMapView:
+        # Take the first tracemap view
+        view = self.view_manager.first_view_in_category("tracemap")
+
+        if view is None:
+            view = TraceMapView(self, 'top')
             self.add_view(view)
 
         return view
