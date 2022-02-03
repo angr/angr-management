@@ -3,10 +3,10 @@ import logging
 
 import PySide2.QtWidgets
 from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtGui import QColor, QPen
+from PySide2.QtGui import QPen
 from PySide2.QtCore import Qt, QRectF
 
-from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
+from angr.analyses.proximity_graph import FunctionProxiNode, CallProxiNode, StringProxiNode, \
     IntegerProxiNode, UnknownProxiNode, VariableProxiNode
 
 from ...config import Conf
@@ -19,6 +19,9 @@ _l = logging.getLogger(__name__)
 
 
 class QProximityGraphBlock(QCachedGraphicsItem):
+    """
+    Base Block
+    """
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
@@ -51,8 +54,6 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         self.setAcceptHoverEvents(True)
 
-
-
     def _init_widgets(self):
         pass
 
@@ -63,7 +64,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event):  # pylint: disable=no-self-use
+    def mousePressEvent(self, event):  # pylint: disable=useless-super-delegation
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -84,10 +85,10 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
         self._proximity_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
         self._proximity_view.hover_leave_block(self)
 
     def _paint_boundary(self, painter):
@@ -139,6 +140,9 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
 
 class QProximityGraphFunctionBlock(QProximityGraphBlock):
+    """
+    Function Block
+    """
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: FunctionProxiNode):
         self._text = None
@@ -146,7 +150,7 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
         super().__init__(is_selected, proximity_view, node)
 
     def _init_widgets(self):
-        self._text = "Function %s" % self._node.func.name
+        self._text = f"Function {self._node.func.name}"
         self._text_item = QGraphicsSimpleTextItem(self._text, self)
         self._text_item.setFont(Conf.symexec_font)
         self._text_item.setBrush(self.FUNCTION_NODE_TEXT_COLOR)
@@ -178,6 +182,9 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
 
 
 class QProximityGraphCallBlock(QProximityGraphBlock):
+    """
+    Call Block
+    """
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: CallProxiNode):
         self._func_name: str = None
@@ -255,7 +262,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         self._right_parenthesis_item.setFont(Conf.symexec_font)
         self._right_parenthesis_item.setPos(x, y)
 
-    def _argument_text(self, arg) -> Tuple[Type, str]:
+    def _argument_text(self, arg) -> Tuple[Type, str]:  # pylint: disable=no-self-use
         if isinstance(arg, StringProxiNode):
             return StringProxiNode, '"' + arg.content.decode("utf-8").replace("\n", "\\n") + '"'
         elif isinstance(arg, IntegerProxiNode):
@@ -296,6 +303,9 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
 
 class QProximityGraphStringBlock(QProximityGraphBlock):
+    """
+    String Block
+    """
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: StringProxiNode):
         self._text = None
