@@ -1,17 +1,25 @@
-from typing import TYPE_CHECKING, Callable, Optional, List
+import os
+from typing import TYPE_CHECKING, Callable, Optional, List, Union
 import logging
 import traceback
 
+from PySide2.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
+from cle import SymbolType
 
 from ..logic.debugger import DebuggerWatcher
+from ..logic.debugger.bintrace import BintraceDebugger
+
 from ..config import Conf
+from ..data.breakpoint import Breakpoint, BreakpointType
+from ..data.trace import BintraceTrace, Trace
 from ..data.instance import ObjectContainer
+from ..data.jobs.loading import LoadBinaryJob
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
-                    RegistersView, StackView)
+                    RegistersView, StackView, TracesView, TraceMapView, BreakpointsView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -297,6 +305,56 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
+        """
+        Convenience function to add a breakpoint.
+
+        Examples:
+        - `workspace.add_breakpoint(0x1234)` sets an execution breakpoint on address 0x1234
+        - `workspace.add_breakpoint('main')` sets an execution breakpoint on `main` function
+        - `workspace.add_breakpoint('global_value')` sets a write breakpoint on `global_value`
+        - `workspace.add_breakpoint('global_value', 'read', 1)` sets a 1-byte read breakpoint on `global_value`
+        """
+        if type(obj) is int:
+            addr = obj
+        elif type(obj) is str:
+            sym = self.instance.project.loader.find_symbol(obj)
+            if sym is None:
+                _l.error("Couldn't resolve '%s'", obj)
+                return
+            addr = sym.rebased_addr
+            if not size:
+                size = sym.size
+            if not type_:
+                if sym.type == SymbolType.TYPE_FUNCTION:
+                    type_ = 'execute'
+                else:
+                    type_ = 'write'
+        elif type(obj) is Function:
+            addr = obj.addr
+            if not type_:
+                type_ = 'execute'
+        else:
+            _l.error('Unexpected target object type. Expected int | str | Function')
+            return
+
+        if not size:
+            size = 1
+
+        bp_type_map = {
+            None: BreakpointType.Execute,
+            'execute': BreakpointType.Execute,
+            'write': BreakpointType.Write,
+            'read': BreakpointType.Read,
+        }
+        if type_ not in bp_type_map:
+            _l.error("Unknown breakpoint type '%s'. Expected %s",
+                     type_, ' | '.join(bp_type_map.keys()))
+            return
+
+        bp = Breakpoint(bp_type_map[type_], addr, size)
+        self.instance.breakpoint_mgr.add_breakpoint(bp)
+
     def set_comment(self, addr, comment_text):
         kb = self.instance.project.kb
         exists = addr in kb.comments
@@ -369,6 +427,80 @@ class Workspace:
         view.select_simgr(simgr_container)
 
         self.raise_view(view)
+
+    def create_trace_debugger(self):
+        if self.instance.current_trace.am_none:
+            _l.error('No trace available')
+            return
+
+        if isinstance(self.instance.current_trace.am_obj, BintraceTrace):
+            dbg = BintraceDebugger(self.instance.current_trace.am_obj, self)
+            dbg.init()
+            self.instance.debugger_list_mgr.add_debugger(dbg)
+            self.instance.debugger_mgr.set_debugger(dbg)
+
+    def is_current_trace(self, trace: Optional[Trace]) -> bool:
+        return self.instance.current_trace.am_obj is trace
+
+    def set_current_trace(self, trace: Optional[Trace]):
+        self.instance.current_trace.am_obj = trace
+        self.instance.current_trace.am_event()
+
+    def remove_trace(self, trace: Trace):
+        if self.is_current_trace(trace):
+            self.set_current_trace(None)
+        self.instance.traces.remove(trace)
+        self.instance.traces.am_event(trace_removed=trace)
+        # Note: Debuggers and other objects may retain trace
+
+    def load_trace_from_path(self, path: str):
+        if not BintraceTrace.trace_backend_enabled():
+            QMessageBox.critical(None, "Error", "bintrace is not installed. Please install the bintrace package.")
+            return
+
+        _l.info("Opening trace %s", path)
+        trace = BintraceTrace.load_trace(path)
+
+        def on_complete():
+            if not self.instance.project.am_none:
+                self.instance.traces.append(trace)
+                self.instance.traces.am_event(trace_added=trace)
+                self.instance.current_trace.am_obj = trace
+                self.instance.current_trace.am_event()
+                self.show_traces_view()
+
+        if self.instance.project.am_none:
+            QMessageBox.information(None, "Creating project", "Creating new project from trace.")
+            self.create_project_from_trace(trace, on_complete)
+        else:
+            on_complete()
+
+    def create_project_from_trace(self, trace: Trace, on_complete: Callable):
+        thing = None
+        load_options = trace.get_project_load_options()
+
+        if load_options is None:
+            QMessageBox.warning(None, "Error", "Failed to determine load options for binary from trace. "
+                                      "Please select binary.")
+            load_options = {}
+        else:
+            thing = load_options["thing"]
+            load_options = load_options["load_options"]
+            if not os.path.exists(thing):
+                QMessageBox.warning(None, "Unable to find target binary!",
+                                          f"Unable to find the traced binary at: \n\n{thing}\n\n"
+                                          "Please select target binary.")
+                thing = None
+
+        if not thing:
+            thing = self.main_window.open_mainfile_dialog()
+
+        if not thing:
+            on_complete()
+            return
+
+        job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
+        self.instance.add_job(job)
 
     def interact_program(self, img_name, view=None):
         if view is None or view.category != 'interaction':
@@ -475,6 +607,16 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_traces_view(self):
+        view = self._get_or_create_traces_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_trace_map_view(self):
+        view = self._get_or_create_trace_map_view()
+        self.raise_view(view)
+        view.setFocus()
+
     def show_registers_view(self):
         view = self._get_or_create_registers_view()
         self.raise_view(view)
@@ -482,6 +624,11 @@ class Workspace:
 
     def show_stack_view(self):
         view = self._get_or_create_stack_view()
+        self.raise_view(view)
+        view.setFocus()
+
+    def show_breakpoints_view(self):
+        view = self._get_or_create_breakpoints_view()
         self.raise_view(view)
         view.setFocus()
 
@@ -657,6 +804,36 @@ class Workspace:
 
         if view is None:
             view = StackView(self, 'right')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_traces_view(self) -> TracesView:
+        # Take the first traces view
+        view = self.view_manager.first_view_in_category("traces")
+
+        if view is None:
+            view = TracesView(self, 'center')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_trace_map_view(self) -> TraceMapView:
+        # Take the first tracemap view
+        view = self.view_manager.first_view_in_category("tracemap")
+
+        if view is None:
+            view = TraceMapView(self, 'top')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_breakpoints_view(self) -> BreakpointsView:
+        # Take the first breakpoints view
+        view = self.view_manager.first_view_in_category("breakpoints")
+
+        if view is None:
+            view = BreakpointsView(self, 'center')
             self.add_view(view)
 
         return view
