@@ -159,6 +159,3 @@ class QCCodeHighlighter(SyntaxHighlighter):
                 start = mo.start()
                 end = mo.end()
                 self.setFormat(start, end - start, FORMATS[format_id])
-                #if format_id in {'quotation', 'comment'}:
-                #    # remove the formatted parts so that we do not end up highlighting these parts again
-                #    text = text[:start] + " " * (end-start) + text[end:]
