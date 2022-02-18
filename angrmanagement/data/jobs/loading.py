@@ -13,6 +13,10 @@ from ...ui.dialogs import LoadBinary
 
 
 class LoadTargetJob(Job):
+    """
+    Job to load archr target and angr project.
+    """
+
     def __init__(self, target, on_finish=None):
         super().__init__("Loading target", on_finish=on_finish)
         self.target = target
@@ -39,8 +43,13 @@ class LoadTargetJob(Job):
 
 
 class LoadBinaryJob(Job):
-    def __init__(self, fname, on_finish=None):
+    """
+    Job to display binary load dialog and create angr project.
+    """
+
+    def __init__(self, fname, load_options=None, on_finish=None):
         super().__init__("Loading file", on_finish=on_finish)
+        self.load_options = load_options or {}
         self.fname = fname
 
     def _run(self, inst):
@@ -67,16 +76,18 @@ class LoadBinaryJob(Job):
                 return
 
         self._progress_callback(50)
-        load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
+        new_load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
         partial_ld.close()
         if cfg_args is None:
             return
 
         engine = None
-        if hasattr(load_options['arch'], 'pcode_arch'):
+        if hasattr(new_load_options['arch'], 'pcode_arch'):
             engine = angr.engines.UberEnginePcode
 
-        proj = angr.Project(self.fname, load_options=load_options, engine=engine)
+        self.load_options.update(new_load_options)
+
+        proj = angr.Project(self.fname, load_options=self.load_options, engine=engine)
         self._progress_callback(95)
         def callback():
             inst._reset_containers()

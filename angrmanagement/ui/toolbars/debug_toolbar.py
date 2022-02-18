@@ -90,6 +90,10 @@ class DebugToolbar(Toolbar):
         self._new_dbg_sim.triggered.connect(self.workspace.main_window.open_newstate_dialog)
         self._new_dbg_menu.addAction(self._new_dbg_sim)
 
+        self._new_dbg_trace = QAction("New trace debugger", self._new_dbg_menu)
+        self._new_dbg_trace.triggered.connect(self.workspace.create_trace_debugger)
+        self._new_dbg_menu.addAction(self._new_dbg_trace)
+
         self._new_dbg_menu.aboutToShow.connect(self._update_new_dbg_list)
         self._cached_actions[self._start_act].setMenu(self._new_dbg_menu)
         self._update_new_dbg_list()
@@ -131,6 +135,7 @@ class DebugToolbar(Toolbar):
 
     def _update_new_dbg_list(self):
         self._new_dbg_sim.setDisabled(self.instance.project.am_none)
+        self._new_dbg_trace.setDisabled(self.instance.current_trace.am_none)
 
     def _update_dbg_list_combo(self, *args, **kwargs):   # pylint:disable=unused-argument
         dl = self.instance.debugger_list_mgr.debugger_list

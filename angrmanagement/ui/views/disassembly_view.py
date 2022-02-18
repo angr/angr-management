@@ -32,7 +32,7 @@ from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
 from .view import SynchronizedView
 from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
 from ..widgets.qblock_code import QVariableObj
-from ...ui.widgets.qinst_annotation import QHookAnnotation
+from ...ui.widgets.qinst_annotation import QHookAnnotation, QBreakAnnotation
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins import VariableManager
@@ -274,7 +274,6 @@ class DisassemblyView(SynchronizedView):
 
         :return:    None
         """
-
         self.current_graph.redraw()
 
     def on_screen_changed(self):
@@ -706,6 +705,9 @@ class DisassemblyView(SynchronizedView):
                     addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
                 if addr in qsimgrs.avoid_addrs:
                     addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
+                for bp in self.workspace.instance.breakpoint_mgr.get_breakpoints_at(addr):
+                    addr_to_annotations[addr].append(QBreakAnnotation(bp))
+
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
     def update_highlight_regions_for_synchronized_views(self, **kwargs):  # pylint: disable=unused-argument
@@ -768,6 +770,7 @@ class DisassemblyView(SynchronizedView):
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
         self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.workspace.instance.breakpoint_mgr.breakpoints.am_subscribe(lambda **kwargs: self.refresh())
 
     #
     # Private methods

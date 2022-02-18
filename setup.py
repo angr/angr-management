@@ -44,5 +44,8 @@ setup(
         'qtterm',
         'getmac',
         'QtAwesome',
-    ]
+    ],
+    extras_require={
+        'bintrace': ['bintrace']
+    }
 )
