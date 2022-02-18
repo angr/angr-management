@@ -1,6 +1,7 @@
 # pylint:disable=no-self-use
 import os
 import logging
+import pickle
 import sys
 import time
 from typing import Optional, TYPE_CHECKING
@@ -17,7 +18,6 @@ try:
     from angr.angrdb import AngrDB
 except ImportError:
     AngrDB = None  # type: Optional[type]
-
 
 try:
     import archr
@@ -61,7 +61,8 @@ class MainWindow(QMainWindow):
     """
     The main window of angr management.
     """
-    def __init__(self, app: Optional['QApplication']=None, parent=None, show=True, use_daemon=False):
+
+    def __init__(self, app: Optional['QApplication'] = None, parent=None, show=True, use_daemon=False):
         super().__init__(parent)
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
@@ -261,10 +262,12 @@ class MainWindow(QMainWindow):
                 self.caption = "Loaded from stream"
             else:
                 self.caption = os.path.basename(self.workspace.instance.project.filename)
+
         self.workspace.instance.project.am_subscribe(set_caption)
 
         self.tab = self.central_widget.findChild(QTabBar)
         self.tab.tabBarClicked.connect(self.on_center_tab_clicked)
+
     #
     # Shortcuts
     #
@@ -280,8 +283,8 @@ class MainWindow(QMainWindow):
         """
 
         center_dockable_views = self.workspace.view_manager.get_center_views()
-        for i in range(1, len(center_dockable_views)+1):
-            QShortcut(QKeySequence('Ctrl+'+str(i)), self, center_dockable_views[i-1].raise_)
+        for i in range(1, len(center_dockable_views) + 1):
+            QShortcut(QKeySequence('Ctrl+' + str(i)), self, center_dockable_views[i - 1].raise_)
 
         QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
 
@@ -467,12 +470,22 @@ class MainWindow(QMainWindow):
             return
         self.load_file(file_path)
 
+    def open_trace_file_button(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace file", Conf.last_used_directory,
+                                                   "All files (*);;"
+                                                   "Trace files (*.trace);;",
+                                                   )
+        Conf.last_used_directory = os.path.dirname(file_path)
+        if not file_path:
+            return
+        self.load_trace_file(file_path)
+
     def open_docker_button(self):
         required = {
-            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
-            'keystone: pip install --no-binary keystone-engine keystone-engine':keystone
-            }
-        is_missing = [ key for key, value in required.items() if value is None ]
+            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .': archr,
+            'keystone: pip install --no-binary keystone-engine keystone-engine': keystone
+        }
+        is_missing = [key for key, value in required.items() if value is None]
         if len(is_missing) > 0:
             req_msg = 'You need to install the following:\n\n\t' + '\n\t'.join(is_missing)
             req_msg += '\n\nInstall them to enable this functionality.'
@@ -486,6 +499,35 @@ class MainWindow(QMainWindow):
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
         self.workspace.instance.add_job(LoadTargetJob(target))
         self.workspace.instance.img_name = img_name
+
+    def load_trace_file(self, file_path):
+        if isurl(file_path):
+            QMessageBox.critical(self,
+                                 "Unsupported Action",
+                                 "Downloading trace files is not yet supported."
+                                 "Please specify a path to a file on disk.")
+        else:
+            # File
+            if os.path.isfile(file_path):
+                try:
+                    with open(file_path, 'rb') as f:
+                        loaded_sim_state = pickle.load(f)
+                        analysis_params = {
+                            'end_state': loaded_sim_state,
+                            'start_addr': None,
+                            'end_addr': None,
+                            'block_addrs': None,
+                        }
+                        self.workspace.view_data_dependency_graph(analysis_params)
+                except pickle.PickleError:
+                    QMessageBox.critical(self,
+                                         "Unable to load trace file",
+                                         "Trace file must contain a serialized SimState.")
+            else:
+                QMessageBox.critical(self,
+                                     "File not found",
+                                     f"angr management cannot open file {file_path}. "
+                                     "Please make sure that the file exists.")
 
     def load_file(self, file_path):
 
@@ -599,7 +641,7 @@ class MainWindow(QMainWindow):
     def run_induction_variable_analysis(self):
         self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
 
-    def run_dependency_analysis(self, func_addr: Optional[int]=None, func_arg_idx: Optional[int]=None):
+    def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
         if self.workspace is None or self.workspace.instance is None:
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
@@ -641,8 +683,8 @@ class MainWindow(QMainWindow):
             return
 
         angrdb = AngrDB()
-        other_kbs = { }
-        extra_info = { }
+        other_kbs = {}
+        extra_info = {}
         try:
             proj = angrdb.load(file_path, kb_names=["global", "pseudocode_variable_kb"], other_kbs=other_kbs,
                                extra_info=extra_info)
@@ -692,9 +734,9 @@ class MainWindow(QMainWindow):
         angrdb = AngrDB(project=self.workspace.instance.project)
         extra_info = self.workspace.plugins.angrdb_store_entries()
         angrdb.dump(file_path, kbs=[
-                        self.workspace.instance.kb,
-                        self.workspace.instance.pseudocode_variable_kb,
-                    ],
+            self.workspace.instance.kb,
+            self.workspace.instance.pseudocode_variable_kb,
+        ],
                     extra_info=extra_info,
                     )
 
@@ -703,7 +745,7 @@ class MainWindow(QMainWindow):
 
     def _recalculate_view_sizes(self, old_size):
         adjustable_dockable_views = [dock for dock in self.workspace.view_manager.docks
-                                     if dock.widget().default_docking_position in ('left', 'bottom', )]
+                                     if dock.widget().default_docking_position in ('left', 'bottom',)]
 
         if not adjustable_dockable_views:
             return

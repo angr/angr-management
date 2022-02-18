@@ -8,6 +8,7 @@ from .menu import Menu, MenuEntry, MenuSeparator
 if TYPE_CHECKING:
     from ...ui.views.disassembly_view import DisassemblyView
 
+
 class DisasmInsnContextMenu(Menu):
     """
     Dissembly Instruction's Context Menu Items and callback funcion.
@@ -15,6 +16,7 @@ class DisasmInsnContextMenu(Menu):
     For adding items in plugins, use `Workspace.add_disasm_insn_ctx_menu_entry`
     and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
+
     def __init__(self, disasm_view: 'DisassemblyView'):
         super().__init__("", parent=disasm_view)
 
@@ -99,4 +101,4 @@ class DisasmInsnContextMenu(Menu):
             if m.caption == text:
                 self.entries.remove(m)
                 if remove_preceding_separator:
-                    self.entries.pop(idx-1)
+                    self.entries.pop(idx - 1)
