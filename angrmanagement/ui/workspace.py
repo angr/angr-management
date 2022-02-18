@@ -651,6 +651,29 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def toggle_exec_breakpoint(self):
+        if self.instance is None:
+            return
+
+        view: Optional[DisassemblyView] = self.view_manager.first_view_in_category('disassembly')
+        if view is not None:
+            selected_insns = view.current_graph.infodock.selected_insns
+            if selected_insns:
+                for insn in selected_insns:
+                    self.instance.breakpoint_mgr.toggle_exec_breakpoint(insn)
+
+    def step_forward(self):
+        if self.instance is None:
+            return
+
+        self.instance.debugger_mgr.debugger.step_forward()
+
+    def continue_forward(self):
+        if self.instance is None:
+            return
+
+        self.instance.debugger_mgr.debugger.continue_forward()
+
     #
     # Private methods
     #

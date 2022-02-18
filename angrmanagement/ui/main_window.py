@@ -291,6 +291,15 @@ class MainWindow(QMainWindow):
         # Raise the DisassemblyView after everything has initialized
         center_dockable_views[0].raise_()
 
+        # Toggle exec breakpoint
+        bp_shortcut = QShortcut(QKeySequence(Qt.Key_F2), self, self.workspace.toggle_exec_breakpoint)
+
+        # Single step
+        bp_singlestep = QShortcut(QKeySequence(Qt.Key_F7), self, self.workspace.step_forward)
+
+        # Run
+        bp_run = QShortcut(QKeySequence(Qt.Key_F9), self, self.workspace.continue_forward)
+
     #
     # Plugins
     #
