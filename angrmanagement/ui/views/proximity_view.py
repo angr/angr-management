@@ -5,18 +5,23 @@ import networkx
 from PySide2.QtWidgets import QHBoxLayout
 from PySide2.QtCore import QSize
 
-from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode, VariableProxiNode
+from angrmanagement.ui.views.view import BaseView
+from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph
+from angrmanagement.ui.widgets.qproximitygraph_block import QProximityGraphCallBlock, QProximityGraphStringBlock, \
+    QProximityGraphFunctionBlock, QProximityGraphBlock
 
-from .view import BaseView
-from ..widgets.qproximity_graph import QProximityGraph
-from ..widgets.qproximitygraph_block import (QProximityGraphCallBlock, QProximityGraphStringBlock,
-                                             QProximityGraphFunctionBlock, QProximityGraphBlock)
+from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode, \
+    VariableProxiNode
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
 
 
 class ProximityView(BaseView):
+    """
+    Proximity View
+    """
+
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('proximity', workspace, default_docking_position, *args, **kwargs)
 
@@ -78,7 +83,7 @@ class ProximityView(BaseView):
             self._graph_widget.on_block_hovered(block)
         self.redraw_graph()
 
-    def hover_leave_block(self, block: QProximityGraphBlock):
+    def hover_leave_block(self, block: QProximityGraphBlock):  # pylint: disable=unused-argument
         self.hovered_block = None
         self.redraw_graph()
 
@@ -111,6 +116,10 @@ class ProximityView(BaseView):
         self._graph = self._create_ui_graph()
         self._graph_widget.graph = self._graph
 
+    def clear(self):
+        self._proximity_graph = None
+        self.reload()
+
     def redraw_graph(self):
         if self._graph_widget is not None:
             self._graph_widget.viewport().update()
@@ -132,7 +141,7 @@ class ProximityView(BaseView):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _convert_node(self, node: BaseProxiNode,
-                      converted: Dict[BaseProxiNode,QProximityGraphBlock]) -> Optional[QProximityGraphBlock]:
+                      converted: Dict[BaseProxiNode, QProximityGraphBlock]) -> Optional[QProximityGraphBlock]:
         if node in converted:
             return converted[node]
 
@@ -147,7 +156,7 @@ class ProximityView(BaseView):
         elif isinstance(node, BaseProxiNode):
             new_node = QProximityGraphBlock(False, self, node)
         else:
-            raise TypeError("Unsupported type of proximity node %s." % type(node))
+            raise TypeError(f"Unsupported type of proximity node {type(node)}.")
         converted[node] = new_node
         return new_node
 
@@ -155,7 +164,7 @@ class ProximityView(BaseView):
 
         g = networkx.DiGraph()
 
-        converted = { }
+        converted = {}
         for proxi_node in self._proximity_graph.nodes():
             node = self._convert_node(proxi_node, converted)
             if node is not None:
