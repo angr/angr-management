@@ -513,7 +513,10 @@ class GraphLayouter:
                 global_max_col = max(global_max_col, col)
 
                 # update min_col and max_col for the next iteration
-                next_min_col = max_col + 1
+                if min_col == max_col:
+                    next_min_col = max_col + 2
+                else:
+                    next_min_col = max_col + 1
                 next_max_col = next_min_col + 1
 
         # Second iteration: Adjust column IDs top-down

@@ -16,6 +16,8 @@ from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async
 from ..logic.debugger import DebuggerListManager, DebuggerManager
 from ..logic.debugger.simgr import SimulationDebugger
+from ..data.trace import Trace
+from ..data.breakpoint import BreakpointManager
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
@@ -63,7 +65,10 @@ class Instance:
                                 List[Type[ProtocolInteractor]],
                                 'Available interaction protocols')
         self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages')
+        self.register_container('current_trace', lambda: None, Type[Trace], 'Currently selected trace')
+        self.register_container('traces', lambda: [], List[Trace], 'Global traces list')
 
+        self.breakpoint_mgr = BreakpointManager()
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
 
@@ -305,6 +310,11 @@ class Instance:
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event(**kwargs)
+
+        for dbg in list(self.debugger_list_mgr.debugger_list):
+            self.debugger_list_mgr.remove_debugger(dbg)
+
+        self.breakpoint_mgr.clear()
 
     def _update_simgr_debuggers(self, **kwargs):  # pylint:disable=unused-argument
         sim_dbg = None

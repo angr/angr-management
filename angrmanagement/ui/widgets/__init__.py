@@ -13,3 +13,4 @@ from .qlinear_viewer import QLinearDisassembly, QLinearDisassemblyView
 # other widgets
 from .qfeature_map import QFeatureMap
 from .qinst_annotation import QFindAddrAnnotation, QAvoidAddrAnnotation, QHookAnnotation, QBlockAnnotations
+from .qtrace_map import QTraceMap
