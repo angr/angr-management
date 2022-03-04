@@ -149,6 +149,14 @@ class QBlock(QCachedGraphicsItem):
                                 self.infodock, parent=self)
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
+
+        # always add the block name as a label:
+        block_name_label = QBlockLabel(bn.addr, f"loc_{hex(bn.addr)}:", self._config,
+                                       self.disasm_view, self.workspace,
+                                       self.infodock, parent=self)
+        self.objects.append(block_name_label)
+        self.addr_to_labels[bn.addr] = block_name_label
+
         for stmt in bn.statements:
             code_obj = QAilObj(stmt, self.workspace, self.infodock, parent=None, options=self._block_code_options)
             obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
