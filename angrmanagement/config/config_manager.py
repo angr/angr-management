@@ -155,6 +155,17 @@ ENTRIES = [
     CE('pseudocode_function_color', QColor, QColor(0x00, 0x00, 0xff, 0xff)),
     CE('pseudocode_quotation_color', QColor, QColor(0x00, 0x80, 0x00, 0xff)),
     CE('pseudocode_keyword_color', QColor, QColor(0x00, 0x00, 0x80, 0xff)),
+    CE('proximity_node_background_color', QColor, QColor(0xfa, 0xfa, 0xfa)),
+    CE('proximity_node_selected_background_color', QColor, QColor(0xcc, 0xcc, 0xcc)),
+    CE('proximity_node_border_color', QColor, QColor(0xf0, 0xf0, 0xf0)),
+    CE('proximity_function_node_text_color', QColor, QColor(0xff, 0x00, 0x00)),
+    CE('proximity_string_node_text_color', QColor, QColor(0x00, 0x80, 0x00)),
+    CE('proximity_integer_node_text_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('proximity_variable_node_text_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('proximity_unknown_node_text_color', QColor, QColor(0x00, 0x00, 0x80)),
+    CE('proximity_call_node_text_color', QColor, QColor(0x00, 0x00, 0xff)),
+    CE('proximity_call_node_text_color_plt', QColor, QColor(0x8b, 0x00, 0x8b)),
+    CE('proximity_call_node_text_color_simproc', QColor, QColor(0x8b, 0x00, 0x8b)),
 
     # FLIRT signatures
     CE('flirt_signatures_root', str, "./flirt_signatures/"),
@@ -204,7 +215,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                  '_symexec_font', '_symexec_font_metrics', '_symexec_font_height',
                  '_symexec_font_width', '_symexec_font_ascent',
                  '_code_font', '_code_font_metrics', '_code_font_height',
-                 '_code_font_width', '_code_font_ascent',
+                 '_code_font_width', '_code_font_ascent', '_last_used_directory'
                  )
 
     def __init__(self, entries=None):
@@ -213,7 +224,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
         self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = None
         self._symexec_font_width = self._symexec_font_ascent = None
         self._code_font = self._code_font_metrics = self._code_font_height = None
-        self._code_font_width = self._code_font_ascent = None
+        self._code_font_width = self._code_font_ascent = self._last_used_directory = None
 
         if entries is None:
             self._entries = { }
@@ -348,6 +359,14 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
     def code_font_ascent(self):
         self._code_manage_font_cache()
         return self._code_font_ascent
+
+    @property
+    def last_used_directory(self):
+        return self._last_used_directory
+
+    @last_used_directory.setter
+    def last_used_directory(self, new_dir):
+        self._last_used_directory = new_dir
 
     def init_font_config(self):
         if self.ui_default_font is None:

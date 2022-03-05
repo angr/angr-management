@@ -3,12 +3,13 @@ from PySide2.QtCore import QSize
 
 
 class ToolbarAction:
-    def __init__(self, icon, name, tooltip, triggered, checkable=False):
+    def __init__(self, icon, name, tooltip, triggered, checkable=False, shortcut=None):
         self.icon = icon
         self.name = name
         self.tooltip = tooltip
         self.triggered = triggered
         self.checkable = checkable
+        self.shortcut = shortcut
 
     def __hash__(self):
         return hash((ToolbarAction, self.name))
@@ -64,6 +65,8 @@ class Toolbar:
                 act.triggered.connect(action.triggered)
             if action.tooltip:
                 act.setToolTip(action.tooltip)
+            if action.shortcut:
+                act.setShortcuts(action.shortcut)
             act.setCheckable(action.checkable)
             toolbar.addAction(act)
             return act

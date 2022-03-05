@@ -3,10 +3,10 @@ import logging
 
 import PySide2.QtWidgets
 from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtGui import QColor, QPen
+from PySide2.QtGui import QPen
 from PySide2.QtCore import Qt, QRectF
 
-from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, CallProxiNode, StringProxiNode, \
+from angr.analyses.proximity_graph import FunctionProxiNode, CallProxiNode, StringProxiNode, \
     IntegerProxiNode, UnknownProxiNode, VariableProxiNode
 
 from ...config import Conf
@@ -15,27 +15,16 @@ from .qgraph_object import QCachedGraphicsItem
 if TYPE_CHECKING:
     from angrmanagement.ui.views.proximity_view import ProximityView
 
-
-
 _l = logging.getLogger(__name__)
 
 
 class QProximityGraphBlock(QCachedGraphicsItem):
-
+    """
+    Base Block
+    """
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
-
-    #
-    # Colors
-    #
-
-    FUNCTION_NODE_TEXT_COLOR = Qt.blue
-    STRING_NODE_TEXT_COLOR = Qt.darkGreen
-    INTEGER_NODE_TEXT_COLOR = Qt.black
-    CALL_NODE_TEXT_COLOR = Qt.darkBlue
-    CALL_NODE_TEXT_COLOR_PLT = Qt.darkMagenta
-    CALL_NODE_TEXT_COLOR_SIMPROC = Qt.darkMagenta
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: 'BaseProxiNode'):
         super().__init__()
@@ -47,6 +36,18 @@ class QProximityGraphBlock(QCachedGraphicsItem):
         self.selected = is_selected
 
         self._node = node
+
+        #
+        # Colors
+        #
+        self.FUNCTION_NODE_TEXT_COLOR = Conf.proximity_function_node_text_color
+        self.STRING_NODE_TEXT_COLOR = Conf.proximity_string_node_text_color
+        self.INTEGER_NODE_TEXT_COLOR = Conf.proximity_integer_node_text_color
+        self.VARIABLE_NODE_TEXT_COLOR = Conf.proximity_variable_node_text_color
+        self.UNKNOWN_NODE_TEXT_COLOR = Conf.proximity_unknown_node_text_color
+        self.CALL_NODE_TEXT_COLOR = Conf.proximity_call_node_text_color
+        self.CALL_NODE_TEXT_COLOR_PLT = Conf.proximity_call_node_text_color_plt
+        self.CALL_NODE_TEXT_COLOR_SIMPROC = Conf.proximity_call_node_text_color_simproc
 
         self._init_widgets()
         self._update_size()
@@ -63,7 +64,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event): #pylint: disable=no-self-use
+    def mousePressEvent(self, event):  # pylint: disable=useless-super-delegation
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -84,26 +85,27 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
         self._proximity_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
         self._proximity_view.hover_leave_block(self)
 
     def _paint_boundary(self, painter):
         painter.setFont(Conf.symexec_font)
-        normal_background = QColor(0xfa, 0xfa, 0xfa)
-        selected_background = QColor(0xcc, 0xcc, 0xcc)
+        normal_background = Conf.proximity_node_background_color
+        selected_background = Conf.proximity_node_selected_background_color
+        border_color = Conf.proximity_node_border_color
 
         # The node background
         if self.selected:
             painter.setBrush(selected_background)
         else:
             painter.setBrush(normal_background)
-        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
+        painter.setPen(QPen(border_color, 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -138,6 +140,9 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
 
 class QProximityGraphFunctionBlock(QProximityGraphBlock):
+    """
+    Function Block
+    """
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: FunctionProxiNode):
         self._text = None
@@ -145,7 +150,7 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
         super().__init__(is_selected, proximity_view, node)
 
     def _init_widgets(self):
-        self._text = "Function %s" % self._node.func.name
+        self._text = f"Function {self._node.func.name}"
         self._text_item = QGraphicsSimpleTextItem(self._text, self)
         self._text_item.setFont(Conf.symexec_font)
         self._text_item.setBrush(self.FUNCTION_NODE_TEXT_COLOR)
@@ -177,10 +182,13 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
 
 
 class QProximityGraphCallBlock(QProximityGraphBlock):
+    """
+    Call Block
+    """
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: CallProxiNode):
         self._func_name: str = None
-        self._args: List[Tuple[Type,str]] = None
+        self._args: List[Tuple[Type, str]] = None
 
         self._func_name_item: QGraphicsSimpleTextItem = None
         self._left_parenthesis_item: QGraphicsSimpleTextItem = None
@@ -193,9 +201,9 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         self._node: CallProxiNode
         self._func_name = self._node.callee.name
         if self._node.args is not None:
-            self._args = [ self._argument_text(arg) for arg in self._node.args ]
+            self._args = [self._argument_text(arg) for arg in self._node.args]
         else:
-            self._args = [ ]
+            self._args = []
 
         # func name
         self._func_name_item = QGraphicsSimpleTextItem(self._func_name, self)
@@ -220,12 +228,16 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         x += self._left_parenthesis_item.boundingRect().width()
 
         # arguments
-        self._args_list = [ ]
+        self._args_list = []
         for i, (type_, arg) in enumerate(self._args):
-            if type_ is str:
+            if type_ is StringProxiNode:
                 color = self.STRING_NODE_TEXT_COLOR
-            elif type_ is int:
+            elif type_ is IntegerProxiNode:
                 color = self.INTEGER_NODE_TEXT_COLOR
+            elif type_ is VariableProxiNode:
+                color = self.VARIABLE_NODE_TEXT_COLOR
+            elif type_ is UnknownProxiNode:
+                color = self.UNKNOWN_NODE_TEXT_COLOR
             else:
                 color = self.CALL_NODE_TEXT_COLOR
             o = QGraphicsSimpleTextItem(arg, self)
@@ -250,15 +262,15 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         self._right_parenthesis_item.setFont(Conf.symexec_font)
         self._right_parenthesis_item.setPos(x, y)
 
-    def _argument_text(self, arg) -> Tuple[Type,str]:
+    def _argument_text(self, arg) -> Tuple[Type, str]:  # pylint: disable=no-self-use
         if isinstance(arg, StringProxiNode):
-            return str, '"' + arg.content.decode("utf-8").replace("\n", "\\n") + '"'
+            return StringProxiNode, '"' + arg.content.decode("utf-8").replace("\n", "\\n") + '"'
         elif isinstance(arg, IntegerProxiNode):
-            return int, str(arg.value)
+            return IntegerProxiNode, str(arg.value)
         elif isinstance(arg, VariableProxiNode):
-            return object, str(arg.name)
+            return VariableProxiNode, str(arg.name)
         elif isinstance(arg, UnknownProxiNode):
-            return object, str(arg.dummy_value)
+            return UnknownProxiNode, str(arg.dummy_value)
         return object, "Unknown"
 
     def mouseDoubleClickEvent(self, event):
@@ -291,6 +303,9 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
 
 class QProximityGraphStringBlock(QProximityGraphBlock):
+    """
+    String Block
+    """
 
     def __init__(self, is_selected, proximity_view: 'ProximityView', node: StringProxiNode):
         self._text = None

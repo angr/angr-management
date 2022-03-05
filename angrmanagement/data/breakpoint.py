@@ -64,6 +64,20 @@ class BreakpointManager:
     def add_exec_breakpoint(self, addr):
         self.add_breakpoint(Breakpoint(BreakpointType.Execute, addr))
 
+    def toggle_exec_breakpoint(self, addr):
+        # is there a breakpoint at this address?
+        found_bp = None
+        for bp in self.breakpoints:
+            if bp.type == BreakpointType.Execute and bp.addr == addr:
+                # yes!
+                found_bp = bp
+                break
+
+        if found_bp is None:
+            self.add_exec_breakpoint(addr)
+        else:
+            self.remove_breakpoint(found_bp)
+
     def get_breakpoints_at(self, addr: int) -> Sequence[Breakpoint]:
         return [bp for bp in self.breakpoints
                      if bp.addr <= addr < (bp.addr + bp.size)]
