@@ -150,7 +150,7 @@ class QBlock(QCachedGraphicsItem):
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
 
-        # always add the block name as a label:
+        # always add the block name as a label and instruction:
         block_name_label = QBlockLabel(bn.addr, f"loc_{hex(bn.addr)}:", self._config,
                                        self.disasm_view, self.workspace,
                                        self.infodock, parent=self)
@@ -163,6 +163,7 @@ class QBlock(QCachedGraphicsItem):
                              self.workspace, self.infodock, parent=self)
             code_obj.parent = obj # Reparent
             self.objects.append(obj)
+            self.addr_to_insns[bn.addr] = obj
 
     def _init_disassembly_block_widgets(self):
         for obj in get_block_objects(self.disasm, self.cfg_nodes, self.func_addr):
