@@ -192,6 +192,9 @@ class QFuzztainerTable(QTableWidget):
         self.viewport().update()
 
     def update_table(self, messages):
+        if messages is None:
+            return
+
         self.items = []
 
         messages = messages[::-1]
