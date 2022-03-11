@@ -1,18 +1,24 @@
+from typing import TYPE_CHECKING
 import json
 import threading
+import datetime
 from time import sleep
 
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, \
-    QAbstractItemView, QTableWidgetItem, QWidget, QTabWidget
+    QAbstractItemView, QTableWidgetItem, QWidget, QTabWidget, QLabel
 
 from angrmanagement.ui.views.view import BaseView
+from angrmanagement.logic.threads import gui_thread_schedule_async
 
 try:
     from slacrs import Slacrs
     from slacrs.model import PluginMessage
 except ImportError as ex:
     Slacrs = None
+
+if TYPE_CHECKING:
+    from .chess_connector import ChessConnector
 
 
 #
@@ -48,10 +54,9 @@ class QPluginsLogTable(QTableWidget):
         'Message',
     ]
 
-    def __init__(self, workspace, session, parent=None):
+    def __init__(self, workspace, parent=None):
         super().__init__(parent)
         self.workspace = workspace
-        self.session = session
 
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
@@ -159,10 +164,9 @@ class QFuzztainerTable(QTableWidget):
         'edges found',
     ]
 
-    def __init__(self, workspace, session, idx, parent=None):
+    def __init__(self, workspace, idx, parent=None):
         super().__init__(parent)
         self.workspace = workspace
-        self.session = session
         self.idx = idx
 
         self.setRowCount(len(self.HEADER[self.idx*10:self.idx*10 + 10]))
@@ -224,13 +228,12 @@ class QFuzztainerTable(QTableWidget):
 
 
 class SummaryView(BaseView):
-    def __init__(self, workspace, default_docking_position, connector, *args, **kwargs):
+    def __init__(self, workspace, default_docking_position, connector: 'ChessConnector', *args, **kwargs):
         super(SummaryView, self).__init__("chess_summary", workspace, default_docking_position, *args, **kwargs)
         self.base_caption = "CHESS"
 
         self.workspace = workspace
         self.connector = connector
-        self.session = self._init_session()
 
         self._init_widgets()
 
@@ -249,9 +252,9 @@ class SummaryView(BaseView):
     #
 
     def _init_widgets(self):
-        self.fuzztainer_table_1 = QFuzztainerTable(self.workspace, self.session, 0)
-        self.fuzztainer_table_2 = QFuzztainerTable(self.workspace, self.session, 1)
-        self.log_table = QPluginsLogTable(self.workspace, self.session)
+        self.fuzztainer_table_1 = QFuzztainerTable(self.workspace, 0)
+        self.fuzztainer_table_2 = QFuzztainerTable(self.workspace, 1)
+        self.log_table = QPluginsLogTable(self.workspace)
 
         #
         # fuzztainer tab
@@ -283,28 +286,47 @@ class SummaryView(BaseView):
 
         layout = QVBoxLayout()
         layout.addWidget(self.tabView)
+
+        #
+        # status bar
+        #
+        self.status_bar = QLabel()
+
+        layout.addWidget(self.status_bar)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self.show()
+
+    def set_status(self, text: str):
+        self.status_bar.setText(text)
 
     #
     # Data Threading
     #
 
     def worker_routine(self):
-        while self.should_work and True:
-            if self.connector is None or self.session is None:
+        while self.should_work:
+            if self.connector is None or not self.connector.connected:
+                gui_thread_schedule_async(self.set_status, args=('Not connected to CHECRS backend.',))
                 sleep(10)
             else:
                 sleep(5)
 
-            if self.session is None:
-                self.session = self._init_session()
+            gui_thread_schedule_async(self.set_status, args=('Refreshing...', ))
+            session = None
+            try:
+                session = self._init_session()
 
-            if not self.session:
-                continue
+                if not session:
+                    continue
 
-            self._update_tables(self.session)
+                self._update_tables(session)
+            finally:
+                if session is not None:
+                    session.close()
+
+            last_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            gui_thread_schedule_async(self.set_status, args=(f'Ready. Last updated at {last_updated}.',))
 
     def _init_session(self):
         if self.connector is None:
