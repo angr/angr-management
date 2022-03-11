@@ -189,23 +189,28 @@ class TraceStatistics:
                 self.mapped_trace.append(converted_addr)
 
         bbls = filter(self._get_bbl, self.mapped_trace)
+        functions = self.workspace.instance.project.kb.functions
 
         for p, bbl_addr in enumerate(bbls):
-            block = self.workspace.instance.project.factory.block(bbl_addr)
-            for addr in block.instruction_addrs:
-                self._positions[addr].append(p)
-
             node = self.workspace.instance.cfg.get_any_node(bbl_addr)
             # if node is None:  # try again without assuming node is start of a basic block
             #     node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
 
             func = None
             if node is not None:
+                if node.instruction_addrs is not None:
+                    instr_addrs = node.instruction_addrs
+                else:
+                    # relift
+                    block = self.workspace.instance.project.factory.block(bbl_addr)
+                    instr_addrs = block.instruction_addrs
+                for addr in instr_addrs:
+                    self._positions[addr].append(p)
+
                 func_addr = node.function_address
-                functions = self.workspace.instance.project.kb.functions
                 if func_addr is not None and functions.contains_addr(func_addr):
-                    func_name = functions[func_addr].demangled_name
-                    func = functions[func_addr]
+                    func = functions.get_by_addr(func_addr)
+                    func_name = func.demangled_name
                 else:
                     func_name = "Unknown"
                 self.func_addr_in_trace.add(func_addr)
