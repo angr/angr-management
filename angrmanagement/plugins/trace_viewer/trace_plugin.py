@@ -171,12 +171,14 @@ class TraceViewer(BasePlugin):
 
     def color_func(self, func):
         if not self.multi_trace.am_none:
-            if isinstance(self.multi_trace.am_obj, MultiTrace) and self.multi_trace.is_active_tab:
-                return self.multi_trace.get_percent_color(func)
+            if isinstance(self.multi_trace.am_obj, MultiTrace):
+                if self.multi_trace.is_active_tab:
+                    return self.multi_trace.get_percent_color(func)
             elif isinstance(self.multi_trace.am_obj, AFLQemuBitmap):
                 return self.multi_trace.get_percent_color(func)
-            # you should not reach here
-            raise RuntimeError("Impossible happened")
+            else:
+                # you should not reach here
+                raise RuntimeError("Impossible happened")
 
         if not self.trace.am_none:
             if func.addr in self.trace.func_addr_in_trace:
