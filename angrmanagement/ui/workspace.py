@@ -6,6 +6,7 @@ import traceback
 from PySide2.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
+from angr.misc.testing import is_testing
 from cle import SymbolType
 
 from ..logic.debugger import DebuggerWatcher
@@ -189,9 +190,12 @@ class Workspace:
                 on_finish=self.on_function_tagged,
             )
         )
+
+        workers = 4 if not is_testing else 0  # disable multiprocessing on angr CI
         self.variable_recovery_job = VariableRecoveryJob(
             **self.instance.variable_recovery_args,
             on_variable_recovered=self.on_variable_recovered,
+            workers=workers,
         )
         # prioritize the current function in display
         disassembly_view = self.view_manager.first_view_in_category("disassembly")

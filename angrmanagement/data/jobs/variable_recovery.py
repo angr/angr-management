@@ -13,11 +13,12 @@ class VariableRecoveryJob(Job):
     Identify variables and recover calling convention for a specific, or all function if no function is specified.
     """
 
-    def __init__(self, on_finish=None, on_variable_recovered=None, **kwargs):
+    def __init__(self, on_finish=None, on_variable_recovered=None, workers: Optional[int]=None, **kwargs):
         super().__init__(name="Variable Recovery", on_finish=on_finish)
 
         self.variable_recovery_args = kwargs
         self.on_variable_recovered = on_variable_recovered
+        self.workers = workers
         self.ccc = None
         self.instance: Optional['Instance'] = None
         self.started = False
@@ -70,7 +71,7 @@ class VariableRecoveryJob(Job):
             analyze_callsites=True,
             max_function_blocks=300,
             max_function_size=4096,
-            workers=4,
+            workers=0 if self.workers is None else self.workers,
             prioritize_func_addrs=func_addrs_to_prioritize,
             auto_start=False,
             **self.variable_recovery_args,
