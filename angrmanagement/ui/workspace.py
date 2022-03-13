@@ -45,6 +45,7 @@ class Workspace:
 
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
+        self.variable_recovery_job: Optional[VariableRecoveryJob] = None
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 
@@ -73,7 +74,7 @@ class Workspace:
             LogView(self, 'bottom'),
         ]
 
-        enabled_tabs =[x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
+        enabled_tabs = [x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
         for tab in self.default_tabs:
             if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs)==0:
                 self.add_view(tab)
@@ -184,18 +185,20 @@ class Workspace:
 
     def _on_prototype_found(self):
         self.instance.add_job(
-            VariableRecoveryJob(
-                on_finish=self.on_variable_recovered,
-                **self.instance.variable_recovery_args,
-            )
-        )
-
-    def on_variable_recovered(self):
-        self.instance.add_job(
             CodeTaggingJob(
                 on_finish=self.on_function_tagged,
             )
         )
+        self.variable_recovery_job = VariableRecoveryJob(
+            **self.instance.variable_recovery_args,
+            on_variable_recovered=self.on_variable_recovered,
+        )
+        # prioritize the current function in display
+        disassembly_view = self.view_manager.first_view_in_category("disassembly")
+        if disassembly_view is not None:
+            if not disassembly_view.function.am_none:
+                self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
+        self.instance.add_job(self.variable_recovery_job)
 
     def on_function_tagged(self):
         # reload disassembly view
@@ -208,6 +211,16 @@ class Workspace:
             view: DisassemblyView
             if view.current_function.am_obj is not None:
                 view.reload()
+
+    def on_variable_recovered(self, func_addr: int):
+        """
+        Called when variable information of the given function is available.
+
+        :param int func_addr:   Address of the function whose variable information is available.
+        """
+        disassembly_view = self.view_manager.first_view_in_category("disassembly")
+        if disassembly_view is not None:
+            disassembly_view.on_variable_recovered(func_addr)
 
     #
     # Public methods

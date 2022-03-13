@@ -226,6 +226,10 @@ class DisassemblyView(SynchronizedView):
     def set_comment_callback(self, v):
         self.workspace.instance.set_comment_callback = v
 
+    def on_variable_recovered(self, func_addr: int):
+        if not self._current_function.am_none and self._current_function.addr == func_addr:
+            self.reload()
+
     #
     # Events
     #
@@ -538,6 +542,11 @@ class DisassemblyView(SynchronizedView):
         self._linear_viewer.refresh()
 
     def display_function(self, function):
+        if function.addr not in self.workspace.instance.kb.variables.function_managers:
+            # variable information is not available
+            if self.workspace.variable_recovery_job is not None:
+                # prioritize the analysis of this function
+                self.workspace.variable_recovery_job.prioritize_function(function.addr)
         self.jump_history.jump_to(function.addr)
         self._display_function(function)
 
