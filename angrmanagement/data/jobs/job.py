@@ -1,3 +1,4 @@
+from typing import Optional
 import logging
 import time
 import datetime
@@ -20,6 +21,7 @@ class Job:
     def __init__(self, name, on_finish=None):
         self.name = name
         self.progress_percentage = 0.
+        self.last_text: Optional[str] = None
         self.start_at: float = 0.
         self.last_gui_updated_at: float = 0.
 
@@ -58,7 +60,7 @@ class Job:
     def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
 
-        if delta > 0.02 and time.time() - self.last_gui_updated_at > 0.2:
+        if (delta > 0.02 or self.last_text != text) and time.time() - self.last_gui_updated_at >= 0.1:
             self.last_gui_updated_at = time.time()
             self.progress_percentage = percentage
             gui_thread_schedule_async(self._set_progress, args=(text,))
