@@ -13,9 +13,9 @@ class RecentMenuEntry(MenuEntry):
     """
     def __init__(self, path):
         self.path = path
-        super().__init__(os.path.basename(path), self.action)
+        super().__init__(os.path.basename(path), self.action_target)
 
-    def action(self):
+    def action_target(self):
         GlobalInfo.main_window.load_file(self.path)
 
 class FileMenu(Menu):
