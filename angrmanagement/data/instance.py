@@ -4,6 +4,8 @@ from threading import Thread
 from queue import Queue
 from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
 
+from PySide2.QtWidgets import QProgressDialog
+
 import angr
 from angr.block import Block
 from angr.knowledge_base import KnowledgeBase
@@ -263,12 +265,19 @@ class Instance:
         self._start_daemon_thread(self._worker, 'angr-management Worker Thread')
 
     def _worker(self):
+
         while True:
             if self._jobs_queue.empty():
-                gui_thread_schedule_async(self._set_status, args=("Ready.",))
+                gui_thread_schedule_async(GlobalInfo.main_window.progress_done, args=())
+
+            if self.workspace is not None and any(job.blocking for job in self.jobs):
+                gui_thread_schedule_async(self.workspace.main_window._progress_dialog.hide, args=())
 
             job = self._jobs_queue.get()
-            gui_thread_schedule_async(self._set_status, args=("Working...",))
+            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0))
+
+            if any(job.blocking for job in self.jobs):
+                self.workspace.main_window._progress_dialog.show()
 
             try:
                 self.current_job = job

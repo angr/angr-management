@@ -6,7 +6,7 @@ import sys
 import time
 from typing import Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar
+from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QProgressDialog
 from PySide2.QtWidgets import QMessageBox, QShortcut, QTabBar
 from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
 from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
@@ -80,10 +80,8 @@ class MainWindow(QMainWindow):
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar = None  # type: QProgressBar
+        self._progress_dialog = None # type: QProgressDialog
         self._load_binary_dialog = None
-
-        self._status = ""
-        self._progress = None
 
         self.defaultWindowFlags = None
 
@@ -131,25 +129,6 @@ class MainWindow(QMainWindow):
     @caption.setter
     def caption(self, v):
         self.setWindowTitle(v)
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, v):
-        self._status = v
-        self.statusBar().showMessage(v)
-
-    @property
-    def progress(self):
-        return self._progress
-
-    @progress.setter
-    def progress(self, v):
-        self._progress = v
-        self._progressbar.show()
-        self._progressbar.setValue(v)
 
     #
     # Dialogs
@@ -202,7 +181,6 @@ class MainWindow(QMainWindow):
     #
 
     def _init_statusbar(self):
-
         self._progressbar = QProgressBar()
 
         self._progressbar.setMinimum(0)
@@ -210,6 +188,20 @@ class MainWindow(QMainWindow):
         self._progressbar.hide()
 
         self.statusBar().addPermanentWidget(self._progressbar)
+
+        self._progress_dialog = QProgressDialog("Waiting...", "Cancel", 0, 100, self)
+        self._progress_dialog.setAutoClose(False)
+        self._progress_dialog.setModal(True)
+        self._progress_dialog.setMinimumDuration(2**31 - 1)
+        def on_cancel(*args, **kwargs):
+            if self.workspace is None:
+                return
+            for job in self.workspace.instance.jobs:
+                if job.blocking:
+                    job.keyboard_interrupt()
+                    break
+        self._progress_dialog.canceled.connect(on_cancel)
+        self._progress_dialog.close()
 
     def _init_toolbars(self):
         for cls in (FileToolbar, DebugToolbar):
@@ -671,9 +663,19 @@ class MainWindow(QMainWindow):
     # Other public methods
     #
 
+    def progress(self, status, progress):
+        self.statusBar().showMessage(f'Working... {status}')
+        self._progress_dialog.setLabelText(status)
+        self._progressbar.show()
+        self._progressbar.setValue(progress)
+        self._progress_dialog.setValue(progress)
+
+
     def progress_done(self):
         self._progress = None
         self._progressbar.hide()
+        self.statusBar().showMessage("Ready.")
+        self._progress_dialog.hide()
 
     def bring_to_front(self):
         self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
