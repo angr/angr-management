@@ -76,7 +76,15 @@ class Menu:
         return menu
 
     @staticmethod
-    def translate_element(menu, entry):
+    def translate_element(menu, entry, index=None):
+        if index is None:
+            before = None
+        else:
+            try:
+                before = menu.actions()[index]
+            except IndexError:
+                before = None
+
         if entry is None:
             entry = MenuSeparator()
         elif type(entry) is tuple and len(entry) == 2 and callable(entry[1]):
@@ -85,7 +93,10 @@ class Menu:
             entry = Menu(*entry)
 
         if isinstance(entry, MenuEntry):
-            action: QAction = menu.addAction(entry.caption, entry.action)
+            action = QAction(entry.caption)
+            action.triggered.connect(entry.action)
+            entry.qaction = action
+
             if entry.shortcut is not None:
                 action.setShortcut(entry.shortcut)
             if entry.checkable:
@@ -93,22 +104,40 @@ class Menu:
                 action.setChecked(entry.checked_initially)
             if not entry.default_enabled:
                 action.setDisabled(True)
-            entry.qaction = action
+
+            if before is None:
+                menu.addAction(action)
+            else:
+                menu.insertAction(before, action)
         elif isinstance(entry, MenuSeparator):
-            menu.addSeparator()
+            if before is None:
+                menu.addSeparator()
+            else:
+                menu.insertSeparator(before)
         elif isinstance(entry, Menu):
-            menu.addMenu(entry.qmenu())
+            if before is None:
+                menu.addMenu(entry.qmenu())
+            else:
+                menu.insertMenu(before, entry.qmenu())
         elif isinstance(entry, QMenu):
-            menu.addMenu(entry)
+            if before is None:
+                menu.addMenu(entry)
+            else:
+                menu.insertMenu(before, entry)
         elif isinstance(entry, QAction):
-            menu.addAction(entry)
+            if before is None:
+                menu.addAction(entry)
+            else:
+                menu.insertAction(before, entry)
         else:
             raise TypeError('Unsupported type', type(entry))
 
-    def add(self, action):
-        self.entries.append(action)
+    def add(self, action, index=None):
+        if index is None:
+            index = len(self.entries)
+        self.entries.insert(index, action)
         if self._qmenu is not None:
-            self.translate_element(self._qmenu, action)
+            self.translate_element(self._qmenu, action, index)
 
     def remove(self, action):
         self.entries.remove(action)

@@ -202,6 +202,9 @@ ENTRIES = [
 
     #Tabs
     CE("enabled_tabs", str, ""),
+
+    # Recent
+    CE("recent_files", list, []),
 ]
 
 
@@ -373,6 +376,13 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
             self.ui_default_font = QApplication.font("QMenu")
         if self.tabular_view_font is None:
             self.tabular_view_font = QApplication.font("QMenu")
+
+    def recent_file(self, file_path):
+        try:
+            self.recent_files.remove(file_path)
+        except ValueError:
+            pass
+        self.recent_files.append(file_path)
 
     def __getattr__(self, item):
 
