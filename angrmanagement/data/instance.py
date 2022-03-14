@@ -4,8 +4,6 @@ from threading import Thread
 from queue import Queue
 from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
 
-from PySide2.QtWidgets import QProgressDialog
-
 import angr
 from angr.block import Block
 from angr.knowledge_base import KnowledgeBase
@@ -37,7 +35,8 @@ class Instance:
     def __init__(self):
         # pylint:disable=import-outside-toplevel)
         # delayed import
-        from ..ui.views.interaction_view import PlainTextProtocol, BackslashTextProtocol, ProtocolInteractor, SavedInteraction
+        from ..ui.views.interaction_view import PlainTextProtocol, BackslashTextProtocol, ProtocolInteractor,\
+            SavedInteraction
 
         self._live = False
         self.workspace: Optional['Workspace'] = None

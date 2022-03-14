@@ -193,7 +193,7 @@ class MainWindow(QMainWindow):
         self._progress_dialog.setAutoClose(False)
         self._progress_dialog.setModal(True)
         self._progress_dialog.setMinimumDuration(2**31 - 1)
-        def on_cancel(*args, **kwargs):
+        def on_cancel():
             if self.workspace is None:
                 return
             for job in self.workspace.instance.jobs:
@@ -672,7 +672,6 @@ class MainWindow(QMainWindow):
 
 
     def progress_done(self):
-        self._progress = None
         self._progressbar.hide()
         self.statusBar().showMessage("Ready.")
         self._progress_dialog.hide()
