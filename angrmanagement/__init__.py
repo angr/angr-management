@@ -1,4 +1,4 @@
-__version__ = (9, 1, "gitrolling")
+__version__ = (9, 1, 12332)
 
 # Hack used to work around the slow-responsiveness issue with the GUI
 # PySide2 5.14.2 solves this problem but it introduces other bugs
