@@ -2,18 +2,26 @@
 
 # Install dependencies
 
+function install_repo() {
+    repo=$1
+    name=$(cut -d'/' -f 2)
+    mkdir -p repos
+    git clone https://github.com/$repo repos/$name
+    pip install -e repos/$name
+}
+
 pip install wheel
 pip install pyinstaller
-pip install git+https://github.com/eliben/pyelftools#egg=pyelftools
-pip install git+https://github.com/angr/archinfo.git#egg=archinfo
-pip install git+https://github.com/angr/pyvex.git#egg=pyvex
-pip install git+https://github.com/angr/cle.git#egg=cle
-pip install git+https://github.com/angr/claripy.git#egg=claripy
-pip install git+https://github.com/angr/ailment.git#egg=ailment
-pip install git+https://github.com/angr/angr.git#egg=angr
+install_repo eliben/pyelftools
+install_repo angr/archinfo
+install_repo angr/pyvex
+install_repo angr/cle
+install_repo angr/claripy
+install_repo angr/ailment
+install_repo angr/angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     pip install keystone-engine --no-binary keystone-engine
-    pip install git+https://github.com/angr/archr.git#egg=archr
+    install_repo angr/archr
 fi
 
 # Install angr-mangement
