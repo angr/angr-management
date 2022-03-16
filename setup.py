@@ -1,13 +1,7 @@
-try:
-    from setuptools import setup
-    from setuptools import find_packages
-    packages = find_packages()
-except ImportError:
-    from distutils.core import setup
-    import os
-    packages = [x.strip('./').replace('/','.') for x in os.popen('find -name "__init__.py" | xargs -n1 dirname').read().strip().split('\n')]
-
 import platform
+
+from setuptools import setup, find_packages
+
 if platform.python_implementation() != 'CPython':
     raise Exception("angr-management must be run with CPython. PyPy cannot work right now.")
 
@@ -17,7 +11,7 @@ setup(
     python_requires='>=3.6',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
-    packages=packages,
+    packages=find_packages(),
     package_data={
         'angrmanagement': [
             'resources/fonts/*.ttf',
