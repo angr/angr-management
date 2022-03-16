@@ -11,7 +11,7 @@ setup(
     python_requires='>=3.6',
     description='GUI for angr',
     url='https://github.com/angr/angr-management',
-    packages=find_packages,
+    packages=find_packages(),
     package_data={
         'angrmanagement': [
             'resources/fonts/*.ttf',
