@@ -58,7 +58,7 @@ def to_supergraph(transition_graph):
             if isinstance(dst, Function):
                 continue
             if 'type' in data and data['type'] == 'fake_return':
-                if all(iter('type' in data and data['type'] in ('fake_return', 'return_from_call')
+                if all(iter('type' in data and data['type'] in ('fake_return', 'return')
                             for _, _, data in transition_graph.in_edges(dst, data=True))):
                     edges_to_shrink.add((src, dst))
                 break
