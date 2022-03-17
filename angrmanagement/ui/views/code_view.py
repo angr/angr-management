@@ -137,6 +137,7 @@ class CodeView(BaseView):
             peephole_optimizations=self._options.selected_peephole_opts,
             vars_must_struct=self.vars_must_struct,
             on_finish=decomp_ready,
+            blocking=True,
         )
 
         self.workspace.instance.add_job(job)

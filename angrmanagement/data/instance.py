@@ -35,7 +35,8 @@ class Instance:
     def __init__(self):
         # pylint:disable=import-outside-toplevel)
         # delayed import
-        from ..ui.views.interaction_view import PlainTextProtocol, BackslashTextProtocol, ProtocolInteractor, SavedInteraction
+        from ..ui.views.interaction_view import PlainTextProtocol, BackslashTextProtocol, ProtocolInteractor,\
+            SavedInteraction
 
         self._live = False
         self.workspace: Optional['Workspace'] = None
@@ -263,12 +264,20 @@ class Instance:
         self._start_daemon_thread(self._worker, 'angr-management Worker Thread')
 
     def _worker(self):
+
         while True:
             if self._jobs_queue.empty():
-                gui_thread_schedule_async(self._set_status, args=("Ready.",))
+                gui_thread_schedule_async(GlobalInfo.main_window.progress_done, args=())
+
+            if self.workspace is not None and any(job.blocking for job in self.jobs):
+                gui_thread_schedule_async(self.workspace.main_window._progress_dialog.hide, args=())
 
             job = self._jobs_queue.get()
-            gui_thread_schedule_async(self._set_status, args=("Working...",))
+            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0))
+
+            if any(job.blocking for job in self.jobs):
+                if self.workspace.main_window.isVisible():
+                    self.workspace.main_window._progress_dialog.show()
 
             try:
                 self.current_job = job
