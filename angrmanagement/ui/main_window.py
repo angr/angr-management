@@ -33,7 +33,7 @@ from ..data.instance import Instance
 from ..data.library_docs import LibraryDocs
 from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
 from ..data.jobs import DependencyAnalysisJob
-from ..config import IMG_LOCATION, Conf
+from ..config import IMG_LOCATION, Conf, save_config
 from ..utils.io import isurl, download_url
 from ..utils.env import is_pyinstaller, app_root
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
         self.defaultWindowFlags = None
 
         # menus
-        self._file_menu = None
+        self._file_menu = None  # FileMenu
         self._analyze_menu = None
         self._view_menu = None
         self._help_menu = None
@@ -225,6 +225,9 @@ class MainWindow(QMainWindow):
         self._view_menu = ViewMenu(self)
         self._help_menu = HelpMenu(self)
         self._plugin_menu = PluginMenu(self)
+
+        for path in Conf.recent_files:
+            self._file_menu.add_recent(path)
 
         # TODO: Eventually fix menu bars to have native support on MacOS
         # if on a Mac, don't use the native menu bar (bug mitigation from QT)
@@ -528,6 +531,7 @@ class MainWindow(QMainWindow):
                             'block_addrs': None,
                         }
                         self.workspace.view_data_dependency_graph(analysis_params)
+                    self._recent_file(file_path)
                 except pickle.PickleError:
                     QMessageBox.critical(self,
                                          "Unable to load trace file",
@@ -552,6 +556,7 @@ class MainWindow(QMainWindow):
                 if file_path.endswith(".adb"):
                     self._load_database(file_path)
                 else:
+                    self._recent_file(file_path)
                     self.workspace.instance.add_job(LoadBinaryJob(file_path))
             else:
                 QMessageBox.critical(self,
@@ -684,6 +689,12 @@ class MainWindow(QMainWindow):
     # Private methods
     #
 
+    def _recent_file(self, file_path):
+        file_path = os.path.abspath(file_path)
+        self._file_menu.add_recent(file_path)
+        Conf.recent_file(file_path)
+        save_config()
+
     def _load_database(self, file_path):
 
         if AngrDB is None:
@@ -708,6 +719,8 @@ class MainWindow(QMainWindow):
                                  f'Details: {ex}')
             _l.critical("Failed to load the angr database.", exc_info=True)
             return
+
+        self._recent_file(file_path)
 
         cfg = proj.kb.cfgs['CFGFast']
         cfb = proj.analyses.CFB()  # it will load functions from kb
