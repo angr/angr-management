@@ -276,7 +276,8 @@ class Instance:
             gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0))
 
             if any(job.blocking for job in self.jobs):
-                self.workspace.main_window._progress_dialog.show()
+                if self.workspace.main_window.isVisible():
+                    self.workspace.main_window._progress_dialog.show()
 
             try:
                 self.current_job = job
