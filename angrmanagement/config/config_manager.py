@@ -382,6 +382,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
             self.recent_files.remove(file_path)
         except ValueError:
             pass
+        self.recent_files = self.recent_files[:9]
         self.recent_files.append(file_path)
 
     def __getattr__(self, item):
