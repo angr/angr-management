@@ -13,7 +13,7 @@ from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
 from .log import LogRecord, LogDumpHandler
 from ..logic import GlobalInfo
-from ..logic.threads import gui_thread_schedule_async
+from ..logic.threads import gui_thread_schedule_async, gui_thread_schedule
 from ..logic.debugger import DebuggerListManager, DebuggerManager
 from ..logic.debugger.simgr import SimulationDebugger
 from ..data.trace import Trace
@@ -267,17 +267,17 @@ class Instance:
 
         while True:
             if self._jobs_queue.empty():
-                gui_thread_schedule_async(GlobalInfo.main_window.progress_done, args=())
+                gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
 
             if self.workspace is not None and any(job.blocking for job in self.jobs):
-                gui_thread_schedule_async(self.workspace.main_window._progress_dialog.hide, args=())
+                gui_thread_schedule(self.workspace.main_window._progress_dialog.hide, args=())
 
             job = self._jobs_queue.get()
             gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0))
 
             if any(job.blocking for job in self.jobs):
                 if self.workspace.main_window.isVisible():
-                    self.workspace.main_window._progress_dialog.show()
+                    gui_thread_schedule(self.workspace.main_window._progress_dialog.show, args=())
 
             try:
                 self.current_job = job
