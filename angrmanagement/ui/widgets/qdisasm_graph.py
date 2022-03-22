@@ -344,18 +344,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     # Private methods
     #
 
-    def _wait_for_cache_update(self):
-        func = self._function_graph.function
-        cache = None
-        while cache is None:
-            try:
-                cache = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')]
-            except KeyError:
-                sleep(0.5)
-
-        return cache
-
-
     def _initial_position(self):
         entry_block_rect = self.entry_block.mapRectToScene(self.entry_block.boundingRect())
         viewport_height = self.viewport().rect().height()
