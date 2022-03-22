@@ -1,4 +1,5 @@
 from typing import Optional, TYPE_CHECKING
+from time import sleep
 import logging
 
 from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
@@ -121,8 +122,17 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene = self.scene()
 
         if self._disassembly_level is DisassemblyLevel.AIL:
-            self.disasm = self.workspace.instance.project.analyses.Clinic(
-                self._function_graph.function)
+            func = self._function_graph.function
+            curr_ins = selected_insns.pop() if selected_insns else None
+            flavors = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
+            if not 'pseudocode' in flavors:
+                self.workspace.decompile_function(func, focus=False)
+
+            decomp_cache = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')] #self._wait_for_cache_update()
+            self.disasm = decomp_cache.clinic
+
+            #self.disasm = self.workspace.instance.project.analyses.Clinic(
+            #    self._function_graph.function)
             self._supergraph = to_ail_supergraph(self.disasm.graph)
             nodefunc = lambda n: n
             branchfunc = lambda n: None
@@ -333,6 +343,18 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     #
     # Private methods
     #
+
+    def _wait_for_cache_update(self):
+        func = self._function_graph.function
+        cache = None
+        while cache is None:
+            try:
+                cache = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')]
+            except KeyError:
+                sleep(0.5)
+
+        return cache
+
 
     def _initial_position(self):
         entry_block_rect = self.entry_block.mapRectToScene(self.entry_block.boundingRect())
