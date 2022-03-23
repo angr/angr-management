@@ -492,7 +492,7 @@ class Workspace:
 
         self.raise_view(view)
 
-    def decompile_function(self, func: Function, curr_ins=None, view=None, focus=True):
+    def decompile_function(self, func: Function, curr_ins=None, view=None):
         """
         Decompile a function a switch to decompiled view. If curr_ins is
         defined, then also switch cursor focus to the position associated
@@ -508,7 +508,7 @@ class Workspace:
             view = self._get_or_create_pseudocode_view()
 
         view.function.am_obj = func
-        view.function.am_event(focus=focus, focus_addr=curr_ins)
+        view.function.am_event(focus=True, focus_addr=curr_ins)
 
     def create_simulation_manager(self, state, state_name, view=None):
 

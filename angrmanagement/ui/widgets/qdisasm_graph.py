@@ -1,6 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 from time import sleep
 import logging
+import os
 
 from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
 
@@ -14,6 +15,7 @@ from .qgraph_arrow import QDisasmGraphArrow
 from .qgraph import QZoomableDraggableGraphicsView
 from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
 from .qminimap import QMiniMapView
+from .qdecomp_options import QDecompilationOptions
 
 if TYPE_CHECKING:
     from angrmanagement.logic.disassembly import InfoDock
@@ -126,13 +128,10 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             curr_ins = selected_insns.pop() if selected_insns else None
             flavors = self.workspace.instance.kb.structured_code.available_flavors(func.addr)
             if not 'pseudocode' in flavors:
-                self.workspace.decompile_function(func, focus=False)
+                self._decompile_cur_func()
 
             decomp_cache = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')] #self._wait_for_cache_update()
             self.disasm = decomp_cache.clinic
-
-            #self.disasm = self.workspace.instance.project.analyses.Clinic(
-            #    self._function_graph.function)
             self._supergraph = to_ail_supergraph(self.disasm.graph)
             nodefunc = lambda n: n
             branchfunc = lambda n: None
@@ -343,6 +342,36 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     #
     # Private methods
     #
+
+    def _decompile_cur_func(self):
+        function = self._function_graph.function
+        inst = self.workspace.instance
+
+        _options = QDecompilationOptions(self, self.workspace.instance, options=None)
+
+        decompiler = inst.project.analyses.Decompiler(
+            function,
+            flavor='pseudocode',
+            variable_kb=inst.pseudocode_variable_kb,
+            options=_options.option_and_values,
+            optimization_passes=_options.selected_passes,
+            peephole_optimizations=_options.selected_peephole_opts,
+            vars_must_struct=set(),
+        )
+
+        # cache the result
+        inst.kb.structured_code[(function.addr, 'pseudocode')] = decompiler.cache
+
+        source_root = None
+        if inst.original_binary_path:
+            source_root = os.path.dirname(inst.original_binary_path)
+
+        inst.project.analyses.ImportSourceCode(
+            function,
+            flavor='source',
+            source_root=source_root,
+        )
+
 
     def _initial_position(self):
         entry_block_rect = self.entry_block.mapRectToScene(self.entry_block.boundingRect())
