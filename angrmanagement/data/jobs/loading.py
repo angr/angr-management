@@ -30,7 +30,6 @@ class LoadTargetJob(Job):
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
             self._progress_callback(50)
             load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld,))
-            partial_ld.close()
             if cfg_args is None:
                 return
 
@@ -77,7 +76,6 @@ class LoadBinaryJob(Job):
 
         self._progress_callback(50)
         new_load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
-        partial_ld.close()
         if cfg_args is None:
             return
 
