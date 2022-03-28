@@ -191,6 +191,7 @@ class MainWindow(QMainWindow):
 
         self._progress_dialog = QProgressDialog("Waiting...", "Cancel", 0, 100, self)
         self._progress_dialog.setAutoClose(False)
+        self._progress_dialog.setWindowFlags(self._progress_dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self._progress_dialog.setModal(True)
         self._progress_dialog.setMinimumDuration(2**31 - 1)
         def on_cancel():
