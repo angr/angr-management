@@ -23,11 +23,11 @@ class QDecompilationOption(QTreeWidgetItem):
         if self.type == OptionType.OPTIMIZATION_PASS:
             self.setText(0, option.__name__)
         elif self.type == OptionType.OPTION:
-            self.setText(0, option.name)
-            self.setToolTip(0, option.description)
+            self.setText(0, option.NAME)
+            self.setToolTip(0, option.DESCRIPTION)
         elif self.type == OptionType.PEEPHOLE_OPTIMIZATION:
             self.setText(0, option.NAME)
-            self.setToolTip(0, option.description)
+            self.setToolTip(0, option.DESCRIPTION)
         else:
             raise NotImplementedError("Unsupported option type %s." % self.type_)
 
@@ -175,9 +175,9 @@ class QDecompilationOptions(QWidget):
         categories = { }
 
         # populate the tree widget with new options
-        for option in sorted(self._options, key=lambda x: x.name):
+        for option in sorted(self._options, key=lambda x: x.NAME):
             if filter_by:
-                if not (filter_by in option.name or filter_by in option.category):
+                if not (filter_by in option.NAME or filter_by in option.category):
                     continue
             if option.category in categories:
                 category = categories[option.category]
@@ -206,7 +206,7 @@ class QDecompilationOptions(QWidget):
         default_peephole_opts = self.get_default_peephole_opts()
         for opt_ in self._peephole_opts:
             if filter_by:
-                if not (filter_by in opt_.name or filter_by in opt_.description):
+                if not (filter_by in opt_.NAME or filter_by in opt_.DESCRIPTION):
                     continue
             w = QDecompilationOption(po_category, opt_, OptionType.PEEPHOLE_OPTIMIZATION,
                                      enabled=opt_ in default_peephole_opts)
