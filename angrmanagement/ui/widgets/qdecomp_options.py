@@ -26,7 +26,7 @@ class QDecompilationOption(QTreeWidgetItem):
             self.setText(0, option.name)
             self.setToolTip(0, option.description)
         elif self.type == OptionType.PEEPHOLE_OPTIMIZATION:
-            self.setText(0, option.name)
+            self.setText(0, option.NAME)
             self.setToolTip(0, option.description)
         else:
             raise NotImplementedError("Unsupported option type %s." % self.type_)
