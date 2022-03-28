@@ -107,6 +107,7 @@ class CodeView(BaseView):
         if clear_prototype:
             # clear the existing function prototype
             self._function.prototype = None
+            self._function.ran_cca = False
 
         if reset_cache:
             self.workspace.instance.kb.structured_code.discard((self._function.addr, flavor))
