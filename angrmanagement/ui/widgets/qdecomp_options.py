@@ -21,7 +21,8 @@ class QDecompilationOption(QTreeWidgetItem):
         self.type = type_
 
         if self.type == OptionType.OPTIMIZATION_PASS:
-            self.setText(0, option.__name__)
+            self.setText(0, option.NAME)
+            self.setToolTip(0, option.DESCRIPTION)
         elif self.type == OptionType.OPTION:
             self.setText(0, option.NAME)
             self.setToolTip(0, option.DESCRIPTION)
