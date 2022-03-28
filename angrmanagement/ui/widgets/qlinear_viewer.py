@@ -437,31 +437,35 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _obj_to_paintable(self, obj_addr, obj):
         if isinstance(obj, Block):
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
-            func_addr = cfg_node.function_address
-            if self.workspace.instance.kb.functions.contains_addr(func_addr):
-                func = self.workspace.instance.kb.functions[func_addr]
-                disasm = self._get_disasm(func)
-                qobject = None
-                if self._disassembly_level is DisassemblyLevel.AIL:
-                    ail_obj = None
-                    if disasm.graph is not None:
-                        # Clinic may yield a None graph when the function is empty
-                        for n in disasm.graph.nodes:
-                            if n.addr == obj.addr:
-                                ail_obj = n
-                        # the corresponding AIL block may not exist
-                        if ail_obj is not None:
-                            qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                                   self.disasm_view.infodock, obj.addr, ail_obj, None, None
-                                                   )
+            if cfg_node is not None:
+                func_addr = cfg_node.function_address
+                if self.workspace.instance.kb.functions.contains_addr(func_addr):
+                    func = self.workspace.instance.kb.functions[func_addr]
+                    disasm = self._get_disasm(func)
+                    qobject = None
+                    if self._disassembly_level is DisassemblyLevel.AIL:
+                        ail_obj = None
+                        if disasm.graph is not None:
+                            # Clinic may yield a None graph when the function is empty
+                            for n in disasm.graph.nodes:
+                                if n.addr == obj.addr:
+                                    ail_obj = n
+                            # the corresponding AIL block may not exist
+                            if ail_obj is not None:
+                                qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                                       self.disasm_view.infodock, obj.addr, ail_obj, None, None
+                                                       )
+                    else:
+                        qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                               self.disasm_view.infodock, obj.addr, [obj], {}, None
+                                               )
                 else:
-                    qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
-                                           self.disasm_view.infodock, obj.addr, [obj], {}, None
-                                           )
+                    # TODO: Get disassembly even if the function does not exist
+                    _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
+                               func_addr, obj)
+                    qobject = None
             else:
-                # TODO: Get disassembly even if the function does not exist
-                _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
-                           func_addr, obj)
+                _l.warning("Failed to get a CFG node for address %#x.", obj_addr)
                 qobject = None
         elif isinstance(obj, MemoryData):
             qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None)
