@@ -21,13 +21,14 @@ class QDecompilationOption(QTreeWidgetItem):
         self.type = type_
 
         if self.type == OptionType.OPTIMIZATION_PASS:
-            self.setText(0, option.__name__)
+            self.setText(0, option.NAME)
+            self.setToolTip(0, option.DESCRIPTION)
         elif self.type == OptionType.OPTION:
-            self.setText(0, option.name)
-            self.setToolTip(0, option.description)
+            self.setText(0, option.NAME)
+            self.setToolTip(0, option.DESCRIPTION)
         elif self.type == OptionType.PEEPHOLE_OPTIMIZATION:
-            self.setText(0, option.name)
-            self.setToolTip(0, option.description)
+            self.setText(0, option.NAME)
+            self.setToolTip(0, option.DESCRIPTION)
         else:
             raise NotImplementedError("Unsupported option type %s." % self.type_)
 
@@ -174,11 +175,13 @@ class QDecompilationOptions(QWidget):
 
         categories = { }
 
+        if filter_by:
+            filter_by = filter_by.lower()
+
         # populate the tree widget with new options
-        for option in sorted(self._options, key=lambda x: x.name):
-            if filter_by:
-                if not (filter_by in option.name or filter_by in option.category):
-                    continue
+        for option in sorted(self._options, key=lambda x: x.NAME):
+            if filter_by and not (filter_by in option.NAME.lower() or filter_by in option.category.lower()):
+                continue
             if option.category in categories:
                 category = categories[option.category]
             else:
@@ -193,9 +196,8 @@ class QDecompilationOptions(QWidget):
 
         default_passes = set(self.get_default_passes())
         for pass_ in self._opti_passes:
-            if filter_by:
-                if not filter_by in pass_.__name__:
-                    continue
+            if filter_by and not (filter_by in pass_.__name__.lower() or filter_by in pass_.NAME.lower()):
+                continue
             w = QDecompilationOption(passes_category, pass_, OptionType.OPTIMIZATION_PASS,
                                      enabled=pass_ in default_passes)
             self._qoptipasses.append(w)
@@ -205,9 +207,8 @@ class QDecompilationOptions(QWidget):
 
         default_peephole_opts = self.get_default_peephole_opts()
         for opt_ in self._peephole_opts:
-            if filter_by:
-                if not (filter_by in opt_.name or filter_by in opt_.description):
-                    continue
+            if filter_by and not (filter_by in opt_.NAME.lower() or filter_by in opt_.DESCRIPTION.lower()):
+                continue
             w = QDecompilationOption(po_category, opt_, OptionType.PEEPHOLE_OPTIMIZATION,
                                      enabled=opt_ in default_peephole_opts)
             self._qpeephole_opts.append(w)
