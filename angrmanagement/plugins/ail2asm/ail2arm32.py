@@ -2,6 +2,10 @@ import ailment
 from angrmanagement.plugins import BasePlugin
 
 class AIL2ARM32(BasePlugin):
+    """
+    Assemble expressions into assembly.
+    """
+
     def __init__(self, workspace, sp_adjust=0x30):
         super().__init__(workspace)
         self.sp_adjust = sp_adjust
@@ -20,7 +24,8 @@ class AIL2ARM32(BasePlugin):
         self.registers_in_use.remove(reg)
         self.free_registers.append(reg)
 
-    def opcode_variant(self, opcode, size=None, signed=None, cond=None):
+    @staticmethod
+    def opcode_variant(opcode, size=None, signed=None, cond=None):
         if size is not None:
             if size == 4:
                 pass
@@ -43,7 +48,9 @@ class AIL2ARM32(BasePlugin):
             raise Exception("function_addr and expr_addr must be specified")
         sp = self.workspace.instance.project.arch.sp_offset
         bp = self.workspace.instance.project.arch.bp_offset
-        sptracker = self.workspace.instance.project.analyses.StackPointerTracker(self.workspace.instance.project.kb.functions[function_addr], {sp, bp})
+        sptracker = self.workspace.instance.project.analyses.StackPointerTracker(
+            self.workspace.instance.project.kb.functions[function_addr], {sp, bp}
+            )
         sp_offset = sptracker.offset_after(expr_addr, sp)
         bp_offset = sptracker.offset_after(expr_addr, bp)
         if sp_offset >= (1<<(32-1)):
@@ -51,13 +58,13 @@ class AIL2ARM32(BasePlugin):
         if bp_offset >= (1<<(32-1)):
             bp_offset -= 1 << 32
         return bp_offset + offset_from_bp - sp_offset + adjust
-    
+
     def assemble(self, expr, function_addr=None, expr_addr=None):
         dest, asm, const_pool = self.assemble_recursive(expr, function_addr, expr_addr)
         self.return_register(dest)
-        asm += f"mov r0, {dest}\n" 
+        asm += f"mov r0, {dest}\n"
         if const_pool:
-            asm += f"b _end\n"
+            asm += "b _end\n"
             asm += const_pool
             asm += "_end:\n"
         return asm
@@ -69,12 +76,14 @@ class AIL2ARM32(BasePlugin):
         # Complex Expressions
         ###################################################
         ## ldr REG, [CONSTANT]
-        if isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.Const) and expr.addr.value <= 0xffff:
+        if isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.Const) \
+            and expr.addr.value <= 0xffff:
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [#{hex(expr.addr.value)}]\n"
             return dest, asm, const_pool
         ## add REG, CONSTANT / lsl REG, CONSTANT
-        elif isinstance(expr, ailment.Expr.BinaryOp) and isinstance(expr.operands[1], ailment.Expr.Const) and expr.operands[1].value <= 0xffff:
+        elif isinstance(expr, ailment.Expr.BinaryOp) and isinstance(expr.operands[1], ailment.Expr.Const) \
+            and expr.operands[1].value <= 0xffff:
             operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
             asm += ret_asm
             const_pool += ret_const_pool
@@ -87,26 +96,31 @@ class AIL2ARM32(BasePlugin):
             return dest, asm, const_pool
         ## ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+" and isinstance(expr.addr.operands[1], ailment.Expr.Const) and expr.addr.operands[1].value <= 0xffff:
+            and expr.addr.op == "+" and isinstance(expr.addr.operands[1], ailment.Expr.Const) \
+            and expr.addr.operands[1].value <= 0xffff:
             operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
             asm += ret_asm
             const_pool += ret_const_pool
             dest = self.reserve_register()
-            asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand0}, #{hex(expr.addr.operands[1].value)}]\n"
+            asm += (f"{self.opcode_variant('ldr', size=expr.size)} {dest}, "
+                    f"[{operand0}, #{hex(expr.addr.operands[1].value)}]\n")
             self.return_register(operand0)
             return dest, asm, const_pool
         ## ldr REG, [CONSTANT, REG] -> ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+" and isinstance(expr.addr.operands[0], ailment.Expr.Const) and expr.addr.operands[0].value <= 0xffff:
+            and expr.addr.op == "+" and isinstance(expr.addr.operands[0], ailment.Expr.Const) \
+            and expr.addr.operands[0].value <= 0xffff:
             operand1, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[1], function_addr, expr_addr)
             asm += ret_asm
             const_pool += ret_const_pool
             dest = self.reserve_register()
-            asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand1}, #{hex(expr.addr.operands[0].value)}]\n"
+            asm += (f"{self.opcode_variant('ldr', size=expr.size)} {dest}, "
+                    f"[{operand1}, #{hex(expr.addr.operands[0].value)}]\n")
             self.return_register(operand1)
             return dest, asm, const_pool
         ## ldr REG, [REG, REG]
-        elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) and expr.addr.op == "+":
+        elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
+            and expr.addr.op == "+":
             operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
             asm += ret_asm
             const_pool += ret_const_pool
@@ -121,7 +135,9 @@ class AIL2ARM32(BasePlugin):
         ## ldr REG, [STACK_OFFSET]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.StackBaseOffset):
             dest = self.reserve_register()
-            asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [sp, {self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n"
+            asm += (f"{self.opcode_variant('ldr', size=expr.size)}"
+                    f"{dest}, [sp, "
+                    f"{self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n")
             return dest, asm, const_pool
 
         ###################################################
@@ -159,7 +175,9 @@ class AIL2ARM32(BasePlugin):
         ## sp + offset
         elif isinstance(expr, ailment.Expr.StackBaseOffset):
             dest = self.reserve_register()
-            asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [sp, {self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n"
+            asm += (f"{self.opcode_variant('ldr', size=expr.size)}"
+                    f"{dest}, [sp, "
+                    f"{self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n")
             return dest, asm, const_pool
         ## Constant -> mov REG, #CONSTANT
         elif isinstance(expr, ailment.Expr.Const):
