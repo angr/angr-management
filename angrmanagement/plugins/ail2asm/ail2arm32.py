@@ -53,55 +53,76 @@ class AIL2ARM32(BasePlugin):
         return bp_offset + offset_from_bp - sp_offset + adjust
     
     def assemble(self, expr, function_addr=None, expr_addr=None):
-        dest, asm = self.assemble_recursive(expr, function_addr, expr_addr)
+        dest, asm, const_pool = self.assemble_recursive(expr, function_addr, expr_addr)
         self.return_register(dest)
-        asm = f"{asm}mov r0, {dest}" 
+        asm += f"mov r0, {dest}\n" 
+        if const_pool:
+            asm += f"b _end\n"
+            asm += const_pool
+            asm += "_end:\n"
         return asm
 
     def assemble_recursive(self, expr, function_addr=None, expr_addr=None):
         asm = ""
+        const_pool = ""
         ###################################################
         # Complex Expressions
         ###################################################
         ## ldr REG, [CONSTANT]
-        if isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.Const):
+        if isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.Const) and expr.addr.value <= 0xffff:
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [#{hex(expr.addr.value)}]\n"
-            return dest, asm
+            return dest, asm, const_pool
         ## add REG, CONSTANT / lsl REG, CONSTANT
-        elif isinstance(expr, ailment.Expr.BinaryOp) and isinstance(expr.operands[1], ailment.Expr.Const):
-            operand0, ret_asm = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
+        elif isinstance(expr, ailment.Expr.BinaryOp) and isinstance(expr.operands[1], ailment.Expr.Const) and expr.operands[1].value <= 0xffff:
+            operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
             asm += ret_asm
+            const_pool += ret_const_pool
             dest = self.reserve_register()
             if expr.op == "+":
                 asm += f"add {dest}, {operand0}, #{hex(expr.operands[1].value)}\n"
             elif expr.op == "<<":
                 asm += f"lsl {dest}, {operand0}, #{hex(expr.operands[1].value)}\n"
             self.return_register(operand0)
-            return dest, asm
+            return dest, asm, const_pool
         ## ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+" and isinstance(expr.addr.operands[1], ailment.Expr.Const):
-            operand0, ret_asm = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
+            and expr.addr.op == "+" and isinstance(expr.addr.operands[1], ailment.Expr.Const) and expr.addr.operands[1].value <= 0xffff:
+            operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
             asm += ret_asm
+            const_pool += ret_const_pool
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand0}, #{hex(expr.addr.operands[1].value)}]\n"
             self.return_register(operand0)
-            return dest, asm
+            return dest, asm, const_pool
         ## ldr REG, [CONSTANT, REG] -> ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+" and isinstance(expr.addr.operands[0], ailment.Expr.Const):
-            operand1, ret_asm = self.assemble_recursive(expr.addr.operands[1], function_addr, expr_addr)
+            and expr.addr.op == "+" and isinstance(expr.addr.operands[0], ailment.Expr.Const) and expr.addr.operands[0].value <= 0xffff:
+            operand1, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[1], function_addr, expr_addr)
             asm += ret_asm
+            const_pool += ret_const_pool
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand1}, #{hex(expr.addr.operands[0].value)}]\n"
             self.return_register(operand1)
-            return dest, asm
+            return dest, asm, const_pool
+        ## ldr REG, [REG, REG]
+        elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) and expr.addr.op == "+":
+            operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
+            asm += ret_asm
+            const_pool += ret_const_pool
+            operand1, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[1], function_addr, expr_addr)
+            asm += ret_asm
+            const_pool += ret_const_pool
+            dest = self.reserve_register()
+            asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand0}, {operand1}]\n"
+            self.return_register(operand0)
+            self.return_register(operand1)
+            return dest, asm, const_pool
         ## ldr REG, [STACK_OFFSET]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.StackBaseOffset):
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [sp, {self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n"
-            return dest, asm
+            return dest, asm, const_pool
 
         ###################################################
         # Fall back to the default implementation
@@ -111,18 +132,21 @@ class AIL2ARM32(BasePlugin):
             return self.assemble_recursive(expr.operand, function_addr, expr_addr)
         ## ldr REG, [REG]
         elif isinstance(expr, ailment.Expr.Load):
-            src, ret_asm = self.assemble_recursive(expr.addr, function_addr, expr_addr)
+            src, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr, function_addr, expr_addr)
             asm += ret_asm
+            const_pool += ret_const_pool
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{src}]\n"
             self.return_register(src)
-            return dest, asm
+            return dest, asm, const_pool
         ## add REG, REG, REG / lsl REG, REG, REG
         elif isinstance(expr, ailment.Expr.BinaryOp):
-            operand0, ret_asm = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
+            operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
             asm += ret_asm
-            operand1, ret_asm = self.assemble_recursive(expr.operands[1], function_addr, expr_addr)
+            const_pool += ret_const_pool
+            operand1, ret_asm, ret_const_pool = self.assemble_recursive(expr.operands[1], function_addr, expr_addr)
             asm += ret_asm
+            const_pool += ret_const_pool
             dest = self.reserve_register()
             if expr.op == "+":
                 asm += f"add {dest}, {operand0}, {operand1}\n"
@@ -130,17 +154,26 @@ class AIL2ARM32(BasePlugin):
                 asm += f"lsl {dest}, {operand0}, {operand1}\n"
             self.return_register(operand0)
             self.return_register(operand1)
-            return dest, asm
+            return dest, asm, const_pool
         ## Stack Base Offset (bp+offset) -> add REG, sp, #PLACE_HOLDER
         ## sp + offset
         elif isinstance(expr, ailment.Expr.StackBaseOffset):
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [sp, {self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n"
-            return dest, asm
+            return dest, asm, const_pool
         ## Constant -> mov REG, #CONSTANT
         elif isinstance(expr, ailment.Expr.Const):
-            dest = self.reserve_register()
-            asm += f"mov {dest}, #{hex(expr.value)}\n"
-            return dest, asm
+            if expr.value <= 0xffff: # either < 16 bits, or > 16 bits but can be represented in 16 bits
+                dest = self.reserve_register()
+                asm += f"mov {dest}, #{hex(expr.value)}\n"
+                return dest, asm, const_pool
+            elif expr.bits == 32:
+                dest = self.reserve_register()
+                asm += f"ldr {dest}, ptr_{hex(expr.value)}\n"
+                const_pool += f"ptr_{hex(expr.value)}:\n"
+                const_pool += f"  .long {hex(expr.value)}\n"
+                return dest, asm, const_pool
+            else:
+                raise NotImplementedError(f"Unsupported constant size: {expr.bits}")
         else:
             raise Exception("Unsupported expression")
