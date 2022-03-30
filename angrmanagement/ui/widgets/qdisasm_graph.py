@@ -132,7 +132,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
             decomp_cache = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')] #self._wait_for_cache_update()
             self.disasm = decomp_cache.clinic
-            self._supergraph = to_ail_supergraph(self.disasm.graph)
+            self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
             nodefunc = lambda n: n
             branchfunc = lambda n: None
         else:
