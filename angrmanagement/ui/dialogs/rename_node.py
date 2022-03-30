@@ -200,8 +200,9 @@ class RenameNode(QDialog):
                     # TODO add callback
                     # TODO prevent name duplication. reuse logic from CTypeEditor?
                     # TODO if this is a temporary struct, make it permanent and add it to kb.types
-                    fields = [(node_name if n == self._node.field else n, t) for n, t in self._node.type.fields.items()]
-                    self._node.type.fields = OrderedDict(fields)
+                    fields = [(node_name if n == self._node.field else n, t)
+                              for n, t in self._node.struct_type.fields.items()]
+                    self._node.struct_type.fields = OrderedDict(fields)
                     self._node.field = node_name
 
 
