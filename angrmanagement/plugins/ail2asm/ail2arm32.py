@@ -70,7 +70,7 @@ class AIL2ARM32(BasePlugin):
             return dest, asm
         ## add REG, CONSTANT / lsl REG, CONSTANT
         elif isinstance(expr, ailment.Expr.BinaryOp) and isinstance(expr.operands[1], ailment.Expr.Const):
-            operand0, ret_asm = self.assemble(expr.operands[0], function_addr, expr_addr)
+            operand0, ret_asm = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
             asm += ret_asm
             dest = self.reserve_register()
             if expr.op == "+":
@@ -82,7 +82,7 @@ class AIL2ARM32(BasePlugin):
         ## ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
             and expr.addr.op == "+" and isinstance(expr.addr.operands[1], ailment.Expr.Const):
-            operand0, ret_asm = self.assemble(expr.addr.operands[0], function_addr, expr_addr)
+            operand0, ret_asm = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
             asm += ret_asm
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand0}, #{hex(expr.addr.operands[1].value)}]\n"
@@ -91,7 +91,7 @@ class AIL2ARM32(BasePlugin):
         ## ldr REG, [CONSTANT, REG] -> ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
             and expr.addr.op == "+" and isinstance(expr.addr.operands[0], ailment.Expr.Const):
-            operand1, ret_asm = self.assemble(expr.addr.operands[1], function_addr, expr_addr)
+            operand1, ret_asm = self.assemble_recursive(expr.addr.operands[1], function_addr, expr_addr)
             asm += ret_asm
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{operand1}, #{hex(expr.addr.operands[0].value)}]\n"
@@ -108,10 +108,10 @@ class AIL2ARM32(BasePlugin):
         ###################################################
         ## Ignore Convert
         elif isinstance(expr, ailment.Expr.Convert):
-            return self.assemble(expr.operand, function_addr, expr_addr)
+            return self.assemble_recursive(expr.operand, function_addr, expr_addr)
         ## ldr REG, [REG]
         elif isinstance(expr, ailment.Expr.Load):
-            src, ret_asm = self.assemble(expr.addr, function_addr, expr_addr)
+            src, ret_asm = self.assemble_recursive(expr.addr, function_addr, expr_addr)
             asm += ret_asm
             dest = self.reserve_register()
             asm += f"{self.opcode_variant('ldr', size=expr.size)} {dest}, [{src}]\n"
@@ -119,9 +119,9 @@ class AIL2ARM32(BasePlugin):
             return dest, asm
         ## add REG, REG, REG / lsl REG, REG, REG
         elif isinstance(expr, ailment.Expr.BinaryOp):
-            operand0, ret_asm = self.assemble(expr.operands[0], function_addr, expr_addr)
+            operand0, ret_asm = self.assemble_recursive(expr.operands[0], function_addr, expr_addr)
             asm += ret_asm
-            operand1, ret_asm = self.assemble(expr.operands[1], function_addr, expr_addr)
+            operand1, ret_asm = self.assemble_recursive(expr.operands[1], function_addr, expr_addr)
             asm += ret_asm
             dest = self.reserve_register()
             if expr.op == "+":
