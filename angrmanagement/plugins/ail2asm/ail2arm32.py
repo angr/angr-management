@@ -91,15 +91,15 @@ class AIL2ARM32(BasePlugin):
             asm += ret_asm
             const_pool += ret_const_pool
             dest = self.reserve_register()
-            if expr.op == "+":
+            if expr.op == "Add":
                 asm += f"add {dest}, {operand0}, #{hex(expr.operands[1].value)}\n"
-            elif expr.op == "<<":
+            elif expr.op == "Shl":
                 asm += f"lsl {dest}, {operand0}, #{hex(expr.operands[1].value)}\n"
             self.return_register(operand0)
             return dest, asm, const_pool
         ## ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+" and isinstance(expr.addr.operands[1], ailment.Expr.Const) \
+            and expr.addr.op == "Add" and isinstance(expr.addr.operands[1], ailment.Expr.Const) \
             and expr.addr.operands[1].value <= 0xffff:
             operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
             asm += ret_asm
@@ -111,7 +111,7 @@ class AIL2ARM32(BasePlugin):
             return dest, asm, const_pool
         ## ldr REG, [CONSTANT, REG] -> ldr REG, [REG, CONSTANT]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+" and isinstance(expr.addr.operands[0], ailment.Expr.Const) \
+            and expr.addr.op == "Add" and isinstance(expr.addr.operands[0], ailment.Expr.Const) \
             and expr.addr.operands[0].value <= 0xffff:
             operand1, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[1], function_addr, expr_addr)
             asm += ret_asm
@@ -123,7 +123,7 @@ class AIL2ARM32(BasePlugin):
             return dest, asm, const_pool
         ## ldr REG, [REG, REG]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.BinaryOp) \
-            and expr.addr.op == "+":
+            and expr.addr.op == "Add":
             operand0, ret_asm, ret_const_pool = self.assemble_recursive(expr.addr.operands[0], function_addr, expr_addr)
             asm += ret_asm
             const_pool += ret_const_pool
@@ -138,7 +138,7 @@ class AIL2ARM32(BasePlugin):
         ## ldr REG, [STACK_OFFSET]
         elif isinstance(expr, ailment.Expr.Load) and isinstance(expr.addr, ailment.Expr.StackBaseOffset):
             dest = self.reserve_register()
-            asm += (f"{self.opcode_variant('ldr', size=expr.size)}"
+            asm += (f"{self.opcode_variant('ldr', size=expr.size)} "
                     f"{dest}, [sp, "
                     f"{self.bp_offset_to_sp_offset(expr.addr.offset, function_addr, expr_addr, self.sp_adjust)}]\n")
             return dest, asm, const_pool
@@ -167,9 +167,9 @@ class AIL2ARM32(BasePlugin):
             asm += ret_asm
             const_pool += ret_const_pool
             dest = self.reserve_register()
-            if expr.op == "+":
+            if expr.op == "Add":
                 asm += f"add {dest}, {operand0}, {operand1}\n"
-            elif expr.op == "<<":
+            elif expr.op == "Shl":
                 asm += f"lsl {dest}, {operand0}, {operand1}\n"
             self.return_register(operand0)
             self.return_register(operand1)
