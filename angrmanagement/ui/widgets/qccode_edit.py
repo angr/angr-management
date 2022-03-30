@@ -8,8 +8,11 @@ from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
 
+from ailment.statement import Store, Assignment
+from ailment.expression import Load
 from angr.sim_variable import SimVariable, SimTemporaryVariable
-from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, CStructField
+from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
+    CStructField, CIndexedVariable, CVariableField
 
 from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
@@ -113,7 +116,7 @@ class QCCodeEdit(api.CodeEdit):
             # function call in selection
             self._selected_node = under_cursor
             mnu.addActions(self.call_actions)
-        if isinstance(under_cursor, CVariable):
+        if isinstance(under_cursor, (CVariable, CIndexedVariable, CVariableField, CStructField)):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
@@ -320,6 +323,62 @@ class QCCodeEdit(api.CodeEdit):
             # decompile again
             self._code_view.decompile()
 
+    def expr2armasm(self):
+
+        def _assemble(expr, expr_addr) -> str:
+            return converter.assemble(expr, self._code_view.function.addr, expr_addr)
+
+        node = self._selected_node
+        # figure out where we are
+        if not isinstance(node, (CVariable, CIndexedVariable, CVariableField, CStructField)):
+            return
+
+        doc: 'QCodeDocument' = self.document()
+        cursor = self.textCursor()
+        pos = cursor.position()
+        current_node = doc.get_stmt_node_at_position(pos)
+
+        if current_node is None:
+            return
+
+        ins_addr = current_node.tags.get("ins_addr", None)
+        if ins_addr is None:
+            return
+
+        # traverse the stored clinic graph to find the AIL block
+        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        the_node = None
+        for node in cache.clinic.graph.nodes():
+            if node.addr <= ins_addr < node.addr + node.original_size:
+                the_node = node
+                break
+
+        if the_node is None:
+            return
+
+        converter = self.workspace.plugins.get_plugin_instance_by_name("AIL2ARM32")
+
+        # I'm lazy - I'll get the first Load if available
+        lst = [ ]
+        for stmt in the_node.statements:
+            if isinstance(stmt, Assignment):
+                if isinstance(stmt.src, Load):
+                    asm = _assemble(stmt.src, stmt.src.ins_addr)
+                    lst.append((str(stmt), str(stmt.src), asm))
+            elif isinstance(stmt, Store):
+                if isinstance(stmt.data, Load):
+                    asm = _assemble(stmt.data, stmt.data.ins_addr)
+                    lst.append((str(stmt), str(stmt.data), asm))
+
+        # format text
+        text = f"The AIL block:\n{str(the_node)}\n\n"
+        for stmt, expr, asm in lst:
+            text += f"Statement: {stmt}\n"
+            text += f"Expression: {expr}\n"
+            text += f"Assembly:\n{asm}\n\n"
+
+        converter.display_output(text)
+
     @staticmethod
     def _separator():
         sep = QAction()
@@ -341,10 +400,14 @@ class QCCodeEdit(api.CodeEdit):
         self.action_toggle_struct = QAction('Toggle &struct/array')
         self.action_toggle_struct.triggered.connect(self.toggle_struct)
 
+        self.action_asmgen = QAction("Expression -> ARM THUMB assembly...")
+        self.action_asmgen.triggered.connect(self.expr2armasm)
+
         self.variable_actions = [
             self.action_rename_node,
             self.action_retype_node,
             self.action_toggle_struct,
+            self.action_asmgen,
         ]
 
         self.function_name_actions = [

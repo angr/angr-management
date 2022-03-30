@@ -1,6 +1,9 @@
 import ailment
 from angrmanagement.plugins import BasePlugin
 
+from .asm_output import AsmOutput
+
+
 class AIL2ARM32(BasePlugin):
     """
     Assemble expressions into assembly.
@@ -195,3 +198,6 @@ class AIL2ARM32(BasePlugin):
                 raise NotImplementedError(f"Unsupported constant size: {expr.bits}")
         else:
             raise Exception("Unsupported expression")
+
+    def display_output(self, s: str):
+        AsmOutput(s, parent=self.workspace.main_window).exec_()
