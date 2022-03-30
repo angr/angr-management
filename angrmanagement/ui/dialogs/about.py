@@ -1,8 +1,8 @@
 import os
 
-from PySide2.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
-from PySide2.QtGui import QIcon, QPixmap, QFont
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
+from PySide6.QtGui import QIcon, QPixmap, QFont
+from PySide6.QtCore import Qt
 import angr
 
 from ...config import IMG_LOCATION

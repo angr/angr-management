@@ -1,6 +1,6 @@
 from typing import Type, Mapping
 
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 from angrmanagement.ui.toolbars import FileToolbar, DebugToolbar
 from angrmanagement.ui.toolbars.toolbar import Toolbar
 

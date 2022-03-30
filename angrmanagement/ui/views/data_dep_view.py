@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Dict, List, TYPE_CHECKING, Set
 
 # noinspection PyPackageRequirements
-from PySide2 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 

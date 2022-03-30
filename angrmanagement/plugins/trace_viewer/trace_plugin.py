@@ -2,9 +2,9 @@ import json
 import os
 from typing import Optional, Union, List, Tuple
 
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
 import requests
 

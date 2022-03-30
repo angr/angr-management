@@ -6,10 +6,10 @@ import sys
 import time
 from typing import Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QProgressDialog
-from PySide2.QtWidgets import QMessageBox, QShortcut, QTabBar
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
-from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QProgressDialog
+from PySide6.QtWidgets import QMessageBox, QTabBar
+from PySide6.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence, QShortcut
+from PySide6.QtCore import Qt, QSize, QEvent, QTimer, QUrl
 
 import angr
 import angr.flirt
@@ -52,7 +52,7 @@ from .toolbars import FileToolbar, DebugToolbar
 from .toolbar_manager import ToolbarManager
 
 if TYPE_CHECKING:
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
 _l = logging.getLogger(name=__name__)
 

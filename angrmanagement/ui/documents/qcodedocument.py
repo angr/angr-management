@@ -1,5 +1,5 @@
-from PySide2.QtGui import QTextDocument
-from PySide2.QtWidgets import QPlainTextDocumentLayout
+from PySide6.QtGui import QTextDocument
+from PySide6.QtWidgets import QPlainTextDocumentLayout
 
 from angr.analyses.decompiler.structured_codegen.c import CConstant, CVariable, CFunctionCall, \
     CStructField, CClosingObject, CFunction

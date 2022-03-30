@@ -1,9 +1,9 @@
 import os
 from typing import List
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, QComboBox, \
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, QComboBox, \
     QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 import angr
 
 from ..widgets import QStateComboBox

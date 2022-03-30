@@ -2,8 +2,8 @@ from typing import Dict, Any, Optional
 
 import networkx
 
-from PySide2.QtWidgets import QHBoxLayout
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtCore import QSize
 
 from angr.knowledge_plugins.key_definitions.definition import Definition
 from angr.knowledge_plugins.key_definitions.atoms import Atom

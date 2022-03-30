@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
 
 from ..widgets import QAddressInput
 

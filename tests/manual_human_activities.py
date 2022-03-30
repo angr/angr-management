@@ -6,9 +6,9 @@ import string
 import unittest
 from time import sleep
 
-from PySide2.QtTest import QTest
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QGraphicsScene, QGraphicsView
+from PySide6.QtTest import QTest
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
 
 import angr
 from angrmanagement.ui.main_window import MainWindow

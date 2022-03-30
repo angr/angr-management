@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Optional
 import logging
 
-import PySide2.QtWidgets
-from PySide2.QtGui import QColor, QPen
-from PySide2.QtCore import Qt, QRectF
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
+import PySide6.QtWidgets
+from PySide6.QtGui import QColor, QPen
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angr.knowledge_plugins.key_definitions.atoms import Atom, Register, MemoryLocation, SpOffset
 
@@ -167,10 +167,10 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
         self._dep_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
         self._dep_view.hover_leave_block(self)
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument

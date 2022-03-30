@@ -2,9 +2,9 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 from sortedcontainers import SortedDict
 
-from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
-from PySide2.QtCore import QEvent, Qt
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
+from PySide6.QtCore import QEvent, Qt
 
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker

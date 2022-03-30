@@ -1,8 +1,8 @@
 from typing import Any, Sequence, Optional, Tuple
 
-from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
-from PySide2.QtCore import Qt, QPointF, QRectF, QObject
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
+from PySide6.QtCore import Qt, QPointF, QRectF, QObject
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 import ailment
 import pyvex

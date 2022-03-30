@@ -4,9 +4,9 @@ from typing import List, Set, Tuple, Optional, TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
-from PySide2.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
-from PySide2.QtGui import QBrush, QColor, QCursor
-from PySide2.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
+from PySide6.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
+from PySide6.QtGui import QBrush, QColor, QCursor
+from PySide6.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
 
 from ..menus.function_context_menu import FunctionContextMenu
 from ...data.instance import ObjectContainer
@@ -14,7 +14,7 @@ from ...config import Conf
 from ..toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
-    import PySide2
+    import PySide6
     from ..views.functions_view import FunctionsView
     from angr.knowledge_plugins.functions import Function, FunctionManager
 
@@ -317,7 +317,7 @@ class QFunctionTableView(QTableView):
         self._function_table.show_filter_box(prefix=text)
         return True
 
-    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
+    def contextMenuEvent(self, event:'PySide6.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
         rows = self.selectionModel().selectedRows()
         funcs = [self.workspace.instance.kb.functions[r.data()] for r in rows]
         self._context_menu.set(funcs).qmenu().popup(QCursor.pos())

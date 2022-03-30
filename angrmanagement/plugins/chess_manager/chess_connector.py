@@ -4,8 +4,8 @@ import os
 import threading
 import time
 
-from PySide2.QtWidgets import QPushButton, QMessageBox
-from PySide2.QtGui import QPixmap, Qt, QIcon
+from PySide6.QtWidgets import QPushButton, QMessageBox
+from PySide6.QtGui import QPixmap, Qt, QIcon
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.config import Conf, save_config

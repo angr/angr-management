@@ -1,7 +1,7 @@
 
 import os
 
-from PySide2.QtGui import QIcon
+from PySide6.QtGui import QIcon
 
 from ...config import IMG_LOCATION
 from .toolbar import Toolbar, ToolbarAction

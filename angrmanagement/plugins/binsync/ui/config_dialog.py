@@ -1,9 +1,9 @@
 import traceback
 import os
 
-from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox,
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox,
                                QFileDialog, QCheckBox, QGridLayout)
-from PySide2.QtCore import QDir
+from PySide6.QtCore import QDir
 
 try:
     import binsync

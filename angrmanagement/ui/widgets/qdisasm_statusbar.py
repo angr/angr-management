@@ -2,7 +2,7 @@ import os
 import logging
 from typing import Optional
 
-from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
 from ..toolbars import NavToolbar

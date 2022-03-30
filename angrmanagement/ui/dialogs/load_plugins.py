@@ -1,9 +1,9 @@
 import logging
 from typing import Type, List
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
     QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from angrmanagement.plugins import load_plugins_from_file
 

@@ -1,6 +1,6 @@
-from PySide2.QtCore import QPoint, QPointF, Qt, QRectF, QMarginsF, QEvent
-from PySide2.QtGui import QPainter, QPainterPath, QPen, QMouseEvent, QWheelEvent, QImage
-from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame
+from PySide6.QtCore import QPoint, QPointF, Qt, QRectF, QMarginsF, QEvent
+from PySide6.QtGui import QPainter, QPainterPath, QPen, QMouseEvent, QWheelEvent, QImage
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame
 
 from ...config import Conf
 from .qgraph import QBaseGraphicsView

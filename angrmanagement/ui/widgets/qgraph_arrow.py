@@ -1,9 +1,9 @@
 import math
 from typing import TYPE_CHECKING, List
 
-from PySide2.QtWidgets import QGraphicsItem, QApplication, QToolTip
-from PySide2.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker, QKeyEvent
-from PySide2.QtCore import QPointF, Qt
+from PySide6.QtWidgets import QGraphicsItem, QApplication, QToolTip
+from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker, QKeyEvent
+from PySide6.QtCore import QPointF, Qt
 
 from ...utils.edge import EdgeSort
 from ...config import Conf

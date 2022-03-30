@@ -2,9 +2,9 @@ from typing import Optional, TYPE_CHECKING, Union
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
-from PySide2.QtGui import QPainter
-from PySide2.QtCore import Qt, QRectF, QRect, QEvent
+from PySide6.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
+from PySide6.QtGui import QPainter
+from PySide6.QtCore import Qt, QRectF, QRect, QEvent
 
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData

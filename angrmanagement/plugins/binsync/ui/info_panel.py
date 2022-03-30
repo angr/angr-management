@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QComboBox
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QComboBox
 
 from angrmanagement.ui.views.view import BaseView
 from .info_tables import QFuncInfoTable

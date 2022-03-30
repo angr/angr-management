@@ -2,8 +2,8 @@ from typing import Dict, Optional, Set, TYPE_CHECKING
 
 import networkx
 
-from PySide2.QtWidgets import QHBoxLayout
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtCore import QSize
 
 from angrmanagement.ui.views.view import BaseView
 from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph

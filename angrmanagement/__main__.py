@@ -27,20 +27,20 @@ def check_dependencies_qt():
     missing_dep = False
 
     try:
-        import PySide2
+        import PySide6
     except ImportError:
-        PySide2 = None
-        sys.stderr.write("Cannot find the PySide2 package. You may install it via pip:\n" +
+        PySide6 = None
+        sys.stderr.write("Cannot find the PySide6 package. You may install it via pip:\n" +
                          "    pip install pyside2\n")
         missing_dep = True
 
     # version check
-    if PySide2 is not None and PySide2.__version__ in BUGGY_PYSIDE2_VERSIONS:
-        sys.stderr.write("Your installed version of PySide2 is known to have bugs that may lead to angr management "
+    if PySide6 is not None and PySide6.__version__ in BUGGY_PYSIDE2_VERSIONS:
+        sys.stderr.write("Your installed version of PySide6 is known to have bugs that may lead to angr management "
                          "crashing. Please switch to other versions.\n"
-                         "A known good version of PySide2 is 5.14.1. You may install it via pip:\n"
+                         "A known good version of PySide6 is 5.14.1. You may install it via pip:\n"
                          "    pip install -U pyside2==5.14.1\n")
-        sys.stderr.write("Bad PySide2 versions include: %s" % ", ".join(BUGGY_PYSIDE2_VERSIONS))
+        sys.stderr.write("Bad PySide6 versions include: %s" % ", ".join(BUGGY_PYSIDE2_VERSIONS))
         missing_dep = True
 
     try:
@@ -105,7 +105,7 @@ def set_windows_event_loop_policy():
 
 def macos_bigsur_wants_layer():
     # workaround for https://bugreports.qt.io/browse/QTBUG-87014
-    # this is because the latest PySide2 (5.15.2) does not include this fix
+    # this is because the latest PySide6 (5.15.2) does not include this fix
     v, _, _ = platform.mac_ver()
     vs = v.split(".")
     if len(vs) >= 2:
@@ -129,9 +129,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
-    from PySide2.QtWidgets import QApplication, QSplashScreen, QMessageBox
-    from PySide2.QtGui import QFontDatabase, QPixmap, QIcon
-    from PySide2.QtCore import Qt, QCoreApplication
+    from PySide6.QtWidgets import QApplication, QSplashScreen, QMessageBox
+    from PySide6.QtGui import QFontDatabase, QPixmap, QIcon
+    from PySide6.QtCore import Qt, QCoreApplication
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
 

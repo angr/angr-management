@@ -1,9 +1,9 @@
 
 import re
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
-from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
+from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
 
 import angr
 

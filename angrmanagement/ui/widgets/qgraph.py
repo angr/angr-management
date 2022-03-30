@@ -1,9 +1,9 @@
 import logging
 
-from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
     QGraphicsSceneMouseEvent
-from PySide2.QtGui import QPainter, QMouseEvent, QImage, QVector2D
-from PySide2.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF
+from PySide6.QtGui import QPainter, QMouseEvent, QImage, QVector2D
+from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF
 
 _l = logging.getLogger(__name__)
 

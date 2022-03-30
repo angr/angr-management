@@ -2,10 +2,10 @@ from uuid import uuid4
 from copy import deepcopy
 import logging
 
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup, QMessageBox, \
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup, QMessageBox, \
     QTabWidget, QAbstractItemView, QMenu, QTableWidget, QTableWidgetItem, QHeaderView
-from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont, QContextMenuEvent
-from PySide2.QtCore import Qt, QPoint
+from PySide6.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont, QContextMenuEvent
+from PySide6.QtCore import Qt, QPoint
 
 from angrmanagement.ui.views.view import BaseView
 

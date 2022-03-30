@@ -1,7 +1,7 @@
 from typing import Any
 import re
-from PySide2.QtWidgets import QHeaderView, QTableView, QAbstractItemView
-from PySide2.QtCore import QSortFilterProxyModel, Qt, QAbstractTableModel
+from PySide6.QtWidgets import QHeaderView, QTableView, QAbstractItemView
+from PySide6.QtCore import QSortFilterProxyModel, Qt, QAbstractTableModel
 
 from angr.analyses.cfg.cfg_fast import MemoryData
 

@@ -1,7 +1,7 @@
 import logging
 
-from PySide2.QtGui import QColor, QPen, QBrush
-from PySide2.QtCore import Qt, QPointF
+from PySide6.QtGui import QColor, QPen, QBrush
+from PySide6.QtCore import Qt, QPointF
 
 from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QZoomableDraggableGraphicsView

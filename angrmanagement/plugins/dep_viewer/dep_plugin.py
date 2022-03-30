@@ -1,7 +1,7 @@
 from typing import Set, Tuple, Optional, Dict
 from sortedcontainers import SortedDict
 
-from PySide2.QtGui import QColor, Qt
+from PySide6.QtGui import QColor, Qt
 
 from angr.sim_type import normalize_cpp_function_name
 

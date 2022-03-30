@@ -2,7 +2,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Optional, Generator, List, Tuple, Set
 import logging
 
-from PySide2.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 from angr import KnowledgeBase
 from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation

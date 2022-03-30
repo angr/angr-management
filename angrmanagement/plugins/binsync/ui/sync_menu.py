@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWidgetItem, \
+from PySide6.QtWidgets import QDialog, QLabel, QComboBox, QTableWidget, QTableWidgetItem, \
     QDialogButtonBox, QGridLayout, QHeaderView, QAbstractItemView
 
 from ..controller import BinsyncController

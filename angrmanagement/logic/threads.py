@@ -1,6 +1,6 @@
 import threading
 
-from PySide2.QtCore import QEvent, QCoreApplication
+from PySide6.QtCore import QEvent, QCoreApplication
 
 from . import GlobalInfo
 

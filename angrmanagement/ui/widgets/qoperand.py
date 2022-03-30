@@ -1,8 +1,8 @@
 from typing import Optional
 import logging
 
-from PySide2.QtWidgets import QApplication, QGraphicsSimpleTextItem
-from PySide2.QtCore import Qt, QRectF, QPointF
+from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
+from PySide6.QtCore import Qt, QRectF, QPointF
 
 from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand, Value
 

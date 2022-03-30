@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QVBoxLayout, QLabel
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QVBoxLayout, QLabel
+from PySide6.QtCore import QSize
 
 from .view import BaseView
 from ..widgets.qfunction_table import QFunctionTable

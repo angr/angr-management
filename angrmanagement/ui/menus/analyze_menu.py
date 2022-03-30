@@ -1,6 +1,6 @@
 
-from PySide2.QtGui import QKeySequence
-from PySide2.QtCore import Qt
+from PySide6.QtGui import QKeySequence
+from PySide6.QtCore import Qt
 
 from .menu import Menu, MenuEntry, MenuSeparator
 

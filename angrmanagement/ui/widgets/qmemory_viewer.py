@@ -1,9 +1,9 @@
 import logging
 
-from PySide2.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit,\
+from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit,\
     QWidget
-from PySide2.QtGui import QPainter, QBrush, QPen
-from PySide2.QtCore import Qt, QSize
+from PySide6.QtGui import QPainter, QBrush, QPen
+from PySide6.QtCore import Qt, QSize
 
 from ...config import Conf
 from .qast_viewer import QASTViewer

@@ -1,8 +1,9 @@
 from typing import Optional
 
 import qtawesome as qta
-from PySide2.QtCore import QAbstractItemModel, Qt, QModelIndex
-from PySide2.QtWidgets import QLabel, QComboBox, QAction, QMenu
+from PySide6.QtCore import QAbstractItemModel, Qt, QModelIndex
+from PySide6.QtWidgets import QLabel, QComboBox, QMenu
+from PySide6.QtGui import QAction
 
 from ...logic.debugger import DebuggerWatcher
 from ...config import Conf

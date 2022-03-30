@@ -2,8 +2,8 @@ import weakref
 import logging
 
 import networkx
-from PySide2.QtWidgets import QFrame, QHBoxLayout
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QFrame, QHBoxLayout
+from PySide6.QtCore import QSize
 
 from .qsymexec_graph import QSymExecGraph
 from .qstate_block import QStateBlock

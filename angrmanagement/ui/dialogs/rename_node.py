@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 from collections import OrderedDict
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
     QDialogButtonBox
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 

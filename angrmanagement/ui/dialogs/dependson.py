@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PySide2.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QGroupBox, QRadioButton, QHBoxLayout, \
+from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QGroupBox, QRadioButton, QHBoxLayout, \
     QVBoxLayout, QCheckBox, QMessageBox, QWidget
 
 from angr.knowledge_plugins import Function

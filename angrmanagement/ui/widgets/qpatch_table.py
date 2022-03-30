@@ -1,9 +1,9 @@
 import binascii
 from typing import Set
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QAction, QMessageBox
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QContextMenuEvent, QCursor
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QMessageBox
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QContextMenuEvent, QCursor, QAction
 
 from angr.knowledge_plugins.patches import Patch
 

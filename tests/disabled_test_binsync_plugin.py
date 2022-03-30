@@ -4,8 +4,8 @@ import tempfile
 import time
 import unittest
 
-from PySide2.QtTest import QTest
-from PySide2.QtCore import Qt
+from PySide6.QtTest import QTest
+from PySide6.QtCore import Qt
 
 import angr
 import common

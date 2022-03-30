@@ -1,7 +1,7 @@
 from typing import List
 
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtCore import QRectF
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtCore import QRectF
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem

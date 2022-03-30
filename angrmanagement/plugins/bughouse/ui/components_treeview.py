@@ -1,8 +1,8 @@
 from typing import List, Tuple, Optional
 
-import PySide2.QtCore
-from PySide2.QtCore import QSize, Qt
-from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem, QHBoxLayout, QVBoxLayout
+import PySide6.QtCore
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QHBoxLayout, QVBoxLayout
 
 from angr.project import Project
 from angr.knowledge_plugins.functions import Function
@@ -68,7 +68,7 @@ class ComponentsView(BaseView):
 
         self.setLayout(layout)
 
-    def minimumSizeHint(self) -> PySide2.QtCore.QSize:
+    def minimumSizeHint(self) -> PySide6.QtCore.QSize:
         return QSize(100, 100)
 
     def load(self, tree: ComponentTree):

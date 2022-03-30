@@ -1,6 +1,6 @@
 from typing import Callable, Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QLineEdit
+from PySide6.QtWidgets import QLineEdit
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace

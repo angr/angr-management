@@ -1,7 +1,7 @@
 import logging
 
-from PySide2.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PySide2.QtCore import Qt, QSize
+from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
+from PySide6.QtCore import Qt, QSize
 
 from .qast_viewer import QASTViewer
 

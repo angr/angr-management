@@ -5,7 +5,7 @@ import datetime
 import time
 import os
 
-from PySide2.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.knowledge_plugins.sync.sync_controller import SyncController

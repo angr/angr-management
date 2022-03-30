@@ -2,8 +2,8 @@ import enum
 import logging
 from typing import Optional
 from threading import Thread
-from PySide2 import QtWidgets, QtCore
-from PySide2.QtWidgets import QMessageBox, QInputDialog, QLineEdit
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 
 from .view import BaseView
 

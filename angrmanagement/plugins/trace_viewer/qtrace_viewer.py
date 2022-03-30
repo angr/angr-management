@@ -1,10 +1,10 @@
 import logging
 
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide2.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
-from PySide2.QtWidgets import  QMessageBox, QTableWidget, QTableWidgetItem
-from PySide2.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
-from PySide2.QtCore import Qt, QPoint, QEvent
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
+from PySide6.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
+from PySide6.QtWidgets import  QMessageBox, QTableWidget, QTableWidgetItem
+from PySide6.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
+from PySide6.QtCore import Qt, QPoint, QEvent
 
 
 l = logging.getLogger(name=__name__)

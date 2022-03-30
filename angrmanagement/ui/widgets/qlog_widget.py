@@ -3,10 +3,10 @@ import os
 import logging
 from typing import List, Any, Optional
 
-import PySide2
-from PySide2.QtWidgets import QTableView, QAbstractItemView, QHeaderView
-from PySide2.QtCore import QAbstractTableModel, Qt
-from PySide2.QtGui import QIcon, QCursor, QGuiApplication, QClipboard, QKeySequence
+import PySide6
+from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
+from PySide6.QtCore import QAbstractTableModel, Qt
+from PySide6.QtGui import QIcon, QCursor, QGuiApplication, QClipboard, QKeySequence
 
 from ...config import IMG_LOCATION
 from ...logic.threads import gui_thread_schedule_async
@@ -62,20 +62,20 @@ class QLogTableModel(QAbstractTableModel):
     def log(self) -> List[LogRecord]:
         return self._log
 
-    def rowCount(self, parent:PySide2.QtCore.QModelIndex=...) -> int:
+    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:
         return len(self._log)
 
-    def columnCount(self, parent:PySide2.QtCore.QModelIndex=...) -> int:
+    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide2.QtCore.Qt.Orientation, role:int=...) -> Any:
+    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> Any:
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide2.QtCore.QModelIndex, role:int=...) -> Any:
+    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -209,7 +209,7 @@ class QLogWidget(QTableView):
         self.log_view.workspace.instance.log.am_unsubscribe(self._on_new_logrecord)
         super().closeEvent(event)
 
-    def contextMenuEvent(self, arg__1: PySide2.QtGui.QContextMenuEvent):
+    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent):
         self._context_menu.popup(QCursor.pos())
 
     def _on_new_logrecord(self, log_record: LogRecord = None):
@@ -239,7 +239,7 @@ class QLogWidget(QTableView):
         if self._auto_scroll:
             self.scrollToBottom()
 
-    def keyPressEvent(self, event:PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event:PySide6.QtGui.QKeyEvent):
         if event.matches(QKeySequence.Copy):
             self.copy_selected_messages()
         else:

@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
-from PySide2.QtWidgets import QFrame, QInputDialog, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
+from PySide6.QtWidgets import QFrame, QInputDialog, QLabel, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, \
     QCheckBox, QTabWidget, QTreeWidget, QTreeWidgetItem
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from ...data.jobs import SimgrStepJob, SimgrExploreJob
 from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer

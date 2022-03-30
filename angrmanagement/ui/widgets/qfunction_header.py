@@ -1,8 +1,8 @@
 from typing import Optional
 
-from PySide2.QtGui import QPainter, QCursor
-from PySide2.QtCore import Qt, QRectF
-from PySide2.QtWidgets import QApplication, QGraphicsSimpleTextItem
+from PySide6.QtGui import QPainter, QCursor
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
 from angr.sim_type import SimTypeFunction
 from angr.calling_conventions import SimRegArg

@@ -1,9 +1,9 @@
 from typing import Set, Union, Optional
 import logging
 
-from PySide2.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget, QVBoxLayout, QWidget, QFrame, QComboBox
-from PySide2.QtGui import QTextCursor
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget, QVBoxLayout, QWidget, QFrame, QComboBox
+from PySide6.QtGui import QTextCursor
+from PySide6.QtCore import Qt
 
 from angr.analyses.decompiler.structured_codegen.c import CFunctionCall, CConstant, CStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator

@@ -1,7 +1,7 @@
 from typing import Dict
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView
+from PySide6.QtCore import Qt
 
 from ...controller import BinsyncController
 

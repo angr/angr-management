@@ -2,10 +2,10 @@ from typing import Optional, Sequence, Mapping
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsPolygonItem, QGraphicsLineItem
-from PySide2.QtGui import QBrush, QPen, QPolygonF
-from PySide2.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
+from PySide6.QtGui import QBrush, QPen, QPolygonF
+from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
 
 import cle
 from angr.block import Block

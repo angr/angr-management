@@ -3,7 +3,7 @@ from typing import Optional, List, Type, Union, TYPE_CHECKING
 import logging
 import os
 
-from PySide2.QtGui import QColor
+from PySide6.QtGui import QColor
 
 from ..config import config_path
 from ..config.config_manager import ENTRIES

@@ -1,8 +1,8 @@
 from typing import List, Optional, Tuple
 import math
 
-from PySide2.QtCore import Qt, QRectF
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort, MemoryData
 
