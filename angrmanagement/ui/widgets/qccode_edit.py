@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from ailment.statement import Store, Assignment
-from ailment.expression import Load
+from ailment.expression import Load, Convert
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
     CStructField, CIndexedVariable, CVariableField
@@ -365,9 +365,15 @@ class QCCodeEdit(api.CodeEdit):
                 if isinstance(stmt.src, Load):
                     asm = _assemble(stmt.src, stmt.src.ins_addr)
                     lst.append((str(stmt), str(stmt.src), asm))
+                elif isinstance(stmt.src, Convert) and isinstance(stmt.src.operand, Load):
+                    asm = _assemble(stmt.src, stmt.src.operand.ins_addr)
+                    lst.append((str(stmt), str(stmt.src), asm))
             elif isinstance(stmt, Store):
                 if isinstance(stmt.data, Load):
                     asm = _assemble(stmt.data, stmt.data.ins_addr)
+                    lst.append((str(stmt), str(stmt.data), asm))
+                elif isinstance(stmt.data, Convert) and isinstance(stmt.data.operand, Load):
+                    asm = _assemble(stmt.data, stmt.data.operand.ins_addr)
                     lst.append((str(stmt), str(stmt.data), asm))
 
         # format text
