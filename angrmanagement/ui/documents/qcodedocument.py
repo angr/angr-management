@@ -1,6 +1,7 @@
 from PySide2.QtGui import QTextDocument
 from PySide2.QtWidgets import QPlainTextDocumentLayout
 
+from angr.sim_type import SimType
 from angr.analyses.decompiler.structured_codegen.c import CConstant, CVariable, CFunctionCall, \
     CStructField, CClosingObject, CFunction
 from angr.analyses.decompiler.structured_codegen.base import BaseStructuredCodeGenerator
@@ -146,6 +147,12 @@ class QCodeDocument(QTextDocument):
                 return [ ]
 
         elif isinstance(node, CFunction):
+            starts = self._codegen.map_ast_to_pos.get(node, None)
+
+            if starts is None:
+                return [ ]
+
+        elif isinstance(node, SimType):
             starts = self._codegen.map_ast_to_pos.get(node, None)
 
             if starts is None:

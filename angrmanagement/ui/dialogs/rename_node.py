@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
     QDialogButtonBox
+from angr.sim_type import SimType, TypeRef, SimTypePointer, NamedTypeMixin
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
 if TYPE_CHECKING:
@@ -48,7 +49,7 @@ class RenameNode(QDialog):
         self._ok_button: QPushButton = None
         self._suggestion_box: QListWidget = None
 
-        self.setWindowTitle('Rename Variable')
+        self.setWindowTitle('Rename')
 
         self.main_layout = QVBoxLayout()
 
@@ -204,6 +205,24 @@ class RenameNode(QDialog):
                               for n, t in self._node.struct_type.fields.items()]
                     self._node.struct_type.fields = OrderedDict(fields)
                     self._node.field = node_name
+                elif isinstance(self._node, SimType):
+                    ty = self._node
+                    ref = None
+                    while True:
+                        if isinstance(ty, TypeRef):
+                            ref = ty
+                            ty = ty.type
+                        elif isinstance(ty, SimTypePointer):
+                            ref = None
+                            ty = ty.pts_to
+                        else:
+                            break
+                    if isinstance(ty, NamedTypeMixin):
+                        ty.name = node_name
+                        if ref is not None:  # update the typeref as well
+                            ref._name = node_name
+                    else:
+                        ty.label = node_name
 
 
                 self._code_view.codegen.am_event()

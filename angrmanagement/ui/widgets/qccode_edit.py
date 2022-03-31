@@ -10,6 +10,7 @@ from pyqodeng.core import panels
 
 from ailment.statement import Store, Assignment
 from ailment.expression import Load, Convert
+from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
     CStructField, CIndexedVariable, CVariableField
@@ -189,7 +190,7 @@ class QCCodeEdit(api.CodeEdit):
         node = self.node_under_cursor()
 
         if key == Qt.Key_N:
-            if isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
+            if node is not None:
                 self.rename_node(node=node)
             return True
         if key == Qt.Key_Y:
@@ -235,7 +236,7 @@ class QCCodeEdit(api.CodeEdit):
 
     def rename_node(self, *args, node=None):  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField)):
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField, SimType)):
             return
         if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
             # unsupported right now..
