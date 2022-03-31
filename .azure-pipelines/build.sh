@@ -14,7 +14,7 @@ pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
 pip install git+https://github.com/angr/angr.git#egg=angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install keystone-engine --no-binary keystone-engine
+    pip install keystone-engine
     pip install git+https://github.com/angr/archr.git#egg=archr
 fi
 
