@@ -237,11 +237,17 @@ class LoadBinary(QDialog):
         recover_variables_on_matched_functions.setChecked(False)
         self.option_widgets['recover_variables_on_matched_functions'] = recover_variables_on_matched_functions
 
+        skip_unmapped_addrs = QCheckBox()
+        skip_unmapped_addrs.setText("Skip unmapped addresses")
+        skip_unmapped_addrs.setChecked(True)
+        self.option_widgets['skip_unmapped_addrs'] = skip_unmapped_addrs
+
         layout = QVBoxLayout()
         layout.addWidget(resolve_indirect_jumps)
         layout.addWidget(collect_data_refs)
         layout.addWidget(xrefs)
         layout.addWidget(recover_variables_on_matched_functions)
+        layout.addWidget(skip_unmapped_addrs)
         layout.addStretch(0)
         frame = QFrame(self)
         frame.setLayout(layout)
@@ -285,6 +291,7 @@ class LoadBinary(QDialog):
             'resolve_indirect_jumps': self.option_widgets['resolve_indirect_jumps'].isChecked(),
             'data_references': self.option_widgets['data_references'].isChecked(),
             'cross_references': self.option_widgets['cross_references'].isChecked(),
+            'skip_unmapped_addrs': self.option_widgets['skip_unmapped_addrs'].isChecked()
         }
 
         self.variable_recovery_args = {
