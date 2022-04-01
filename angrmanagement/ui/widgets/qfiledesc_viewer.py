@@ -32,6 +32,12 @@ class QFileDescriptorViewer(QFrame):
         self._state.am_subscribe(self._watch_state)
 
     def dump_fd(self, fd):
+        # Clean up when nothing is selected
+        if fd == -1:
+            self._current_fd = None
+            self.textedit.setPlainText("")
+            return
+
         if self._state.am_none:
             return
         self._current_fd = fd
@@ -75,6 +81,6 @@ class QFileDescriptorViewer(QFrame):
             if fd in self.STD:
                 self.select_fd.addItem(self.STD[fd])
             elif isinstance(simfile, SimFileDescriptor):
-                self.select_fd.addItem(simfile.file.name)
+                self.select_fd.addItem(str(simfile.file.name))
             else:
                 self.select_fd.addItem(str(simfile))
