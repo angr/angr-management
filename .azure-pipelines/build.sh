@@ -22,8 +22,8 @@ fi
 pip install -e .
 
 # Bundle!
-python .azure-pipelines/bundle.py --onefile
-python .azure-pipelines/bundle.py --onedir
+python packaging/pyinstaller/bundle.py --onefile
+python packaging/pyinstaller/bundle.py --onedir
 
 mkdir upload
 

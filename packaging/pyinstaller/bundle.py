@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 import os
+import subprocess
+import sys
 
 # for finding various libs
 import angrmanagement
@@ -124,7 +125,11 @@ def make_common_options(for_chess=False):
     for mapping in all_mappings:
         args.append("--add-data")
         args.append(mapping)
-    args.append("start.py")
+    args.append(
+        os.path.realpath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "start.py")
+        )
+    )
 
     return args
 
@@ -142,7 +147,7 @@ def make_bundle(onefile=True, for_chess=False):
 
     if sys.platform in ("linux", "win32", "darwin"):
         print(f"Creating bundle for {sys.platform}")
-        os.system(" ".join(args))
+        subprocess.run(args, check=True, cwd=os.path.dirname(os.path.realpath(__file__)))
     else:
         print(f"Unsupported platform: {sys.platform}")
 

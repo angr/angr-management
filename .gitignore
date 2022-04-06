@@ -23,3 +23,13 @@ __enamlcache__/
 
 .vscode
 .idea
+
+
+# Packaging
+packaging/pyinstaller/build
+packaging/pyinstaller/dist
+packaging/pyinstaller/angr-management.spec
+packaging/appimage/AppDir
+packaging/appimage/appimage-builder-cache
+packaging/appimage/AppDir
+*.AppImage
