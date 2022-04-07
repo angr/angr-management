@@ -26,7 +26,7 @@ pip install -e .
 python packaging/pyinstaller/bundle.py --onefile
 python packaging/pyinstaller/bundle.py --onedir
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    python packaging/appimage/build.sh
+    bash packaging/appimage/build.sh
 fi
 
 mkdir upload
