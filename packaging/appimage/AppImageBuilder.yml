@@ -11,7 +11,7 @@ AppDir:
     exec_args: $@
   apt:
     arch:
-    - x86_64
+    - amd64
     allow_unauthenticated: true
     sources:
     - sourceline: deb http://archive.ubuntu.com/ubuntu/ focal main restricted
@@ -50,5 +50,5 @@ AppDir:
       use_host_x: true
 
 AppImage:
-  arch: x86_64
+  arch: amd64
   update-information: guess
