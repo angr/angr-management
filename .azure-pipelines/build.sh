@@ -38,7 +38,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-ubuntu
 else
-    mv $ONEFILE_DIR/angr-management.exe upload/angr-management-onefile-win64.exe
+    cp $ONEFILE_DIR/angr-management.exe upload/angr-management-onefile-win64.exe
 fi
 
 # Prepare onedirs
