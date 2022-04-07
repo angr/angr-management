@@ -50,5 +50,5 @@ AppDir:
       use_host_x: true
 
 AppImage:
-  arch: amd64
+  arch: x86_64
   update-information: guess
