@@ -12,7 +12,7 @@ mkdir -p $APPDIR/usr/share/icons
 python $BASE_DIR/packaging/pyinstaller/bundle.py
 
 # Copy out build artifact
-cp -r $BASE_DIR/packaging/pyinstaller/dist/angr-management $APPDIR/opt/
+cp -r $BASE_DIR/packaging/pyinstaller/onedir/angr-management $APPDIR/opt/
 # Copy icon
 cp $BASE_DIR/angrmanagement/resources/images/angr.png $APPDIR/usr/share/icons/
 

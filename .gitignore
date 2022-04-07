@@ -27,7 +27,8 @@ __enamlcache__/
 
 # Packaging
 packaging/pyinstaller/build
-packaging/pyinstaller/dist
+packaging/pyinstaller/onefile
+packaging/pyinstaller/onedir
 packaging/pyinstaller/angr-management.spec
 packaging/appimage/AppDir
 packaging/appimage/appimage-builder-cache
