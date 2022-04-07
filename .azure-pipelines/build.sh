@@ -14,7 +14,7 @@ pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
 pip install git+https://github.com/angr/angr.git#egg=angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install appimage-builder
+    pip install "appimage-builder>=1.0.0a2"
     pip install keystone-engine
     pip install git+https://github.com/angr/archr.git#egg=archr
 fi
