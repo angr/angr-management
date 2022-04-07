@@ -14,7 +14,7 @@ python $BASE_DIR/packaging/pyinstaller/bundle.py
 # Copy out build artifact
 cp -r $BASE_DIR/packaging/pyinstaller/onedir/angr-management $APPDIR/opt/
 # Copy icon
-cp $BASE_DIR/angrmanagement/resources/images/angr.png $APPDIR/usr/share/icons/
+cp $BASE_DIR/angrmanagement/resources/images/angr.png $APPDIR/usr/share/icons/angr200x200.png
 
 pushd $BASE_DIR/packaging/appimage
 appimage-builder --skip-tests
