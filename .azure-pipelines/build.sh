@@ -1,8 +1,5 @@
 #!/bin/bash -e
 
-echo PWD1: $PWD
-ls -la
-
 python -m venv .venv
 source .venv/bin/activate
 
@@ -31,9 +28,6 @@ fi
 # Install angr-mangement
 pip install -e .
 
-echo PWD2: $PWD
-ls -la
-
 # Bundle!
 python packaging/pyinstaller/bundle.py --onefile
 python packaging/pyinstaller/bundle.py --onedir
@@ -41,15 +35,10 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     bash packaging/appimage/build.sh
 fi
 
-echo PWD3: $PWD
-ls -la
-ls -la packaging
-ls -la packaging/*
-
 mkdir upload
 
 # Prepare onefiles
-ONEFILE_DIR=packaging/onefile
+ONEFILE_DIR=packaging/pyinstaller/onefile
 if [[ "$OSTYPE" == "darwin"* ]]; then
     cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-macos
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -59,7 +48,7 @@ else
 fi
 
 # Prepare onedirs
-ONEDIR_DIR=packaging/onedir
+ONEDIR_DIR=packaging/pyinstaller/onedir
 if [[ "$OSTYPE" == "darwin"* ]]; then
     hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder $ONEDIR_DIR
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -70,5 +59,5 @@ fi
 
 # Prepare appimage
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    cp packaging/appimage/angr management-latest-x86_64.AppImage upload/angr-management.AppImage
+    cp packaging/appimage/angr\ management-latest-x86_64.AppImage upload/angr-management.AppImage
 fi
