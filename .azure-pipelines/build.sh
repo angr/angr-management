@@ -14,6 +14,13 @@ pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
 pip install git+https://github.com/angr/angr.git#egg=angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    mkdir -p ~/.bin
+    wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage \
+        -O ~/.bin/appimagetool
+    chmod +x ~/.bin/appimagetool
+    export PATH="$HOME/.bin:$PATH"
+
+    pip install "appimage-builder>=1.0.0a2"
     pip install keystone-engine
     pip install git+https://github.com/angr/archr.git#egg=archr
 fi
@@ -22,26 +29,35 @@ fi
 pip install -e .
 
 # Bundle!
-python .azure-pipelines/bundle.py --onefile
-python .azure-pipelines/bundle.py --onedir
+python packaging/pyinstaller/bundle.py --onefile
+python packaging/pyinstaller/bundle.py --onedir
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    bash packaging/appimage/build.sh
+fi
 
 mkdir upload
 
 # Prepare onefiles
+ONEFILE_DIR=packaging/pyinstaller/onefile
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    cp onefile/angr-management upload/angr-management-onefile-macos
+    cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-macos
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    cp onefile/angr-management upload/angr-management-onefile-ubuntu
+    cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-ubuntu
 else
-    mv onefile/angr-management.exe upload/angr-management-onefile-win64.exe
+    cp $ONEFILE_DIR/angr-management.exe upload/angr-management-onefile-win64.exe
 fi
 
 # Prepare onedirs
+ONEDIR_DIR=packaging/pyinstaller/onedir
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    rm -rf dist/angr-management
-    hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder dist
+    hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder $ONEDIR_DIR
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    tar -C dist -czf upload/angr-management-ubuntu.tar.gz angr-management
+    tar -C $ONEDIR_DIR -czf upload/angr-management-ubuntu.tar.gz angr-management
 else
-    7z a upload/angr-management-win64.zip ./dist/\*
+    7z a upload/angr-management-win64.zip $ONEDIR_DIR/\*
+fi
+
+# Prepare appimage
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    cp packaging/appimage/angr\ management-latest-x86_64.AppImage upload/angr-management.AppImage
 fi

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 import os
+import subprocess
+import sys
 
 # for finding various libs
 import angrmanagement
@@ -124,35 +125,41 @@ def make_common_options(for_chess=False):
     for mapping in all_mappings:
         args.append("--add-data")
         args.append(mapping)
-    args.append("start.py")
+    args.append(
+        os.path.realpath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "start.py")
+        )
+    )
+    args.append("--noconfirm")
 
     return args
 
 
-def make_bundle(onefile=True, for_chess=False):
+def make_bundle(onefile=False, onedir=False, for_chess=False):
     """
     Execute the pyinstaller command.
     """
     args = make_common_options(for_chess=for_chess)
 
     if onefile:
-        args.append("--onefile")
-        args.append("--distpath")
-        args.append("onefile")
+        file_args = [*args]
+        file_args.append("--onefile")
+        file_args.append("--distpath")
+        file_args.append("onefile")
+        subprocess.run(file_args, check=True, cwd=os.path.dirname(os.path.realpath(__file__)))
 
-    if sys.platform in ("linux", "win32", "darwin"):
-        print(f"Creating bundle for {sys.platform}")
-        os.system(" ".join(args))
-    else:
-        print(f"Unsupported platform: {sys.platform}")
+    if onedir:
+        dir_args = [*args]
+        dir_args.append("--distpath")
+        dir_args.append("onedir")
+        subprocess.run(dir_args, check=True, cwd=os.path.dirname(os.path.realpath(__file__)))
 
 
 def main():
     for_chess = "--chess" in sys.argv
-    if "--onefile" in sys.argv:
-        make_bundle(onefile=True, for_chess=for_chess)
-    if "--onedir" in sys.argv:
-        make_bundle(onefile=False, for_chess=for_chess)
+    onefile = "--onefile" in sys.argv
+    onedir = "--onedir" in sys.argv
+    make_bundle(onefile=onefile, onedir=onedir, for_chess=for_chess)
 
 
 if __name__ == "__main__":
