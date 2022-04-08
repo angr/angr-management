@@ -28,6 +28,9 @@ fi
 # Install angr-mangement
 pip install -e .
 
+echo "PATH: $PATH"
+echo $(which appimagetool)
+
 # Bundle!
 python packaging/pyinstaller/bundle.py --onefile
 python packaging/pyinstaller/bundle.py --onedir
