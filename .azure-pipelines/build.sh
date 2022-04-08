@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 echo PWD1: $PWD
+ls -la
 
 python -m venv .venv
 source .venv/bin/activate
@@ -31,6 +32,7 @@ fi
 pip install -e .
 
 echo PWD2: $PWD
+ls -la
 
 # Bundle!
 python packaging/pyinstaller/bundle.py --onefile
@@ -40,6 +42,9 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 fi
 
 echo PWD3: $PWD
+ls -la
+ls -la packaging
+ls -la packaging/*
 
 mkdir upload
 
