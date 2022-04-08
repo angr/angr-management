@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+echo PWD1: $PWD
+
 python -m venv .venv
 source .venv/bin/activate
 
@@ -28,12 +30,16 @@ fi
 # Install angr-mangement
 pip install -e .
 
+echo PWD2: $PWD
+
 # Bundle!
 python packaging/pyinstaller/bundle.py --onefile
 python packaging/pyinstaller/bundle.py --onedir
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     bash packaging/appimage/build.sh
 fi
+
+echo PWD3: $PWD
 
 mkdir upload
 
