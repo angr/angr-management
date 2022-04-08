@@ -14,6 +14,11 @@ pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
 pip install git+https://github.com/angr/angr.git#egg=angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage \
+        -o ~/.bin/appimagetool
+    chmod +x ~/.bin/appimagetool
+    export PATH="$HOME/.bin:$PATH"
+
     pip install "appimage-builder>=1.0.0a2"
     pip install keystone-engine
     pip install git+https://github.com/angr/archr.git#egg=archr
