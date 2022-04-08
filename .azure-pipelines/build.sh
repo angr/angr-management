@@ -16,7 +16,7 @@ pip install git+https://github.com/angr/angr.git#egg=angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     mkdir -p ~/.bin
     wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage \
-        -o ~/.bin/appimagetool
+        -O ~/.bin/appimagetool
     chmod +x ~/.bin/appimagetool
     export PATH="$HOME/.bin:$PATH"
 
@@ -27,9 +27,6 @@ fi
 
 # Install angr-mangement
 pip install -e .
-
-echo "PATH: $PATH"
-echo $(which appimagetool)
 
 # Bundle!
 python packaging/pyinstaller/bundle.py --onefile
