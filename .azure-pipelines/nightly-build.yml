@@ -79,10 +79,7 @@ stages:
         isPreRelease: true
         addChangelog: true
         compareWith: 'lastRelease'
-        assets: |
-          dist/angr-management-windows-2019/*
-          dist/angr-management-macos-10.14/*
-          dist/angr-management-ubuntu-18.04/*
+        assets: dist/*/*
 
     # Delete oldest nightly release
     - task: PythonScript@0
