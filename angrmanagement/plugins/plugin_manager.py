@@ -354,6 +354,10 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.step_callback,True, simgr):
             pass
 
+    def decompile_callback(self, func):
+        for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
+            pass
+
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         for res in self._dispatch(BasePlugin.handle_variable_rename, False,
                                   func, offset, old_name, new_name, type_, size):
