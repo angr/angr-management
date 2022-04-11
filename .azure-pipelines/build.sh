@@ -5,14 +5,14 @@ source .venv/bin/activate
 
 # Install dependencies
 
-pip install -U pip wheel pyinstaller
+pip install -U pip wheel setuptools pyinstaller unicorn==1.0.2rc4
 pip install git+https://github.com/eliben/pyelftools#egg=pyelftools
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
 pip install git+https://github.com/angr/cle.git#egg=cle
 pip install git+https://github.com/angr/claripy.git#egg=claripy
 pip install git+https://github.com/angr/ailment.git#egg=ailment
-pip install git+https://github.com/angr/angr.git#egg=angr
+pip install --no-build-isolation git+https://github.com/angr/angr.git#egg=angr
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     mkdir -p ~/.bin
     wget https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage \
