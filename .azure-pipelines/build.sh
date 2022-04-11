@@ -5,7 +5,7 @@ source .venv/bin/activate
 
 # Install dependencies
 
-pip install -U pip wheel pyinstaller
+pip install -U pip wheel setuptools pyinstaller
 pip install git+https://github.com/eliben/pyelftools#egg=pyelftools
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
