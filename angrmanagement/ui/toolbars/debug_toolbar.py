@@ -66,6 +66,8 @@ class DebugToolbar(Toolbar):
             'Halt', 'Halt', self._on_halt)
         self._step_act = ToolbarAction(qta.icon("fa5s.step-forward", color=Conf.palette_buttontext),
             'Step', 'Step', self._on_step)
+        self._step_over_act = ToolbarAction(qta.icon("fa5s.share", color=Conf.palette_buttontext),
+            'Step Over', 'Step Over', self._on_step_over)
 
         self._start_act = ToolbarAction(qta.icon("fa5s.running", color=Conf.palette_buttontext),
             'Launch', 'New Debugger', self._on_start)
@@ -74,6 +76,7 @@ class DebugToolbar(Toolbar):
 
         self.actions = [
             self._cont_backward_act, self._step_backward_act, self._cont_act, self._halt_act, self._step_act,
+            self._step_over_act,
             ToolbarSplitter(),
             self._start_act, self._stop_act
         ]
@@ -149,6 +152,7 @@ class DebugToolbar(Toolbar):
         dbg_active = dbg is not None
         q = lambda a: self._cached_actions[a]
         q(self._step_act).setEnabled(dbg_active and dbg.can_step_forward)
+        q(self._step_over_act).setEnabled(dbg_active and dbg.can_step_forward)
         q(self._step_backward_act).setEnabled(dbg_active and dbg.can_step_backward)
         q(self._cont_backward_act).setEnabled(dbg_active and dbg.can_continue_backward)
         q(self._cont_act).setEnabled(dbg_active and dbg.can_continue_forward)
@@ -181,6 +185,14 @@ class DebugToolbar(Toolbar):
 
     def _on_step(self):
         self._dbg_mgr.debugger.step_forward()
+
+    def _on_step_over(self):
+        b = self._dbg_mgr.debugger.simstate.block()
+        if b.instructions == 1 and b.vex.jumpkind == 'Ijk_Call':
+            until_addr = b.instruction_addrs[0] + b.size
+        else:
+            until_addr = None
+        self._dbg_mgr.debugger.step_forward(until_addr=until_addr)
 
     def _on_step_backward(self):
         self._dbg_mgr.debugger.step_backward()

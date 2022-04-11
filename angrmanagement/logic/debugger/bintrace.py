@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import Optional
 
 from angr import SimState
 
@@ -79,9 +80,9 @@ class BintraceDebugger(Debugger):
     def can_step_forward(self) -> bool:
         return self._trace_dbg.can_step_forward
 
-    def step_forward(self):
+    def step_forward(self, until_addr: Optional[int] = None):
         if self.can_step_forward:
-            self._trace_dbg.step_forward()
+            self._trace_dbg.step_forward(until_addr=until_addr)
             self._on_state_change()
 
     @property
