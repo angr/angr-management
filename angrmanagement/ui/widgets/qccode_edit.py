@@ -301,12 +301,12 @@ class QCCodeEdit(api.CodeEdit):
             exists = addr in cdict
             if text:
                 # callback
-                self.workspace.plugins.handle_comment_changed(addr, text, not exists, True)
+                self.workspace.plugins.handle_comment_changed(addr, "", text, not exists, True)
                 cdict[addr] = text
             else:
                 if exists:
                     # callback
-                    self.workspace.plugins.handle_comment_changed(addr, "", False, True)
+                    self.workspace.plugins.handle_comment_changed(addr, cdict[addr], "", False, True)
                     del cdict[addr]
 
             self._code_view.codegen.am_event()

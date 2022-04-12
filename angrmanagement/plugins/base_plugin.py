@@ -172,6 +172,36 @@ class BasePlugin:
     # Decompiler Callbacks
     #
 
+    def handle_stack_var_renamed(self, func, offset, old_type, new_type):
+        return False
+
+    def handle_stack_var_retyped(self, func, offset, old_type, new_type):
+        return False
+
+    def handle_func_arg_renamed(self, func, offset, old_name, new_name):
+        return False
+
+    def handle_func_arg_retyped(self, func, offset, old_type, new_type):
+        return False
+
+    def handle_global_var_renamed(self, address, old_name, new_name):
+        return False
+
+    def handle_global_var_retyped(self, address, old_type, new_type):
+        return False
+
+    def handle_function_renamed(self, func, old_name, new_name):
+        return False
+
+    def handle_function_retyped(self, func, old_type, new_type):
+        return False
+
+    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
+        return False
+
+    def handle_struct_changed(self, old_struct, new_struct):
+        return False
+
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
         A handler that is called *right before* function stack variable is renamed. Note: this does not directly
