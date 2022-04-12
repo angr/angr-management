@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 
 import networkx
 
@@ -16,6 +16,10 @@ from .view import BaseView
 
 
 class DependencyView(BaseView):
+    """
+    Creates view for dependency analysis.
+    """
+
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
         super().__init__('dependencies', workspace, default_docking_position, *args, **kwargs)
 
@@ -41,7 +45,7 @@ class DependencyView(BaseView):
             self._graph_widget.on_block_hovered(block)
         self.redraw_graph()
 
-    def hover_leave_block(self, block: QDepGraphBlock):
+    def hover_leave_block(self):
         self.hovered_block = None
         self.redraw_graph()
 
