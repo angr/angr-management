@@ -1,8 +1,10 @@
 import asyncio
 import json
 import logging
+import math
 import threading
 import time
+
 from typing import List, Iterator
 
 from angr.sim_manager import SimulationManager
@@ -28,6 +30,19 @@ except ImportError as ex:
     l.error("You don't have slacrs module installed locally, CoveragePlugin going to have a bad time.")
     pass
 
+def generate_light_gradients(color, number, lightness=20):
+    """
+    return a List of QColors, where the colors are ordered in terms of
+    lightness (last is given as color) the rest (total of number) are
+    each lightness (%) lighter.
+    """
+    to_return = [color]
+    for i in range(number):
+        last_color = to_return[-1]
+        to_return.append(last_color.lighter(100+lightness))
+    to_return.reverse()
+    return to_return
+
 # TODO: This should really be a property of the target
 TRACE_BASE = 0x4000000000
 
@@ -46,6 +61,10 @@ class CoveragePlugin(BasePlugin):
         self.slacrs_instance = self.connector.slacrs_instance()
         if self.slacrs_instance is None:
             self.workspace.log("Unable to retrieve Slacrs instance")
+
+        self.hit_color = QColor(0, 20, 147)
+        self.num_gradients = 8
+        self.gradients = generate_light_gradients(self.hit_color, self.num_gradients)
 
         self.running = False
         self.slacrs_thread = None
@@ -86,6 +105,29 @@ class CoveragePlugin(BasePlugin):
         with self.coverage_lock:
             if addr in self.bbl_coverage:
                 return QColor(0, 20, 147)
+
+    def color_func(self, func):
+        if not self.running:
+            return None
+
+        func_bbls = func.block_addrs_set
+        total_bbls = len(func_bbls)
+
+        # Be paranoid
+        if total_bbls == 0:
+            return None
+        
+        with self.coverage_lock:
+            covered_bbls = self.bbl_coverage & func_bbls
+
+        # Never want to highlight something that wasn't covered
+        if len(covered_bbls) == 0:
+            return None
+
+        fraction_covered = len(covered_bbls) / total_bbls
+
+        gradient_number = math.ceil(fraction_covered * len(self.gradients))
+        return self.gradients[gradient_number-1]
 
     def reset_coverage(self):
         with self.coverage_lock:
