@@ -100,31 +100,28 @@ class DependencyView(BaseView):
         converted[node] = new_node
         return new_node
 
+    #def _is_edge_in_graph(self):
     def _create_ui_graph(self) -> networkx.DiGraph:
 
         g = networkx.DiGraph()
         source_node = QDepGraphBlock(False, self, atom=self.sink_atom, addr=self.sink_ins_addr)
         g.add_node(source_node)
+        all_graphs = networkx.compose_all(self.closures.values())
+        converted = {}
 
-        for key, graph in self.closures.items():
-            converted = { }
-            node = self._convert_node(key, converted)
+        for node_ in all_graphs.nodes:
+            node = self._convert_node(node_, converted)
             if node is not None:
+                g.add_node(node)
+            # this is a hack - we only want our sink as the only root of the dependency tree
+            # TODO: Figure out why
+            if all_graphs.out_degree[node_] == 0:
                 g.add_edge(node, source_node)
 
-            for node_ in graph.nodes:
-                node = self._convert_node(node_, converted)
-                if node is not None:
-                    g.add_node(node)
-                # this is a hack - we only want our sink as the only root of the dependency tree
-                # TODO: Figure out why
-                if graph.out_degree[node_] == 0:
-                    g.add_edge(node, source_node)
-
-            for src_, dst_ in graph.edges:
-                src = self._convert_node(src_, converted)
-                dst = self._convert_node(dst_, converted)
-                if src is not None and dst is not None:
-                    g.add_edge(src, dst)
+        for src_, dst_ in all_graphs.edges:
+            src = self._convert_node(src_, converted)
+            dst = self._convert_node(dst_, converted)
+            if src is not None and dst is not None:
+                g.add_edge(src, dst)
 
         return g
