@@ -178,7 +178,6 @@ class BasePlugin:
         with ``self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')]``
         :param func:        angr Function that was just decompiled
         """
-        pass
 
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
@@ -237,10 +236,8 @@ class BasePlugin:
         @param file_name:       Name in which project is saved as.
         @return:
         """
-        pass
 
     def handle_project_initialization(self):
         """
         A handler to perform any initialization when a new project is loaded
         """
-        pass

@@ -6,6 +6,10 @@ from angrmanagement.plugins import BasePlugin
 
 
 class SourceImporterPlugin(BasePlugin):
+    """
+    A plugin that adds scraping source code from the local filesystem and displaying it as an alternative to the
+    pseudocode.
+    """
     DISPLAY_NAME = 'Source Importer'
 
     def __init__(self, workspace):

@@ -2,6 +2,9 @@ from .job import Job
 
 
 class DecompileFunctionJob(Job):
+    """
+    The job for running the decompiler analysis. You can trigger this by pressing f5 in a function.
+    """
     def __init__(self, function, on_finish=None, blocking=False, **kwargs):
         self.kwargs = kwargs
         self.function = function
