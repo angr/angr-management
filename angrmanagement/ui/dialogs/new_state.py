@@ -1,10 +1,12 @@
 import os
 from typing import List
+import typing
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, QComboBox, \
     QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
+import claripy
 
 from .socket_config import SocketConfig
 from ..widgets import QStateComboBox
@@ -68,9 +70,9 @@ class NewState(QDialog):
         self._mode_combo = None  # type: QComboBox
         self._editor = None  # type: QTextEdit
         self._ok_button = None
-
+        
+        self._args = None # type: typing.List[str]
         self._fs_config = None  # type: List[(str,str)]
-
         self._sockets_config = None
 
         self.setWindowTitle('New State')
@@ -162,6 +164,10 @@ class NewState(QDialog):
             base_allowed = template_combo.currentData() in ('blank', 'call')
             base_state_combo.setHidden(not base_allowed)
             base_state_label.setHidden(not base_allowed)
+            args_allowed = template_combo.currentData() in ("entry",)
+            args_label.setHidden(not args_allowed)
+            args_edit.setHidden(not args_allowed)
+
 
         template_combo.currentIndexChanged.connect(handle_template)
 
@@ -180,6 +186,25 @@ class NewState(QDialog):
         layout.addWidget(base_state_label, row, 0)
         layout.addWidget(base_state_combo, row, 1)
         row += 1
+
+        # args
+        args_label = QLabel(self)
+        args_label.setText('Args')
+
+        args_edit = QTextEdit(self)
+        args_edit.setAcceptRichText(False)
+        args_edit.setFixedHeight(60)
+        self._args_edit = args_edit
+
+        def handle_args():
+            self._args = [self.instance.project.filename.encode() or b'dummy_filename'] + [x.encode() for x in args_edit.toPlainText().split()]
+
+        args_edit.textChanged.connect(handle_args)
+
+        layout.addWidget(args_label, row, 0)
+        layout.addWidget(args_edit, row, 1)
+        row += 1
+
 
         # fs_mount
         fs_label = QLabel(self)
@@ -340,7 +365,7 @@ class NewState(QDialog):
                 elif template == 'call':
                     self.state = factory.call_state(addr, mode=mode, options=self._options)
                 elif template == 'entry':
-                    self.state = factory.entry_state(mode=mode, options=self._options)
+                    self.state = factory.entry_state(mode=mode, options=self._options, args=self._args)
                 else:
                     self.state = factory.full_init_state(mode=mode, options=self._options)
                 self.state.gui_data.base_name = name
