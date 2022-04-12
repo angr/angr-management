@@ -6,6 +6,7 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QDialog
 from PySide2.QtCore import Qt
 import angr
 
+from .socket_config import SocketConfig
 from ..widgets import QStateComboBox
 from ...utils.namegen import NameGenerator
 from ...ui.dialogs.fs_mount import FilesystemMount
@@ -69,6 +70,8 @@ class NewState(QDialog):
         self._ok_button = None
 
         self._fs_config = None  # type: List[(str,str)]
+
+        self._sockets_config = None
 
         self.setWindowTitle('New State')
 
@@ -194,6 +197,25 @@ class NewState(QDialog):
             fs_button.setText("{} Items".format(len(self._fs_config)))
 
         fs_button.clicked.connect(fs_edit_button)
+
+        row += 1
+
+        # socket support
+        socket_label = QLabel(self)
+        socket_label.setText("Sockets")
+        socket_button = QPushButton(self)
+        socket_button.setText("Change")
+
+        layout.addWidget(socket_label, row, 0)
+        layout.addWidget(socket_button, row, 1)
+
+        def socket_edit_button():
+            socket_dialog = SocketConfig(socket_config=self._sockets_config, instance=self.instance)
+            socket_dialog.exec_()
+            self._sockets_config = socket_dialog.socket_config
+            #socket_button.setText("{} Items".format(len(self._sockets_config)))
+
+        socket_button.clicked.connect(socket_edit_button)
 
         row += 1
 
@@ -334,6 +356,9 @@ class NewState(QDialog):
                         fs = angr.SimHostFilesystem(real)
                         fs.set_state(self.state)
                         self.state.fs.mount(path, fs)
+
+            if self._sockets_config:
+                self.state.posix.sockets = self._sockets_config.convert()
 
             if self._push_to_instance:
                 states_list = self.instance.states
