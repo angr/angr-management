@@ -202,6 +202,13 @@ class BasePlugin:
     def handle_struct_changed(self, old_struct, new_struct):
         return False
 
+    def decompile_callback(self, func):
+        """
+        A callback that is called *right after* the decompiler is run on a function. You can access the current codegen
+        with ``self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')]``
+        :param func:        angr Function that was just decompiled
+        """
+
     def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
         """
         A handler that is called *right before* function stack variable is renamed. Note: this does not directly
@@ -262,5 +269,5 @@ class BasePlugin:
 
     def handle_project_initialization(self):
         """
-        A handler to set up the project name for logging.
+        A handler to perform any initialization when a new project is loaded
         """

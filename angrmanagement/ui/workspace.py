@@ -679,11 +679,11 @@ class Workspace:
                 for insn in selected_insns:
                     self.instance.breakpoint_mgr.toggle_exec_breakpoint(insn)
 
-    def step_forward(self):
+    def step_forward(self, until_addr: Optional[int] = None):
         if self.instance is None:
             return
 
-        self.instance.debugger_mgr.debugger.step_forward()
+        self.instance.debugger_mgr.debugger.step_forward(until_addr=until_addr)
 
     def continue_forward(self):
         if self.instance is None:

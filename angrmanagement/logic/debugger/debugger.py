@@ -57,7 +57,7 @@ class Debugger:
         """
         return False
 
-    def step_forward(self):
+    def step_forward(self, until_addr: Optional[int] = None):
         """
         Step forward by one machine instruction.
         """

@@ -1,5 +1,6 @@
 import functools
 import logging
+from typing import Optional
 
 from angr import SimState
 
@@ -61,7 +62,9 @@ class SimulationDebugger(Debugger):
     def can_step_forward(self) -> bool:
         return not self._sim_mgr.am_none and self.is_halted and len(self._sim_mgr.stashes['active']) > 0
 
-    def step_forward(self):
+    def step_forward(self, until_addr: Optional[int] = None):
+        if until_addr is not None:
+            _l.warning('Step-until not implemented for SimulationDebugger')
         if self.can_step_forward:
             self._sim_mgr_view._on_step_clicked()
 
