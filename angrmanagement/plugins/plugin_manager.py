@@ -366,17 +366,6 @@ class PluginManager:
                 return True
         return False
 
-    def decompile_callback(self, func):
-        for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
-            pass
-
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
-        for res in self._dispatch(BasePlugin.handle_variable_rename, False,
-                                  func, offset, old_name, new_name, type_, size):
-            if res:
-                return True
-        return False
-
     def handle_func_arg_renamed(self, func, offset, old_name, new_name):
         for res in self._dispatch(BasePlugin.handle_func_arg_renamed, False, func, offset, old_name, new_name):
             if res:
@@ -424,6 +413,10 @@ class PluginManager:
             if res:
                 return True
         return False
+
+    def decompile_callback(self, func):
+        for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
+            pass
 
     def handle_project_initialization(self):
         for _ in self._dispatch(BasePlugin.handle_project_initialization, False):
