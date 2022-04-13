@@ -172,7 +172,7 @@ class BasePlugin:
     # Decompiler Callbacks
     #
 
-    def handle_stack_var_renamed(self, func, offset, old_type, new_type):
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         return False
 
     def handle_stack_var_retyped(self, func, offset, old_type, new_type):
