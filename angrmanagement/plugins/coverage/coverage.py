@@ -9,11 +9,12 @@ from typing import List, Iterator
 
 from angr.sim_manager import SimulationManager
 from angrmanagement.config import Conf
+from angrmanagement.errors import UnexpectedStatusCodeError
+from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.widgets.qblock import QBlock
 from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
 from angrmanagement.utils.io import isurl, download_url
-from angrmanagement.errors import UnexpectedStatusCodeError
 
 from .parse_trace import trace_to_bb_addrs
 
@@ -99,6 +100,16 @@ class CoveragePlugin(BasePlugin):
     def stop(self):
         self.running = False
 
+    def _coverage_of_func(self, func):
+        """
+        return (set of covered_bbls, and num_of_function_bbls)
+        """
+        func_bbls = func.block_addrs_set
+        with self.coverage_lock:
+            covered_bbls = self.bbl_coverage & func_bbls
+
+        return covered_bbls, len(func_bbls)
+
     def color_block(self, addr):
         if not self.running:
             return None
@@ -110,16 +121,12 @@ class CoveragePlugin(BasePlugin):
         if not self.running:
             return None
 
-        func_bbls = func.block_addrs_set
-        total_bbls = len(func_bbls)
+        covered_bbls, total_bbls = self._coverage_of_func(func)
 
         # Be paranoid
         if total_bbls == 0:
             return None
         
-        with self.coverage_lock:
-            covered_bbls = self.bbl_coverage & func_bbls
-
         # Never want to highlight something that wasn't covered
         if len(covered_bbls) == 0:
             return None
@@ -129,16 +136,39 @@ class CoveragePlugin(BasePlugin):
         gradient_number = math.ceil(fraction_covered * len(self.gradients))
         return self.gradients[gradient_number-1]
 
+    FUNC_COLUMNS = ('Coverage',)
+    def extract_func_column(self, func, idx):
+        assert idx == 0
+        if not self.running:
+            return 0, "0%"
+
+        covered_bbls, total_bbls = self._coverage_of_func(func)
+        if len(covered_bbls) == 0:
+            return 0, "0%"
+
+        fraction_covered = len(covered_bbls) / total_bbls
+
+        return fraction_covered, f"{int(round(fraction_covered*100,0))}%"
+
+    def _refresh_gui(self):
+        self.workspace.refresh()
+
     def reset_coverage(self):
         with self.coverage_lock:
             self.seen_traces = set()
             self.bbl_coverage = set()
+            self.bbl_coverage_hash = 0
 
     def update_coverage_from_list(self, trace_addrs):
         l.info(f"Processing {len(trace_addrs)} from the trace")
         with self.coverage_lock:
             for addr in trace_addrs:
                 self.bbl_coverage.add(addr)
+
+        new_hash = hash(frozenset(self.bbl_coverage))
+        if new_hash != self.bbl_coverage_hash:
+            self.bbl_coverage_hash = new_hash
+            gui_thread_schedule(self._refresh_gui)
             
     def update_coverage(self):
         session = self.slacrs_instance.session()
