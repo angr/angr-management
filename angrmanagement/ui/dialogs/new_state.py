@@ -8,6 +8,8 @@ from PySide2.QtCore import Qt
 import angr
 import claripy
 
+from angrmanagement.ui.dialogs.env_config import EnvConfig
+
 from .socket_config import SocketConfig
 from ..widgets import QStateComboBox
 from ...utils.namegen import NameGenerator
@@ -72,6 +74,7 @@ class NewState(QDialog):
         self._ok_button = None
         
         self._args = None # type: typing.List[str]
+        self._env_config = None # type: List[(str,str)]
         self._fs_config = None  # type: List[(str,str)]
         self._sockets_config = None
 
@@ -205,6 +208,25 @@ class NewState(QDialog):
         layout.addWidget(args_edit, row, 1)
         row += 1
 
+
+        # env_config
+        env_label = QLabel(self)
+        env_label.setText('Environment')
+        env_button = QPushButton(self)
+        env_button.setText("Change")
+
+        layout.addWidget(env_label, row, 0)
+        layout.addWidget(env_button, row, 1)
+
+        def env_edit_button():
+            env_dialog = EnvConfig(env_config=self._env_config, instance=self.instance, parent=self)
+            env_dialog.exec_()
+            self._env_config = env_dialog.env_config
+            env_button.setText("{} Items".format(len(self._env_config)))
+
+        env_button.clicked.connect(env_edit_button)
+
+        row += 1
 
         # fs_mount
         fs_label = QLabel(self)
@@ -365,7 +387,7 @@ class NewState(QDialog):
                 elif template == 'call':
                     self.state = factory.call_state(addr, mode=mode, options=self._options)
                 elif template == 'entry':
-                    self.state = factory.entry_state(mode=mode, options=self._options, args=self._args)
+                    self.state = factory.entry_state(mode=mode, options=self._options, args=self._args, env=dict(self._env_config))
                 else:
                     self.state = factory.full_init_state(mode=mode, options=self._options)
                 self.state.gui_data.base_name = name
