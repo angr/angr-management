@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
 
 from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QLineEdit
@@ -112,15 +112,15 @@ class RetypeNode(QDialog):
     # Private methods
     #
 
-    def _get_predefined_types(self) -> List['SimType']:
+    def _get_predefined_types(self) -> Dict[Any,'SimType']:
         # global types
-        r = list(self._instance.kb.types.values())
+        r = dict(self._instance.kb.types)
         # local types
         if not self._code_view.function.am_none:
             func_addr = self._code_view.function.addr
             if (func_addr, 'pseudocode') in self._instance.kb.structured_code:
                 pseudocode_cache = self._instance.kb.structured_code[(func_addr, 'pseudocode')]
-                r += list(pseudocode_cache.local_types.values())
+                r.update(pseudocode_cache.local_types)
         return r
 
     def _init_widgets(self):
