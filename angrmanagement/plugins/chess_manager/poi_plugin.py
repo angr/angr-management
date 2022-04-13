@@ -74,7 +74,7 @@ class POIViewer(BasePlugin):
             view.refresh()
 
     #
-    # workspace initialiZation
+    # workspace initialization
     #
 
     def on_workspace_initialized(self, _):
