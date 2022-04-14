@@ -5,22 +5,16 @@ import math
 import threading
 import time
 
-from typing import List, Iterator
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+from PySide2.QtGui import QColor
 
-from angr.sim_manager import SimulationManager
 from angrmanagement.config import Conf
 from angrmanagement.errors import UnexpectedStatusCodeError
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.widgets.qblock import QBlock
-from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
-from angrmanagement.utils.io import isurl, download_url
+from angrmanagement.utils.io import download_url
 
 from .parse_trace import trace_to_bb_addrs
-
-from PySide2.QtGui import QColor
-
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 l = logging.getLogger(__name__)
 
@@ -28,7 +22,7 @@ try:
     import slacrs.model
 except ImportError as ex:
     l.error("You don't have slacrs module installed locally, CoveragePlugin going to have a bad time.")
-    pass
+
 
 def generate_light_gradients(color, number, lightness=20):
     """
@@ -37,7 +31,7 @@ def generate_light_gradients(color, number, lightness=20):
     each lightness (%) lighter.
     """
     to_return = [color]
-    for i in range(number):
+    for _ in range(number):
         last_color = to_return[-1]
         to_return.append(last_color.lighter(100+lightness))
     to_return.reverse()
@@ -46,7 +40,12 @@ def generate_light_gradients(color, number, lightness=20):
 # TODO: This should really be a property of the target
 TRACE_BASE = 0x4000000000
 
+
 class CoveragePlugin(BasePlugin):
+    """
+    Implements the fuzzing coverage view.
+    """
+
     def __init__(self, workspace):
         super().__init__(workspace)
 
@@ -71,7 +70,7 @@ class CoveragePlugin(BasePlugin):
 
         self.coverage_lock = threading.Lock()
         self.reset_coverage()
-        
+
     MENU_BUTTONS = [
         'Start Showing Coverage',
         'Stop Showing Coverage',
@@ -82,14 +81,14 @@ class CoveragePlugin(BasePlugin):
     def handle_click_menu(self, idx):
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
-        
+
         mapping = {
             self.START_SHOWING_COVERAGE: self.start,
             self.STOP_SHOWING_COVERAGE: self.stop,
         }
 
         mapping.get(idx)()
-        
+
     def start(self):
         self.running = True
         self.slacrs_thread = threading.Thread(target=self.listen_for_events)
@@ -117,6 +116,7 @@ class CoveragePlugin(BasePlugin):
         with self.coverage_lock:
             if addr in self.bbl_coverage:
                 return QColor(0, 20, 147)
+        return None
 
     def color_func(self, func):
         if not self.running:
@@ -127,7 +127,7 @@ class CoveragePlugin(BasePlugin):
         # Be paranoid
         if total_bbls == 0:
             return None
-        
+
         # Never want to highlight something that wasn't covered
         if len(covered_bbls) == 0:
             return None
@@ -138,6 +138,7 @@ class CoveragePlugin(BasePlugin):
         return self.gradients[gradient_number-1]
 
     FUNC_COLUMNS = ('Coverage',)
+
     def extract_func_column(self, func, idx):
         assert idx == 0
         if not self.running:
@@ -161,7 +162,7 @@ class CoveragePlugin(BasePlugin):
             self.bbl_coverage_hash = 0
 
     def update_coverage_from_list(self, trace_addrs):
-        l.info(f"Processing {len(trace_addrs)} from the trace")
+        l.info("Processing %d from the trace", len(trace_addrs))
         with self.coverage_lock:
             for addr in trace_addrs:
                 self.bbl_coverage.add(addr)
@@ -170,47 +171,48 @@ class CoveragePlugin(BasePlugin):
         if new_hash != self.bbl_coverage_hash:
             self.bbl_coverage_hash = new_hash
             gui_thread_schedule(self._refresh_gui)
-            
+
     def update_coverage(self):
         session = self.slacrs_instance.session()
         if session:
             for trace in session.query(slacrs.model.Trace).filter(
-                    slacrs.model.Trace.input.has(target_image_id=self.connector.target_image_id)).order_by(slacrs.model.Trace.created_at):
+                    slacrs.model.Trace.input.has(target_image_id=self.connector.target_image_id)
+            ).order_by(slacrs.model.Trace.created_at):
                 if not self.running:
                     break
                 self.update_one_coverage(trace)
-    
+
     def update_one_coverage(self, trace):
         with self.coverage_lock:
             if trace.id in self.seen_traces:
-                l.info(f"Already seen trace {trace.id}, skipping")
+                l.info("Already seen trace %s, skipping", trace.id)
                 return
-            
-        l.info(f"Processing trace {trace.id} {trace.input_id} {trace.created_at}")
+
+        l.info("Processing trace %s %s %s", trace.id, trace.input_id, trace.created_at)
 
         if not Conf.checrs_rest_endpoint_url:
-            l.error(f"Unable to fetch trace {trace.id} because there is no CHECRS REST endpoint.")
+            l.error("Unable to fetch trace %d because there is no CHECRS REST endpoint.", trace.id)
             return
 
         url = f"{Conf.checrs_rest_endpoint_url}v1/targets/{self.connector.target_image_id}/seeds/{trace.input_id}/trace"
         try:
             trace_bytes = download_url(url, parent=self.workspace._main_window, to_file=False)
         except UnexpectedStatusCodeError:
-            l.exception(f"Unable to download {url}")
+            l.exception("Unable to download %s.", url)
             return
         try:
             parsed_trace = json.loads(trace_bytes)
-        except json.JSONDecodeError as ex:
-            l.exception("Unable to parse {url} as JSON")
+        except json.JSONDecodeError:
+            l.exception("Unable to parse %s as JSON.", url)
             return
 
         bbl_addrs = trace_to_bb_addrs(parsed_trace, self.workspace.instance.project, TRACE_BASE)
         self.update_coverage_from_list(bbl_addrs)
-        
+
         with self.coverage_lock:
             self.seen_traces.add(trace.id)
-        l.info(f"Done processing trace {trace.id}")
-    
+        l.info("Done processing trace %s.", trace.id)
+
     def listen_for_events(self):
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while not self.connector and self.running:

@@ -2,11 +2,17 @@ import bisect
 import os
 import logging
 
-from typing import Dict, Any, List, Set, Optional
+from angr.errors import SimEngineError
+
+from typing import Dict, List, Optional
 
 l = logging.getLogger(__name__)
 
+
 class ObjectAndBase:
+    """
+    Groups an object and its base address.
+    """
 
     __slots__ = ('obj_name', 'base_addr', )
 
@@ -21,6 +27,7 @@ class ObjectAndBase:
             return self.base_addr < other
         raise TypeError("Unsupported type %s" % type(other))
 
+
 def _valid_addr(addr, project):
     if not addr and addr != 0:
         return None
@@ -28,6 +35,7 @@ def _valid_addr(addr, project):
         return project.factory.block(addr)
     except SimEngineError:
         return None
+
 
 def _find_object_base_in_project(object_name, project):
     base_addr = None
@@ -41,11 +49,15 @@ def _find_object_base_in_project(object_name, project):
             base_addr = obj.mapped_base
             break
     if base_addr is None:
-        l.warning(f"Cannot find object {object_name} in angr project. Maybe it has not been loaded. Exclude it from the trace.")
+        l.warning("Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the trace.",
+                  object_name)
     return base_addr
-        
 
-def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr, state = {}):
+
+def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr, state=None):
+    if state is None:
+        state = {}
+
     if mapping is not None and mapping:
         # find the base address that this address belongs to
         idx = bisect.bisect_left(mapping, addr)
@@ -102,5 +114,7 @@ def trace_to_bb_addrs(trace, project, trace_base):
     runtime_baddr = trace_base # this will not be used if self.mapping is available
 
     # convert over all the trace adders using info from the trace
-    to_return = filter(lambda a: _valid_addr(a, project), [_apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr) for addr in bbl_addrs])
+    to_return = filter(lambda a: _valid_addr(a, project), [
+        _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr) for addr in bbl_addrs
+    ])
     return list(to_return)
