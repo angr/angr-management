@@ -23,7 +23,6 @@ from PySide2.QtGui import QColor
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 l = logging.getLogger(__name__)
-l.setLevel(logging.INFO)
 
 try:
     import slacrs.model
@@ -96,9 +95,11 @@ class CoveragePlugin(BasePlugin):
         self.slacrs_thread = threading.Thread(target=self.listen_for_events)
         self.slacrs_thread.setDaemon(True)
         self.slacrs_thread.start()
+        gui_thread_schedule(self._refresh_gui)
 
     def stop(self):
         self.running = False
+        gui_thread_schedule(self._refresh_gui)
 
     def _coverage_of_func(self, func):
         """
@@ -175,6 +176,8 @@ class CoveragePlugin(BasePlugin):
         if session:
             for trace in session.query(slacrs.model.Trace).filter(
                     slacrs.model.Trace.input.has(target_image_id=self.connector.target_image_id)).order_by(slacrs.model.Trace.created_at):
+                if not self.running:
+                    break
                 self.update_one_coverage(trace)
     
     def update_one_coverage(self, trace):
@@ -239,6 +242,8 @@ class CoveragePlugin(BasePlugin):
                 if e.kind == "trace":
                     obj = e.get_object(session)
                     if session.query(slacrs.model.Trace).filter_by(id=e.object_id) == 1:
+                        if not self.running:
+                            break
                         trace = session.query(slacrs.model.Trace).filter_by(obj.object_id).one()
                         self.update_one_coverage(trace)
                 session.close()
