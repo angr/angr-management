@@ -68,6 +68,10 @@ class CoveragePlugin(BasePlugin):
         self.running = False
         self.slacrs_thread = None
 
+        self.seen_traces = None
+        self.bbl_coverage = None
+        self.bbl_coverage_hash = 0
+
         self.coverage_lock = threading.Lock()
         self.reset_coverage()
 

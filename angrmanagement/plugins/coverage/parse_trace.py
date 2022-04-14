@@ -1,10 +1,10 @@
 import bisect
 import os
 import logging
+from typing import Dict, List, Optional
 
 from angr.errors import SimEngineError
 
-from typing import Dict, List, Optional
 
 l = logging.getLogger(__name__)
 
