@@ -54,10 +54,7 @@ def _find_object_base_in_project(object_name, project):
     return base_addr
 
 
-def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr, state=None):
-    if state is None:
-        state = {}
-
+def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr, state={}):
     if mapping is not None and mapping:
         # find the base address that this address belongs to
         idx = bisect.bisect_left(mapping, addr)
