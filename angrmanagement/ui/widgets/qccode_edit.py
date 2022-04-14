@@ -252,7 +252,8 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
             return
-        dialog = RetypeNode(code_view=self._code_view, node=node, node_type=node_type, variable=node.variable)
+        dialog = RetypeNode(self.workspace.instance, code_view=self._code_view, node=node,
+                            node_type=node_type, variable=node.variable)
         dialog.exec_()
 
         new_node_type = dialog.new_type
