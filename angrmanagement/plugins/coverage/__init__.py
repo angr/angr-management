@@ -1,0 +1,1 @@
+from .coverage import CoveragePlugin
