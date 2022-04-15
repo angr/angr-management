@@ -190,6 +190,12 @@ class BasePlugin:
     def handle_global_var_retyped(self, address, old_type, new_type):
         return False
 
+    def handle_other_var_renamed(self, var, old_name, new_name):
+        return False
+
+    def handle_other_var_retyped(self, var, old_type, new_type):
+        return False
+
     def handle_function_renamed(self, func, old_name, new_name):
         return False
 

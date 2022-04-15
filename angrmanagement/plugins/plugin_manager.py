@@ -390,6 +390,18 @@ class PluginManager:
                 return True
         return False
 
+    def handle_other_var_renamed(self, var, old_name, new_name):
+        for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_other_var_retyped(self, var, old_type, new_type):
+        for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type):
+            if res:
+                return True
+        return False
+
     def handle_function_renamed(self, func, old_name, new_name):
         for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name):
             if res:
