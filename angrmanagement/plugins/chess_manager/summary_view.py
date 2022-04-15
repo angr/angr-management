@@ -1,9 +1,11 @@
+# pylint:disable=missing-class-docstring
 from typing import TYPE_CHECKING
 import json
 import threading
 import datetime
 from time import sleep
 
+from sqlalchemy import func as sqlalchemy_func
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, \
     QAbstractItemView, QTableWidgetItem, QWidget, QTabWidget, QLabel
@@ -16,8 +18,6 @@ try:
     from slacrs.model import PluginMessage
 except ImportError as ex:
     Slacrs = None
-
-from sqlalchemy import func as sqlalchemy_func
 
 if TYPE_CHECKING:
     from .chess_connector import ChessConnector
@@ -208,8 +208,8 @@ class QFuzztainerTable(QTableWidget):
             if msg.plugin.lower() == "fuzztainer" and msg.kind == "info":
                 try:
                     stats = json.loads(msg.message)
-                except Exception as e:
-                    print(e)
+                except Exception as ex:  # pylint:disable=broad-except
+                    print(ex)
                     continue
 
                 try:
@@ -231,7 +231,7 @@ class QFuzztainerTable(QTableWidget):
 
 class SummaryView(BaseView):
     def __init__(self, workspace, default_docking_position, connector: 'ChessConnector', *args, **kwargs):
-        super(SummaryView, self).__init__("chess_summary", workspace, default_docking_position, *args, **kwargs)
+        super().__init__("chess_summary", workspace, default_docking_position, *args, **kwargs)
         self.base_caption = "CHESS"
 
         self.workspace = workspace
@@ -240,7 +240,7 @@ class SummaryView(BaseView):
         self._init_widgets()
 
         # start the worker routine
-        self.should_work = True
+        self.should_work = Slacrs is not None
         self.worker_thread = threading.Thread(target=self.worker_routine)
         self.worker_thread.setDaemon(True)
         self.worker_thread.start()
@@ -353,7 +353,8 @@ class SummaryView(BaseView):
         session = slacrs_instance.session()
         return session
 
-    def _find_latest_fuzztainer_stats(self, messages):
+    @staticmethod
+    def _find_latest_fuzztainer_stats(messages):
         messages = messages[::-1]
         for msg in messages:
             if msg.plugin.lower() == "fuzztainer" and msg.kind == "info":
