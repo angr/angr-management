@@ -1,13 +1,13 @@
 import bisect
-import os
+import functools
 import logging
+import os
 from typing import Dict, List, Optional
 
 from angr.errors import SimEngineError
 
 
 l = logging.getLogger(__name__)
-
 
 class ObjectAndBase:
     """
@@ -36,7 +36,7 @@ def _valid_addr(addr, project):
     except SimEngineError:
         return None
 
-
+@functools.lru_cache(1024)
 def _find_object_base_in_project(object_name, project):
     base_addr = None
     base_obj_name = os.path.basename(object_name)
@@ -54,7 +54,7 @@ def _find_object_base_in_project(object_name, project):
     return base_addr
 
 
-def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr, state={}):
+def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr):
     if mapping is not None and mapping:
         # find the base address that this address belongs to
         idx = bisect.bisect_left(mapping, addr)
@@ -71,11 +71,7 @@ def _apply_trace_offset(addr, project, mapping, project_baddr, runtime_baddr, st
                 obj = mapping[idx - 1]
 
             if obj is not None:
-                if obj.obj_name in state:
-                    project_base_addr = state[obj.obj_name]
-                else:
-                    project_base_addr = _find_object_base_in_project(obj.obj_name, project)
-                    state[obj.obj_name] = project_base_addr
+                project_base_addr = _find_object_base_in_project(obj.obj_name, project.am_obj)
                 if project_base_addr is not None:
                     return addr + (project_base_addr - obj.base_addr)
                 else:
