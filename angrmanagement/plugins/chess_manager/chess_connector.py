@@ -241,15 +241,16 @@ class ChessConnector(BasePlugin):
                                        parent=self.workspace.main_window)
         dialog.exec_()
 
-        if dialog.target_id:
-            self.target_id = dialog.target_id
-            self.target_image_id = dialog.target_image_id
-            self.target_description = dialog.target_description
-        else:
-            self.target_id = None
-            self.target_image_id = None
-            self.target_description = None
-        self.target_id_updated()
+        if dialog.ok:
+            if dialog.target_id:
+                self.target_id = dialog.target_id
+                self.target_image_id = dialog.target_image_id
+                self.target_description = dialog.target_description
+            else:
+                self.target_id = None
+                self.target_image_id = None
+                self.target_description = None
+            self.target_id_updated()
 
     CONFIG_ENTRIES = [
         ConfigurationEntry("checrs_backend_str", str, "", default_value=""),
