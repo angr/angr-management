@@ -17,6 +17,8 @@ try:
 except ImportError as ex:
     Slacrs = None
 
+from sqlalchemy import func as sqlalchemy_func
+
 if TYPE_CHECKING:
     from .chess_connector import ChessConnector
 
@@ -203,7 +205,7 @@ class QFuzztainerTable(QTableWidget):
 
         messages = messages[::-1]
         for msg in messages:
-            if msg.plugin == "fuzztainer" and msg.kind == "info":
+            if msg.plugin.lower() == "fuzztainer" and msg.kind == "info":
                 try:
                     stats = json.loads(msg.message)
                 except Exception as e:
@@ -309,8 +311,14 @@ class SummaryView(BaseView):
             if self.connector is None or not self.connector.connected:
                 gui_thread_schedule_async(self.set_status, args=('Not connected to CHECRS backend.',))
                 sleep(10)
-            else:
-                sleep(5)
+                continue
+
+            if not self.connector.target_image_id:
+                gui_thread_schedule_async(self.set_status, args=('No associated remote target.',))
+                sleep(2)
+                continue
+
+            sleep(5)
 
             gui_thread_schedule_async(self.set_status, args=('Refreshing...', ))
             session = None
@@ -320,7 +328,7 @@ class SummaryView(BaseView):
                 if not session:
                     continue
 
-                self._update_tables(session)
+                self._update_tables(session, self.connector.target_image_id)
             finally:
                 if session is not None:
                     session.close()
@@ -348,7 +356,7 @@ class SummaryView(BaseView):
     def _find_latest_fuzztainer_stats(self, messages):
         messages = messages[::-1]
         for msg in messages:
-            if msg.plugin == "fuzztainer" and msg.kind == "info":
+            if msg.plugin.lower() == "fuzztainer" and msg.kind == "info":
                 try:
                     stats = json.loads(msg.message)
                 except Exception as e:
@@ -364,8 +372,14 @@ class SummaryView(BaseView):
                 return [msg]
         return None
 
-    def _update_tables(self, session):
-        res = session.query(PluginMessage)
+    def _update_tables(self, session, target_image_id: str):
+        res = session.query(PluginMessage).filter(
+            sqlalchemy_func.lower(PluginMessage.plugin)=="fuzztainer",
+            PluginMessage.kind=="info",
+            PluginMessage.target_image_id==target_image_id,
+        ).order_by(
+            PluginMessage.created_at.desc()
+        ).limit(50)
         if not res:
             return
 
@@ -374,6 +388,6 @@ class SummaryView(BaseView):
             return
 
         fuzztainer_msgs = self._find_latest_fuzztainer_stats(messages)
-        self.log_table.update_table(messages[-50:])
+        self.log_table.update_table(messages)
         self.fuzztainer_table_1.update_table(fuzztainer_msgs)
         self.fuzztainer_table_2.update_table(fuzztainer_msgs)

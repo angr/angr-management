@@ -144,6 +144,7 @@ class QTargetSelectorDialog(QDialog):
         self.target_id: Optional[str] = None
         self.target_image_id: Optional[str] = None
         self.target_description: Optional[str] = None
+        self.ok: bool = False
         self.setMinimumWidth(400)
 
         self._status_label: QLabel = None
@@ -237,9 +238,11 @@ class QTargetSelectorDialog(QDialog):
         self.target_id = target.target_id
         self.target_description = target.description
         self.target_image_id = target.image_id
+        self.ok = True
         self.close()
 
     def _on_cancel_button_clicked(self):
         self.target_id = None
         self.target_description = None
+        self.ok = False
         self.close()
