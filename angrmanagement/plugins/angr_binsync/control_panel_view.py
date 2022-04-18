@@ -1,10 +1,11 @@
 import logging
 from PySide2.QtWidgets import QVBoxLayout
 
+from binsync.common.ui import set_ui_version
+
 from .controller import AngrBinSyncController
 from ...ui.views.view import BaseView
 
-from binsync.common.ui import set_ui_version
 set_ui_version("PySide2")
 # pylint: disable=wrong-import-position
 from binsync.common.ui.control_panel import ControlPanel
