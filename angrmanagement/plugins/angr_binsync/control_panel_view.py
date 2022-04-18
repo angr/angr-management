@@ -7,7 +7,7 @@ from .controller import AngrBinSyncController
 from ...ui.views.view import BaseView
 
 set_ui_version("PySide2")
-# pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position,wrong-import-order
 from binsync.common.ui.control_panel import ControlPanel
 
 
