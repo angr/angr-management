@@ -1,18 +1,16 @@
 import os
-import logging
-
-from angrmanagement.ui.views import CodeView
-from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
-from angr import knowledge_plugins
-import angr
-import logging
 
 from binsync.common.controller import *
-from binsync.data import StackOffsetType, Function, FunctionHeader
+from binsync.data import StackOffsetType, FunctionHeader
 import binsync
+
+from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
+import angr
+from ...ui.views import CodeView
 
 
 l = logging.getLogger(__name__)
+
 
 class AngrBinSyncController(BinSyncController):
     """
@@ -22,7 +20,7 @@ class AngrBinSyncController(BinSyncController):
     """
 
     def __init__(self, workspace):
-        super(AngrBinSyncController, self).__init__()
+        super().__init__()
         self._workspace = workspace
         self._instance = workspace.instance
 
@@ -49,6 +47,7 @@ class AngrBinSyncController(BinSyncController):
     def binary_path(self) -> Optional[str]:
         try:
             return self._instance.project.loader.main_object.binary
+        # pylint: disable=broad-except
         except Exception:
             return None
 
@@ -110,6 +109,7 @@ class AngrBinSyncController(BinSyncController):
                 try:
                     pos = decompilation.map_addr_to_pos.get_nearest_pos(addr)
                     corrected_addr = decompilation.map_pos_to_addr.get_node(pos).tags['ins_addr']
+                # pylint: disable=broad-except
                 except Exception:
                     break
 
@@ -146,6 +146,7 @@ class AngrBinSyncController(BinSyncController):
 
     @init_checker
     @make_state_with_func
+    # pylint: disable=unused-argument
     def push_comment(self, addr, cmt, decompiled, func_addr=None, user=None, state=None):
         sync_cmt = binsync.data.Comment(addr, cmt, decompiled=decompiled)
         return state.set_comment(sync_cmt)
@@ -196,7 +197,8 @@ class AngrBinSyncController(BinSyncController):
 
         return None
 
-    def stack_var_type_str(self, decompilation, stack_var: angr.sim_variable.SimStackVariable):
+    @staticmethod
+    def stack_var_type_str(decompilation, stack_var: angr.sim_variable.SimStackVariable):
         try:
             var_type = decompilation.cfunc.variable_manager.get_variable_type(stack_var)
         except Exception:
@@ -204,7 +206,8 @@ class AngrBinSyncController(BinSyncController):
 
         return var_type.c_repr()
 
-    def get_func_args(self, decompilation):
+    @staticmethod
+    def get_func_args(decompilation):
         arg_info = {
             i: (arg.variable, decompilation.cfunc.functy.args[i].c_repr())
             for i, arg in enumerate(decompilation.cfunc.arg_list)

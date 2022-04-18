@@ -1,14 +1,14 @@
 import logging
-from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.workspace import Workspace
 
 import binsync
-from .control_panel_view import ControlPanelView
-from .controller import AngrBinSyncController
-
 from binsync.common.ui import set_ui_version
 set_ui_version("PySide2")
 from binsync.common.ui.config_dialog import SyncConfig
+
+from ...plugins import BasePlugin
+from ...ui.workspace import Workspace
+from .control_panel_view import ControlPanelView
+from .controller import AngrBinSyncController
 
 l = logging.getLogger(__name__)
 
@@ -89,16 +89,18 @@ class BinSyncPlugin(BasePlugin):
     #   BinSync Decompiler Hooks
     #
 
+    # pylint: disable=unused-argument
     def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         decompilation = self.controller.decompile_function(func)
         stack_var = self.controller.find_stack_var_in_codegen(decompilation, offset)
-        var_type = self.controller.stack_var_type_str(decompilation, stack_var)
+        var_type = AngrBinSyncController.stack_var_type_str(decompilation, stack_var)
 
         self.controller.make_controller_cmd(
             self.controller.push_stack_variable, func.addr, offset, new_name, var_type, stack_var.size
         )
         return False
 
+    # pylint: disable=unused-argument
     def handle_stack_var_retyped(self, func, offset, old_type, new_type):
         decompilation = self.controller.decompile_function(func)
         stack_var = self.controller.find_stack_var_in_codegen(decompilation, offset)
@@ -108,9 +110,10 @@ class BinSyncPlugin(BasePlugin):
         )
         return False
 
+    # pylint: disable=unused-argument
     def handle_func_arg_renamed(self, func, offset, old_name, new_name):
         decompilation = self.controller.decompile_function(func)
-        func_args = self.controller.get_func_args(decompilation)
+        func_args = AngrBinSyncController.get_func_args(decompilation)
         func_type = decompilation.cfunc.functy.returnty.c_repr()
         bs_args = {
             i: binsync.FunctionArgument(i, var_info[0].name, var_info[1], var_info[0].size)
@@ -123,9 +126,10 @@ class BinSyncPlugin(BasePlugin):
         )
         return False
 
+    # pylint: disable=unused-argument
     def handle_func_arg_retyped(self, func, offset, old_type, new_type):
         decompilation = self.controller.decompile_function(func)
-        func_args = self.controller.get_func_args(decompilation)
+        func_args = AngrBinSyncController.get_func_args(decompilation)
         func_type = decompilation.cfunc.functy.returnty.c_repr()
         bs_args = {
             i: binsync.FunctionArgument(i, var_info[0].name, var_info[1], var_info[0].size)
@@ -138,12 +142,15 @@ class BinSyncPlugin(BasePlugin):
         )
         return False
 
+    # pylint: disable=unused-argument,no-self-use
     def handle_global_var_renamed(self, address, old_name, new_name):
         return False
 
+    # pylint: disable=unused-argument,no-self-use
     def handle_global_var_retyped(self, address, old_type, new_type):
         return False
 
+    # pylint: disable=unused-argument
     def handle_function_renamed(self, func, old_name, new_name):
         self.controller.make_controller_cmd(
             self.controller.push_function_header,
@@ -151,9 +158,11 @@ class BinSyncPlugin(BasePlugin):
         )
         return False
 
+    # pylint: disable=unused-argument,no-self-use
     def handle_function_retyped(self, func, old_type, new_type):
         return False
 
+    # pylint: disable=unused-argument
     def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
         func_addr = self.controller.get_func_addr_from_addr(address)
         self.controller.make_controller_cmd(
