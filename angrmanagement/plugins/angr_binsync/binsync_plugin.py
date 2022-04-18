@@ -1,18 +1,24 @@
-import logging
-
-import binsync
-from binsync.common.ui import set_ui_version
-set_ui_version("PySide2")
-from binsync.common.ui.config_dialog import SyncConfig
-
 from ...plugins import BasePlugin
 from ...ui.workspace import Workspace
 from .control_panel_view import ControlPanelView
 from .controller import AngrBinSyncController
 
+import binsync
+from binsync.common.ui import set_ui_version
+set_ui_version("PySide2")
+# pylint: disable=wrong-import-position
+from binsync.common.ui.config_dialog import SyncConfig
+
+# pylint: disable=wrong-import-position
+import logging
+
+
 l = logging.getLogger(__name__)
 
 class BinSyncPlugin(BasePlugin):
+    """
+    Controller plugin for BinSync
+    """
     def __init__(self, workspace: Workspace):
         """
         The entry point for the BinSync plugin. This class is respobsible for both initializing the GUI and

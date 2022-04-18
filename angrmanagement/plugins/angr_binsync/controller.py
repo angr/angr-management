@@ -129,6 +129,7 @@ class AngrBinSyncController(BinSyncController):
 
         decompilation.regenerate_text()
         self.decompile_function(func, refresh_gui=True)
+        return True
 
     #
     #   Pushers
@@ -136,19 +137,21 @@ class AngrBinSyncController(BinSyncController):
 
     @init_checker
     @make_state_with_func
+    # pylint: disable=arguments-differ
     def push_function_header(self, addr, new_name, ret_type=None, args=None, user=None, state=None):
         func_header = FunctionHeader(new_name, addr, ret_type=ret_type, args=args)
         return state.set_function_header(func_header)
 
     @init_checker
     @make_state_with_func
+    # pylint: disable=arguments-differ
     def push_stack_variable(self, func_addr, offset, name, type_, size_, user=None, state=None):
         sync_var = binsync.data.StackVariable(offset, StackOffsetType.ANGR, name, type_, size_, func_addr)
         return state.set_stack_variable(sync_var, offset, func_addr)
 
     @init_checker
     @make_state_with_func
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,arguments-differ
     def push_comment(self, addr, cmt, decompiled, func_addr=None, user=None, state=None):
         sync_cmt = binsync.data.Comment(addr, cmt, decompiled=decompiled)
         return state.set_comment(sync_cmt)
@@ -203,6 +206,7 @@ class AngrBinSyncController(BinSyncController):
     def stack_var_type_str(decompilation, stack_var: angr.sim_variable.SimStackVariable):
         try:
             var_type = decompilation.cfunc.variable_manager.get_variable_type(stack_var)
+        # pylint: disable=broad-except
         except Exception:
             return None
 
