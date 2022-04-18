@@ -54,7 +54,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.slacrs_thread.setDaemon(True)
         self.slacrs_thread.start()
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         """
         Log a user's activity of variable renaming.
         """
@@ -70,7 +70,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self._log_list.append(variable_rename)
         l.debug("Add variable rename sesssion to slacrs")
 
-    def handle_function_rename(self, func, old_name: str, new_name: str):
+    def handle_function_renamed(self, func, old_name, new_name):
         """
         Log a user's activity of function renaming.
         """
@@ -132,7 +132,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self._log_list.append(raise_view)
         l.debug("View %s is raised with function %s", view_name, func_name)
 
-    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
+    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
         """
         Log a user's activity of changing comment
         @param new: T if a new comment. We don't log it in slacrs.
@@ -142,13 +142,13 @@ class LogHumanActivitiesPlugin(BasePlugin):
             project=self.project_name,
             project_md5=self.project_md5,
             category=HumanActivityEnum.CommentChanged,
-            addr=addr,
-            cmt=cmt,
+            addr=address,
+            cmt=new_cmt,
             decomp=decomp,
             created_by=self.user,
         )
         self._log_list.append(comment_change)
-        l.debug("Comment is added at %x", addr)
+        l.debug("Comment is added at %x", address)
         return False
 
     def handle_project_initialization(self):

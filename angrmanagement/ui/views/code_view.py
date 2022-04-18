@@ -220,7 +220,7 @@ class CodeView(BaseView):
                 dec_cache = self.workspace.instance.kb.structured_code[(self._function.addr, 'pseudocode')]
                 new_codegen = dec.reflow_variable_types(
                     dec_cache.type_constraints,
-                    dec_cache.var_to_typevar,
+                    dec_cache.var_to_typevar or {},
                     dec_cache.codegen,
                 )
                 # update the cache

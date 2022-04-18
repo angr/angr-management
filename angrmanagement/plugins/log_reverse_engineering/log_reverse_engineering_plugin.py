@@ -30,7 +30,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
             else self.workspace.instance.project.filename
         )
 
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         """
         Logic to check if the same variable has already been renamed, if not add to the current session.
         """
@@ -38,12 +38,12 @@ class LogReverseEngineeringPlugin(BasePlugin):
             new_name = old_name
         variable_rename = (
             self.session.query(VariableRename)
-            .filter(
+                .filter(
                 VariableRename.project == self.project,
                 VariableRename.function == func._name,
                 VariableRename.variable == old_name,
-            )
-            .first()
+                )
+                .first()
         )
         if variable_rename:
             self.session.delete(variable_rename)
@@ -53,8 +53,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
         variable_rename.variable = new_name
         self.session.add(variable_rename)
 
-    #
-    def handle_function_rename(self, func, old_name: str, new_name: str):
+    def handle_function_renamed(self, func, old_name: str, new_name: str):
         """
         Logic to check if the same Function has already been renamed, if not add to the current session.
         """

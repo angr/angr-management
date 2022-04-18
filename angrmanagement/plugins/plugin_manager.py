@@ -354,28 +354,81 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.step_callback,True, simgr):
             pass
 
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
+        for res in self._dispatch(BasePlugin.handle_stack_var_renamed, False, func, offset, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_stack_var_retyped(self, func, offset, old_type, new_type):
+        for res in self._dispatch(BasePlugin.handle_stack_var_retyped, False, func, offset, old_type, new_type):
+            if res:
+                return True
+        return False
+
+    def handle_func_arg_renamed(self, func, offset, old_name, new_name):
+        for res in self._dispatch(BasePlugin.handle_func_arg_renamed, False, func, offset, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_func_arg_retyped(self, func, offset, old_type, new_type):
+        for res in self._dispatch(BasePlugin.handle_func_arg_retyped, False, func, offset, old_type, new_type):
+            if res:
+                return True
+        return False
+
+    def handle_global_var_renamed(self, address, old_name, new_name):
+        for res in self._dispatch(BasePlugin.handle_global_var_renamed, False, address, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_global_var_retyped(self, address, old_type, new_type):
+        for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, address, old_type, new_type):
+            if res:
+                return True
+        return False
+
+    def handle_other_var_renamed(self, var, old_name, new_name):
+        for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_other_var_retyped(self, var, old_type, new_type):
+        for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type):
+            if res:
+                return True
+        return False
+
+    def handle_function_renamed(self, func, old_name, new_name):
+        for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name):
+            if res:
+                return True
+        return False
+
+    def handle_function_retyped(self, func, old_type, new_type):
+        for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type):
+            if res:
+                return True
+        return False
+
+    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
+        for res in self._dispatch(BasePlugin.handle_comment_changed, False, address, old_cmt, new_cmt, created, decomp):
+            if res:
+                return True
+        return False
+
+    def handle_struct_changed(self, old_struct, new_struct):
+        for res in self._dispatch(BasePlugin.handle_struct_changed, False, old_struct, new_struct):
+            if res:
+                return True
+        return False
+
     def decompile_callback(self, func):
         for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
             pass
-
-    def handle_variable_rename(self, func, offset: int, old_name: str, new_name: str, type_: str, size: int):
-        for res in self._dispatch(BasePlugin.handle_variable_rename, False,
-                                  func, offset, old_name, new_name, type_, size):
-            if res:
-                return True
-        return False
-
-    def handle_function_rename(self, func, old_name: str, new_name: str):
-        for res in self._dispatch(BasePlugin.handle_function_rename, False, func, old_name, new_name):
-            if res:
-                return True
-        return False
-
-    def handle_comment_changed(self, addr: int, cmt: str, new: bool, decomp: bool):
-        for res in self._dispatch(BasePlugin.handle_comment_changed, False, addr, cmt, new, decomp):
-            if res:
-                return True
-        return False
 
     def handle_project_initialization(self):
         for _ in self._dispatch(BasePlugin.handle_project_initialization, False):
