@@ -195,7 +195,7 @@ ENTRIES = [
     CE('plugin_ComponentsPlugin_enabled', bool, False),
 
     # VARec
-    CE('varec_endpoint', str, "http://192.168.32.129:5000/varec"),
+    CE('varec_endpoint', str, "http://192.168.32.129:5000/varec_joint_small"),
 
     # Daemon
     CE('use_daemon', bool, False),
