@@ -367,6 +367,7 @@ class CodeView(BaseView):
         for _ in range(self._view_selector.count()):
             self._view_selector.removeItem(0)
         self._view_selector.addItems(available)
+        self._view_selector.setVisible(len(available) >= 2)
 
     def _on_view_selector_changed(self, index):
         key = (self._function.addr, self._view_selector.itemText(index))
