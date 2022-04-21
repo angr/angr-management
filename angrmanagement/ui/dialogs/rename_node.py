@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
     QDialogButtonBox
+from PySide2.QtGui import Qt
 from angr.sim_type import SimType, TypeRef, SimTypePointer, NamedTypeMixin
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
@@ -41,6 +42,8 @@ class RenameNode(QDialog):
         super().__init__(parent)
 
         # initialization
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
         self._code_view = code_view
         self._node = node
 
