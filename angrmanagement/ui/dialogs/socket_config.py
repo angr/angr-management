@@ -1,5 +1,6 @@
 import socket
 import base64
+import platform
 
 import claripy
 from PySide2.QtGui import QIntValidator, QContextMenuEvent, QColor
@@ -10,15 +11,20 @@ from PySide2.QtCore import QSize, Qt, QAbstractItemModel, QModelIndex
 from angr.storage.file import SimPacketsStream
 
 
-socket_family = {"AF_INET": socket.AF_INET, "AF_INET6": socket.AF_INET6, "AF_UNIX": socket.AF_UNIX,
-                 "AF_CAN": socket.AF_CAN, "AF_PACKET": socket.AF_PACKET, "AF_RDS": socket.AF_RDS}
+socket_family = {"AF_INET": socket.AF_INET, "AF_INET6": socket.AF_INET6}
 socket_type = {"SOCK_STREAM": socket.SOCK_STREAM, "SOCK_DGRAM": socket.SOCK_DGRAM, "SOCK_RAW": socket.SOCK_RAW}
+
+if platform.system() != "Windows":
+    socket_family["AF_UNIX"] = socket.AF_UNIX
+    socket_family["AF_CAN"] = socket.AF_CAN
+    socket_family["AF_PACKET"] = socket.AF_PACKET
+    socket_family["AF_RDS"] = socket.AF_RDS
 
 
 class SocketItem(): # pylint: disable=no-self-use, unused-argument
-    '''
+    """
     Socket Item for SocketModel
-    '''
+    """
     def __init__(self, ident=None, parent=None, node_type=None):
         self.parentItem = parent
         self.children = []
@@ -274,9 +280,9 @@ class SocketView(QTreeView):
 
 
 class SocketConfig(QDialog):
-    '''
+    """
     Socket Config Dialog
-    '''
+    """
     family = list(socket_family.keys())
     typ = list(socket_type.keys())
 
