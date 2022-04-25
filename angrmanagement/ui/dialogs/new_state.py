@@ -1,15 +1,16 @@
 import os
-from typing import List
+import typing
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QDialogButtonBox, QGridLayout, QComboBox, \
     QLineEdit, QTextEdit, QTreeWidget, QTreeWidgetItem
 from PySide2.QtCore import Qt
 import angr
 
+from .socket_config import SocketConfig
 from ..widgets import QStateComboBox
 from ...utils.namegen import NameGenerator
 from ...ui.dialogs.fs_mount import FilesystemMount
-
+from ...ui.dialogs.env_config import EnvConfig
 
 class StateMetadata(angr.SimStatePlugin):
     """
@@ -68,7 +69,10 @@ class NewState(QDialog):
         self._editor = None  # type: QTextEdit
         self._ok_button = None
 
-        self._fs_config = None  # type: List[(str,str)]
+        self._args = None # type: typing.List[str]
+        self._env_config = None # type: typing.List[(str,str)]
+        self._fs_config = None  # type: typing.List[(str,str)]
+        self._sockets_config = None
 
         self.setWindowTitle('New State')
 
@@ -159,6 +163,11 @@ class NewState(QDialog):
             base_allowed = template_combo.currentData() in ('blank', 'call')
             base_state_combo.setHidden(not base_allowed)
             base_state_label.setHidden(not base_allowed)
+            args_allowed = template_combo.currentData() in ("entry",)
+            args_label.setHidden(not args_allowed)
+            args_edit.setHidden(not args_allowed)
+            env_label.setHidden(not args_allowed)
+            env_button.setHidden(not args_allowed)
 
         template_combo.currentIndexChanged.connect(handle_template)
 
@@ -178,6 +187,44 @@ class NewState(QDialog):
         layout.addWidget(base_state_combo, row, 1)
         row += 1
 
+        # args
+        args_label = QLabel(self)
+        args_label.setText('Args')
+
+        args_edit = QTextEdit(self)
+        args_edit.setAcceptRichText(False)
+        args_edit.setFixedHeight(60)
+        self._args_edit = args_edit
+
+        def handle_args():
+            self._args = [self.instance.project.filename.encode() or b'dummy_filename'] + \
+                         [x.encode() for x in args_edit.toPlainText().split()]
+
+        args_edit.textChanged.connect(handle_args)
+
+        layout.addWidget(args_label, row, 0)
+        layout.addWidget(args_edit, row, 1)
+        row += 1
+
+        # env_config
+        env_label = QLabel(self)
+        env_label.setText('Environment')
+        env_button = QPushButton(self)
+        env_button.setText("Change")
+
+        layout.addWidget(env_label, row, 0)
+        layout.addWidget(env_button, row, 1)
+
+        def env_edit_button():
+            env_dialog = EnvConfig(env_config=self._env_config, instance=self.instance, parent=self)
+            env_dialog.exec_()
+            self._env_config = env_dialog.env_config
+            env_button.setText("{} Items".format(len(self._env_config)))
+
+        env_button.clicked.connect(env_edit_button)
+
+        row += 1
+
         # fs_mount
         fs_label = QLabel(self)
         fs_label.setText('Filesystem')
@@ -194,6 +241,25 @@ class NewState(QDialog):
             fs_button.setText("{} Items".format(len(self._fs_config)))
 
         fs_button.clicked.connect(fs_edit_button)
+
+        row += 1
+
+        # socket support
+        socket_label = QLabel(self)
+        socket_label.setText("Sockets")
+        socket_button = QPushButton(self)
+        socket_button.setText("Change")
+
+        layout.addWidget(socket_label, row, 0)
+        layout.addWidget(socket_button, row, 1)
+
+        def socket_edit_button():
+            socket_dialog = SocketConfig(socket_config=self._sockets_config, instance=self.instance)
+            socket_dialog.exec_()
+            self._sockets_config = socket_dialog.socket_config
+            #socket_button.setText("{} Items".format(len(self._sockets_config)))
+
+        socket_button.clicked.connect(socket_edit_button)
 
         row += 1
 
@@ -318,7 +384,8 @@ class NewState(QDialog):
                 elif template == 'call':
                     self.state = factory.call_state(addr, mode=mode, options=self._options)
                 elif template == 'entry':
-                    self.state = factory.entry_state(mode=mode, options=self._options)
+                    self.state = factory.entry_state(mode=mode, options=self._options, args=self._args, \
+                        env=dict(self._env_config))
                 else:
                     self.state = factory.full_init_state(mode=mode, options=self._options)
                 self.state.gui_data.base_name = name
@@ -334,6 +401,9 @@ class NewState(QDialog):
                         fs = angr.SimHostFilesystem(real)
                         fs.set_state(self.state)
                         self.state.fs.mount(path, fs)
+
+            if self._sockets_config:
+                self.state.posix.sockets = self._sockets_config.convert()
 
             if self._push_to_instance:
                 states_list = self.instance.states
@@ -354,3 +424,5 @@ class NewState(QDialog):
 
         self.main_layout.addLayout(layout)
         self.main_layout.addWidget(buttons)
+
+        handle_template(None)
