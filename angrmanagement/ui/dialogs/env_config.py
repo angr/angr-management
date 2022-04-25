@@ -1,12 +1,10 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout
 from PySide2.QtCore import Qt
-from ..widgets.filesystem_table import QFileSystemTable
-
-
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QFileDialog, QHeaderView
-
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QHeaderView, QDialog, QVBoxLayout
 
 class EnvTable(QTableWidget):
+    '''
+    Environment Config Table
+    '''
     def __init__(self, items, parent):
         super().__init__(parent)
 
@@ -25,8 +23,6 @@ class EnvTable(QTableWidget):
                 self.setItem(idx, i, QTableWidgetItem(it))
 
     def contextMenuEvent(self, event):
-        sr = self.currentRow()
-
         menu = QMenu("", self)
 
         menu.addAction('Add a Row', self._action_new_row)
@@ -37,7 +33,7 @@ class EnvTable(QTableWidget):
     def _action_new_row(self):
         row = self.rowCount()
         self.insertRow(row)
-        self.setItem(row, 0, QTableWidgetItem("Edit Me"))
+        self.setItem(row, 0, QTableWidgetItem("change me"))
         self.setItem(row, 1, QTableWidgetItem(""))
 
     def _action_delete(self):
@@ -51,6 +47,9 @@ class EnvTable(QTableWidget):
 
 
 class EnvConfig(QDialog):
+    '''
+    Environment Config Dialog for new state
+    '''
     def __init__(self, env_config=None, instance=None, parent=None):
         super().__init__(parent)
 
