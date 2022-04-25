@@ -180,8 +180,6 @@ class QDecompilationOptions(QWidget):
 
         # populate the tree widget with new options
         for option in sorted(self._options, key=lambda x: x.NAME):
-            if filter_by and not (filter_by in option.NAME.lower() or filter_by in option.category.lower()):
-                continue
             if option.category in categories:
                 category = categories[option.category]
             else:
@@ -189,6 +187,8 @@ class QDecompilationOptions(QWidget):
                 categories[option.category] = category
 
             w = QDecompilationOption(category, option, OptionType.OPTION, enabled=option.default_value)
+            if filter_by and not (filter_by in option.NAME.lower() or filter_by in option.category.lower()):
+                w.setHidden(True)
             self._qoptions.append(w)
 
         passes_category = QTreeWidgetItem(self._treewidget, ["Optimization Passes"])
@@ -196,10 +196,10 @@ class QDecompilationOptions(QWidget):
 
         default_passes = set(self.get_default_passes())
         for pass_ in self._opti_passes:
-            if filter_by and not (filter_by in pass_.__name__.lower() or filter_by in pass_.NAME.lower()):
-                continue
             w = QDecompilationOption(passes_category, pass_, OptionType.OPTIMIZATION_PASS,
                                      enabled=pass_ in default_passes)
+            if filter_by and not (filter_by in pass_.__name__.lower() or filter_by in pass_.NAME.lower()):
+               w.setHidden(True)
             self._qoptipasses.append(w)
 
         po_category = QTreeWidgetItem(self._treewidget, ["Peephole Optimizations"])
@@ -207,10 +207,10 @@ class QDecompilationOptions(QWidget):
 
         default_peephole_opts = self.get_default_peephole_opts()
         for opt_ in self._peephole_opts:
-            if filter_by and not (filter_by in opt_.NAME.lower() or filter_by in opt_.DESCRIPTION.lower()):
-                continue
             w = QDecompilationOption(po_category, opt_, OptionType.PEEPHOLE_OPTIMIZATION,
                                      enabled=opt_ in default_peephole_opts)
+            if filter_by and not (filter_by in opt_.NAME.lower() or filter_by in opt_.DESCRIPTION.lower()):
+                w.setHidden(True)
             self._qpeephole_opts.append(w)
 
         # expand all
