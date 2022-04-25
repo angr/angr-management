@@ -96,7 +96,7 @@ class SocketModel(QAbstractItemModel):
     '''
     # pylint: disable=no-self-use, unused-argument
     def __init__(self, data=None, parent=None):
-        super(SocketModel, self).__init__(parent)
+        super().__init__(parent)
         self.rootItem = SocketItem()
 
     def columnCount(self, parent=QModelIndex()):
