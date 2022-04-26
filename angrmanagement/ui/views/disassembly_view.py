@@ -66,6 +66,7 @@ class DisassemblyView(SynchronizedView):
 
         self._linear_viewer = None  # type: Optional[QLinearDisassembly]
         self._flow_graph = None  # type: Optional[QDisassemblyGraph]
+        self._prefer_graph = True
         self._statusbar = None
         self.jump_history: JumpHistory = JumpHistory()
         self.infodock = InfoDock(self)
@@ -503,15 +504,17 @@ class DisassemblyView(SynchronizedView):
     # Public methods
     #
 
-    def toggle_disasm_view(self):
+    def toggle_disasm_view(self, prefer=True):
         if self._flow_graph.isHidden():
             # Show flow graph
-            self.display_disasm_graph()
+            self.display_disasm_graph(prefer)
         else:
             # Show linear viewer
-            self.display_linear_viewer()
+            self.display_linear_viewer(prefer)
 
-    def display_disasm_graph(self):
+    def display_disasm_graph(self, prefer=True):
+        if prefer:
+            self._prefer_graph = True
 
         self._linear_viewer.hide()
         self._flow_graph.show()
@@ -526,7 +529,9 @@ class DisassemblyView(SynchronizedView):
         self.view_visibility_changed.emit()
         self._flow_graph.refresh()
 
-    def display_linear_viewer(self):
+    def display_linear_viewer(self, prefer=True):
+        if prefer:
+            self._prefer_graph = False
 
         self._flow_graph.hide()
         self._linear_viewer.show()
@@ -820,6 +825,9 @@ class DisassemblyView(SynchronizedView):
             })
 
     def _jump_to(self, addr, use_animation=False):
+        if self._prefer_graph and self.current_graph is self._linear_viewer:
+            self.display_disasm_graph(prefer=False)
+
         if self.current_graph is not self._linear_viewer:
             function = locate_function(self.workspace.instance, addr)
             if function is not None:
@@ -831,7 +839,7 @@ class DisassemblyView(SynchronizedView):
                 return True
 
             # it does not belong to any function - we need to switch to linear view mode
-            self.display_linear_viewer()
+            self.display_linear_viewer(prefer=False)
 
         try:
             item = self.workspace.instance.cfb.floor_item(addr)
