@@ -38,7 +38,8 @@ class CodeView(BaseView):
         self._function: Union[ObjectContainer, Function] = ObjectContainer(None, 'The function to decompile')
         self.current_node = ObjectContainer(None, 'Current selected C-code node')
         self.addr: Union[ObjectContainer, int] = ObjectContainer(0, "Current cursor address")
-        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(None, "The currently-displayed codegen object")
+        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = \
+            ObjectContainer(None, "The currently-displayed codegen object")
 
         self._last_function: Optional[Function] = None
         self._textedit: Optional[QCCodeEdit] = None
@@ -190,7 +191,8 @@ class CodeView(BaseView):
         self.addr.am_obj = self._textedit.get_src_to_inst()
         self.addr.am_event(already_moved=True)
 
-    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str]=None, **kwargs):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str]=None, **kwargs):
         """
         The callback function that triggers an update of the codegen.
 
@@ -392,7 +394,7 @@ class CodeView(BaseView):
         textedit_dock.setWidget(self._textedit)
 
         # decompilation
-        self._options = QDecompilationOptions(self, self.workspace.instance, options=None)
+        self._options = QDecompilationOptions(self, self.workspace.instance)
         options_dock = QDockWidget('Decompilation Options', self._options)
         window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
