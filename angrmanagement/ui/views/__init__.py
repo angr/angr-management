@@ -19,3 +19,4 @@ from .stack_view import StackView
 from .traces_view import TracesView
 from .trace_map_view import TraceMapView
 from .breakpoints_view import BreakpointsView
+from .call_explorer_view import CallExplorerView

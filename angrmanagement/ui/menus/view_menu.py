@@ -100,6 +100,7 @@ class ViewMenu(Menu):
             MenuEntry('&Registers', main_window.workspace.show_registers_view),
             MenuEntry('&Stack', main_window.workspace.show_stack_view),
             MenuEntry('&Breakpoints', main_window.workspace.show_breakpoints_view),
+            MenuEntry('&Call Explorer', main_window.workspace.show_call_explorer_view),
             MenuSeparator(),
             MenuEntry('&Console', main_window.workspace.show_console_view),
             MenuEntry('&Log', main_window.workspace.show_log_view),

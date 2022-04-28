@@ -20,7 +20,8 @@ from ..data.jobs.loading import LoadBinaryJob
 from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
-                    DataDepView, RegistersView, StackView, TracesView, TraceMapView, BreakpointsView)
+                    DataDepView, RegistersView, StackView, TracesView, TraceMapView, BreakpointsView,
+                    CallExplorerView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
@@ -658,6 +659,11 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
+    def show_call_explorer_view(self):
+        view = self._get_or_create_call_explorer_view()
+        self.raise_view(view)
+        view.setFocus()
+
     def show_console_view(self):
         view = self._get_or_create_console_view()
         self.raise_view(view)
@@ -897,6 +903,16 @@ class Workspace:
 
         if view is None:
             view = BreakpointsView(self, 'center')
+            self.add_view(view)
+
+        return view
+
+    def _get_or_create_call_explorer_view(self) -> CallExplorerView:
+        # Take the first function call explorer view
+        view = self.view_manager.first_view_in_category('call_explorer')
+
+        if view is None:
+            view = CallExplorerView(self, 'right')
             self.add_view(view)
 
         return view
