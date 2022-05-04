@@ -4,7 +4,8 @@ import logging
 import PySide2
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
     QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
-    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction, QMessageBox
+    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction, QMessageBox, QAbstractScrollArea, \
+    QAbstractSlider
 from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor
 from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
 
@@ -154,6 +155,11 @@ class HexGraphicsObject(QGraphicsObject):
         super().__init__(*args, **kwargs)
         self.setFlag(QGraphicsItem.ItemUsesExtendedStyleOption, True)  # Give me more specific paint update rect info
         self.setFlag(QGraphicsItem.ItemIsFocusable, True)  # Give me focus/key events
+        self.setFlag(QGraphicsItem.ItemClipsToShape, True)
+        self.display_offset_addr: HexAddress = 0
+        self.display_num_rows: int = 0
+        self.display_start_addr: HexAddress = 0
+        self.display_end_addr: HexAddress = 0
         self.start_addr: HexAddress = 0
         self.num_bytes: int = 0
         self.end_addr: HexAddress = 0  # Exclusive
@@ -221,12 +227,50 @@ class HexGraphicsObject(QGraphicsObject):
             self.cursor_blink_state = self.always_show_cursor
             self.update()
 
+    def set_display_offset_range(self, offset: HexAddress, num_rows: Optional[int] = None):
+        """
+        Set the visible byte range.
+        """
+        offset = max(0, min(offset & ~0xf, self.end_addr - self.start_addr - 0x10))
+        self.display_offset_addr = offset
+        self.display_start_addr = self.start_addr + self.display_offset_addr
+        self.display_num_rows = num_rows or self.num_rows
+        self.display_end_addr = min(self.end_addr, self.display_start_addr + self.display_num_rows * 16)
+        self._update_layout()
+
+    def move_viewport_to(self, addr: HexAddress, preserve_relative_offset: bool = False):
+        """
+        Translate the visible range so `addr` is visible.
+        """
+        assert self.start_addr <= addr < self.end_addr
+
+        if preserve_relative_offset and (self.display_start_addr <= self.cursor < self.display_end_addr):
+            # Let the target addr be on the same relative row from top of screen
+            self.set_display_offset_range(addr - self.cursor + self.display_start_addr - self.start_addr,
+                                          self.display_num_rows)
+            return
+
+        if addr < self.display_start_addr:
+            # Let the target addr be on the first displayed row
+            self.set_display_offset_range(addr - self.start_addr, self.display_num_rows)
+            return
+
+        # Let the target addr be on last fully displayed row
+        max_fully_visible_bytes = 0x10 * (self.display_num_rows - 1)
+        display_end = self.display_start_addr + max_fully_visible_bytes
+        if addr >= display_end:
+            offset = addr - max_fully_visible_bytes - self.start_addr + 0x10
+            self.set_display_offset_range(offset, self.display_num_rows)
+
     def _set_data_common(self):
         """
         Common handler for set_data_*
         """
         assert self.num_bytes >= 0
+        self.num_rows = int((self.num_bytes + (self.start_addr & 0xf) + 0xf) / 16)
         self.end_addr = self.start_addr + self.num_bytes
+        self.clear_selection()
+        self.set_display_offset_range(offset=0, num_rows=None)  # Show all
         self.set_cursor(self.start_addr)
         self._update_layout()
 
@@ -328,19 +372,19 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Get address for a given row.
         """
-        return (self.start_addr & ~15) + row * 16
+        return (self.display_start_addr & ~15) + row * 16
 
     def row_col_to_addr(self, row: int, col: int) -> int:
         """
         Get address for a given row, column.
         """
-        return (self.start_addr & ~15) + row*16 + col
+        return (self.display_start_addr & ~15) + row*16 + col
 
     def addr_to_row_col(self, addr: int) -> RowCol:
         """
         Get (row, column) for a given address.
         """
-        addr = addr - (self.start_addr & ~0xf)
+        addr = addr - (self.display_start_addr & ~0xf)
         row = addr >> 4
         col = addr & 15
         return row, col
@@ -398,7 +442,8 @@ class HexGraphicsObject(QGraphicsObject):
                 regions.append(region)
         return regions
 
-    def set_cursor(self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None):
+    def set_cursor(self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None,
+                   update_viewport: bool = True):
         """
         Move cursor to address `addr`.
         """
@@ -412,12 +457,14 @@ class HexGraphicsObject(QGraphicsObject):
         if self.hasFocus():
             self.restart_cursor_blink_timer()
         cursor_changed = self.cursor != addr
-        self.cursor = addr
+        if cursor_changed:
+            if update_viewport:
+                self.move_viewport_to(addr)
+            self.cursor = addr
         self.cursor_nibble = nibble
         self.cursor_changed.emit()
-        if cursor_changed:
-            self.update_active_highlight_regions()
-            self.update()
+        self.update_active_highlight_regions()
+        self.update()
         self._processing_cursor_update = False
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
@@ -500,8 +547,10 @@ class HexGraphicsObject(QGraphicsObject):
             Qt.Key_Down: 16,
             Qt.Key_Right: 1,
             Qt.Key_Left: -1,
-            Qt.Key_PageUp: -8*16,
-            Qt.Key_PageDown: 8*16
+            Qt.Key_PageUp: 0,
+            Qt.Key_PageDown: 0,
+            Qt.Key_Home: 0,
+            Qt.Key_End: 0,
         }
         if event.key() in movement_keys:
             if int(QApplication.keyboardModifiers()) & Qt.ShiftModifier:
@@ -509,14 +558,31 @@ class HexGraphicsObject(QGraphicsObject):
                     self.begin_selection()
             else:
                 self.clear_selection()
-            new_cursor = self.cursor + movement_keys[event.key()]
-            self.set_cursor(new_cursor)
+
+            # FIXME: When holding Ctrl, only scroll the viewport
+            preserve_relative_offset = False
+            if event.key() == Qt.Key_PageUp:
+                new_cursor = max(self.start_addr, self.cursor - (self.display_num_rows - 1) * 16)
+                preserve_relative_offset = True
+            elif event.key() == Qt.Key_PageDown:
+                new_cursor = min(self.end_addr - 1, self.cursor + (self.display_num_rows - 1) * 16)
+                preserve_relative_offset = True
+            elif event.key() == Qt.Key_Home:
+                new_cursor = max(self.start_addr, self.cursor & ~0xf)
+            elif event.key() == Qt.Key_End:
+                new_cursor = min(self.end_addr - 1, (self.cursor & ~0xf) + 0xf)
+            else:
+                new_cursor = self.cursor + movement_keys[event.key()]
+            if self.start_addr <= new_cursor < self.end_addr:
+                self.move_viewport_to(new_cursor, preserve_relative_offset)
+                self.set_cursor(new_cursor, update_viewport=False)
             event.accept()
             return
-        elif event.key() == Qt.Key_Space and (int(QApplication.keyboardModifiers()) & Qt.ControlModifier):
-            self.set_cursor(self.cursor, ascii_column=(not self.ascii_column_active))
-            event.accept()
-            return
+        elif int(QApplication.keyboardModifiers()) & Qt.ControlModifier:
+            if event.key() == Qt.Key_Space:
+                self.set_cursor(self.cursor, ascii_column=(not self.ascii_column_active))
+                event.accept()
+                return
         else:
             t = event.text()
             if len(t) == 1:
@@ -564,12 +630,8 @@ class HexGraphicsObject(QGraphicsObject):
             x = self.ascii_column_offsets[-1] + self.ascii_width + self.ascii_space
             self.ascii_column_offsets.append(x)
 
-        if self.num_bytes > 0:
-            self.num_rows = int((self.num_bytes + (self.start_addr & 0xf) + 0xf) / 16)
-        else:
-            self.num_rows = 0
         self.max_x = self.ascii_column_offsets[-1]
-        self.max_y = self.num_rows * self.row_height
+        self.max_y = self.display_num_rows * self.row_height
 
         self.update()
 
@@ -731,13 +793,16 @@ class HexGraphicsObject(QGraphicsObject):
             min_row = 0
         max_row = self.point_to_row(option.exposedRect.bottomLeft())
         if max_row is None:
-            max_row = self.num_rows - 1
+            max_row = self.display_num_rows - 1
 
         # Paint background
         painter.setPen(Qt.NoPen)
         for row in range(min_row, max_row + 1):
+            row_addr = self.row_to_addr(row)
+            if row_addr >= self.display_end_addr:
+                break
             pt = self.row_to_point(row)
-            painter.setBrush(Conf.palette_base if row % 2 == 0 else Conf.palette_alternatebase)
+            painter.setBrush(Conf.palette_base if row_addr & 0x10 else Conf.palette_alternatebase)
             painter.drawRect(QRectF(0, pt.y(), self.boundingRect().width(), self.row_height))
 
         for region in self.highlighted_regions:
@@ -769,11 +834,15 @@ class HexGraphicsObject(QGraphicsObject):
         painter.setFont(self.font)
 
         for row in range(min_row, max_row + 1):
+            row_addr = self.row_to_addr(row)
+            if row_addr >= self.display_end_addr:
+                break
+
             pt = self.row_to_point(row)
             pt.setY(pt.y() + self.row_height - self.row_padding)
 
             # Paint address
-            addr_text = '%08x' % self.row_to_addr(row)
+            addr_text = '%08x' % row_addr
             pt.setX(self.addr_offset)
             painter.setPen(Conf.disasm_view_node_address_color)
             painter.drawText(pt, addr_text)
@@ -781,7 +850,7 @@ class HexGraphicsObject(QGraphicsObject):
             # Paint byte values
             for col in range(0, 16):
                 addr = self.row_col_to_addr(row, col)
-                if addr < self.start_addr or addr >= self.end_addr:
+                if addr < self.display_start_addr or addr >= self.display_end_addr:
                     continue
                 val = self.get_value_for_addr(addr)
                 pt.setX(self.byte_column_offsets[col])
@@ -803,7 +872,7 @@ class HexGraphicsObject(QGraphicsObject):
             # Paint ASCII representation
             for col in range(0, 16):
                 addr = self.row_col_to_addr(row, col)
-                if addr < self.start_addr or addr >= self.end_addr:
+                if addr < self.display_start_addr or addr >= self.display_end_addr:
                     continue
                 val = self.get_value_for_addr(addr)
                 pt.setX(self.ascii_column_offsets[col])
@@ -824,7 +893,7 @@ class HexGraphicsObject(QGraphicsObject):
                 painter.drawText(pt, ch)
 
         # Paint cursor
-        if self.show_cursor and (self.start_addr <= self.cursor < self.end_addr):
+        if self.show_cursor and (self.display_start_addr <= self.cursor < self.display_end_addr):
             cursor_height = self.row_padding / 2
             def set_pen_brush_for_active_cursor(active):
                 painter.setPen(Qt.NoPen)
@@ -857,7 +926,20 @@ class HexGraphicsObject(QGraphicsObject):
         return QRectF(0, 0, self.max_x, self.max_y)
 
 
-class HexGraphicsView(QGraphicsView):
+class HexGraphicsSubView(QGraphicsView):
+    """
+    Wrapper QGraphicsView used for rendering and event propagation.
+    """
+
+    def wheelEvent(self, event):
+        self.parent().wheelEvent(event)
+        super().wheelEvent(event)
+
+    def resizeEvent(self, event):
+        self.parent().resizeEvent(event)
+
+
+class HexGraphicsView(QAbstractScrollArea):
     """
     Container view for the HexGraphicsObject.
     """
@@ -866,88 +948,182 @@ class HexGraphicsView(QGraphicsView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._processing_scroll_event: bool = False
 
-        self._scene: QGraphicsScene = QGraphicsScene(parent=self)
+        self._view: QGraphicsView = HexGraphicsSubView(parent=self)
+        self._scene: QGraphicsScene = QGraphicsScene(parent=self._view)
         self.hex: HexGraphicsObject = HexGraphicsObject()
         self.hex.cursor_changed.connect(self.on_cursor_changed)
         self._scene.addItem(self.hex)
-        self.setScene(self._scene)
+        self._view.setScene(self._scene)
 
-        self.setBackgroundBrush(Conf.palette_base)
-        self.setResizeAnchor(QGraphicsView.NoAnchor)
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self._view.setBackgroundBrush(Conf.palette_base)
+        self._view.setResizeAnchor(QGraphicsView.NoAnchor)
+        self._view.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self._view.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+
+        self._view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
+        self.horizontalScrollBar().actionTriggered.connect(self._on_horizontal_scroll_bar_triggered)
+        self._view.setFrameStyle(QFrame.NoFrame)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._view)
+        self.setLayout(layout)
+
+        self.scrollbar_range = 100
+        self.verticalScrollBar().setRange(0, self.scrollbar_range)
+        self._update_vertical_scrollbar()
+
+    def _update_vertical_scrollbar(self):
+        if self._processing_scroll_event:
+            return
+        addr_range = (self.hex.end_addr - self.hex.start_addr) >> 4
+        if addr_range > 0:
+            offset = (self.hex.display_start_addr - self.hex.start_addr) >> 4
+            scrollbar_value = (offset + 1) / addr_range
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        else:
+            scrollbar_value = 0
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.verticalScrollBar().setValue(int(scrollbar_value * self.scrollbar_range))
+
+    def _update_horizontal_scrollbar(self):
+        if self._processing_scroll_event:
+            return
+        hex_rect = self.hex.boundingRect()
+        hex_rect.translate(self.hex.pos())
+        vp_rect = self._view.sceneRect()
+        scroll_range = max(0, int(hex_rect.width()) - int(vp_rect.width()))
+        if scroll_range == 0:
+            self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        else:
+            self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            self.horizontalScrollBar().setRange(0, scroll_range)
+            self.horizontalScrollBar().setPageStep(hex_rect.width()/10)
+            self.horizontalScrollBar().setValue(vp_rect.left())
+
+    def _get_num_rows_visible(self, fully_visible: bool = False):
+        num_rows_visible = int(self._view.mapToScene(0, self.viewport().height()).y() / self.hex.row_height)
+        if not fully_visible:
+            num_rows_visible += 1
+        return num_rows_visible
+
+    def _set_display_offset(self, offset: HexAddress):
+        self.hex.set_display_offset_range(offset, self._get_num_rows_visible())
+        self._update_vertical_scrollbar()
+
+    def _on_vertical_scroll_bar_triggered(self, action):
+        if self._processing_scroll_event:
+            return
+        self._processing_scroll_event = True
+        if action == QAbstractSlider.SliderSingleStepAdd:
+            self._set_display_offset(self.hex.display_offset_addr + 0x10)
+        elif action == QAbstractSlider.SliderSingleStepSub:
+            self._set_display_offset(self.hex.display_offset_addr - 0x10)
+        elif action == QAbstractSlider.SliderPageStepAdd:
+            self._set_display_offset(self.hex.display_offset_addr + 0x10)
+        elif action == QAbstractSlider.SliderPageStepSub:
+            self._set_display_offset(self.hex.display_offset_addr - 0x10)
+        elif action == QAbstractSlider.SliderMove:
+            addr_range = self.hex.end_addr - self.hex.start_addr
+            if addr_range <= 0:
+                return
+
+            sb_value = self.verticalScrollBar().value()
+            if sb_value < 5:
+                sb = 0
+            elif sb_value > (self.scrollbar_range - 5):
+                sb = 1.0
+            else:
+                sb = sb_value / self.scrollbar_range
+            display_offset_addr = int(sb * addr_range) & ~0xf
+            self._set_display_offset(display_offset_addr)
+        self._processing_scroll_event = False
+
+    def _on_horizontal_scroll_bar_triggered(self, action):
+        self._processing_scroll_event = True
+        if action == QAbstractSlider.SliderMove:
+            vp = self.viewport().geometry()
+            vp.moveTo(0, 0)
+            vp = self._view.mapToScene(vp).boundingRect()
+            vp.moveTo(self.horizontalScrollBar().value(), 0)
+            self._view.setSceneRect(vp)
+        self._processing_scroll_event = False
+
+    def wheelEvent(self, event: QWheelEvent):
+        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+            self.adjust_viewport_scale(1.25 if event.delta() > 0 else 1/1.25)
+        else:
+            d = event.delta()
+            if d != 0:
+                self._set_display_offset(self.hex.display_offset_addr - 0x10 * d//32)
+        event.accept()
+
+    def update_scene_rect(self):
+        hex_rect = self.hex.boundingRect()
+        hex_rect.translate(self.hex.pos())
+        cursor_rect = self.hex.addr_to_rect(self.hex.cursor)
+        cursor_rect.translate(self.hex.pos())
+        vp_rect = self.viewport().geometry()
+        vp_rect.moveTo(0, 0)
+        vp_rect = self._view.mapToScene(vp_rect).boundingRect()
+
+        if cursor_rect.right() > vp_rect.right():
+            dX = vp_rect.right() - cursor_rect.right()  # Scroll right
+        elif cursor_rect.left() < vp_rect.left():
+            dX = vp_rect.left() - cursor_rect.left()  # Scroll left
+        elif vp_rect.width() < hex_rect.width() and vp_rect.right() > hex_rect.right():
+            dX = vp_rect.right() - hex_rect.right()  # Reveal left
+        elif vp_rect.width() > hex_rect.width():
+            dX = vp_rect.left()  # Reveal all
+        else:
+            dX = 0
+
+        vp_rect.translate(-dX, 0)
+        self._view.setSceneRect(vp_rect)
+        self._update_horizontal_scrollbar()
+
+    def resizeEvent(self, event:PySide2.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
+        self._view.resize(self.viewport().size())
+        self.update_scene_rect()
+        self._set_display_offset(self.hex.display_offset_addr)
 
     def set_region_callback(self, write, mem, addr, size):
-        s = self.scene().itemsBoundingRect()
-        self.hex.setPos(s.bottomLeft())
         self.hex.set_data_callback(write, mem, addr, size)
-        self.setSceneRect(self.scene().itemsBoundingRect())
+        self.update_scene_rect()
+        self._set_display_offset(0)
 
     def on_cursor_changed(self):
         """
         Handle cursor change events.
         """
         self.cursor_changed.emit()
-        self.move_viewport_to_cursor()
-
-    def move_viewport_to_cursor(self):
-        """
-        Ensure cursor is visible in viewport.
-        """
-        target = self.hex.addr_to_rect(self.hex.cursor)
-        target.translate(self.hex.pos())
-        vp_rect = self.viewport().geometry()
-        vp_rect.moveTo(0, 0)
-        current = self.mapToScene(vp_rect).boundingRect()
-
-        if target.bottomRight().x() > current.bottomRight().x():
-            dX = current.bottomRight().x() - target.bottomRight().x()  # Scroll right
-        elif target.bottomLeft().x() < current.bottomLeft().x():
-            dX = current.bottomLeft().x() - target.bottomLeft().x()  # Scroll left
-        else:
-            dX = 0
-
-        if target.bottomLeft().y() > current.bottomLeft().y():
-            dY = current.bottomLeft().y() - target.bottomLeft().y()  # Scroll down
-        elif target.topLeft().y() < current.topLeft().y():
-            dY = current.topLeft().y() - target.topLeft().y()  # Scroll up
-        else:
-            dY = 0
-
-        if dX != 0 or dY != 0:
-            self.translate(dX, dY)
+        self.update_scene_rect()
+        self._update_vertical_scrollbar()
 
     def adjust_viewport_scale(self, scale: Optional[float] = None):
         """
         Reset viewport scaling. If `scale` is None, viewport scaling is reset to default.
         """
-        # Ensure top-left position visible in scene remains at the top left when changing scale
-        old_pos = self.mapToScene(self.viewport().geometry().topLeft())
         if scale is None:
-            self.resetTransform()
+            self._view.resetTransform()
         else:
-            self.scale(scale, scale)
-        new_pos = self.mapToScene(self.viewport().geometry().topLeft())
-        delta = new_pos - old_pos
-        self.translate(delta.x(), delta.y())
-
-    def wheelEvent(self, event: QWheelEvent):
-        """
-        Handle wheel events, specifically for changing font size when holding Ctrl key.
-        """
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.delta() > 0 else 1/1.25)
-            event.accept()
-        else:
-            super().wheelEvent(event)
+            self._view.scale(scale, scale)
+        self.update_scene_rect()
+        self._set_display_offset(self.hex.display_offset_addr)
 
     def changeEvent(self, event: QEvent):
         """
         Redraw on color scheme update.
         """
         if event.type() == QEvent.PaletteChange:
-            self.setBackgroundBrush(Conf.palette_base)
+            self._view.setBackgroundBrush(Conf.palette_base)
             self.update()
 
     def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
@@ -1083,8 +1259,6 @@ class HexView(SynchronizedView):
             loader.max_addr - loader.min_addr + 1
         )
 
-        self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
-
     def set_smart_highlighting_enabled(self, enable: bool):
         """
         Control whether smart highlighting is enabled or not.
@@ -1127,6 +1301,7 @@ class HexView(SynchronizedView):
         lyt.addWidget(self.inner_widget)
         lyt.addWidget(status_bar)
         self.setLayout(lyt)
+        self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
 
         self._widgets_initialized = True
 
@@ -1338,7 +1513,10 @@ class HexView(SynchronizedView):
         regions = []
 
         try:
-            item = self.workspace.instance.cfb.floor_item(self.inner_widget.hex.cursor)
+            cfb = self.workspace.instance.cfb
+            if cfb.am_none:
+                return []
+            item = cfb.floor_item(self.inner_widget.hex.cursor)
         except KeyError:
             item = None
         if item is None:
