@@ -1,11 +1,13 @@
 from typing import Sequence, Union, Optional, Tuple, Callable
+from enum import Enum
 import logging
 
+import angr
 import PySide2
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
     QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
     QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction, QMessageBox, QAbstractScrollArea, \
-    QAbstractSlider
+    QAbstractSlider, QComboBox
 from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor
 from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
 
@@ -18,6 +20,7 @@ from .view import SynchronizedView
 from ..dialogs.jumpto import JumpTo
 from ...utils import is_printable
 from ...config import Conf
+from ...logic.debugger import DebuggerWatcher
 
 l = logging.getLogger(__name__)
 
@@ -26,6 +29,14 @@ HexByteValue = Union[int, str]
 HexAddress = int
 HexDataBuffer = Union[bytes, bytearray]
 HexDataProvider = Callable[[HexAddress], HexByteValue]
+
+
+class HexDataSource(Enum):
+    """
+    Data source to be displayed in the hex view.
+    """
+    Loader = 0
+    Debugger = 1
 
 
 class HexHighlightRegion:
@@ -165,7 +176,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.end_addr: HexAddress = 0  # Exclusive
         self.read_func: Optional[HexDataProvider] = None
         self.write_func: Callable[[HexAddress, HexByteValue], bool] = None
-        self.data: HexDataBuffer = b''
+        self.data: Optional[HexDataBuffer] = None
         self.addr_offset: int = 0
         self.addr_width: int = 0
         self.ascii_column_offsets: Sequence[int] = []
@@ -274,25 +285,46 @@ class HexGraphicsObject(QGraphicsObject):
         self.set_cursor(self.start_addr)
         self._update_layout()
 
+    def _simple_read_callback(self, addr: HexAddress) -> HexByteValue:
+        """
+        Handler for simple data buffers.
+        """
+        return self.data[addr - self.start_addr]
+
+    # pylint:disable=unused-argument,no-self-use
+    def _simple_write_callback(self, addr: HexAddress, value: HexByteValue) -> bool:
+        """
+        Handler for simple data buffers.
+        """
+        return False
+
     def set_data(self, data: HexDataBuffer, start_addr: HexAddress = 0, num_bytes: Optional[int] = None):
         """
         Assign the buffer to be displayed with bytes.
         """
+        self.data = data
         self.start_addr = start_addr
         self.num_bytes = num_bytes if num_bytes is not None else len(data)
-        self.data = data
-        self.read_func = None
+        self.read_func = self._simple_read_callback
+        self.write_func = self._simple_write_callback
         self._set_data_common()
 
     def set_data_callback(self, write_func, read_func: HexDataProvider, start_addr: HexAddress, num_bytes: int):
         """
         Assign the buffer to be displayed using a callback function.
         """
+        self.data = None
         self.start_addr = start_addr
         self.num_bytes = num_bytes
         self.write_func = write_func
         self.read_func = read_func
         self._set_data_common()
+
+    def clear(self):
+        """
+        Clear the current buffer.
+        """
+        self.set_data(b'')
 
     def point_to_row(self, p: QPointF) -> Optional[int]:
         """
@@ -613,7 +645,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.char_width = ti.boundingRect().width()
         self.section_space = self.char_width * 4
         self.addr_offset = self.char_width * 1
-        self.addr_width = self.char_width * 8
+        self.addr_width = self.char_width * len(f'{self.display_end_addr:8x}')
         self.byte_width = self.char_width * 2
         self.byte_space = self.char_width * 1
         self.byte_group_space = self.char_width * 2
@@ -719,15 +751,6 @@ class HexGraphicsObject(QGraphicsObject):
             spath.lineTo(QPointF(trect.bottomLeft().x(), last.y()))
         spath.closeSubpath()
         return spath
-
-    def get_value_for_addr(self, addr: int) -> Union[int, str]:
-        """
-        Get the value for given address `addr`.
-        """
-        if self.read_func is not None:
-            return self.read_func(addr)
-        else:
-            return self.data[addr - self.start_addr]
 
     def get_selection(self) -> Optional[Tuple[int, int]]:
         """
@@ -852,7 +875,7 @@ class HexGraphicsObject(QGraphicsObject):
                 addr = self.row_col_to_addr(row, col)
                 if addr < self.display_start_addr or addr >= self.display_end_addr:
                     continue
-                val = self.get_value_for_addr(addr)
+                val = self.read_func(addr)
                 pt.setX(self.byte_column_offsets[col])
 
                 if type(val) is int:
@@ -862,7 +885,10 @@ class HexGraphicsObject(QGraphicsObject):
                         color = Conf.disasm_view_unprintable_byte_color
                     byte_text = '%02x' % val
                 else:
-                    byte_text = '??'
+                    if type(val) is str and len(val) == 1:
+                        byte_text = val * 2
+                    else:
+                        byte_text = '??'
                     color = Conf.disasm_view_unknown_byte_color
 
                 pt.setX(self.byte_column_offsets[col])
@@ -874,7 +900,7 @@ class HexGraphicsObject(QGraphicsObject):
                 addr = self.row_col_to_addr(row, col)
                 if addr < self.display_start_addr or addr >= self.display_end_addr:
                     continue
-                val = self.get_value_for_addr(addr)
+                val = self.read_func(addr)
                 pt.setX(self.ascii_column_offsets[col])
 
                 if type(val) is int:
@@ -886,7 +912,10 @@ class HexGraphicsObject(QGraphicsObject):
                         ch = '.'
                 else:
                     color = Conf.disasm_view_unknown_character_color
-                    ch = '?'
+                    if type(val) is str and len(val) == 1:
+                        ch = val
+                    else:
+                        ch = '?'
 
                 pt.setX(self.ascii_column_offsets[col])
                 painter.setPen(color)
@@ -1014,22 +1043,28 @@ class HexGraphicsView(QAbstractScrollArea):
             num_rows_visible += 1
         return num_rows_visible
 
-    def _set_display_offset(self, offset: HexAddress):
+    def set_display_offset(self, offset: HexAddress):
         self.hex.set_display_offset_range(offset, self._get_num_rows_visible())
         self._update_vertical_scrollbar()
+
+    def get_display_start_addr(self) -> HexAddress:
+        return self.hex.display_start_addr
+
+    def set_display_start_addr(self, start: HexAddress):
+        self.set_display_offset(start - self.hex.start_addr)
 
     def _on_vertical_scroll_bar_triggered(self, action):
         if self._processing_scroll_event:
             return
         self._processing_scroll_event = True
         if action == QAbstractSlider.SliderSingleStepAdd:
-            self._set_display_offset(self.hex.display_offset_addr + 0x10)
+            self.set_display_offset(self.hex.display_offset_addr + 0x10)
         elif action == QAbstractSlider.SliderSingleStepSub:
-            self._set_display_offset(self.hex.display_offset_addr - 0x10)
+            self.set_display_offset(self.hex.display_offset_addr - 0x10)
         elif action == QAbstractSlider.SliderPageStepAdd:
-            self._set_display_offset(self.hex.display_offset_addr + 0x10)
+            self.set_display_offset(self.hex.display_offset_addr + 0x10)
         elif action == QAbstractSlider.SliderPageStepSub:
-            self._set_display_offset(self.hex.display_offset_addr - 0x10)
+            self.set_display_offset(self.hex.display_offset_addr - 0x10)
         elif action == QAbstractSlider.SliderMove:
             addr_range = self.hex.end_addr - self.hex.start_addr
             if addr_range <= 0:
@@ -1043,7 +1078,7 @@ class HexGraphicsView(QAbstractScrollArea):
             else:
                 sb = sb_value / self.scrollbar_range
             display_offset_addr = int(sb * addr_range) & ~0xf
-            self._set_display_offset(display_offset_addr)
+            self.set_display_offset(display_offset_addr)
         self._processing_scroll_event = False
 
     def _on_horizontal_scroll_bar_triggered(self, action):
@@ -1062,7 +1097,7 @@ class HexGraphicsView(QAbstractScrollArea):
         else:
             d = event.delta()
             if d != 0:
-                self._set_display_offset(self.hex.display_offset_addr - 0x10 * d//32)
+                self.set_display_offset(self.hex.display_offset_addr - 0x10 * d // 32)
         event.accept()
 
     def update_scene_rect(self):
@@ -1092,12 +1127,23 @@ class HexGraphicsView(QAbstractScrollArea):
     def resizeEvent(self, event:PySide2.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
         self._view.resize(self.viewport().size())
         self.update_scene_rect()
-        self._set_display_offset(self.hex.display_offset_addr)
+        self.set_display_offset(self.hex.display_offset_addr)
 
     def set_region_callback(self, write, mem, addr, size):
+        """
+        Set current buffer.
+        """
         self.hex.set_data_callback(write, mem, addr, size)
         self.update_scene_rect()
-        self._set_display_offset(0)
+        self.set_display_offset(0)
+
+    def clear(self):
+        """
+        Clear current buffer.
+        """
+        self.hex.clear()
+        self.update_scene_rect()
+        self.set_display_offset(0)
 
     def on_cursor_changed(self):
         """
@@ -1116,7 +1162,7 @@ class HexGraphicsView(QAbstractScrollArea):
         else:
             self._view.scale(scale, scale)
         self.update_scene_rect()
-        self._set_display_offset(self.hex.display_offset_addr)
+        self.set_display_offset(self.hex.display_offset_addr)
 
     def changeEvent(self, event: QEvent):
         """
@@ -1161,13 +1207,128 @@ class HexView(SynchronizedView):
         self._cfb_highlights: Sequence[HexHighlightRegion] = []
         self._sync_view_highlights: Sequence[HexHighlightRegion] = []
         self._patch_highlights: Sequence[HexHighlightRegion] = []
+        self._changed_data_highlights: Sequence[HexHighlightRegion] = []
 
         self._init_widgets()
-        self.workspace.instance.cfb.am_subscribe(self.reload_cfb)
+        self.workspace.instance.cfb.am_subscribe(self._reload_data)
         self.workspace.instance.patches.am_subscribe(self._update_highlight_regions_from_patches)
+        self._data_cache = {}
 
-        self.reload_cfb()
-        self._update_highlight_regions_from_patches()
+        self._reload_data()
+
+        self._dbg_manager = self.workspace.instance.debugger_mgr
+        self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
+        self._on_debugger_state_updated()
+
+    def closeEvent(self, event):
+        self._dbg_watcher.shutdown()
+        super().closeEvent(event)
+
+    def _clear_highlights(self):
+        """
+        Clear all highlight regions
+        """
+        self._cfb_highlights = []
+        self._sync_view_highlights = []
+        self._patch_highlights = []
+        self._changed_data_highlights = []
+
+    def _reload_data(self):
+        """
+        Callback when hex backing data store should be updated.
+        """
+        self._clear_highlights()
+        start = self.inner_widget.get_display_start_addr()
+        cursor = self.inner_widget.hex.cursor
+        source = self._data_source_combo.currentData()
+        if source == HexDataSource.Loader:
+            if self.workspace.instance.cfb.am_none:
+                self.inner_widget.clear()
+                return
+            loader = self.workspace.instance.project.loader
+            self.inner_widget.set_region_callback(
+                self.project_memory_write_func,
+                self.project_memory_read_func,
+                loader.min_addr,
+                loader.max_addr - loader.min_addr + 1
+            )
+            self._update_highlight_regions_from_patches()
+        elif source == HexDataSource.Debugger:
+            self._data_cache = {}
+            self.inner_widget.set_region_callback(
+                self.debugger_memory_write_func,
+                self.debugger_memory_read_func,
+                0,
+                0x10000000000000000  # FIXME: Get actual ranges and add them
+            )
+        else:
+            raise NotImplementedError()
+
+        self.inner_widget.set_display_start_addr(start)
+        self.inner_widget.hex.set_cursor(cursor)
+        self._update_highlight_regions_from_synchronized_views()
+        self._update_highlight_regions_under_cursor()
+        self._set_highlighted_regions()
+
+    def _data_source_changed(self, index: int):  # pylint:disable=unused-argument
+        self._reload_data()
+
+    def _on_debugger_state_updated(self):
+        source = self._data_source_combo.currentData()
+        if source == HexDataSource.Debugger:
+            #
+            # Calculate differences in state memory and highlight
+            #
+            previous_data = self._data_cache
+            self._data_cache = {}
+            addr = self.inner_widget.hex.display_start_addr
+            regions = []
+            r = None
+            while addr < self.inner_widget.hex.display_end_addr:
+                if addr in previous_data:
+                    differs = self.debugger_memory_read_func(addr) != previous_data[addr]
+                else:
+                    differs = False
+                if differs:
+                    if r is None:
+                        r = HexHighlightRegion(Qt.red, addr, 0)
+                        regions.append(r)
+                    r.size += 1
+                else:
+                    r = None
+                addr += 1
+            self._changed_data_highlights = regions
+            self.inner_widget.hex.update()
+            self._set_highlighted_regions()
+
+    def debugger_memory_read_func(self, addr: int) -> HexByteValue:
+        """
+        Callback to populate hex view with bytes from debugger state.
+        """
+        if addr not in self._data_cache:
+            dbg = self.workspace.instance.debugger_mgr.debugger
+            if dbg.am_none:
+                v = '?'
+            else:
+                state: Optional[angr.SimState] = dbg.simstate
+                if state is None:
+                    v = '?'
+                else:
+                    try:
+                        r = state.memory.load(addr, 1)
+                        v = 'S' if r.symbolic else state.solver.eval(r)
+                    except:  # pylint:disable=bare-except
+                        l.exception('Failed to read @ %#x', addr)
+                        v = '?'
+            self._data_cache[addr] = v
+        return self._data_cache[addr]
+
+    def debugger_memory_write_func(self, addr: int, value: int) -> bool:  # pylint:disable=unused-argument,no-self-use
+        """
+        Callback to populate hex view with bytes.
+        """
+        # FIXME: For debuggers that support it, allow editing
+        return False
 
     def project_memory_read_func(self, addr: int) -> HexByteValue:
         """
@@ -1228,7 +1389,7 @@ class HexView(SynchronizedView):
 
     def project_memory_write_bytearray(self, addr: int, value: bytearray) -> bool:
         """
-        Callback to populate hex view with bytes.
+        Callback to write array of bytes as patch.
         """
         self.auto_patch(addr, bytearray(value))
         pm = self.workspace.instance.project.kb.patches
@@ -1243,21 +1404,6 @@ class HexView(SynchronizedView):
         Callback to populate hex view with bytes.
         """
         return self.project_memory_write_bytearray(addr, bytearray([value]))
-
-    def reload_cfb(self):
-        """
-        Callback when project CFB changes.
-        """
-        if self.workspace.instance.cfb.am_none:
-            return
-
-        loader = self.workspace.instance.project.loader
-        self.inner_widget.set_region_callback(
-            self.project_memory_write_func,
-            self.project_memory_read_func,
-            loader.min_addr,
-            loader.max_addr - loader.min_addr + 1
-        )
 
     def set_smart_highlighting_enabled(self, enable: bool):
         """
@@ -1282,6 +1428,12 @@ class HexView(SynchronizedView):
 
         status_lyt.addWidget(self._status_lbl)
         status_lyt.addStretch(0)
+
+        self._data_source_combo = QComboBox(self)
+        self._data_source_combo.addItem("Loader", HexDataSource.Loader)
+        self._data_source_combo.addItem("Debugger", HexDataSource.Debugger)
+        self._data_source_combo.activated.connect(self._data_source_changed)
+        status_lyt.addWidget(self._data_source_combo)
 
         option_btn = QPushButton()
         option_btn.setText('Options')
@@ -1384,8 +1536,11 @@ class HexView(SynchronizedView):
         """
         Paste the view-only clipboard contents at cursor location.
         """
-        if self._clipboard is not None:
+        if self._clipboard is None:
+            return
+        if self._data_source_combo.currentData() == HexDataSource.Loader:
             self.project_memory_write_bytearray(self.inner_widget.hex.cursor, self._clipboard)
+        # FIXME: Support pasting data to current debugger state
 
     def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
@@ -1402,7 +1557,7 @@ class HexView(SynchronizedView):
             act.triggered.connect(self._copy_selected_bytes)
             mnu.addAction(act)
             add_sep = True
-        if self._clipboard is not None:
+        if self._clipboard is not None and self._data_source_combo.currentData() == HexDataSource.Loader:
             plural = "s" if len(self._clipboard) != 1 else ""
             act = QAction(f"Paste {len(self._clipboard):d} byte{plural}", mnu)
             act.triggered.connect(self._paste_copied_bytes_at_cursor)
@@ -1580,5 +1735,9 @@ class HexView(SynchronizedView):
         regions = []
         regions.extend(self._cfb_highlights)
         regions.extend(self._sync_view_highlights)
-        regions.extend(self._patch_highlights)
+        source = self._data_source_combo.currentData()
+        if source == HexDataSource.Loader:
+            regions.extend(self._patch_highlights)
+        elif source == HexDataSource.Debugger:
+            regions.extend(self._changed_data_highlights)
         self.inner_widget.hex.set_highlight_regions(regions)
