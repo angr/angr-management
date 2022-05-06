@@ -865,6 +865,8 @@ class DisassemblyView(SynchronizedView):
             return self._insn_addr_on_context_menu
         elif len(self.infodock.selected_insns) == 1:
             return next(iter(self.infodock.selected_insns))
+        elif len(self.infodock.selected_labels) == 1:
+            return next(iter(self.infodock.selected_labels))
         else:
             return None
 
