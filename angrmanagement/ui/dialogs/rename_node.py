@@ -30,7 +30,8 @@ class NodeNameBox(QLineEdit):
 
     @staticmethod
     def _is_valid_node_name(name):
-        return name and not ' ' in name.strip()
+        stripped = name.strip()
+        return stripped and ' ' not in stripped
 
 
 class RenameNode(QDialog):
