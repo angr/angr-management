@@ -1,3 +1,4 @@
+import sys
 import time
 import logging
 from threading import Thread
@@ -21,7 +22,6 @@ from ..data.breakpoint import BreakpointManager
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
-
 
 class Instance:
     """
@@ -284,9 +284,11 @@ class Instance:
                 result = job.run(self)
                 self.current_job = None
             except Exception as e: # pylint: disable=broad-except
+                sys.last_traceback = e.__traceback__
                 self.current_job = None
                 self.workspace.log('Exception while running job "%s":' % job.name)
                 self.workspace.log(e)
+                self.workspace.log("Type %debug to debug it")
             else:
                 gui_thread_schedule_async(job.finish, args=(self, result))
 
