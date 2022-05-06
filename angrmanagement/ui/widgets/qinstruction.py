@@ -126,7 +126,10 @@ class QInstruction(QCachedGraphicsItem):
         return None
 
     def load_comment(self):
-        self._comment = get_comment_for_display(self.workspace.instance.kb, self.insn.addr)
+        if self.worksapce.instance.kb is None:
+            self._comment = None
+        else:
+            self._comment = get_comment_for_display(self.workspace.instance.kb, self.insn.addr)
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
