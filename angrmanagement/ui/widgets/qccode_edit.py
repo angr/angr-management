@@ -105,9 +105,7 @@ class QCCodeEdit(api.CodeEdit):
 
         mnu = QMenu()
         self._selected_node = None
-        if isinstance(under_cursor, CBinaryOp) \
-                and "vex_stmt_idx" in under_cursor.tags \
-                and "vex_block_addr" in under_cursor.tags:
+        if isinstance(under_cursor, CBinaryOp):
             # operator in selection
             self._selected_node = under_cursor
             mnu.addActions(self.operator_actions)
@@ -186,6 +184,7 @@ class QCCodeEdit(api.CodeEdit):
         return asm_ins_addr
 
     def keyPressEvent(self, event):
+        # TODO make this actually inspect the shortcuts for the active menu entries
         key = event.key()
         node = self.node_under_cursor()
 
@@ -325,6 +324,14 @@ class QCCodeEdit(api.CodeEdit):
             # decompile again
             self._code_view.decompile()
 
+    def collapse_expr(self):
+        self._selected_node.collapsed = True
+        self._code_view.codegen.am_event()
+
+    def expand_expr(self):
+        self._selected_node.collapsed = False
+        self._code_view.codegen.am_event()
+
     def expr2armasm(self):
 
         def _assemble(expr, expr_addr) -> str:
@@ -407,6 +414,15 @@ class QCCodeEdit(api.CodeEdit):
         self.action_retype_node.triggered.connect(self.retype_node)
         self.action_toggle_struct = QAction('Toggle &struct/array')
         self.action_toggle_struct.triggered.connect(self.toggle_struct)
+        self.action_collapse_expr = QAction('Collapse expression', self)
+        self.action_collapse_expr.triggered.connect(self.collapse_expr)
+        self.action_expand_expr = QAction('Expand expression', self)
+        self.action_expand_expr.triggered.connect(self.expand_expr)
+
+        expr_actions = [
+            self.action_collapse_expr,
+            self.action_expand_expr,
+        ]
 
         self.action_asmgen = QAction("Expression -> ARM THUMB assembly...")
         self.action_asmgen.triggered.connect(self.expr2armasm)
@@ -422,10 +438,10 @@ class QCCodeEdit(api.CodeEdit):
             self.action_rename_node,
         ]
 
-        self.constant_actions += base_actions
-        self.operator_actions += base_actions
-        self.variable_actions += base_actions
+        self.constant_actions += base_actions + expr_actions
+        self.operator_actions += base_actions + expr_actions
+        self.variable_actions += base_actions + expr_actions
         self.function_name_actions += base_actions
-        self.call_actions += base_actions
+        self.call_actions += base_actions + expr_actions
         self.selected_actions += base_actions
         self.default_actions += base_actions
