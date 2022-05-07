@@ -97,7 +97,7 @@ class QXRefModel(QAbstractTableModel):
 
 class QXRefVariableModel(QXRefModel):
 
-    HEADER = [('Direction', 70), ('Type', 50), ('Variable', 80), ('VarId', 80), ('PC', 80), ('Text', 300)]
+    HEADER = [('Direction', 70), ('Type', 50), ('Variable', 80), ('VarId', 80), ('PC', 160), ('Text', 300)]
 
     DIRECTION_COL = 0
     TYPE_COL = 1
@@ -118,7 +118,7 @@ class QXRefVariableModel(QXRefModel):
             self.TYPE_COL: self._access_type,
             self.VARIABLE_COL: self._varname,
             self.VARID_COL: self._identstr,
-            self.PC_COL: lambda _r: _r.location.ins_addr,
+            self.PC_COL: self._addrstr,
             self.TEXT_COL: self._text,
         }
 
@@ -126,6 +126,13 @@ class QXRefVariableModel(QXRefModel):
         if handler is not None:
             return handler(ref)
         return None
+
+    def _addrstr(self, _r):
+        addr = _r.location.ins_addr
+        node = self.instance.cfg.get_any_node(addr, anyaddr=True)
+        if node is not None and node.function_address is not None:
+            return f'{addr:#x} ({self.instance.kb.functions[node.function_address].name})'
+        return hex(addr)
 
     def _direction(self, _r):
         """
@@ -180,7 +187,7 @@ class QXRefVariableModel(QXRefModel):
 
 class QXRefAddressModel(QXRefModel):
 
-    HEADER = [('Direction', 70), ('Type', 50), ('PC', 80), ('Text', 300)]
+    HEADER = [('Direction', 70), ('Type', 50), ('PC', 160), ('Text', 300)]
 
     DIRECTION_COL = 0
     TYPE_COL = 1
@@ -197,7 +204,7 @@ class QXRefAddressModel(QXRefModel):
         mapping = {
             self.DIRECTION_COL: self._direction,
             self.TYPE_COL: self._access_type,
-            self.PC_COL: lambda _r: _r.ins_addr,
+            self.PC_COL: self._addrstr,
             self.TEXT_COL: self._text,
         }
 
@@ -205,6 +212,13 @@ class QXRefAddressModel(QXRefModel):
         if handler is not None:
             return handler(ref)
         return None
+
+    def _addrstr(self, _r):
+        addr = _r.ins_addr
+        node = self.instance.cfg.get_any_node(addr, anyaddr=True)
+        if node is not None and node.function_address is not None:
+            return f'{addr:#x} ({self.instance.kb.functions[node.function_address].name})'
+        return hex(addr)
 
     def _direction(self, _r):
         """
