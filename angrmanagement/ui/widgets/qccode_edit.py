@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
 from PySide2.QtCore import Qt, QEvent
-from PySide2.QtGui import QTextCharFormat
-from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit, QApplication
+from PySide2.QtGui import QTextCharFormat, QKeySequence
+from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit, QApplication, QShortcut
 
 from pyqodeng.core import api
 from pyqodeng.core import modes
@@ -13,7 +13,7 @@ from ailment.expression import Load, Convert
 from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
-    CStructField, CIndexedVariable, CVariableField
+    CStructField, CIndexedVariable, CVariableField, CUnaryOp, CConstant
 
 from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
@@ -105,7 +105,10 @@ class QCCodeEdit(api.CodeEdit):
 
         mnu = QMenu()
         self._selected_node = None
-        if isinstance(under_cursor, CBinaryOp):
+        if isinstance(under_cursor, CConstant):
+            self._selected_node = under_cursor
+            mnu.addActions(self.constant_actions)
+        if isinstance(under_cursor, (CBinaryOp, CUnaryOp)):
             # operator in selection
             self._selected_node = under_cursor
             mnu.addActions(self.operator_actions)
@@ -184,20 +187,24 @@ class QCCodeEdit(api.CodeEdit):
         return asm_ins_addr
 
     def keyPressEvent(self, event):
-        # TODO make this actually inspect the shortcuts for the active menu entries
         key = event.key()
-        node = self.node_under_cursor()
+        modifiers = event.modifiers()
+        xkey = key
+        if modifiers & Qt.ShiftModifier:
+            xkey += Qt.SHIFT
+        if modifiers & Qt.ControlModifier:
+            xkey += Qt.CTRL
+        if modifiers & Qt.AltModifier:
+            xkey += Qt.ALT
+        if modifiers & Qt.MetaModifier:
+            xkey += Qt.META
+        sequence = QKeySequence(xkey)
+        mnu = self.get_context_menu()
+        for item in mnu.actions():
+            if item.shortcut().matches(sequence) == QKeySequence.SequenceMatch.ExactMatch:
+                item.activate(QAction.ActionEvent.Trigger)
+                return True
 
-        if key == Qt.Key_N:
-            if node is not None:
-                self.rename_node(node=node)
-            return True
-        if key == Qt.Key_Y:
-            # setting the type
-            if isinstance(node, (CVariable, )):
-                # find existing type
-                self.retype_node(node=node, node_type=node.variable_type)
-            return True
         if key in (Qt.Key_Slash, Qt.Key_Question):
             self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
             return True
@@ -325,12 +332,24 @@ class QCCodeEdit(api.CodeEdit):
             self._code_view.decompile()
 
     def collapse_expr(self):
-        self._selected_node.collapsed = True
-        self._code_view.codegen.am_event()
+        if hasattr(self._selected_node, 'collapsed'):
+            self._selected_node.collapsed = True
+            self._code_view.codegen.am_event()
 
     def expand_expr(self):
-        self._selected_node.collapsed = False
-        self._code_view.codegen.am_event()
+        if hasattr(self._selected_node, 'collapsed'):
+            self._selected_node.collapsed = False
+            self._code_view.codegen.am_event()
+
+    def hex_constant(self):
+        if hasattr(self._selected_node, 'fmt_hex'):
+            self._selected_node.fmt_hex ^= True
+            self._code_view.codegen.am_event()
+
+    def neg_constant(self):
+        if hasattr(self._selected_node, 'fmt_neg'):
+            self._selected_node.fmt_neg ^= True
+            self._code_view.codegen.am_event()
 
     def expr2armasm(self):
 
@@ -408,16 +427,24 @@ class QCCodeEdit(api.CodeEdit):
             self.action_select_all,
         ]
 
-        self.action_rename_node = QAction('Re&name variable', self)
+        self.action_rename_node = QAction('Rename variable', self)
         self.action_rename_node.triggered.connect(self.rename_node)
-        self.action_retype_node = QAction("Re&type variable", self)
+        self.action_rename_node.setShortcut(QKeySequence('N'))
+        self.action_retype_node = QAction("Retype variable", self)
         self.action_retype_node.triggered.connect(self.retype_node)
+        self.action_retype_node.setShortcut(QKeySequence('Y'))
         self.action_toggle_struct = QAction('Toggle &struct/array')
         self.action_toggle_struct.triggered.connect(self.toggle_struct)
         self.action_collapse_expr = QAction('Collapse expression', self)
         self.action_collapse_expr.triggered.connect(self.collapse_expr)
         self.action_expand_expr = QAction('Expand expression', self)
         self.action_expand_expr.triggered.connect(self.expand_expr)
+        self.action_hex = QAction('Toggle hex', self)
+        self.action_hex.triggered.connect(self.hex_constant)
+        self.action_hex.setShortcut(QKeySequence('H'))
+        self.action_neg = QAction('Toggle negative', self)
+        self.action_neg.triggered.connect(self.neg_constant)
+        self.action_neg.setShortcut(QKeySequence('_'))
 
         expr_actions = [
             self.action_collapse_expr,
@@ -436,6 +463,11 @@ class QCCodeEdit(api.CodeEdit):
 
         self.function_name_actions = [
             self.action_rename_node,
+        ]
+
+        self.constant_actions = [
+            self.action_hex,
+            self.action_neg,
         ]
 
         self.constant_actions += base_actions + expr_actions
