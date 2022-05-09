@@ -196,6 +196,7 @@ class HexGraphicsObject(QGraphicsObject):
     """
 
     cursor_changed = Signal()
+    viewport_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -283,6 +284,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.display_num_rows = num_rows or self.num_rows
         self.display_end_addr = min(self.end_addr, self.display_start_addr + self.display_num_rows * 16)
         self._update_layout()
+        self.viewport_changed.emit()
 
     def move_viewport_to(self, addr: HexAddress, preserve_relative_offset: bool = False):
         """
@@ -1305,7 +1307,7 @@ class HexView(SynchronizedView):
         self.inner_widget.set_display_start_addr(start)
         self.inner_widget.hex.set_cursor(cursor)
         self._update_highlight_regions_from_synchronized_views()
-        self._update_highlight_regions_under_cursor()
+        self._update_cfb_highlight_regions()
         self._set_highlighted_regions()
 
     def _data_source_changed(self, index: int):  # pylint:disable=unused-argument
@@ -1448,7 +1450,7 @@ class HexView(SynchronizedView):
         Control whether smart highlighting is enabled or not.
         """
         self.smart_highlighting_enabled = enable
-        self._update_highlight_regions_under_cursor()
+        self._update_cfb_highlight_regions()
 
     def _init_widgets(self):
         """
@@ -1492,6 +1494,7 @@ class HexView(SynchronizedView):
         lyt.addWidget(status_bar)
         self.setLayout(lyt)
         self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
+        self.inner_widget.hex.viewport_changed.connect(self.on_cursor_changed)
 
         self._widgets_initialized = True
 
@@ -1678,23 +1681,24 @@ class HexView(SynchronizedView):
 
     def on_cursor_changed(self):
         """
-        Handle updates to cursor.
+        Handle updates to cursor or viewport.
         """
         self.update_status_text()
-        self._update_highlight_regions_under_cursor()
+        self._update_cfb_highlight_regions()
         self.set_synchronized_cursor_address(self.inner_widget.hex.cursor)
 
     def update_status_text(self):
         """
         Update status text with current cursor info.
         """
-        s = 'Address: %08x' % self.inner_widget.hex.cursor
         sel = self.inner_widget.hex.get_selection()
-        if sel is not None:
+        if sel:
             minaddr, maxaddr = sel
             bytes_selected = maxaddr - minaddr + 1
             plural = "s" if bytes_selected != 1 else ""
             s = f'Address: [{minaddr:08x}, {maxaddr:08x}], {bytes_selected} byte{plural} selected'
+        else:
+            s = 'Address: %08x' % self.inner_widget.hex.cursor
         self._status_lbl.setText(s)
 
     def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
@@ -1733,60 +1737,39 @@ class HexView(SynchronizedView):
         """
         self._update_highlight_regions_from_synchronized_views()
 
-    def _generate_highlight_regions_under_cursor(self) -> Sequence[HexHighlightRegion]:
-        """
-        Generate list of highlighted regions from CFB under cursor.
-        """
-        regions = []
-
-        try:
-            cfb = self.workspace.instance.cfb
-            if cfb.am_none:
-                return []
-            item = cfb.floor_item(self.inner_widget.hex.cursor)
-        except KeyError:
-            item = None
-        if item is None:
-            return regions
-
-        addr, item = item
-        if self.inner_widget.hex.cursor >= (addr + item.size):
-            return regions
-
-        if isinstance(item, MemoryData):
-            color = Conf.hex_view_string_color if item.sort == 'string' else Conf.hex_view_data_color
-            regions.append(HexHighlightRegion(color, item.addr, item.size))
-        elif isinstance(item, Block):
-            for insn in item.disassembly.insns:
-                regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size))
-
-        return regions
-
-    def _update_highlight_regions_under_cursor(self):
+    def _update_cfb_highlight_regions(self):
         """
         Update cached list of highlight regions under cursor.
         """
-        self._cfb_highlights = []
-        if self.smart_highlighting_enabled:
-            self._cfb_highlights.extend(self._generate_highlight_regions_under_cursor())
+        regions = []
+        cfb = self.workspace.instance.cfb
+        if self.smart_highlighting_enabled and not cfb.am_none:
+            for item in cfb.floor_items(self.inner_widget.hex.display_start_addr):
+                item_addr, item = item
+                if (item_addr + item.size) < self.inner_widget.hex.display_start_addr:
+                    continue
+                if item_addr >= self.inner_widget.hex.display_end_addr:
+                    break
+                if isinstance(item, MemoryData):
+                    color = Conf.hex_view_string_color if item.sort == 'string' else Conf.hex_view_data_color
+                    regions.append(HexHighlightRegion(color, item.addr, item.size))
+                elif isinstance(item, Block):
+                    for insn in item.disassembly.insns:
+                        regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size))
+        self._cfb_highlights = regions
         self._set_highlighted_regions()
 
-    def _generate_highlight_regions_from_synchronized_views(self) -> Sequence[HexHighlightRegion]:
+    def _update_highlight_regions_from_synchronized_views(self):
         """
-        Generate list of highlighted regions from any synchronized views.
+        Update cached list of highlight regions from synchronized views.
         """
         regions = []
         for v in self.sync_state.highlight_regions:
             if v is not self:
                 for r in self.sync_state.highlight_regions[v]:
                     regions.append(HexHighlightRegion(Qt.green, r.addr, r.size))
-        return regions
 
-    def _update_highlight_regions_from_synchronized_views(self):
-        """
-        Update cached list of highlight regions from synchronized views.
-        """
-        self._sync_view_highlights = self._generate_highlight_regions_from_synchronized_views()
+        self._sync_view_highlights = regions
         self._set_highlighted_regions()
 
     def _update_highlight_regions_from_patches(self):
