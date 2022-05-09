@@ -1,3 +1,4 @@
+import functools
 from typing import Sequence, Union, Optional, Tuple, Callable
 from enum import Enum
 import logging
@@ -14,13 +15,15 @@ from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMargins
 from angr import Block
 from angr.knowledge_plugins.cfg import MemoryData
 from angr.knowledge_plugins.patches import Patch
-from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
 
 from .view import SynchronizedView
 from ..dialogs.jumpto import JumpTo
+from ..dialogs.input_prompt import InputPromptDialog
 from ...utils import is_printable
 from ...config import Conf
 from ...logic.debugger import DebuggerWatcher
+from ...data.breakpoint import Breakpoint, BreakpointType
+
 
 l = logging.getLogger(__name__)
 
@@ -55,6 +58,38 @@ class HexHighlightRegion:
         Get submenu for this highlight region.
         """
         return None
+
+
+class BreakpointHighlightRegion(HexHighlightRegion):
+    """
+    Defines a highlighted region indicating a patch.
+    """
+
+    def __init__(self, bp: Breakpoint, view: 'HexView'):
+        super().__init__(Qt.cyan, bp.addr, bp.size)
+        self.bp: Breakpoint = bp
+        self.view: 'HexView' = view
+
+    def gen_context_menu_actions(self) -> Optional[QMenu]:
+        """
+        Get submenu for this highlight region.
+        """
+        bp_type_str = {
+            BreakpointType.Execute: 'Execute',
+            BreakpointType.Read: 'Read',
+            BreakpointType.Write: 'Write'
+        }.get(self.bp.type)
+        mnu = QMenu(f"Breakpoint 0x{self.bp.addr:x} {bp_type_str} ({self.bp.size} bytes)")
+        act = QAction("&Remove", mnu)
+        act.triggered.connect(self.remove)
+        mnu.addAction(act)
+        return mnu
+
+    def remove(self):
+        """
+        Remove this breakpoint.
+        """
+        self.view.workspace.instance.breakpoint_mgr.remove_breakpoint(self.bp)
 
 
 class PatchHighlightRegion(HexHighlightRegion):
@@ -1206,12 +1241,14 @@ class HexView(SynchronizedView):
         self._clipboard = None
         self._cfb_highlights: Sequence[HexHighlightRegion] = []
         self._sync_view_highlights: Sequence[HexHighlightRegion] = []
-        self._patch_highlights: Sequence[HexHighlightRegion] = []
+        self._patch_highlights: Sequence[PatchHighlightRegion] = []
         self._changed_data_highlights: Sequence[HexHighlightRegion] = []
+        self._breakpoint_highlights: Sequence[BreakpointHighlightRegion] = []
 
         self._init_widgets()
         self.workspace.instance.cfb.am_subscribe(self._reload_data)
         self.workspace.instance.patches.am_subscribe(self._update_highlight_regions_from_patches)
+        self.workspace.instance.breakpoint_mgr.breakpoints.am_subscribe(self._update_highlight_regions_from_breakpoints)
         self._data_cache = {}
 
         self._reload_data()
@@ -1232,6 +1269,7 @@ class HexView(SynchronizedView):
         self._sync_view_highlights = []
         self._patch_highlights = []
         self._changed_data_highlights = []
+        self._breakpoint_highlights = []
 
     def _reload_data(self):
         """
@@ -1542,6 +1580,37 @@ class HexView(SynchronizedView):
             self.project_memory_write_bytearray(self.inner_widget.hex.cursor, self._clipboard)
         # FIXME: Support pasting data to current debugger state
 
+    def _set_breakpoint(self, bp_type: BreakpointType = BreakpointType.Execute):
+        """
+        Set breakpoint at current cursor.
+        """
+        sel = self.inner_widget.hex.get_selection()
+        if sel:
+            minaddr, maxaddr = sel
+            num_bytes_selected = maxaddr - minaddr + 1
+        else:
+            minaddr = self.inner_widget.hex.cursor
+            num_bytes_selected = 1
+        self.workspace.instance.breakpoint_mgr.add_breakpoint(
+            Breakpoint(bp_type, minaddr, num_bytes_selected)
+        )
+
+    def _get_breakpoint_submenu(self) -> QMenu:
+        """
+        Get context menu to add new breakpoints.
+        """
+        mnu = QMenu('Set &breakpoint', self)
+        act = QAction('Break on &Execute', mnu)
+        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Execute))
+        mnu.addAction(act)
+        act = QAction('Break on &Read', mnu)
+        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Read))
+        mnu.addAction(act)
+        act = QAction('Break on &Write', mnu)
+        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Write))
+        mnu.addAction(act)
+        return mnu
+
     def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
         Display view context menu.
@@ -1567,6 +1636,9 @@ class HexView(SynchronizedView):
         if add_sep:
             mnu.addSeparator()
             add_sep = False
+
+        mnu.addMenu(self._get_breakpoint_submenu())
+        mnu.addSeparator()
 
         # Get context menu for specific item under cursor
         for rgn in self.inner_widget.hex.get_highlight_regions_under_cursor():
@@ -1728,6 +1800,17 @@ class HexView(SynchronizedView):
                                       for patch in self.workspace.instance.project.kb.patches.values()]
         self._set_highlighted_regions()
 
+    def _update_highlight_regions_from_breakpoints(self, **kwargs):  # pylint:disable=unused-argument
+        """
+        Updates cached list of highlight regions from breakpoints.
+        """
+        if self.workspace.instance.project.am_none:
+            self._breakpoint_highlights = []
+        else:
+            self._breakpoint_highlights = [BreakpointHighlightRegion(bp, self)
+                                            for bp in self.workspace.instance.breakpoint_mgr.breakpoints]
+        self._set_highlighted_regions()
+
     def _set_highlighted_regions(self):
         """
         Update highlighted regions, with data from CFB and synchronized views.
@@ -1740,4 +1823,5 @@ class HexView(SynchronizedView):
             regions.extend(self._patch_highlights)
         elif source == HexDataSource.Debugger:
             regions.extend(self._changed_data_highlights)
+        regions.extend(self._breakpoint_highlights)
         self.inner_widget.hex.set_highlight_regions(regions)
