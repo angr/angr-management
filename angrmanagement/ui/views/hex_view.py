@@ -47,17 +47,24 @@ class HexHighlightRegion:
     Defines a highlighted region.
     """
 
-    def __init__(self, color: QColor, addr: HexAddress, size: int):
+    def __init__(self, color: QColor, addr: HexAddress, size: int, tooltip: Optional[str] = None):
         self.color: QColor = color
         self.addr: HexAddress = addr
         self.size: int = size
         self.active: bool = False
+        self._tooltip: Optional[str] = tooltip
 
     def gen_context_menu_actions(self) -> Optional[QMenu]:  # pylint: disable=no-self-use
         """
         Get submenu for this highlight region.
         """
         return None
+
+    def get_tooltip(self) -> Optional[str]:
+        """
+        Return a tooltip for this region.
+        """
+        return self._tooltip
 
 
 class BreakpointHighlightRegion(HexHighlightRegion):
@@ -91,6 +98,17 @@ class BreakpointHighlightRegion(HexHighlightRegion):
         """
         self.view.workspace.instance.breakpoint_mgr.remove_breakpoint(self.bp)
 
+    def get_tooltip(self) -> Optional[str]:
+        """
+        Return a tooltip for this region.
+        """
+        bp_type_str = {
+            BreakpointType.Execute: 'Execute',
+            BreakpointType.Read: 'Read',
+            BreakpointType.Write: 'Write'
+        }.get(self.bp.type)
+        return f"Breakpoint 0x{self.bp.addr:x} {bp_type_str} ({self.bp.size} bytes)"
+
 
 class PatchHighlightRegion(HexHighlightRegion):
     """
@@ -101,6 +119,12 @@ class PatchHighlightRegion(HexHighlightRegion):
         super().__init__(Qt.yellow, patch.addr, len(patch))
         self.patch: Patch = patch
         self.view: 'HexView' = view
+
+    def get_tooltip(self) -> Optional[str]:
+        """
+        Return a tooltip for this region.
+        """
+        return f"Patch 0x{self.patch.addr:x} ({len(self.patch)} bytes)"
 
     def gen_context_menu_actions(self) -> Optional[QMenu]:
         """
@@ -501,15 +525,21 @@ class HexGraphicsObject(QGraphicsObject):
         """
         return [rgn for rgn in self.highlighted_regions if rgn.active]
 
-    def get_highlight_regions_under_cursor(self) -> Sequence[HexHighlightRegion]:
+    def get_highlight_regions_at_addr(self, addr: HexAddress) -> Sequence[HexHighlightRegion]:
         """
-        Return the region under the cursor, or None if there isn't a region under the cursor.
+        Return the highlight regions at specified address.
         """
         regions = []
         for region in self.highlighted_regions:
-            if region.addr <= self.cursor < (region.addr + region.size):
+            if region.addr <= addr < (region.addr + region.size):
                 regions.append(region)
         return regions
+
+    def get_highlight_regions_under_cursor(self) -> Sequence[HexHighlightRegion]:
+        """
+        Return the highlight regions under the cursor.
+        """
+        return self.get_highlight_regions_at_addr(self.cursor)
 
     def set_cursor(self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None,
                    update_viewport: bool = True):
@@ -992,10 +1022,35 @@ class HexGraphicsObject(QGraphicsObject):
         return QRectF(0, 0, self.max_x, self.max_y)
 
 
+    def on_mouse_move_event_from_view(self, point: QPointF):
+        """
+        Highlight memory region under cursor.
+        """
+        self.setToolTip('')
+        addr = self.point_to_addr(point)
+        if addr is None:
+            return
+        addr, _ = addr
+        regions = self.get_highlight_regions_at_addr(addr)
+        if len(regions):
+            t = '\n'.join(t for t in [r.get_tooltip() for r in regions] if t)
+            self.setToolTip(t)
+
+
 class HexGraphicsSubView(QGraphicsView):
     """
     Wrapper QGraphicsView used for rendering and event propagation.
     """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.setMouseTracking(True)
+        self.setBackgroundBrush(Conf.palette_base)
+        self.setResizeAnchor(QGraphicsView.NoAnchor)
+        self.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
     def wheelEvent(self, event):
         self.parent().wheelEvent(event)
@@ -1004,6 +1059,17 @@ class HexGraphicsSubView(QGraphicsView):
     def resizeEvent(self, event):
         self.parent().resizeEvent(event)
 
+    def mouseMoveEvent(self, event):
+        """
+        Handle mouse move events.
+
+        Mouse move events whilst not holding a mouse button will not be propagated down to QGraphicsItems, so we catch
+        the movement events here in the view and forward them to the feature map item.
+        """
+        scene_pt = self.mapToScene(event.pos().x(), event.pos().y())
+        item_pt = self.mapFromScene(scene_pt)
+        self.parent().hex.on_mouse_move_event_from_view(item_pt)
+        super().mouseMoveEvent(event)
 
 class HexGraphicsView(QAbstractScrollArea):
     """
@@ -1023,13 +1089,6 @@ class HexGraphicsView(QAbstractScrollArea):
         self._scene.addItem(self.hex)
         self._view.setScene(self._scene)
 
-        self._view.setBackgroundBrush(Conf.palette_base)
-        self._view.setResizeAnchor(QGraphicsView.NoAnchor)
-        self._view.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self._view.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-
-        self._view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self._view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
@@ -1752,10 +1811,11 @@ class HexView(SynchronizedView):
                     break
                 if isinstance(item, MemoryData):
                     color = Conf.hex_view_string_color if item.sort == 'string' else Conf.hex_view_data_color
-                    regions.append(HexHighlightRegion(color, item.addr, item.size))
+                    regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
                 elif isinstance(item, Block):
                     for insn in item.disassembly.insns:
-                        regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size))
+                        s = f'{insn} in {item}'
+                        regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size, s))
         self._cfb_highlights = regions
         self._set_highlighted_regions()
 
