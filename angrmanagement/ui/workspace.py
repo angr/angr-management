@@ -526,6 +526,8 @@ class Workspace:
             on_complete()
             return
 
+        self.instance.binary_path = thing
+        self.instance.original_binary_path = thing
         job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
         self.instance.add_job(job)
 
