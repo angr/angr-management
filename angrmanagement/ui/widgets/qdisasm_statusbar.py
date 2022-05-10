@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
+from angr.knowledge_plugins import Function
 
 from ..menus.disasm_options_menu import DisasmOptionsMenu
 from ..toolbars import NavToolbar
@@ -31,7 +32,7 @@ class QDisasmStatusBar(QFrame):
         self._view_combo: QComboBox = None
 
         # information
-        self._function = None
+        self._function: Optional[Function] = None
 
         self._init_menu()
         self._init_widgets()
@@ -43,14 +44,7 @@ class QDisasmStatusBar(QFrame):
     @function.setter
     def function(self, f):
         self._function = f
-
-        self._update_function_address()
-
-    @property
-    def function_address(self):
-        if self._function is None:
-            return None
-        return self._function.addr
+        self._update_function_label()
 
     #
     # Initialization
@@ -135,9 +129,12 @@ class QDisasmStatusBar(QFrame):
         index = self._disasm_level_combo.findData(new_level)
         self._disasm_level_combo.setCurrentIndex(index)
 
-    def _update_function_address(self):
-        if self.function_address is not None:
-            self._function_label.setText("Function %x" % self.function_address)
+    def _update_function_label(self):
+        if self._function:
+            s = f'{self._function.name} ({self._function.addr:#x})'
+        else:
+            s = ''
+        self._function_label.setText(s)
 
     def _on_saveimage_btn_clicked(self):
 
