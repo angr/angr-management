@@ -30,6 +30,8 @@ class QIPythonWidget(RichJupyterWidget):
 
         self.exit_requested.connect(stop)
 
+        self.enable_calltips = False
+
     def __del__(self):
         super().__del__()
         CSS.global_css.am_unsubscribe(self._on_css_updated)
