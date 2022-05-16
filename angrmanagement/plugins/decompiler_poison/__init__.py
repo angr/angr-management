@@ -7,32 +7,97 @@ from angr.analyses.decompiler.optimization_passes import _all_optimization_passe
 from angr.analyses.decompiler.structured_codegen.c import CFunctionCall
 from angr.knowledge_plugins import KnowledgeBasePlugin
 
-from .. import BasePlugin
+from angrmanagement.plugins import BasePlugin
+from angrmanagement.ui.views import CodeView
+
 
 class PoisonPlugin(BasePlugin):
+    """
+    Allows the user to "poison" pieces of code, removing them and causing any conditional jumps pointing to that code
+    to be removed and made unconditional in the opposite direction.
+    """
     def build_context_menu_node(self, node):
         if isinstance(node, CFunctionCall) and node.callee_func is not None:
-            return [
-                ('Poison call for this function', lambda: self.set_poison_local(node.codegen._func.addr, node.callee_func.addr)),
-                ('Poison call globally', lambda: self.set_poison_global(node.callee_func.addr)),
-            ]
+            yield None
+            if self.knowledge.is_poisoned_local(node.codegen._func.addr, node.callee_func.addr):
+                yield 'Remove poison for this function', lambda: self.set_poison_local(
+                    node.codegen._func.addr,
+                    node.callee_func.addr,
+                    False
+                )
+            else:
+                yield 'Poison call for this function', lambda: self.set_poison_local(
+                    node.codegen._func.addr,
+                    node.callee_func.addr,
+                    True
+                )
+            if self.knowledge.is_poisoned_global(node.callee_func.addr):
+                yield 'Remove global poison', lambda: self.set_poison_global(node.callee_func.addr, False)
+            else:
+                yield 'Poison call globally', lambda: self.set_poison_global(node.callee_func.addr, True)
         else:
-            return []
+            pass
 
-    def set_poison_local(self, func, callee):
-        self.workspace.instance.kb.get_plugin('decompiler_poison').local_poison[func].add(callee)
+    @property
+    def knowledge(self) -> 'PoisonKnowledge':
+        return self.workspace.instance.kb.decompiler_poison
 
-    def set_poison_global(self, callee):
-        self.workspace.instance.kb.get_plugin('decompiler_poison').global_poison.add(callee)
+    def set_poison_local(self, func, callee, value):
+        if value:
+            self.knowledge.local_poison[func].add(callee)
+        else:
+            self.knowledge.local_poison[func].discard(callee)
+        if isinstance(self.workspace.view_manager.current_tab, CodeView):
+            self.workspace.view_manager.current_tab.decompile()
+
+    def set_poison_global(self, callee, value):
+        if value:
+            self.knowledge.global_poison.add(callee)
+        else:
+            self.knowledge.global_poison.discard(callee)
+        if isinstance(self.workspace.view_manager.current_tab, CodeView):
+            self.workspace.view_manager.current_tab.decompile()
+
+    @staticmethod
+    def _poison_to_string(a_set):
+        return ','.join(hex(a) for a in a_set)
+
+    @staticmethod
+    def _string_to_poison(a_string):
+        return {int(a, 16) for a in a_string.split(',')}
+
+    def angrdb_store_entries(self):
+        poison = self.workspace.instance.kb.decompiler_poison.global_poison
+        if poison:
+            yield ('global_poison', self._poison_to_string(poison))
+        for func, poison in self.workspace.instance.kb.decompiler_poison.local_poison.items():
+            if poison:
+                yield ('local_poison_' + hex(func), self._poison_to_string(poison))
+
+    def angrdb_load_entry(self, key: str, value: str):
+        if key == 'global_poison':
+            self.workspace.instance.kb.decompiler_poison.global_poison = self._string_to_poison(value)
+        elif key.startswith('local_poison_'):
+            func = int(key.split('_')[2], 16)
+            self.workspace.instance.kb.decompiler_poison.local_poison[func] = self._string_to_poison(value)
 
 class PoisonKnowledge(KnowledgeBasePlugin):
+    """
+    See PoisonPlugin. This is the storage mechanism in the knowledgebase.
+    """
     def __init__(self, kb):
         self.kb = kb
         self.global_poison = set()
         self.local_poison = defaultdict(set)
 
+    def is_poisoned_local(self, func, addr):
+        return addr in self.local_poison[func]
+
+    def is_poisoned_global(self, addr):
+        return addr in self.global_poison
+
     def is_poisoned(self, func, addr):
-        return addr in self.global_poison or addr in self.local_poison[func]
+        return self.is_poisoned_local(func, addr) or self.is_poisoned_global(addr)
 
     def copy(self):
         out = PoisonKnowledge(self.kb)
@@ -42,8 +107,7 @@ class PoisonKnowledge(KnowledgeBasePlugin):
 
 class PoisonPass(OptimizationPass):
     """
-    Allows the user to "poison" pieces of code, removing them and causing any conditional jumps pointing to that code
-    to be removed and made unconditional in the opposite direction.
+    See PoisonPlugin. This is the optimization pass that trims poisoned branches.
     """
 
     ARCHES = ["X86", "AMD64"]
@@ -57,7 +121,7 @@ class PoisonPass(OptimizationPass):
         self.analyze()
 
     def is_poisoned(self, addr):
-        return self.project.kb.get_plugin("decompiler_poison").is_poisoned(self._func.addr, addr)
+        return self.project.kb.decompiler_poison.is_poisoned(self._func.addr, addr)
 
     def _check(self):
         return True, None
@@ -91,4 +155,3 @@ class PoisonPass(OptimizationPass):
 
 PoisonKnowledge.register_default('decompiler_poison', PoisonKnowledge)
 _all_optimization_passes.append((PoisonPass, True))
-AnalysesHub.register_default('PoisonPass', PoisonPass)
