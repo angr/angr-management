@@ -1,9 +1,10 @@
 # pylint:disable=unused-private-member
 import logging
-from typing import Optional, Tuple, Callable, Iterator, Generator, List, Any, Union, TYPE_CHECKING
+from typing import Optional, Tuple, Callable, Iterator, Generator, List, Any, Union, TYPE_CHECKING, Type
 from PySide2.QtGui import QColor, QPainter
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QGraphicsSceneMouseEvent
+
 from angr.sim_manager import SimulationManager
 
 from ..ui.widgets.qblock import QBlock
@@ -13,6 +14,7 @@ from ..ui.widgets.qinst_annotation import QInstructionAnnotation
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass
     from angrmanagement.ui.workspace import Workspace
     from angrmanagement.config.config_entry import ConfigurationEntry
     from ..ui.views import disassembly_view, code_view
@@ -171,6 +173,8 @@ class BasePlugin:
     #
     # Decompiler Callbacks
     #
+
+    OPTIMIZATION_PASSES: List[Tuple[Type['OptimizationPass'], bool]] = []
 
     def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         return False

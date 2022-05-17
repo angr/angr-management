@@ -474,3 +474,7 @@ class PluginManager:
                     custom(key, value)
                 except Exception as ex:  # pylint: disable=broad-except
                     self._handle_error(plugin, BasePlugin.angrdb_load_entry, False, ex)
+
+    def optimization_passes(self):
+        for plugin in self.active_plugins:
+            yield from plugin.OPTIMIZATION_PASSES

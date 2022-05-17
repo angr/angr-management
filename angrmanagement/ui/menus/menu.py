@@ -93,7 +93,7 @@ class Menu:
             entry = Menu(*entry)
 
         if isinstance(entry, MenuEntry):
-            action = QAction(entry.caption)
+            action = QAction(entry.caption, menu)
             action.triggered.connect(entry.action)
             entry.qaction = action
 
