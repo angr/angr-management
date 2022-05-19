@@ -1,6 +1,5 @@
 import socket
 import base64
-import platform
 
 import claripy
 from PySide2.QtGui import QIntValidator, QContextMenuEvent, QColor
@@ -11,15 +10,10 @@ from PySide2.QtCore import QSize, Qt, QAbstractItemModel, QModelIndex
 from angr.storage.file import SimPacketsStream
 
 
-socket_family = {"AF_INET": socket.AF_INET, "AF_INET6": socket.AF_INET6}
+_socket_families_wanted = ["AF_INET", "AF_INET6", "AF_UNIX", "AF_CAN", "AF_PACKET", "AF_RDS"]
+
+socket_family = {s: getattr(socket, s) for s in _socket_families_wanted if s in dir(socket)}
 socket_type = {"SOCK_STREAM": socket.SOCK_STREAM, "SOCK_DGRAM": socket.SOCK_DGRAM, "SOCK_RAW": socket.SOCK_RAW}
-
-if platform.system() != "Windows":
-    socket_family["AF_UNIX"] = socket.AF_UNIX
-    socket_family["AF_CAN"] = socket.AF_CAN
-    socket_family["AF_PACKET"] = socket.AF_PACKET
-    socket_family["AF_RDS"] = socket.AF_RDS
-
 
 class SocketItem(): # pylint: disable=no-self-use, unused-argument
     """
