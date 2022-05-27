@@ -44,6 +44,7 @@ class Instance:
         self.jobs = []
         self._jobs_queue = Queue()
         self.current_job = None
+        self.worker_thread = None
 
         self.extra_containers = {}
         self._container_defaults = {}
@@ -259,9 +260,10 @@ class Instance:
         t = Thread(target=target, name=name, args=args if args else tuple())
         t.daemon = True
         t.start()
+        return t
 
     def _start_worker(self):
-        self._start_daemon_thread(self._worker, 'angr-management Worker Thread')
+        self.worker_thread = self._start_daemon_thread(self._worker, 'angr-management Worker Thread')
 
     def _worker(self):
 
@@ -283,7 +285,7 @@ class Instance:
                 self.current_job = job
                 result = job.run(self)
                 self.current_job = None
-            except Exception as e: # pylint: disable=broad-except
+            except (Exception, KeyboardInterrupt) as e: # pylint: disable=broad-except
                 sys.last_traceback = e.__traceback__
                 self.current_job = None
                 self.workspace.log('Exception while running job "%s":' % job.name)
