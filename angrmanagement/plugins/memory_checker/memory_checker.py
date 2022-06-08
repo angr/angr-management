@@ -1,7 +1,10 @@
 from typing import List, TYPE_CHECKING
+import types
+
 from angr import options
 from angr.state_plugins.sim_action import SimAction
 from angr.state_plugins.heap import SimHeapPTMalloc
+from angr.errors import SimSegfaultException
 from sortedcontainers.sorteddict import SortedDict
 from angrmanagement.plugins.base_plugin import BasePlugin
 
@@ -16,13 +19,28 @@ class MemoryChecker(BasePlugin):
         super().__init__(*args, **kwargs)
         self.states = self.workspace.instance.states
         self.states.am_subscribe(self.install_state_plugin)
+        
+        self.simgrs = self.workspace.instance.simgrs
+        self.simgrs.am_subscribe(self.install_simgrs_option)
+        
+    def handle_project_initialization(self):
+        
+        def _handle_exception(self_simos, successors, engine, exception):
+            if not isinstance(exception, SimSegfaultException):
+                raise exception
+            
+        simos = self.workspace.instance.project.simos
+        simos.handle_exception = types.MethodType(_handle_exception, simos)
+
+    def install_simgrs_option(self, **kwargs):
+        
 
     def install_state_plugin(self, **kwargs):
         if kwargs.get("src",None) != "new":
             return
         state = kwargs.get("state") # type: SimState
         state.register_plugin('heap', SimHeapPTMalloc())
-        state.options.update({options.TRACK_MEMORY_ACTIONS})
+        state.options.update({options.TRACK_MEMORY_ACTIONS, options.STRICT_PAGE_ACCESS, options.EXCEPTION_HANDLING})
 
     @staticmethod
     def eval_ptr(state, ptr):
