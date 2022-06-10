@@ -176,6 +176,9 @@ class BinSyncPlugin(BasePlugin):
         func_addr = self.controller.get_func_addr_from_addr(address)
         self.controller.make_controller_cmd(
             self.controller.push_comment,
-            self.controller.rebase_addr(address), new_cmt, decomp, **{"func_addr": self.controller.rebase_addr(func_addr)}
+            self.controller.rebase_addr(address),
+            new_cmt,
+            decomp,
+            **{"func_addr": self.controller.rebase_addr(func_addr)}
         )
         return False
