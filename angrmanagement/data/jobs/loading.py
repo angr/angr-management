@@ -1,6 +1,11 @@
+from typing import List, Optional, Dict, TYPE_CHECKING
+import logging
+
+from PySide2.QtWidgets import QMessageBox
 
 import cle
 import angr
+from angr.angrdb import AngrDB
 import archinfo
 try:
     import archr
@@ -10,6 +15,11 @@ except ImportError:
 from .job import Job
 from ...logic.threads import gui_thread_schedule
 from ...ui.dialogs import LoadBinary
+
+if TYPE_CHECKING:
+    from angr.knowledge_base import KnowledgeBase
+
+_l = logging.getLogger(__name__)
 
 
 class LoadTargetJob(Job):
@@ -92,3 +102,50 @@ class LoadBinaryJob(Job):
             inst.project.am_obj = proj
             inst.project.am_event(cfg_args=cfg_args, variable_recovery_args=variable_recovery_args)
         gui_thread_schedule(callback, ())
+
+
+class LoadAngrDBJob(Job):
+    """
+    Load an angr database file and return a new angr project.
+    """
+    def __init__(self, file_path: str, kb_names: List[str], other_kbs: Optional[Dict[str,'KnowledgeBase']]=None,
+                 extra_info: Optional[Dict]=None, on_finish=None):
+        super().__init__("Loading angr database", on_finish=on_finish)
+        self.file_path = file_path
+        self.kb_names = kb_names
+        self.other_kbs = other_kbs
+        self.extra_info = extra_info
+        self.blocking = True
+
+        self.project = None
+
+    def _run(self, inst):
+        self._progress_callback(5)
+
+        angrdb = AngrDB()
+        try:
+            proj = angrdb.load(self.file_path,
+                               kb_names=self.kb_names,
+                               other_kbs=self.other_kbs,
+                               extra_info=self.extra_info)
+        except angr.errors.AngrIncompatibleDBError as ex:
+            _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
+            gui_thread_schedule(QMessageBox.critical,
+                                (None, 'Error',
+                                 "Failed to load the angr database because of compatibility issues.\n"
+                                 f"Details: {ex}")
+                                )
+            return
+        except angr.errors.AngrDBError as ex:
+            _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
+            gui_thread_schedule(QMessageBox.critical,
+                                (None, 'Error',
+                                 'Failed to load the angr database.\n'
+                                 f'Details: {ex}')
+                                )
+            _l.critical("Failed to load the angr database.", exc_info=True)
+            return
+
+        self.project = proj
+
+        self._progress_callback(100)
