@@ -4,6 +4,7 @@ import logging
 import pickle
 import sys
 import time
+from functools import partial
 from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QProgressDialog
@@ -31,7 +32,7 @@ from ..daemon.client import ClientService
 from ..logic import GlobalInfo
 from ..data.instance import Instance
 from ..data.library_docs import LibraryDocs
-from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob
+from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob, LoadAngrDBJob
 from ..data.jobs import DependencyAnalysisJob
 from ..config import IMG_LOCATION, Conf, save_config
 from ..utils.io import isurl, download_url
@@ -697,44 +698,40 @@ class MainWindow(QMainWindow):
         Conf.recent_file(file_path)
         save_config()
 
-    def _load_database(self, file_path):
+    def _load_database(self, file_path: str):
 
         if AngrDB is None:
             QMessageBox.critical(None, 'Error',
                                  'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
             return
 
-        angrdb = AngrDB()
+
         other_kbs = {}
         extra_info = {}
-        try:
-            proj = angrdb.load(file_path, kb_names=["global", "pseudocode_variable_kb"], other_kbs=other_kbs,
-                               extra_info=extra_info)
-        except angr.errors.AngrIncompatibleDBError as ex:
-            QMessageBox.critical(None, 'Error',
-                                 "Failed to load the angr database because of compatibility issues.\n"
-                                 f"Details: {ex}")
-            return
-        except angr.errors.AngrDBError as ex:
-            QMessageBox.critical(None, 'Error',
-                                 'Failed to load the angr database.\n'
-                                 f'Details: {ex}')
-            _l.critical("Failed to load the angr database.", exc_info=True)
+
+        job = LoadAngrDBJob(file_path, ["global", "pseudocode_variable_kb"], other_kbs=other_kbs, extra_info=extra_info)
+        job._on_finish = partial(self._on_load_database_finished, job)
+        self.workspace.instance.add_job(job)
+
+    def _on_load_database_finished(self, job: LoadAngrDBJob):
+        proj = job.project
+
+        if proj is None:
             return
 
-        self._recent_file(file_path)
+        self._recent_file(job.file_path)
 
         cfg = proj.kb.cfgs['CFGFast']
         cfb = proj.analyses.CFB()  # it will load functions from kb
 
-        self.workspace.instance.database_path = file_path
+        self.workspace.instance.database_path = job.file_path
 
         self.workspace.instance._reset_containers()
         self.workspace.instance.project = proj
         self.workspace.instance.cfg = cfg
         self.workspace.instance.cfb = cfb
-        if "pseudocode_variable_kb" in other_kbs:
-            self.workspace.instance.pseudocode_variable_kb = other_kbs["pseudocode_variable_kb"]
+        if "pseudocode_variable_kb" in job.other_kbs:
+            self.workspace.instance.pseudocode_variable_kb = job.other_kbs["pseudocode_variable_kb"]
         else:
             self.workspace.instance.initialize_pseudocode_variable_kb()
         self.workspace.instance.project.am_event(initialized=True)
@@ -742,7 +739,7 @@ class MainWindow(QMainWindow):
         # trigger callbacks
         self.workspace.reload()
         self.workspace.on_cfg_generated()
-        self.workspace.plugins.angrdb_load_entries(extra_info)
+        self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
     def _save_database(self, file_path):
         if self.workspace.instance is None or self.workspace.instance.project.am_none:
