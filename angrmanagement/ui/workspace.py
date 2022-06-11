@@ -540,7 +540,7 @@ class Workspace:
         view.setFocus()
 
     def log(self, msg):
-        if isinstance(msg, Exception):
+        if isinstance(msg, BaseException):
             msg = ''.join(traceback.format_exception(type(msg), msg, msg.__traceback__))
 
         console = self.view_manager.first_view_in_category('console')

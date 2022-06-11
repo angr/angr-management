@@ -2,6 +2,7 @@ from typing import Optional
 import logging
 import time
 import datetime
+import ctypes
 
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
@@ -56,7 +57,13 @@ class Job:
 
     def keyboard_interrupt(self):
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
-        return
+        # lol. lmao even.
+        if GlobalInfo.main_window.workspace.instance.current_job == self:
+            tid = GlobalInfo.main_window.workspace.instance.worker_thread.ident
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(KeyboardInterrupt))
+            if res != 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
+                l.error("Failed to interrupt thread")
 
     def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
