@@ -20,7 +20,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     chmod +x ~/.bin/appimagetool
     export PATH="$HOME/.bin:$PATH"
 
-    pip install "appimage-builder>=1.0.0a2"
+    pip install "appimage-builder==1.0.2"
     pip install keystone-engine
     pip install git+https://github.com/angr/archr.git#egg=archr
 fi
