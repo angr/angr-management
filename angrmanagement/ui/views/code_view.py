@@ -101,7 +101,7 @@ class CodeView(BaseView):
         self.vars_must_struct = set()
 
     def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None, flavor='pseudocode',
-                  reset_cache: bool=False):
+                  reset_cache: bool=False, regen_clinic: bool=True):
         if self._function.am_none:
             return
 
@@ -140,6 +140,7 @@ class CodeView(BaseView):
             vars_must_struct=self.vars_must_struct,
             on_finish=decomp_ready,
             blocking=True,
+            regen_clinic=regen_clinic,
         )
 
         self.workspace.instance.add_job(job)
