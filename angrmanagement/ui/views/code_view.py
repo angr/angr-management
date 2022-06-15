@@ -373,9 +373,10 @@ class CodeView(BaseView):
         self._view_selector.setVisible(len(available) >= 2)
 
     def _on_view_selector_changed(self, index):
-        key = (self._function.addr, self._view_selector.itemText(index))
-        self.codegen.am_obj = self.workspace.instance.kb.structured_code[key].codegen
-        self.codegen.am_event()
+        if not self._function.am_none:
+            key = (self._function.addr, self._view_selector.itemText(index))
+            self.codegen.am_obj = self.workspace.instance.kb.structured_code[key].codegen
+            self.codegen.am_event()
 
     #
     # Private methods
