@@ -1,17 +1,15 @@
+# pylint: disable=wrong-import-position,wrong-import-order
 import logging
 
 import binsync
-from binsync.common.ui import set_ui_version
-
-from ...plugins import BasePlugin
-from ...ui.workspace import Workspace
-from .control_panel_view import ControlPanelView
-from .controller import AngrBinSyncController
+from angrmanagement.plugins import BasePlugin
+from angrmanagement.ui.workspace import Workspace
+from binsync.common.ui.version import set_ui_version
 
 set_ui_version("PySide2")
-# pylint: disable=wrong-import-position,wrong-import-order
 from binsync.common.ui.config_dialog import SyncConfig
-
+from angrmanagement.plugins.angr_binsync.control_panel_view import ControlPanelView
+from angrmanagement.plugins.angr_binsync.controller import AngrBinSyncController
 
 l = logging.getLogger(__name__)
 
