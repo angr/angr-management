@@ -105,7 +105,8 @@ def make_common_options(for_chess=False):
         "--hidden-import=sqlalchemy.sql.default_comparator",
         "--hidden-import=pyxdg",
         "--hidden-import=pyzmq",
-        "--hidden-import=xmlrpc.server"
+        "--hidden-import=xmlrpc.server",
+        "--hidden-import=angrmanagement.plugins.angr_binsync",
     ]
     if for_chess:
         hidden_import.append("--hidden-import=slacrs")

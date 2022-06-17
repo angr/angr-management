@@ -26,7 +26,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 fi
 
 # Install angr-mangement
-pip install -e .
+pip install -e .[binsync]
 
 # Bundle!
 python packaging/pyinstaller/bundle.py --onefile
