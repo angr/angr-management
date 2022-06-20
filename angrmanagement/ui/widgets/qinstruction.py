@@ -70,6 +70,8 @@ class QInstruction(QCachedGraphicsItem):
                 self.addr,
                 insn_pos=self.scenePos(),
                 unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
+             # sync with the pseudocode view
+            self.disasm_view.decompile_current_function()
             event.accept()
         elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
             if self.addr not in self.infodock.selected_insns:

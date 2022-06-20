@@ -119,6 +119,9 @@ class QOperand(QCachedGraphicsItem):
             if selected:
                 # select the current instruction, too
                 self.infodock.select_instruction(self.insn.addr, insn_pos=QPointF(self.x(), self.y()), unique=True)
+                
+            # sync with the pseudocode view
+            self.disasm_view.decompile_current_function()
         else:
             super().mousePressEvent(event)
 

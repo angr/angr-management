@@ -320,12 +320,13 @@ class Workspace:
         elif type(obj) is Function:
             self.jump_to(obj.addr)
 
-    def jump_to(self, addr, view=None, use_animation=False):
+    def jump_to(self, addr, view=None, use_animation=False, raise_view=True):
         if view is None or view.category != 'disassembly':
             view = self._get_or_create_disassembly_view()
 
         view.jump_to(addr, use_animation=use_animation)
-        self.raise_view(view)
+        if raise_view:
+            self.raise_view(view)
         view.setFocus()
 
     def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
@@ -438,7 +439,7 @@ class Workspace:
             view = self._get_or_create_pseudocode_view()
 
         view.function.am_obj = func
-        view.function.am_event(focus=True, focus_addr=curr_ins)
+        view.function.am_event(focus=False, focus_addr=curr_ins)
 
     def create_simulation_manager(self, state, state_name, view=None):
 

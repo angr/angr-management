@@ -298,6 +298,7 @@ class CodeView(BaseView):
             chunks = self._doc.find_related_text_chunks(selected_node)
             # highlight these chunks
             self.highlight_chunks(chunks)
+            self.workspace.jump_to(selected_node.tags['ins_addr'], raise_view=False)
         else:
             self.highlight_chunks([ ])
 
