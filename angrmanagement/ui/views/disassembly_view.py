@@ -11,6 +11,7 @@ from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
 
 from ...logic import GlobalInfo
+from ...logic.threads import gui_thread_schedule_async
 from ...data.instance import ObjectContainer
 from ...utils import locate_function
 from ...data.function_graph import FunctionGraph
@@ -555,7 +556,7 @@ class DisassemblyView(SynchronizedView):
         self.jump_history.jump_to(function.addr)
         self._display_function(function)
 
-    def decompile_current_function(self):
+    def decompile_current_function(self, focus=True):
 
         if self._current_function.am_obj is not None:
             try:
@@ -563,7 +564,14 @@ class DisassemblyView(SynchronizedView):
             except StopIteration:
                 curr_ins = None
 
-            self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
+            self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins, focus=focus)
+
+    def sync_pseudocode_view(self):
+        # if pseudocode view is visible, we decompile the current function
+        pseudocode_view = self.workspace.view_manager.first_view_in_category("pseudocode")
+        if pseudocode_view is not None and pseudocode_view.is_shown():
+            # decompile the function in a callback so we can return fast
+            gui_thread_schedule_async(self.decompile_current_function, kwargs={'focus': False})
 
     def toggle_show_minimap(self, show:bool):
         """

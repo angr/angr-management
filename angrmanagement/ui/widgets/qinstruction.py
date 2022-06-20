@@ -70,8 +70,6 @@ class QInstruction(QCachedGraphicsItem):
                 self.addr,
                 insn_pos=self.scenePos(),
                 unique=QApplication.keyboardModifiers() != Qt.ControlModifier)
-             # sync with the pseudocode view
-            self.disasm_view.decompile_current_function()
             event.accept()
         elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
             if self.addr not in self.infodock.selected_insns:
@@ -80,6 +78,14 @@ class QInstruction(QCachedGraphicsItem):
             event.accept()
         else:
             super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event:PySide2.QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        if event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (Qt.NoModifier, Qt.ControlModifier):
+            # sync with the pseudocode view
+            self.disasm_view.sync_pseudocode_view()
+            event.accept()
+        else:
+            super().mouseReleaseEvent(event)
 
     @property
     def addr(self):
