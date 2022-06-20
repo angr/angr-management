@@ -298,7 +298,10 @@ class CodeView(BaseView):
             chunks = self._doc.find_related_text_chunks(selected_node)
             # highlight these chunks
             self.highlight_chunks(chunks)
-            self.workspace.jump_to(selected_node.tags['ins_addr'], raise_view=False)
+            if isinstance(selected_node, CFunctionCall) or isinstance(selected_node, CConstant):
+                curr_ins = selected_node.tags['ins_addr']
+                if curr_ins is not None:     
+                    self.workspace.jump_to(curr_ins, raise_view=False)
         else:
             self.highlight_chunks([ ])
 
