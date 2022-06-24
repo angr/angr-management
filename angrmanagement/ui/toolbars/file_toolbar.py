@@ -1,4 +1,3 @@
-
 import os
 
 from PySide2.QtGui import QIcon
@@ -6,6 +5,10 @@ from PySide2.QtGui import QIcon
 from ...config import IMG_LOCATION
 from .toolbar import Toolbar, ToolbarAction
 
+try:
+    import archr
+except ImportError:
+    archr = None
 
 class FileToolbar(Toolbar):
     def __init__(self, main_window):
@@ -25,3 +28,6 @@ class FileToolbar(Toolbar):
                           main_window.save_database,
                           ),
         ]
+
+        if archr is None:
+            self.actions.pop(1)
