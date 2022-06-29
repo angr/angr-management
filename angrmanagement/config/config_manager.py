@@ -1,9 +1,11 @@
 import os
 import logging
 import re
-from typing import Union
+from typing import Union, Type, Any, Optional
 
-import toml
+import tomlkit
+import tomlkit.exceptions
+import tomlkit.items
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication, QMessageBox
 
@@ -14,6 +16,23 @@ from .config_entry import ConfigurationEntry as CE
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
 
+
+def tomltype2pytype(v, ty: Optional[Type]) -> Any:
+    if ty is str:
+        if not isinstance(v, tomlkit.items.String):
+            raise TypeError()
+        return v.value
+    elif ty is int:
+        if not isinstance(v, tomlkit.items.Integer):
+            raise TypeError()
+        return v.value
+    elif ty is list:
+        if not isinstance(v, tomlkit.items.Array):
+            raise TypeError()
+        return [ tomltype2pytype(v_, None) for v_ in v.value ]
+    return v.value
+
+
 def color_parser(config_option, value) -> Union[QColor, None]:
     if not isinstance(value, str) \
        or not color_re.match(value) \
@@ -23,12 +42,14 @@ def color_parser(config_option, value) -> Union[QColor, None]:
 
     return QColor('#' + value)
 
+
 def color_serializer(config_option, value: QColor) -> str:
     if not isinstance(value, QColor):
         _l.error("Failed to serialize value %r as rgb color for option %s", value, config_option)
         return None
 
     return f'{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}'
+
 
 def font_parser(config_option, value) -> Union[QFont, None]:
     if not isinstance(value, str) or 'px ' not in value:
@@ -209,9 +230,9 @@ ENTRIES = [
 
 
 class ConfigurationManager: # pylint: disable=assigning-non-slot
-    '''
+    """
     Globe Configuration Manager for UI configuration with save/load function
-    '''
+    """
     __slots__ = ('_entries',
                  '_disasm_font', '_disasm_font_metrics', '_disasm_font_height',
                  '_disasm_font_width', '_disasm_font_ascent',
@@ -417,7 +438,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
             entry_map[entry.name] = entry.copy()
 
         try:
-            loaded = toml.load(f)
+            loaded = tomlkit.load(f)
 
             for k, v in loaded.items():
                 if k not in entry_map:
@@ -432,17 +453,20 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
 
                 if entry.type_ in data_serializers:
                     v = data_serializers[entry.type_][0](k, v)
-                if v is None:
-                    continue
-                if type(v) is not entry.type_:
-                    _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '\
-                        ' expected type \'%s\'. Ignoring...',
-                        v, k, type(v), entry.type_
-                    )
-                    continue
+                    if v is None:
+                        continue
+                else:
+                    try:
+                        v = tomltype2pytype(v, entry.type_)
+                    except TypeError:
+                        _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '
+                                   'expected type \'%s\'. Ignoring...',
+                                   v, k, type(v), entry.type_
+                        )
+                        continue
                 entry.value = v
-        except toml.TomlDecodeError as ex:
-            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', ex.msg)
+        except tomlkit.exceptions.ParseError:
+            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', exc_info=True)
 
         return cls(entry_map)
 
@@ -459,7 +483,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                 v = data_serializers[type(v)][1](k, v)
             out[k] = v
 
-        toml.dump(out, f)
+        tomlkit.dump(out, f)
 
     def save_file(self, path:str):
         with open(path, 'w', encoding="utf-8") as f:
