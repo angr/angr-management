@@ -1,3 +1,4 @@
+# pylint:disable=global-statement,missing-class-docstring,no-self-use,unspecified-encoding
 import os
 import sys
 import subprocess
@@ -5,7 +6,8 @@ import logging
 from pathlib import Path
 from typing import Tuple, Optional
 
-import tomlkit, tomlkit.exceptions
+import tomlkit
+import tomlkit.exceptions
 from xdg import BaseDirectory
 from PySide2.QtWidgets import QApplication
 from PySide2.QtWidgets import QMessageBox, QFileDialog
@@ -18,6 +20,7 @@ _l = logging.getLogger(name=__name__)
 
 # we probably want to put this feature into angr management
 _app = None
+
 def tmp_app():
     global _app
     if _app is None:
@@ -87,7 +90,8 @@ class ChessUrlHandler(BasePlugin):
             return rootdirs_path
         raise ValueError("Cannot get the configuration file root directory for angr-management.")
 
-    def _get_rootdir(self, target_uuid: str, challenge_name: str, source_file: str) -> Tuple[Optional[str],Optional[str]]:
+    def _get_rootdir(self, target_uuid: str, challenge_name: str,
+                     source_file: str) -> Tuple[Optional[str],Optional[str]]:
         rootdirs_path = self._get_rootdir_config_path()
         # load it if it exists
         entries = { }
@@ -118,7 +122,7 @@ class ChessUrlHandler(BasePlugin):
                 full_path = None
 
                 source_file_name = os.path.basename(source_file)
-                for base, directories, files in os.walk(dir_path):
+                for base, _, files in os.walk(dir_path):
                     if source_file_name in files:
                         # check the full path
                         full_path = os.path.normpath(os.path.join(base, source_file_name))

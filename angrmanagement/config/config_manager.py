@@ -3,7 +3,9 @@ import logging
 import re
 from typing import Union, Type, Any, Optional
 
-import tomlkit, tomlkit.exceptions, tomlkit.items
+import tomlkit
+import tomlkit.exceptions
+import tomlkit.items
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication, QMessageBox
 
@@ -457,14 +459,14 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                     try:
                         v = tomltype2pytype(v, entry.type_)
                     except TypeError:
-                        _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. '
-                                   'Ignoring...',
+                        _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '
+                                   'expected type \'%s\'. Ignoring...',
                                    v, k, type(v), entry.type_
                         )
                         continue
                 entry.value = v
         except tomlkit.exceptions.ParseError as ex:
-            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', ex.msg)
+            _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', exc_info=True)
 
         return cls(entry_map)
 
