@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Tuple, Optional
 
-import toml
+import tomlkit, tomlkit.exceptions
 from xdg import BaseDirectory
 from PySide2.QtWidgets import QApplication
 from PySide2.QtWidgets import QMessageBox, QFileDialog
@@ -94,8 +94,8 @@ class ChessUrlHandler(BasePlugin):
         if os.path.isfile(rootdirs_path):
             with open(rootdirs_path, "r") as f:
                 try:
-                    entries = toml.load(f)
-                except toml.TomlDecodeError:
+                    entries = tomlkit.load(f)
+                except tomlkit.exceptions.ParseError:
                     _l.error("Cannot decode rootdirs file %s. Ignore existing content.",
                              rootdirs_path)
 
@@ -161,8 +161,8 @@ class ChessUrlHandler(BasePlugin):
         if os.path.isfile(rootdirs_path):
             with open(rootdirs_path, "r") as f:
                 try:
-                    entries = toml.load(f)
-                except toml.TomlDecodeError:
+                    entries = tomlkit.load(f)
+                except tomlkit.exceptions.ParseError:
                     _l.error("Cannot decode rootdirs file %s. Ignore existing content.",
                              rootdirs_path)
 
@@ -175,7 +175,7 @@ class ChessUrlHandler(BasePlugin):
 
         # store it
         with open(rootdirs_path, "w") as f:
-            toml.dump(entries, f)
+            tomlkit.dump(entries, f)
 
     def _vscode_path(self) -> Optional[str]:
         if sys.platform == "win32":

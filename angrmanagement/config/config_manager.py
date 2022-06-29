@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Union
 
-import toml
+import tomlkit, tomlkit.exceptions
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication, QMessageBox
 
@@ -14,6 +14,7 @@ from .config_entry import ConfigurationEntry as CE
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
 
+
 def color_parser(config_option, value) -> Union[QColor, None]:
     if not isinstance(value, str) \
        or not color_re.match(value) \
@@ -23,12 +24,14 @@ def color_parser(config_option, value) -> Union[QColor, None]:
 
     return QColor('#' + value)
 
+
 def color_serializer(config_option, value: QColor) -> str:
     if not isinstance(value, QColor):
         _l.error("Failed to serialize value %r as rgb color for option %s", value, config_option)
         return None
 
     return f'{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}'
+
 
 def font_parser(config_option, value) -> Union[QFont, None]:
     if not isinstance(value, str) or 'px ' not in value:
@@ -209,9 +212,9 @@ ENTRIES = [
 
 
 class ConfigurationManager: # pylint: disable=assigning-non-slot
-    '''
+    """
     Globe Configuration Manager for UI configuration with save/load function
-    '''
+    """
     __slots__ = ('_entries',
                  '_disasm_font', '_disasm_font_metrics', '_disasm_font_height',
                  '_disasm_font_width', '_disasm_font_ascent',
@@ -417,7 +420,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
             entry_map[entry.name] = entry.copy()
 
         try:
-            loaded = toml.load(f)
+            loaded = tomlkit.load(f)
 
             for k, v in loaded.items():
                 if k not in entry_map:
@@ -441,7 +444,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                     )
                     continue
                 entry.value = v
-        except toml.TomlDecodeError as ex:
+        except tomlkit.exceptions.ParseError as ex:
             _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', ex.msg)
 
         return cls(entry_map)
@@ -459,7 +462,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                 v = data_serializers[type(v)][1](k, v)
             out[k] = v
 
-        toml.dump(out, f)
+        tomlkit.dump(out, f)
 
     def save_file(self, path:str):
         with open(path, 'w', encoding="utf-8") as f:
