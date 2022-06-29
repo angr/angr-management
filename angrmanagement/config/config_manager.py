@@ -465,7 +465,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                         )
                         continue
                 entry.value = v
-        except tomlkit.exceptions.ParseError as ex:
+        except tomlkit.exceptions.ParseError:
             _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', exc_info=True)
 
         return cls(entry_map)
