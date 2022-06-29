@@ -384,10 +384,10 @@ class Workspace:
 
         # callback
         if comment_text is None and exists:
-            self.plugins.handle_comment_changed(addr, "", False, False)
+            self.plugins.handle_comment_changed(addr, "", False, False, False)
             del kb.comments[addr]
         else:
-            self.plugins.handle_comment_changed(addr, comment_text, not exists, False)
+            self.plugins.handle_comment_changed(addr, comment_text, not exists, False, False)
             kb.comments[addr] = comment_text
 
         # callback first
