@@ -117,7 +117,7 @@ class VaRec(BasePlugin):
 
             return
 
-        varname_blacklist = {'UNK', 'null', "true", "false", }
+        varname_blacklist = {'UNK', 'null', "true", "false", "return", "do", "while"}
         varname_to_predicted = defaultdict(list)
 
         # handle failure cases

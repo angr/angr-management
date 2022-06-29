@@ -103,7 +103,7 @@ class ChessUrlHandler(BasePlugin):
         if 'uuid_to_rootdir' in entries:
             if target_uuid in entries['uuid_to_rootdir']:
                 # yes there is already one
-                dir_path = entries['uuid_to_rootdir'][target_uuid]
+                dir_path = entries['uuid_to_rootdir'][target_uuid].value
             else:
                 dir_path = None
 

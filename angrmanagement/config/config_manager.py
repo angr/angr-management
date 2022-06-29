@@ -1,9 +1,9 @@
 import os
 import logging
 import re
-from typing import Union
+from typing import Union, Type, Any, Optional
 
-import tomlkit, tomlkit.exceptions
+import tomlkit, tomlkit.exceptions, tomlkit.items
 from PySide2.QtGui import QFont, QFontMetricsF, QColor
 from PySide2.QtWidgets import QApplication, QMessageBox
 
@@ -13,6 +13,22 @@ from .config_entry import ConfigurationEntry as CE
 
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
+
+
+def tomltype2pytype(v, ty: Optional[Type]) -> Any:
+    if ty is str:
+        if not isinstance(v, tomlkit.items.String):
+            raise TypeError()
+        return v.value
+    elif ty is int:
+        if not isinstance(v, tomlkit.items.Integer):
+            raise TypeError()
+        return v.value
+    elif ty is list:
+        if not isinstance(v, tomlkit.items.Array):
+            raise TypeError()
+        return [ tomltype2pytype(v_, None) for v_ in v.value ]
+    return v.value
 
 
 def color_parser(config_option, value) -> Union[QColor, None]:
@@ -435,14 +451,17 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
 
                 if entry.type_ in data_serializers:
                     v = data_serializers[entry.type_][0](k, v)
-                if v is None:
-                    continue
-                if type(v) is not entry.type_:
-                    _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '\
-                        ' expected type \'%s\'. Ignoring...',
-                        v, k, type(v), entry.type_
-                    )
-                    continue
+                    if v is None:
+                        continue
+                else:
+                    try:
+                        v = tomltype2pytype(v, entry.type_)
+                    except TypeError:
+                        _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', expected type \'%s\'. '
+                                   'Ignoring...',
+                                   v, k, type(v), entry.type_
+                        )
+                        continue
                 entry.value = v
         except tomlkit.exceptions.ParseError as ex:
             _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', ex.msg)
