@@ -9,8 +9,8 @@ from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtWidgets import QMainWindow, QTabWidget, QFileDialog, QProgressBar, QProgressDialog
 from PySide2.QtWidgets import QMessageBox, QShortcut, QTabBar
-from PySide2.QtGui import QResizeEvent, QIcon, QDesktopServices, QKeySequence
-from PySide2.QtCore import Qt, QSize, QEvent, QTimer, QUrl
+from PySide2.QtGui import QIcon, QDesktopServices, QKeySequence
+from PySide2.QtCore import Qt, QSize, QEvent, QUrl
 
 import angr
 import angr.flirt
@@ -402,15 +402,6 @@ class MainWindow(QMainWindow):
     # Event
     #
 
-    def resizeEvent(self, event: QResizeEvent):
-        """
-
-        :param event:
-        :return:
-        """
-
-        self._recalculate_view_sizes(event.oldSize())
-
     def closeEvent(self, event):
 
         # Ask if the user wants to save things
@@ -763,60 +754,3 @@ class MainWindow(QMainWindow):
 
         self.workspace.instance.database_path = file_path
         return True
-
-    def _recalculate_view_sizes(self, old_size):
-        adjustable_dockable_views = [dock for dock in self.workspace.view_manager.docks
-                                     if dock.widget().default_docking_position in ('left', 'bottom',)]
-
-        if not adjustable_dockable_views:
-            return
-
-        for dock in adjustable_dockable_views:
-            widget = dock.widget()
-
-            if old_size.width() < 0:
-                dock.old_size = widget.sizeHint()
-                continue
-
-            if old_size != self.size():
-                # calculate the width ratio
-
-                if widget.default_docking_position == 'left':
-                    # we want to adjust the width
-                    ratio = widget.old_width * 1.0 / old_size.width()
-                    new_width = int(self.width() * ratio)
-                    widget.width_hint = new_width
-                    widget.updateGeometry()
-                elif widget.default_docking_position == 'bottom':
-                    # we want to adjust the height
-                    ratio = widget.old_height * 1.0 / old_size.height()
-                    new_height = int(self.height() * ratio)
-                    widget.height_hint = new_height
-                    widget.updateGeometry()
-
-                dock.old_size = widget.size()
-
-    def _resize_dock_widget(self, dock_widget, new_width, new_height):
-
-        original_size = dock_widget.size()
-        original_min = dock_widget.minimumSize()
-        original_max = dock_widget.maximumSize()
-
-        dock_widget.resize(new_width, new_height)
-
-        if new_width != original_size.width():
-            if original_size.width() > new_width:
-                dock_widget.setMaximumWidth(new_width)
-            else:
-                dock_widget.setMinimumWidth(new_width)
-
-        if new_height != original_size.height():
-            if original_size.height() > new_height:
-                dock_widget.setMaximumHeight(new_height)
-            else:
-                dock_widget.setMinimumHeight(new_height)
-
-        dock_widget.original_min = original_min
-        dock_widget.original_max = original_max
-
-        QTimer.singleShot(1, dock_widget.restore_original_size)
