@@ -39,8 +39,8 @@ class LoadTargetJob(Job):
             apb = archr.arsenal.angrProjectBow(t, dsb)
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
             self._progress_callback(50)
-            load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld,))
-            if cfg_args is None:
+            load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
+            if load_options is None:
                 return
 
             # Create the project, load it, then record the image name on success
@@ -48,7 +48,7 @@ class LoadTargetJob(Job):
             self._progress_callback(95)
             inst._reset_containers()
             inst.project = proj
-            inst.project.am_event(cfg_args=cfg_args, variable_recovery_args=variable_recovery_args)
+            inst.project.am_event()
 
 
 class LoadBinaryJob(Job):
@@ -85,8 +85,8 @@ class LoadBinaryJob(Job):
                 return
 
         self._progress_callback(50)
-        new_load_options, cfg_args, variable_recovery_args = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
-        if cfg_args is None:
+        new_load_options = gui_thread_schedule(LoadBinary.run, (partial_ld, ))
+        if new_load_options is None:
             return
 
         engine = None
@@ -100,7 +100,7 @@ class LoadBinaryJob(Job):
         def callback():
             inst._reset_containers()
             inst.project.am_obj = proj
-            inst.project.am_event(cfg_args=cfg_args, variable_recovery_args=variable_recovery_args)
+            inst.project.am_event()
         gui_thread_schedule(callback, ())
 
 
