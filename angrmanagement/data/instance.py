@@ -10,7 +10,6 @@ from angr.block import Block
 from angr.knowledge_base import KnowledgeBase
 from angr.analyses.disassembly import Instruction
 
-from .jobs import CFGGenerationJob
 from .object_container import ObjectContainer
 from .log import LogRecord, LogDumpHandler
 from ..logic import GlobalInfo
@@ -167,7 +166,7 @@ class Instance:
             self._container_defaults[name] = (default_val_func, ty)
             self.extra_containers[name] = ObjectContainer(default_val_func(), description)
 
-    def initialize(self, initialized=False, cfg_args=None, variable_recovery_args=None, **kwargs):  # pylint:disable=unused-argument
+    def initialize(self, initialized=False, **kwargs):  # pylint:disable=unused-argument
         if self.project.am_none:
             return
 
@@ -175,32 +174,12 @@ class Instance:
             if self.pseudocode_variable_kb is None:
                 self.initialize_pseudocode_variable_kb()
 
-            if cfg_args is None:
-                cfg_args = {}
-            # save cfg_args
-            self.cfg_args = cfg_args
+            gui_thread_schedule_async(self.workspace.run_analysis)
 
-            if variable_recovery_args is None:
-                variable_recovery_args = {}
-            self.variable_recovery_args = variable_recovery_args
-
-            # generate CFG
-            cfg_job = self.generate_cfg()
-
-            # start daemon
-            self._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
         self.workspace.plugins.handle_project_initialization()
 
     def initialize_pseudocode_variable_kb(self):
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
-
-    def generate_cfg(self):
-        cfg_job = CFGGenerationJob(
-            on_finish=self.workspace.on_cfg_generated,
-            **self.cfg_args
-        )
-        self.add_job(cfg_job)
-        return cfg_job
 
     def add_job(self, job):
         self.jobs.append(job)
@@ -297,26 +276,6 @@ class Instance:
     # pylint:disable=no-self-use
     def _set_status(self, status_text):
         GlobalInfo.main_window.status = status_text
-
-    def _refresh_cfg(self, cfg_job):
-        # reload once and then refresh in a loop
-        reloaded = False
-        while True:
-            if not self.cfg.am_none:
-                if self.workspace is not None:
-                    if reloaded:
-                        gui_thread_schedule_async(self.workspace.refresh,
-                                                  kwargs={'categories': ['disassembly', 'functions'],}
-                                                  )
-                    else:
-                        gui_thread_schedule_async(self.workspace.reload,
-                                                  kwargs={'categories': ['disassembly', 'functions'],}
-                                                  )
-                        reloaded = True
-
-            time.sleep(0.3)
-            if cfg_job not in self.jobs:
-                break
 
     def _reset_containers(self, **kwargs):
         # pylint:disable=consider-using-dict-items

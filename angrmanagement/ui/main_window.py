@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(icon_location))
 
         GlobalInfo.main_window = self
+        self.shown_at_start = show
 
         # initialization
         self.setMinimumSize(QSize(400, 400))
@@ -82,7 +83,6 @@ class MainWindow(QMainWindow):
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar = None  # type: QProgressBar
         self._progress_dialog = None # type: QProgressDialog
-        self._load_binary_dialog = None
 
         self.defaultWindowFlags = None
 
@@ -626,8 +626,6 @@ class MainWindow(QMainWindow):
         self.workspace.load_trace_from_path(file_path)
 
     def preferences(self):
-
-        # Open Preferences dialog
         pref = Preferences(self.workspace, parent=self)
         pref.exec_()
 
@@ -645,6 +643,10 @@ class MainWindow(QMainWindow):
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
         self.workspace.instance.add_job(dep_analysis_job)
+
+    def run_analysis(self):
+        if self.workspace:
+            self.workspace.run_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:
@@ -746,11 +748,11 @@ class MainWindow(QMainWindow):
         angrdb = AngrDB(project=self.workspace.instance.project)
         extra_info = self.workspace.plugins.angrdb_store_entries()
         angrdb.dump(file_path, kbs=[
-            self.workspace.instance.kb,
-            self.workspace.instance.pseudocode_variable_kb,
-        ],
-                    extra_info=extra_info,
-                    )
+                self.workspace.instance.kb,
+                self.workspace.instance.pseudocode_variable_kb,
+                ],
+            extra_info=extra_info,
+            )
 
         self.workspace.instance.database_path = file_path
         return True
