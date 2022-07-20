@@ -9,11 +9,12 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from ailment.statement import Store, Assignment
-from ailment.expression import Load, Convert
+from ailment.expression import Load, Convert, BinaryOp
 from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
     CStructField, CIndexedVariable, CVariableField, CUnaryOp, CConstant, CExpression
+from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 
 from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
@@ -374,6 +375,50 @@ class QCCodeEdit(api.CodeEdit):
         cache.ite_exprs.add((addr, ailexpr))
         self._code_view.decompile(clear_prototype=False, regen_clinic=False)
 
+    def swap_binop_operands(self):
+        node = self._selected_node
+        if not isinstance(node, CBinaryOp):
+            return
+        ailexpr = self._code_view.codegen.cnode2ailexpr.get(node, None)
+        if ailexpr is None:
+            return
+        if not isinstance(ailexpr, BinaryOp):
+            return
+
+        op = ailexpr.op
+        if op in {'CmpEQ', 'CmpNE'}:
+            negated_op = op
+        else:
+            negated_op = BinaryOp.COMPARISON_NEGATION.get(op, None)
+        if negated_op is None:
+            return
+
+        # which statement?
+        addr = self.get_closest_insaddr(node)
+        if addr is None:
+            return
+
+        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        if cache.binop_operators is None:
+            cache.binop_operators = { }
+        op_desc = OpDescriptor(ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
+                               ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
+                               addr,
+                               op,
+                               )
+        cache.binop_operators[op_desc] = negated_op
+
+        if negated_op != op:
+            existing_op_desc = OpDescriptor(
+                ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
+                ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
+                addr,
+                negated_op,
+            )
+            if existing_op_desc in cache.binop_operators:
+                del cache.binop_operators[existing_op_desc]
+        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+
     def expr2armasm(self):
 
         def _assemble(expr, expr_addr) -> str:
@@ -474,9 +519,12 @@ class QCCodeEdit(api.CodeEdit):
         self.action_neg.setShortcut(QKeySequence('_'))
         self.action_to_ite_expr = QAction("Create a ternary expression")
         self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
+        self.action_swap_binop_operands = QAction("Swap operands")
+        self.action_swap_binop_operands.triggered.connect(self.swap_binop_operands)
 
         expr_actions = [
             self.action_to_ite_expr,
+            self.action_swap_binop_operands,
             self.action_collapse_expr,
             self.action_expand_expr,
         ]
