@@ -3,12 +3,14 @@ from typing import TYPE_CHECKING, Optional
 from ailment.expression import BinaryOp, Load, Op, UnaryOp
 from ailment.statement import Assignment, Store
 from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
+from angr.analyses.decompiler.refactor_passes import CascadingIfToNestedIf, ConditionNodeSwapScopes, MergeNestedIfs
 from angr.analyses.decompiler.structured_codegen.c import (
     CBinaryOp,
     CConstant,
     CExpression,
     CFunction,
     CFunctionCall,
+    CIfElse,
     CIndexedVariable,
     CStructField,
     CUnaryOp,
@@ -71,6 +73,7 @@ class QCCodeEdit(api.CodeEdit):
         self.operator_actions = []
         self.variable_actions = []
         self.selected_actions = []
+        self.refactor_actions = []
         self.call_actions = []
         self.default_actions = []
         self.function_name_actions = []
@@ -134,6 +137,9 @@ class QCCodeEdit(api.CodeEdit):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
+        if isinstance(under_cursor, CIfElse):
+            self._selected_node = under_cursor
+            mnu.addActions(self.refactor_actions)
         if isinstance(under_cursor, CFunction):
             # decompiled function name in selection
             self._selected_node = under_cursor
@@ -448,6 +454,45 @@ class QCCodeEdit(api.CodeEdit):
                 del cache.binop_operators[existing_op_desc]
         self._code_view.decompile(clear_prototype=False, regen_clinic=False)
 
+    def cascading_if_to_nested_if(self):
+        node = self._selected_node
+        if not isinstance(node, CIfElse):
+            return
+        if node.path is None:
+            return
+
+        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        if cache.refactor_vector is None:
+            cache.refactor_vector = []
+        cache.refactor_vector.append((node.path, (CascadingIfToNestedIf, None)))
+        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+
+    def condition_node_swap_scopes(self):
+        node = self._selected_node
+        if not isinstance(node, CIfElse):
+            return
+        if node.path is None:
+            return
+
+        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        if cache.refactor_vector is None:
+            cache.refactor_vector = []
+        cache.refactor_vector.append((node.path, (ConditionNodeSwapScopes, None)))
+        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+
+    def merge_nested_ifs(self):
+        node = self._selected_node
+        if not isinstance(node, CIfElse):
+            return
+        if node.path is None:
+            return
+
+        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        if cache.refactor_vector is None:
+            cache.refactor_vector = []
+        cache.refactor_vector.append((node.path, (MergeNestedIfs, None)))
+        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+
     def expr2armasm(self):
         def _assemble(expr, expr_addr) -> str:
             return converter.assemble(expr, self._code_view.function.addr, expr_addr)
@@ -558,6 +603,14 @@ class QCCodeEdit(api.CodeEdit):
         self.action_swap_binop_operands = QAction("Swap operands")
         self.action_swap_binop_operands.triggered.connect(self.swap_binop_operands)
 
+        # refactor
+        self.action_cascading_if_to_nested_if = QAction("Convert cascading-if to nested-if")
+        self.action_cascading_if_to_nested_if.triggered.connect(self.cascading_if_to_nested_if)
+        self.action_condition_node_swap_scopes = QAction("Swap if-else branches")
+        self.action_condition_node_swap_scopes.triggered.connect(self.condition_node_swap_scopes)
+        self.action_merge_nested_ifs = QAction("Merge nested if branches")
+        self.action_merge_nested_ifs.triggered.connect(self.merge_nested_ifs)
+
         expr_actions = [
             self.action_to_ite_expr,
             self.action_swap_binop_operands,
@@ -588,10 +641,17 @@ class QCCodeEdit(api.CodeEdit):
             self.action_rename_node,
         ]
 
+        self.refactor_actions = [
+            self.action_cascading_if_to_nested_if,
+            self.action_condition_node_swap_scopes,
+            self.action_merge_nested_ifs,
+        ]
+
         self.constant_actions += base_actions + expr_actions
         self.operator_actions += base_actions + expr_actions
         self.variable_actions += base_actions + expr_actions
         self.function_name_actions += base_actions
         self.call_actions += base_actions + expr_actions
         self.selected_actions += base_actions
+        self.refactor_actions += base_actions
         self.default_actions += base_actions
