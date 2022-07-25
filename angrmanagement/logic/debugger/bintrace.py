@@ -140,7 +140,13 @@ class BintraceDebugger(Debugger):
             _l.error('Could not seek to event %d', n)
             return
 
-        until = t.get_prev_exec_event(until)
+        if self._trace_dbg.single_step_range is None:
+            step_region_addr, step_region_size = None, 1
+        else:
+            self._trace_dbg.single_step_range: Tuple[int, int]
+            step_region_addr, step_region_size = self._trace_dbg.single_step_range
+
+        until = t.get_prev_exec_event(until, addr=step_region_addr, size=step_region_size)
         if until is None:
             _l.error('No execution event prior to event %d', n)
             return
