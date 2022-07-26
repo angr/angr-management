@@ -1,12 +1,15 @@
+import functools
 import logging
 from typing import Any, Optional
 
 import PySide2
-from PySide2.QtGui import QFont
+from PySide2.QtGui import QFont, QCursor
 from PySide2.QtCore import QAbstractTableModel, Qt, QSize
-from PySide2.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout
+from PySide2.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QMenu, QAction
+
 
 import angr
+from ...data.breakpoint import BreakpointType, Breakpoint
 
 from ...logic.debugger import DebuggerWatcher
 from ...config import Conf
@@ -22,7 +25,7 @@ class QStackTableModel(QAbstractTableModel):
     """
 
     Headers = ['Offset', 'Value']
-    COL_REGISTER = 0
+    COL_OFFSET = 0
     COL_VALUE = 1
 
     def __init__(self, log_widget: 'QStackTableWidget' = None):
@@ -57,7 +60,7 @@ class QStackTableModel(QAbstractTableModel):
         width = self.state.arch.bits // 8
         offset = row * width
         mapping = {
-            QStackTableModel.COL_REGISTER: lambda x: str(offset),
+            QStackTableModel.COL_OFFSET: lambda x: str(offset),
             QStackTableModel.COL_VALUE: lambda x: repr(self.state.stack_read(offset, width)),
         }
         func = mapping.get(col)
@@ -111,6 +114,48 @@ class QStackTableWidget(QTableView):
         self.model.state = None if dbg.am_none else dbg.simstate
         self.model.layoutChanged.emit()
         self.update()
+
+    def contextMenuEvent(self, arg__1:PySide2.QtGui.QContextMenuEvent):  # pylint:disable=unused-argument
+        if not self.selectedIndexes():
+            return
+
+        mnu = self._get_breakpoint_submenu()
+        mnu.exec_(QCursor.pos())
+
+    def _set_breakpoint(self, bp_type: BreakpointType = BreakpointType.Execute):
+        """
+        Set breakpoint at current cursor.
+        """
+        state = self.model.state
+        if state is None or not state.regs.sp.concrete:
+            return
+
+        selected = self.selectedIndexes()
+        if not selected:
+            return
+
+        row = selected[0].row()
+        width = state.arch.bits // 8
+        offset = row * width + state.solver.eval(state.regs.sp)
+        self.stack_view.workspace.instance.breakpoint_mgr.add_breakpoint(
+            Breakpoint(bp_type, offset, width)
+        )
+
+    def _get_breakpoint_submenu(self) -> QMenu:
+        """
+        Get context menu to add new breakpoints.
+        """
+        mnu = QMenu('Set &breakpoint', self)
+        act = QAction('Break on &Execute', mnu)
+        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Execute))
+        mnu.addAction(act)
+        act = QAction('Break on &Read', mnu)
+        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Read))
+        mnu.addAction(act)
+        act = QAction('Break on &Write', mnu)
+        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Write))
+        mnu.addAction(act)
+        return mnu
 
 
 class StackView(BaseView):
