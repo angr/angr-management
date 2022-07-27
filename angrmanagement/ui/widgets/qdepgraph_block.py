@@ -171,7 +171,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self._dep_view.hover_enter_block(self)
 
     def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):
-        self._dep_view.hover_leave_block(self)
+        self._dep_view.hover_leave_block()
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
         """
