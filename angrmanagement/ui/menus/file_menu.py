@@ -45,7 +45,7 @@ class FileMenu(Menu):
             MenuEntry('E&xit', main_window.quit),
         ])
 
-    def add_recent(self, path):
+    def add_recent(self, path: str):
         for entry in list(self.recent_menu.entries):
             if entry.path == path:
                 self.recent_menu.remove(entry)

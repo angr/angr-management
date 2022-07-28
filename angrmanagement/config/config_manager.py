@@ -1,7 +1,7 @@
 import os
 import logging
 import re
-from typing import Union, Type, Any, Optional
+from typing import Union, Type, Any, List, Optional
 
 import tomlkit
 import tomlkit.exceptions
@@ -21,16 +21,16 @@ def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     if ty is str:
         if not isinstance(v, tomlkit.items.String):
             raise TypeError()
-        return v.value
+        return v.unwrap()
     elif ty is int:
         if not isinstance(v, tomlkit.items.Integer):
             raise TypeError()
-        return v.value
+        return v.unwrap()
     elif ty is list:
         if not isinstance(v, tomlkit.items.Array):
             raise TypeError()
         return [ tomltype2pytype(v_, None) for v_ in v.value ]
-    return v.value
+    return v.unwrap()
 
 
 def color_parser(config_option, value) -> Union[QColor, None]:
@@ -398,7 +398,9 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
         if self.tabular_view_font is None:
             self.tabular_view_font = QApplication.font("QMenu")
 
-    def recent_file(self, file_path):
+    recent_files: List[str]
+
+    def recent_file(self, file_path: str):
         try:
             self.recent_files.remove(file_path)
         except ValueError:
