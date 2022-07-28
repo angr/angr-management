@@ -670,7 +670,6 @@ class MainWindow(QMainWindow):
         self._progressbar.setValue(progress)
         self._progress_dialog.setValue(progress)
 
-
     def progress_done(self):
         self._progressbar.hide()
         self.statusBar().showMessage("Ready.")
