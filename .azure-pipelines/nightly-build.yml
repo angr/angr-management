@@ -46,17 +46,17 @@ stages:
 
 - stage: Test
   jobs:
-  - ${{ each pool in parameters.pools }}:
-  - job:
-    displayName: Test linux pyinstaller build launches on Ubuntu ${{ pool }}
-    pool:
-      vmImage: ${{ pool }}
-    steps:
-    - bash: sudo apt-get install -y xvfb-run
-    - task: DownloadPipelineArtifact@2
-      inputs:
-        artifactName: angr-management-ubuntu-18.04
-    - task: xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu
+  - ${{ each pool in parameters.test_pools }}:
+    - job:
+      displayName: Test linux pyinstaller build launches on Ubuntu ${{ pool }}
+      pool:
+        vmImage: ${{ pool }}
+      steps:
+      - bash: sudo apt-get install -y xvfb-run
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifactName: angr-management-ubuntu-18.04
+      - task: xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu
 
 
 
