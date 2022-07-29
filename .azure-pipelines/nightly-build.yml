@@ -58,8 +58,7 @@ stages:
         inputs:
           artifactName: angr-management-ubuntu-18.04
       - bash: |
-          find ..
-          xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu &
+          xvfb-run ../angr-management-onefile-ubuntu &
           sleep 10 && output=$(DISPLAY=:99 xwininfo -tree -root)
           [[ "$output" == *"angr management"* ]] || exit 1
 
