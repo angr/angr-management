@@ -56,7 +56,7 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           artifactName: angr-management-ubuntu-18.04
-      - task: xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu
+      - bash: xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu
 
 
 
