@@ -12,6 +12,9 @@ parameters:
 - name: pools
   type: object
   default: [ "ubuntu-20.04", "windows-2022", "macos-12" ]
+- name: test_pools
+  type: object
+  default: [ "ubuntu-20.04", "ubuntu-22.04" ]
 
 stages:
 - stage: Build
@@ -40,6 +43,22 @@ stages:
           inputs:
             targetPath: upload
             artifactName: angr-management-${{ pool }}
+
+- stage: Test
+  jobs:
+  - ${{ each pool in parameters.pools }}:
+  - job:
+    displayName: Test linux pyinstaller build launches on Ubuntu ${{ pool }}
+    pool:
+      vmImage: ${{ pool }}
+    steps:
+    - run: sudo apt-get install -y xvfb-run
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: angr-management-ubuntu-18.04
+    - task: xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu
+
+
 
 - stage: Deploy
   dependsOn: Build
