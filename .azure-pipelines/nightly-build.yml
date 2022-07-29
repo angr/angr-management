@@ -52,7 +52,7 @@ stages:
       pool:
         vmImage: ${{ pool }}
       steps:
-      - bash: sudo apt-get install -y xvfb-run
+      - bash: sudo apt-get install -y xvfb
       - task: DownloadPipelineArtifact@2
         inputs:
           artifactName: angr-management-ubuntu-18.04
