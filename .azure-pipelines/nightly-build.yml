@@ -56,9 +56,10 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           artifactName: angr-management-ubuntu-18.04
-      - bash: xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu
-
-
+      - bash: |
+          xvfb-run angr-management-ubuntu-18.04/angr-management-onefile-ubuntu &
+          sleep 10 && output=$(DISPLAY=99 xwininfo -tree -root)
+          [[ "$output" == *"angr management"* ]] || exit 1
 
 - stage: Deploy
   dependsOn: Test
