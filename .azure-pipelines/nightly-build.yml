@@ -59,9 +59,11 @@ stages:
           artifactName: angr-management-ubuntu-18.04
       - bash: |
           chmod +x ../angr-management-onefile-ubuntu
-          xvfb-run ../angr-management-onefile-ubuntu &
-          sleep 10 && output=$(DISPLAY=:99 xwininfo -tree -root)
-          [[ "$output" == *"angr management"* ]] || exit 1
+          xvfb-run bash -c '
+            ../angr-management-onefile-ubuntu &
+            sleep 10 && output=$(xwininfo -tree -root)
+            [[ "$output" == *"angr management"* ]] || exit 1
+          '
 
 - stage: Deploy
   dependsOn: Test
