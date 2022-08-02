@@ -21,7 +21,7 @@ def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     if ty is str:
         if not isinstance(v, tomlkit.items.String):
             raise TypeError()
-        return v.unwrap()
+        return str(v)
     elif ty is int:
         if not isinstance(v, tomlkit.items.Integer):
             raise TypeError()
@@ -30,7 +30,7 @@ def tomltype2pytype(v, ty: Optional[Type]) -> Any:
         if not isinstance(v, tomlkit.items.Array):
             raise TypeError()
         return [ tomltype2pytype(v_, None) for v_ in v.value ]
-    return v.unwrap()
+    return str(v) if isinstance(v, tomlkit.items.String) else v.unwrap()
 
 
 def color_parser(config_option, value) -> Union[QColor, None]:
