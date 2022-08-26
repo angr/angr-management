@@ -17,6 +17,9 @@ _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
 
 class UninterpretedCE(CE):
+    """
+    A config entry which has not been parsed because no type was available for it.
+    """
     def __init__(self, name, value, default_value=None):
         super().__init__(name, UninterpretedCE, value, default_value=default_value)
 
