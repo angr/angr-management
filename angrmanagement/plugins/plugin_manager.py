@@ -171,10 +171,7 @@ class PluginManager:
 
         if new_entries_added:
             # reload configuration manager so that it's aware of newly added entries
-            Conf.load_initial_entries(reset=False)
-            # reload the configuration file
-            new_conf = Conf.parse_file(config_path)
-            Conf._entries = new_conf._entries
+            Conf.reinterpet()
 
     def get_plugin_instance_by_name(self, plugin_cls_name: str) -> Optional[BasePlugin]:
         instances = [plugin for plugin in self.active_plugins if plugin.__class__.__name__.split(".")[-1] == plugin_cls_name]
