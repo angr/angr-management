@@ -16,6 +16,13 @@ from .config_entry import ConfigurationEntry as CE
 _l = logging.getLogger(__name__)
 color_re = re.compile('[0-9a-fA-F]+')
 
+class UninterpretedCE(CE):
+    """
+    A config entry which has not been parsed because no type was available for it.
+    """
+    def __init__(self, name, value, default_value=None):
+        super().__init__(name, UninterpretedCE, value, default_value=default_value)
+
 
 def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     if ty is str:
@@ -434,7 +441,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
         return list(super().__dir__()) + list(self._entries)
 
     @classmethod
-    def parse(cls, f, ignore_unknown_entries: bool=True):
+    def parse(cls, f, ignore_unknown_entries: bool=False):
         entry_map = {}
         for entry in ENTRIES:
             entry_map[entry.name] = entry.copy()
@@ -446,34 +453,56 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
                 if k not in entry_map:
                     if ignore_unknown_entries:
                         _l.warning('Unknown configuration option \'%s\'. Ignoring...', k)
-                        continue
+                    else:
+                        entry_map[k] = UninterpretedCE(k, v)
+                    continue
                     # default to a string
-                    entry = CE(k, str, v)
-                    entry_map[k] = entry
 
                 entry = entry_map[k]
-
-                if entry.type_ in data_serializers:
-                    v = data_serializers[entry.type_][0](k, v)
-                    if v is None:
-                        continue
-                else:
-                    try:
-                        v = tomltype2pytype(v, entry.type_)
-                    except TypeError:
-                        _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '
-                                   'expected type \'%s\'. Ignoring...',
-                                   v, k, type(v), entry.type_
-                        )
-                        continue
-                entry.value = v
+                entry.value = cls.deserialize(entry.type_, k, v)
+                if entry.value is None:
+                    entry_map[k] = UninterpretedCE(k, v)
         except tomlkit.exceptions.ParseError:
             _l.error('Failed to parse configuration file: \'%s\'. Continuing with default options...', exc_info=True)
 
         return cls(entry_map)
 
+    @staticmethod
+    def deserialize(ty, k, v):
+        if ty in data_serializers:
+            v = data_serializers[ty][0](k, v)
+            if v is None:
+                return None
+        else:
+            try:
+                v = tomltype2pytype(v, ty)
+            except TypeError:
+                _l.warning('Value \'%s\' for configuration option \'%s\' has type \'%s\', '
+                           'expected type \'%s\'. Ignoring...',
+                           v, k, type(v), ty,
+                           )
+                return None
+
+        return v
+
+    def reinterpet(self):
+        """
+        Walks the ENTRIES list, trying to update self's entries with respect to anything that may have been added to
+        the global list. Tries to fix up UninterpretedCEs. Should be called e.g. after loading plugins.
+        """
+        for entry in ENTRIES:
+            my_entry = self._entries.get(entry.name, None)
+            if my_entry is None:
+                self._entries[entry.name] = my_entry
+                continue
+
+            if type(my_entry) is UninterpretedCE:
+                entry.value = self.deserialize(entry.type_, entry.name, my_entry.value)
+                if entry.value is not None:
+                    self._entries[entry.name] = entry
+
     @classmethod
-    def parse_file(cls, path: str, ignore_unknown_entries: bool=True):
+    def parse_file(cls, path: str, ignore_unknown_entries: bool=False):
         with open(path, 'r', encoding="utf-8") as f:
             return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 

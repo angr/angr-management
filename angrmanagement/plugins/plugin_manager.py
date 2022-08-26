@@ -5,7 +5,6 @@ import os
 
 from PySide2.QtGui import QColor
 
-from ..config import config_path
 from ..config.config_manager import ENTRIES
 from ..ui.menus.menu import MenuEntry, MenuSeparator
 from ..ui.toolbars.toolbar import ToolbarAction
@@ -22,22 +21,24 @@ if TYPE_CHECKING:
 
 l = logging.getLogger(__name__)
 
-# The plugin manager can be initialized in two modes:
-# - UI mode, where workspace is not None
-# - headless mode, where workspace is None, and any plugin that requires workspace will not be initialized
-#
-# Plugins can be in two states:
-# - Loaded, but inactive. In this, the class is present in .loaded_plugins but there is nothing in .active_plugins
-# - Activated. In this, there is an instance of the class in .active_plugins
-#
-# ...so this class has functions to transition plugins into and between these states.
-#
-# The actual process of excavating a process from the filesystem into a python class ("loading") needs to be dealt
-# with before anything touches this class. There are functions to do that in the plugins package but they need to be
-# tied to the user's settings related to loading paths and activation. Presently this is split between MainWindow (the
-# first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
 
 class PluginManager:
+    """
+    The plugin manager can be initialized in two modes:
+    - UI mode, where workspace is not None
+    - headless mode, where workspace is None, and any plugin that requires workspace will not be initialized
+
+    Plugins can be in two states:
+    - Loaded, but inactive. In this, the class is present in .loaded_plugins but there is nothing in .active_plugins
+    - Activated. In this, there is an instance of the class in .active_plugins
+
+    ...so this class has functions to transition plugins into and between these states.
+
+    The actual process of excavating a process from the filesystem into a python class ("loading") needs to be dealt
+    with before anything touches this class. There are functions to do that in the plugins package but they need to be
+    tied to the user's settings related to loading paths and activation. Presently this is split between MainWindow (the
+    first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
+    """
     def __init__(self, workspace: Optional['Workspace']):
         self.workspace = workspace
         # should one or both of these be ObjectContainers? I think no since we should be synchronizing on models, not
@@ -130,7 +131,7 @@ class PluginManager:
             for widget in gen:
                 self.workspace.main_window.statusBar().addPermanentWidget(widget)
                 widget.show()
-            plugin.__cached_status_bar_widgets.append(widget)
+                plugin.__cached_status_bar_widgets.append(widget)
 
     def _register_toolbar_actions(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
         for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
@@ -171,13 +172,11 @@ class PluginManager:
 
         if new_entries_added:
             # reload configuration manager so that it's aware of newly added entries
-            Conf.load_initial_entries(reset=False)
-            # reload the configuration file
-            new_conf = Conf.parse_file(config_path)
-            Conf._entries = new_conf._entries
+            Conf.reinterpet()
 
     def get_plugin_instance_by_name(self, plugin_cls_name: str) -> Optional[BasePlugin]:
-        instances = [plugin for plugin in self.active_plugins if plugin.__class__.__name__.split(".")[-1] == plugin_cls_name]
+        instances = \
+            [plugin for plugin in self.active_plugins if plugin.__class__.__name__.split(".")[-1] == plugin_cls_name]
         if not instances:
             return None
         if len(instances) > 1:
