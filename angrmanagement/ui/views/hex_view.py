@@ -1805,6 +1805,8 @@ class HexView(SynchronizedView):
         if self.smart_highlighting_enabled and not cfb.am_none:
             for item in cfb.floor_items(self.inner_widget.hex.display_start_addr):
                 item_addr, item = item
+                if item.size is None:
+                    continue
                 if (item_addr + item.size) < self.inner_widget.hex.display_start_addr:
                     continue
                 if item_addr >= self.inner_widget.hex.display_end_addr:

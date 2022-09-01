@@ -101,7 +101,7 @@ class CodeView(BaseView):
         self.vars_must_struct = set()
 
     def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None, flavor='pseudocode',
-                  reset_cache: bool=False):
+                  reset_cache: bool=False, regen_clinic: bool=True):
         if self._function.am_none:
             return
 
@@ -140,6 +140,7 @@ class CodeView(BaseView):
             vars_must_struct=self.vars_must_struct,
             on_finish=decomp_ready,
             blocking=True,
+            regen_clinic=regen_clinic,
         )
 
         self.workspace.instance.add_job(job)
@@ -208,7 +209,22 @@ class CodeView(BaseView):
         if self.codegen.am_none:
             return
 
+        old_lineno: Optional[int] = None
+        old_node: Optional = None
+        old_font = None
+        if self._last_function is self._function.am_obj and self._doc is not None:
+            # we are re-rendering the current function (e.g., triggered by a node renaming). the cursor should stay at
+            # the same node
+            old_cursor: QTextCursor = self._textedit.textCursor()
+            old_pos = old_cursor.position()
+            old_lineno = old_cursor.blockNumber()
+            old_font = self._textedit.font()
+            # TODO: If multiple instances of the node is referenced at the same line, we will always select the first
+            #  node. We need to fix this by counting which node is selected.
+            old_node = self._doc.get_node_at_position(old_pos)
+
         self._view_selector.setCurrentText(self.codegen.flavor)
+
         if already_regenerated:
             # do not regenerate text
             pass
@@ -234,23 +250,27 @@ class CodeView(BaseView):
             # regenerate text in the end
             self.codegen.regenerate_text()
 
-        old_pos: Optional[int] = None
-        old_font = None
-        if self._last_function is self._function.am_obj:
-            # we are re-rendering the current function (e.g., triggered by a node renaming). save the old cursor and
-            # reuse it later.
-            old_cursor: QTextCursor = self._textedit.textCursor()
-            old_pos = old_cursor.position()
-            old_font = self._textedit.font()
-
         self._options.dirty = False
-        self._doc = QCodeDocument(self.codegen)
-        self._textedit.setDocument(self._doc)
+        if self._doc is None:
+            self._doc = QCodeDocument(self.codegen)
+            self._textedit.setDocument(self._doc)
+        else:
+            # only update the text. do not set a new document. this avoids scrolling the textedit up and down
+            self._doc._codegen = self.codegen
+            self._doc.setPlainText(self.codegen.text)
 
-        if old_pos is not None:
-            new_cursor: QTextCursor = self._textedit.textCursor()
-            new_cursor.setPosition(old_pos)
+        if old_lineno is not None:
+            the_block = self._doc.findBlockByNumber(old_lineno)
+            new_cursor: QTextCursor = QTextCursor(the_block)
             self._textedit.setFont(old_font)
+            if old_node is not None:
+                # find the first node starting from the current position
+                for pos in self.codegen.map_pos_to_node._posmap.irange(
+                        minimum=new_cursor.position(),
+                        maximum=new_cursor.position() + the_block.length()):
+                    elem = self.codegen.map_pos_to_node._posmap[pos]
+                    if elem.obj is old_node:
+                        new_cursor.setPosition(pos)
             self._textedit.setTextCursor(new_cursor)
 
         if self.codegen.flavor == 'pseudocode':
@@ -372,9 +392,10 @@ class CodeView(BaseView):
         self._view_selector.setVisible(len(available) >= 2)
 
     def _on_view_selector_changed(self, index):
-        key = (self._function.addr, self._view_selector.itemText(index))
-        self.codegen.am_obj = self.workspace.instance.kb.structured_code[key].codegen
-        self.codegen.am_event()
+        if not self._function.am_none:
+            key = (self._function.addr, self._view_selector.itemText(index))
+            self.codegen.am_obj = self.workspace.instance.kb.structured_code[key].codegen
+            self.codegen.am_event()
 
     #
     # Private methods

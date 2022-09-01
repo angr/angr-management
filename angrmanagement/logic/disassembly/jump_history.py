@@ -17,6 +17,13 @@ class JumpHistory:
     def pos(self):
         return self._pos
 
+    @property
+    def current(self):
+        if len(self._history):
+            return self._history[self._pos]
+        else:
+            return None
+
     def __len__(self):
         return len(self._history)
 

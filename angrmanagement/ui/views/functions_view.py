@@ -17,7 +17,7 @@ class FunctionsView(BaseView):
 
         self._init_widgets()
 
-        self.width_hint = 100
+        self.width_hint = 300
         self.height_hint = 0
         self.updateGeometry()
 
@@ -44,9 +44,6 @@ class FunctionsView(BaseView):
     def reload(self):
         if not self.workspace.instance.cfg.am_none:
             self._function_table.function_manager = self.workspace.instance.kb.functions
-
-    def minimumSizeHint(self, *args, **kwargs):
-        return QSize(100, 500)
 
     def subscribe_func_select(self, callback):
         """

@@ -121,14 +121,20 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene = self.scene()
 
         if self._disassembly_level is DisassemblyLevel.AIL:
-            self.disasm = self.workspace.instance.project.analyses.Clinic(
-                self._function_graph.function)
-            self._supergraph = to_ail_supergraph(self.disasm.graph)
+            func = self._function_graph.function
+            try:
+                # always check if decompiler has cached a clinic object first
+                self.disasm = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')].clinic
+            except (KeyError, AttributeError):
+                self.disasm = self.workspace.instance.project.analyses.Clinic(func)
+
+            self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
             nodefunc = lambda n: n
             branchfunc = lambda n: None
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function, include_ir=include_ir)
+            self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function,
+                                                                               include_ir=include_ir)
             view = self.workspace.view_manager.first_view_in_category('console')
             if view is not None:
                 view.push_namespace({

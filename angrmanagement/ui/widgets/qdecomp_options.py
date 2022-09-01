@@ -106,8 +106,9 @@ class QDecompilationOptions(QWidget):
             # clear the cached version
             self._code_view.decompile(reset_cache=True)
         else:
-            self._code_view.codegen.reapply_options(self.option_and_values)
-            self._code_view.codegen.am_event()
+            if not self._code_view.codegen.am_none:
+                self._code_view.codegen.reapply_options(self.option_and_values)
+                self._code_view.codegen.am_event()
 
     @property
     def selected_passes(self):

@@ -10,7 +10,7 @@ from PySide2.QtGui import QColor
 
 from angrmanagement.config import Conf
 from angrmanagement.errors import UnexpectedStatusCodeError
-from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.utils.io import download_url
 
@@ -61,9 +61,11 @@ class CoveragePlugin(BasePlugin):
         if self.slacrs_instance is None:
             self.workspace.log("Unable to retrieve Slacrs instance")
 
-        self.hit_color = QColor(0, 20, 147)
-        self.num_gradients = 8
-        self.gradients = generate_light_gradients(self.hit_color, self.num_gradients)
+        self.dark_theme_color = QColor(0, 20, 147)
+        self.light_theme_color = QColor(225, 174, 0)
+        self.hit_color = self.dark_theme_color if Conf.theme_name == "dark" else self.light_theme_color
+        self.num_gradients = 16
+        self.gradients = generate_light_gradients(self.hit_color, self.num_gradients, lightness=int(100 / 16))
 
         self.running = False
         self.slacrs_thread = None
@@ -95,14 +97,15 @@ class CoveragePlugin(BasePlugin):
 
     def start(self):
         self.running = True
-        self.slacrs_thread = threading.Thread(target=self.listen_for_events)
-        self.slacrs_thread.setDaemon(True)
+        self.slacrs_thread = threading.Thread(target=self.listen_for_events, daemon=True)
         self.slacrs_thread.start()
         gui_thread_schedule(self._refresh_gui)
 
     def stop(self):
         self.running = False
         gui_thread_schedule(self._refresh_gui)
+        if self.workspace._main_window is not None:
+            gui_thread_schedule_async(self.workspace._main_window.progress_done)
 
     def _coverage_of_func(self, func):
         """
@@ -119,7 +122,7 @@ class CoveragePlugin(BasePlugin):
             return None
         with self.coverage_lock:
             if addr in self.bbl_coverage:
-                return QColor(0, 20, 147)
+                return self.dark_theme_color if Conf.theme_name == "dark" else self.light_theme_color
         return None
 
     def color_func(self, func):
@@ -141,7 +144,7 @@ class CoveragePlugin(BasePlugin):
         gradient_number = math.ceil(fraction_covered * len(self.gradients))
         return self.gradients[gradient_number-1]
 
-    FUNC_COLUMNS = ('Coverage',)
+    FUNC_COLUMNS = ('Fuzzing Coverage',)
 
     def extract_func_column(self, func, idx):
         assert idx == 0
@@ -177,14 +180,17 @@ class CoveragePlugin(BasePlugin):
             gui_thread_schedule(self._refresh_gui)
 
     def update_coverage(self):
+        self.set_status("Retrieving fuzzing coverage information...", 0.)
         session = self.slacrs_instance.session()
         if session:
-            for trace in session.query(slacrs.model.Trace).filter(
+            for idx, trace in enumerate(session.query(slacrs.model.Trace).filter(
                     slacrs.model.Trace.input.has(target_image_id=self.connector.target_image_id)
-            ).order_by(slacrs.model.Trace.created_at):
+            ).order_by(slacrs.model.Trace.created_at)):
                 if not self.running:
                     break
+                self.set_status(f"Processing trace {idx}...", 50.)
                 self.update_one_coverage(trace)
+        self.set_status("Fuzzing coverage updated", 100.)
 
     def update_one_coverage(self, trace):
         with self.coverage_lock:
@@ -241,8 +247,10 @@ class CoveragePlugin(BasePlugin):
                 self.reset_coverage()
                 self.update_coverage()
 
+            self.set_status("Retrieving fuzzing coverage information...", 0.)
             new_event_count = self.slacrs_instance.fetch_events()
-            for _ in range(new_event_count):
+            trace_idx = 0
+            for idx in range(new_event_count):
                 e = self.slacrs_instance.event_queue.get_nowait()
                 session = self.slacrs_instance.session()
                 if e.kind == "trace":
@@ -251,5 +259,12 @@ class CoveragePlugin(BasePlugin):
                         if not self.running:
                             break
                         trace = session.query(slacrs.model.Trace).filter_by(obj.object_id).one()
+                        self.set_status(f"Processing trace {trace_idx}...", idx * 100 / new_event_count)
+                        trace_idx += 1
                         self.update_one_coverage(trace)
                 session.close()
+            self.set_status("Fuzzing coverage updated", 100.)
+
+    def set_status(self, status: str, percentage: float):
+        if self.workspace._main_window is not None:
+            gui_thread_schedule_async(self.workspace._main_window.progress, (status, percentage))

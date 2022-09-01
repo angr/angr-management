@@ -24,7 +24,7 @@ stages:
       steps:
         - task: UsePythonVersion@0
           inputs:
-            versionSpec: 3.8
+            versionSpec: 3.10
         - ${{ if contains(pool, 'windows') }}:
           - task: BatchScript@1
             displayName: Call vcvars64.bat

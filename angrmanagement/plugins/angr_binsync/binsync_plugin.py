@@ -1,17 +1,15 @@
+# pylint: disable=wrong-import-position,wrong-import-order
 import logging
 
 import binsync
-from binsync.common.ui import set_ui_version
-
-from ...plugins import BasePlugin
-from ...ui.workspace import Workspace
-from .control_panel_view import ControlPanelView
-from .controller import AngrBinSyncController
+from angrmanagement.plugins import BasePlugin
+from angrmanagement.ui.workspace import Workspace
+from binsync.common.ui.version import set_ui_version
 
 set_ui_version("PySide2")
-# pylint: disable=wrong-import-position,wrong-import-order
 from binsync.common.ui.config_dialog import SyncConfig
-
+from angrmanagement.plugins.angr_binsync.control_panel_view import ControlPanelView
+from angrmanagement.plugins.angr_binsync.controller import AngrBinSyncController
 
 l = logging.getLogger(__name__)
 
@@ -102,7 +100,9 @@ class BinSyncPlugin(BasePlugin):
         var_type = AngrBinSyncController.stack_var_type_str(decompilation, stack_var)
 
         self.controller.make_controller_cmd(
-            self.controller.push_stack_variable, func.addr, offset, new_name, var_type, stack_var.size
+            self.controller.push_stack_variable,
+            self.controller.rebase_addr(func.addr),
+            offset, new_name, var_type, stack_var.size
         )
         return False
 
@@ -112,7 +112,8 @@ class BinSyncPlugin(BasePlugin):
         stack_var = self.controller.find_stack_var_in_codegen(decompilation, offset)
 
         self.controller.make_controller_cmd(
-            self.controller.push_stack_variable, func.addr, offset, stack_var.name, new_type, stack_var.size
+            self.controller.push_stack_variable, self.controller.rebase_addr(func.addr),
+            offset, stack_var.name, new_type, stack_var.size
         )
         return False
 
@@ -128,7 +129,7 @@ class BinSyncPlugin(BasePlugin):
 
         self.controller.make_controller_cmd(
             self.controller.push_function_header,
-            func.addr, func.name, **{"ret_type": func_type, "args": bs_args}
+            self.controller.rebase_addr(func.addr), func.name, **{"ret_type": func_type, "args": bs_args}
         )
         return False
 
@@ -144,7 +145,7 @@ class BinSyncPlugin(BasePlugin):
 
         self.controller.make_controller_cmd(
             self.controller.push_function_header,
-            func.addr, func.name, **{"ret_type": func_type, "args": bs_args}
+            self.controller.rebase_addr(func.addr), func.name, **{"ret_type": func_type, "args": bs_args}
         )
         return False
 
@@ -160,7 +161,7 @@ class BinSyncPlugin(BasePlugin):
     def handle_function_renamed(self, func, old_name, new_name):
         self.controller.make_controller_cmd(
             self.controller.push_function_header,
-            func.addr, new_name
+            self.controller.rebase_addr(func.addr), new_name
         )
         return False
 
@@ -172,6 +173,10 @@ class BinSyncPlugin(BasePlugin):
     def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
         func_addr = self.controller.get_func_addr_from_addr(address)
         self.controller.make_controller_cmd(
-            self.controller.push_comment, address, new_cmt, decomp, **{"func_addr": func_addr}
+            self.controller.push_comment,
+            self.controller.rebase_addr(address),
+            new_cmt,
+            decomp,
+            **{"func_addr": self.controller.rebase_addr(func_addr)}
         )
         return False

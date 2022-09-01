@@ -256,6 +256,5 @@ class RenameNode(QDialog):
                     else:
                         ty.label = node_name
 
-
                 self._code_view.codegen.am_event()
                 self.close()

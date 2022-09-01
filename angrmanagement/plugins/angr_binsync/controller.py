@@ -1,15 +1,18 @@
-import os
 import logging
+import os
 from typing import Optional
 
-from binsync.common.controller import BinSyncController, init_checker, make_ro_state, make_state_with_func
-from binsync.data import StackOffsetType, FunctionHeader
-import binsync
-
-from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 import angr
-from ...ui.views import CodeView
-
+import binsync
+from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
+from angrmanagement.ui.views import CodeView
+from binsync.common.controller import (
+    BinSyncController,
+    init_checker,
+    make_ro_state,
+    make_state_with_func
+)
+from binsync.data import FunctionHeader, StackOffsetType
 
 l = logging.getLogger(__name__)
 
@@ -42,8 +45,10 @@ class AngrBinSyncController(BinSyncController):
         if func is None or func.am_obj is None:
             return None
 
+        func_addr = self.rebase_addr(func.addr)
+
         return binsync.data.Function(
-            func.addr, 0, header=FunctionHeader(func.name, func.addr)
+            func_addr, 0, header=FunctionHeader(func.name, func_addr)
         )
 
     def binary_path(self) -> Optional[str]:
@@ -60,6 +65,18 @@ class AngrBinSyncController(BinSyncController):
         except KeyError:
             return 0
 
+    def rebase_addr(self, addr, up=False):
+        base_addr = self._instance.project.loader.main_object.mapped_base
+        is_pie = self._instance.project.loader.main_object.pic
+
+        if is_pie:
+            if up:
+                return addr + base_addr
+            elif addr > base_addr:
+                return addr - base_addr
+
+        return addr
+
     #
     # Display Fillers
     #
@@ -70,12 +87,12 @@ class AngrBinSyncController(BinSyncController):
     @init_checker
     @make_ro_state
     def fill_function(self, func_addr, user=None, state=None):
-        func = self._instance.kb.functions[func_addr]
+        func = self._instance.kb.functions[self.rebase_addr(func_addr, up=True)]
 
         # re-decompile a function if needed
         decompilation = self.decompile_function(func)
 
-        sync_func: binsync.data.Function = self.pull_function(func.addr, user=user)
+        sync_func: binsync.data.Function = self.pull_function(self.rebase_addr(func.addr), user=user)
         if sync_func is None:
             # the function does not exist for that user's state
             return False
@@ -103,7 +120,7 @@ class AngrBinSyncController(BinSyncController):
         # Comments
         #
 
-        for addr, cmt in self.pull_func_comments(func_addr).items():
+        for addr, cmt in self.pull_func_comments(self.rebase_addr(func_addr)).items():
             if not cmt or not cmt.comment:
                 continue
 
@@ -120,7 +137,7 @@ class AngrBinSyncController(BinSyncController):
                 self._instance.kb.comments[cmt.addr] = cmt.comment
 
         # ==== Stack Vars ==== #
-        sync_vars = self.pull_stack_variables(func.addr, user=user)
+        sync_vars = self.pull_stack_variables(self.rebase_addr(func.addr), user=user)
         for offset, sync_var in sync_vars.items():
             code_var = AngrBinSyncController.find_stack_var_in_codegen(decompilation, offset)
             if code_var:
@@ -237,3 +254,6 @@ class AngrBinSyncController(BinSyncController):
             func_addr = None
 
         return func_addr
+    
+    def goto_address(self, func_addr):
+        self._workspace.jump_to(self.rebase_addr(func_addr, up=True))

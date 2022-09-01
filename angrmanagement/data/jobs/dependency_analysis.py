@@ -204,7 +204,7 @@ class DependencyAnalysisJob(Job):
                )
 
         for idx, start in enumerate(starts):
-            handler = Handler(project, False, sink_function=sink, sink_atoms=sink_atoms)
+            handler = Handler(project, False, sink_function=sink, sink_atoms=sink_atoms, cfg=kb.cfgs[0])
             try:
                 rda = project.analyses.ReachingDefinitions(
                     subject=CallTraceSubject(start, kb.functions[start.current_function_address()]),

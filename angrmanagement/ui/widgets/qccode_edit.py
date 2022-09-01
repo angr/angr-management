@@ -1,19 +1,20 @@
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from PySide2.QtCore import Qt, QEvent
 from PySide2.QtGui import QTextCharFormat, QKeySequence
-from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit, QApplication, QShortcut
+from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit, QApplication
 
 from pyqodeng.core import api
 from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from ailment.statement import Store, Assignment
-from ailment.expression import Load, Convert
+from ailment.expression import Load, Convert, BinaryOp
 from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
-    CStructField, CIndexedVariable, CVariableField, CUnaryOp, CConstant
+    CStructField, CIndexedVariable, CVariableField, CUnaryOp, CConstant, CExpression
+from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 
 from ..documents.qcodedocument import QCodeDocument
 from ..dialogs.rename_node import RenameNode
@@ -157,6 +158,21 @@ class QCCodeEdit(api.CodeEdit):
 
         return super().event(event)
 
+    def get_closest_insaddr(self, node, expr=None) -> Optional[int]:
+        addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+        if addr is None:
+            if expr:
+                addr = self.get_src_to_inst()
+            else:
+                pos = self.textCursor().position()
+                while self.document().characterAt(pos) not in ('\n', '\u2029') and \
+                        pos < self.document().characterCount():  # qt WHAT are you doing
+                    pos += 1
+                node = self.document().get_stmt_node_at_position(pos)
+                addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+
+        return addr
+
     def get_src_to_inst(self) -> int:
         """
         Uses the current cursor position, which is in a code view, and gets the
@@ -276,18 +292,7 @@ class QCCodeEdit(api.CodeEdit):
                 self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
     def comment(self, expr=False, node=None):
-        addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
-        if addr is None:
-            if expr:
-                addr = self.get_src_to_inst()
-            else:
-                pos = self.textCursor().position()
-                while self.document().characterAt(pos) not in ('\n', '\u2029') and \
-                        pos < self.document().characterCount():  # qt WHAT are you doing
-                    pos += 1
-                node = self.document().get_stmt_node_at_position(pos)
-                addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
-
+        addr = self.get_closest_insaddr(node, expr=expr)
         if addr is None:
             return
 
@@ -351,6 +356,69 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node.fmt_neg ^= True
             self._code_view.codegen.am_event()
 
+    def convert_to_ite_expr(self):
+        node = self._selected_node
+        if not isinstance(node, CExpression):
+            return
+        ailexpr = self._code_view.codegen.cnode2ailexpr.get(node, None)
+        if ailexpr is None:
+            return
+
+        # which statement?
+        addr = self.get_closest_insaddr(node)
+        if addr is None:
+            return
+
+        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        if cache.ite_exprs is None:
+            cache.ite_exprs = set()
+        cache.ite_exprs.add((addr, ailexpr))
+        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+
+    def swap_binop_operands(self):
+        node = self._selected_node
+        if not isinstance(node, CBinaryOp):
+            return
+        ailexpr = self._code_view.codegen.cnode2ailexpr.get(node, None)
+        if ailexpr is None:
+            return
+        if not isinstance(ailexpr, BinaryOp):
+            return
+
+        op = ailexpr.op
+        if op in {'CmpEQ', 'CmpNE'}:
+            negated_op = op
+        else:
+            negated_op = BinaryOp.COMPARISON_NEGATION.get(op, None)
+        if negated_op is None:
+            return
+
+        # which statement?
+        addr = self.get_closest_insaddr(node)
+        if addr is None:
+            return
+
+        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        if cache.binop_operators is None:
+            cache.binop_operators = { }
+        op_desc = OpDescriptor(ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
+                               ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
+                               addr,
+                               op,
+                               )
+        cache.binop_operators[op_desc] = negated_op
+
+        if negated_op != op:
+            existing_op_desc = OpDescriptor(
+                ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
+                ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
+                addr,
+                negated_op,
+            )
+            if existing_op_desc in cache.binop_operators:
+                del cache.binop_operators[existing_op_desc]
+        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+
     def expr2armasm(self):
 
         def _assemble(expr, expr_addr) -> str:
@@ -413,6 +481,10 @@ class QCCodeEdit(api.CodeEdit):
 
         converter.display_output(text)
 
+    #
+    # Private methods
+    #
+
     @staticmethod
     def _separator():
         sep = QAction()
@@ -445,8 +517,14 @@ class QCCodeEdit(api.CodeEdit):
         self.action_neg = QAction('Toggle negative', self)
         self.action_neg.triggered.connect(self.neg_constant)
         self.action_neg.setShortcut(QKeySequence('_'))
+        self.action_to_ite_expr = QAction("Create a ternary expression")
+        self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
+        self.action_swap_binop_operands = QAction("Swap operands")
+        self.action_swap_binop_operands.triggered.connect(self.swap_binop_operands)
 
         expr_actions = [
+            self.action_to_ite_expr,
+            self.action_swap_binop_operands,
             self.action_collapse_expr,
             self.action_expand_expr,
         ]

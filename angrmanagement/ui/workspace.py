@@ -2,6 +2,7 @@ import os
 from typing import TYPE_CHECKING, Callable, Optional, List, Union
 import logging
 import traceback
+import time
 
 from PySide2.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
@@ -17,13 +18,18 @@ from ..data.breakpoint import Breakpoint, BreakpointType
 from ..data.trace import BintraceTrace, Trace
 from ..data.instance import ObjectContainer
 from ..data.jobs.loading import LoadBinaryJob
-from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob
+from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob, \
+    CFGGenerationJob
+from ..data.analysis_options import AnalysesConfiguration, CFGAnalysisConfiguration, FlirtAnalysisConfiguration, \
+    VariableRecoveryConfiguration
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
                     DataDepView, RegistersView, StackView, TracesView, TraceMapView, BreakpointsView,
                     CallExplorerView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
+from .dialogs import AnalysisOptionsDialog
+from ..logic.threads import gui_thread_schedule_async
 
 from ..plugins import PluginManager
 
@@ -50,10 +56,6 @@ class Workspace:
         self.variable_recovery_job: Optional[VariableRecoveryJob] = None
 
         self.current_screen = ObjectContainer(None, name="current_screen")
-
-        #
-        # Initialize font configurations
-        #
 
         self.default_tabs = [
             FunctionsView(self, 'left'),
@@ -83,6 +85,8 @@ class Workspace:
 
         self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.instance.debugger_mgr.debugger)
         self.on_debugger_state_updated()
+
+        self._analysis_configuration: Optional[AnalysesConfiguration] = None
 
     #
     # Properties
@@ -138,13 +142,44 @@ class Workspace:
             # ask the current view to display this function
             current_view.function = func
 
-    def on_cfg_generated(self):
-
-        self.instance.add_job(
-            FlirtSignatureRecognitionJob(
-                on_finish=self._on_flirt_signature_recognized,
-            )
+    def generate_cfg(self, cfg_args=None):
+        if cfg_args is None:
+            cfg_args = {}
+        cfg_job = CFGGenerationJob(
+            on_finish=self.on_cfg_generated,
+            **cfg_args
         )
+        self.instance.add_job(cfg_job)
+        self.instance._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
+
+    def _refresh_cfg(self, cfg_job):
+        """
+        Reload once and then refresh in a loop, while the CFG job is running
+        """
+        reloaded = False
+        while True:
+            if not self.instance.cfg.am_none:
+                if reloaded:
+                    gui_thread_schedule_async(self.refresh,
+                                              kwargs={'categories': ['disassembly', 'functions'],}
+                                              )
+                else:
+                    gui_thread_schedule_async(self.reload,
+                                              kwargs={'categories': ['disassembly', 'functions'],}
+                                              )
+                    reloaded = True
+
+            time.sleep(0.3)
+            if cfg_job not in self.instance.jobs:
+                break
+
+    def on_cfg_generated(self):
+        if self._analysis_configuration['flirt'].enabled:
+            self.instance.add_job(
+                FlirtSignatureRecognitionJob(
+                    on_finish=self._on_flirt_signature_recognized,
+                )
+            )
 
         # display the main function if it exists, otherwise display the function at the entry point
         if self.instance.cfg is not None:
@@ -192,18 +227,19 @@ class Workspace:
             )
         )
 
-        workers = 4 if not is_testing else 0  # disable multiprocessing on angr CI
-        self.variable_recovery_job = VariableRecoveryJob(
-            **self.instance.variable_recovery_args,
-            on_variable_recovered=self.on_variable_recovered,
-            workers=workers,
-        )
-        # prioritize the current function in display
-        disassembly_view = self.view_manager.first_view_in_category("disassembly")
-        if disassembly_view is not None:
-            if not disassembly_view.function.am_none:
-                self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-        self.instance.add_job(self.variable_recovery_job)
+        if self._analysis_configuration['varec'].enabled:
+            workers = 4 if not is_testing else 0  # disable multiprocessing on angr CI
+            self.variable_recovery_job = VariableRecoveryJob(
+                **self._analysis_configuration['varec'].to_dict(),
+                on_variable_recovered=self.on_variable_recovered,
+                workers=workers,
+            )
+            # prioritize the current function in display
+            disassembly_view = self.view_manager.first_view_in_category("disassembly")
+            if disassembly_view is not None:
+                if not disassembly_view.function.am_none:
+                    self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
+            self.instance.add_job(self.variable_recovery_job)
 
     def on_function_tagged(self):
         # reload disassembly view
@@ -235,13 +271,20 @@ class Workspace:
         """
         Add a new disassembly view.
         """
-        new_view = DisassemblyView(self, 'center')
-        self.add_view(new_view)
-        self.raise_view(new_view)
-        if self.instance.binary_path is not None:
-            self.on_cfg_generated()
-        # TODO move new_view tab to front of dock
-        return new_view
+        disassembly_view = self.view_manager.first_view_in_category("disassembly")
+        if disassembly_view is not None:
+            current_addr = disassembly_view.jump_history.current
+        else:
+            current_addr = None
+
+        view = DisassemblyView(self, 'center')
+        self.add_view(view)
+        self.raise_view(view)
+        view._linear_viewer.initialize()  # FIXME: Don't access protected member
+        if current_addr is not None:
+            view.jump_to(current_addr)
+        # TODO move view tab to front of dock
+        return view
 
     def add_view(self, view):
         self.view_manager.add_view(view)
@@ -384,10 +427,10 @@ class Workspace:
 
         # callback
         if comment_text is None and exists:
-            self.plugins.handle_comment_changed(addr, "", False, False)
+            self.plugins.handle_comment_changed(addr, "", False, False, False)
             del kb.comments[addr]
         else:
-            self.plugins.handle_comment_changed(addr, comment_text, not exists, False)
+            self.plugins.handle_comment_changed(addr, comment_text, not exists, False, False)
             kb.comments[addr] = comment_text
 
         # callback first
@@ -399,6 +442,33 @@ class Workspace:
         if disasm_view._flow_graph.disasm is not None:
             # redraw
             disasm_view.current_graph.refresh()
+
+    def run_analysis(self, prompt_for_configuration=True):
+        if self.instance.project.am_none:
+            return
+
+        if self._analysis_configuration is None:
+            self._analysis_configuration = AnalysesConfiguration([
+                a(self) for a in [
+                    CFGAnalysisConfiguration,
+                    FlirtAnalysisConfiguration,
+                    VariableRecoveryConfiguration
+                ]], self)
+
+        if not self.main_window.shown_at_start:
+            # If we are running headlessly (e.g. tests), just run with default configuration
+            prompt_for_configuration = False
+
+        if prompt_for_configuration:
+            dlg = AnalysisOptionsDialog(self._analysis_configuration, self, self.main_window)
+            dlg.setModal(True)
+            should_run = dlg.exec_()
+        else:
+            should_run = True
+
+        if should_run:
+            if self._analysis_configuration['cfg'].enabled:
+                self.generate_cfg(self._analysis_configuration['cfg'].to_dict())
 
     def decompile_current_function(self):
         current = self.view_manager.current_tab
@@ -540,7 +610,7 @@ class Workspace:
         view.setFocus()
 
     def log(self, msg):
-        if isinstance(msg, Exception):
+        if isinstance(msg, BaseException):
             msg = ''.join(traceback.format_exception(type(msg), msg, msg.__traceback__))
 
         console = self.view_manager.first_view_in_category('console')
@@ -946,7 +1016,8 @@ class Workspace:
         if dv:
             dv.label_rename_callback = callback
 
-    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True):
+    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None],
+                                       add_separator_first=True):
         if len(self.view_manager.views_by_category['disassembly']) == 1:
             dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
         else:
