@@ -70,7 +70,7 @@ class NewState(QDialog):
         self._ok_button = None
 
         self._args = None # type: typing.List[str]
-        self._env_config = None # type: typing.List[(str,str)]
+        self._env_config = [] # type: typing.List[(str,str)]
         self._fs_config = None  # type: typing.List[(str,str)]
         self._sockets_config = None
 
@@ -385,7 +385,7 @@ class NewState(QDialog):
                     self.state = factory.call_state(addr, mode=mode, options=self._options)
                 elif template == 'entry':
                     self.state = factory.entry_state(mode=mode, options=self._options, args=self._args, \
-                        env=dict(self._env_config) if self._env_config else {})
+                        env=dict(self._env_config))
                 else:
                     self.state = factory.full_init_state(mode=mode, options=self._options)
                 self.state.gui_data.base_name = name
