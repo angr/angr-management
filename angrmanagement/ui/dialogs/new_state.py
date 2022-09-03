@@ -70,7 +70,7 @@ class NewState(QDialog):
         self._ok_button = None
 
         self._args = None # type: typing.List[str]
-        self._env_config = None # type: typing.List[(str,str)]
+        self._env_config = [] # type: typing.List[(str,str)]
         self._fs_config = None  # type: typing.List[(str,str)]
         self._sockets_config = None
 
