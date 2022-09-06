@@ -1,4 +1,4 @@
-__version__ = "9.2.17.dev0"
+__version__ = "9.2.17"
 
 # Hack used to work around the slow-responsiveness issue with the GUI
 # PySide2 5.14.2 solves this problem but it introduces other bugs
