@@ -1,7 +1,7 @@
 from typing import Optional
 
-from PySide2.QtWidgets import QVBoxLayout
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QVBoxLayout
+from PySide6.QtCore import QSize
 
 from ..views import BaseView
 from ..widgets import QTraceMap

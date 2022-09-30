@@ -1,8 +1,8 @@
 from typing import Optional, TYPE_CHECKING
 
-from PySide2.QtCore import Qt, QEvent
-from PySide2.QtGui import QTextCharFormat, QKeySequence
-from PySide2.QtWidgets import QMenu, QAction, QInputDialog, QLineEdit, QApplication
+from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QTextCharFormat, QKeySequence, QAction
+from PySide6.QtWidgets import QMenu, QInputDialog, QLineEdit, QApplication
 
 from pyqodeng.core import api
 from pyqodeng.core import modes
@@ -23,7 +23,7 @@ from ..widgets.qccode_highlighter import QCCodeHighlighter
 from ..menus.menu import Menu
 
 if TYPE_CHECKING:
-    from PySide2.QtGui import QTextDocument
+    from PySide6.QtGui import QTextDocument
     from ..views.code_view import CodeView
 
 

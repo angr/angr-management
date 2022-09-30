@@ -1,6 +1,6 @@
 from typing import Type
 
-from PySide2.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence
 from angrmanagement.ui.toolbars.toolbar import Toolbar
 
 from .menu import Menu, MenuEntry, MenuSeparator

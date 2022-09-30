@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtCore import Qt, QRectF
 
 from .qgraph_object import QCachedGraphicsItem
 

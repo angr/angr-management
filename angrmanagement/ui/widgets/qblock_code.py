@@ -1,8 +1,8 @@
 from typing import Any, Sequence, Optional, Tuple
 
-from PySide2.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
-from PySide2.QtCore import Qt, QPointF, QRectF, QObject
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
+from PySide6.QtCore import Qt, QPointF, QRectF, QObject
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 import ailment
 import pyvex
@@ -759,8 +759,7 @@ class QBlockCode(QCachedGraphicsItem):
     def paint(self, painter, option, widget):  #pylint: disable=unused-argument
         self.update_document()
         painter.setRenderHints(QPainter.Antialiasing
-                               | QPainter.SmoothPixmapTransform
-                               | QPainter.HighQualityAntialiasing)
+                               | QPainter.SmoothPixmapTransform)
         painter.setFont(self._config.disasm_font)
 
 

@@ -3,8 +3,18 @@ import os
 import json
 import binascii
 
-from PySide2.QtWidgets import QDialog, QLineEdit, QLabel, QHBoxLayout, QVBoxLayout, QPushButton, QProgressBar,\
-    QMessageBox, QSizePolicy, QFileDialog
+from PySide6.QtWidgets import (
+    QDialog,
+    QLineEdit,
+    QLabel,
+    QHBoxLayout,
+    QVBoxLayout,
+    QPushButton,
+    QProgressBar,
+    QMessageBox,
+    QSizePolicy,
+    QFileDialog,
+)
 
 from ....utils.io import isurl, download_url
 from ..data.component_tree import ComponentTree, ComponentTreeNode, ComponentFunction

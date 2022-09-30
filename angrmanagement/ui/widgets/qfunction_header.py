@@ -1,8 +1,8 @@
 from typing import Optional
 
-from PySide2.QtGui import QPainter, QCursor
-from PySide2.QtCore import Qt, QRectF
-from PySide2.QtWidgets import QApplication, QGraphicsSimpleTextItem
+from PySide6.QtGui import QPainter, QCursor
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
 from angr.sim_type import SimTypeFunction
 from angr.calling_conventions import SimRegArg
@@ -45,7 +45,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
     def paint(self, painter, option, widget):
         painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+                QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         if self.infodock.is_label_selected(self.addr):
             highlight_color = Conf.disasm_view_label_highlight_color

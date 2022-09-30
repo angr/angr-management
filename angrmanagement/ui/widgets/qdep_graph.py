@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, List, Dict, Any
 import logging
 
-from PySide2.QtCore import Qt, QPointF
+from PySide6.QtCore import Qt, QPointF
 
 from ...utils.edge import Edge
 from ...utils.tree_graph_layouter import TreeGraphLayouter

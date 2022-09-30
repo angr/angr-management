@@ -2,7 +2,7 @@
 import re
 
 from pyqodeng.core.api import SyntaxHighlighter
-from PySide2.QtGui import QTextCharFormat, QFont, QBrush
+from PySide6.QtGui import QTextCharFormat, QFont, QBrush
 
 from ..documents import QCodeDocument
 from ...config import Conf

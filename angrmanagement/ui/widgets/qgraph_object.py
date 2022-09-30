@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QGraphicsItem
+from PySide6.QtWidgets import QGraphicsItem
 
 
 class QCachedGraphicsItem(QGraphicsItem):

@@ -1,5 +1,5 @@
 from typing import Optional, List, TYPE_CHECKING
-from PySide2 import QtWidgets
+from PySide6 import QtWidgets
 
 if TYPE_CHECKING:
     from angr.analyses.data_dep import BaseDepNode

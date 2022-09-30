@@ -1,8 +1,8 @@
 from typing import Optional
 from collections import OrderedDict
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QDialogButtonBox
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDialog, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QDialogButtonBox
 
 import pycparser.plyparser
 from angr import sim_type

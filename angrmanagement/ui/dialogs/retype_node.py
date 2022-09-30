@@ -1,7 +1,7 @@
 from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
 
-from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QLineEdit
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QLineEdit
 
 import pycparser
 

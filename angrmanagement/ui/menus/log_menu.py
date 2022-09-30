@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from PySide2.QtGui import QKeySequence, Qt
+from PySide6.QtGui import QKeySequence, Qt
 
 from .menu import Menu, MenuEntry, MenuSeparator
 

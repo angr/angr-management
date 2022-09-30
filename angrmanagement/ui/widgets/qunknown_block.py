@@ -1,7 +1,7 @@
 from typing import List
 
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtCore import QRectF
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtCore import QRectF
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
@@ -37,7 +37,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
 
         # painter.setRenderHints(
-        #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         # painter.setFont(self._config.disasm_font)
         pass
 

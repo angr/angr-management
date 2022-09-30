@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Sequence
 import logging
 import functools
 
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from angrmanagement.ui.views.view import BaseView
 

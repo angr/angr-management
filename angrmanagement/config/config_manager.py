@@ -6,8 +6,8 @@ from typing import Union, Type, Any, List, Optional
 import tomlkit
 import tomlkit.exceptions
 import tomlkit.items
-from PySide2.QtGui import QFont, QFontMetricsF, QColor
-from PySide2.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QFont, QFontMetricsF, QColor
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from ..utils.env import app_root
 from .config_entry import ConfigurationEntry as CE

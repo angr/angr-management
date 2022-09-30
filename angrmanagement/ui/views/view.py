@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING, Optional, Mapping, Sequence
 
-import PySide2.QtGui
-from PySide2.QtWidgets import QFrame, QMenu, QAction
-from PySide2.QtCore import QSize
+import PySide6.QtGui
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QFrame, QMenu
+from PySide6.QtCore import QSize
 
 from ...data.highlight_region import SynchronizedHighlightRegion
 
@@ -62,7 +63,7 @@ class BaseView(QFrame):
     def is_shown(self):
         return self.visibleRegion().isEmpty() is False
 
-    def closeEvent(self, event: PySide2.QtGui.QCloseEvent):
+    def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
         self.instance.workspace.view_manager.remove_view(self)
         event.accept()
 
@@ -189,7 +190,7 @@ class SynchronizedView(BaseView):
         Handle view being added to or removed from the view synchronization group.
         """
 
-    def closeEvent(self, event: PySide2.QtGui.QCloseEvent):
+    def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
         """
         View close event handler.
         """

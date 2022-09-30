@@ -1,6 +1,6 @@
-from PySide2.QtGui import QPainter, QBrush, QColor
-from PySide2.QtWidgets import QWidget, QSizePolicy, QMessageBox
-from PySide2.QtCore import Qt, QSize
+from PySide6.QtGui import QPainter, QBrush, QColor
+from PySide6.QtWidgets import QWidget, QSizePolicy, QMessageBox
+from PySide6.QtCore import Qt, QSize
 
 from angr.sim_type import TypeRef, SimUnion, SimStruct, SimTypeBottom
 from angr.knowledge_plugins.types import TypesStore

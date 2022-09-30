@@ -2,9 +2,9 @@ from typing import Optional, TYPE_CHECKING, Union
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
-from PySide2.QtGui import QPainter
-from PySide2.QtCore import Qt, QRectF, QRect, QEvent
+from PySide6.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
+from PySide6.QtGui import QPainter
+from PySide6.QtCore import Qt, QRectF, QRect, QEvent
 
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
@@ -36,8 +36,7 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         self._scene = QGraphicsScene(0, 0, self.width(), self.height())
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.setScene(self._scene)
-        self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform |
-                            QPainter.HighQualityAntialiasing)
+        self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # Do not use the scrollbars since they are hard-linked to the size of the scene, which is bad for us
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)

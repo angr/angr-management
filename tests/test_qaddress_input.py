@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-from PySide2.QtTest import QTest
+from PySide6.QtTest import QTest
 
 from angrmanagement.ui.main_window import MainWindow
 import angr

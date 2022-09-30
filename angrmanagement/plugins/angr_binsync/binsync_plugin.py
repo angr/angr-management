@@ -6,7 +6,7 @@ from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.workspace import Workspace
 from binsync.common.ui.version import set_ui_version
 
-set_ui_version("PySide2")
+set_ui_version("PySide6")
 from binsync.common.ui.config_dialog import SyncConfig
 from angrmanagement.plugins.angr_binsync.control_panel_view import ControlPanelView
 from angrmanagement.plugins.angr_binsync.controller import AngrBinSyncController

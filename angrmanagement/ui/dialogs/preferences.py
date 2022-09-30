@@ -1,8 +1,8 @@
-from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
     QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, \
     QSizePolicy, QDialogButtonBox
-from PySide2.QtCore import QSize
+from PySide6.QtCore import QSize
 
 from ..widgets.qcolor_option import QColorOption
 from ...config.config_manager import ENTRIES

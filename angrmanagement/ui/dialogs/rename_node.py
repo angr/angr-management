@@ -1,9 +1,9 @@
 from typing import Optional, TYPE_CHECKING
 from collections import OrderedDict
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
     QDialogButtonBox
-from PySide2.QtGui import Qt
+from PySide6.QtGui import Qt
 from angr.sim_type import SimType, TypeRef, SimTypePointer, NamedTypeMixin
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 

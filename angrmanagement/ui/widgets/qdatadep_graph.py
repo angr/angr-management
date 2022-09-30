@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from typing import Optional, Any, List, Dict, TYPE_CHECKING, Set
 
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide6 import QtWidgets, QtCore, QtGui
 
 from .qgraph import QZoomableDraggableGraphicsView
 from .qgraph_arrow import QDataDepGraphArrow, QDataDepGraphAncestorLine

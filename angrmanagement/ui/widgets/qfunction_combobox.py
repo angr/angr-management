@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QComboBox, QHBoxLayout
+from PySide6.QtWidgets import QComboBox, QHBoxLayout
 
 from angr.knowledge_plugins import FunctionManager
 

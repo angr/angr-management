@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout
+from PySide6.QtCore import Qt
 from ..widgets.filesystem_table import QFileSystemTable
 
 class FilesystemMount(QDialog):

@@ -2,10 +2,10 @@ import functools
 import logging
 from typing import Any, Optional
 
-import PySide2
-from PySide2.QtGui import QFont, QCursor
-from PySide2.QtCore import QAbstractTableModel, Qt, QSize
-from PySide2.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QMenu, QAction
+import PySide6
+from PySide6.QtGui import QFont, QCursor, QAction
+from PySide6.QtCore import QAbstractTableModel, Qt, QSize
+from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QMenu
 
 
 import angr
@@ -33,20 +33,20 @@ class QStackTableModel(QAbstractTableModel):
         self._log_widget = log_widget
         self.state: angr.SimState = None
 
-    def rowCount(self, parent:PySide2.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
         return 0 if self.state is None else 15
 
-    def columnCount(self, parent:PySide2.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide2.QtCore.Qt.Orientation, role:int=...) -> Any:  # pylint:disable=unused-argument
+    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide2.QtCore.QModelIndex, role:int=...) -> Any:
+    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -115,7 +115,7 @@ class QStackTableWidget(QTableView):
         self.model.layoutChanged.emit()
         self.update()
 
-    def contextMenuEvent(self, arg__1:PySide2.QtGui.QContextMenuEvent):  # pylint:disable=unused-argument
+    def contextMenuEvent(self, arg__1:PySide6.QtGui.QContextMenuEvent):  # pylint:disable=unused-argument
         if not self.selectedIndexes():
             return
 

@@ -6,8 +6,8 @@ import datetime
 from time import sleep
 
 from sqlalchemy import func as sqlalchemy_func
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, \
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, \
     QAbstractItemView, QTableWidgetItem, QWidget, QTabWidget, QLabel
 
 from angrmanagement.ui.views.view import BaseView

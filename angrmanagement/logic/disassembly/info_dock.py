@@ -1,4 +1,4 @@
-from PySide2.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal
 
 from ...data.object_container import ObjectContainer
 

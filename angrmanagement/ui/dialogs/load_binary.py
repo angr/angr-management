@@ -5,9 +5,9 @@ import logging
 import archinfo
 from cle import Blob
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QCheckBox, QFrame, QGroupBox, \
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTabWidget, QCheckBox, QFrame, QGroupBox, \
     QListWidgetItem, QListWidget, QMessageBox, QLineEdit, QGridLayout, QComboBox, QSizePolicy, QDialogButtonBox
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 
 
 l = logging.getLogger('dialogs.load_binary')

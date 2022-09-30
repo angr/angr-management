@@ -1,9 +1,9 @@
 import logging
 
-from PySide2.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
     QGraphicsSceneMouseEvent
-from PySide2.QtGui import QPainter, QMouseEvent, QImage, QVector2D
-from PySide2.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF
+from PySide6.QtGui import QPainter, QMouseEvent, QImage, QVector2D
+from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF
 
 _l = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         painter = QPainter(image)
 
         painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+                QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # draw the image
         self.scene().setSceneRect(imgRect)
@@ -110,13 +110,13 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self.zoom_factor = None
 
         #self.setRenderHints(
-                #QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+                #QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
     def _initial_position(self):
         raise NotImplementedError
 
     def _reset_view(self):
-        self.resetMatrix()
+        self.resetTransform()
         self.centerOn(self._initial_position())
         self.zoom(restore=True)
 

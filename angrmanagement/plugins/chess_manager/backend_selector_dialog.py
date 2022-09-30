@@ -3,8 +3,8 @@ from typing import Optional, TYPE_CHECKING
 import sqlalchemy
 import requests
 
-from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
 
 try:
     import slacrs

@@ -4,7 +4,7 @@ import sys
 import subprocess
 import pathlib
 
-from PySide2.QtCore import QSettings
+from PySide6.QtCore import QSettings
 
 from ..utils.env import app_path
 

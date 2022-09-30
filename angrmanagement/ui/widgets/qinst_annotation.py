@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING, Dict
-from PySide2.QtGui import QColor, QPainterPath, QBrush, QCursor
-from PySide2.QtCore import QMarginsF
-from PySide2.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, \
+from PySide6.QtGui import QColor, QPainterPath, QBrush, QCursor
+from PySide6.QtCore import QMarginsF
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, \
     QInputDialog, QLineEdit
 
 from .qsimulation_managers import QSimulationManagers

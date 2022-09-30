@@ -2,10 +2,10 @@ import socket
 import base64
 
 import claripy
-from PySide2.QtGui import QIntValidator, QContextMenuEvent, QColor
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox, \
+from PySide6.QtGui import QIntValidator, QContextMenuEvent, QColor
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox, \
     QLineEdit, QStyledItemDelegate, QTreeView, QTextEdit, QMenu
-from PySide2.QtCore import QSize, Qt, QAbstractItemModel, QModelIndex
+from PySide6.QtCore import QSize, Qt, QAbstractItemModel, QModelIndex
 
 from angr.storage.file import SimPacketsStream
 

@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QDockWidget
+from PySide6.QtWidgets import QDockWidget
 
 
 class QSmartDockWidget(QDockWidget):

@@ -1,10 +1,10 @@
 from typing import List, Optional
 import logging
 
-import PySide2
-from PySide2.QtGui import QPainter, QCursor, QBrush
-from PySide2.QtCore import Qt, QRectF
-from PySide2.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
+import PySide6
+from PySide6.QtGui import QPainter, QCursor, QBrush
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
 
 from angr.analyses.disassembly import Value
 from .qgraph_object import QCachedGraphicsItem
@@ -57,7 +57,7 @@ class QInstruction(QCachedGraphicsItem):
 
         self._init_widgets()
 
-    def contextMenuEvent(self, event:PySide2.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
+    def contextMenuEvent(self, event:PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
         pass
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
@@ -134,7 +134,7 @@ class QInstruction(QCachedGraphicsItem):
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
         painter.setRenderHints(
-            QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+            QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # background color
         backcolor = self._calc_backcolor()

@@ -1,6 +1,6 @@
 import os
 import typing
-from PySide2.QtWidgets import QFileDialog, QFrame, QComboBox, QMessageBox, QPushButton, QVBoxLayout, QTextEdit
+from PySide6.QtWidgets import QFileDialog, QFrame, QComboBox, QMessageBox, QPushButton, QVBoxLayout, QTextEdit
 from angr.storage.file import SimFileDescriptor
 
 

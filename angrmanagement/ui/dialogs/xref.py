@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout
-from PySide2.QtCore import QSize, Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout
+from PySide6.QtCore import QSize, Qt
 
 from ..widgets.qxref_viewer import QXRefViewer
 

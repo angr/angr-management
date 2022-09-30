@@ -1,8 +1,8 @@
 import threading
 
 import archr
-from PySide2.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QPushButton
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide6.QtCore import Qt
 from qtterm import TerminalWidget
 
 from angrmanagement.plugins import BasePlugin
