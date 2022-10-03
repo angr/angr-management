@@ -1189,9 +1189,9 @@ class HexGraphicsView(QAbstractScrollArea):
 
     def wheelEvent(self, event: QWheelEvent):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.delta() > 0 else 1/1.25)
+            self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1/1.25)
         else:
-            d = event.delta()
+            d = event.angleDelta().y()
             if d != 0:
                 self.set_display_offset(self.hex.display_offset_addr - 0x10 * d // 32)
         event.accept()

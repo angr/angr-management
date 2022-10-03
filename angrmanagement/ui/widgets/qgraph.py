@@ -165,8 +165,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.zoom(event.delta() < 0, event.pos())
-        elif event.angleDelta().y() != event.delta() or event.angleDelta().x() != 0:
+            self.zoom(event.angleDelta().y() < 0, event.pos())
+        elif event.angleDelta().x() != 0:
             # if this is an angled zoom (e.g. touchpad) then just let the default handler take care of it
             super().wheelEvent(event)
         else:

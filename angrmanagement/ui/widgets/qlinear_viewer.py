@@ -155,7 +155,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         :param QWheelEvent event:
         :return:
         """
-        delta = event.delta()
+        delta = event.angleDelta().y()
         if delta < 0:
             # scroll down by some lines
             lines = min(int(-delta // self._line_height), 3)
