@@ -238,7 +238,9 @@ class QMiniMapView(QGraphicsView):
         Forward the wheel event to target view to handle zoom events.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(event.pos()))
+            self._target_view.centerOn(
+                self.map_event_pos_to_target_scene_pos(QPoint(event.x(), event.y()))
+            )
 
         self._target_view.wheelEvent(event)
 

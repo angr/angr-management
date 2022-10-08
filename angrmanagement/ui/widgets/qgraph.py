@@ -3,7 +3,7 @@ import logging
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
     QGraphicsSceneMouseEvent
 from PySide6.QtGui import QPainter, QMouseEvent, QImage, QVector2D
-from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF
+from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF, QPoint
 
 _l = logging.getLogger(__name__)
 
@@ -165,7 +165,10 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
     def wheelEvent(self, event):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.zoom(event.angleDelta().y() < 0, event.pos())
+            self.zoom(
+                event.angleDelta().y() < 0,
+                QPoint(event.position().x(), event.position().y()),
+            )
         elif event.angleDelta().x() != 0:
             # if this is an angled zoom (e.g. touchpad) then just let the default handler take care of it
             super().wheelEvent(event)

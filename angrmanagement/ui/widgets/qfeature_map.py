@@ -414,8 +414,10 @@ class QFeatureMapView(QGraphicsView):
         Handle wheel events to scale and translate the feature map.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.angleDelta() > 0 else 1/1.25,
-                                       QPoint(event.pos().x(), event.pos().y()))
+            self.adjust_viewport_scale(
+                1.25 if event.angleDelta() > 0 else 1/1.25,
+                QPoint(event.position().x(), event.position().y()),
+            )
         else:
             self.translate(100 * (-1 if event.angleDelta() < 0 else 1), 0)
             super().wheelEvent(event)
