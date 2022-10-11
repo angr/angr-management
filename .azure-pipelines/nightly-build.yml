@@ -11,7 +11,7 @@ schedules:
 parameters:
 - name: pools
   type: object
-  default: [ "ubuntu-18.04", "windows-2019", "macos-11" ]
+  default: [ "ubuntu-20.04", "windows-2022", "macos-12" ]
 
 stages:
 - stage: Build
