@@ -86,7 +86,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             for byt in self.memory_data.content:
                 self._bytes.append(byt)
 
-        if len(self._bytes) < self.memory_data.size:
+        if self.memory_data.size is not None and len(self._bytes) < self.memory_data.size:
             # load more from mapped memory
             start_address = self.memory_data.addr + len(self._bytes)
             size = self.memory_data.size - len(self._bytes)
