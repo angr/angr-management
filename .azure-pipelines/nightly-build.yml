@@ -11,7 +11,7 @@ schedules:
 parameters:
 - name: pools
   type: object
-  default: [ "ubuntu-18.04", "windows-2019", "macos-11" ]
+  default: [ "ubuntu-20.04", "windows-2022", "macos-12" ]
 
 stages:
 - stage: Build
@@ -29,7 +29,7 @@ stages:
           - task: BatchScript@1
             displayName: Call vcvars64.bat
             inputs:
-              filename: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+              filename: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
               modifyEnvironment: true
         - task: Bash@3
           displayName: Run build.sh
