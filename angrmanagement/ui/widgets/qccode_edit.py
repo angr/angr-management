@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from ailment.statement import Store, Assignment
-from ailment.expression import Load, Convert, BinaryOp
+from ailment.expression import Load, Convert, Op, UnaryOp, BinaryOp
 from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
@@ -424,6 +424,20 @@ class QCCodeEdit(api.CodeEdit):
         def _assemble(expr, expr_addr) -> str:
             return converter.assemble(expr, self._code_view.function.addr, expr_addr)
 
+        def _find_loads(expr) -> list:
+            if isinstance(expr, Load):
+                return [expr]
+            elif isinstance(expr, Op):
+                if isinstance(expr, UnaryOp):
+                    return _find_loads(expr.operand)
+                else:
+                    loads = []
+                    for operand in expr.operands:
+                        loads += _find_loads(operand)
+                    return loads
+            else:
+                return []
+
         node = self._selected_node
         # figure out where we are
         if not isinstance(node, (CVariable, CIndexedVariable, CVariableField, CStructField)):
@@ -454,23 +468,18 @@ class QCCodeEdit(api.CodeEdit):
 
         converter = self.workspace.plugins.get_plugin_instance_by_name("AIL2ARM32")
 
-        # I'm lazy - I'll get the first Load if available
         lst = [ ]
         for stmt in the_node.statements:
             if isinstance(stmt, Assignment):
-                if isinstance(stmt.src, Load):
-                    asm = _assemble(stmt.src, stmt.src.ins_addr)
-                    lst.append((str(stmt), str(stmt.src), asm))
-                elif isinstance(stmt.src, Convert) and isinstance(stmt.src.operand, Load):
-                    asm = _assemble(stmt.src, stmt.src.operand.ins_addr)
-                    lst.append((str(stmt), str(stmt.src), asm))
+                loads = _find_loads(stmt.src)
+                for load in loads:
+                    asm = _assemble(load, load.ins_addr)
+                    lst.append((str(stmt), str(load), asm))
             elif isinstance(stmt, Store):
-                if isinstance(stmt.data, Load):
-                    asm = _assemble(stmt.data, stmt.data.ins_addr)
-                    lst.append((str(stmt), str(stmt.data), asm))
-                elif isinstance(stmt.data, Convert) and isinstance(stmt.data.operand, Load):
-                    asm = _assemble(stmt.data, stmt.data.operand.ins_addr)
-                    lst.append((str(stmt), str(stmt.data), asm))
+                loads = _find_loads(stmt.data)
+                for load in loads:
+                    asm = _assemble(load, load.ins_addr)
+                    lst.append((str(stmt), str(load), asm))
 
         # format text
         text = f"The AIL block:\n{str(the_node)}\n\n"
