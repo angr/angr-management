@@ -9,7 +9,7 @@ from pyqodeng.core import modes
 from pyqodeng.core import panels
 
 from ailment.statement import Store, Assignment
-from ailment.expression import Load, Convert, Op, UnaryOp, BinaryOp
+from ailment.expression import Load, Op, UnaryOp, BinaryOp
 from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
 from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
