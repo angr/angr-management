@@ -93,7 +93,7 @@ class TypesView(BaseView):
         self._layout.addStretch()
         # background color
         # TODO: Support dark mode
-        scroll_contents.setStyleSheet("background-color: white;")
+        #scroll_contents.setStyleSheet("background-color: white;")
 
     def reload(self):
         for child in list(self._layout.parent().children()):

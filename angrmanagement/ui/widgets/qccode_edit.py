@@ -275,7 +275,7 @@ class QCCodeEdit(api.CodeEdit):
             # unsupported right now..
             return
         dialog = RetypeNode(self.workspace.instance, code_view=self._code_view, node=node,
-                            node_type=node_type, variable=node.variable)
+                            node_type=node_type)
         dialog.exec_()
 
         new_node_type = dialog.new_type
@@ -286,8 +286,12 @@ class QCCodeEdit(api.CodeEdit):
                 variable_kb = self._code_view.codegen._variable_kb
                 # specify the type
                 new_node_type = new_node_type.with_arch(workspace.instance.project.arch)
-                variable_kb.variables[self._code_view.function.addr].variables_with_manual_types.add(node.variable)
-                variable_kb.variables[self._code_view.function.addr].set_variable_type(node.variable, new_node_type)
+                variable_kb.variables[self._code_view.function.addr].set_variable_type(
+                    node.variable,
+                    new_node_type,
+                    all_unified=True,
+                    mark_manual=True,
+                )
 
                 self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
