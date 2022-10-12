@@ -15,7 +15,7 @@ from ..documents import QCodeDocument
 from .view import BaseView
 from ...data.object_container import ObjectContainer
 from ...logic.disassembly import JumpHistory
-from ...data.jobs import DecompileFunctionJob
+from ...data.jobs import DecompileFunctionJob, VariableRecoveryJob
 from ..toolbars import NavToolbar
 
 
@@ -131,19 +131,31 @@ class CodeView(BaseView):
                 else:
                     self.jump_history.record_address(self._function.am_obj.addr)
 
-        job = DecompileFunctionJob(
-            self._function.am_obj,
-            cfg=self.workspace.instance.cfg,
-            options=self._options.option_and_values,
-            optimization_passes=self._options.selected_passes,
-            peephole_optimizations=self._options.selected_peephole_opts,
-            vars_must_struct=self.vars_must_struct,
-            on_finish=decomp_ready,
-            blocking=True,
-            regen_clinic=regen_clinic,
-        )
+        def decomp():
+            job = DecompileFunctionJob(
+                self._function.am_obj,
+                cfg=self.workspace.instance.cfg,
+                options=self._options.option_and_values,
+                optimization_passes=self._options.selected_passes,
+                peephole_optimizations=self._options.selected_peephole_opts,
+                vars_must_struct=self.vars_must_struct,
+                on_finish=decomp_ready,
+                blocking=True,
+                regen_clinic=regen_clinic,
+            )
+            self.workspace.instance.add_job(job)
 
-        self.workspace.instance.add_job(job)
+        if self._function.ran_cca is False:
+            # run calling convention analysis for this function
+            varrec_job = VariableRecoveryJob(
+                **self.workspace._analysis_configuration['varec'].to_dict(),
+                workers=0,
+                on_finish=decomp,
+                func_addr=self._function.addr
+            )
+            self.workspace.instance.add_job(varrec_job)
+        else:
+            decomp()
 
     def highlight_chunks(self, chunks):
         extra_selections = [ ]
