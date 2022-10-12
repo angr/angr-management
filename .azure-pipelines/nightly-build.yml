@@ -11,7 +11,7 @@ schedules:
 parameters:
 - name: pools
   type: object
-  default: [ "ubuntu-20.04", "windows-2022", "macos-12" ]
+  default: [ "ubuntu-20.04", "ubuntu-22.04", "windows-2022", "macos-12" ]
 - name: test_pools
   type: object
   default: [ "ubuntu-20.04", "ubuntu-22.04" ]
@@ -56,7 +56,7 @@ stages:
         displayName: Install X11 app testing utilities
       - task: DownloadPipelineArtifact@2
         inputs:
-          artifactName: angr-management-ubuntu-20.04
+          artifactName: angr-management-${{ pool }}
       - bash: |
           chmod +x ../angr-management-onefile-ubuntu
           xvfb-run bash -c '

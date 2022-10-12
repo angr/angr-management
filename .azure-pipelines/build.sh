@@ -42,7 +42,8 @@ ONEFILE_DIR=packaging/pyinstaller/onefile
 if [[ "$OSTYPE" == "darwin"* ]]; then
     cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-macos
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-ubuntu
+    source /etc/os-release
+    cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-$ID-$VERSION_ID
 else
     cp $ONEFILE_DIR/angr-management.exe upload/angr-management-onefile-win64.exe
 fi
