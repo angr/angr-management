@@ -30,8 +30,8 @@ class CodeView(BaseView):
 
     FUNCTION_SPECIFIC_VIEW = True
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('pseudocode', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('pseudocode', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Pseudocode'
 
@@ -95,7 +95,7 @@ class CodeView(BaseView):
     #
 
     def reload(self):
-        if self.workspace.instance.project.am_none:
+        if self.instance.project.am_none:
             return
         self._options.reload(force=True)
         self.vars_must_struct = set()
@@ -111,18 +111,18 @@ class CodeView(BaseView):
             self._function.ran_cca = False
 
         if reset_cache:
-            self.workspace.instance.kb.structured_code.discard((self._function.addr, flavor))
-            variables = self.workspace.instance.pseudocode_variable_kb.variables
+            self.instance.kb.structured_code.discard((self._function.addr, flavor))
+            variables = self.instance.pseudocode_variable_kb.variables
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
         def decomp_ready():
             # this code is _partially_ duplicated from _on_new_function. be careful!
-            available = self.workspace.instance.kb.structured_code.available_flavors(self._function.addr)
+            available = self.instance.kb.structured_code.available_flavors(self._function.addr)
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self._function.addr,
+                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr,
                                                                                   chosen_flavor)].codegen
                 self.codegen.am_event(already_regenerated=True)
                 self._focus_core(focus, focus_addr)
@@ -134,7 +134,7 @@ class CodeView(BaseView):
         def decomp():
             job = DecompileFunctionJob(
                 self._function.am_obj,
-                cfg=self.workspace.instance.cfg,
+                cfg=self.instance.cfg,
                 options=self._options.option_and_values,
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
@@ -143,17 +143,17 @@ class CodeView(BaseView):
                 blocking=True,
                 regen_clinic=regen_clinic,
             )
-            self.workspace.instance.add_job(job)
+            self.instance.add_job(job)
 
         if self._function.ran_cca is False:
             # run calling convention analysis for this function
             varrec_job = VariableRecoveryJob(
-                **self.workspace._analysis_configuration['varec'].to_dict(),
+                **self.instance._analysis_configuration['varec'].to_dict(),
                 workers=0,
                 on_finish=decomp,
                 func_addr=self._function.addr
             )
-            self.workspace.instance.add_job(varrec_job)
+            self.instance.add_job(varrec_job)
         else:
             decomp()
 
@@ -190,10 +190,10 @@ class CodeView(BaseView):
                 self._focus_core(True, None)
         else:
             # try to find the right function
-            block_addr, _ = self.workspace.instance.cfb.floor_item(self.addr.am_obj)
-            block = self.workspace.instance.cfg.get_any_node(block_addr)
+            block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
+            block = self.instance.cfg.get_any_node(block_addr)
             if block is not None:
-                func = self.workspace.instance.kb.functions[block.function_address]
+                func = self.instance.kb.functions[block.function_address]
                 if func is not self._function.am_obj:
                     self._function.am_obj = func
                     self._function.am_event(focus_addr=self.addr.am_obj, focus=focus)
@@ -242,12 +242,12 @@ class CodeView(BaseView):
             pass
         else:
             if event == "retype_variable":
-                dec = self.workspace.instance.project.analyses.Decompiler(
+                dec = self.instance.project.analyses.Decompiler(
                     self._function,
-                    variable_kb=self.workspace.instance.pseudocode_variable_kb,
+                    variable_kb=self.instance.pseudocode_variable_kb,
                     decompile=False
                 )
-                dec_cache = self.workspace.instance.kb.structured_code[(self._function.addr, 'pseudocode')]
+                dec_cache = self.instance.kb.structured_code[(self._function.addr, 'pseudocode')]
                 new_codegen = dec.reflow_variable_types(
                     dec_cache.type_constraints,
                     dec_cache.var_to_typevar or {},
@@ -301,12 +301,12 @@ class CodeView(BaseView):
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
             return
-        available = self.workspace.instance.kb.structured_code.available_flavors(self._function.addr)
+        available = self.instance.kb.structured_code.available_flavors(self._function.addr)
         self._update_available_views(available)
         should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
-            cached = self.workspace.instance.kb.structured_code[(self._function.addr, chosen_flavor)].codegen
+            cached = self.instance.kb.structured_code[(self._function.addr, chosen_flavor)].codegen
             if not isinstance(cached, DummyStructuredCodeGenerator):
                 should_decompile = False
                 self.codegen.am_obj = cached
@@ -348,11 +348,11 @@ class CodeView(BaseView):
                 if selected_node.callee_func is not None:
                     self.jump_history.record_address(selected_node.tags['ins_addr'])
                     self.jump_history.jump_to(selected_node.callee_func.addr)
-                    self.workspace.decompile_function(selected_node.callee_func, view=self)
+                    self.instance.workspace.decompile_function(selected_node.callee_func, view=self)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
-                    self.workspace.jump_to(selected_node.value)
+                    self.instance.workspace.jump_to(selected_node.value)
 
     def _jump_to(self, addr:int):
         self.addr.am_obj = addr
@@ -379,7 +379,7 @@ class CodeView(BaseView):
         key = event.key()
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
-            self.workspace.jump_to(self.addr.am_obj)
+            self.instance.workspace.jump_to(self.addr.am_obj)
             return True
         elif key == Qt.Key_Escape:
             self.jump_back()
@@ -387,10 +387,10 @@ class CodeView(BaseView):
         elif key == Qt.Key_Space:
             if not self.codegen.am_none:
                 flavor = self.codegen.flavor
-                flavors = self.workspace.instance.kb.structured_code.available_flavors(self._function.addr)
+                flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
                 idx = flavors.index(flavor)
                 newidx = (idx + 1) % len(flavors)
-                self.codegen.am_obj = self.workspace.instance.kb.structured_code[(self._function.addr,
+                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr,
                                                                                   flavors[newidx])].codegen
                 self.codegen.am_event()
                 return True
@@ -406,7 +406,7 @@ class CodeView(BaseView):
     def _on_view_selector_changed(self, index):
         if not self._function.am_none:
             key = (self._function.addr, self._view_selector.itemText(index))
-            self.codegen.am_obj = self.workspace.instance.kb.structured_code[key].codegen
+            self.codegen.am_obj = self.instance.kb.structured_code[key].codegen
             self.codegen.am_event()
 
     #
@@ -427,7 +427,7 @@ class CodeView(BaseView):
         textedit_dock.setWidget(self._textedit)
 
         # decompilation
-        self._options = QDecompilationOptions(self, self.workspace.instance)
+        self._options = QDecompilationOptions(self, self.instance)
         options_dock = QDockWidget('Decompilation Options', self._options)
         window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
@@ -465,4 +465,4 @@ class CodeView(BaseView):
 
         self._textedit.focusWidget()
 
-        self.workspace.plugins.instrument_code_view(self)
+        self.instance.workspace.plugins.instrument_code_view(self)

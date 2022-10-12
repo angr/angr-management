@@ -23,9 +23,9 @@ class NewLinePiece(object):
 
 
 class QMemoryView(QWidget):
-    def __init__(self, state, workspace, parent=None):
+    def __init__(self, state, instance, parent=None):
         super(QMemoryView, self).__init__(parent)
-        self.workspace = workspace
+        self.instance = instance
 
         self.state = state
         self.cols = None
@@ -108,7 +108,7 @@ class QMemoryView(QWidget):
             # QASTViewer objects
             for col in range(self.cols):
                 data = self.state.memory.load(addr + col, 1, inspect=False, disable_actions=True)
-                ast_viewer = QASTViewer(data, workspace=self.workspace, custom_painting=True, display_size=False)
+                ast_viewer = QASTViewer(data, workspace=self.instance.workspace, custom_painting=True, display_size=False)
                 objects.append(ast_viewer)
 
             # end of the line

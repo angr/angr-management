@@ -8,6 +8,7 @@ from ...data.highlight_region import SynchronizedHighlightRegion
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.ui.workspace import Instance
 
 
 class BaseView(QFrame):
@@ -19,10 +20,10 @@ class BaseView(QFrame):
     # to True.
     FUNCTION_SPECIFIC_VIEW = False
 
-    def __init__(self, category: str, workspace, default_docking_position, *args, **kwargs):
+    def __init__(self, category: str, instance, default_docking_position, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace: 'Workspace' = workspace
+        self.instance: 'Instance' = instance
         self.category = category
         self.default_docking_position = default_docking_position
 
@@ -42,7 +43,7 @@ class BaseView(QFrame):
         raise NotImplementedError()
 
     def focus(self):
-        self.workspace.view_manager.raise_view(self)
+        self.instance.workspace.view_manager.raise_view(self)
 
     def refresh(self):
         pass
@@ -62,7 +63,7 @@ class BaseView(QFrame):
         return self.visibleRegion().isEmpty() is False
 
     def closeEvent(self, event: PySide2.QtGui.QCloseEvent):
-        self.workspace.view_manager.remove_view(self)
+        self.instance.workspace.view_manager.remove_view(self)
         event.accept()
 
     #
@@ -200,7 +201,7 @@ class SynchronizedView(BaseView):
         Get submenu for 'Synchronize with' context menu.
         """
         mnu = QMenu("&Synchronize with", self)
-        groups = {v.sync_state for v in self.workspace.view_manager.views
+        groups = {v.sync_state for v in self.instance.workspace.view_manager.views
                   if (v is not self) and isinstance(v, SynchronizedView)}
         if len(groups) == 0:
             act = QAction('None available', self)

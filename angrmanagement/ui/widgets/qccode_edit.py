@@ -128,7 +128,7 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node = under_cursor
             mnu.addActions(self.function_name_actions)
             for entry in self.workspace.plugins.build_context_menu_functions(
-                    [self.workspace.instance.kb.functions[under_cursor.name]]):
+                    [self.instance.kb.functions[under_cursor.name]]):
                 Menu.translate_element(mnu, entry)
         else:
             mnu.addActions(self.default_actions)
@@ -140,7 +140,11 @@ class QCCodeEdit(api.CodeEdit):
 
     @property
     def workspace(self):
-        return self._code_view.workspace if self._code_view is not None else None
+        return self._code_view.instance.workspace if self._code_view is not None else None
+
+    @property
+    def instance(self):
+        return self._code_view.instance if self._code_view is not None else None
 
     def event(self, event):
         """
@@ -274,7 +278,7 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
             return
-        dialog = RetypeNode(self.workspace.instance, code_view=self._code_view, node=node,
+        dialog = RetypeNode(self.instance, code_view=self._code_view, node=node,
                             node_type=node_type)
         dialog.exec_()
 
@@ -282,10 +286,9 @@ class QCCodeEdit(api.CodeEdit):
         if new_node_type is not None:
             if self._code_view is not None and node is not None:
                 # need workspace for altering callbacks of changes
-                workspace = self._code_view.workspace
                 variable_kb = self._code_view.codegen._variable_kb
                 # specify the type
-                new_node_type = new_node_type.with_arch(workspace.instance.project.arch)
+                new_node_type = new_node_type.with_arch(self.instance.project.arch)
                 variable_kb.variables[self._code_view.function.addr].set_variable_type(
                     node.variable,
                     new_node_type,
@@ -373,7 +376,7 @@ class QCCodeEdit(api.CodeEdit):
         if addr is None:
             return
 
-        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
         if cache.ite_exprs is None:
             cache.ite_exprs = set()
         cache.ite_exprs.add((addr, ailexpr))
@@ -402,7 +405,7 @@ class QCCodeEdit(api.CodeEdit):
         if addr is None:
             return
 
-        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
         if cache.binop_operators is None:
             cache.binop_operators = { }
         op_desc = OpDescriptor(ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
@@ -460,7 +463,7 @@ class QCCodeEdit(api.CodeEdit):
             return
 
         # traverse the stored clinic graph to find the AIL block
-        cache = self.workspace.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
         the_node = None
         for node in cache.clinic.graph.nodes():
             if node.addr <= ins_addr < node.addr + node.original_size:

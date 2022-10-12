@@ -9,10 +9,10 @@ from .qgraph_object import QCachedGraphicsItem
 
 class QBlockLabel(QCachedGraphicsItem):
 
-    def __init__(self, addr, text, config, disasm_view, workspace, infodock, parent=None):
+    def __init__(self, addr, text, config, disasm_view, instance, infodock, parent=None):
         super().__init__(parent=parent)
 
-        self.workspace = workspace
+        self.instance = instance
         self.addr = addr
         self.text = text
         self._width = 0

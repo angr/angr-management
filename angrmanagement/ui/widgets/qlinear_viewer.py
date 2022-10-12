@@ -62,8 +62,8 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
 
-    def __init__(self, workspace, disasm_view, parent=None):
-        QDisassemblyBaseControl.__init__(self, workspace, disasm_view, QAbstractScrollArea)
+    def __init__(self, instance, disasm_view, parent=None):
+        QDisassemblyBaseControl.__init__(self, instance, disasm_view, QAbstractScrollArea)
         QAbstractScrollArea.__init__(self, parent=parent)
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -123,11 +123,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     @property
     def cfg(self):
-        return self.workspace.instance.cfg
+        return self.instance.cfg
 
     @property
     def cfb(self):
-        return self.workspace.instance.cfb
+        return self.instance.cfb
 
     @property
     def scene(self):
@@ -259,7 +259,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         :param use_block_pos:
         :return:
         """
-
         if insn_pos is not None:
             # check if item is already visible in the viewport
             viewport = self._viewer.viewport()
@@ -338,7 +337,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         _l.debug("Address %#x, offset %d, start_line %d.", addr, offset, start_line)
 
         self._insaddr_to_block.clear()
-
         if start_line < 0:
             # Which object are we currently displaying at the top of the disassembly view?
             try:
@@ -439,8 +437,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is not None:
                 func_addr = cfg_node.function_address
-                if self.workspace.instance.kb.functions.contains_addr(func_addr):
-                    func = self.workspace.instance.kb.functions[func_addr]
+                if self.instance.kb.functions.contains_addr(func_addr):
+                    func = self.instance.kb.functions[func_addr]
                     disasm = self._get_disasm(func)
                     qobject = None
                     if self._disassembly_level is DisassemblyLevel.AIL:
@@ -452,11 +450,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                                     ail_obj = n
                             # the corresponding AIL block may not exist
                             if ail_obj is not None:
-                                qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                                qobject = QLinearBlock(self.instance, func_addr, self.disasm_view, disasm,
                                                        self.disasm_view.infodock, obj.addr, ail_obj, None, None
                                                        )
                     else:
-                        qobject = QLinearBlock(self.workspace, func_addr, self.disasm_view, disasm,
+                        qobject = QLinearBlock(self.instance, func_addr, self.disasm_view, disasm,
                                                self.disasm_view.infodock, obj.addr, [obj], {}, None
                                                )
                 else:
@@ -468,9 +466,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 _l.warning("Failed to get a CFG node for address %#x.", obj_addr)
                 qobject = None
         elif isinstance(obj, MemoryData):
-            qobject = QMemoryDataBlock(self.workspace, self.disasm_view.infodock, obj_addr, obj, parent=None)
+            qobject = QMemoryDataBlock(self.instance, self.disasm_view.infodock, obj_addr, obj, parent=None)
         elif isinstance(obj, Unknown):
-            qobject = QUnknownBlock(self.workspace, obj_addr, obj.bytes)
+            qobject = QUnknownBlock(self.instance, obj_addr, obj.bytes)
         else:
             qobject = None
         return qobject
@@ -499,10 +497,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         """
         if self._disassembly_level is DisassemblyLevel.AIL:
             if func.addr not in self._ail_disasms:
-                self._ail_disasms[func.addr] = self.workspace.instance.project.analyses.Clinic(func)
+                self._ail_disasms[func.addr] = self.instance.project.analyses.Clinic(func)
             return self._ail_disasms[func.addr]
 
         if func.addr not in self._disasms:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            self._disasms[func.addr] = self.workspace.instance.project.analyses.Disassembly(function=func, include_ir=include_ir)
+            self._disasms[func.addr] = self.instance.project.analyses.Disassembly(function=func, include_ir=include_ir)
         return self._disasms[func.addr]

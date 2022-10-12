@@ -2,14 +2,13 @@ from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QGridLayout, QTextEdit
 
 from ...config import Conf
-from ...data.instance import Instance
 
 
 class FuncDocDialog(QDialog):
     """
     Implements the FuncDoc dialog.
     """
-    def __init__(self, instance: Instance, addr=None, name="", doc_tuple=None, parent=None):
+    def __init__(self, instance, addr=None, name="", doc_tuple=None, parent=None):
         super().__init__(parent)
 
         # initialization

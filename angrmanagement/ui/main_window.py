@@ -646,7 +646,7 @@ class MainWindow(QMainWindow):
 
     def run_analysis(self):
         if self.workspace:
-            self.workspace.run_analysis()
+            self.workspace.instance.run_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:

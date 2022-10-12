@@ -20,11 +20,10 @@ class DependencyView(BaseView):
     Creates view for dependency analysis.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('dependencies', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('dependencies', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Dependencies'
-        self.workspace = workspace
 
         # UI widgets
         self._graph_widget: QDependencyGraph = None
@@ -75,7 +74,7 @@ class DependencyView(BaseView):
 
     def _init_widgets(self):
 
-        self._graph_widget = QDependencyGraph(self.workspace, self)
+        self._graph_widget = QDependencyGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._graph_widget)
@@ -84,7 +83,7 @@ class DependencyView(BaseView):
         self.setLayout(hlayout)
 
     def _register_events(self):
-        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _convert_node(self, node: Definition, converted: Dict[Definition,QDepGraphBlock]) -> Optional[QDepGraphBlock]:
         if node in converted:
@@ -94,8 +93,8 @@ class DependencyView(BaseView):
         if isinstance(node.codeloc, ExternalCodeLocation):
             return None
 
-        if self.workspace.instance.project.is_hooked(node.codeloc.block_addr):
-            hook = self.workspace.instance.project.hooked_by(node.codeloc.block_addr)
+        if self.instance.project.is_hooked(node.codeloc.block_addr):
+            hook = self.instance.project.hooked_by(node.codeloc.block_addr)
             if isinstance(hook, (SIM_PROCEDURES['stubs']['UnresolvableJumpTarget'],
                                  SIM_PROCEDURES['stubs']['UnresolvableCallTarget'])):
                 return None

@@ -6,8 +6,8 @@ from ..widgets.qpatch_table import QPatchTable
 
 
 class PatchesView(BaseView):
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('patches', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('patches', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Patches"
         self._patch_table = None  # type: QPatchTable
@@ -24,7 +24,7 @@ class PatchesView(BaseView):
     def _init_widgets(self):
 
         # patch table
-        self._patch_table = QPatchTable(self.workspace.instance, self)
+        self._patch_table = QPatchTable(self.instance, self)
 
         #
         # controls
@@ -52,11 +52,11 @@ class PatchesView(BaseView):
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Save the patched binary to...",
-            self.workspace.instance.project.loader.main_object.binary + ".patched",  # FIXME: this will not work if we are loading from an angrdb
+            self.instance.project.loader.main_object.binary + ".patched",  # FIXME: this will not work if we are loading from an angrdb
             "Any file (*)",
         )
 
         if file_path:
-            b = self.workspace.instance.project.kb.patches.apply_patches_to_binary()
+            b = self.instance.project.kb.patches.apply_patches_to_binary()
             with open(file_path, "wb") as f:
                 f.write(b)

@@ -156,15 +156,15 @@ class QLogWidget(QTableView):
         self.setColumnWidth(0, 20)
         hheader.setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
-        self.log_view.workspace.instance.log.am_subscribe(self._on_new_logrecord)
+        self.log_view.instance.log.am_subscribe(self._on_new_logrecord)
 
     #
     # Public methods
     #
 
     def clear_log(self):
-        self.log_view.workspace.instance.log.am_obj = [ ]
-        self.log_view.workspace.instance.log.am_event()
+        self.log_view.instance.log.am_obj = [ ]
+        self.log_view.instance.log.am_event()
 
     def copy_selected(self):
         content = [ ]
@@ -206,7 +206,7 @@ class QLogWidget(QTableView):
     #
 
     def closeEvent(self, event):
-        self.log_view.workspace.instance.log.am_unsubscribe(self._on_new_logrecord)
+        self.log_view.instance.log.am_unsubscribe(self._on_new_logrecord)
         super().closeEvent(event)
 
     def contextMenuEvent(self, arg__1: PySide2.QtGui.QContextMenuEvent):
@@ -221,7 +221,7 @@ class QLogWidget(QTableView):
         if log_record is None:
             # reload
             self.model.layoutAboutToBeChanged.emit()
-            self.model._log = self.log_view.workspace.instance.log[::]
+            self.model._log = self.log_view.instance.log[::]
             self.model.layoutChanged.emit()
         else:
             log_records = len(self.model.log)

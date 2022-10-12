@@ -22,11 +22,11 @@ class ProximityView(BaseView):
     Proximity View
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('proximity', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('proximity', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Proximity'
-        self.workspace = workspace
+        self.instance = instance
 
         self._function: Optional['Function'] = None
         self._expand_function_addrs: Set[int] = set()
@@ -55,17 +55,17 @@ class ProximityView(BaseView):
 
     def get_decompilation(self):
         # FIXME: Get rid of this fucker and replace it with the new decompilation manager
-        inst = self.workspace.instance
+        inst = self.instance
         dec = inst.project.analyses.Decompiler(
             self.function,
-            cfg=self.workspace.instance.cfg,
+            cfg=self.instance.cfg,
         )
         return dec
 
     def run_analysis(self):
         dec = self.get_decompilation()
 
-        inst = self.workspace.instance
+        inst = self.instance
         prox = inst.project.analyses.Proximity(
             self.function,
             inst.cfg,
@@ -129,7 +129,7 @@ class ProximityView(BaseView):
 
     def _init_widgets(self):
 
-        self._graph_widget = QProximityGraph(self.workspace, self)
+        self._graph_widget = QProximityGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._graph_widget)
@@ -138,7 +138,7 @@ class ProximityView(BaseView):
         self.setLayout(hlayout)
 
     def _register_events(self):
-        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _convert_node(self, node: BaseProxiNode,
                       converted: Dict[BaseProxiNode, QProximityGraphBlock]) -> Optional[QProximityGraphBlock]:

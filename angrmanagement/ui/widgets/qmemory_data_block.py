@@ -17,9 +17,9 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     BYTE_AREA_SPACING = 15
 
-    def __init__(self, workspace, infodock, addr, memory_data, bytes_per_line=16, parent=None):
+    def __init__(self, instance, infodock, addr, memory_data, bytes_per_line=16, parent=None):
         super().__init__(parent=parent)
-        self.workspace = workspace
+        self.instance = instance
         self.infodock = infodock
         self.addr = addr
         self.memory_data: MemoryData = memory_data
@@ -91,7 +91,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             start_address = self.memory_data.addr + len(self._bytes)
             size = self.memory_data.size - len(self._bytes)
             try:
-                mem_bytes = self.workspace.instance.project.loader.memory.load(start_address, size)
+                mem_bytes = self.instance.project.loader.memory.load(start_address, size)
             except KeyError:
                 mem_bytes = b""
             self._bytes += [ b for b in mem_bytes ] + [ '??' ] * (size - len(mem_bytes))
@@ -110,7 +110,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _init_label_item(self):
-        lbl_text = get_label_text(self.addr, self.workspace.instance.kb)
+        lbl_text = get_label_text(self.addr, self.instance.kb)
         if lbl_text:
             self._label_item = QGraphicsSimpleTextItem(lbl_text, self)
             self._label_item.setFont(Conf.code_font)

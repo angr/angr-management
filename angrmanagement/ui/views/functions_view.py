@@ -6,14 +6,14 @@ from ..widgets.qfunction_table import QFunctionTable
 
 
 class FunctionsView(BaseView):
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super(FunctionsView, self).__init__('functions', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super(FunctionsView, self).__init__('functions', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Functions'
         self._function_table = None  # type: QFunctionTable
         self._status_label = None
 
-        self.workspace.instance.cfg.am_subscribe(self.reload)
+        self.instance.cfg.am_subscribe(self.reload)
 
         self._init_widgets()
 
@@ -42,8 +42,8 @@ class FunctionsView(BaseView):
         self._refresh_status_label()
 
     def reload(self):
-        if not self.workspace.instance.cfg.am_none:
-            self._function_table.function_manager = self.workspace.instance.kb.functions
+        if not self.instance.cfg.am_none:
+            self._function_table.function_manager = self.instance.kb.functions
 
     def subscribe_func_select(self, callback):
         """
@@ -58,7 +58,7 @@ class FunctionsView(BaseView):
     #
 
     def _init_widgets(self):
-        self._function_table = QFunctionTable(self, self.workspace, selection_callback=self._on_function_selected)
+        self._function_table = QFunctionTable(self, self.instance.workspace, selection_callback=self._on_function_selected)
         self._status_label = QLabel()
 
         vlayout = QVBoxLayout()
@@ -74,7 +74,7 @@ class FunctionsView(BaseView):
         :param function:
         :return:
         """
-        self.workspace.on_function_selected(func=func)
+        self.instance.workspace.on_function_selected(func=func)
 
     def _refresh_status_label(self):
         if self._status_label is not None:

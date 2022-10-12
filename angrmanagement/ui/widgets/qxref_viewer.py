@@ -325,12 +325,12 @@ class QXRefViewer(QTableView):
     def _xrefs_from_control_flow_transitions(self):
 
         if self._disassembly_view is not None:
-            cfg = self._disassembly_view.workspace.instance.cfg
+            cfg = self._disassembly_view.instance.cfg
             node = cfg.get_any_node(self._dst_addr)
             if node is not None:
                 # its predecessors
                 predecessors = cfg.get_predecessors(node)
-                arch = self._disassembly_view.workspace.instance.project.arch
+                arch = self._disassembly_view.instance.project.arch
                 for pred in predecessors:
                     if pred.instruction_addrs:
                         if arch.branch_delay_slot and len(pred.instruction_addrs) > 1:

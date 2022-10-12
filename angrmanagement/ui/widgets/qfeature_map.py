@@ -35,8 +35,8 @@ class FeatureMapItem(QGraphicsItem):
         self._height: int = 1
 
         self.disasm_view = disasm_view
-        self.workspace = disasm_view.workspace
-        self.instance = self.workspace.instance
+        self.workspace = disasm_view.instance.workspace
+        self.instance = self.disasm_view.instance
 
         self.addr = ObjectContainer(None, name='The current address of the Feature Map.')
 
@@ -345,7 +345,7 @@ class FeatureMapItem(QGraphicsItem):
 
         try:
             addr = self._get_addr_from_pos(point.x())
-            item = self.workspace.instance.cfb.floor_item(addr)
+            item = self.instance.cfb.floor_item(addr)
             if item is not None:
                 _, item = item
                 self.setToolTip(f'{str(item)} in {str(mr)}')
