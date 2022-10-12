@@ -34,6 +34,12 @@ stages:
             inputs:
               filename: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
               modifyEnvironment: true
+        - ${{ if contains(pool, 'ubuntu-22.04') }}:
+          - task: Bash@3
+            displayName: Install libfuse2
+            inputs:
+              targetType: inline
+              script: sudo apt-get update; sudo apt-get install -y libfuse2
         - task: Bash@3
           displayName: Run build.sh
           inputs:
