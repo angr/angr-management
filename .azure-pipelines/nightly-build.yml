@@ -70,10 +70,11 @@ stages:
         inputs:
           artifactName: angr-management-${{ pool }}
       - bash: |
-          source /etc/os-release
-          chmod +x ../angr-management-onefile-ubuntu
+          . /etc/os-release
+          binary="../angr-management-onefile-ubuntu-$ID-$VERSION_ID"
+          chmod +x $binary
           xvfb-run bash -c '
-          ../angr-management-onefile-ubuntu-"$ID"-"$VERSION_ID" &
+            $binary &
             sleep 10 && output=$(xwininfo -tree -root)
             [[ "$output" == *"angr management"* ]] || exit 1
           '
