@@ -119,8 +119,8 @@ class TracesView(BaseView):
     Traces table view.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('traces', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('traces', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Traces'
         self._tbl_widget: Optional[QTraceTableWidget] = None
@@ -136,6 +136,6 @@ class TracesView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
-        self._tbl_widget = QTraceTableWidget(self.workspace.instance, self)
+        self._tbl_widget = QTraceTableWidget(self.instance, self)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)

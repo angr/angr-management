@@ -39,7 +39,7 @@ class TraceStatistics:
         self._positions = defaultdict(list)
         self.mapped_trace = []
 
-        project = self.workspace.instance.project
+        project = self.workspace.main_instance.project
         if project.am_none:
             self.project_baddr = None
         else:
@@ -105,19 +105,19 @@ class TraceStatistics:
         bbls = filter(self._get_bbl, self.mapped_trace)
 
         for p, bbl_addr in enumerate(bbls):
-            block = self.workspace.instance.project.factory.block(bbl_addr)
+            block = self.workspace.main_instance.project.factory.block(bbl_addr)
             for addr in block.instruction_addrs:
                 self._positions[addr].append(p)
 
-            node = self.workspace.instance.cfg.get_any_node(bbl_addr)
+            node = self.workspace.main_instance.cfg.get_any_node(bbl_addr)
             if node is None: #try again without asssuming node is start of a basic block
-                node = self.workspace.instance.cfg.get_any_node(bbl_addr, anyaddr=True)
+                node = self.workspace.main_instance.cfg.get_any_node(bbl_addr, anyaddr=True)
 
             func_name = hex(bbl_addr) #default to using bbl_addr as name if none is not found
             func = None
             if node is not None:
                 func_addr = node.function_address
-                functions = self.workspace.instance.project.kb.functions
+                functions = self.workspace.main_instance.project.kb.functions
                 if func_addr in functions:
                     func_name = functions[func_addr].demangled_name
                     func = functions[func_addr]
@@ -131,15 +131,15 @@ class TraceStatistics:
 
     def _get_bbl(self, addr):
         try:
-            return self.workspace.instance.project.factory.block(addr)
+            return self.workspace.main_instance.project.factory.block(addr)
         except SimEngineError:
             return None
 
     def _func_addr(self, a):
-        return self.workspace.instance.cfg.get_any_node(a).function_address
+        return self.workspace.main_instance.cfg.get_any_node(a).function_address
 
     def _func_name(self, a):
-        return self.workspace.instance.project.kb.functions[self._func_addr(a)].demangled_name
+        return self.workspace.main_instance.project.kb.functions[self._func_addr(a)].demangled_name
 
     @staticmethod
     def _random_color():

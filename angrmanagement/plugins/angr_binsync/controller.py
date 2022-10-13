@@ -27,7 +27,7 @@ class AngrBinSyncController(BinSyncController):
     def __init__(self, workspace):
         super().__init__()
         self._workspace = workspace
-        self._instance = workspace.instance
+        self._instance = workspace.main_instance
 
     def binary_hash(self) -> str:
         return self._instance.project.loader.main_object.md5.hex()
@@ -247,7 +247,7 @@ class AngrBinSyncController(BinSyncController):
 
     def get_func_addr_from_addr(self, addr):
         try:
-            func_addr = self._workspace.instance.kb.cfgs.get_most_accurate()\
+            func_addr = self._workspace.main_instance.kb.cfgs.get_most_accurate()\
                 .get_any_node(addr, anyaddr=True)\
                 .function_address
         except AttributeError:

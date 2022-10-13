@@ -138,7 +138,7 @@ class ChessConnector(BasePlugin):
             self._target_description_label.setToolTip(f"Target ID: {self.target_id}\n"
                                                       f"Target image ID: {self.target_image_id}")
 
-            DaemonClient.register_binary(self.workspace.instance.project.loader.main_object.binary,
+            DaemonClient.register_binary(self.workspace.main_instance.project.loader.main_object.binary,
                                          self.target_id)
         else:
             self._target_description_label.setText("No associated CHESS target")
@@ -230,7 +230,7 @@ class ChessConnector(BasePlugin):
                                  QMessageBox.Ok)
             return
 
-        if self.workspace.instance.project.am_none:
+        if self.workspace.main_instance.project.am_none:
             QMessageBox.critical(self.workspace.main_window,
                                  "No binary is loaded",
                                  "Please load a binary before associating it to a CHESS target.",

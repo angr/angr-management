@@ -76,10 +76,10 @@ class ComponentsView(BaseView):
         Display a component tree.
         """
 
-        if self.workspace.instance.project.am_none:
+        if self.workspace.main_instance.project.am_none:
             return
-        proj = self.workspace.instance.project
-        funcs = self.workspace.instance.kb.functions
+        proj = self.workspace.main_instance.project
+        funcs = self.workspace.main_instance.kb.functions
 
         self._tree.clear()
 
@@ -99,7 +99,7 @@ class ComponentsView(BaseView):
                     func = funcs.get_by_addr(proj.loader.main_object.mapped_base + comp_func.virtual_addr)
                 except KeyError:
                     func = None
-                func_node = QFunctionItem(self.workspace.instance.project, item, comp_func, function=func)
+                func_node = QFunctionItem(self.workspace.main_instance.project, item, comp_func, function=func)
                 item.function_nodes.append(func_node)
             # insert all components into the queue
             for comp in node.components:

@@ -64,7 +64,7 @@ class DisasmInsnContextMenu(Menu):
         self._disasm_view.refresh()
 
     def _toggle_breakpoint(self):
-        self._disasm_view.workspace.instance.breakpoint_mgr.toggle_exec_breakpoint(self.insn_addr)
+        self._disasm_view.instance.breakpoint_mgr.toggle_exec_breakpoint(self.insn_addr)
         self._disasm_view.refresh()
 
     def _add_hook(self):

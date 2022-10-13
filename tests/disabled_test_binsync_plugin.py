@@ -34,10 +34,10 @@ class TestBinsyncPlugin(unittest.TestCase):
             # ====== USER 1 ======
             # setup GUI
             main = MainWindow(show=False)
-            main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-            main.workspace.instance.project.am_event()
-            main.workspace.instance.join_all_jobs()
-            func = main.workspace.instance.project.kb.functions['main']
+            main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+            main.workspace.main_instance.project.am_event()
+            main.workspace.main_instance.join_all_jobs()
+            func = main.workspace.main_instance.project.kb.functions['main']
             self.assertIsNotNone(func)
 
             # find the binsync plugin
@@ -47,7 +47,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             ))  # type: BinsyncPlugin
 
             # configure, and connect
-            config = SyncConfig(main.workspace.instance, binsync_plugin.controller)
+            config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
             config._user_edit.setText("")
             config._repo_edit.setText("")
             QTest.keyClicks(config._user_edit, user_1)
@@ -64,7 +64,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             disasm_view._t_flow_graph_visible = True
             disasm_view.display_function(func)
             disasm_view.decompile_current_function()
-            main.workspace.instance.join_all_jobs()
+            main.workspace.main_instance.join_all_jobs()
             pseudocode_view = main.workspace._get_or_create_pseudocode_view()
             for _, item in pseudocode_view.codegen.map_pos_to_node.items():
                 if isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CFunction):
@@ -87,10 +87,10 @@ class TestBinsyncPlugin(unittest.TestCase):
             # ====== USER 2 ======
             # setup GUI
             main = MainWindow(show=False)
-            main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-            main.workspace.instance.project.am_event()
-            main.workspace.instance.join_all_jobs()
-            func = main.workspace.instance.project.kb.functions['main']
+            main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+            main.workspace.main_instance.project.am_event()
+            main.workspace.main_instance.join_all_jobs()
+            func = main.workspace.main_instance.project.kb.functions['main']
             self.assertIsNotNone(func)
 
             # find the binsync plugin
@@ -100,7 +100,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             ))  # type: BinsyncPlugin
 
             # configure, and connect
-            config = SyncConfig(main.workspace.instance, binsync_plugin.controller)
+            config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
             config._user_edit.setText("")
             config._repo_edit.setText("")
             QTest.keyClicks(config._user_edit, user_2)
@@ -135,10 +135,10 @@ class TestBinsyncPlugin(unittest.TestCase):
             # ====== USER 1 ======
             # setup GUI
             main = MainWindow(show=False)
-            main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-            main.workspace.instance.project.am_event()
-            main.workspace.instance.join_all_jobs()
-            func = main.workspace.instance.project.kb.functions['main']
+            main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+            main.workspace.main_instance.project.am_event()
+            main.workspace.main_instance.join_all_jobs()
+            func = main.workspace.main_instance.project.kb.functions['main']
             self.assertIsNotNone(func)
 
             # find the binsync plugin
@@ -148,7 +148,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             ))  # type: BinsyncPlugin
 
             # configure, and connect
-            config = SyncConfig(main.workspace.instance, binsync_plugin.controller)
+            config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
             config._user_edit.setText("")
             config._repo_edit.setText("")
             QTest.keyClicks(config._user_edit, user_1)
@@ -165,7 +165,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             disasm_view._t_flow_graph_visible = True
             disasm_view.display_function(func)
             disasm_view.decompile_current_function()
-            main.workspace.instance.join_all_jobs()
+            main.workspace.main_instance.join_all_jobs()
             pseudocode_view = main.workspace._get_or_create_pseudocode_view()
             for _, item in pseudocode_view.codegen.map_pos_to_node.items():
                 if isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CVariable) and \
@@ -181,7 +181,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             QTest.mouseClick(rnode._ok_button, Qt.MouseButton.LeftButton)
 
             # find the variable in the var manager
-            var_man = main.workspace.instance.pseudocode_variable_kb.variables.get_function_manager(func.addr)
+            var_man = main.workspace.main_instance.pseudocode_variable_kb.variables.get_function_manager(func.addr)
             for var in var_man._unified_variables:
                 if isinstance(var, angr.sim_variable.SimStackVariable) and var.offset == var_offset:
                     renamed_var = var
@@ -199,10 +199,10 @@ class TestBinsyncPlugin(unittest.TestCase):
             # ====== USER 2 ======
             # setup GUI
             main = MainWindow(show=False)
-            main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-            main.workspace.instance.project.am_event()
-            main.workspace.instance.join_all_jobs()
-            func = main.workspace.instance.project.kb.functions['main']
+            main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+            main.workspace.main_instance.project.am_event()
+            main.workspace.main_instance.join_all_jobs()
+            func = main.workspace.main_instance.project.kb.functions['main']
             self.assertIsNotNone(func)
 
             # find the binsync plugin
@@ -212,7 +212,7 @@ class TestBinsyncPlugin(unittest.TestCase):
             ))  # type: BinsyncPlugin
 
             # configure, and connect
-            config = SyncConfig(main.workspace.instance, binsync_plugin.controller)
+            config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
             config._user_edit.setText("")
             config._repo_edit.setText("")
             QTest.keyClicks(config._user_edit, user_2)

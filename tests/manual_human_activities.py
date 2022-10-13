@@ -39,12 +39,12 @@ class TestHumanActivities(unittest.TestCase):
     def _open_a_project(self):
         main = MainWindow(show=False)
         binpath = os.path.join(test_location, "x86_64", "fauxware")
-        main.workspace.instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-        main.workspace.instance.project.am_event()
-        main.workspace.instance.join_all_jobs()
+        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_event()
+        main.workspace.main_instance.join_all_jobs()
         self.project = binpath
         # import ipdb; ipdb.set_trace()
-        self.project_md5 = main.workspace.instance.project.loader.main_object.md5.hex()
+        self.project_md5 = main.workspace.main_instance.project.loader.main_object.md5.hex()
         return main
 
     def test_open_a_project(self):
@@ -53,7 +53,7 @@ class TestHumanActivities(unittest.TestCase):
     def test_rename_a_function_in_disasm_and_pseudocode_views(self):
         main = self._open_a_project()
 
-        func = main.workspace.instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions['main']
         self.assertIsNotNone(func)
 
         # decompile the function
@@ -61,7 +61,7 @@ class TestHumanActivities(unittest.TestCase):
         disasm_view._t_flow_graph_visible = True
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
-        main.workspace.instance.join_all_jobs()
+        main.workspace.main_instance.join_all_jobs()
         pseudocode_view = main.workspace._get_or_create_pseudocode_view()
 
         # find the node for function
@@ -105,7 +105,7 @@ class TestHumanActivities(unittest.TestCase):
     def test_rename_a_variable_in_pseudocode_view(self):
         main = self._open_a_project()
 
-        func = main.workspace.instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions['main']
         self.assertIsNotNone(func)
 
         # decompile the function
@@ -113,7 +113,7 @@ class TestHumanActivities(unittest.TestCase):
         disasm_view._t_flow_graph_visible = True
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
-        main.workspace.instance.join_all_jobs()
+        main.workspace.main_instance.join_all_jobs()
         pseudocode_view = main.workspace._get_or_create_pseudocode_view()
 
         # find an arbitrary node for a variable
@@ -144,7 +144,7 @@ class TestHumanActivities(unittest.TestCase):
 
     def test_click_block(self):
         main_window = self._open_a_project()
-        func = main_window.workspace.instance.project.kb.functions['main']
+        func = main_window.workspace.main_instance.project.kb.functions['main']
         self.assertIsNotNone(func)
 
         # display function main
@@ -171,7 +171,7 @@ class TestHumanActivities(unittest.TestCase):
 
     def test_click_insn(self):
         main_window = self._open_a_project()
-        func = main_window.workspace.instance.project.kb.functions['main']
+        func = main_window.workspace.main_instance.project.kb.functions['main']
         self.assertIsNotNone(func)
 
         # display function main

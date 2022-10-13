@@ -14,7 +14,7 @@ class MemoryChecker(BasePlugin):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.states = self.workspace.instance.states
+        self.states = self.workspace.main_instance.states
         self.states.am_subscribe(self.install_state_plugin)
 
     def install_state_plugin(self, **kwargs):

@@ -59,8 +59,8 @@ class SetComment(QDialog):
 
         # comment textbox
         comment_txtbox = QCommentTextBox(textconfirmed_callback=self._on_ok_clicked, parent=self)
-        if self._comment_addr in self._workspace.instance.project.kb.comments:
-            comment_txtbox.setPlainText(self._workspace.instance.project.kb.comments[self._comment_addr])
+        if self._comment_addr in self._workspace.main_instance.project.kb.comments:
+            comment_txtbox.setPlainText(self._workspace.main_instance.project.kb.comments[self._comment_addr])
             comment_txtbox.selectAll()
         self._comment_textbox = comment_txtbox
 

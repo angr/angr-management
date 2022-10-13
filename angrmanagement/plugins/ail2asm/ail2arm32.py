@@ -49,10 +49,10 @@ class AIL2ARM32(BasePlugin):
     def bp_offset_to_sp_offset(self, offset_from_bp, function_addr, expr_addr, adjust=0):
         if function_addr is None or expr_addr is None:
             raise Exception("function_addr and expr_addr must be specified")
-        sp = self.workspace.instance.project.arch.sp_offset
-        bp = self.workspace.instance.project.arch.bp_offset
-        sptracker = self.workspace.instance.project.analyses.StackPointerTracker(
-            self.workspace.instance.project.kb.functions[function_addr], {sp, bp}
+        sp = self.workspace.main_instance.project.arch.sp_offset
+        bp = self.workspace.main_instance.project.arch.bp_offset
+        sptracker = self.workspace.main_instance.project.analyses.StackPointerTracker(
+            self.workspace.main_instance.project.kb.functions[function_addr], {sp, bp}
             )
         sp_offset = sptracker.offset_after(expr_addr, sp)
         bp_offset = sptracker.offset_after(expr_addr, bp)

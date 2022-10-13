@@ -38,7 +38,7 @@ class VaRec(BasePlugin):
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
-        if self.workspace.instance.project.am_none:
+        if self.workspace.main_instance.project.am_none:
             return
 
         mapping = {

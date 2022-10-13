@@ -155,12 +155,12 @@ class LogHumanActivitiesPlugin(BasePlugin):
         """
         Set project name
         """
-        if self.workspace.instance.img_name is not None:
-            self.project_name = self.workspace.instance.img_name
+        if self.workspace.main_instance.img_name is not None:
+            self.project_name = self.workspace.main_instance.img_name
         else:
-            filename = self.workspace.instance.project.filename
+            filename = self.workspace.main_instance.project.filename
             self.project_name = filename
-            self.project_md5 = self.workspace.instance.project.loader.main_object.md5.hex()
+            self.project_md5 = self.workspace.main_instance.project.loader.main_object.md5.hex()
             l.debug("Set project md5 to %s", self.project_md5)
         l.debug("Set project name to %s", self.project_name)
 

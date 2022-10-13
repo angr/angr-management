@@ -292,7 +292,7 @@ class Instance:
             return
 
         bp = Breakpoint(bp_type_map[type_], addr, size)
-        self.instance.breakpoint_mgr.add_breakpoint(bp)
+        self.breakpoint_mgr.add_breakpoint(bp)
 
     def set_comment(self, addr, comment_text):
         kb = self.project.kb
@@ -508,11 +508,10 @@ class Instance:
                 workers=workers,
             )
             # prioritize the current function in display
-            # TODO: uncomment these lines
-            #disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
-            #if disassembly_view is not None:
-            #    if not disassembly_view.function.am_none:
-            #        self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
+            disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
+            if disassembly_view is not None:
+                if not disassembly_view.function.am_none:
+                    self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
             self.add_job(self.variable_recovery_job)
 
     def on_function_selected(self, func: Function):
@@ -524,7 +523,6 @@ class Instance:
         """
 
         # Ask all current views to display this function
-
         current_view = self.workspace.view_manager.current_tab
         if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
             # we don't have a current view or the current view does not have function-specific content. create a

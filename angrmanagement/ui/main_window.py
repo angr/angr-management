@@ -162,12 +162,12 @@ class MainWindow(QMainWindow):
         dlg.exec_()
 
     def open_newstate_dialog(self):
-        if self.workspace.instance.project.am_none:
+        if self.workspace.main_instance.project.am_none:
             QMessageBox.critical(self,
                                  "Cannot create new states",
                                  "Please open a binary to analyze first.")
             return
-        new_state_dialog = NewState(self.workspace.instance, parent=self, create_simgr=True)
+        new_state_dialog = NewState(self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
     def open_doc_link(self):
@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
         def on_cancel():
             if self.workspace is None:
                 return
-            for job in self.workspace.instance.jobs:
+            for job in self.workspace.main_instance.jobs:
                 if job.blocking:
                     job.keyboard_interrupt()
                     break
@@ -253,14 +253,14 @@ class MainWindow(QMainWindow):
         self.central_widget.setDockNestingEnabled(True)
 
         def set_caption(**kwargs):  # pylint: disable=unused-argument
-            if self.workspace.instance.project.am_none:
+            if self.workspace.main_instance.project.am_none:
                 self.caption = ''
-            elif self.workspace.instance.project.filename is None:
+            elif self.workspace.main_instance.project.filename is None:
                 self.caption = "Loaded from stream"
             else:
-                self.caption = os.path.basename(self.workspace.instance.project.filename)
+                self.caption = os.path.basename(self.workspace.main_instance.project.filename)
 
-        self.workspace.instance.project.am_subscribe(set_caption)
+        self.workspace.main_instance.project.am_subscribe(set_caption)
 
         self.tab = self.central_widget.findChild(QTabBar)
         self.tab.tabBarClicked.connect(self.on_center_tab_clicked)
@@ -270,7 +270,7 @@ class MainWindow(QMainWindow):
     #
 
     def interrupt_current_job(self):
-        self.workspace.instance.interrupt_current_job()
+        self.workspace.main_instance.interrupt_current_job()
 
     def _init_shortcuts(self):
         """
@@ -405,7 +405,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
 
         # Ask if the user wants to save things
-        if self.workspace.instance is not None and not self.workspace.instance.project.am_none:
+        if self.workspace.main_instance is not None and not self.workspace.main_instance.project.am_none:
             msgbox = QMessageBox()
             msgbox.setWindowTitle("Save database")
             msgbox.setText("angr management is about to exit. Do you want to save the database?")
@@ -494,8 +494,8 @@ class MainWindow(QMainWindow):
         if img_name is None:
             return
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
-        self.workspace.instance.add_job(LoadTargetJob(target))
-        self.workspace.instance.img_name = img_name
+        self.workspace.main_instance.add_job(LoadTargetJob(target))
+        self.workspace.main_instance.img_name = img_name
 
     def load_trace_file(self, file_path):
         if isurl(file_path):
@@ -536,13 +536,13 @@ class MainWindow(QMainWindow):
                     self.workspace.load_trace_from_path(file_path)
                     return
 
-                self.workspace.instance.binary_path = file_path
-                self.workspace.instance.original_binary_path = file_path
+                self.workspace.main_instance.binary_path = file_path
+                self.workspace.main_instance.original_binary_path = file_path
                 if file_path.endswith(".adb"):
                     self._load_database(file_path)
                 else:
                     self._recent_file(file_path)
-                    self.workspace.instance.add_job(LoadBinaryJob(file_path))
+                    self.workspace.main_instance.add_job(LoadBinaryJob(file_path))
             else:
                 QMessageBox.critical(self,
                                      "File not found",
@@ -571,8 +571,8 @@ class MainWindow(QMainWindow):
 
                 if target_path:
                     # open the file - now it's a local file
-                    self.workspace.instance.binary_path = target_path
-                    self.workspace.instance.original_binary_path = file_path
+                    self.workspace.main_instance.binary_path = target_path
+                    self.workspace.main_instance.original_binary_path = file_path
                     self.load_file(target_path)
 
     def load_database(self):
@@ -588,22 +588,22 @@ class MainWindow(QMainWindow):
         self._load_database(file_path)
 
     def save_database(self):
-        if self.workspace.instance is None or self.workspace.instance.project.am_none:
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return True
 
-        if self.workspace.instance.database_path is None:
+        if self.workspace.main_instance.database_path is None:
             return self.save_database_as()
         else:
-            return self._save_database(self.workspace.instance.database_path)
+            return self._save_database(self.workspace.main_instance.database_path)
 
     def save_database_as(self):
 
-        if self.workspace.instance is None or self.workspace.instance.project.am_none:
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 
-        default_database_path = self.workspace.instance.database_path
+        default_database_path = self.workspace.main_instance.database_path
         if default_database_path is None:
-            default_database_path = os.path.normpath(self.workspace.instance.project.filename) + ".adb"
+            default_database_path = os.path.normpath(self.workspace.main_instance.project.filename) + ".adb"
 
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
@@ -639,14 +639,14 @@ class MainWindow(QMainWindow):
         self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
 
     def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
-        if self.workspace is None or self.workspace.instance is None:
+        if self.workspace is None or self.workspace.main_instance is None:
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
-        self.workspace.instance.add_job(dep_analysis_job)
+        self.workspace.main_instance.add_job(dep_analysis_job)
 
     def run_analysis(self):
         if self.workspace:
-            self.workspace.instance.run_analysis()
+            self.workspace.main_instance.run_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:
@@ -657,7 +657,7 @@ class MainWindow(QMainWindow):
             self.workspace.view_proximity_for_current_function()
 
     def interact(self):
-        self.workspace.interact_program(self.workspace.instance.img_name)
+        self.workspace.interact_program(self.workspace.main_instance.img_name)
 
     #
     # Other public methods
@@ -703,7 +703,7 @@ class MainWindow(QMainWindow):
 
         job = LoadAngrDBJob(file_path, ["global", "pseudocode_variable_kb"], other_kbs=other_kbs, extra_info=extra_info)
         job._on_finish = partial(self._on_load_database_finished, job)
-        self.workspace.instance.add_job(job)
+        self.workspace.main_instance.add_job(job)
 
     def _on_load_database_finished(self, job: LoadAngrDBJob):
         proj = job.project
@@ -716,17 +716,17 @@ class MainWindow(QMainWindow):
         cfg = proj.kb.cfgs['CFGFast']
         cfb = proj.analyses.CFB()  # it will load functions from kb
 
-        self.workspace.instance.database_path = job.file_path
+        self.workspace.main_instance.database_path = job.file_path
 
-        self.workspace.instance._reset_containers()
-        self.workspace.instance.project = proj
-        self.workspace.instance.cfg = cfg
-        self.workspace.instance.cfb = cfb
+        self.workspace.main_instance._reset_containers()
+        self.workspace.main_instance.project = proj
+        self.workspace.main_instance.cfg = cfg
+        self.workspace.main_instance.cfb = cfb
         if "pseudocode_variable_kb" in job.other_kbs:
-            self.workspace.instance.pseudocode_variable_kb = job.other_kbs["pseudocode_variable_kb"]
+            self.workspace.main_instance.pseudocode_variable_kb = job.other_kbs["pseudocode_variable_kb"]
         else:
-            self.workspace.instance.initialize_pseudocode_variable_kb()
-        self.workspace.instance.project.am_event(initialized=True)
+            self.workspace.main_instance.initialize_pseudocode_variable_kb()
+        self.workspace.main_instance.project.am_event(initialized=True)
 
         # trigger callbacks
         self.workspace.reload()
@@ -734,7 +734,7 @@ class MainWindow(QMainWindow):
         self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
     def _save_database(self, file_path):
-        if self.workspace.instance is None or self.workspace.instance.project.am_none:
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 
         if AngrDB is None:
@@ -744,14 +744,14 @@ class MainWindow(QMainWindow):
 
         self.workspace.plugins.handle_project_save(file_path)
 
-        angrdb = AngrDB(project=self.workspace.instance.project)
+        angrdb = AngrDB(project=self.workspace.main_instance.project)
         extra_info = self.workspace.plugins.angrdb_store_entries()
         angrdb.dump(file_path, kbs=[
-                self.workspace.instance.kb,
-                self.workspace.instance.pseudocode_variable_kb,
+                self.workspace.main_instance.kb,
+                self.workspace.main_instance.pseudocode_variable_kb,
                 ],
             extra_info=extra_info,
             )
 
-        self.workspace.instance.database_path = file_path
+        self.workspace.main_instance.database_path = file_path
         return True

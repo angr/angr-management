@@ -31,14 +31,14 @@ class AFLQemuBitmap:
         self._node_hitcounts = {}
         self._node_hitcount_summary = {}
 
-        project = self.workspace.instance.project
+        project = self.workspace.main_instance.project
         self.project_baddr = project.loader.main_object.mapped_base
         self.runtime_baddr = base_addr
 
         self._compute_hitcounts()
 
     def _compute_hitcounts(self):
-        func_manager = self.workspace.instance.project.kb.functions
+        func_manager = self.workspace.main_instance.project.kb.functions
         for func_addr in func_manager:
             func = func_manager[func_addr]
 

@@ -31,7 +31,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
         super().__init__()
 
         self._dep_view = dep_view
-        self._workspace = self._dep_view.workspace
+        self._instance = self._dep_view.instance
         self._config = Conf
 
         self.selected = is_selected
@@ -66,7 +66,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
         addr_str = "unknown address" if self.addr is None else "%#x" % self.addr
         if isinstance(atom, Register):
             # convert it to a register name
-            arch = self._workspace.instance.project.arch
+            arch = self._instance.project.arch
             register_name = arch.translate_register_name(atom.reg_offset, size=atom.size)
             self._definition_str = "Register {} @ {}".format(register_name, addr_str)
         elif isinstance(atom, MemoryLocation):
@@ -86,11 +86,11 @@ class QDepGraphBlock(QCachedGraphicsItem):
             self._instruction_str = "Unknown"
         else:
             # function string
-            the_func = locate_function(self._workspace.instance, self.addr)
+            the_func = locate_function(self._instance, self.addr)
             if the_func is None:
                 # is it a SimProcedure?
-                if self._workspace.instance.project.is_hooked(self.addr):
-                    hooker = self._workspace.instance.project.hooked_by(self.addr)
+                if self._instance.project.is_hooked(self.addr):
+                    hooker = self._instance.project.hooked_by(self.addr)
                     self._function_str = "SimProcedure " + hooker.__class__.__name__.split('.')[-1]
                 else:
                     self._function_str = "Unknown"
@@ -102,11 +102,11 @@ class QDepGraphBlock(QCachedGraphicsItem):
                     self._function_str = "%s%+x" % (the_func.name, offset)
             # instruction
             self._instruction_str = "%s:  %s" % (self._function_str,
-                                                 self._workspace.instance.get_instruction_text_at(self.addr))
+                                                 self._instance.get_instruction_text_at(self.addr))
             # text
-            self._text = get_string_for_display(self._workspace.instance.cfg,
+            self._text = get_string_for_display(self._instance.cfg,
                                                 self.addr,
-                                                self._workspace.instance.project,
+                                                self._instance.project,
                                                 max_size=60,
                                                 )
 

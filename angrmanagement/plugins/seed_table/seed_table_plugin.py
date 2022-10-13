@@ -200,8 +200,8 @@ class SeedTableView(BaseView):
         super().__init__("SeedTableView", workspace, *args, **kwargs)
         self.base_caption = "Seed Table"
         self.workspace = workspace
-        self.instance = workspace.instance
-        workspace.instance.project.am_subscribe(self.on_project_load)
+        self.instance = workspace.main_instance
+        workspace.main_instance.project.am_subscribe(self.on_project_load)
         self._init_widgets()
 
     def page_changed(self, i):

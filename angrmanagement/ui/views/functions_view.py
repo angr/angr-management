@@ -58,7 +58,7 @@ class FunctionsView(BaseView):
     #
 
     def _init_widgets(self):
-        self._function_table = QFunctionTable(self, self.instance.workspace, selection_callback=self._on_function_selected)
+        self._function_table = QFunctionTable(self, self.instance, selection_callback=self._on_function_selected)
         self._status_label = QLabel()
 
         vlayout = QVBoxLayout()
@@ -74,7 +74,7 @@ class FunctionsView(BaseView):
         :param function:
         :return:
         """
-        self.instance.workspace.on_function_selected(func=func)
+        self.instance.on_function_selected(func=func)
 
     def _refresh_status_label(self):
         if self._status_label is not None:

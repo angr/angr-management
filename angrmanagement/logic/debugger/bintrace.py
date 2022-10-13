@@ -33,7 +33,7 @@ class BintraceDebugger(Debugger):
         assert isinstance(trace, BintraceTrace)
         self._trace: BintraceTrace = trace
         self._btrace: bintrace.Trace = trace.trace
-        self._trace_dbg: AngrTraceDebugger = AngrTraceDebugger(self._btrace, self.workspace.instance.project.am_obj)
+        self._trace_dbg: AngrTraceDebugger = AngrTraceDebugger(self._btrace, self.workspace.main_instance.project.am_obj)
         self._cached_simstate = None
 
     def __str__(self):
@@ -58,7 +58,7 @@ class BintraceDebugger(Debugger):
         }
         self._trace_dbg.breakpoints = {
             bintrace.debugger.Breakpoint(bp_type_map[bp.type], bp.addr, bp.size)
-            for bp in self.workspace.instance.breakpoint_mgr.breakpoints
+            for bp in self.workspace.main_instance.breakpoint_mgr.breakpoints
         }
 
     @property
@@ -182,11 +182,11 @@ class BintraceDebugger(Debugger):
             return None
 
         # Determine what function we are in currently.
-        node = self.workspace.instance.cfg.get_node(event.Addr())
+        node = self.workspace.main_instance.cfg.get_node(event.Addr())
         if node is None:
             return None
 
-        kb = self.workspace.instance.project.kb
+        kb = self.workspace.main_instance.project.kb
         if node.function_address in kb.functions:
             return kb.functions[node.function_address], event
         else:
@@ -240,7 +240,7 @@ class BintraceDebugger(Debugger):
 
             # Check exit type
             exit_block_addr = event.Addr()
-            b = self.workspace.instance.project.factory.block(exit_block_addr)
+            b = self.workspace.main_instance.project.factory.block(exit_block_addr)
             if b.vex.jumpkind == 'Ijk_Ret':
                 _l.debug('Exit is a return to caller')
                 break
@@ -256,7 +256,7 @@ class BintraceDebugger(Debugger):
             event = called_func_entry_event
             ret_addr = b.instruction_addrs[0] + b.size
             num_nested_calls = 0
-            if self.workspace.instance.project.arch.name == 'AMD64':
+            if self.workspace.main_instance.project.arch.name == 'AMD64':
                 # FIXME Remove this hardcoding
                 stack_reg = 7
                 expected_sp = called_func_entry_event.Regs(stack_reg) + 8
@@ -282,7 +282,7 @@ class BintraceDebugger(Debugger):
                 _l.debug('Skipping over nested call (%d)', num_nested_calls)
                 num_nested_calls += 1
 
-        all_funcs = self.workspace.instance.project.kb.functions
+        all_funcs = self.workspace.main_instance.project.kb.functions
         return [((all_funcs[addr] if (addr in all_funcs) else addr), e) for (addr, e) in called_addrs]
 
     def get_called_functions_recursive(self, event: Optional[TraceEvent] = None,

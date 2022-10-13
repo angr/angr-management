@@ -23,12 +23,12 @@ class SourceImporterPlugin(BasePlugin):
 
     def _import_from_project(self):
         self.source_paths = []
-        if self.workspace.instance.original_binary_path:
-            self.source_paths.append(os.path.dirname(self.workspace.instance.original_binary_path))
+        if self.workspace.main_instance.original_binary_path:
+            self.source_paths.append(os.path.dirname(self.workspace.main_instance.original_binary_path))
 
     def decompile_callback(self, func):
         for source_root in self.source_paths:
-            self.workspace.instance.project.analyses.ImportSourceCode(func, flavor='source', source_root=source_root)
+            self.workspace.main_instance.project.analyses.ImportSourceCode(func, flavor='source', source_root=source_root)
 
     MENU_BUTTONS = ['Import source path']
 
