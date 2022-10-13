@@ -63,8 +63,6 @@ class VariableRecoveryJob(Job):
         func_addrs_to_prioritize = set()
         if self.func_addrs_to_prioritize:
             for func_addr in self.func_addrs_to_prioritize:
-                print(self.instance.kb.functions)
-                print(func_addr)
                 callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
                 func_addrs_to_prioritize |= {func_addr} | callees
 
