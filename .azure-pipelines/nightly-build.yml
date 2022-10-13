@@ -39,7 +39,7 @@ stages:
             displayName: Install build dependencies
             inputs:
               targetType: inline
-              script: sudo apt-get update; sudo apt-get install -y libxcb-xinerama libegl1 libsodium23
+              script: sudo apt-get update; sudo apt-get install -y libxcb-xinerama0 libegl1 libsodium23
         - ${{ if contains(pool, 'ubuntu-22.04') }}:
           - task: Bash@3
             displayName: Install build dependencies
