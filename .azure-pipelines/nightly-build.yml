@@ -70,6 +70,7 @@ stages:
         inputs:
           artifactName: angr-management-${{ pool }}
       - bash: |
+          find ..
           . /etc/os-release
           binary="../angr-management-onefile-ubuntu-$ID-$VERSION_ID"
           chmod +x $binary
