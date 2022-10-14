@@ -72,7 +72,7 @@ stages:
       - bash: |
           find ..
           . /etc/os-release
-          binary="../angr-management-onefile-ubuntu-$ID-$VERSION_ID"
+          binary="../angr-management-onefile-$ID-$VERSION_ID"
           chmod +x $binary
           xvfb-run bash -c '
             $binary &
