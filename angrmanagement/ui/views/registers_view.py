@@ -108,7 +108,7 @@ class QRegisterTableWidget(QTableView):
 
         hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
-        self._dbg_manager = register_view.workspace.instance.debugger_mgr
+        self._dbg_manager = register_view.instance.debugger_mgr
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
         self._on_debugger_state_updated()
 
@@ -132,8 +132,8 @@ class RegistersView(BaseView):
     Register table view.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('registers', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('registers', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Registers'
         self._tbl_widget: Optional[QRegisterTableWidget] = None

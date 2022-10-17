@@ -48,7 +48,7 @@ class Workspace:
     def __init__(self, main_window, instance):
 
         self.main_window: 'MainWindow' = main_window
-        self._instance = instance
+        self._main_instance = instance
         instance.workspace = self
 
         self.view_manager: ViewManager = ViewManager(self)
@@ -58,24 +58,24 @@ class Workspace:
         self.current_screen = ObjectContainer(None, name="current_screen")
 
         self.default_tabs = [
-            FunctionsView(self, 'left'),
-            DisassemblyView(self, 'center'),
-            HexView(self, 'center'),
-            ProximityView(self, 'center'),
-            CodeView(self, 'center'),
+            FunctionsView(self._main_instance, 'left'),
+            DisassemblyView(self._main_instance, 'center'),
+            HexView(self._main_instance, 'center'),
+            ProximityView(self._main_instance, 'center'),
+            CodeView(self._main_instance, 'center'),
         ]
         if Conf.has_operation_mango:
             self.default_tabs.append(
-                DependencyView(self, 'center')
+                DependencyView(self._main_instance, 'center')
             )
         self.default_tabs += [
-            StringsView(self, 'center'),
-            PatchesView(self, 'center'),
-            SymexecView(self, 'center'),
-            StatesView(self, 'center'),
-            InteractionView(self, 'center'),
-            ConsoleView(self, 'bottom'),
-            LogView(self, 'bottom'),
+            StringsView(self._main_instance, 'center'),
+            PatchesView(self._main_instance, 'center'),
+            SymexecView(self._main_instance, 'center'),
+            StatesView(self._main_instance, 'center'),
+            InteractionView(self._main_instance, 'center'),
+            ConsoleView(self._main_instance, 'bottom'),
+            LogView(self._main_instance, 'bottom'),
         ]
 
         enabled_tabs = [x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
@@ -83,7 +83,7 @@ class Workspace:
             if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs)==0:
                 self.add_view(tab)
 
-        self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.instance.debugger_mgr.debugger)
+        self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.main_instance.debugger_mgr.debugger)
         self.on_debugger_state_updated()
 
         self._analysis_configuration: Optional[AnalysesConfiguration] = None
@@ -97,8 +97,8 @@ class Workspace:
         return self.main_window
 
     @property
-    def instance(self) -> 'Instance':
-        return self._instance
+    def main_instance(self) -> 'Instance':
+        return self._main_instance
 
     #
     # Events
@@ -122,146 +122,13 @@ class Workspace:
                     view.jump_to(addr, True)
 
     def on_function_selected(self, func: Function):
-        """
-        Callback function triggered when a new function is selected in the function view.
-
-        :param func:    The function that is selected.
-        :return:        None
-        """
-
-        # Ask all current views to display this function
-
-        current_view = self.view_manager.current_tab
-        if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
-            # we don't have a current view or the current view does not have function-specific content. create a
-            # disassembly view to display the selected function.
-            disasm_view = self._get_or_create_disassembly_view()
-            disasm_view.display_function(func)
-            self.view_manager.raise_view(disasm_view)
-        else:
-            # ask the current view to display this function
-            current_view.function = func
-
-    def generate_cfg(self, cfg_args=None):
-        if cfg_args is None:
-            cfg_args = {}
-        cfg_job = CFGGenerationJob(
-            on_finish=self.on_cfg_generated,
-            **cfg_args
-        )
-        self.instance.add_job(cfg_job)
-        self.instance._start_daemon_thread(self._refresh_cfg, 'Progressively Refreshing CFG', args=(cfg_job,))
-
-    def _refresh_cfg(self, cfg_job):
-        """
-        Reload once and then refresh in a loop, while the CFG job is running
-        """
-        reloaded = False
-        while True:
-            if not self.instance.cfg.am_none:
-                if reloaded:
-                    gui_thread_schedule_async(self.refresh,
-                                              kwargs={'categories': ['disassembly', 'functions'],}
-                                              )
-                else:
-                    gui_thread_schedule_async(self.reload,
-                                              kwargs={'categories': ['disassembly', 'functions'],}
-                                              )
-                    reloaded = True
-
-            time.sleep(0.3)
-            if cfg_job not in self.instance.jobs:
-                break
-
-    def on_cfg_generated(self):
-        if self._analysis_configuration['flirt'].enabled:
-            self.instance.add_job(
-                FlirtSignatureRecognitionJob(
-                    on_finish=self._on_flirt_signature_recognized,
-                )
-            )
-
-        # display the main function if it exists, otherwise display the function at the entry point
-        if self.instance.cfg is not None:
-            the_func = self.instance.kb.functions.function(name='main')
-            if the_func is None:
-                the_func = self.instance.kb.functions.function(addr=self.instance.project.entry)
-
-            if the_func is not None:
-                self.on_function_selected(the_func)
-
-            # Initialize the linear viewer
-            if len(self.view_manager.views_by_category['disassembly']) == 1:
-                view = self.view_manager.first_view_in_category('disassembly')
-            else:
-                view = self.view_manager.current_view_in_category('disassembly')
-            if view is not None:
-                view._linear_viewer.initialize()
-
-            # Reload the pseudocode view
-            view = self.view_manager.first_view_in_category('pseudocode')
-            if view is not None:
-                view.reload()
-
-            # Reload the strings view
-            view = self.view_manager.first_view_in_category('strings')
-            if view is not None:
-                view.reload()
-
-            # Clear the proximity view
-            view = self.view_manager.first_view_in_category('proximity')
-            if view is not None:
-                view.clear()
-
-    def _on_flirt_signature_recognized(self):
-        self.instance.add_job(
-            PrototypeFindingJob(
-                on_finish=self._on_prototype_found,
-            )
-        )
-
-    def _on_prototype_found(self):
-        self.instance.add_job(
-            CodeTaggingJob(
-                on_finish=self.on_function_tagged,
-            )
-        )
-
-        if self._analysis_configuration['varec'].enabled:
-            workers = 4 if not is_testing else 0  # disable multiprocessing on angr CI
-            self.variable_recovery_job = VariableRecoveryJob(
-                **self._analysis_configuration['varec'].to_dict(),
-                on_variable_recovered=self.on_variable_recovered,
-                workers=workers,
-            )
-            # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None:
-                if not disassembly_view.function.am_none:
-                    self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.instance.add_job(self.variable_recovery_job)
+        self.main_instance.on_function_selected(func)
 
     def on_function_tagged(self):
-        # reload disassembly view
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            view = self.view_manager.first_view_in_category('disassembly')
-        else:
-            view = self.view_manager.current_view_in_category('disassembly')
-
-        if view is not None:
-            view: DisassemblyView
-            if view.current_function.am_obj is not None:
-                view.reload()
+        self.main_instance.on_function_tagged()
 
     def on_variable_recovered(self, func_addr: int):
-        """
-        Called when variable information of the given function is available.
-
-        :param int func_addr:   Address of the function whose variable information is available.
-        """
-        disassembly_view = self.view_manager.first_view_in_category("disassembly")
-        if disassembly_view is not None:
-            disassembly_view.on_variable_recovered(func_addr)
+        self.main_instance.on_variable_recovered(func_addr)
 
     #
     # Public methods
@@ -277,7 +144,7 @@ class Workspace:
         else:
             current_addr = None
 
-        view = DisassemblyView(self, 'center')
+        view = DisassemblyView(self._main_instance, 'center')
         self.add_view(view)
         self.raise_view(view)
         view._linear_viewer.initialize()  # FIXME: Don't access protected member
@@ -357,7 +224,7 @@ class Workspace:
         if type(obj) is int:
             self.jump_to(obj)
         elif type(obj) is str:
-            sym = self.instance.project.loader.find_symbol(obj)
+            sym = self.main_instance.project.loader.find_symbol(obj)
             if sym is not None:
                 self.jump_to(sym.rebased_addr)
         elif type(obj) is Function:
@@ -384,7 +251,7 @@ class Workspace:
         if type(obj) is int:
             addr = obj
         elif type(obj) is str:
-            sym = self.instance.project.loader.find_symbol(obj)
+            sym = self.main_instance.project.loader.find_symbol(obj)
             if sym is None:
                 _l.error("Couldn't resolve '%s'", obj)
                 return
@@ -419,24 +286,10 @@ class Workspace:
             return
 
         bp = Breakpoint(bp_type_map[type_], addr, size)
-        self.instance.breakpoint_mgr.add_breakpoint(bp)
+        self.main_instance.breakpoint_mgr.add_breakpoint(bp)
 
     def set_comment(self, addr, comment_text):
-        kb = self.instance.project.kb
-        exists = addr in kb.comments
-
-        # callback
-        if comment_text is None and exists:
-            self.plugins.handle_comment_changed(addr, "", False, False, False)
-            del kb.comments[addr]
-        else:
-            self.plugins.handle_comment_changed(addr, comment_text, not exists, False, False)
-            kb.comments[addr] = comment_text
-
-        # callback first
-        # TODO: can this be removed?
-        if self.instance.set_comment_callback:
-            self.instance.set_comment_callback(addr=addr, comment_text=comment_text)
+        self.main_instance.set_comment(addr, comment_text)
 
         disasm_view = self._get_or_create_disassembly_view()
         if disasm_view._flow_graph.disasm is not None:
@@ -444,31 +297,7 @@ class Workspace:
             disasm_view.current_graph.refresh()
 
     def run_analysis(self, prompt_for_configuration=True):
-        if self.instance.project.am_none:
-            return
-
-        if self._analysis_configuration is None:
-            self._analysis_configuration = AnalysesConfiguration([
-                a(self) for a in [
-                    CFGAnalysisConfiguration,
-                    FlirtAnalysisConfiguration,
-                    VariableRecoveryConfiguration
-                ]], self)
-
-        if not self.main_window.shown_at_start:
-            # If we are running headlessly (e.g. tests), just run with default configuration
-            prompt_for_configuration = False
-
-        if prompt_for_configuration:
-            dlg = AnalysisOptionsDialog(self._analysis_configuration, self, self.main_window)
-            dlg.setModal(True)
-            should_run = dlg.exec_()
-        else:
-            should_run = True
-
-        if should_run:
-            if self._analysis_configuration['cfg'].enabled:
-                self.generate_cfg(self._analysis_configuration['cfg'].to_dict())
+        self.main_instance.run_analysis(prompt_for_configuration=prompt_for_configuration)
 
     def decompile_current_function(self):
         current = self.view_manager.current_tab
@@ -512,7 +341,7 @@ class Workspace:
 
     def create_simulation_manager(self, state, state_name, view=None):
 
-        inst = self.instance
+        inst = self.main_instance
         hierarchy = StateHierarchy()
         simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
         simgr_container = ObjectContainer(simgr, name=state_name)
@@ -526,28 +355,28 @@ class Workspace:
         self.raise_view(view)
 
     def create_trace_debugger(self):
-        if self.instance.current_trace.am_none:
+        if self.main_instance.current_trace.am_none:
             _l.error('No trace available')
             return
 
-        if isinstance(self.instance.current_trace.am_obj, BintraceTrace):
-            dbg = BintraceDebugger(self.instance.current_trace.am_obj, self)
+        if isinstance(self.main_instance.current_trace.am_obj, BintraceTrace):
+            dbg = BintraceDebugger(self.main_instance.current_trace.am_obj, self)
             dbg.init()
-            self.instance.debugger_list_mgr.add_debugger(dbg)
-            self.instance.debugger_mgr.set_debugger(dbg)
+            self.main_instance.debugger_list_mgr.add_debugger(dbg)
+            self.main_instance.debugger_mgr.set_debugger(dbg)
 
     def is_current_trace(self, trace: Optional[Trace]) -> bool:
-        return self.instance.current_trace.am_obj is trace
+        return self.main_instance.current_trace.am_obj is trace
 
     def set_current_trace(self, trace: Optional[Trace]):
-        self.instance.current_trace.am_obj = trace
-        self.instance.current_trace.am_event()
+        self.main_instance.current_trace.am_obj = trace
+        self.main_instance.current_trace.am_event()
 
     def remove_trace(self, trace: Trace):
         if self.is_current_trace(trace):
             self.set_current_trace(None)
-        self.instance.traces.remove(trace)
-        self.instance.traces.am_event(trace_removed=trace)
+        self.main_instance.traces.remove(trace)
+        self.main_instance.traces.am_event(trace_removed=trace)
         # Note: Debuggers and other objects may retain trace
 
     def load_trace_from_path(self, path: str):
@@ -559,14 +388,14 @@ class Workspace:
         trace = BintraceTrace.load_trace(path)
 
         def on_complete():
-            if not self.instance.project.am_none:
-                self.instance.traces.append(trace)
-                self.instance.traces.am_event(trace_added=trace)
-                self.instance.current_trace.am_obj = trace
-                self.instance.current_trace.am_event()
+            if not self.main_instance.project.am_none:
+                self.main_instance.traces.append(trace)
+                self.main_instance.traces.am_event(trace_added=trace)
+                self.main_instance.current_trace.am_obj = trace
+                self.main_instance.current_trace.am_event()
                 self.show_traces_view()
 
-        if self.instance.project.am_none:
+        if self.main_instance.project.am_none:
             QMessageBox.information(None, "Creating project", "Creating new project from trace.")
             self.create_project_from_trace(trace, on_complete)
         else:
@@ -596,10 +425,10 @@ class Workspace:
             on_complete()
             return
 
-        self.instance.binary_path = thing
-        self.instance.original_binary_path = thing
+        self.main_instance.binary_path = thing
+        self.main_instance.original_binary_path = thing
         job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
-        self.instance.add_job(job)
+        self.main_instance.add_job(job)
 
     def interact_program(self, img_name, view=None):
         if view is None or view.category != 'interaction':
@@ -747,7 +576,7 @@ class Workspace:
         view.setFocus()
 
     def toggle_exec_breakpoint(self):
-        if self.instance is None:
+        if self.main_instance is None:
             return
 
         view: Optional[DisassemblyView] = self.view_manager.first_view_in_category('disassembly')
@@ -755,19 +584,19 @@ class Workspace:
             selected_insns = view.current_graph.infodock.selected_insns
             if selected_insns:
                 for insn in selected_insns:
-                    self.instance.breakpoint_mgr.toggle_exec_breakpoint(insn)
+                    self.main_instance.breakpoint_mgr.toggle_exec_breakpoint(insn)
 
     def step_forward(self, until_addr: Optional[int] = None):
-        if self.instance is None:
+        if self.main_instance is None:
             return
 
-        self.instance.debugger_mgr.debugger.step_forward(until_addr=until_addr)
+        self.main_instance.debugger_mgr.debugger.step_forward(until_addr=until_addr)
 
     def continue_forward(self):
-        if self.instance is None:
+        if self.main_instance is None:
             return
 
-        self.instance.debugger_mgr.debugger.continue_forward()
+        self.main_instance.debugger_mgr.debugger.continue_forward()
 
     #
     # Private methods
@@ -778,7 +607,7 @@ class Workspace:
         if view is None:
             view = self.view_manager.first_view_in_category('disassembly')
         if view is None:
-            view = DisassemblyView(self, 'center')
+            view = DisassemblyView(self._main_instance, 'center')
             self.add_view(view)
             view.reload()
 
@@ -788,7 +617,7 @@ class Workspace:
         """
         Create a new hex view.
         """
-        view = HexView(self, 'center')
+        view = HexView(self._main_instance, 'center')
         self.add_view(view)
         return view
 
@@ -806,7 +635,7 @@ class Workspace:
 
         if view is None:
             # Create a new pseudo-code view
-            view = CodeView(self, 'center')
+            view = CodeView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -817,7 +646,7 @@ class Workspace:
 
         if view is None:
             # Create a new symexec view
-            view = SymexecView(self, 'center')
+            view = SymexecView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -828,7 +657,7 @@ class Workspace:
 
         if view is None:
             # Create a new states view
-            view = StatesView(self, 'center')
+            view = StatesView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -839,7 +668,7 @@ class Workspace:
 
         if view is None:
             # Create a new states view
-            view = StringsView(self, 'center')
+            view = StringsView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -850,7 +679,7 @@ class Workspace:
 
         if view is None:
             # Create a new states view
-            view = PatchesView(self, 'center')
+            view = PatchesView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -859,7 +688,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("interaction")
         if view is None:
             # Create a new interaction view
-            view = InteractionView(self, 'center')
+            view = InteractionView(self._main_instance, 'center')
             self.add_view(view)
         return view
 
@@ -867,7 +696,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("types")
         if view is None:
             # Create a new interaction view
-            view = TypesView(self, 'center')
+            view = TypesView(self._main_instance, 'center')
             self.add_view(view)
         return view
 
@@ -877,7 +706,7 @@ class Workspace:
 
         if view is None:
             # Create a new data dependency view
-            view = DataDepView(self, 'center')
+            view = DataDepView(self._main_instance, 'center')
             self.add_view(view)
 
         # Update DataDepView to utilize new analysis params
@@ -891,7 +720,7 @@ class Workspace:
 
         if view is None:
             # Create a new proximity view
-            view = ProximityView(self, 'center')
+            view = ProximityView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -902,7 +731,7 @@ class Workspace:
 
         if view is None:
             # Create a new console view
-            view = ConsoleView(self, 'bottom')
+            view = ConsoleView(self._main_instance, 'bottom')
             self.add_view(view)
 
         return view
@@ -913,7 +742,7 @@ class Workspace:
 
         if view is None:
             # Create a new log view
-            view = LogView(self, 'bottom')
+            view = LogView(self._main_instance, 'bottom')
             self.add_view(view)
 
         return view
@@ -924,7 +753,7 @@ class Workspace:
 
         if view is None:
             # Create a new functions view
-            view = FunctionsView(self, 'left')
+            view = FunctionsView(self._main_instance, 'left')
             self.add_view(view)
 
         return view
@@ -934,7 +763,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("registers")
 
         if view is None:
-            view = RegistersView(self, 'right')
+            view = RegistersView(self._main_instance, 'right')
             self.add_view(view)
 
         return view
@@ -944,7 +773,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("stack")
 
         if view is None:
-            view = StackView(self, 'right')
+            view = StackView(self._main_instance, 'right')
             self.add_view(view)
 
         return view
@@ -954,7 +783,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("traces")
 
         if view is None:
-            view = TracesView(self, 'center')
+            view = TracesView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -964,7 +793,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("tracemap")
 
         if view is None:
-            view = TraceMapView(self, 'top')
+            view = TraceMapView(self._main_instance, 'top')
             self.add_view(view)
 
         return view
@@ -974,7 +803,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("breakpoints")
 
         if view is None:
-            view = BreakpointsView(self, 'center')
+            view = BreakpointsView(self._main_instance, 'center')
             self.add_view(view)
 
         return view
@@ -984,7 +813,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category('call_explorer')
 
         if view is None:
-            view = CallExplorerView(self, 'right')
+            view = CallExplorerView(self._main_instance, 'right')
             self.add_view(view)
 
         return view

@@ -32,8 +32,8 @@ class AnalysesConfiguration:
     Configuration for a sequence of analyses.
     """
 
-    def __init__(self, analyses: Sequence['AnalysisConfiguration'], workspace: 'Workspace'):
-        self.workspace: 'Workspace' = workspace
+    def __init__(self, analyses: Sequence['AnalysisConfiguration'], instance):
+        self.instance = instance
         self.analyses: Sequence['AnalysisConfiguration'] = analyses
 
     def __len__(self):
@@ -59,9 +59,9 @@ class AnalysisConfiguration:
     Configuration for an analysis.
     """
 
-    def __init__(self, workspace: 'Workspace'):
-        self.workspace: 'Workspace' = workspace
-        self.project: angr.Project = workspace.instance.project.am_obj
+    def __init__(self, instance):
+        self.instance = instance
+        self.project: angr.Project = self.instance.project.am_obj
         self.enabled: bool = False
         self.name: str = ''
         self.display_name: str = ''
@@ -133,8 +133,8 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
     Configuration for CFGFast analysis.
     """
 
-    def __init__(self, workspace: 'Workspace'):
-        super().__init__(workspace)
+    def __init__(self, instance):
+        super().__init__(instance)
         self.name = 'cfg'
         self.display_name = 'Control-Flow Graph Recovery'
         self.description = extract_first_paragraph_from_docstring(self.project.analyses.CFGFast.__doc__)
@@ -152,8 +152,8 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
     Configuration for Flirt analysis.
     """
 
-    def __init__(self, workspace: 'Workspace'):
-        super().__init__(workspace)
+    def __init__(self, instance):
+        super().__init__(instance)
         self.name = 'flirt'
         self.display_name = 'Signature Matching'
         self.description = self.project.analyses.Flirt.__doc__.strip()
@@ -165,8 +165,8 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     Configuration for VariableRecovery analysis.
     """
 
-    def __init__(self, workspace: 'Workspace'):
-        super().__init__(workspace)
+    def __init__(self, instance):
+        super().__init__(instance)
         self.name = 'varec'
         self.display_name = 'Variable Recovery'
         self.description = extract_first_paragraph_from_docstring(self.project.analyses.VariableRecovery.__doc__)

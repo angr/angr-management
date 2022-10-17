@@ -49,7 +49,7 @@ class ConsoleView(BaseView):
     def connect(self):
         self.disconnect()
 
-        img_name = self.workspace.instance.img_name
+        img_name = self.workspace.main_instance.img_name
         if img_name is None:
             QMessageBox.critical(
                 None, "Nothing to run", "The project was not loaded from a docker image"
@@ -125,10 +125,10 @@ class ConsoleView(BaseView):
 
         name = hex(hash(str(conversation)) & 0xFFFFFFFFFFFFFFFF)[2:].rjust(16, "0")
 
-        self.workspace.instance.interactions.am_obj.append(
+        self.workspace.main_instance.interactions.am_obj.append(
             SavedInteraction(name, PlainTextProtocol, log)
         )
-        self.workspace.instance.interactions.am_event()
+        self.workspace.main_instance.interactions.am_event()
 
 
 class InteractionConsole(BasePlugin):

@@ -71,8 +71,8 @@ class InteractionState(enum.Enum):
 
 
 class InteractionView(BaseView):
-    def __init__(self, workspace, *args, **kwargs):
-        super().__init__('interaction', workspace, *args, **kwargs)
+    def __init__(self, instance, *args, **kwargs):
+        super().__init__('interaction', instance, *args, **kwargs)
         self.base_caption = 'Interaction'
         self.current_log = []  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
                        # "in" here means it's input to the program
@@ -110,7 +110,7 @@ class InteractionView(BaseView):
 
     @property
     def selected_protocol(self):
-        return self.workspace.instance.interaction_protocols[self.widget_combobox_protocol.currentIndex()]
+        return self.instance.interaction_protocols[self.widget_combobox_protocol.currentIndex()]
 
     # log_add/clear will be called by the base class. it's the subclass' responsibility to call input_show and
     # input_hide depending on whether or not the protocol is accepting input
@@ -167,13 +167,13 @@ class InteractionView(BaseView):
     def _handler_update_interactions(self, **kwargs):
         while self.widget_combobox_load.count():
             self.widget_combobox_load.removeItem(0)
-        for interaction in self.workspace.instance.interactions:
+        for interaction in self.instance.interactions:
             self.widget_combobox_load.addItem(interaction.name)
 
     def _handler_update_protocols(self, **kwargs):
         while self.widget_combobox_protocol.count():
             self.widget_combobox_protocol.removeItem(0)
-        for protocol in self.workspace.instance.interaction_protocols:
+        for protocol in self.instance.interaction_protocols:
             self.widget_combobox_protocol.addItem(protocol.__name__)
 
     # utility for tweaking the control panel
@@ -217,27 +217,27 @@ class InteractionView(BaseView):
     # buttons
 
     def _save_interaction(self):
-        self.workspace.instance.interactions.am_obj.append(
+        self.instance.interactions.am_obj.append(
             SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log))
-        self.workspace.instance.interactions.am_event()
+        self.instance.interactions.am_event()
 
     def _upload_interaction(self):
         if slacrs is None:
-            QMessageBox.warning(self.workspace.main_window,
+            QMessageBox.warning(self.instance.workspace.main_window,
                                 "slacrs module does not exist",
                                 "Failed to import slacrs package. Please make sure it is installed.")
             return
-        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        connector = self.instance.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
         if connector is None:
             # chess connector does not exist
-            QMessageBox.warning(self.workspace.main_window,
+            QMessageBox.warning(self.instance.workspace.main_window,
                                 "CHESSConnector is not found",
                                 "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed "
                                 "and enabled.")
             return
         if not connector.target_image_id:
             # the target image ID does not exist
-            QMessageBox.warning(self.workspace.main_window,
+            QMessageBox.warning(self.instance.workspace.main_window,
                                 "Target image ID is not specified",
                                 "The target image ID is unspecified. Please associate the binary with a remote "
                                 "challenge target.")
@@ -245,7 +245,7 @@ class InteractionView(BaseView):
         slacrs_instance = connector.slacrs_instance()
         if slacrs_instance is None:
             # slacrs does not exist
-            QMessageBox.warning(self.workspace.main_window,
+            QMessageBox.warning(self.instance.workspace.main_window,
                                 "CHECRS backend does not exist",
                                 "Cannot communicate with the CHECRS backend. Please make sure you have proper Internet "
                                 "access and have connected to the CHECRS backend.")
@@ -253,7 +253,7 @@ class InteractionView(BaseView):
         session = slacrs_instance.session()
 
         # get the interaction
-        interaction: SavedInteraction = self.workspace.instance.interactions[self.widget_combobox_load.currentIndex()]
+        interaction: SavedInteraction = self.instance.interactions[self.widget_combobox_load.currentIndex()]
 
         # upload it to the session
         data = b""
@@ -274,7 +274,7 @@ class InteractionView(BaseView):
     def _load_interaction(self):
         if self.widget_combobox_load.currentIndex() == -1:
             return
-        thing = self.workspace.instance.interactions[self.widget_combobox_load.currentIndex()]
+        thing = self.instance.interactions[self.widget_combobox_load.currentIndex()]
         self.chosen_protocol = thing.protocol
         self.running_protocol = self.chosen_protocol(self, None)  # does this mean the abstractions are fucked?
         self._state_transition(InteractionState.VIEWING)
@@ -298,7 +298,7 @@ class InteractionView(BaseView):
             QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
             return
 
-        img_name = self.workspace.instance.img_name
+        img_name = self.instance.img_name
         if img_name is None:
             # Ask the user to provide a local image name
             QtWidgets.QMessageBox.information(None,
@@ -390,7 +390,7 @@ class InteractionView(BaseView):
         protocolBox = QtWidgets.QComboBox(box_start)
         box_start.layout().addWidget(protocolBox)
         self.widget_combobox_protocol = protocolBox
-        self.workspace.instance.interaction_protocols.am_subscribe(self._handler_update_protocols)
+        self.instance.interaction_protocols.am_subscribe(self._handler_update_protocols)
         self._handler_update_protocols()
 
         start_button = QtWidgets.QPushButton(box_start)
@@ -415,7 +415,7 @@ class InteractionView(BaseView):
         load_picker = QtWidgets.QComboBox(box_load)
         box_load.layout().addWidget(load_picker)
         self.widget_combobox_load = load_picker
-        self.workspace.instance.interactions.am_subscribe(self._handler_update_interactions)
+        self.instance.interactions.am_subscribe(self._handler_update_interactions)
         self._handler_update_interactions()
 
         load_button = QtWidgets.QPushButton(box_load)

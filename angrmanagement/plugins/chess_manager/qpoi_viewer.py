@@ -107,11 +107,11 @@ class QPOIViewer(QWidget):
 
     @property
     def poi_trace(self):
-        return self.workspace.instance.poi_trace
+        return self.workspace.main_instance.poi_trace
 
     @property
     def multi_poi(self):
-        return self.workspace.instance.multi_poi
+        return self.workspace.main_instance.multi_poi
 
     @property
     def selected_ins(self):
@@ -343,11 +343,11 @@ class QPOIViewer(QWidget):
                 self.scroll_to_position(self.curr_position)
 
     def _get_func_from_addr(self, addr):
-        if self.workspace.instance.cfg.am_none:
+        if self.workspace.main_instance.cfg.am_none:
             return None
-        bbl = self.workspace.instance.cfg.get_any_node(addr, anyaddr=True)
+        bbl = self.workspace.main_instance.cfg.get_any_node(addr, anyaddr=True)
         function_addr = bbl.function_address
-        return self.workspace.instance.project.kb.functions.get(function_addr)
+        return self.workspace.main_instance.project.kb.functions.get(function_addr)
 
     def _populate_poi_table(self, view, poi_ids):
         view.clearContents()
@@ -451,7 +451,7 @@ class QPOIViewer(QWidget):
     def _jump_bbl(self, func, bbl_addr):
         disasm_view = self.disasm_view
         if disasm_view is not None:
-            all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
+            all_insn_addrs = self.workspace.main_instance.project.factory.block(bbl_addr).instruction_addrs
             # TODO: replace this with am_events perhaps?
             self.workspace.on_function_selected(func)
             self.selected_ins.clear()

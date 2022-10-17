@@ -18,10 +18,10 @@ class TestQaddressInput(unittest.TestCase):
 
     def test_address_conversion(self):
         main = MainWindow(show=False)
-        main.workspace.instance.project = load_shellcode(b'X', 'amd64')
-        main.workspace.instance.project.kb.functions.function(addr=0x1234, name='foo', create=True)
+        main.workspace.main_instance.project = load_shellcode(b'X', 'amd64')
+        main.workspace.main_instance.project.kb.functions.function(addr=0x1234, name='foo', create=True)
 
-        obj = QAddressInput(None, main.workspace)
+        obj = QAddressInput(None, main.workspace.main_instance)
 
         obj.setText("")
         QTest.keyClicks(obj, "4321")
@@ -39,10 +39,10 @@ class TestQaddressInput(unittest.TestCase):
     def test_function_name(self):
         proj = angr.Project(os.path.join(test_location, "x86_64", "fauxware"), auto_load_libs=False)
         main = MainWindow(show=False)
-        main.workspace.instance.project = proj
+        main.workspace.main_instance.project = proj
 
         cfg = proj.analyses.CFG()
-        obj = QAddressInput(None, main.workspace)
+        obj = QAddressInput(None, main.workspace.main_instance)
 
         obj.setText("")
         QTest.keyClicks(obj, "main")

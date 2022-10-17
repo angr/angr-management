@@ -11,7 +11,7 @@ class QPhiVariable(QCachedGraphicsItem):
 
     IDENT_LEFT_PADDING = 5
 
-    def __init__(self, workspace, disasm_view, phi_variable, config, parent=None):
+    def __init__(self, instance, disasm_view, phi_variable, config, parent=None):
         """
 
         :param workspace:
@@ -23,7 +23,7 @@ class QPhiVariable(QCachedGraphicsItem):
         super().__init__(parent=parent)
 
         # initialization
-        self.workspace = workspace
+        self.instance = instance
         self.disasm_view = disasm_view
         self.phi = phi_variable.variable  # the major variable
         self.variables = phi_variable.variables  # the sub variables

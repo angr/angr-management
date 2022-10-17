@@ -216,7 +216,7 @@ class CoveragePlugin(BasePlugin):
             l.exception("Unable to parse %s as JSON.", url)
             return
 
-        bbl_addrs = trace_to_bb_addrs(parsed_trace, self.workspace.instance.project, TRACE_BASE)
+        bbl_addrs = trace_to_bb_addrs(parsed_trace, self.workspace.main_instance.project, TRACE_BASE)
         self.update_coverage_from_list(bbl_addrs)
 
         with self.coverage_lock:

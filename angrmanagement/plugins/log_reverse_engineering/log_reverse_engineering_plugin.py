@@ -25,9 +25,9 @@ class LogReverseEngineeringPlugin(BasePlugin):
         super().__init__(workspace)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
         self.project = (
-            self.workspace.instance.img_name
-            if self.workspace.instance.img_name
-            else self.workspace.instance.project.filename
+            self.workspace.main_instance.img_name
+            if self.workspace.main_instance.img_name
+            else self.workspace.main_instance.project.filename
         )
 
     def handle_stack_var_renamed(self, func, offset, old_name, new_name):
@@ -85,7 +85,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
             .all()
         )
         total_variables_count = len(
-            self.workspace.instance.project.kb.variables.global_manager._variables
+            self.workspace.main_instance.project.kb.variables.global_manager._variables
         )
         reverse_eng_progress = (
             self.session.query(ReverseEngineeringProgress)
@@ -125,14 +125,14 @@ class LogReverseEngineeringPlugin(BasePlugin):
         functions_renamed_count = 0
         total_functions_count = 0
 
-        for key in self.workspace.instance.project.kb.functions._function_map:
+        for key in self.workspace.main_instance.project.kb.functions._function_map:
             if (
-                self.workspace.instance.project.kb.functions._function_map[key]._name
+                self.workspace.main_instance.project.kb.functions._function_map[key]._name
                 in functions_renamed
             ):
                 functions_renamed_count = functions_renamed_count + 1
                 total_functions_count = total_functions_count + 1
-            elif self.workspace.instance.project.kb.functions._function_map[
+            elif self.workspace.main_instance.project.kb.functions._function_map[
                 key
             ]._name.startswith("sub"):
                 total_functions_count = total_functions_count + 1

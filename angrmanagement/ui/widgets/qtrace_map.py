@@ -309,6 +309,7 @@ class QTraceMapView(QGraphicsView):
     """
     Graphics view for trace map scene. The scene will rotate based on dimensions of the viewport to support horizontal
     and vertical orientations.
+    TODO: decouple this from the workspace.instance (main_instance)
     """
 
     def __init__(self, workspace, parent=None):

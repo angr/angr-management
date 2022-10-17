@@ -18,11 +18,11 @@ class QOperand(QCachedGraphicsItem):
     LABEL_VARIABLE_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
+    def __init__(self, instance, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
                  is_branch_target, is_indirect_branch, branch_targets, config, parent=None):
         super().__init__(parent=parent)
 
-        self.workspace = workspace
+        self.instance = instance
         self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
@@ -408,7 +408,7 @@ class QOperand(QCachedGraphicsItem):
                 return None, None
 
             reg_name = the_reg.reg
-            arch = self.workspace.instance.project.arch
+            arch = self.instance.project.arch
 
             if len(variable_and_offsets) == 1:
                 # only one candidate...

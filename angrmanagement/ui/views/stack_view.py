@@ -97,7 +97,7 @@ class QStackTableWidget(QTableView):
 
         hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
 
-        self._dbg_manager = stack_view.workspace.instance.debugger_mgr
+        self._dbg_manager = stack_view.instance.debugger_mgr
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
         self._on_debugger_state_updated()
 
@@ -137,7 +137,7 @@ class QStackTableWidget(QTableView):
         row = selected[0].row()
         width = state.arch.bits // 8
         offset = row * width + state.solver.eval(state.regs.sp)
-        self.stack_view.workspace.instance.breakpoint_mgr.add_breakpoint(
+        self.stack_view.instance.breakpoint_mgr.add_breakpoint(
             Breakpoint(bp_type, offset, width)
         )
 
@@ -163,8 +163,8 @@ class StackView(BaseView):
     Stack table view.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('stack', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('stack', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Stack'
         self._tbl_widget: Optional[QStackTableWidget] = None

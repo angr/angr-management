@@ -180,9 +180,9 @@ class QAilObj(QBlockCodeObj):
     Renders an AIL object
     """
 
-    def __init__(self, obj:Any, workspace, *args, stmt=None, **kwargs):
+    def __init__(self, obj:Any, instance, *args, stmt=None, **kwargs):
         self.stmt = stmt or obj
-        self.workspace = workspace
+        self.instance = instance
         super().__init__(obj, *args, **kwargs)
 
     def create_subobjs(self, obj:Any):
@@ -207,7 +207,7 @@ class QAilObj(QBlockCodeObj):
             ailment.expression.Convert: QAilConvertObj,
             ailment.expression.Load: QAilLoadObj,
         }.get(type(obj), QAilTextObj)
-        subobj = subobjcls(obj, self.workspace, self.infodock, parent=self, options=self.options, stmt=self.stmt)
+        subobj = subobjcls(obj, self.instance, self.infodock, parent=self, options=self.options, stmt=self.stmt)
         self._add_subobj(subobj)
 
     @property
@@ -337,9 +337,9 @@ class QAilConstObj(QAilTextObj):
             return
 
         data_str = string_at_addr(
-            self.workspace.instance.cfg,
+            self.instance.cfg,
             obj.value,
-            self.workspace.instance.project,
+            self.instance.project,
          )
         if data_str:
             self.add_text(data_str)
@@ -716,12 +716,11 @@ class QBlockCode(QCachedGraphicsItem):
     obj: QBlockCodeObj
     _config: ConfigurationManager
     disasm_view: 'QDisassemblyBaseControl'
-    workspace: 'Workspace'
     infodock: InfoDock
     parent: Any
 
     def __init__(self, addr:int, obj:QBlockCodeObj, config:ConfigurationManager,
-        disasm_view:'QDisassemblyBaseControl', workspace:'Workspace',
+        disasm_view:'QDisassemblyBaseControl', instance,
         infodock:InfoDock, parent:Any=None):
         super().__init__(parent=parent)
         self.addr = addr
@@ -732,7 +731,7 @@ class QBlockCode(QCachedGraphicsItem):
         self._height = 0
         self._config = config
         self.parent = parent
-        self.workspace = workspace
+        self.instance = instance
         self.infodock = infodock
         self._disasm_view = disasm_view
         self._qtextdoc = QTextDocument()

@@ -9,11 +9,11 @@ class QVariable(QCachedGraphicsItem):
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
-    def __init__(self, workspace, disasm_view, variable, config, parent=None):
+    def __init__(self, instance, disasm_view, variable, config, parent=None):
         super(QVariable, self).__init__(parent=parent)
 
         # initialization
-        self.workspace = workspace
+        self.instance = instance
         self.disasm_view = disasm_view
         self.variable = variable
         self._config = config

@@ -14,8 +14,8 @@ class ConsoleView(BaseView):
     Console view providing IPython interactive session.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('console', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('console', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Console'
         self._ipython_widget = None
@@ -37,9 +37,9 @@ class ConsoleView(BaseView):
         namespace = {'angr': angr,
                      'claripy': claripy,
                      'cle': cle,
-                     'workspace': self.workspace,
-                     'instance': self.workspace.instance,
-                     'project': self.workspace.instance.project,
+                     'workspace': self.instance.workspace,
+                     'instance': self.instance,
+                     'project': self.instance.project,
                      }
         self._ipython_widget.push_namespace(namespace)
 
@@ -92,6 +92,6 @@ class ConsoleView(BaseView):
 
     def command_executed(self,msg):
         if msg["msg_type"] == "execute_reply" and msg["content"]["status"] == "ok":
-            view = self.workspace.view_manager.first_view_in_category("disassembly")
+            view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
             if view is not None:
                 view.refresh()

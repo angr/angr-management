@@ -26,11 +26,11 @@ class QInstruction(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
 
-    def __init__(self, workspace, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
+    def __init__(self, instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
         super().__init__(parent=parent)
 
         # initialization
-        self.workspace = workspace
+        self.instance = instance
         self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
@@ -61,7 +61,7 @@ class QInstruction(QCachedGraphicsItem):
         pass
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        if self.workspace.plugins.handle_click_insn(self, event):
+        if self.instance.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
         elif event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (Qt.NoModifier, Qt.ControlModifier):
@@ -85,7 +85,7 @@ class QInstruction(QCachedGraphicsItem):
 
     def _calc_backcolor(self):
         # First we'll check for customizations
-        color = self.workspace.plugins.color_insn(self.insn.addr, self.selected)
+        color = self.instance.workspace.plugins.color_insn(self.insn.addr, self.selected)
         if color is not None:
             return color
 
@@ -126,10 +126,10 @@ class QInstruction(QCachedGraphicsItem):
         return None
 
     def load_comment(self):
-        if self.workspace.instance.kb is None:
+        if self.instance.kb is None:
             self._comment = None
         else:
-            self._comment = get_comment_for_display(self.workspace.instance.kb, self.insn.addr)
+            self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
@@ -144,7 +144,7 @@ class QInstruction(QCachedGraphicsItem):
             painter.drawRect(0, 0, self.width, self.height)
 
         # any plugin instruction rendering passes
-        self.workspace.plugins.draw_insn(self, painter)
+        self.instance.workspace.plugins.draw_insn(self, painter)
 
     #
     # Private methods
@@ -181,7 +181,7 @@ class QInstruction(QCachedGraphicsItem):
                     # it does not create multiple branches. e.g., a call instruction
                     if len(operand.children) == 1 and type(operand.children[0]) is Value:
                         branch_targets = (operand.children[0].val,)
-            qoperand = QOperand(self.workspace, self.func_addr, self.disasm_view, self.disasm, self.infodock,
+            qoperand = QOperand(self.instance, self.func_addr, self.disasm_view, self.disasm, self.infodock,
                                 self.insn, operand, i, is_branch_target, is_indirect_branch, branch_targets,
                                 self._config, parent=self)
             self._operands.append(qoperand)
@@ -193,10 +193,10 @@ class QInstruction(QCachedGraphicsItem):
             comma.setBrush(self._config.disasm_view_node_mnemonic_color)
             self._commas.append(comma)
 
-        if should_display_string_label(self.workspace.instance.cfg, self.insn.addr, self.workspace.instance.project):
+        if should_display_string_label(self.instance.cfg, self.insn.addr, self.instance.project):
             # yes we should display a string label
-            self._string = get_string_for_display(self.workspace.instance.cfg, self.insn.addr,
-                                                  self.workspace.instance.project)
+            self._string = get_string_for_display(self.instance.cfg, self.insn.addr,
+                                                  self.instance.project)
             if self._string is None:
                 self._string = "<Unknown>"
 

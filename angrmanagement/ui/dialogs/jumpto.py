@@ -39,7 +39,7 @@ class JumpTo(QDialog):
         address_label = QLabel(self)
         address_label.setText('Address')
 
-        address = QAddressInput(self._on_address_changed, self._disasm_view.workspace, parent=self)
+        address = QAddressInput(self._on_address_changed, self._disasm_view.instance, parent=self)
         self._address_box = address
 
         address_layout = QHBoxLayout()

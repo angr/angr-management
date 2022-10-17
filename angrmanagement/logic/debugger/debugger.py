@@ -15,7 +15,7 @@ class Debugger:
     def __init__(self, workspace: 'Workspace'):
         super().__init__()
         self.workspace: 'Workspace' = workspace
-        self.instance: 'Instance' = workspace.instance
+        self.instance: 'Instance' = workspace.main_instance
         self.state_changed: EventSentinel = EventSentinel()
 
     @property

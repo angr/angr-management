@@ -59,8 +59,8 @@ class CallExplorerView(BaseView):
     Call Explorer view.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('call_explorer', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('call_explorer', instance, default_docking_position, *args, **kwargs)
 
         self._last_updated_func: Optional[Union[int, Function]] = None
         self._inhibit_update: bool = False
@@ -74,7 +74,7 @@ class CallExplorerView(BaseView):
         self.height_hint = 400
         self.updateGeometry()
 
-        self._dbg_manager = workspace.instance.debugger_mgr
+        self._dbg_manager = instance.debugger_mgr
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
         self._on_debugger_state_updated()
 
@@ -118,7 +118,7 @@ class CallExplorerView(BaseView):
         self._inhibit_update = True
 
         # Replay up to just before call
-        dbg = self.workspace.instance.debugger_mgr.debugger
+        dbg = self.instance.debugger_mgr.debugger
         dbg.replay_to_event(dbg._btrace.get_prev_exec_event(item.event, vcpu=dbg._trace_dbg.vcpu))
 
         self._inhibit_update = original_inhibit
@@ -130,7 +130,7 @@ class CallExplorerView(BaseView):
         item = self._model.itemFromIndex(index)
         # Replay after the jump, jumping into the called function
         # FIXME: Doesn't consider proper selected debugger, assumes bintrace
-        dbg = self.workspace.instance.debugger_mgr.debugger
+        dbg = self.instance.debugger_mgr.debugger
         dbg.replay_to_event(dbg._btrace.get_next_exec_event(item.event, vcpu=dbg._trace_dbg.vcpu))
 
     def _on_item_expanded(self, index):
@@ -139,7 +139,7 @@ class CallExplorerView(BaseView):
         """
         expanding_item = self._model.itemFromIndex(index)
         if not expanding_item.populated:
-            dbg = self.workspace.instance.debugger_mgr.debugger
+            dbg = self.instance.debugger_mgr.debugger
             if dbg.am_none:
                 return
             called = dbg.get_called_functions(expanding_item.event)

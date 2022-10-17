@@ -48,11 +48,11 @@ class QViewPortMover:
 
 class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView):
 
-    def __init__(self, workspace, disasm_view, parent=None):
-        QDisassemblyBaseControl.__init__(self, workspace, disasm_view, QZoomableDraggableGraphicsView)
+    def __init__(self, instance, disasm_view, parent=None):
+        QDisassemblyBaseControl.__init__(self, instance, disasm_view, QZoomableDraggableGraphicsView)
         QZoomableDraggableGraphicsView.__init__(self, parent=parent)
 
-        self.workspace = workspace
+        self.instance = instance
 
         self.disasm = None
         self.variable_manager = None
@@ -124,18 +124,18 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             func = self._function_graph.function
             try:
                 # always check if decompiler has cached a clinic object first
-                self.disasm = self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')].clinic
+                self.disasm = self.instance.kb.structured_code[(func.addr, 'pseudocode')].clinic
             except (KeyError, AttributeError):
-                self.disasm = self.workspace.instance.project.analyses.Clinic(func)
+                self.disasm = self.instance.project.analyses.Clinic(func)
 
             self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
             nodefunc = lambda n: n
             branchfunc = lambda n: None
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            self.disasm = self.workspace.instance.project.analyses.Disassembly(function=self._function_graph.function,
+            self.disasm = self.instance.project.analyses.Disassembly(function=self._function_graph.function,
                                                                                include_ir=include_ir)
-            view = self.workspace.view_manager.first_view_in_category('console')
+            view = self.instance.workspace.view_manager.first_view_in_category('console')
             if view is not None:
                 view.push_namespace({
                     'disasm': self.disasm,
@@ -145,7 +145,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             branchfunc = get_out_branches
 
         for n in self._supergraph.nodes():
-            block = QGraphBlock(self.workspace, self._function_graph.function.addr, self.disasm_view, self.disasm,
+            block = QGraphBlock(self.instance, self._function_graph.function.addr, self.disasm_view, self.disasm,
                                 self.infodock, n.addr, nodefunc(n), branchfunc(n), scene)
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block

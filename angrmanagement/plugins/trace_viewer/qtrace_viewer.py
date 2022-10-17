@@ -71,11 +71,11 @@ class QTraceViewer(QWidget):
 
     @property
     def trace(self):
-        return self.workspace.instance.trace
+        return self.workspace.main_instance.trace
 
     @property
     def multi_trace(self):
-        return self.workspace.instance.multi_trace
+        return self.workspace.main_instance.multi_trace
 
     @property
     def selected_ins(self):
@@ -368,7 +368,7 @@ class QTraceViewer(QWidget):
             self._jump_bbl(func, bbl_addr)
 
     def _jump_bbl(self, func, bbl_addr):
-        all_insn_addrs = self.workspace.instance.project.factory.block(bbl_addr).instruction_addrs
+        all_insn_addrs = self.workspace.main_instance.project.factory.block(bbl_addr).instruction_addrs
         # TODO: replace this with am_events perhaps?
         if func is None:
             return

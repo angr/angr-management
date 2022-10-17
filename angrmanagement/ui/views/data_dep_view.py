@@ -29,15 +29,14 @@ class DataDepView(BaseView):
 
     FUNCTION_SPECIFIC_VIEW = False
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('data_dependency', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('data_dependency', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Data Dependency'
-        self.workspace = workspace
 
         # Get all instructions in the program
         self._instructions: Dict[int, 'CsInsn'] = {}
-        inst = self.workspace.instance
+        inst = self.instance
         for _, func in inst.kb.functions.items():
             for block in func.blocks:
                 disass = block.disassembly
@@ -121,7 +120,7 @@ class DataDepView(BaseView):
         #     _l.error("Unable to generate data dependency graph with provided parameters!")
 
     def run_analysis(self):
-        inst = self.workspace.instance
+        inst = self.instance
 
         data_dep: 'DataDependencyGraphAnalysis' = inst.project.analyses.DataDep(
             self._end_state,

@@ -113,7 +113,7 @@ class PoisonPlugin(BasePlugin):
 
     @property
     def knowledge(self) -> 'PoisonKnowledge':
-        return self.workspace.instance.kb.decompiler_poison
+        return self.workspace.main_instance.kb.decompiler_poison
 
     def set_poison_local(self, func, callee, value):
         if value:
@@ -140,18 +140,18 @@ class PoisonPlugin(BasePlugin):
         return {int(a, 16) for a in a_string.split(',')}
 
     def angrdb_store_entries(self):
-        poison = self.workspace.instance.kb.decompiler_poison.global_poison
+        poison = self.workspace.main_instance.kb.decompiler_poison.global_poison
         if poison:
             yield ('global_poison', self._poison_to_string(poison))
-        for func, poison in self.workspace.instance.kb.decompiler_poison.local_poison.items():
+        for func, poison in self.workspace.main_instance.kb.decompiler_poison.local_poison.items():
             if poison:
                 yield ('local_poison_' + hex(func), self._poison_to_string(poison))
 
     def angrdb_load_entry(self, key: str, value: str):
         if key == 'global_poison':
-            self.workspace.instance.kb.decompiler_poison.global_poison = self._string_to_poison(value)
+            self.workspace.main_instance.kb.decompiler_poison.global_poison = self._string_to_poison(value)
         elif key.startswith('local_poison_'):
             func = int(key.split('_')[2], 16)
-            self.workspace.instance.kb.decompiler_poison.local_poison[func] = self._string_to_poison(value)
+            self.workspace.main_instance.kb.decompiler_poison.local_poison[func] = self._string_to_poison(value)
 
 PoisonKnowledge.register_default('decompiler_poison', PoisonKnowledge)

@@ -23,7 +23,7 @@ class ClientService(rpyc.Service):
 
     @property
     def instance(self):
-        return GlobalInfo.main_window.workspace.instance
+        return GlobalInfo.main_window.workspace.main_instance
 
     @property
     def workspace(self):

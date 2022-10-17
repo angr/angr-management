@@ -12,8 +12,8 @@ class TraceMapView(BaseView):
     View container for QTraceMap.
     """
 
-    def __init__(self, workspace: 'Workspace', default_docking_position, *args, **kwargs):
-        super().__init__('tracemap', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('tracemap', instance, default_docking_position, *args, **kwargs)
         self.base_caption: str = 'Trace Map'
         self.inner_widget: Optional[QTraceMap] = None
         self._init_widgets()

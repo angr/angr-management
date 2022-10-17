@@ -20,7 +20,7 @@ class QStateBlock(QGraphicsItem):
         super(QStateBlock, self).__init__()
 
         self.symexec_view = symexec_view
-        self._workspace = self.symexec_view.workspace
+        self._instance = self.symexec_view.instance
         self._config = Conf
 
         self.state = state
@@ -63,11 +63,11 @@ class QStateBlock(QGraphicsItem):
         if addr is None:
             self._function_str = "Unknown"
         else:
-            the_func = locate_function(self._workspace.instance, addr)
+            the_func = locate_function(self._instance, addr)
             if the_func is None:
                 # is it a SimProcedure?
-                if self._workspace.instance.project.is_hooked(addr):
-                    hooker = self._workspace.instance.project.hooked_by(addr)
+                if self._instance.project.is_hooked(addr):
+                    hooker = self._instance.project.hooked_by(addr)
                     self._function_str = "SimProcedure " + hooker.__class__.__name__.split('.')[-1]
                 else:
                     self._function_str = "Unknown"
@@ -95,10 +95,10 @@ class QStateBlock(QGraphicsItem):
         # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
             if self.state is not None:
-                self._workspace.viz(self.state.addr)
+                self._instance.workspace.viz(self.state.addr)
                 event.accept()
             elif self.history is not None:
-                self._workspace.viz(self.history.state.addr)
+                self._instance.workspace.viz(self.history.state.addr)
                 event.accept()
 
         super().mouseDoubleClickEvent(event)

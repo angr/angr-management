@@ -58,8 +58,8 @@ class Job:
     def keyboard_interrupt(self):
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
         # lol. lmao even.
-        if GlobalInfo.main_window.workspace.instance.current_job == self:
-            tid = GlobalInfo.main_window.workspace.instance.worker_thread.ident
+        if GlobalInfo.main_window.workspace.main_instance.current_job == self:
+            tid = GlobalInfo.main_window.workspace.main_instance.worker_thread.ident
             res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(KeyboardInterrupt))
             if res != 1:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)

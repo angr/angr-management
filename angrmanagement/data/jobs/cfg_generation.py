@@ -33,6 +33,7 @@ class CFGGenerationJob(Job):
         self._last_progress_callback_triggered = None
 
     def _run(self, inst):
+        self.instance = inst
         exclude_region_types = {'kernel', 'tls'}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
         temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)
@@ -84,5 +85,6 @@ class CFGGenerationJob(Job):
 
     def _refresh(self, cfg, cfb):
         # do not signal events. that will happen on a timer to not overwhelm the renderer
-        GlobalInfo.main_window.workspace.instance.cfg = cfg
-        GlobalInfo.main_window.workspace.instance.cfb = cfb
+        # instance will exist because _run must be used first
+        self.instance.cfg = cfg
+        self.instance.cfb = cfb

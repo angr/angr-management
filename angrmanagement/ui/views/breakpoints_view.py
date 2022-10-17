@@ -145,8 +145,8 @@ class BreakpointsView(BaseView):
     Breakpoints table view.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('breakpoints', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('breakpoints', instance, default_docking_position, *args, **kwargs)
         self.base_caption = 'Breakpoints'
         self._tbl_widget: Optional[QBreakpointTableWidget] = None
         self._init_widgets()
@@ -161,6 +161,6 @@ class BreakpointsView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
-        self._tbl_widget = QBreakpointTableWidget(self.workspace.instance.breakpoint_mgr, self.workspace)
+        self._tbl_widget = QBreakpointTableWidget(self.instance.breakpoint_mgr, self.instance.workspace)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)

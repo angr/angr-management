@@ -26,9 +26,9 @@ class POIViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace.instance.register_container('poi_trace', lambda: None, Optional[TraceStatistics],
+        self.workspace.main_instance.register_container('poi_trace', lambda: None, Optional[TraceStatistics],
                                                    'The trace of selected POI')
-        self.workspace.instance.register_container('multi_poi', lambda: None, Optional[MultiPOI],
+        self.workspace.main_instance.register_container('multi_poi', lambda: None, Optional[MultiPOI],
                                                    'POI list')
 
         self._views = []
@@ -52,11 +52,11 @@ class POIViewer(BasePlugin):
 
     @property
     def poi_trace(self) -> Union[ObjectContainer, Optional[TraceStatistics]]:
-        return self.workspace.instance.poi_trace
+        return self.workspace.main_instance.poi_trace
 
     @property
     def multi_poi(self) -> Union[ObjectContainer, Optional[MultiPOI]]:
-        return self.workspace.instance.multi_poi
+        return self.workspace.main_instance.multi_poi
 
 
     #

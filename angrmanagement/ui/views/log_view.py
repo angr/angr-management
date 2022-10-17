@@ -14,8 +14,8 @@ class LogView(BaseView):
     Log view displays logging output.
     """
 
-    def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('log', workspace, default_docking_position, *args, **kwargs)
+    def __init__(self, instance, default_docking_position, *args, **kwargs):
+        super().__init__('log', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Log'
         self._log_widget: QLogWidget = None

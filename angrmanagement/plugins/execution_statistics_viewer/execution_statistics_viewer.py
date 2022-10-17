@@ -22,7 +22,7 @@ class ExecutionStatisticsViewer(BasePlugin):
         self.addr_to_active_states = defaultdict(list)
         self.returning_to_here_states = defaultdict(list)
         self.bb_addrs = None
-        self.instance = self.workspace.instance
+        self.instance = self.workspace.main_instance
 
         if self.symexec_view:
             self.current_simgr = self.symexec_view.current_simgr

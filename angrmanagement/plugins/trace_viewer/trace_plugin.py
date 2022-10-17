@@ -26,9 +26,9 @@ class TraceViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace.instance.register_container('trace', lambda: None, Optional[TraceStatistics],
+        self.workspace.main_instance.register_container('trace', lambda: None, Optional[TraceStatistics],
                                                    'The current trace')
-        self.workspace.instance.register_container('multi_trace', lambda: None, Optional[MultiTrace],
+        self.workspace.main_instance.register_container('multi_trace', lambda: None, Optional[MultiTrace],
                                                    'The current set of multiple traces')
 
         # Register event callbacks
@@ -48,11 +48,11 @@ class TraceViewer(BasePlugin):
 
     @property
     def trace(self) -> Union[ObjectContainer, Optional[TraceStatistics]]:
-        return self.workspace.instance.trace
+        return self.workspace.main_instance.trace
 
     @property
     def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace], AFLQemuBitmap]:
-        return self.workspace.instance.multi_trace
+        return self.workspace.main_instance.multi_trace
 
     #
     # Event handlers
@@ -223,7 +223,7 @@ class TraceViewer(BasePlugin):
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
-        if self.workspace.instance.project.am_none:
+        if self.workspace.main_instance.project.am_none:
             return
 
         mapping = {
