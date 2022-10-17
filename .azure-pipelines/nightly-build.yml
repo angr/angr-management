@@ -74,11 +74,11 @@ stages:
           . /etc/os-release
           binary="../angr-management-onefile-$ID-$VERSION_ID"
           chmod +x $binary
-          xvfb-run bash -x -c '
+          xvfb-run bash -x -c "
             $binary &
             sleep 10 && output=$(xwininfo -tree -root)
-            [[ "$output" == *"angr management"* ]] || exit 1
-          '
+            [[ \"$output\" == *'angr management'* ]] || exit 1
+          "
 
 - stage: Deploy
   dependsOn: Test
