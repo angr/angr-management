@@ -241,7 +241,7 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
 
         # sorting
