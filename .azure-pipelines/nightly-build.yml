@@ -64,7 +64,7 @@ stages:
       pool:
         vmImage: ${{ pool }}
       steps:
-      - bash: sudo apt-get install -y xvfb x11-utils libqt5gui5
+      - bash: sudo apt-get install -y xvfb x11-utils
         displayName: Install X11 app testing utilities
       - task: DownloadPipelineArtifact@2
         inputs:
