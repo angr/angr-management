@@ -63,6 +63,7 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           artifactName: angr-management-${{ pool }}
+      - bash: udo apt-get install -y libegl1
       - bash: |
           set -x
           . /etc/os-release
