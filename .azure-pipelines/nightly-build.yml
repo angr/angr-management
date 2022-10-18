@@ -34,13 +34,7 @@ stages:
             inputs:
               filename: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
               modifyEnvironment: true
-        - ${{ if contains(pool, 'ubuntu-20.04') }}:
-          - task: Bash@3
-            displayName: Install build dependencies
-            inputs:
-              targetType: inline
-              script: sudo apt-get update; sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
-        - ${{ if contains(pool, 'ubuntu-22.04') }}:
+        - ${{ if contains(pool, 'ubuntu') }}:
           - task: Bash@3
             displayName: Install build dependencies
             inputs:
@@ -69,7 +63,6 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           artifactName: angr-management-${{ pool }}
-      - bash: sudo apt-get update; sudo apt-get install -y libxkbcommon0 libegl1 libxcb-xinerama0
       - bash: |
           set -x
           . /etc/os-release
