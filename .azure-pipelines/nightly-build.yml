@@ -45,7 +45,7 @@ stages:
             displayName: Install build dependencies
             inputs:
               targetType: inline
-              script: sudo apt-get update; sudo apt-get install -y libfuse3 libegl1 libxkbcommon0
+              script: sudo apt-get update; sudo apt-get install -y libfuse2 libegl1 libxkbcommon0
         - task: Bash@3
           displayName: Run build.sh
           inputs:
