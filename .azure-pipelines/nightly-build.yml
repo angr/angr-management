@@ -69,7 +69,7 @@ stages:
       - task: DownloadPipelineArtifact@2
         inputs:
           artifactName: angr-management-${{ pool }}
-      - bash: sudo apt-get update; sudo apt-get install -y libxkbcommon0
+      - bash: sudo apt-get update; sudo apt-get install -y libxkbcommon0 libegl1
       - bash: |
           set -x
           . /etc/os-release
