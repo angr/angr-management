@@ -3,6 +3,8 @@
 python -m venv .venv
 source .venv/bin/activate
 
+alias pip="python -m pip"
+
 # Install dependencies
 
 pip install -U pip wheel setuptools pyinstaller==5.5 unicorn==1.0.2rc4
