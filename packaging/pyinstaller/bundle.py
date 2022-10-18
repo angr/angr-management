@@ -16,6 +16,7 @@ import z3
 import zmq
 import parso
 import debugpy
+import PySide6
 
 if sys.platform == "linux":
     import archr
@@ -65,6 +66,7 @@ def make_common_options(for_chess=False):
         (os.path.join(am_repo_dir, "flirt_signatures"), "flirt_signatures"),
         (os.path.join(am_repo_dir, "library_docs"), "library_docs"),
         (os.path.join(os.path.dirname(debugpy.__file__), "_vendored"), "debugpy/_vendored"),
+        (os.path.join(os.path.dirname(PySide6.__file__), "Qt", "lib"), "PySide6/Qt/lib"),
     ]
     if sys.platform == "linux":
         included_data.append(
