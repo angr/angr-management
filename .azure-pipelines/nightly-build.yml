@@ -39,13 +39,13 @@ stages:
             displayName: Install build dependencies
             inputs:
               targetType: inline
-              script: sudo apt-get update; sudo apt-get install -y libegl1 libxkbcommon-x11-0
+              script: sudo apt-get update; sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-icccm4
         - ${{ if contains(pool, 'ubuntu-22.04') }}:
           - task: Bash@3
             displayName: Install build dependencies
             inputs:
               targetType: inline
-              script: sudo apt-get update; sudo apt-get install -y libfuse2 libegl1 libxkbcommon-x11-0
+              script: sudo apt-get update; sudo apt-get install -y libfuse2 libegl1 libxkbcommon-x11-0 libxcb-icccm4
         - task: Bash@3
           displayName: Run build.sh
           inputs:
