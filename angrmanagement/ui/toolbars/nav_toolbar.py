@@ -1,9 +1,9 @@
 import os
 from typing import Callable, Any
 
-from PySide2.QtCore import Signal, QSize
-from PySide2.QtGui import QMouseEvent, QIcon
-from PySide2.QtWidgets import QMenu, QAction, QToolButton, QToolBar, QStyle
+from PySide6.QtCore import Signal, QSize
+from PySide6.QtGui import QMouseEvent, QIcon, QAction
+from PySide6.QtWidgets import QMenu, QToolButton, QToolBar, QStyle
 
 from .toolbar import Toolbar
 from ...logic.disassembly import JumpHistory

@@ -5,7 +5,7 @@ import urllib.parse
 
 import requests
 
-from PySide2.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog
 
 from ..config import Conf
 from ..errors import InvalidURLError, UnexpectedStatusCodeError

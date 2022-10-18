@@ -1,6 +1,6 @@
-from PySide2.QtCore import QPoint, QPointF, Qt, QRectF, QMarginsF, QEvent
-from PySide2.QtGui import QPainter, QPainterPath, QPen, QMouseEvent, QWheelEvent, QImage
-from PySide2.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame
+from PySide6.QtCore import QPoint, QPointF, Qt, QRectF, QMarginsF, QEvent
+from PySide6.QtGui import QPainter, QPainterPath, QPen, QMouseEvent, QWheelEvent, QImage
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame
 
 from ...config import Conf
 from .qgraph import QBaseGraphicsView
@@ -97,8 +97,7 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
         self._view.set_extra_render_pass(True)
         painter = QPainter(self._scene_img)
         painter.setRenderHints(QPainter.Antialiasing
-                               | QPainter.SmoothPixmapTransform
-                               | QPainter.HighQualityAntialiasing)
+                               | QPainter.SmoothPixmapTransform)
         scene.render(painter, target=self._minimap_scene_rect)
         self._view.set_extra_render_pass(False)
         self.update()
@@ -239,7 +238,9 @@ class QMiniMapView(QGraphicsView):
         Forward the wheel event to target view to handle zoom events.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(event.pos()))
+            self._target_view.centerOn(
+                self.map_event_pos_to_target_scene_pos(QPoint(event.x(), event.y()))
+            )
 
         self._target_view.wheelEvent(event)
 

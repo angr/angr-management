@@ -1,5 +1,5 @@
 
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog
 
 from .view import BaseView
 from ..widgets.qpatch_table import QPatchTable

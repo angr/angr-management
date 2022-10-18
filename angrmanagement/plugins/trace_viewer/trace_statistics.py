@@ -6,7 +6,7 @@ from collections import defaultdict
 from bisect import bisect_left
 from typing import Dict, Any, List, Set, Optional
 
-from PySide2.QtGui import QColor
+from PySide6.QtGui import QColor
 
 from angr.errors import SimEngineError
 

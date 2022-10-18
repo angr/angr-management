@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.code_view import CodeView

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from PySide2.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QGroupBox, QRadioButton, QHBoxLayout, \
-    QVBoxLayout, QCheckBox, QMessageBox, QWidget
+from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QGroupBox, QRadioButton, QHBoxLayout, \
+    QVBoxLayout, QMessageBox, QWidget
 
 from angr.knowledge_plugins import Function
 from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE, OP_AFTER

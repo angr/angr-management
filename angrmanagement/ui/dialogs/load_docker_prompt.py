@@ -1,7 +1,7 @@
 import logging
 import subprocess
 
-from PySide2.QtWidgets import QInputDialog, QMessageBox
+from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 
 _l = logging.getLogger(__name__)

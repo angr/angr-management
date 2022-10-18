@@ -1,9 +1,9 @@
 from collections import defaultdict
 from typing import List
 
-from PySide2.QtGui import QCursor, QContextMenuEvent
-from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QInputDialog, QAbstractItemView
-from PySide2.QtCore import Qt
+from PySide6.QtGui import QCursor, QContextMenuEvent
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QInputDialog, QAbstractItemView
+from PySide6.QtCore import Qt
 
 from angr import SimState
 from inspect import isfunction

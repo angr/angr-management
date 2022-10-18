@@ -1,10 +1,7 @@
 
-from PySide2.QtGui import QColor
-from PySide2.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt, QRectF
 
-from ...utils.block_objects import PhiVariable
 from .qgraph_object import QCachedGraphicsItem
-from .qvariable import QVariable
 
 
 class QPhiVariable(QCachedGraphicsItem):

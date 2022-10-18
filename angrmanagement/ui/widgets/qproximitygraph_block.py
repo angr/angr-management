@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, List, Tuple, Type
 import logging
 
-import PySide2.QtWidgets
-from PySide2.QtWidgets import QGraphicsSimpleTextItem
-from PySide2.QtGui import QPen
-from PySide2.QtCore import Qt, QRectF
+import PySide6.QtWidgets
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtGui import QPen
+from PySide6.QtCore import Qt, QRectF
 
 from angr.analyses.proximity_graph import FunctionProxiNode, CallProxiNode, StringProxiNode, \
     IntegerProxiNode, UnknownProxiNode, VariableProxiNode
@@ -85,10 +85,10 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
+    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
         self._proximity_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide2.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
+    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
         self._proximity_view.hover_leave_block(self)
 
     def _paint_boundary(self, painter):

@@ -3,10 +3,10 @@ from collections import defaultdict
 import logging
 from typing import Union, Optional, TYPE_CHECKING
 
-import PySide2
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu, QAction
-from PySide2.QtCore import Qt, Signal
-from PySide2.QtGui import QCursor
+import PySide6
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QCursor, QAction
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
 
@@ -295,7 +295,7 @@ class DisassemblyView(SynchronizedView):
         menu.addSeparator()
         menu.addMenu(self.get_synchronize_with_submenu())
 
-    def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
+    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
         Display view context menu.
         """

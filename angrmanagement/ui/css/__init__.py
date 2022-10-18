@@ -1,7 +1,7 @@
 import sys
 
-from PySide2.QtWidgets import QApplication
-from PySide2.QtGui import QPalette
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QPalette
 
 from ..widgets.qccode_highlighter import reset_formats
 from ...data.object_container import ObjectContainer

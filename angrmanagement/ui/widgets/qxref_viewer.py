@@ -1,7 +1,7 @@
 from typing import List
 
-from PySide2.QtWidgets import QAbstractItemView, QHeaderView, QTableView
-from PySide2.QtCore import Qt, QAbstractTableModel
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
+from PySide6.QtCore import Qt, QAbstractTableModel
 
 from angr.knowledge_plugins.variables.variable_access import VariableAccess
 from angr.knowledge_plugins.xrefs.xref import XRef, XRefType

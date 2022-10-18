@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QFileDialog, QHeaderView
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QFileDialog, QHeaderView
 
 
 class QFileSystemTable(QTableWidget):

@@ -1,10 +1,10 @@
 from typing import Optional, Sequence
 import logging
 
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsPolygonItem, QGraphicsLineItem
-from PySide2.QtGui import QBrush, QPen, QPolygonF, QLinearGradient, QColor
-from PySide2.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent
+from PySide6.QtGui import QBrush, QPen, QPolygonF, QLinearGradient, QColor
+from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent
 
 from ...config import Conf
 from ...logic.debugger import DebuggerWatcher
@@ -349,8 +349,10 @@ class QTraceMapView(QGraphicsView):
         Handle wheel events to scale and translate the trace map.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.delta() > 0 else 1/1.25,
-                                       QPoint(event.pos().x(), event.pos().y()))
+            self.adjust_viewport_scale(
+                1.25 if event.angleDelta().y() > 0 else 1/1.25,
+                QPoint(event.x(), event.y())
+            )
         else:
             self.translate(100 * (-1 if event.delta() < 0 else 1), 0)
             super().wheelEvent(event)

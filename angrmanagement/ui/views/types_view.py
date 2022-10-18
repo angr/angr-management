@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from PySide2.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox, QLabel
+from PySide6.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox, QLabel
 
 from angr.sim_type import TypeRef, ALL_TYPES, SimStruct, SimUnion
 

@@ -9,8 +9,8 @@ from typing import Tuple, Optional
 import tomlkit
 import tomlkit.exceptions
 from xdg import BaseDirectory
-from PySide2.QtWidgets import QApplication
-from PySide2.QtWidgets import QMessageBox, QFileDialog
+from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QMessageBox, QFileDialog
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.daemon.url_handler import UrlActionBase, register_url_action

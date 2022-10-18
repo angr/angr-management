@@ -1,8 +1,8 @@
 import time
 
-from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex, QEvent, Signal, QObject
-from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import (
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QEvent, Signal, QObject
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import (
     QVBoxLayout,
     QMainWindow,
     QTableView,
@@ -174,7 +174,7 @@ class SeedTableWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
-    def contextMenuEvent(self, event:'PySide2.QtGui.QContextMenuEvent') -> None:
+    def contextMenuEvent(self, event:'PySide6.QtGui.QContextMenuEvent') -> None:
         rows = self.selectionModel().selectedIndexes()
         contextMenu = QMenu(self)
         saveSeed = contextMenu.addAction("&Save Seed")

@@ -4,13 +4,13 @@ from enum import Enum
 import logging
 
 import angr
-import PySide2
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
+import PySide6
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
     QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
-    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QAction, QMessageBox, QAbstractScrollArea, \
+    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QMessageBox, QAbstractScrollArea, \
     QAbstractSlider, QComboBox
-from PySide2.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor
-from PySide2.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
+from PySide6.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor, QAction
+from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
 
 from angr import Block
 from angr.knowledge_plugins.cfg import MemoryData
@@ -271,7 +271,7 @@ class HexGraphicsObject(QGraphicsObject):
 
         self._update_layout()
 
-    def focusInEvent(self, event: PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
+    def focusInEvent(self, event: PySide6.QtGui.QFocusEvent):  # pylint: disable=unused-argument
         """
         Item receives focus.
         """
@@ -279,7 +279,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.restart_cursor_blink_timer()
         self.update()
 
-    def focusOutEvent(self, event: PySide2.QtGui.QFocusEvent):  # pylint: disable=unused-argument
+    def focusOutEvent(self, event: PySide6.QtGui.QFocusEvent):  # pylint: disable=unused-argument
         """
         Item lost focus.
         """
@@ -637,7 +637,7 @@ class HexGraphicsObject(QGraphicsObject):
         next_nibble = 1 - nibble
         self.set_cursor(self.cursor + next_nibble, nibble=next_nibble)
 
-    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
         """
         Handle key press events (e.g. moving cursor around).
         """
@@ -861,7 +861,7 @@ class HexGraphicsObject(QGraphicsObject):
             color = color.darker(150)
 
         r = path.boundingRect()
-        bg = PySide2.QtGui.QLinearGradient(r.topLeft(), r.bottomLeft())
+        bg = PySide6.QtGui.QLinearGradient(r.topLeft(), r.bottomLeft())
         top_color = QColor(color)
         top_color.setAlpha(50)
         bg.setColorAt(0, top_color)
@@ -1018,7 +1018,7 @@ class HexGraphicsObject(QGraphicsObject):
             tl.setY(tl.y() + self.row_height - cursor_height)
             painter.drawRect(QRectF(tl, QSizeF(self.ascii_width, cursor_height)))
 
-    def boundingRect(self) -> PySide2.QtCore.QRectF:
+    def boundingRect(self) -> PySide6.QtCore.QRectF:
         return QRectF(0, 0, self.max_x, self.max_y)
 
 
@@ -1189,9 +1189,9 @@ class HexGraphicsView(QAbstractScrollArea):
 
     def wheelEvent(self, event: QWheelEvent):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.delta() > 0 else 1/1.25)
+            self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1/1.25)
         else:
-            d = event.delta()
+            d = event.angleDelta().y()
             if d != 0:
                 self.set_display_offset(self.hex.display_offset_addr - 0x10 * d // 32)
         event.accept()
@@ -1220,7 +1220,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self._view.setSceneRect(vp_rect)
         self._update_horizontal_scrollbar()
 
-    def resizeEvent(self, event:PySide2.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
+    def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
         self._view.resize(self.viewport().size())
         self.update_scene_rect()
         self.set_display_offset(self.hex.display_offset_addr)
@@ -1268,7 +1268,7 @@ class HexGraphicsView(QAbstractScrollArea):
             self._view.setBackgroundBrush(Conf.palette_base)
             self.update()
 
-    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
         """
         Handle key events.
         """
@@ -1673,7 +1673,7 @@ class HexView(SynchronizedView):
         mnu.addAction(act)
         return mnu
 
-    def contextMenuEvent(self, event: PySide2.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
+    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
         Display view context menu.
         """
@@ -1760,7 +1760,7 @@ class HexView(SynchronizedView):
             s = 'Address: %08x' % self.inner_widget.hex.cursor
         self._status_lbl.setText(s)
 
-    def keyPressEvent(self, event: PySide2.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
         """
         Handle key events.
         """

@@ -4,7 +4,7 @@ import logging
 import traceback
 import time
 
-from PySide2.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
 from angr.misc.testing import is_testing

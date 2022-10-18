@@ -1,6 +1,6 @@
 import os
 
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from angrmanagement.config import Conf
 

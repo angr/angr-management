@@ -6,8 +6,8 @@ from time import sleep
 from typing import Optional
 
 
-from PySide2.QtCore import QEvent, QObject
-from PySide2.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout
+from PySide6.QtCore import QEvent, QObject
+from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 try:
     from slacrs import Slacrs

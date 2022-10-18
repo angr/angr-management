@@ -1,9 +1,9 @@
 # pylint:disable=unused-private-member
 import logging
 from typing import Optional, Tuple, Callable, Iterator, Generator, List, Any, Union, TYPE_CHECKING, Type
-from PySide2.QtGui import QColor, QPainter
-from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import QGraphicsSceneMouseEvent
+from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QGraphicsSceneMouseEvent
 
 from angr.sim_manager import SimulationManager
 

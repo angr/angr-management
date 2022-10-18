@@ -1,6 +1,6 @@
 import re
-from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QLineEdit, QVBoxLayout, QLabel
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLineEdit, QVBoxLayout, QLabel
+from PySide6.QtCore import QSize
 
 from angr.knowledge_plugins import Function
 from angr.knowledge_plugins.cfg.memory_data import MemoryData

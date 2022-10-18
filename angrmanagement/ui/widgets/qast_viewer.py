@@ -1,6 +1,5 @@
-from PySide2.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy
-from PySide2.QtGui import QPainter
-from PySide2.QtCore import QSize, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
+from PySide6.QtCore import QSize, Qt
 
 import claripy
 

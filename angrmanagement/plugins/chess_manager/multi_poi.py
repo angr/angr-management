@@ -1,7 +1,7 @@
 import math
 import logging
 
-from PySide2.QtGui import QColor
+from PySide6.QtGui import QColor
 
 _l = logging.getLogger(__name__)
 # _l.setLevel('DEBUG')

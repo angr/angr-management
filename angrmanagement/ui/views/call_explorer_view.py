@@ -1,9 +1,9 @@
 import logging
 from typing import Optional, Union
 
-from PySide2.QtGui import QFont, QStandardItemModel, QStandardItem
-from PySide2.QtCore import QSize, Qt
-from PySide2.QtWidgets import QHeaderView, QVBoxLayout, QTreeWidget, QTreeView, QLabel
+from PySide6.QtGui import QFont, QStandardItemModel, QStandardItem
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QHeaderView, QVBoxLayout, QTreeWidget, QTreeView, QLabel
 from angr.knowledge_plugins import Function
 
 try:

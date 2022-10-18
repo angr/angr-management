@@ -1,7 +1,7 @@
 
 import logging
-from PySide2.QtWidgets import QHBoxLayout
-from PySide2.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtCore import QSize
 from traitlets.config.configurable import MultipleInstanceError
 
 from .view import BaseView

@@ -5,7 +5,7 @@ import networkx as nx
 
 from angr.knowledge_plugins.functions import Function
 
-from PySide2.QtGui import QColor
+from PySide6.QtGui import QColor
 
 _l = logging.getLogger(name=__name__)
 

@@ -1,8 +1,8 @@
 import logging
 
-from PySide2.QtWidgets import QGraphicsItem
-from PySide2.QtGui import QColor, QPen
-from PySide2.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QGraphicsItem
+from PySide6.QtGui import QColor, QPen
+from PySide6.QtCore import Qt, QRectF
 
 from ...config import Conf
 from ...utils import locate_function

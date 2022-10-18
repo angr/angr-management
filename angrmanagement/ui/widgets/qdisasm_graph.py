@@ -1,7 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 import logging
 
-from PySide2.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
+from PySide6.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
 
 from angr.analyses.decompiler.utils import to_ail_supergraph
 

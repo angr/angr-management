@@ -1,6 +1,6 @@
 import math
 
-from PySide2.QtGui import QColor
+from PySide6.QtGui import QColor
 
 from .trace_statistics import TraceStatistics
 

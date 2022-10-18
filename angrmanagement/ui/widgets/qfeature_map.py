@@ -2,10 +2,10 @@ from typing import Optional, Sequence, Mapping
 import logging
 from sortedcontainers import SortedDict
 
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
     QGraphicsPolygonItem, QGraphicsLineItem
-from PySide2.QtGui import QBrush, QPen, QPolygonF
-from PySide2.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
+from PySide6.QtGui import QBrush, QPen, QPolygonF
+from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
 
 import cle
 from angr.block import Block
@@ -414,10 +414,12 @@ class QFeatureMapView(QGraphicsView):
         Handle wheel events to scale and translate the feature map.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.delta() > 0 else 1/1.25,
-                                       QPoint(event.pos().x(), event.pos().y()))
+            self.adjust_viewport_scale(
+                1.25 if event.angleDelta() > 0 else 1/1.25,
+                QPoint(event.position().x(), event.position().y()),
+            )
         else:
-            self.translate(100 * (-1 if event.delta() < 0 else 1), 0)
+            self.translate(100 * (-1 if event.angleDelta() < 0 else 1), 0)
             super().wheelEvent(event)
 
     def resizeEvent(self, event):  # pylint: disable=unused-argument

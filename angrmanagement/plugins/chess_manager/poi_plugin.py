@@ -4,8 +4,8 @@ from copy import deepcopy
 import os
 from typing import Optional, Union
 
-from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from ...data.object_container import ObjectContainer
 from ..base_plugin import BasePlugin

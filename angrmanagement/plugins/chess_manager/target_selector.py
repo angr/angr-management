@@ -6,10 +6,10 @@ import threading
 import asyncio
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-import PySide2
-from PySide2.QtWidgets import QDialog, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox, QTableView, \
+import PySide6
+from PySide6.QtWidgets import QDialog, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox, QTableView, \
     QAbstractItemView, QHeaderView, QLabel
-from PySide2.QtCore import Qt, QAbstractTableModel
+from PySide6.QtCore import Qt, QAbstractTableModel
 
 try:
     import slacrs
@@ -57,13 +57,13 @@ class QTargetSelectorTableModel(QAbstractTableModel):
         self._targets = v
         self.endResetModel()
 
-    def rowCount(self, parent:PySide2.QtCore.QModelIndex=...) -> int:
+    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:
         return len(self.targets)
 
-    def columnCount(self, parent:PySide2.QtCore.QModelIndex=...) -> int:
+    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide2.QtCore.Qt.Orientation, role:int=...) -> typing.Any:
+    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> typing.Any:
         if role != Qt.DisplayRole:
             return None
 
@@ -71,7 +71,7 @@ class QTargetSelectorTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide2.QtCore.QModelIndex, role:int=...) -> typing.Any:
+    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> typing.Any:
         if not index.isValid():
             return None
         row = index.row()

@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QTabWidget
+from PySide6.QtWidgets import QTabWidget
 
 from .qmemory_viewer import QMemoryViewer
 from .qregister_viewer import QRegisterViewer

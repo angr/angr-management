@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, TYPE_CHECKING
 import logging
 
-from PySide2.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 import cle
 import angr

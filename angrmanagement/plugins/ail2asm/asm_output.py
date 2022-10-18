@@ -1,5 +1,5 @@
-from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QDialogButtonBox
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QDialogButtonBox
 
 
 class AsmOutput(QDialog):

@@ -1,10 +1,10 @@
 import os
 
-from PySide2.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
-from PySide2.QtGui import QIcon, QPixmap, QFont
-from PySide2.QtCore import Qt
-import angr
+from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
+from PySide6.QtGui import QIcon, QPixmap, QFont
+from PySide6.QtCore import Qt
 
+import angrmanagement
 from ...config import IMG_LOCATION
 
 
@@ -31,7 +31,7 @@ class LoadAboutDialog(QDialog):
         # textbox
         angr_text = QLabel("angr")
         angr_text.setFont(QFont("Consolas", 24, weight=QFont.Bold))
-        version_text_tup = "Version: " + ".".join(str(x) for x in angr.__version__[0:4])
+        version_text_tup = "Version: " + angrmanagement.__version__
         version_text = QLabel(version_text_tup)
         version_text.setFont(QFont("Consolas", weight=QFont.Bold))
         version_text.setAlignment(Qt.AlignCenter)

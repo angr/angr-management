@@ -1,5 +1,5 @@
-from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QFrame, QLabel, QColorDialog
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QFrame, QLabel, QColorDialog
 
 from ...data.object_container import ObjectContainer
 
