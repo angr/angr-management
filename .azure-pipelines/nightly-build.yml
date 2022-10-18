@@ -11,7 +11,10 @@ schedules:
 parameters:
 - name: pools
   type: object
-  default: [ "ubuntu-20.04", "windows-2022", "macos-12" ]
+  default: [ "ubuntu-20.04", "ubuntu-22.04", "windows-2022", "macos-12" ]
+- name: test_pools
+  type: object
+  default: [ "ubuntu-20.04", "ubuntu-22.04" ]
 
 stages:
 - stage: Build
@@ -31,6 +34,12 @@ stages:
             inputs:
               filename: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
               modifyEnvironment: true
+        - ${{ if contains(pool, 'ubuntu') }}:
+          - task: Bash@3
+            displayName: Install build dependencies
+            inputs:
+              targetType: inline
+              script: sudo apt-get update; sudo apt-get install -y libfuse2 libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
         - task: Bash@3
           displayName: Run build.sh
           inputs:
@@ -41,8 +50,34 @@ stages:
             targetPath: upload
             artifactName: angr-management-${{ pool }}
 
+- stage: Test
+  jobs:
+  - ${{ each pool in parameters.test_pools }}:
+    - job:
+      displayName: Test linux pyinstaller build launches on Ubuntu ${{ pool }}
+      pool:
+        vmImage: ${{ pool }}
+      steps:
+      - bash: sudo apt-get install -y xvfb x11-utils
+        displayName: Install X11 app testing utilities
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          artifactName: angr-management-${{ pool }}
+      - bash: sudo apt-get install -y libegl1
+      - bash: |
+          set -x
+          . /etc/os-release
+          export binary="../angr-management-onefile-$ID-$VERSION_ID"
+          export QT_DEBUG_PLUGINS=1
+          chmod +x $binary
+          xvfb-run bash -x -c '
+            $binary &
+            sleep 30 && output=$(xwininfo -tree -root)
+            [[ "$output" == *"angr management"* ]] || exit 1
+          '
+
 - stage: Deploy
-  dependsOn: Build
+  dependsOn: Test
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   jobs:
   - job: Release
