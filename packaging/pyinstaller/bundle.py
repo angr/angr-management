@@ -3,20 +3,20 @@
 import os
 import subprocess
 import sys
-from os.path import dirname, join
 
 # for finding various libs
-import angrmanagement
-import capstone
-import unicorn
-import pyvex
 import angr
+import capstone
 import cle
+import debugpy
+import parso
+import PySide6
+import pyvex
+import unicorn
 import z3
 import zmq
-import parso
-import debugpy
-import PySide6
+
+import angrmanagement
 
 if sys.platform == "linux":
     import archr
