@@ -74,6 +74,7 @@ stages:
           set -x
           . /etc/os-release
           export binary="../angr-management-onefile-$ID-$VERSION_ID"
+          export QT_DEBUG_PLUGINS=1
           chmod +x $binary
           xvfb-run bash -x -c '
             $binary &
