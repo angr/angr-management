@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate || source .venv/Scripts/activate
 
 alias pip="python -m pip"
 
