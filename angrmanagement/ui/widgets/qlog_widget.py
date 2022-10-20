@@ -145,7 +145,7 @@ class QLogWidget(QTableView):
         hheader.setStretchLastSection(True)
         vheader.setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         vheader.setDefaultSectionSize(20)
         self.setShowGrid(False)
 

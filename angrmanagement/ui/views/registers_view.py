@@ -98,7 +98,7 @@ class QRegisterTableWidget(QTableView):
         vheader.setDefaultSectionSize(20)
 
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self.model: QRegisterTableModel = QRegisterTableModel(self)
         self.setModel(self.model)
