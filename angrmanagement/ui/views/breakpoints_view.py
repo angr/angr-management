@@ -93,7 +93,7 @@ class QBreakpointTableWidget(QTableView):
         vheader.setDefaultSectionSize(20)
 
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self.model: QBreakpointTableModel = QBreakpointTableModel(self.breakpoint_mgr)
         self.setModel(self.model)

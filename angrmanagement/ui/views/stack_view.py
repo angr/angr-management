@@ -87,7 +87,7 @@ class QStackTableWidget(QTableView):
         vheader.setDefaultSectionSize(20)
 
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self.model: QStackTableModel = QStackTableModel(self)
         self.setModel(self.model)

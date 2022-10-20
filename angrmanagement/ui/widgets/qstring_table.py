@@ -156,7 +156,7 @@ class QStringTable(QTableView):
         self.setShowGrid(False)
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(24)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self._model = QStringModel(None)
         self._proxy = QSortFilterProxyModel(self)

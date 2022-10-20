@@ -83,7 +83,7 @@ class QTraceTableWidget(QTableView):
         vheader.setDefaultSectionSize(20)
 
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
 
         self.model: QTraceTableModel = QTraceTableModel(instance)
         self.setModel(self.model)

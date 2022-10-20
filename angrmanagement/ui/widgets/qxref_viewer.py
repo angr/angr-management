@@ -261,7 +261,7 @@ class QXRefViewer(QTableView):
 
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.setShowGrid(False)
 
         self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
