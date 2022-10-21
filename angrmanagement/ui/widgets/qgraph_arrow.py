@@ -236,7 +236,7 @@ class QDataDepGraphArrow(QGraphArrow):
 
     def __init__(self, data_dep_view: 'DataDepView', *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setFlags(self.ItemIsFocusable)
+        self.setFlags(QGraphicsItem.ItemIsFocusable)
         self._data_dep_view = data_dep_view
         self.is_hovered = False
 
