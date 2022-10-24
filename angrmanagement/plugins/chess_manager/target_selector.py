@@ -117,7 +117,7 @@ class QTargetSelectorTableView(QTableView):
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
