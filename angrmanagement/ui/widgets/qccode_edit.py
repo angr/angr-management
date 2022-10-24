@@ -210,14 +210,16 @@ class QCCodeEdit(api.CodeEdit):
         key = event.key()
         modifiers = event.modifiers()
         xkey = key
+        if isinstance(xkey, int):
+            xkey = Qt.Key(xkey)
         if modifiers & Qt.ShiftModifier:
-            xkey += Qt.SHIFT
+            xkey |= Qt.SHIFT
         if modifiers & Qt.ControlModifier:
-            xkey += Qt.CTRL
+            xkey |= Qt.CTRL
         if modifiers & Qt.AltModifier:
-            xkey += Qt.ALT
+            xkey |= Qt.ALT
         if modifiers & Qt.MetaModifier:
-            xkey += Qt.META
+            xkey |= Qt.META
         sequence = QKeySequence(xkey)
         mnu = self.get_context_menu()
         for item in mnu.actions():

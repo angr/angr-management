@@ -113,7 +113,7 @@ class QTraceViewer(QWidget):
         self.multiTraceList = QTableWidget(0,2) # row, col
         self.multiTraceList.setSelectionMode(QAbstractItemView.MultiSelection)
         self.multiTraceList.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.multiTraceList.setHorizontalScrollMode(self.multiTraceList.ScrollPerPixel)
+        self.multiTraceList.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.multiTraceList.setHorizontalHeaderItem(0, QTableWidgetItem("Trace ID"))
         self.multiTraceList.setHorizontalHeaderItem(1, QTableWidgetItem("Input ID"))
         self.selectMultiTrace = QPushButton("Refresh Heatmap")
