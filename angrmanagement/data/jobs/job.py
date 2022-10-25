@@ -1,3 +1,4 @@
+# pylint:disable=global-statement
 from typing import Optional
 import logging
 import time
@@ -31,6 +32,10 @@ def _load_autoreload():
 
 
 class Job:
+    """
+    The base class of all Jobs in angr management.
+    """
+
     def __init__(self, name, on_finish=None, blocking=False):
         self.name = name
         self.progress_percentage = 0.
