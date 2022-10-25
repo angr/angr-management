@@ -1,5 +1,5 @@
 import logging
-from typing import Type, List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
     QListWidget, QFileDialog, QMessageBox, QDialogButtonBox

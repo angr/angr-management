@@ -1,6 +1,7 @@
+from typing import List
+
 import tomlkit
 from tomlkit.items import String, Integer, AoT, Table
-from typing import List
 
 
 class PluginDescription:
@@ -36,20 +37,20 @@ class PluginDescription:
         if not isinstance(desc.name, String):
             raise TypeError(f"\"name\" must be a String instance, not a {type(desc.name)}")
         if not desc.name:
-            raise TypeError(f"\"name\" cannot be empty")
+            raise TypeError("\"name\" cannot be empty")
 
         desc.shortname = data.get("shortname", None)
         if not isinstance(desc.shortname, String):
             raise TypeError(f"\"shortname\" must be a String instance, not a {type(desc.shortname)}")
         if not desc.shortname:
-            raise TypeError(f"\"shortname\" cannot be empty")
+            raise TypeError("\"shortname\" cannot be empty")
 
         desc.entrypoints = data.get("entrypoints", "")
         if not isinstance(desc.entrypoints, List) or \
                 not all(isinstance(entrypoint, String) for entrypoint in desc.entrypoints):
-            raise TypeError(f"\"entrypoints\" must be a List of String instances")
+            raise TypeError("\"entrypoints\" must be a List of String instances")
         if not desc.entrypoints:
-            raise TypeError(f"\"entrypoints\" cannot be empty")
+            raise TypeError("\"entrypoints\" cannot be empty")
 
         # optional
         desc.version = data.get("version", "")
@@ -65,7 +66,7 @@ class PluginDescription:
 
     @classmethod
     def from_toml(cls, file_path: str) -> List['PluginDescription']:
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding='utf-8') as f:
             data = tomlkit.load(f)
 
         # load metadata
@@ -76,7 +77,7 @@ class PluginDescription:
                     outer_desc.plugin_metadata_version = data['meta']['plugin_metadata_version'].unwrap()
 
         if outer_desc.plugin_metadata_version is None:
-            raise TypeError(f"Cannot find plugin_metadata_version")
+            raise TypeError("Cannot find plugin_metadata_version")
         if outer_desc.plugin_metadata_version != 0:
             raise TypeError(f"Unsupported plugin metadata version {outer_desc.plugin_metadata_version}")
 

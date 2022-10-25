@@ -1,5 +1,6 @@
+# pylint:disable=unused-private-member
 import functools
-from typing import Optional, List, Type, Union, Tuple, Dict, TYPE_CHECKING
+from typing import Optional, Type, Union, Dict, TYPE_CHECKING
 import logging
 import os
 
@@ -56,7 +57,7 @@ class PluginManager:
 
             # load plugin descriptions
             dir_and_descs = load_plugin_descriptions_from_dir(search_dir)
-            for d, desc in dir_and_descs:
+            for _, desc in dir_and_descs:
                 if desc.shortname in self.loaded_plugins:
                     l.warning("Plugin shortname conflict: %s and %s have the same shortname %s.",
                               self.loaded_plugins[desc.shortname].plugin_file_path,
@@ -71,8 +72,8 @@ class PluginManager:
                 plugin_conf_key = f"plugin_{desc.name}_enabled"
 
                 # see if the plugin is enabled or not
-                if any((plugin in desc.name or plugin.lower() in desc.shortname.lower()) for plugin in enabled_plugins) \
-                        and not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False):
+                if (any((plugin in desc.name or plugin.lower() in desc.shortname.lower()) for plugin in enabled_plugins)
+                        and not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False)):
                     # see if we can't load this plugin because headless mode
                     if self.workspace is None and desc.require_workspace:
                         if desc.has_url_actions:
@@ -180,7 +181,8 @@ class PluginManager:
                                                             )
                                           )
 
-    def _register_configuration_entries(self, plugin_cls: Type[BasePlugin]) -> None:
+    @staticmethod
+    def _register_configuration_entries(plugin_cls: Type[BasePlugin]) -> None:
         new_entries_added = False
         for ent in plugin_cls.CONFIG_ENTRIES:
             if ent not in ENTRIES:
