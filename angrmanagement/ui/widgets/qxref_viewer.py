@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 from PySide6.QtCore import Qt, QAbstractTableModel
@@ -8,6 +8,9 @@ from angr.knowledge_plugins.xrefs.xref import XRef, XRefType
 
 
 from ...config import Conf
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class XRefMode:
@@ -256,7 +259,7 @@ class QXRefAddressModel(QXRefModel):
 class QXRefViewer(QTableView):
 
     def __init__(self, addr=None, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None,
-                 instance=None, disassembly_view=None, parent=None):
+                 instance: 'Instance'=None, xref_dialog=None, parent=None):
         super(QXRefViewer, self).__init__(parent)
 
         self.verticalHeader().setVisible(False)
@@ -268,7 +271,7 @@ class QXRefViewer(QTableView):
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._instance = instance
-        self._disassembly_view = disassembly_view
+        self._xref_dialog = xref_dialog
         self._addr = addr
 
         # Two modes
@@ -324,13 +327,13 @@ class QXRefViewer(QTableView):
 
     def _xrefs_from_control_flow_transitions(self):
 
-        if self._disassembly_view is not None:
-            cfg = self._disassembly_view.instance.cfg
+        if self._instance is not None:
+            cfg = self._instance.cfg
             node = cfg.get_any_node(self._dst_addr)
             if node is not None:
                 # its predecessors
                 predecessors = cfg.get_predecessors(node)
-                arch = self._disassembly_view.instance.project.arch
+                arch = self._instance.project.arch
                 for pred in predecessors:
                     if pred.instruction_addrs:
                         if arch.branch_delay_slot and len(pred.instruction_addrs) > 1:
@@ -349,9 +352,12 @@ class QXRefViewer(QTableView):
 
     def _on_item_doubleclicked(self, model_index):
         row = model_index.row()
-        if self._disassembly_view is not None:
-            item = self.items[row]
-            if isinstance(item, VariableAccess):
-                self.parent().jump_to(item.location.ins_addr)
-            elif isinstance(item, XRef):
-                self.parent().jump_to(item.ins_addr)
+        xref_dialog = self._xref_dialog
+        if xref_dialog is None:
+            return
+
+        item = self.items[row]
+        if isinstance(item, VariableAccess):
+            xref_dialog.jump_to(item.location.ins_addr)
+        elif isinstance(item, XRef):
+            xref_dialog.jump_to(item.ins_addr)

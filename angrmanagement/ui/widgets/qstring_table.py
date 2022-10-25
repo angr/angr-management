@@ -7,6 +7,7 @@ from angr.analyses.cfg.cfg_fast import MemoryData
 
 from ...utils import filter_string_for_display
 from ...config import Conf
+from ..dialogs.xref import XRefDialog
 
 
 class QStringModel(QAbstractTableModel):
@@ -146,9 +147,10 @@ class QStringModel(QAbstractTableModel):
 
 
 class QStringTable(QTableView):
-    def __init__(self, parent, selection_callback=None):
+    def __init__(self, instance, parent, selection_callback=None):
         super(QStringTable, self).__init__(parent)
 
+        self._instance = instance
         self._selected = selection_callback
         self._filter = None
 
@@ -216,7 +218,6 @@ class QStringTable(QTableView):
             self._proxy.setFilterWildcard(self._filter)
         self._proxy.setFilterKeyColumn(2)
 
-
     #
     # Public methods
     #
@@ -242,3 +243,23 @@ class QStringTable(QTableView):
 
         if self._selected is not None:
             self._selected(selected_item)
+
+    def keyPressEvent(self, event: 'PySide6.QtGui.QKeyEvent') -> None:
+
+        if event.key() == Qt.Key_X:
+            # xrefs
+            if self._model is None:
+                return
+
+            selected_rows = list(self.selectionModel().selectedRows())
+            if len(selected_rows) == 1:
+                model_index = self._proxy.mapToSource(selected_rows[0])
+                selected_index = model_index.row()
+                if 0 <= selected_index < len(self._model.values):
+                    selected_item: MemoryData = self._model.values[selected_index]
+                    dialog = XRefDialog(addr=selected_item.addr, dst_addr=selected_item.addr, xrefs_manager=self.xrefs,
+                                        instance=self._instance, parent=self)
+                    dialog.exec_()
+            return
+
+        return super().keyPressEvent(event)

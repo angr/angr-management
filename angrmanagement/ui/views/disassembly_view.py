@@ -24,7 +24,7 @@ from ..dialogs.rename import RenameDialog
 from ..dialogs.rename_label import RenameLabel
 from ..dialogs.set_comment import SetComment
 from ..dialogs.new_state import NewState
-from ..dialogs.xref import XRef
+from ..dialogs.xref import XRefDialog
 from ..dialogs.hook import HookDialog
 from ..dialogs.func_doc import FuncDocDialog
 from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
@@ -490,11 +490,11 @@ class DisassemblyView(SynchronizedView):
     def popup_xref_dialog(self, addr=None, variable=None, dst_addr=None, async_=True):
 
         if variable is not None:
-            dialog = XRef(addr=addr, variable_manager=self.variable_manager, variable=variable,
-                          instance=self.instance, parent=self)
+            dialog = XRefDialog(addr=addr, variable_manager=self.variable_manager, variable=variable,
+                                instance=self.instance, disassembly_view=self, parent=self)
         else:
-            dialog = XRef(addr=addr, xrefs_manager=self.instance.project.kb.xrefs, dst_addr=dst_addr,
-                          instance=self.instance, parent=self)
+            dialog = XRefDialog(addr=addr, xrefs_manager=self.instance.project.kb.xrefs, dst_addr=dst_addr,
+                                instance=self.instance, disassembly_view=self, parent=self)
         if async_:
             dialog.show()
         else:

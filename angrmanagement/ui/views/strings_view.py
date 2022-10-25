@@ -99,7 +99,7 @@ class StringsView(BaseView):
         function_layout.addWidget(self._filter_string, 10)
         function_layout.addWidget(self._regex_checkbox)
 
-        self._string_table = QStringTable(self, selection_callback=self._on_string_selected)
+        self._string_table = QStringTable(self.instance, self, selection_callback=self._on_string_selected)
 
         layout = QVBoxLayout()
         layout.addLayout(function_layout)
