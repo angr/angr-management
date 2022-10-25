@@ -1,0 +1,14 @@
+[meta]
+plugin_metadata_version = 0
+
+[plugin]
+name = "Trace Viewer"
+shortname = "trace_viewer"
+version = "0.0.0"
+description = ""
+long_description = ""
+platforms = ["windows", "linux", "macos"]
+min_angr_version = "9.0.0.0"
+author = "The angr team"
+entrypoints = ["trace_plugin.py"]
+has_url_actions = true

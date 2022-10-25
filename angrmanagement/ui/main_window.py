@@ -425,7 +425,7 @@ class MainWindow(QMainWindow):
                     event.ignore()
                     return
 
-        for plugin in list(self.workspace.plugins.active_plugins):
+        for plugin in list(self.workspace.plugins.active_plugins.values()):
             self.workspace.plugins.deactivate_plugin(plugin)
         event.accept()
 

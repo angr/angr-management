@@ -1,5 +1,6 @@
+# pylint:disable=unused-private-member
 import functools
-from typing import Optional, List, Type, Union, TYPE_CHECKING
+from typing import Optional, Type, Union, Dict, TYPE_CHECKING
 import logging
 import os
 
@@ -12,8 +13,9 @@ from ..daemon.url_handler import register_url_action, UrlActionBinaryAware
 from ..daemon.client import DaemonClient
 from ..ui.widgets.qblock import QBlock
 from ..config import Conf, save_config
-from . import load_plugins_from_dir
 from .base_plugin import BasePlugin
+from .plugin_description import PluginDescription
+from . import load_plugin_descriptions_from_dir, load_plugins_from_file
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
@@ -43,8 +45,8 @@ class PluginManager:
         self.workspace = workspace
         # should one or both of these be ObjectContainers? I think no since we should be synchronizing on models, not
         # views/controllers. not super clear... that's not a hard and fast rule
-        self.loaded_plugins = []  # type: List[Type[BasePlugin]]
-        self.active_plugins = []  # type: List[BasePlugin]
+        self.loaded_plugins: Dict[str,PluginDescription] = { }
+        self.active_plugins: Dict[str,BasePlugin] = { }
 
     def discover_and_initialize_plugins(self):
         os.environ['AM_BUILTIN_PLUGINS'] = os.path.dirname(__file__)
@@ -52,48 +54,65 @@ class PluginManager:
         for search_dir in Conf.plugin_search_path.split(':'):
             search_dir = os.path.expanduser(search_dir)
             search_dir = os.path.expandvars(search_dir)
-            for plugin_or_exception in load_plugins_from_dir(search_dir):
-                if isinstance(plugin_or_exception, Exception):
-                    l.warning("Exception occurred during plugin loading: %s", plugin_or_exception)
-                else:
-                    plugin_or_exception: Type[BasePlugin]
-                    plugin_conf_key = "plugin_%s_enabled" % plugin_or_exception.__name__
 
+            # load plugin descriptions
+            dir_and_descs = load_plugin_descriptions_from_dir(search_dir)
+            for _, desc in dir_and_descs:
+                if desc.shortname in self.loaded_plugins:
+                    l.warning("Plugin shortname conflict: %s and %s have the same shortname %s.",
+                              self.loaded_plugins[desc.shortname].plugin_file_path,
+                              desc.plugin_file_path,
+                              desc.shortname,
+                              )
+                    continue
+                self.loaded_plugins[desc.shortname] = desc
+
+            # activate all enabled plugins
+            for _, desc in self.loaded_plugins.items():
+                plugin_conf_key = f"plugin_{desc.name}_enabled"
+
+                # see if the plugin is enabled or not
+                if (any((plugin in desc.name or plugin.lower() in desc.shortname.lower()) for plugin in enabled_plugins)
+                        and not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False)):
                     # see if we can't load this plugin because headless mode
-                    if self.workspace is None and plugin_or_exception.REQUIRE_WORKSPACE:
-                        # still note that we can use the url handlers
-                        for action in plugin_or_exception.URL_ACTIONS:
-                            register_url_action(action, UrlActionBinaryAware)
-                    # see if the plugin is enabled or not
-                    elif any(plugin in repr(plugin_or_exception) for plugin in enabled_plugins) and \
-                            not (hasattr(Conf, plugin_conf_key) and getattr(Conf, plugin_conf_key) is False):
-                        self.activate_plugin(plugin_or_exception)
+                    if self.workspace is None and desc.require_workspace:
+                        if desc.has_url_actions:
+                            basedir = os.path.join(os.path.dirname(desc.plugin_file_path))
+                            for plugin_cls in load_plugins_from_file(os.path.join(basedir, desc.entrypoints[0])):
+                                if isinstance(plugin_cls, Exception):
+                                    l.warning("Exception occurred during plugin loading: %s", plugin_cls)
+                                else:
+                                    plugin_cls: Type[BasePlugin]
+                                    for action in plugin_cls.URL_ACTIONS:
+                                        register_url_action(action, UrlActionBinaryAware)
                     else:
-                        plugin_or_exception: Type[BasePlugin]
-                        if (plugin_or_exception.REQUIRE_WORKSPACE and self.workspace is not None) \
-                                or not plugin_or_exception.REQUIRE_WORKSPACE:
-                            self.load_plugin(plugin_or_exception)
-                            l.info("Blacklisted plugin %s", plugin_or_exception.get_display_name())
+                        self.activate_plugin_by_name(desc.shortname)
 
-    def load_plugin(self, plugin_cls: Type[BasePlugin]):
-        if plugin_cls in self.loaded_plugins:
-            return
+    def verify_plugin_class(self, plugin_cls: Type[BasePlugin]):
         if type(plugin_cls) is not type or not issubclass(plugin_cls, BasePlugin):
             raise TypeError("Cannot load a plugin which is not a BasePlugin subclass")
         if hasattr(plugin_cls, '_%s__i_hold_this_abstraction_token' % plugin_cls.__name__):
             raise TypeError("Cannot load an abstract plugin")
         if plugin_cls.REQUIRE_WORKSPACE and self.workspace is None:
             raise RuntimeError("Cannot load plugin %s in headless mode.")
-        self.loaded_plugins.append(plugin_cls)
 
-    def activate_plugin(self, plugin_cls: Type[BasePlugin]):
-        self.load_plugin(plugin_cls)  # just to be sure, also perform the sanity checks
+    def activate_plugin_by_name(self, shortname: str):
+        desc = self.loaded_plugins[shortname]
+        basedir = os.path.join(os.path.dirname(desc.plugin_file_path))
+        for plugin_cls in load_plugins_from_file(os.path.join(basedir, desc.entrypoints[0])):
+            if isinstance(plugin_cls, Exception):
+                l.warning("Exception occurred during plugin loading: %s", plugin_cls)
+            else:
+                self.activate_plugin(desc.shortname, plugin_cls)
+
+    def activate_plugin(self, shortname: str, plugin_cls: Type[BasePlugin]):
+        self.verify_plugin_class(plugin_cls)  # perform the sanity checks
         if self.get_plugin_instance(plugin_cls) is not None:
             return
 
         try:
             plugin = plugin_cls(self.workspace)
-            self.active_plugins.append(plugin)
+            self.active_plugins[shortname] = plugin
             plugin.__cached_status_bar_widgets = []
             plugin.__cached_toolbar_actions = []  # a hack, lol. really this could be a mapping on PluginManager but idc
             plugin.__cached_menu_actions = []  # as above
@@ -122,7 +141,7 @@ class PluginManager:
 
     def save_enabled_plugins_to_config(self):
         # pylint: disable=assigning-non-slot
-        Conf.enabled_plugins = ','.join(p.__class__.__name__ for p in self.active_plugins)
+        Conf.enabled_plugins = ','.join(self.active_plugins.keys())
         save_config()
 
     def _register_status_bar_widgets(self, plugin: BasePlugin) -> None:
@@ -162,7 +181,8 @@ class PluginManager:
                                                             )
                                           )
 
-    def _register_configuration_entries(self, plugin_cls: Type[BasePlugin]) -> None:
+    @staticmethod
+    def _register_configuration_entries(plugin_cls: Type[BasePlugin]) -> None:
         new_entries_added = False
         for ent in plugin_cls.CONFIG_ENTRIES:
             if ent not in ENTRIES:
@@ -174,29 +194,35 @@ class PluginManager:
             # reload configuration manager so that it's aware of newly added entries
             Conf.reinterpet()
 
-    def get_plugin_instance_by_name(self, plugin_cls_name: str) -> Optional[BasePlugin]:
+    def get_plugin_instance_by_name(self, shortname: str) -> Optional[BasePlugin]:
         instances = \
-            [plugin for plugin in self.active_plugins if plugin.__class__.__name__.split(".")[-1] == plugin_cls_name]
+            [plugin for key, plugin in self.active_plugins.items() if key == shortname]
         if not instances:
             return None
         if len(instances) > 1:
-            l.error("Somehow there is more than one instance of %s active?", plugin_cls_name)
+            l.error("Somehow there is more than one instance of %s active?", shortname)
         return instances[0]
 
     def get_plugin_instance(self, plugin_cls: Type[BasePlugin]) -> Optional[BasePlugin]:
-        instances = [plugin for plugin in self.active_plugins if type(plugin) is plugin_cls]
+        instances = [plugin for plugin in self.active_plugins.values() if type(plugin) is plugin_cls]
         if len(instances) == 0:
             return None
         if len(instances) > 1:
             l.error("Somehow there is more than one instance of %s active?", plugin_cls.get_display_name())
         return instances[0]
 
+    def deactivate_plugin_by_name(self, shortname: str):
+        for key, plugin in self.active_plugins.items():
+            if key == shortname:
+                self.deactivate_plugin(plugin)
+                break
+
     def deactivate_plugin(self, plugin: Union[BasePlugin, Type[BasePlugin]]):
         # this method should work on both instances and classes
         if type(plugin) is type:
             plugin = self.get_plugin_instance(plugin)
 
-        if plugin not in self.active_plugins:
+        if plugin not in self.active_plugins.values():
             return
 
         for widget in plugin.__cached_status_bar_widgets:
@@ -212,13 +238,17 @@ class PluginManager:
         except Exception: #pylint: disable=broad-except
             l.warning("Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(),
                       exc_info=True)
-        self.active_plugins.remove(plugin)
+
+        for key in list(self.active_plugins.keys()):
+            if self.active_plugins[key] is plugin:
+                del self.active_plugins[key]
 
     #
     # Dispatchers
     #
+
     def _dispatch(self, func, sensitive, *args):
-        for plugin in list(self.active_plugins):
+        for plugin in list(self.active_plugins.values()):
             custom = getattr(plugin, func.__name__)
             if custom.__func__ is not func:
                 try:
@@ -229,7 +259,7 @@ class PluginManager:
                     yield res
 
     def _dispatch_with_plugin(self, func, sensitive, *args):
-        for plugin in list(self.active_plugins):
+        for plugin_shortname, plugin in list(self.active_plugins.items()):
             custom = getattr(plugin, func.__name__)
             if custom.__func__ is not func:
                 try:
@@ -237,7 +267,7 @@ class PluginManager:
                 except Exception as e: #pylint: disable=broad-except
                     self._handle_error(plugin, func, sensitive, e)
                 else:
-                    yield plugin, res
+                    yield (plugin_shortname, plugin), res
 
     def _dispatch_single(self, plugin, func, sensitive, *args):
         custom = getattr(plugin, func.__name__)
@@ -325,7 +355,7 @@ class PluginManager:
             yield from res
 
     def get_func_column(self, idx):
-        for plugin in self.active_plugins:
+        for plugin in self.active_plugins.values():
             if idx >= len(plugin.FUNC_COLUMNS):
                 idx -= len(plugin.FUNC_COLUMNS)
             else:
@@ -333,10 +363,10 @@ class PluginManager:
         raise IndexError("Not enough columns")
 
     def count_func_columns(self):
-        return sum((len(plugin.FUNC_COLUMNS) for plugin in self.active_plugins))
+        return sum((len(plugin.FUNC_COLUMNS) for plugin in self.active_plugins.values()))
 
     def extract_func_column(self, func, idx):
-        for plugin in self.active_plugins:
+        for plugin in self.active_plugins.values():
             if idx >= len(plugin.FUNC_COLUMNS):
                 idx -= len(plugin.FUNC_COLUMNS)
             else:
@@ -443,18 +473,16 @@ class PluginManager:
 
     def angrdb_store_entries(self):
         entries = {}
-        for plugin, res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
+        for (shortname, plugin), res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
             for result in res:
                 if isinstance(result, tuple) and len(result) == 2:
                     key, value = result
-                    key = plugin.__class__.__name__.split(".")[-1] + "___" + key
+                    key = shortname + "___" + key
                     entries[key] = value
         return entries
 
     def angrdb_load_entries(self, entries):
-        plugin_name_to_plugin = {}
-        for plugin in list(self.active_plugins):
-            plugin_name_to_plugin[plugin.__class__.__name__.split(".")[-1]] = plugin
+        plugin_name_to_plugin = self.active_plugins
 
         for key, value in entries.items():
             if "___" not in key:
@@ -462,8 +490,8 @@ class PluginManager:
             splitted = key.split("___")
             if len(splitted) != 2:
                 continue
-            plugin_class_name, key = splitted
-            plugin = plugin_name_to_plugin.get(plugin_class_name, None)
+            plugin_shortname, key = splitted
+            plugin = plugin_name_to_plugin.get(plugin_shortname, None)
             if plugin is None:
                 continue
             # dispatch
@@ -475,5 +503,5 @@ class PluginManager:
                     self._handle_error(plugin, BasePlugin.angrdb_load_entry, False, ex)
 
     def optimization_passes(self):
-        for plugin in self.active_plugins:
+        for plugin in self.active_plugins.values():
             yield from plugin.OPTIMIZATION_PASSES

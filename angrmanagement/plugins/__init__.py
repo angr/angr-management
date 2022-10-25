@@ -8,11 +8,44 @@ loading out-of-tree files).
 import os
 import logging
 import importlib.util
+from typing import List, Tuple
+
+from .plugin_description import PluginDescription
 
 l = logging.getLogger(__name__)
 
+
+def load_plugin_descriptions_from_dir(path: str) -> List[Tuple[str,PluginDescription]]:
+    try:
+        dlist = os.listdir(path)
+    except OSError:
+        return [ ]
+
+    plugins = [ ]
+    for d in dlist:
+        descs = load_plugin_description(os.path.join(path, d))
+        for desc in descs:
+            plugins.append((d, desc))
+    return plugins
+
+
+def load_plugin_description(path: str) -> List[PluginDescription]:
+    try:
+        flist = os.listdir(path)
+    except OSError:
+        return []
+
+    if "plugin.toml" in flist:
+        fpath = os.path.join(path, "plugin.toml")
+        if os.path.isfile(fpath):
+            return PluginDescription.from_toml(fpath)
+    return []
+
+
 def load_default_plugins():
-    return load_plugins_from_dir(os.path.dirname(os.path.abspath(__file__)), exclude=('base_plugin.py', 'plugin_manager.py'))
+    return load_plugins_from_dir(os.path.dirname(os.path.abspath(__file__)),
+                                 exclude=('base_plugin.py', 'plugin_manager.py', 'plugin_description.py'))
+
 
 def load_plugins_from_dir(path, exclude=()):
     out = []
@@ -32,9 +65,11 @@ def load_plugins_from_dir(path, exclude=()):
 
     return out
 
+
 def load_plugins_from_package(path):
     # this logic is a little multiplexed in the next function but like... whatever
     return load_plugins_from_file(os.path.join(path, '__init__.py'))
+
 
 def load_plugins_from_file(path):
     basename = os.path.basename(path)
@@ -44,10 +79,18 @@ def load_plugins_from_file(path):
             l.error("file %s cannot be loaded - weird name", path)
             return []
     else:
-        modname = basename.split('.')[0]
-        if basename.count('.') != 1:
-            l.error("package %s cannot be loaded - weird name", path)
-            return []
+        if os.path.isfile(path):
+            modname = os.path.basename(os.path.dirname(path))
+            modname += "." + basename.split('.')[0]
+            if modname.count('.') != 1:
+                l.error("package %s cannot be loaded - weird name", path)
+                return []
+        else:
+            # directory
+            modname = basename.split('.')[0]
+            if basename.count('.') != 1:
+                l.error("package %s cannot be loaded - weird name", path)
+                return []
 
     # https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
     spec = importlib.util.spec_from_file_location("angrmanagement.plugins.%s" % modname, path)
@@ -62,8 +105,10 @@ def load_plugins_from_file(path):
 
     return load_plugins_from_module(mod)
 
+
 def load_plugins_from_module(module):
     return load_plugins_from_vars(vars(module))
+
 
 def load_plugins_from_vars(variables):
     out = []
@@ -71,6 +116,7 @@ def load_plugins_from_vars(variables):
         if type(cls) is type and issubclass(cls, BasePlugin) and not hasattr(cls, '_%s__i_hold_this_abstraction_token' % cls.__name__):
             out.append(cls)
     return out
+
 
 from .plugin_manager import PluginManager
 from .base_plugin import BasePlugin

@@ -1,11 +1,15 @@
 import logging
-from typing import Type, List
+from typing import List, TYPE_CHECKING
 
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
     QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
 from PySide6.QtCore import Qt
 
-from angrmanagement.plugins import load_plugins_from_file
+from angrmanagement.plugins import load_plugin_description
+
+if TYPE_CHECKING:
+    from angrmanagement.plugins import PluginManager, PluginDescription
+
 
 _l = logging.getLogger(__name__)
 
@@ -15,10 +19,10 @@ class QPluginListWidgetItem(QListWidgetItem):
     Plugin list item.
     """
 
-    def __init__(self, plugin_cls, **kwargs):
+    def __init__(self, plugin_desc, **kwargs):
         super().__init__(**kwargs)
-        self.plugin_class = plugin_cls  # type: Type[BasePlugin]
-        self.setText(plugin_cls.get_display_name())
+        self.plugin_desc: 'PluginDescription' = plugin_desc
+        self.setText(plugin_desc.name)
 
 
 # TODO: Add plugin settings, reloading, etc.
@@ -31,7 +35,7 @@ class LoadPlugins(QDialog):
     def __init__(self, plugin_mgr, parent=None):
         super().__init__(parent)
 
-        self._pm = plugin_mgr  # type: PluginManager
+        self._pm: 'PluginManager' = plugin_mgr
         self._installed_plugin_list = None  # type: QListWidget
 
         self.setWindowTitle('Installed Plugins')
@@ -64,9 +68,9 @@ class LoadPlugins(QDialog):
         self.main_layout.addWidget(frame)
 
     def _populate_installed_plugin_list(self):
-        for cls in self._pm.loaded_plugins:
-            plugin_item = QPluginListWidgetItem(plugin_cls=cls)
-            if self._pm.get_plugin_instance(cls) is not None:
+        for _, desc in self._pm.loaded_plugins.items():
+            plugin_item = QPluginListWidgetItem(plugin_desc=desc)
+            if self._pm.get_plugin_instance_by_name(desc.shortname) is not None:
                 plugin_item.setCheckState(Qt.Checked)
             else:
                 plugin_item.setCheckState(Qt.Unchecked)
@@ -95,32 +99,27 @@ class LoadPlugins(QDialog):
         for i in list_items:
             checked = i.checkState() == Qt.Checked
 
-            if checked and self._pm.get_plugin_instance(i.plugin_class) is None:
-                self._pm.activate_plugin(i.plugin_class)
-            elif not checked and self._pm.get_plugin_instance(i.plugin_class) is not None:
-                self._pm.deactivate_plugin(i.plugin_class)
+            if checked and self._pm.get_plugin_instance_by_name(i.plugin_desc.shortname) is None:
+                self._pm.activate_plugin_by_name(i.plugin_desc.shortname)
+            elif not checked and self._pm.get_plugin_instance_by_name(i.plugin_desc.shortname) is not None:
+                self._pm.deactivate_plugin_by_name(i.plugin_desc.shortname)
 
         self._pm.save_enabled_plugins_to_config()
         self.close()
 
     def _on_load_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open a plugin (select __init__.py for packages)", "", "Python files (*.py)")
+            self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)")
         if not file_path:
             return
-        plugins = load_plugins_from_file(file_path)
+        plugins = load_plugin_description(file_path)
 
         if not plugins:
-            QMessageBox.warning(self, "Error", "File contained no plugins")
-            return
-
-        errors = [x for x in plugins if isinstance(x, Exception)]
-        if errors:
-            QMessageBox.warning(self, "Error", "Loading errored with %s" % errors[0])
+            QMessageBox.warning(self, "Error", "File contained no plugin descriptions")
             return
 
         for plugin in plugins:
-            plugin_item = QPluginListWidgetItem(plugin_cls=plugin)
+            plugin_item = QPluginListWidgetItem(plugin_desc=plugin)
             plugin_item.setCheckState(Qt.Unchecked)
-            self._pm.load_plugin(plugin)
+            self._pm.loaded_plugins[plugin.shortname] = plugin
             self._installed_plugin_list.addItem(plugin_item)

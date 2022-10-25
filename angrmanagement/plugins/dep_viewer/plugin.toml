@@ -1,0 +1,13 @@
+[meta]
+plugin_metadata_version = 0
+
+[plugin]
+name = "Dependency Viewer"
+shortname = "dependency_viewer"
+version = "0.0.0"
+description = ""
+long_description = ""
+platforms = ["windows", "linux", "macos"]
+min_angr_version = "9.0.0.0"
+author = "The angr team"
+entrypoints = ["dep_plugin.py"]
