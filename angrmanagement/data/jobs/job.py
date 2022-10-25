@@ -1,24 +1,41 @@
+# pylint:disable=global-statement
 from typing import Optional
 import logging
 import time
 import datetime
 import ctypes
 
+from IPython.extensions.autoreload import ModuleReloader
+
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
 
-try:
-    from IPython.extensions.autoreload import ModuleReloader
-    m = ModuleReloader()
-    m.enabled = True
-    m.check_all = True
-    m.check()
-except ImportError:
-    m = None
+m = ...
+
 
 l = logging.getLogger(__name__)
 
+
+def _load_autoreload():
+    """
+    Load the autoreload extension module. Delay the import and initialization to reduce angr management's startup time.
+    """
+
+    global m
+    try:
+        m = ModuleReloader()
+        m.enabled = True
+        m.check_all = True
+        m.check()
+    except ImportError:
+        m = None
+
+
 class Job:
+    """
+    The base class of all Jobs in angr management.
+    """
+
     def __init__(self, name, on_finish=None, blocking=False):
         self.name = name
         self.progress_percentage = 0.
@@ -30,12 +47,15 @@ class Job:
         # callbacks
         self._on_finish = on_finish
 
-        if m is not None and GlobalInfo.autoreload:
-            prestate = dict(m.modules_mtimes)
-            m.check()
-            poststate = dict(m.modules_mtimes)
-            if prestate != poststate:
-                l.warning("Autoreload found changed modules")
+        if GlobalInfo.autoreload:
+            if m is ...:
+                _load_autoreload()
+            if m is not None:
+                prestate = dict(m.modules_mtimes)
+                m.check()
+                poststate = dict(m.modules_mtimes)
+                if prestate != poststate:
+                    l.warning("Autoreload found changed modules")
 
     @property
     def time_elapsed(self) -> str:
