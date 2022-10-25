@@ -1,0 +1,13 @@
+[meta]
+plugin_metadata_version = 0
+
+[plugin]
+name = "Coverage Viewer"
+shortname = "coverage_viewer"
+version = "0.0.0"
+description = ""
+long_description = ""
+platforms = ["windows", "linux", "macos"]
+min_angr_version = "9.0.0.0"
+author = "The angr team"
+entrypoints = ["coverage.py"]

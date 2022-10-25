@@ -1,0 +1,15 @@
+[meta]
+plugin_metadata_version = 0
+
+[plugin]
+name = "Components Viewer"
+shortname = "components"
+version = "0.0.0"
+description = ""
+long_description = ""
+platforms = ["windows", "linux", "macos"]
+min_angr_version = "9.0.0.0"
+author = "The angr team"
+entrypoints = ["components.py"]
+require_workspace = false
+has_url_actions = true
