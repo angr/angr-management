@@ -1,7 +1,11 @@
 #!/bin/bash -e
 
 python -m venv .venv
-source .venv/bin/activate || source .venv/Scripts/activate
+if [[ "$OSTYPE" == "win32" ]]; then
+    source .venv/Scripts/activate
+else
+    source .venv/bin/activate
+fi
 
 # Install dependencies
 
