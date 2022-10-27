@@ -97,7 +97,7 @@ def get_block_objects(disasm, nodes, func_addr):
 
     # initial label, if there is any
     # FIXME: all labels should be generated during CFG recovery, and this step should not be necessary.
-    if lst and not isinstance(lst[0], FunctionHeader):
+    if lst and not isinstance(lst[0], (FunctionHeader, Label)):
         # the first element should be a label
         lst.insert(0, Label(block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
 

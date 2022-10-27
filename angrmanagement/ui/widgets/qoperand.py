@@ -99,7 +99,7 @@ class QOperand(QCachedGraphicsItem):
 
     @property
     def operand_descriptor(self):
-        return OperandDescriptor(self.text, None,
+        return OperandDescriptor(self.text, self.constant_value,
                                  func_addr=self.func_addr,
                                  variable_ident=self.variable.ident if self.variable is not None else None)
 
@@ -141,7 +141,7 @@ class QOperand(QCachedGraphicsItem):
     #
 
     def refresh(self):
-        self._layout_items_and_update_size()
+        self._init_widgets()
         self.recalculate_size()
 
     def paint(self, painter, option, widget): #pylint: disable=unused-argument
@@ -323,24 +323,36 @@ class QOperand(QCachedGraphicsItem):
 
         # label
         # [rax]
+        if self._label_item is not None:
+            self.scene().removeItem(self._label_item)
+            self._label_item = None
         self._label_item = QGraphicsSimpleTextItem(self._label, self)
         self._label_item.setFont(self._config.disasm_font)
         self._label_item.setBrush(label_color)
 
         # variable
         # {s_10}
+        if self._variable_label_item is not None:
+            self.scene().removeItem(self._variable_label_item)
+            self._variable_label_item = None
         if self._variable_label:
             self._variable_label_item = QGraphicsSimpleTextItem(self._variable_label, self)
             self._variable_label_item.setFont(self._config.disasm_font)
             self._variable_label_item.setBrush(self._config.disasm_view_variable_label_color)
 
         # additional branch targets
+        if self._branch_targets_item is not None:
+            self.scene().removeItem(self._branch_targets_item)
+            self._branch_targets_item = None
         if self._branch_targets_text:
             self._branch_targets_item = QGraphicsSimpleTextItem(self._branch_targets_text, self)
             self._branch_targets_item.setFont(self._config.disasm_font)
             self._branch_targets_item.setBrush(Qt.darkYellow)  # TODO: Expose as a configuration entry in Config
 
         # variable identifier
+        if self._variable_ident_item is not None:
+            self.scene().removeItem(self._variable_ident_item)
+            self._variable_ident_item = None
         if self.variable is not None and self.disasm_view.show_variable_identifier:
             self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
             self._variable_ident_item.setFont(self._config.disasm_font)

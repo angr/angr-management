@@ -128,14 +128,14 @@ class InfoDock(QObject):
             self.selected_insns.clear()
             self.selected_insns.am_event()
 
-    def select_operand(self, ins_addr, operand_index, operand, unique=False):
+    def select_operand(self, ins_addr: int, operand_index: int, operand: OperandDescriptor, unique: bool=False):
         """
         Mark an operand as selected.
 
-        :param int ins_addr:                Address of the instruction.
-        :param int operand_index:           Index of the operand.
-        :param OperandDescriptor operand:   Data of the operand.
-        :param bool unique:                 If this is a unique selection or not.
+        :param ins_addr:                Address of the instruction.
+        :param operand_index:           Index of the operand.
+        :param operand:   Data of the operand.
+        :param unique:                 If this is a unique selection or not.
         :return:                            None
         """
 

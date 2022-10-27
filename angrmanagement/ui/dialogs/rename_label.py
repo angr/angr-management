@@ -14,7 +14,7 @@ class LabelNameBox(QLineEdit):
     @property
     def label(self):
         text = self.text()
-        if self._is_valid_label_name(text):
+        if not text or self._is_valid_label_name(text):
             return text.strip()
         return None
 
@@ -27,18 +27,20 @@ class RenameLabel(QDialog):
     Dialog to rename labels.
     """
 
-    def __init__(self, disasm_view, label_addr, parent=None):
+    def __init__(self, disasm_view, label_addr, full_refresh=False, parent=None):
         super().__init__(parent)
 
         # initialization
         self._disasm_view = disasm_view
         self._label_addr = label_addr
+        self._full_refresh = full_refresh
+        self._label_type: str = None
 
         self._name_box: LabelNameBox = None
         self._status_label = None
         self._ok_button: QPushButton = None
 
-        self.setWindowTitle('Rename Label')
+        self.setWindowTitle(f'Rename Label at {self._label_addr:#08x}')
 
         self.main_layout = QVBoxLayout()
 
@@ -58,8 +60,17 @@ class RenameLabel(QDialog):
         name_label.setText('New name')
 
         name_box = LabelNameBox(self._on_name_changed, self)
-        if self._label_addr in self._disasm_view.disasm.kb.labels:
-            name_box.setText(self._disasm_view.disasm.kb.labels[self._label_addr])
+        text = ""
+        if self._disasm_view.disasm.kb.functions.contains_addr(self._label_addr):
+            self._label_type = "function"
+            text = self._disasm_view.disasm.kb.functions.get_by_addr(self._label_addr).name
+        else:
+            self._label_type = "label"
+            if self._label_addr in self._disasm_view.disasm.kb.labels:
+                text = self._disasm_view.disasm.kb.labels[self._label_addr]
+
+        if text:
+            name_box.setText(text)
             name_box.selectAll()
         self._name_box = name_box
 
@@ -109,5 +120,6 @@ class RenameLabel(QDialog):
     def _on_ok_clicked(self):
         label = self._name_box.label
         if label is not None:
-            self._disasm_view.rename_label(self._label_addr, label)
+            self._disasm_view.rename_label(self._label_addr, label, is_func=self._label_type == "function",
+                                           full_refresh=self._full_refresh)
             self.close()
