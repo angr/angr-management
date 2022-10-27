@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash
+set -ex
 
 python -m venv .venv
 if [[ "$OSTYPE" == "win32" ]]; then
