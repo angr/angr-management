@@ -2,7 +2,7 @@
 set -ex
 
 python -m venv .venv
-if [[ "$OSTYPE" == "win32" ]]; then
+if [[ "$OSTYPE" == "msys" ]]; then
     source .venv/Scripts/activate
 else
     source .venv/bin/activate
