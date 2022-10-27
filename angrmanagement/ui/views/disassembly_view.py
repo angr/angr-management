@@ -1,7 +1,7 @@
 
 from collections import defaultdict
 import logging
-from typing import Union, Optional, TYPE_CHECKING
+from typing import Union, Optional, Tuple, TYPE_CHECKING
 
 import PySide6
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu
@@ -35,6 +35,7 @@ from ..widgets.qblock_code import QVariableObj
 from ...ui.widgets.qinst_annotation import QHookAnnotation, QBreakAnnotation
 
 if TYPE_CHECKING:
+    from angrmanagement.logic.disassembly.info_dock import OperandDescriptor
     from angr.knowledge_plugins import VariableManager
 
 
@@ -365,15 +366,16 @@ class DisassemblyView(SynchronizedView):
         JumpTo(self, parent=self).exec_()
 
     def popup_rename_label_dialog(self):
-        label_addr = self._address_in_selection()
-        if label_addr is None:
+        label_addr_tpl = self._address_in_selection()
+        if label_addr_tpl is None:
             return
 
-        dialog = RenameLabel(self, label_addr, parent=self)
+        type_, label_addr = label_addr_tpl
+        dialog = RenameLabel(self, label_addr, parent=self, full_refresh=type_ == "operand")
         dialog.exec_()
 
     def popup_comment_dialog(self):
-        comment_addr = self._address_in_selection()
+        comment_addr = self._instruction_address_in_selection()
         if comment_addr is None:
             return
 
@@ -381,7 +383,7 @@ class DisassemblyView(SynchronizedView):
         dialog.exec_()
 
     def popup_newstate_dialog(self, async_=True):
-        addr = self._address_in_selection()
+        addr = self._instruction_address_in_selection()
         if addr is None:
             return
 
@@ -392,7 +394,7 @@ class DisassemblyView(SynchronizedView):
             dialog.exec_()
 
     def popup_hook_dialog(self, async_=True, addr=None):
-        addr = addr or self._address_in_selection()
+        addr = addr or self._instruction_address_in_selection()
 
         if addr is None:
             return
@@ -668,26 +670,39 @@ class DisassemblyView(SynchronizedView):
     def select_label(self, label_addr):
         self.infodock.select_label(label_addr)
 
-    def rename_label(self, addr, new_name):
+    def rename_label(self, addr, new_name, is_func: bool=False, full_refresh: bool=False):
         if self._flow_graph.disasm is not None:
 
             is_renaming = False
 
             kb = self._flow_graph.disasm.kb
-            if new_name == '':
-                if addr in kb.labels:
-                    del kb.labels[addr]
+            if is_func:
+                func = kb.functions.get_by_addr(addr)
+                is_renaming = True
+                if new_name:
+                    func.name = new_name
+                else:
+                    # restore to the default name
+                    func.name = f"sub_{addr:x}"
             else:
-                if addr in kb.labels:
-                    is_renaming = True
-                kb.labels[addr] = new_name
+                if new_name == '':
+                    if addr in kb.labels:
+                        del kb.labels[addr]
+                else:
+                    if addr in kb.labels:
+                        is_renaming = True
+                    kb.labels[addr] = new_name
 
             # callback first
             if self.instance.label_rename_callback:
                 self.instance.label_rename_callback(addr=addr, new_name=new_name)
 
-            # redraw the current block
-            self._flow_graph.update_label(addr, is_renaming=is_renaming)
+            if full_refresh:
+                # redraw the entire graph. required if a data address is renamed.
+                self._flow_graph.refresh()
+            else:
+                # redraw the current block
+                self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
         self.instance.workspace._get_or_create_symexec_view().avoid_addr_in_exec(addr)
@@ -860,15 +875,27 @@ class DisassemblyView(SynchronizedView):
     # Utils
     #
 
-    def _address_in_selection(self):
+    def _address_in_selection(self) -> Optional[Tuple[str,int]]:
+        if self._insn_addr_on_context_menu is not None:
+            return "insn", self._insn_addr_on_context_menu
+        if len(self.infodock.selected_operands) == 1:
+            selected_operand: 'OperandDescriptor' = next(iter(self.infodock.selected_operands.values()))
+            if selected_operand.num_value is not None:
+                return "operand", selected_operand.num_value
+        if len(self.infodock.selected_insns) == 1:
+            return "insn", next(iter(self.infodock.selected_insns))
+        if len(self.infodock.selected_labels) == 1:
+            return "insn", next(iter(self.infodock.selected_labels))
+        return None
+
+    def _instruction_address_in_selection(self) -> Optional[int]:
         if self._insn_addr_on_context_menu is not None:
             return self._insn_addr_on_context_menu
-        elif len(self.infodock.selected_insns) == 1:
+        if len(self.infodock.selected_insns) == 1:
             return next(iter(self.infodock.selected_insns))
-        elif len(self.infodock.selected_labels) == 1:
+        if len(self.infodock.selected_labels) == 1:
             return next(iter(self.infodock.selected_labels))
-        else:
-            return None
+        return None
 
     def _get_instruction_size(self, addr: int) -> Optional[int]:
         kb = self.instance.project.kb
