@@ -43,6 +43,9 @@ class BaseView(QFrame):
     def function(self, v):
         raise NotImplementedError()
 
+    def is_shown(self):
+        return self.visibleRegion().isEmpty() is False
+
     def focus(self):
         self.instance.workspace.view_manager.raise_view(self)
 
@@ -60,12 +63,12 @@ class BaseView(QFrame):
         self.old_width = event.oldSize().width()
         self.old_height = event.oldSize().height()
 
-    def is_shown(self):
-        return self.visibleRegion().isEmpty() is False
-
     def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
         self.instance.workspace.view_manager.remove_view(self)
         event.accept()
+
+    def mainWindowInitializedEvent(self):
+        pass
 
     #
     # Properties

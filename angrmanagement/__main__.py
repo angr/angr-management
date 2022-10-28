@@ -69,13 +69,6 @@ def check_dependencies():
                          "    pip install pyxdg\n")
         missing_dep = True
 
-    try:
-        import requests
-    except ImportError:
-        sys.stderr.write("Cannot find the requests package. You may install it via pip:\n" +
-                         "    pip install requests\n")
-        missing_dep = True
-
     return not missing_dep
 
 
@@ -120,7 +113,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
-    from PySide6.QtWidgets import QApplication, QSplashScreen, QMessageBox
+    from PySide6.QtWidgets import QApplication, QSplashScreen
     from PySide6.QtGui import QFontDatabase, QPixmap, QIcon
     from PySide6.QtCore import Qt, QCoreApplication
 
@@ -160,7 +153,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     splash.setEnabled(False)
     splash.show()
     for _ in range(5):
-        time.sleep(0.01)
+        time.sleep(0.0001)
         app.processEvents()
 
     if not check_dependencies():
@@ -194,6 +187,8 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
 
     if file_to_open is not None:
         main_window.load_file(file_to_open)
+
+    main_window.workspace.view_manager.main_window_initialized()
 
     app.exec_()
 
