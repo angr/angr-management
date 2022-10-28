@@ -67,10 +67,10 @@ def make_common_options(for_chess=False):
         (os.path.join(am_repo_dir, "library_docs"), "library_docs"),
         (os.path.join(os.path.dirname(debugpy.__file__), "_vendored"), "debugpy/_vendored"),
     ]
-     if sys.platform != "win32":
--        included_data.append(
--            (os.path.join(os.path.dirname(PySide6.__file__), "Qt", "lib"), "PySide6/Qt/lib"),
--        )
+    if sys.platform != "win32":
+        included_data.append(
+            (os.path.join(os.path.dirname(PySide6.__file__), "Qt", "lib"), "PySide6/Qt/lib"),
+        )
 
     if sys.platform == "linux":
         included_data.append(
