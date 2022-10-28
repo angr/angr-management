@@ -9,7 +9,7 @@ import warnings
 import platform
 import signal
 
-def shut_up(*args, **kwargs):
+def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
     return
 warnings.simplefilter = shut_up
 
@@ -78,7 +78,7 @@ def set_app_user_model_id():
     if sys.platform == 'win32':
         winver = sys.getwindowsversion()
         if winver.major >= 5:
-            myappid = u'angr-management'
+            myappid = 'angr-management'
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
@@ -93,7 +93,7 @@ def macos_bigsur_wants_layer():
     v, _, _ = platform.mac_ver()
     vs = v.split(".")
     if len(vs) >= 2:
-        major, minor = list(map(int, vs[:2]))
+        major, minor = [int(x) for x in vs[:2]]
     else:
         return
     if major >= 11 or major == 10 and minor == 16:
@@ -165,7 +165,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
 
     import angr
 
-    angr.loggers.profiling_enabled = True if profiling else False
+    angr.loggers.profiling_enabled = bool(profiling)
 
     from .logic import GlobalInfo
     from .ui.main_window import MainWindow
@@ -237,7 +237,7 @@ def main():
         return
     if args.script:
         import runpy
-        script_globals = runpy.run_path(args.script)
+        script_globals = runpy.run_path(args.script)  # pylint:disable=unused-variable
     if args.interactive:
         if args.script:
             print("Your script's globals() dict is available in the `script_globals` variable.")
