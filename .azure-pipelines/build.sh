@@ -1,11 +1,20 @@
-#!/bin/bash -e
+#!/bin/bash
+set -ex
 
 python -m venv .venv
-source .venv/bin/activate
+if [[ "$OSTYPE" == "msys" ]]; then
+    source .venv/Scripts/activate
+else
+    source .venv/bin/activate
+fi
 
 # Install dependencies
 
-pip install -U pip wheel setuptools pyinstaller==5.5 unicorn==1.0.2rc4
+python -m pip install -U pip wheel setuptools pyinstaller==5.5 unicorn==1.0.2rc4
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    pip install pillow # icon conversion on macOS
+fi
+
 pip install git+https://github.com/eliben/pyelftools#egg=pyelftools
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
