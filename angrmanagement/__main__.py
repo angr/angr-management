@@ -153,7 +153,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     splash.setEnabled(False)
     splash.show()
     for _ in range(5):
-        time.sleep(0.0001)
+        time.sleep(0.01)
         app.processEvents()
 
     if not check_dependencies():
