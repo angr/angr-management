@@ -11,6 +11,10 @@ fi
 # Install dependencies
 
 python -m pip install -U pip wheel setuptools pyinstaller==5.5 unicorn==1.0.2rc4
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    pip install pillow # icon conversion on macOS
+fi
+
 pip install git+https://github.com/eliben/pyelftools#egg=pyelftools
 pip install git+https://github.com/angr/archinfo.git#egg=archinfo
 pip install git+https://github.com/angr/pyvex.git#egg=pyvex
