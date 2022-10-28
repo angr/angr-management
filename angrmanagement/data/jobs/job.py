@@ -5,8 +5,6 @@ import time
 import datetime
 import ctypes
 
-from IPython.extensions.autoreload import ModuleReloader
-
 from ...logic import GlobalInfo
 from ...logic.threads import gui_thread_schedule_async
 
@@ -23,6 +21,7 @@ def _load_autoreload():
 
     global m
     try:
+        from IPython.extensions.autoreload import ModuleReloader  # pylint:disable=import-outside-toplevel
         m = ModuleReloader()
         m.enabled = True
         m.check_all = True

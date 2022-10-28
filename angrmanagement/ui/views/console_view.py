@@ -20,12 +20,13 @@ class ConsoleView(BaseView):
         self.base_caption = 'Console'
         self._ipython_widget = None
 
-        self._init_widgets()
-        self.reload()
-
     @property
     def ipython_widget_available(self):
         return self._ipython_widget is not None
+
+    def mainWindowInitializedEvent(self):
+        self._init_widgets()
+        self.reload()
 
     def reload(self):
 

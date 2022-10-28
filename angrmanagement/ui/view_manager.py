@@ -28,7 +28,7 @@ class ViewManager:
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self.views = [ ]
+        self.views: List[BaseView] = [ ]
         self.docks = [ ]
         self.view_to_dock = { }
         self.dock_to_view = { }
@@ -37,6 +37,14 @@ class ViewManager:
     @property
     def main_window(self):
         return self.workspace._main_window
+
+    def main_window_initialized(self):
+        """
+        Invoked by the main window after it has finished initialization. Views can override
+        BaseView.mainWindowInitializedEvent() to support delayed initialization or loading.
+        """
+        for view in self.views:
+            view.mainWindowInitializedEvent()
 
     def _update_view_index_in_category(self, view: BaseView):
         """
