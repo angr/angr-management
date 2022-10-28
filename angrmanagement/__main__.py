@@ -31,7 +31,7 @@ def check_dependencies_qt():
     except ImportError:
         PySide6 = None
         sys.stderr.write("Cannot find the PySide6 package. You may install it via pip:\n" +
-                         "    pip install pyside2\n")
+                         "    pip install pyside6\n")
         missing_dep = True
 
     try:
