@@ -1,4 +1,4 @@
-# pylint:disable=missing-class-docstring
+# pylint:disable=missing-class-docstring,wrong-import-order
 import os
 import unittest
 from typing import TYPE_CHECKING
