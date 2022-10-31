@@ -62,7 +62,8 @@ ONEDIR_DIR=packaging/pyinstaller/onedir
 if [[ "$OSTYPE" == "darwin"* ]]; then
     hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder $ONEDIR_DIR
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    tar -C $ONEDIR_DIR -czf upload/angr-management-ubuntu.tar.gz angr-management
+    source /etc/os-release
+    tar -C $ONEDIR_DIR -czf upload/angr-management-ubuntu-$ID-$VERSION_ID.tar.gz angr-management
 else
     7z a upload/angr-management-win64.zip $ONEDIR_DIR/\*
 fi
