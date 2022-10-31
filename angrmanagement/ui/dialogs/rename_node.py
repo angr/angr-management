@@ -175,7 +175,7 @@ class RenameNode(QDialog):
                     self._node.unified_variable.renamed = True
 
                 # global variable
-                elif isinstance(self._node, CVariable) and self._node.variable.region == '':
+                elif isinstance(self._node, CVariable) and not self._node.variable.region:
                     workspace.plugins.handle_global_var_renamed(
                         self._node.variable.addr,
                         self._node.variable.name,
@@ -190,7 +190,7 @@ class RenameNode(QDialog):
                 elif isinstance(self._node, CVariable):
                     workspace.plugins.handle_func_arg_renamed(
                         code_kb.functions[self._node.codegen.cfunc.addr],
-                        self._node.offset,
+                        0,
                         self._node.variable.name,
                         node_name
                     )
