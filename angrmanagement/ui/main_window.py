@@ -405,7 +405,9 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
 
         # Ask if the user wants to save things
-        if self.workspace.main_instance is not None and not self.workspace.main_instance.project.am_none:
+        if self.workspace.main_instance is not None \
+                and not self.workspace.main_instance.project.am_none \
+                and self.shown_at_start:
             msgbox = QMessageBox()
             msgbox.setWindowTitle("Save database")
             msgbox.setText("angr management is about to exit. Do you want to save the database?")

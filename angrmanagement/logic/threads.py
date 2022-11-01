@@ -134,11 +134,15 @@ def gui_thread_schedule(callable, args=None, timeout=None):
             return callable(*args)
 
     event = ExecuteCodeEvent(callable, args)
-    try:
-        QCoreApplication.postEvent(GlobalInfo.main_window, event)
-    except RuntimeError:
-        # the application is exiting and the main window has been destroyed. just let it go
-        return None
+
+    if GlobalInfo.is_test:
+        GlobalInfo.add_event_during_test(event)
+    else:
+        try:
+            QCoreApplication.postEvent(GlobalInfo.main_window, event)
+        except RuntimeError:
+            # the application is exiting and the main window has been destroyed. just let it go
+            return None
 
     event.event.wait(timeout=timeout)  # TODO: unsafe. to be fixed later.
     if not event.event.is_set():
@@ -166,8 +170,12 @@ def gui_thread_schedule_async(callable, args=None, kwargs=None):
         return
 
     event = ExecuteCodeEvent(callable, args=args, kwargs=kwargs)
-    try:
-        QCoreApplication.postEvent(GlobalInfo.main_window, event)
-    except RuntimeError:
-        # the application is exiting and the main window has been destroyed. just let it go
-        pass
+
+    if GlobalInfo.is_test:
+        GlobalInfo.add_event_during_test(event)
+    else:
+        try:
+            QCoreApplication.postEvent(GlobalInfo.main_window, event)
+        except RuntimeError:
+            # the application is exiting and the main window has been destroyed. just let it go
+            pass
