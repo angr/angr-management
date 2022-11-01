@@ -1,3 +1,4 @@
+# pylint:disable=missing-class-docstring,wrong-import-order
 import os
 import sys
 import threading
@@ -7,7 +8,6 @@ from PySide6.QtTest import QTest
 from PySide6.QtCore import Qt
 
 import angr
-from angrmanagement.ui.main_window import MainWindow
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.logic.threads import gui_thread_schedule

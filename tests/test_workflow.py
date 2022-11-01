@@ -1,14 +1,13 @@
+# pylint:disable=missing-class-docstring,wrong-import-order,no-self-use
 import unittest
 import os
 import sys
 import threading
 
-from angrmanagement.ui.main_window import MainWindow
 import angr
 
 from common import test_location, start_main_window_and_event_loop
 
-# pylint: disable=no-self-use
 
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
