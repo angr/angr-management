@@ -71,7 +71,7 @@ class TestRenameFunctions(unittest.TestCase):
         # decompile the function
         disasm_view = main.workspace._get_or_create_disassembly_view()
         disasm_view._t_flow_graph_visible = True
-        disasm_view.display_function(func)
+        gui_thread_schedule(disasm_view.display_function, args=(func,))
         disasm_view.decompile_current_function()
         main.workspace.main_instance.join_all_jobs()
 
