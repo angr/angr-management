@@ -1,19 +1,26 @@
 import unittest
 import os
 import sys
+import threading
 
 from angrmanagement.ui.main_window import MainWindow
-from common import test_location, setUp
 import angr
+
+from common import test_location, start_main_window_and_event_loop
 
 # pylint: disable=no-self-use
 
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
-        setUp()
+        self.event = threading.Event()
+        _, self.main = start_main_window_and_event_loop(self.event)
+
+    def tearDown(self) -> None:
+        self.event.set()
+        del self.main
 
     def test_workflow(self):
-        main = MainWindow(show=False)
+        main = self.main
         proj = angr.Project(os.path.join(test_location, "x86_64", "true"), auto_load_libs=False)
         main.workspace.main_instance.project.am_obj = proj
         main.workspace.main_instance.project.am_event()

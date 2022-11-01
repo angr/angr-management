@@ -232,10 +232,19 @@ class Instance:
         if current_job:
             current_job.keyboard_interrupt()
 
-    def join_all_jobs(self):
-        # ...lol
-        while self.jobs:
-            time.sleep(0.05)
+    def join_all_jobs(self, wait_period=2.0):
+        """
+        Wait until self.jobs is empty for at least `wait_period` seconds.
+
+        This is because one job may add another job upon completion. We cannot simply wait until self.jobs becomes
+        empty.
+        """
+
+        last_has_job = time.time()
+        while time.time() - last_has_job <= wait_period:
+            while self.jobs:
+                last_has_job = time.time()
+                time.sleep(0.05)
 
     def append_code_to_console(self, hook_code_string):
         console = self.workspace._get_or_create_console_view()
@@ -351,7 +360,6 @@ class Instance:
         self.worker_thread = self._start_daemon_thread(self._worker, 'angr-management Worker Thread')
 
     def _worker(self):
-
         while True:
             if self._jobs_queue.empty():
                 gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())

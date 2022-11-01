@@ -1,6 +1,7 @@
 # pylint:disable=missing-class-docstring,wrong-import-order
 import os
 import unittest
+import threading
 from typing import TYPE_CHECKING
 
 from PySide6.QtTest import QTest
@@ -8,10 +9,10 @@ from PySide6.QtCore import Qt
 
 import angr
 from angr.analyses.decompiler.structured_codegen.c import CVariable
-from angrmanagement.ui.main_window import MainWindow
+from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 
-from common import setUp, test_location
+from common import start_main_window_and_event_loop, test_location
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views import CodeView
@@ -19,9 +20,9 @@ if TYPE_CHECKING:
 
 class TestRenameVariables(unittest.TestCase):
     def setUp(self) -> None:
-        setUp()
+        self.event = threading.Event()
+        _, self.main = start_main_window_and_event_loop(self.event)
 
-        self.main = MainWindow(show=False)
         binpath = os.path.join(test_location, "x86_64", "1after909")
         proj = angr.Project(binpath, auto_load_libs=False)
         self.main.workspace.main_instance.project.am_obj = proj
@@ -34,12 +35,17 @@ class TestRenameVariables(unittest.TestCase):
         # decompile the function
         disasm_view = self.main.workspace._get_or_create_disassembly_view()
         disasm_view._t_flow_graph_visible = True
-        disasm_view.display_function(func)
+        gui_thread_schedule(disasm_view.display_function, args=(func,))
         disasm_view.decompile_current_function()
         self.main.workspace.main_instance.join_all_jobs()
         self.code_view: 'CodeView' = self.main.workspace.view_manager.first_view_in_category("pseudocode")
 
-    def test_rename_a_local_variable_in_pseudocode_view(self):
+    def tearDown(self) -> None:
+        self.main = None
+        self.code_view = None
+        self.event.set()
+
+    def _test_rename_a_local_variable_in_pseudocode_view(self):
         # find a node for local variable
         local_var_node = None
         for _, item in self.code_view.codegen.map_pos_to_node.items():
@@ -57,7 +63,10 @@ class TestRenameVariables(unittest.TestCase):
 
         self.assertEqual(local_var_node.unified_variable.name, "var_abcd")
 
-    def test_rename_a_global_variable_in_pseudocode_view(self):
+    def test_rename_a_local_variable_in_pseudocode_view(self):
+        gui_thread_schedule(self._test_rename_a_local_variable_in_pseudocode_view)
+
+    def _test_rename_a_global_variable_in_pseudocode_view(self):
         # find a node for global variable
         global_var_node = None
         for _, item in self.code_view.codegen.map_pos_to_node.items():
@@ -74,6 +83,9 @@ class TestRenameVariables(unittest.TestCase):
         QTest.mouseClick(rename_node._ok_button, Qt.MouseButton.LeftButton)
 
         self.assertEqual(global_var_node.variable.name, "std_notout")
+
+    def test_rename_a_global_variable_in_pseudocode_view(self):
+        gui_thread_schedule(self._test_rename_a_global_variable_in_pseudocode_view)
 
 
 if __name__ == "__main__":
