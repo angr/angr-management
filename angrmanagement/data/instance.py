@@ -26,7 +26,6 @@ from ..logic.debugger.simgr import SimulationDebugger
 from ..data.trace import Trace
 from ..data.breakpoint import BreakpointManager, BreakpointType, Breakpoint
 from ..ui.dialogs import AnalysisOptionsDialog
-from ..ui.views import DisassemblyView
 
 if TYPE_CHECKING:
     from ..ui.workspace import Workspace
@@ -534,7 +533,6 @@ class Instance:
             # we don't have a current view or the current view does not have function-specific content. create a
             # disassembly view to display the selected function.
             disasm_view = self.workspace._get_or_create_disassembly_view()
-            #disasm_view = DisassemblyView(self, 'center')
             disasm_view.display_function(func)
             self.workspace.view_manager.raise_view(disasm_view)
         else:
