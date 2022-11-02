@@ -566,6 +566,10 @@ class QCCodeEdit(api.CodeEdit):
             self.action_neg,
         ]
 
+        self.call_actions = [
+            self.action_rename_node,
+        ]
+
         self.constant_actions += base_actions + expr_actions
         self.operator_actions += base_actions + expr_actions
         self.variable_actions += base_actions + expr_actions

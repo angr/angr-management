@@ -215,7 +215,7 @@ class RenameNode(QDialog):
                     if self._node.callee_func is not None:
                         workspace.plugins.handle_function_renamed(
                             code_kb.functions[self._node.codegen.cfunc.addr],
-                            self._node.name,
+                            self._node.callee_func.name,
                             node_name
                         )
 
