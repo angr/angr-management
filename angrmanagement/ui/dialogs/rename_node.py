@@ -8,6 +8,7 @@ from angr.sim_type import SimType, TypeRef, SimTypePointer, NamedTypeMixin
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
 if TYPE_CHECKING:
+    from angr.knowledge_plugins.functions import Function
     from angrmanagement.ui.views.code_view import CodeView
 
 
@@ -39,7 +40,8 @@ class RenameNode(QDialog):
     Dialog for renaming a node.
     """
 
-    def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, parent=None):
+    def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, parent=None,
+                 func: Optional['Function']=None):
         super().__init__(parent)
 
         # initialization
@@ -47,6 +49,7 @@ class RenameNode(QDialog):
 
         self._code_view = code_view
         self._node = node
+        self._func: Optional['Function'] = func
 
         self._name_box: NodeNameBox = None
         self._status_label = None
@@ -87,7 +90,7 @@ class RenameNode(QDialog):
             # parse node type, either a Function header or a Variable.
             if isinstance(self._node, CVariable) and self._node.unified_variable and self._node.unified_variable.name:
                 name_box.setText(self._node.unified_variable.name)
-            elif isinstance(self._node, CVariable) and self._node.variable.region == '':
+            elif isinstance(self._node, CVariable) and not self._node.variable.region:
                 name_box.setText(self._node.variable.name)
             elif isinstance(self._node, CFunction) and self._node.name:
                 name_box.setText(self._node.name)
@@ -165,7 +168,7 @@ class RenameNode(QDialog):
                     # sanity check that we are a stack var
                     if hasattr(self._node.variable, 'offset') and self._node.variable.offset is not None:
                         workspace.plugins.handle_stack_var_renamed(
-                            code_kb.functions[self._node.variable.region],
+                            self._func,
                             self._node.variable.offset,
                             self._node.variable.name,
                             node_name,
