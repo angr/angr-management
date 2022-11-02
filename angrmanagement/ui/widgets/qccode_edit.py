@@ -269,7 +269,7 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
             # unsupported right now..
             return
-        dialog = RenameNode(code_view=self._code_view, node=n)
+        dialog = RenameNode(code_view=self._code_view, node=n, func=self._code_view.function)
         dialog.exec_()
 
     def retype_node(self, *args, node=None, node_type=None):  # pylint: disable=unused-argument
@@ -517,7 +517,7 @@ class QCCodeEdit(api.CodeEdit):
             self.action_select_all,
         ]
 
-        self.action_rename_node = QAction('Rename variable', self)
+        self.action_rename_node = QAction('Rename...', self)
         self.action_rename_node.triggered.connect(self.rename_node)
         self.action_rename_node.setShortcut(QKeySequence('N'))
         self.action_retype_node = QAction("Retype variable", self)

@@ -29,13 +29,13 @@ class TestRenameVariables(unittest.TestCase):
         self.main.workspace.main_instance.project.am_event()
         self.main.workspace.main_instance.join_all_jobs()
 
-        func = proj.kb.functions["doit"]
-        self.assertIsNotNone(func)
+        self.func = proj.kb.functions["doit"]
+        self.assertIsNotNone(self.func)
 
         # decompile the function
         disasm_view = self.main.workspace._get_or_create_disassembly_view()
         disasm_view._t_flow_graph_visible = True
-        gui_thread_schedule(disasm_view.display_function, args=(func,))
+        gui_thread_schedule(disasm_view.display_function, args=(self.func,))
         disasm_view.decompile_current_function()
         self.main.workspace.main_instance.join_all_jobs()
         self.code_view: 'CodeView' = self.main.workspace.view_manager.first_view_in_category("pseudocode")
@@ -56,7 +56,7 @@ class TestRenameVariables(unittest.TestCase):
         self.assertIsNotNone(local_var_node)
 
         # rename it
-        rename_node = RenameNode(code_view=self.code_view, node=local_var_node)
+        rename_node = RenameNode(code_view=self.code_view, node=local_var_node, func=self.func)
         rename_node._name_box.setText("")
         QTest.keyClicks(rename_node._name_box, "var_abcd")
         QTest.mouseClick(rename_node._ok_button, Qt.MouseButton.LeftButton)
@@ -77,7 +77,7 @@ class TestRenameVariables(unittest.TestCase):
         self.assertIsNotNone(global_var_node)
 
         # rename it
-        rename_node = RenameNode(code_view=self.code_view, node=global_var_node)
+        rename_node = RenameNode(code_view=self.code_view, node=global_var_node, func=self.func)
         rename_node._name_box.setText("")
         QTest.keyClicks(rename_node._name_box, "std_notout")
         QTest.mouseClick(rename_node._ok_button, Qt.MouseButton.LeftButton)
