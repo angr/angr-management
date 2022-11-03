@@ -20,6 +20,9 @@ class ConsoleView(BaseView):
         self.base_caption = 'Console'
         self._ipython_widget = None
 
+        if self.instance.workspace.main_window.initialized:
+            self.mainWindowInitializedEvent()
+
     @property
     def ipython_widget_available(self):
         return self._ipython_widget is not None
