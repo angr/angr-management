@@ -91,6 +91,7 @@ class ConsoleView(BaseView):
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(ipython_widget)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)
 
