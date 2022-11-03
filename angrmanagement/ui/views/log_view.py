@@ -23,6 +23,10 @@ class LogView(BaseView):
         self._init_widgets()
         self.reload()
 
+    def closeEvent(self, event):
+        self._log_widget.close()
+        super().closeEvent(event)
+
     def reload(self):
         pass
 
