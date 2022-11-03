@@ -178,6 +178,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def _on_vertical_scroll_bar_triggered(self, action):
 
+        action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
+
         if action == QAbstractSlider.SliderSingleStepAdd:
             # scroll down by one line
             self.prepare_objects(self.offset, start_line=self._start_line_in_object + 1)
