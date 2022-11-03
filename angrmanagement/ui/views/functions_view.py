@@ -1,16 +1,19 @@
-from PySide6.QtWidgets import QVBoxLayout, QLabel
+from PySide6.QtWidgets import QVBoxLayout
 
 from .view import BaseView
 from ..widgets.qfunction_table import QFunctionTable
 
 
 class FunctionsView(BaseView):
+    """
+    View displaying functions in the project.
+    """
+
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super(FunctionsView, self).__init__('functions', instance, default_docking_position, *args, **kwargs)
+        super().__init__('functions', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Functions'
         self._function_table = None  # type: QFunctionTable
-        self._status_label = None
 
         self.instance.cfg.am_subscribe(self.reload)
 
@@ -34,11 +37,9 @@ class FunctionsView(BaseView):
 
     def set_function_count(self, count):
         self.function_count = count
-        self._refresh_status_label()
 
     def set_displayed_function_count(self, count):
         self._displayed_function_count = count
-        self._refresh_status_label()
 
     def reload(self):
         if not self.instance.cfg.am_none:
@@ -58,11 +59,11 @@ class FunctionsView(BaseView):
 
     def _init_widgets(self):
         self._function_table = QFunctionTable(self, self.instance, selection_callback=self._on_function_selected)
-        self._status_label = QLabel()
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._function_table)
-        vlayout.addWidget(self._status_label)
+        vlayout.setSpacing(0)
+        vlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(vlayout)
 
@@ -74,11 +75,3 @@ class FunctionsView(BaseView):
         :return:
         """
         self.instance.on_function_selected(func=func)
-
-    def _refresh_status_label(self):
-        if self._status_label is not None:
-            function_count = 0 if self.function_count is None else self.function_count
-            if self._displayed_function_count is not None:
-                self._status_label.setText("%d/%d functions" % (self._displayed_function_count, function_count))
-            else:
-                self._status_label.setText("%d functions" % function_count)
