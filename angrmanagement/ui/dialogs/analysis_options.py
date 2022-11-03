@@ -130,7 +130,7 @@ class AnalysisOptionsDialog(QDialog):
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText('&Run Analysis')
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setIcon(QIcon(os.path.join(IMG_LOCATION, 'run-icon.png')))
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setIcon(QIcon(os.path.join(IMG_LOCATION, 'run-icon.svg')))
         buttons.accepted.connect(self._on_run_clicked)
         buttons.rejected.connect(self.reject)
         self.main_layout.addWidget(buttons)
