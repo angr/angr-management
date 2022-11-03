@@ -1153,6 +1153,7 @@ class HexGraphicsView(QAbstractScrollArea):
         if self._processing_scroll_event:
             return
         self._processing_scroll_event = True
+        action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
         if action == QAbstractSlider.SliderSingleStepAdd:
             self.set_display_offset(self.hex.display_offset_addr + 0x10)
         elif action == QAbstractSlider.SliderSingleStepSub:
