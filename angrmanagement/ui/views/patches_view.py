@@ -36,10 +36,13 @@ class PatchesView(BaseView):
         btn_apply_patches.clicked.connect(self._on_apply_patches_clicked)
         control_layout.addStretch(0)
         control_layout.addWidget(btn_apply_patches)
+        control_layout.setContentsMargins(3, 3, 3, 3)
 
         layout = QVBoxLayout()
-        layout.addWidget(self._patch_table)
         layout.addLayout(control_layout)
+        layout.addWidget(self._patch_table)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
     #
