@@ -2,6 +2,7 @@ from typing import Optional, TYPE_CHECKING
 import logging
 
 from PySide6.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
+from PySide6.QtWidgets import QFrame
 
 from angr.analyses.decompiler.utils import to_ail_supergraph
 
@@ -68,6 +69,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setFrameStyle(QFrame.NoFrame)
 
         self._minimap = QMiniMapView(self, parent=self)
         self._minimap.setMaximumSize(200, 400)
