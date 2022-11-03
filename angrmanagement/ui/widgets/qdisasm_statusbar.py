@@ -87,7 +87,7 @@ class QDisasmStatusBar(QFrame):
         saveimage_btn.clicked.connect(self._on_saveimage_btn_clicked)
 
         layout = QHBoxLayout()
-        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setContentsMargins(3, 3, 3, 3)
 
         layout.addWidget(self._nav_toolbar.qtoolbar())
         layout.addWidget(self._function_label)
@@ -98,7 +98,6 @@ class QDisasmStatusBar(QFrame):
         layout.addWidget(self._view_combo)
         layout.addWidget(self._disasm_level_combo)
         layout.addWidget(option_btn)
-        layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
 
