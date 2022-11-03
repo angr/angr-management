@@ -243,19 +243,20 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
-
-        # sorting
-        # self.horizontalHeader().setSortIndicatorShown(True)
-
-        self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.verticalHeader().setDefaultSectionSize(24)
 
         self.show_alignment_functions = False
         self._functions = None
         self._model = QFunctionTableModel(self.instance, [])
 
         self.setModel(self._model)
+
+        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        self.horizontalHeader().setSortIndicatorShown(True)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+
+        self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.verticalHeader().setDefaultSectionSize(24)
 
         # slots
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
