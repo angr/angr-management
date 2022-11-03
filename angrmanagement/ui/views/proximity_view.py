@@ -139,6 +139,13 @@ class ProximityView(BaseView):
     def _register_events(self):
         self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
+    def _unregister_events(self):
+        self.instance.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
+
+    def closeEvent(self, event):
+        self._unregister_events()
+        super().closeEvent(event)
+
     def _convert_node(self, node: BaseProxiNode,
                       converted: Dict[BaseProxiNode, QProximityGraphBlock]) -> Optional[QProximityGraphBlock]:
         if node in converted:
