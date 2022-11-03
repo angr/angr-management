@@ -171,7 +171,7 @@ class QStringTable(QTableView):
 
         # let the last column (string) fill table width
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.horizontalHeader().setSectionResizeMode(2,QHeaderView.Stretch)
+        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
         self.doubleClicked.connect(self._on_string_selected)
 
