@@ -30,7 +30,7 @@ class TraceMapView(BaseView):
         """
         Initialize widgets for this view.
         """
-        self.inner_widget = QTraceMap(self.workspace, parent=self)
+        self.inner_widget = QTraceMap(self.instance, parent=self)
         lyt = QVBoxLayout()
         lyt.addWidget(self.inner_widget)
         self.setLayout(lyt)

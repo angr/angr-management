@@ -22,10 +22,9 @@ class TraceMapItem(QGraphicsItem):
     ZVALUE_ADDR = 2
     ZVALUE_HOVER = 3
 
-    def __init__(self, workspace, *args, **kwargs):
+    def __init__(self, instance, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.workspace = workspace
-        self.instance = self.workspace.instance
+        self.instance = instance
 
         self._width: int = 1
         self._height: int = 1
@@ -309,18 +308,17 @@ class QTraceMapView(QGraphicsView):
     """
     Graphics view for trace map scene. The scene will rotate based on dimensions of the viewport to support horizontal
     and vertical orientations.
-    TODO: decouple this from the workspace.instance (main_instance)
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, instance, parent=None):
         super().__init__(parent)
-        self.workspace = workspace
+        self.instance = instance
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setMouseTracking(True)
         self._scene = QGraphicsScene(parent=self)
         self.setScene(self._scene)
-        self.fm: TraceMapItem = TraceMapItem(self.workspace)
+        self.fm: TraceMapItem = TraceMapItem(self.instance)
         self._scale: float = 1.0
         self._scene.addItem(self.fm)
         self._orientation: str = 'horizontal'
@@ -443,9 +441,9 @@ class QTraceMap(QWidget):
     Map of the current trace, with debugger playback position and checkpoint indicators.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, instance, parent=None):
         super().__init__(parent)
-        self.workspace = workspace
+        self.instance = instance
         self.view: QTraceMapView = None
         self._init_widgets()
 
@@ -468,7 +466,7 @@ class QTraceMap(QWidget):
     #
 
     def _init_widgets(self):
-        self.view = QTraceMapView(self.workspace, self)
+        self.view = QTraceMapView(self.instance, self)
         layout = QHBoxLayout()
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
