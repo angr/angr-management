@@ -65,6 +65,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, app: Optional['QApplication'] = None, parent=None, show=True, use_daemon=False):
         super().__init__(parent)
+        self.initialized = False
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
