@@ -652,7 +652,7 @@ class HexGraphicsObject(QGraphicsObject):
             Qt.Key_End: 0,
         }
         if event.key() in movement_keys:
-            if int(QApplication.keyboardModifiers()) & Qt.ShiftModifier:
+            if QApplication.keyboardModifiers() & Qt.ShiftModifier:
                 if self.selection_start is None:
                     self.begin_selection()
             else:
@@ -677,7 +677,7 @@ class HexGraphicsObject(QGraphicsObject):
                 self.set_cursor(new_cursor, update_viewport=False)
             event.accept()
             return
-        elif int(QApplication.keyboardModifiers()) & Qt.ControlModifier:
+        elif QApplication.keyboardModifiers() & Qt.ControlModifier:
             if event.key() == Qt.Key_Space:
                 self.set_cursor(self.cursor, ascii_column=(not self.ascii_column_active))
                 event.accept()
