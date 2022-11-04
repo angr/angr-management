@@ -132,6 +132,7 @@ def refresh_theme():
     palette.setColor(QPalette.AlternateBase,   Conf.palette_alternatebase)
     palette.setColor(QPalette.ToolTipBase,     Conf.palette_tooltipbase)
     palette.setColor(QPalette.ToolTipText,     Conf.palette_tooltiptext)
+    palette.setColor(QPalette.PlaceholderText, Conf.palette_placeholdertext)
     palette.setColor(QPalette.Text,            Conf.palette_text)
     palette.setColor(QPalette.Button,          Conf.palette_button)
     palette.setColor(QPalette.ButtonText,      Conf.palette_buttontext)
