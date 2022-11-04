@@ -58,11 +58,11 @@ class Workspace:
         self.current_screen = ObjectContainer(None, name="current_screen")
 
         self.default_tabs = [
-            FunctionsView(self._main_instance, 'left'),
             DisassemblyView(self._main_instance, 'center'),
             HexView(self._main_instance, 'center'),
             ProximityView(self._main_instance, 'center'),
             CodeView(self._main_instance, 'center'),
+            FunctionsView(self._main_instance, 'left'),
         ]
         if Conf.has_operation_mango:
             self.default_tabs.append(
