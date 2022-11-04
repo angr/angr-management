@@ -253,6 +253,8 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
         self.horizontalHeader().setSortIndicatorShown(True)
         self.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        for i, w in enumerate([80, 80, 80, 50, 50]):
+            self.setColumnWidth(i + 1, w)
         self.verticalHeader().setDefaultSectionSize(24)
 
         # slots
