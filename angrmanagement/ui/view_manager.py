@@ -3,11 +3,9 @@ from typing import Dict, List, Optional, Sequence
 import logging
 import functools
 
-from PySide6.QtCore import Qt
+import PySide6QtAds as QtAds
 
-from angrmanagement.ui.views.view import BaseView
-
-from .widgets.qsmart_dockwidget import QSmartDockWidget
+from .views.view import BaseView
 
 
 _l = logging.getLogger(__name__)
@@ -19,11 +17,11 @@ class ViewManager:
     """
 
     DOCKING_POSITIONS = {
-        # 'center': None,
-        'left': Qt.LeftDockWidgetArea,
-        'right': Qt.RightDockWidgetArea,
-        'top': Qt.TopDockWidgetArea,
-        'bottom': Qt.BottomDockWidgetArea,
+        'center': QtAds.CenterDockWidgetArea,
+        'left': QtAds.LeftDockWidgetArea,
+        'right': QtAds.RightDockWidgetArea,
+        'top': QtAds.TopDockWidgetArea,
+        'bottom': QtAds.BottomDockWidgetArea,
     }
 
     def __init__(self, workspace):
@@ -68,61 +66,46 @@ class ViewManager:
         self._update_view_index_in_category(view)
         self.views_by_category[view.category].append(view)
 
-        dock = QSmartDockWidget(view.caption, parent=view,
-                                on_close=functools.partial(self.remove_view, view),
-                                on_raise=functools.partial(self._handle_raise_view, view))
-        dock_area = self.DOCKING_POSITIONS.get(view.default_docking_position, Qt.RightDockWidgetArea)
-        if view.default_docking_position == 'center':
-            self.main_window.central_widget.addDockWidget(dock_area, dock)
-            retab = True
-        else:
-            self.main_window.addDockWidget(dock_area, dock)
-            retab = False
-        dock.setWidget(view)
+        dw = QtAds.CDockWidget(view.caption)
+        dw.setFeature(QtAds.CDockWidget.DockWidgetDeleteOnClose, True)
+        dw.closed.connect(functools.partial(self._on_dock_widget_closed, dw))
+        dw.setWidget(view)
+
+        area = self.DOCKING_POSITIONS.get(view.default_docking_position, QtAds.RightDockWidgetArea)
+        self.main_window.central_widget.addDockWidgetTab(area, dw)
 
         self.views.append(view)
-        self.docks.append(dock)
-        self.view_to_dock[view] = dock
-        self.dock_to_view[dock] = view
+        self.docks.append(dw)
+        self.view_to_dock[view] = dw
+        self.dock_to_view[dw] = view
 
-        if retab:
-            self.tabify_center_views()
+    def _on_dock_widget_closed(self, dock):
+        """
+        Handle dock widget close event.
+        """
+        if dock not in self.docks:
+            return
+
+        self.docks.remove(dock)
+        view = self.dock_to_view.pop(dock, None)
+        if view:
+            view.close()
+            self.remove_view(view)
 
     def remove_view(self, view: BaseView):
         """
         Remove a view from this workspace
 
-        :param view:            The view to remove.
+        :param view: The view to remove.
         """
-
-        if view not in self.views_by_category[view.category]:
+        if view not in self.views:
             return
-        self.views_by_category[view.category].remove(view)
-
-        # find the correct dock
-        dock: Optional[QSmartDockWidget] = None
-        for d in self.docks:
-            if d.windowTitle() == view.caption:
-                dock = d
-
-        # sanity check on the dock
-        if dock is None:
-            _l.warning("Warning: removed view does not exist as a dock!")
-            return
-
-        if view.default_docking_position == 'center':
-            self.main_window.central_widget.removeDockWidget(dock)
-            retab = True
-        else:
-            self.main_window.removeDockWidget(dock)
-            retab = False
 
         self.views.remove(view)
-        self.docks.remove(dock)
-        self.view_to_dock.pop(view)
-
-        if retab:
-            self.tabify_center_views()
+        self.views_by_category[view.category].remove(view)
+        dock = self.view_to_dock.pop(view, None)
+        if dock:
+            dock.closeDockWidget()
 
     def raise_view(self, view: BaseView):
         """
@@ -141,7 +124,7 @@ class ViewManager:
         dock.raise_()
         view.focusWidget()
 
-    def get_center_views(self) -> Sequence[QSmartDockWidget]:
+    def get_center_views(self) -> Sequence[QtAds.CDockWidget]:
         """
         Get the right dockable views
 
@@ -183,16 +166,6 @@ class ViewManager:
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
         return None
-
-    def tabify_center_views(self):
-        """
-        Tabify all right-side dockable views.
-
-        :return:    None
-        """
-        center_dockable_views = self.get_center_views()
-        for d0, d1 in zip(center_dockable_views, center_dockable_views[1:]):
-            self.workspace._main_window.central_widget.tabifyDockWidget(d0, d1)
 
     def get_current_tab_id(self) -> Optional[int]:
         """
@@ -247,9 +220,3 @@ class ViewManager:
 
     def _handle_raise_view(self, view: BaseView):
         self.workspace.plugins.handle_raise_view(view)
-
-    def handle_center_tab_click(self, index: int):
-        center_docks = self.get_center_views()
-        dock = center_docks[index]
-        view = self.dock_to_view[dock]
-        self._handle_raise_view(view)

@@ -1,0 +1,5 @@
+close.svg, tab-menu.svg
+	copyright: 2022–present WorkOS
+	license: MIT
+	source: https://icons.radix-ui.com/
+	acquired-on: 11/1/2022

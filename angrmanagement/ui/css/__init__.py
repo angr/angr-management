@@ -37,15 +37,19 @@ class CSS:
             css = ''
 
         theme_path = os.path.join(THEME_LOCATION, Conf.theme_name)
-        if os.path.exists(theme_path):
+        css_path = os.path.join(theme_path, 'theme.css')
+        if os.path.exists(css_path):
             try:
-                css_path = os.path.join(theme_path, 'theme.css')
                 with open(css_path, encoding='utf-8') as f:
                     css += '\n' + f.read()
             except:  # pylint: disable=bare-except
                 l.warning('Failed to load theme CSS at %s', css_path)
 
-        CSS.global_css.am_obj = Template(css).safe_substitute(resources=RES_LOCATION, theme=theme_path)
+        theme_resources_path = RES_LOCATION
+        if sys.platform == "win32":
+            theme_resources_path = theme_resources_path.replace('\\', '/')
+            theme_path = theme_path.replace('\\', '/')
+        CSS.global_css.am_obj = Template(css).safe_substitute(resources=theme_resources_path, theme=theme_path)
         CSS.global_css.am_event()
 
 

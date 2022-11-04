@@ -73,3 +73,125 @@ QDockWidget::title {
     padding: 0px 0px 0px 5px;
     margin: 0px 0px 2px 0px;
 }
+
+QMainWindow QProgressBar {
+    max-height: 8px;
+    color: transparent;
+}
+
+QToolBar {
+    margin: 0;
+}
+
+QSplitter[orientation="1"] {
+    min-width: 3px;
+    max-width: 3px;
+}
+
+QSplitter[orientation="2"] {
+    min-height: 3px;
+    max-height: 3px;
+}
+
+ads--CDockContainerWidget, ads--CDockSplitter::handle {
+    background: palette(shadow);
+}
+
+ads--CDockContainerWidget > QSplitter {
+    padding: 3px;
+}
+
+ads--CDockAreaTabBar {
+    background: transparent;
+}
+
+#tabsContainerWidget {
+    background: transparent;
+}
+
+ads--CDockAreaWidget {
+    background: palette(mid);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+ads--CDockWidgetTab {
+    background: palette(midlight);
+    border-style: solid;
+    border-width: 3px 0 0 0;
+    border-color: palette(light);
+    padding: 4px 5px;
+    margin-right: 1px;
+}
+
+ads--CDockWidgetTab[activeTab="true"] {
+    border-color: palette(highlight);
+    background: palette(window);
+}
+
+ads--CDockWidgetTab QLabel {
+    color: palette(text);
+}
+
+ads--CDockWidgetTab[activeTab="true"] QLabel {
+    color: palette(text);
+}
+
+#tabCloseButton {
+    border: none;
+    padding: 0px -2px;
+    qproperty-icon: url("$theme/images/close.svg");
+    qproperty-iconSize: 15px;
+}
+
+#tabCloseButton:hover {
+    background: rgba(0, 0, 0, 24);
+}
+
+#tabCloseButton:pressed {
+    background: rgba(0, 0, 0, 48);
+}
+
+#tabsMenuButton {
+    qproperty-icon: url("$theme/images/tab-menu.svg");
+    qproperty-iconSize: 15px;
+}
+
+#tabsMenuButton::menu-indicator {
+    image: none;
+}
+
+ads--CDockAreaTitleBar {
+    background: transparent;
+    padding-bottom: 0px;
+}
+
+#dockAreaCloseButton {
+    qproperty-icon: url("$theme/images/close.svg");
+    qproperty-iconSize: 15px;
+}
+
+ads--CDockWidget {
+    background: palette(window);
+    border-color: palette(shadow);
+    border-style: solid;
+    border-width: 0px 0 0 0;
+    padding: 0px;
+}
+
+ads--CFloatingDockContainer {
+    border:  0;
+}
+
+ads--CTitleBarButton {
+    padding: 0px 0px;
+}
+
+QScrollArea#dockWidgetScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QTableView {
+    border: none;
+}
