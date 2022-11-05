@@ -4,7 +4,8 @@ from typing import List, Set, Tuple, Optional, TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
-from PySide6.QtWidgets import QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit
+from PySide6.QtWidgets import (QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit, QLabel,
+                               QHBoxLayout)
 from PySide6.QtGui import QBrush, QColor, QCursor
 from PySide6.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
 
@@ -242,19 +243,19 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
-
-        # sorting
-        # self.horizontalHeader().setSortIndicatorShown(True)
-
-        self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.verticalHeader().setDefaultSectionSize(24)
 
         self.show_alignment_functions = False
         self._functions = None
         self._model = QFunctionTableModel(self.instance, [])
 
         self.setModel(self._model)
+
+        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        self.horizontalHeader().setSortIndicatorShown(True)
+        self.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        for i, w in enumerate([80, 80, 80, 50, 50]):
+            self.setColumnWidth(i + 1, w)
+        self.verticalHeader().setDefaultSectionSize(24)
 
         # slots
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
@@ -361,6 +362,7 @@ class QFunctionTable(QWidget):
         self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
         self._toolbar = None  # type: FunctionTableToolbar
+        self._status_label = None # type: QLabel
 
         self._last_known_func_addrs: Set[int] = set()
 
@@ -429,11 +431,14 @@ class QFunctionTable(QWidget):
     def update_displayed_function_count(self):
         cnt = self._table_view.model().rowCount()
         if self.function_manager is None:
+            self._status_label.setText("")
             return
         if cnt == len(self.function_manager):
             self._view.set_displayed_function_count(None)  # no filtering
+            self._status_label.setText("%d functions" % cnt)
         else:
             self._view.set_displayed_function_count(cnt)
+            self._status_label.setText("%d/%d functions" % (cnt, len(self.function_manager)))
 
     def filter_functions(self, text):
         self._table_view.filter(text)
@@ -460,13 +465,21 @@ class QFunctionTable(QWidget):
         # toolbar
         self._toolbar = FunctionTableToolbar(self)
 
+        self._status_label = QLabel()
+
+        status_lyt = QHBoxLayout()
+        status_lyt.setContentsMargins(3, 3, 3, 3)
+        status_lyt.addWidget(self._toolbar.qtoolbar())
+        status_lyt.addStretch(0)
+        status_lyt.addWidget(self._status_label)
+
         # layout
         layout = QVBoxLayout()
-        layout.addWidget(self._toolbar.qtoolbar())
+        layout.addLayout(status_lyt)
         layout.addWidget(self._filter_box)
         layout.addWidget(self._table_view)
-
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.setLayout(layout)
 
