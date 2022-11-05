@@ -159,7 +159,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     if not check_dependencies():
         sys.exit(1)
 
-    from .ui.css import refresh_theme  # import .ui after shwing the splash screen since it's going to take time
+    from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
 
     refresh_theme()
 

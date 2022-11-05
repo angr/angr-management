@@ -26,7 +26,6 @@ class ProximityView(BaseView):
         super().__init__('proximity', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Proximity'
-        self.instance = instance
 
         self._function: Optional['Function'] = None
         self._expand_function_addrs: Set[int] = set()
