@@ -1521,7 +1521,7 @@ class HexView(SynchronizedView):
 
         status_bar = QFrame()
         status_lyt = QHBoxLayout()
-        status_lyt.setContentsMargins(0, 0, 0, 0)
+        status_lyt.setContentsMargins(3, 3, 3, 3)
 
         self._status_lbl = QLabel()
         self._status_lbl.setText('Address: ')
@@ -1550,8 +1550,10 @@ class HexView(SynchronizedView):
 
         self.inner_widget = HexGraphicsView(parent=self)
         lyt = QVBoxLayout()
-        lyt.addWidget(self.inner_widget)
         lyt.addWidget(status_bar)
+        lyt.addWidget(self.inner_widget)
+        lyt.setContentsMargins(0, 0, 0, 0)
+        lyt.setSpacing(1)
         self.setLayout(lyt)
         self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
         self.inner_widget.hex.viewport_changed.connect(self.on_cursor_changed)

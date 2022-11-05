@@ -442,24 +442,27 @@ class CodeView(BaseView):
             True,
             self)
         self._view_selector = QComboBox()
-        self._view_selector.addItems(["pseudocode"])
+        self._view_selector.addItems(["Pseudocode"])
         self._view_selector.activated.connect(self._on_view_selector_changed)
         status_layout = QHBoxLayout()
         status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
         status_layout.addWidget(self._view_selector)
-        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_layout.setContentsMargins(3, 3, 3, 3)
         status_bar.setLayout(status_layout)
 
         inner_layout = QHBoxLayout()
         inner_layout.addWidget(window)
         inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.setSpacing(0)
         inner_widget = QWidget()
         inner_widget.setLayout(inner_layout)
 
         outer_layout = QVBoxLayout()
-        outer_layout.addWidget(inner_widget)
         outer_layout.addWidget(status_bar)
+        outer_layout.addWidget(inner_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
 
         self.setLayout(outer_layout)
 

@@ -761,10 +761,11 @@ class DisassemblyView(SynchronizedView):
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
         vlayout = QVBoxLayout()
+        vlayout.addWidget(self._statusbar)
         vlayout.addWidget(self._feature_map)
         vlayout.addWidget(self._flow_graph)
         vlayout.addWidget(self._linear_viewer)
-        vlayout.addWidget(self._statusbar)
+        vlayout.setSpacing(0)
         vlayout.setContentsMargins(0, 0, 0, 0)
 
         self._feature_map.setMaximumHeight(25)
@@ -775,6 +776,8 @@ class DisassemblyView(SynchronizedView):
 
         hlayout = QHBoxLayout()
         hlayout.addLayout(vlayout)
+        hlayout.setSpacing(20)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)
 

@@ -35,5 +35,6 @@ class LogView(BaseView):
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._log_widget)
+        hlayout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(hlayout)

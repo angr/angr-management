@@ -1,7 +1,7 @@
 import binascii
 from typing import Set
 
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QMessageBox
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QMessageBox, QHeaderView
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QContextMenuEvent, QCursor, QAction
 
@@ -47,6 +47,7 @@ class QPatchTable(QTableWidget):
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.horizontalHeader().setSectionResizeMode(4,QHeaderView.Stretch)
         self.verticalHeader().setVisible(False)
 
         self.items = [ ]
