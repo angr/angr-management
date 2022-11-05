@@ -1,105 +1,51 @@
 import sys
+import os
+import logging
+from string import Template
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPalette
 
 from ..widgets.qccode_highlighter import reset_formats
 from ...data.object_container import ObjectContainer
-from ...config import Conf
+from ...config import Conf, THEME_LOCATION, RES_LOCATION
 from ...logic import GlobalInfo
 
 
-def repr_color(color):
-    r,g,b,a = color.getRgb()
-    return f'rgba({r},{g},{b},{a})'
+l = logging.getLogger(__name__)
+
 
 #
 # FIXME: Need to propagate CSS updates to more objects.
 #
 
 class CSS:
+    """
+    Main stylesheet re-load logic.
+    """
 
     global_css = ObjectContainer('', 'Global CSS')
 
     @staticmethod
     def rebuild():
-        CSS.global_css.am_obj = """
-QLabel[class=insn] {
-    font: 10pt courier new;
-    color: #000080;
-}
+        base_css_path = os.path.join(THEME_LOCATION, 'base.css')
+        try:
+            with open(base_css_path, encoding='utf-8') as f:
+                css = f.read()
+        except:  # pylint: disable=bare-except
+            l.warning('Failed to load base theme at %s', base_css_path)
+            css = ''
 
-QLabel[class=reg_viewer_label] {
-    font: 10pt courier new;
-    background-color: #ffffff;
-}
+        theme_path = os.path.join(THEME_LOCATION, Conf.theme_name)
+        if os.path.exists(theme_path):
+            try:
+                css_path = os.path.join(theme_path, 'theme.css')
+                with open(css_path, encoding='utf-8') as f:
+                    css += '\n' + f.read()
+            except:  # pylint: disable=bare-except
+                l.warning('Failed to load theme CSS at %s', css_path)
 
-QLabel[class=ast_viewer_size] {
-    font: 10pt courier new;
-}
-
-QLabel[class=ast_viewer_ast_concrete] {
-    font: 10pt courier new;
-    color: blue;
-}
-
-QLabel[class=ast_viewer_ast_symbolic] {
-    font: 10pt courier new;
-    color: green;
-}
-
-QLabel[class=memory_viewer_address] {
-    font: 10pt courier new;
-}
-
-QLabel[class=status_valid] {
-    color: green;
-}
-
-QLabel[class=status_invalid] {
-    color: red;
-}
-
-QFrame[class=insn_selected] {
-    font: 10pt courier new;
-    color: #000000;
-    background-color: #efbfba;
-}
-
-QBlock {
-    border: 1px solid black;
-}
-
-QBlockLabel {
-    color: #0000ff;
-}
-
-QLabel[class=insn_addr] {
-    font: 10pt courier new;
-    color: black;
-}
-
-QLabel[class=insn_string] {
-    font: 10pt courier new;
-    color: gray;
-    font-weight: bold;
-}
-
-QDockWidget::title {
-    """ + f"background: {repr_color(Conf.palette_mid)};" + """
-    border: 1px solid gray;
-    padding: 0px 0px 0px 5px;
-    margin: 0px 0px 2px 0px;
-}
-
-QPlainTextEdit, QTextEdit {
-    """ + f"background-color: {repr_color(Conf.palette_base)};" + """
-}
-
-QTableView {
-    """ + f"background-color: {repr_color(Conf.palette_base)};" + """
-}
-"""
+        CSS.global_css.am_obj = Template(css).safe_substitute(resources=RES_LOCATION, theme=theme_path)
         CSS.global_css.am_event()
 
 
@@ -132,6 +78,7 @@ def refresh_theme():
     palette.setColor(QPalette.AlternateBase,   Conf.palette_alternatebase)
     palette.setColor(QPalette.ToolTipBase,     Conf.palette_tooltipbase)
     palette.setColor(QPalette.ToolTipText,     Conf.palette_tooltiptext)
+    palette.setColor(QPalette.PlaceholderText, Conf.palette_placeholdertext)
     palette.setColor(QPalette.Text,            Conf.palette_text)
     palette.setColor(QPalette.Button,          Conf.palette_button)
     palette.setColor(QPalette.ButtonText,      Conf.palette_buttontext)
