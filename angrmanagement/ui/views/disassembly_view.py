@@ -800,9 +800,32 @@ class DisassemblyView(SynchronizedView):
         self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
-        self._feature_map.addr.am_subscribe(lambda: self._jump_to(self._feature_map.addr.am_obj))
+        self._feature_map.addr.am_subscribe(self._on_feature_map_addr_changed)
         self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
-        self.instance.breakpoint_mgr.breakpoints.am_subscribe(lambda **kwargs: self.refresh())
+        self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
+
+    def _on_feature_map_addr_changed(self):
+        self._jump_to(self._feature_map.addr.am_obj)
+
+    def _on_breakpoints_updated(self, **kwargs):  # pylint:disable=unused-argument
+        self.refresh()
+
+    def _unregister_events(self):
+        self.infodock.selected_insns.am_unsubscribe(self.redraw_current_graph)
+        self.infodock.selected_insns.am_unsubscribe(self.update_highlight_regions_for_synchronized_views)
+        self.infodock.selected_operands.am_unsubscribe(self.redraw_current_graph)
+        self.infodock.selected_blocks.am_unsubscribe(self.redraw_current_graph)
+        self.infodock.hovered_block.am_unsubscribe(self.redraw_current_graph)
+        self.infodock.hovered_edge.am_unsubscribe(self.redraw_current_graph)
+        self.infodock.selected_labels.am_unsubscribe(self.redraw_current_graph)
+        self.infodock.qblock_code_obj_selection_changed.disconnect(self.redraw_current_graph)
+        self._feature_map.addr.am_unsubscribe(self._on_feature_map_addr_changed)
+        self.instance.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
+        self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
+
+    def closeEvent(self, event):
+        self._unregister_events()
+        super().closeEvent(event)
 
     #
     # Private methods
