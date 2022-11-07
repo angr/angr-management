@@ -730,7 +730,7 @@ class MainWindow(QMainWindow):
 
         # trigger callbacks
         self.workspace.reload()
-        self.workspace.on_cfg_generated()
+        self.workspace.main_instance.on_cfg_generated()
         self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
     def _save_database(self, file_path):
