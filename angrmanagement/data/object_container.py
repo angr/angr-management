@@ -76,24 +76,27 @@ class EventSentinel:
                 l.exception("Error raised from event of %s", self)
 
     @staticmethod
-    def _async_loop(self: weakref.ProxyType) -> None:
+    def _async_loop(weak_self: weakref.ProxyType) -> None:
         """
         Call am_event on every item put into the queue while self exists
-        :param self: A weak reference to the EventSentinel
+        :param weak_self: A weak reference to the EventSentinel
         :return: None
         """
-        if self.am_async is False:
+        if weak_self.am_async is False:
             raise RuntimeError("Must be called on an async EventSentinel")
         try:
             while True:
-                try:  # We loop with a timeout to recheck if self is still alive
-                    self._am_event(self._am_queue.get(block=True, timeout=.05))
+                try:  # We loop with a timeout to recheck if weak_self is still alive
+                    weak_self._am_event(weak_self._am_queue.get(block=True, timeout=.05))
                 except queue.Empty:
                     pass
         except ReferenceError:
             l.debug("Event loop for async EventSentinel died")
 
 class ObjectContainer(EventSentinel):
+    """
+    A EventSentinel wrapper for an object
+    """
     def __init__(self, obj, name=None, notes='', async_: bool = False):
         super().__init__(async_)
         self._am_obj = None
@@ -155,3 +158,4 @@ class ObjectContainer(EventSentinel):
 
     def __repr__(self):
         return '(container: %s)%s' % (self.am_name, repr(self._am_obj))
+
