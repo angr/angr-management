@@ -205,7 +205,7 @@ def main():
 
     prog: str = name.replace(" ", "-")
     parser = argparse.ArgumentParser(prog=prog, description=name)
-    parser.add_argument('--version', action='version', version=f"{prog} {__version__}")
+    parser.add_argument("-v", "--version", action="version", version=f"{prog} {__version__}")
     parser.add_argument("-s", "--script", type=str, help="run a python script in the (commandline) angr environment")
     parser.add_argument("-i", "--interactive", action='store_true', help="interactive (ipython) mode")
     parser.add_argument("-n", "--no-gui", action='store_true', help="run in headless mode")
