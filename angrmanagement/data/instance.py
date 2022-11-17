@@ -18,7 +18,7 @@ from .analysis_options import AnalysesConfiguration, CFGAnalysisConfiguration, F
 from .jobs import VariableRecoveryJob, PrototypeFindingJob, CodeTaggingJob, FlirtSignatureRecognitionJob, \
     CFGGenerationJob
 from .object_container import ObjectContainer
-from .log import LogRecord, LogDumpHandler
+from .log import LogRecord, initialize
 from ..logic import GlobalInfo
 from ..logic.threads import gui_thread_schedule_async, gui_thread_schedule
 from ..logic.debugger import DebuggerListManager, DebuggerManager
@@ -95,10 +95,8 @@ class Instance:
         self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
         self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
 
-        self._logging_handler = LogDumpHandler(self)
-
-        # Register a root logger
-        logging.root.handlers.insert(0, self._logging_handler)
+        # Setup logging
+        initialize(self)
 
         self.cfg_args = None
         self.variable_recovery_args = None

@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 
+from angr.utils.mp import Initializer
+
 logger = logging.getLogger(name=__name__)
 
 
@@ -95,7 +97,8 @@ class SingleInstance:
             sys.exit(-1)
 
 
-def f(name):
+def f(initializer: Initializer, name):
+    initializer.initialize()
     tmp = logger.level
     logger.setLevel(logging.CRITICAL)  # we do not want to see the warning
     try:
@@ -114,7 +117,7 @@ class testSingleton(unittest.TestCase):
         assert True
 
     def test_2(self):
-        p = Process(target=f, args=("test-2",))
+        p = Process(target=f, args=(Initializer.get(), "test-2",))
         p.start()
         p.join()
         # the called function should succeed
@@ -122,7 +125,7 @@ class testSingleton(unittest.TestCase):
 
     def test_3(self):
         me = SingleInstance(flavor_id="test-3")  # noqa -- me should still kept
-        p = Process(target=f, args=("test-3",))
+        p = Process(target=f, args=(Initializer.get(), "test-3",))
         p.start()
         p.join()
         # the called function should fail because we already have another
@@ -130,7 +133,7 @@ class testSingleton(unittest.TestCase):
         assert p.exitcode != 0, "%s != 0 (2nd execution)" % p.exitcode
         # note, we return -1 but this translates to 255 meanwhile we'll
         # consider that anything different from 0 is good
-        p = Process(target=f, args=("test-3",))
+        p = Process(target=f, args=(Initializer.get(), "test-3",))
         p.start()
         p.join()
         # the called function should fail because we already have another
