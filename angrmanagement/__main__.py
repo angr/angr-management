@@ -9,6 +9,8 @@ import warnings
 import platform
 import signal
 
+from . import __version__
+
 def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
     return
 warnings.simplefilter = shut_up
@@ -20,6 +22,9 @@ BUGGY_PYSIDE2_VERSIONS = [
                # https://code.qt.io/cgit/pyside/pyside-setup.git/commit/?h=5.14&id=52299827c64cccc1456f9050fdf3dd8596df3e6f
     "5.14.2.1",  # deadlocks sometimes, although better than 5.14.2
 ]
+
+
+name: str = "angr management"
 
 
 def check_dependencies_qt():
@@ -78,7 +83,7 @@ def set_app_user_model_id():
     if sys.platform == 'win32':
         winver = sys.getwindowsversion()
         if winver.major >= 5:
-            myappid = 'angr-management'
+            myappid = name.replace(" ", "-")
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
@@ -135,8 +140,8 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     app = QApplication(sys.argv)
-    app.setApplicationDisplayName("angr management")
-    app.setApplicationName("angr management")
+    app.setApplicationDisplayName(name)
+    app.setApplicationName(name)
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     QApplication.setWindowIcon(QIcon(icon_location))
 
@@ -198,7 +203,9 @@ def main():
     import argparse
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    parser = argparse.ArgumentParser(description="angr management")
+    prog: str = name.replace(" ", "-")
+    parser = argparse.ArgumentParser(prog=prog, description=name)
+    parser.add_argument("-v", "--version", action="version", version=f"{prog} {__version__}")
     parser.add_argument("-s", "--script", type=str, help="run a python script in the (commandline) angr environment")
     parser.add_argument("-i", "--interactive", action='store_true', help="interactive (ipython) mode")
     parser.add_argument("-n", "--no-gui", action='store_true', help="run in headless mode")

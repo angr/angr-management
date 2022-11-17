@@ -29,6 +29,12 @@ class EventSentinel:
 
 
 class ObjectContainer(EventSentinel):
+    """
+    A proxy for a given object with EventSentinel functionality added on
+    Note: While interprocess event notifications are possible via the async_ flag,
+    the contents of the shared object are *not* synchronized between processes;
+    only the kwargs passed to the am_event of EventSentinel are synchronized
+    """
     def __init__(self, obj, name=None, notes=''):
         super().__init__()
         self._am_obj = None
