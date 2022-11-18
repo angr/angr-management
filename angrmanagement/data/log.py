@@ -58,7 +58,7 @@ def initialize(*args, **kwargs) -> None:
     queue = Queue()
     # Install queue handlers to the current process and all future subprocesses
     Initializer.get().register(install_queue_handler, queue)
-    # install_queue_handler(queue)
+    install_queue_handler(queue)
     # Install a listener which forwards log records to the LogDumpHandler
     primary = LogDumpHandler(*args, **kwargs)
     logging.handlers.QueueListener(queue, primary).start()
