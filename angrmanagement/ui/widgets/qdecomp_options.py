@@ -1,8 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton, QComboBox, \
-    QCheckBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton, QComboBox
 
 from angr.analyses.decompiler.decompilation_options import options as dec_options
 from angr.analyses.decompiler.optimization_passes import get_optimization_passes, get_default_optimization_passes
