@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, QEvent, QKeyCombination
 from PySide6.QtGui import QTextCharFormat, QKeySequence, QAction
 from PySide6.QtWidgets import QMenu, QInputDialog, QLineEdit, QApplication
 
@@ -31,6 +31,7 @@ class ColorSchemeIDA(api.ColorScheme):
     """
     An IDA-like color scheme.
     """
+
     def __init__(self):
         super().__init__('default')
 
@@ -45,6 +46,7 @@ class QCCodeEdit(api.CodeEdit):
     A subclass of pyqodeng's CodeEdit, specialized to handle the kinds of textual interaction expected of the pseudocode
     view. You will typically interact with this class as code_view.textedit.
     """
+
     def __init__(self, code_view):
         super().__init__(create_default_actions=True)
 
@@ -58,12 +60,12 @@ class QCCodeEdit(api.CodeEdit):
         self.setTabChangesFocus(False)
         self.setReadOnly(True)
 
-        self.constant_actions = [ ]
-        self.operator_actions = [ ]
-        self.variable_actions = [ ]
-        self.selected_actions = [ ]
-        self.call_actions = [ ]
-        self.default_actions = [ ]
+        self.constant_actions = []
+        self.operator_actions = []
+        self.variable_actions = []
+        self.selected_actions = []
+        self.call_actions = []
+        self.default_actions = []
         self.function_name_actions = []
         self.action_rename_node = None
         self._selected_node = None
@@ -213,13 +215,13 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(xkey, int):
             xkey = Qt.Key(xkey)
         if modifiers & Qt.ShiftModifier:
-            xkey |= Qt.SHIFT
+            xkey |= Qt.Key.Key_Shift
         if modifiers & Qt.ControlModifier:
-            xkey |= Qt.CTRL
+            xkey |= Qt.Key.Key_Control
         if modifiers & Qt.AltModifier:
-            xkey |= Qt.ALT
+            xkey |= Qt.Key.Key_Alt
         if modifiers & Qt.MetaModifier:
-            xkey |= Qt.META
+            xkey |= Qt.Key.Key_Meta
         sequence = QKeySequence(xkey)
         mnu = self.get_context_menu()
         for item in mnu.actions():
@@ -228,11 +230,12 @@ class QCCodeEdit(api.CodeEdit):
                 return True
 
         if key in (Qt.Key_Slash, Qt.Key_Question):
-            self.comment(expr=event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier)
+            self.comment(expr=event.modifiers() & Qt.KeyboardModifier.ShiftModifier
+                              == Qt.KeyboardModifier.ShiftModifier)
             return True
-        if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.CTRL != 0:
+        if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.KeyboardModifier.ControlModifier != 0:
             self.zoomOut()
-        if key == Qt.Key_Equal and QApplication.keyboardModifiers() & Qt.CTRL != 0:
+        if key == Qt.Key_Equal and QApplication.keyboardModifiers() & Qt.KeyboardModifier.ControlModifier != 0:
             self.zoomIn()
 
         if self._code_view.keyPressEvent(event):
@@ -409,7 +412,7 @@ class QCCodeEdit(api.CodeEdit):
 
         cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
         if cache.binop_operators is None:
-            cache.binop_operators = { }
+            cache.binop_operators = {}
         op_desc = OpDescriptor(ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
                                ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
                                addr,
@@ -477,7 +480,7 @@ class QCCodeEdit(api.CodeEdit):
 
         converter = self.workspace.plugins.get_plugin_instance_by_name("AIL2ARM32")
 
-        lst = [ ]
+        lst = []
         for stmt in the_node.statements:
             if isinstance(stmt, Assignment):
                 loads = _find_loads(stmt.src)
