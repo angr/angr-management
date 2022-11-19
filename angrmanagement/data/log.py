@@ -38,7 +38,6 @@ class _QueueHandler(logging.handlers.QueueHandler):
     A logging QueueHandler that is of a different type than the default QueueHandler
     This allows checking isinstance to ensure the handler is what we desired
     """
-    pass
 
 
 def install_queue_handler(queue: Queue):
