@@ -14,6 +14,7 @@ import signal
 if sys.platform.startswith("darwin"):
     from Foundation import NSBundle  # pylint: disable=import-error
 
+
 def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
     return
 warnings.simplefilter = shut_up
