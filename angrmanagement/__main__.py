@@ -8,7 +8,6 @@ import time
 import warnings
 import platform
 import signal
-import pathlib
 
 if sys.platform.startswith("darwin"):
     from Foundation import NSBundle
@@ -149,7 +148,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         if bundle:
             app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
             if app_info:
-                app_info['CFBundleName'] = pathlib.Path(name).stem
+                app_info['CFBundleName'] = name
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
