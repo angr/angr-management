@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QEvent, QKeyCombination
+from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QTextCharFormat, QKeySequence, QAction
 from PySide6.QtWidgets import QMenu, QInputDialog, QLineEdit, QApplication
 
