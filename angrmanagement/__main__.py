@@ -1,6 +1,4 @@
 # pylint:disable=import-outside-toplevel,unused-import,no-member
-from . import __version__
-
 import asyncio
 import sys
 import os
@@ -13,6 +11,8 @@ import signal
 
 if sys.platform.startswith("darwin"):
     from Foundation import NSBundle  # pylint: disable=import-error
+
+from . import __version__  # pylint: disable=wrong-import-position
 
 
 def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
