@@ -1,7 +1,8 @@
 from typing import Optional, TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton, QComboBox, \
+    QCheckBox
 
 from angr.analyses.decompiler.decompilation_options import options as dec_options
 from angr.analyses.decompiler.optimization_passes import get_optimization_passes, get_default_optimization_passes
@@ -29,6 +30,10 @@ class QDecompilationOption(QTreeWidgetItem):
         self.option = option
         self.type = type_
 
+        # optional and may not exist
+        self._combo_box = None
+        self._option_text_item = None
+
         if self.type == OptionType.OPTIMIZATION_PASS:
             self.setText(0, option.NAME)
             self.setToolTip(0, option.DESCRIPTION)
@@ -41,11 +46,29 @@ class QDecompilationOption(QTreeWidgetItem):
         else:
             raise NotImplementedError("Unsupported option type %s." % self.type_)
 
-        self.setFlags(self.flags() | Qt.ItemIsUserCheckable)
-        if enabled:
-            self.setCheckState(0, Qt.Checked)
+        # should make a dropdown option
+        if hasattr(self.option, "value_type") and self.option.value_type != bool and self.option.candidate_values:
+            self._combo_box = QComboBox()
+            self._combo_box.addItems(self.option.candidate_values)
+            self._combo_box.setToolTip("%s: %s" % (option.NAME, option.DESCRIPTION))
+            # XXX: causes an itemChanged event for the tree
+            self._combo_box.currentTextChanged.connect(lambda x: self.setText(0, self._combo_box.currentText()))
+            self.treeWidget().setItemWidget(self, 0, self._combo_box)
+
+        # should make a boolean click option
         else:
-            self.setCheckState(0, Qt.Unchecked)
+            self.setFlags(self.flags() | Qt.ItemIsUserCheckable)
+            if enabled:
+                self.setCheckState(0, Qt.Checked)
+            else:
+                self.setCheckState(0, Qt.Unchecked)
+
+    @property
+    def state(self):
+        if self._combo_box:
+            return self._combo_box.currentText()
+        else:
+            return bool(self.checkState(0))
 
 
 class QDecompilationOptions(QWidget):
@@ -114,7 +137,7 @@ class QDecompilationOptions(QWidget):
     def selected_passes(self):
         selected = [ ]
         for item in self._qoptipasses:
-            if item.checkState(0) == Qt.CheckState.Checked:
+            if item.state:
                 selected.append(item.option)
         return selected
 
@@ -122,13 +145,13 @@ class QDecompilationOptions(QWidget):
     def selected_peephole_opts(self):
         selected = []
         for item in self._qpeephole_opts:
-            if item.checkState(0) == Qt.CheckState.Checked:
+            if item.state:
                 selected.append(item.option)
         return selected
 
     @property
     def option_and_values(self):
-        return [(item.option, bool(item.checkState(0) == Qt.CheckState.Checked)) for item in self._qoptions]
+        return [(item.option, item.state) for item in self._qoptions]
 
     def get_default_options(self):  # pylint: disable=no-self-use
         return dec_options
