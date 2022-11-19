@@ -10,6 +10,9 @@ import platform
 import signal
 import pathlib
 
+if sys.platform.startswith("darwin"):
+    from Foundation import NSBundle
+
 from . import __version__
 
 def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
@@ -142,7 +145,6 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
 
     # Fix app title on macOS
     if sys.platform.startswith("darwin"):
-        from Foundation import NSBundle
         bundle = NSBundle.mainBundle()
         if bundle:
             app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
