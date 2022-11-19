@@ -149,7 +149,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         if bundle:
             app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
             if app_info:
-                app_info['CFBundleName'] = pathlib.Path(sys.argv[0]).stem
+                app_info['CFBundleName'] = pathlib.Path(name).stem
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
