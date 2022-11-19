@@ -32,7 +32,6 @@ class QDecompilationOption(QTreeWidgetItem):
 
         # optional and may not exist
         self._combo_box = None
-        self._option_text_item = None
 
         if self.type == OptionType.OPTIMIZATION_PASS:
             self.setText(0, option.NAME)
