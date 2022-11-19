@@ -8,6 +8,7 @@ import time
 import warnings
 import platform
 import signal
+import pathlib
 
 from . import __version__
 
@@ -138,6 +139,15 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     # Use highDPI pixmaps
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+    # Fix app title on macOS
+    if sys.platform.startswith("darwin"):
+        from Foundation import NSBundle
+        bundle = NSBundle.mainBundle()
+        if bundle:
+            app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+            if app_info:
+                app_info['CFBundleName'] = pathlib.Path(sys.argv[0]).stem
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
