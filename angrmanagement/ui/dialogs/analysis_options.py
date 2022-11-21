@@ -129,8 +129,9 @@ class AnalysisOptionsDialog(QDialog):
         #
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText('&Run Analysis')
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setIcon(QIcon(os.path.join(IMG_LOCATION, 'run-icon.svg')))
+        ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
+        ok_button.setText('&Run Analysis')
+        ok_button.setIcon(QIcon(os.path.join(IMG_LOCATION, 'run-icon.svg')))
         buttons.accepted.connect(self._on_run_clicked)
         buttons.rejected.connect(self.reject)
         self.main_layout.addWidget(buttons)
@@ -140,6 +141,8 @@ class AnalysisOptionsDialog(QDialog):
 
         if len(self._analyses) > 0:
             self._analysis_list.setCurrentRow(0)
+
+        ok_button.setFocus()
 
     def _update_item_details(self):
         while self._options_layout.count():
