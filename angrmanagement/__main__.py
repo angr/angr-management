@@ -151,6 +151,8 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
             if app_info:
                 app_info['CFBundleName'] = name
 
+    import IPython; IPython.embed()
+
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
     app.setApplicationName(name)
