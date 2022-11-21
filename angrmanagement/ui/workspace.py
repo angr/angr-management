@@ -234,9 +234,9 @@ class Workspace:
         if view is None or view.category != 'disassembly':
             view = self._get_or_create_disassembly_view()
 
-        view.jump_to(addr, use_animation=use_animation)
         self.raise_view(view)
         view.setFocus()
+        view.jump_to(addr, use_animation=use_animation)
 
     def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
         """
