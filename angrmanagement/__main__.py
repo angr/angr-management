@@ -145,11 +145,13 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
 
     # Fix app title on macOS
     if sys.platform.startswith("darwin"):
-        bundle = NSBundle.mainBundle()
-        if bundle:
-            app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
-            if app_info:
-                app_info['CFBundleName'] = name
+        try:
+            bundle = NSBundle.mainBundle()
+            info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+            info["CFBundleName"] = name
+        except Exception as e:
+            # This happens before logging is setup so use stderr
+            print(f"{type(e).__name__}: {e}", file=sys.stderr)
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
