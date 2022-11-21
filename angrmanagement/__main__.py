@@ -9,10 +9,10 @@ import warnings
 import platform
 import signal
 
+from . import __version__
+
 if sys.platform.startswith("darwin"):
     from Foundation import NSBundle  # pylint: disable=import-error
-
-from . import __version__  # pylint: disable=wrong-import-position
 
 
 def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
