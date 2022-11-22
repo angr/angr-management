@@ -11,6 +11,10 @@ import signal
 
 from . import __version__
 
+if sys.platform.startswith("darwin"):
+    from Foundation import NSBundle  # pylint: disable=import-error
+
+
 def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
     return
 warnings.simplefilter = shut_up
@@ -138,6 +142,16 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     # Use highDPI pixmaps
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+    # Fix app title on macOS
+    if sys.platform.startswith("darwin"):
+        try:
+            bundle = NSBundle.mainBundle()
+            info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+            info["CFBundleName"] = name
+        except Exception as e:  # pylint: disable=broad-except
+            # This happens before logging is setup so use stderr
+            print(f"{type(e).__name__}: {e}", file=sys.stderr)
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
