@@ -149,7 +149,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
             bundle = NSBundle.mainBundle()
             info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
             info["CFBundleName"] = name
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             # This happens before logging is setup so use stderr
             print(f"{type(e).__name__}: {e}", file=sys.stderr)
 
