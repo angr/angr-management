@@ -325,7 +325,7 @@ class NewState(QDialog):
             if not is_option(option):
                 return
 
-            checked = item.checkState(0)
+            checked = item.checkState(0) == Qt.CheckState.Checked
             if (option in self._options) == checked:
                 return
 
@@ -336,7 +336,7 @@ class NewState(QDialog):
 
             for child in children_items:
                 if child is not item and child.text(0) == option:
-                    child.setCheckState(0, checked)
+                    child.setCheckState(0, Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
 
         options_tree.itemChanged.connect(maintain_model)
 
