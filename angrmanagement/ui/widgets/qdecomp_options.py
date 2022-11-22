@@ -114,7 +114,7 @@ class QDecompilationOptions(QWidget):
     def selected_passes(self):
         selected = [ ]
         for item in self._qoptipasses:
-            if item.checkState(0):
+            if item.checkState(0) == Qt.CheckState.Checked:
                 selected.append(item.option)
         return selected
 
@@ -122,13 +122,13 @@ class QDecompilationOptions(QWidget):
     def selected_peephole_opts(self):
         selected = []
         for item in self._qpeephole_opts:
-            if item.checkState(0):
+            if item.checkState(0) == Qt.CheckState.Checked:
                 selected.append(item.option)
         return selected
 
     @property
     def option_and_values(self):
-        return [(item.option, bool(item.checkState(0))) for item in self._qoptions]
+        return [(item.option, bool(item.checkState(0) == Qt.CheckState.Checked)) for item in self._qoptions]
 
     def get_default_options(self):  # pylint: disable=no-self-use
         return dec_options
