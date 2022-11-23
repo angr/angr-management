@@ -22,7 +22,7 @@ class OptionType:
 
 class QDecompilationOption(QTreeWidgetItem):
     """
-    The UI entry for a single decompliation option. Get status with item.checkState(0).
+    The UI entry for a single decompliation option. Get status with item.state.
     """
     def __init__(self, parent, option, type_: int, enabled=True):
         super().__init__(parent)
@@ -66,7 +66,7 @@ class QDecompilationOption(QTreeWidgetItem):
         if self._combo_box:
             return self._combo_box.currentText()
         else:
-            return bool(self.checkState(0))
+            return bool(self.checkState(0) == Qt.CheckState.Checked)
 
 
 class QDecompilationOptions(QWidget):
