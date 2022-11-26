@@ -1,5 +1,7 @@
 from multiprocessing import Queue
+from logging.handlers import QueueListener, QueueHandler
 import logging
+import atexit
 
 from angr.utils.mp import Initializer
 
@@ -33,7 +35,7 @@ class LogDumpHandler(logging.Handler):
         self.instance.log.am_event(log_record=log_record)
 
 
-class _QueueHandler(logging.handlers.QueueHandler):
+class AMQueueHandler(QueueHandler):
     """
     A logging QueueHandler that is of a different type than the default QueueHandler
     This allows checking isinstance to ensure the handler is what we desired
@@ -46,8 +48,8 @@ def install_queue_handler(queue: Queue):
     This function should work for both fork and spawn modes of multiprocessing
     Fork modes may already have the parent logger installed, spawn may not
     """
-    if not any(isinstance(i, _QueueHandler) for i in logging.root.handlers):
-        logging.root.handlers.insert(0, _QueueHandler(queue))
+    if not any(isinstance(i, AMQueueHandler) for i in logging.root.handlers):
+        logging.root.handlers.insert(0, AMQueueHandler(queue))
 
 
 def initialize(*args, **kwargs) -> None:
@@ -59,5 +61,6 @@ def initialize(*args, **kwargs) -> None:
     Initializer.get().register(install_queue_handler, queue)
     install_queue_handler(queue)
     # Install a listener which forwards log records to the LogDumpHandler
-    primary = LogDumpHandler(*args, **kwargs)
-    logging.handlers.QueueListener(queue, primary).start()
+    listener = QueueListener(queue, LogDumpHandler(*args, **kwargs))
+    atexit.register(listener.stop)
+    listener.start()
