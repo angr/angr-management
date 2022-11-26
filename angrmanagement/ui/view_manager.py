@@ -120,7 +120,8 @@ class ViewManager:
         if dock is None:
             return
 
-        dock.show()
+        if not dock.isTabbed():
+            dock.show()
         dock.raise_()
         view.focusWidget()
 
