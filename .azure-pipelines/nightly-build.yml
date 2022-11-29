@@ -97,7 +97,7 @@ stages:
     - task: DownloadPipelineArtifact@2
       inputs:
         path: $(Build.SourcesDirectory)/dist/
-    - task: GitHubRelease@0
+    - task: GitHubRelease@1
       displayName: Create Github Release
       inputs:
         gitHubConnection: angr-management
@@ -121,7 +121,7 @@ stages:
       inputs:
         scriptPath: $(Build.SourcesDirectory)/.azure-pipelines/get_oldest_nightly.py
         arguments: $(Build.Repository.Name)
-    - task: GitHubRelease@0
+    - task: GitHubRelease@1
       displayName: Delete old nightlies
       condition: |
         and(
