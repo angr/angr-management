@@ -82,7 +82,7 @@ stages:
   jobs:
   - job: Release
     pool:
-      vmImage: ubuntu-18.04
+      vmImage: ubuntu-22.04
     variables:
     - name: old_release
       value: ''
@@ -90,7 +90,7 @@ stages:
     # Needed for the oldest_release script
     - task: UsePythonVersion@0
       inputs:
-        versionSpec: 3.6
+        versionSpec: 3.8
     - bash: pip install pygithub
 
     # Download artifacts and create release
@@ -103,7 +103,7 @@ stages:
         gitHubConnection: angr-management
         repositoryName: $(Build.Repository.Name)
         target: $(Build.SourceVersion)
-        tagSource: manual
+        tagSource: userSpecifiedTag
         tag: nightly-$(Build.BuildNumber)
         title: angr-management nightly preview $(Build.BuildNumber)
         releaseNotesSource: input
@@ -134,5 +134,5 @@ stages:
         action: delete
         repositoryName: $(Build.Repository.Name)
         target: $(Build.SourceVersion)
-        tagSource: manual
+        tagSource: userSpecifiedTag
         tag: $(old_release)
