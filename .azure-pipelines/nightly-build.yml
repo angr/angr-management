@@ -106,7 +106,7 @@ stages:
         tagSource: userSpecifiedTag
         tag: nightly-$(Build.BuildNumber)
         title: angr-management nightly preview $(Build.BuildNumber)
-        releaseNotesSource: input
+        releaseNotesSource: inline
         releaseNotes: >
           This release is an automatically generated pre-release. We do our best
           to make sure everything works, but please be advised that features may
