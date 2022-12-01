@@ -40,7 +40,7 @@ class FileMenu(Menu):
             MenuSeparator(),
             MenuEntry('Load a new &trace...', main_window.load_trace),
             MenuSeparator(),
-            MenuEntry('&Preferences...', main_window.preferences, shortcut=QKeySequence(Qt.CTRL | Qt.Key_P)),
+            MenuEntry('&Preferences...', main_window.preferences, shortcut=QKeySequence(Qt.CTRL | Qt.Key_Comma)),
             MenuSeparator(),
             MenuEntry('E&xit', main_window.quit),
         ])
