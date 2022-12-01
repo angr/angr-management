@@ -9,7 +9,6 @@ from angrmanagement.config.color_schemes import COLOR_SCHEMES
 from angrmanagement.config import Conf, save_config
 from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.ui.widgets.qcolor_option import QColorOption
-from angrmanagement.ui.css import refresh_theme
 from angrmanagement.utils.track_system_theme import TrackSystemTheme
 
 
@@ -19,6 +18,9 @@ class Page(QWidget):
     """
 
     def save_config(self):
+        raise NotImplementedError()
+
+    def revert_unsaved(self):
         raise NotImplementedError()
 
     NAME = NotImplemented
@@ -84,6 +86,9 @@ class Integration(Page):
             # the current OS is not supported
             pass
 
+    def revert_unsaved(self):
+        pass
+
 
 class ThemeAndColors(Page):
     """
@@ -97,6 +102,7 @@ class ThemeAndColors(Page):
 
         self._to_save = {}
         self._auto = TrackSystemTheme.get()
+        self._auto_original: bool = self._auto.enabled()
         self._schemes_combo: QComboBox = None
 
         self._init_widgets()
@@ -164,6 +170,9 @@ class ThemeAndColors(Page):
         self._load_color_scheme(self._schemes_combo.currentText())
         self.save_config()
 
+    def revert_unsaved(self):
+        self._auto.set_enabled(self._auto_original)
+
     def save_config(self):
         # pylint: disable=assigning-non-slot
         Conf.theme_name = self._schemes_combo.currentText()
@@ -230,6 +239,11 @@ class Preferences(QDialog):
         main_layout.addWidget(buttons)
 
         self.setLayout(main_layout)
+
+    def close(self, *args, **kwargs):
+        for page in self._pages:
+            page.revert_unsaved()
+        super().close(*args, **kwargs)
 
     def _on_ok_clicked(self):
         for page in self._pages:
