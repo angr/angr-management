@@ -52,6 +52,7 @@ from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import FileToolbar, DebugToolbar
 from .toolbar_manager import ToolbarManager
+from .theme import Theme
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
@@ -111,6 +112,7 @@ class MainWindow(QMainWindow):
 
         self._run_daemon(use_daemon=use_daemon)
 
+        self._theme = Theme.create(self)
         # I'm ready to show off!
         if show:
             self.showMaximized()
