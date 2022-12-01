@@ -80,7 +80,7 @@ class TrackSystemTheme:
         """
         This method is not public
         """
-        if _caller != self.create:
+        if _caller != self.create:  # pylint: disable=comparison-with-callable
             raise RuntimeError("Use .create(parent) or .get(); this is a singleton")
         # Init
         self._underlying: str = darkdetect.theme()
@@ -95,7 +95,7 @@ class TrackSystemTheme:
         new: str = darkdetect.theme()
         if force or new != self._underlying:
             self._underlying = new
-            _l.debug("Underling color theme set to: ", new)
+            _l.debug("Underling color theme set to: %s", new)
             Conf.theme_name = self._system if self._enabled else self._underlying
             for prop, value in COLOR_SCHEMES[new].items():
                 setattr(Conf, prop, value)
