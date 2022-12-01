@@ -196,6 +196,9 @@ ENTRIES = [
     CE('proximity_call_node_text_color_plt', QColor, QColor(0x8b, 0x00, 0x8b)),
     CE('proximity_call_node_text_color_simproc', QColor, QColor(0x8b, 0x00, 0x8b)),
 
+    # UI Style
+    CE('log_timestamp_format', str, "%H:%M:%S"),
+
     # FLIRT signatures
     CE('flirt_signatures_root', str, "./flirt_signatures/"),
 

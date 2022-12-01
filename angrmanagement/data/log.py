@@ -1,9 +1,35 @@
-from multiprocessing import Queue
 from logging.handlers import QueueListener, QueueHandler
+from multiprocessing import Queue
+from datetime import datetime
+from typing import Optional
 import logging
 import atexit
 
 from angr.utils.mp import Initializer
+
+from angrmanagement.config import Conf
+
+
+class LogTimeStamp:
+    """
+    A Log timestamp with formatting
+    """
+
+    def __init__(self, unix_timestamp: int):
+        """
+        :param unix_time: The unix time the timestamp represents
+        """
+        self._ts = datetime.fromtimestamp(unix_timestamp)
+        self._cache_key: Optional[str] = None
+        self._cache_str: Optional[str] = None
+
+    def __str__(self) -> str:
+        """
+        Return the timestamp as a formatted string
+        """
+        if Conf.log_timestamp_format != self._cache_key:
+            self._cache_str = self._ts.strftime(Conf.log_timestamp_format)
+        return self._cache_str
 
 
 class LogRecord:
@@ -13,9 +39,9 @@ class LogRecord:
 
     __slots__ = ('level', 'timestamp', 'source', 'content', )
 
-    def __init__(self, level, timestamp, source, content):
+    def __init__(self, level, unix_timestamp, source, content):
+        self.timestamp = LogTimeStamp(unix_timestamp)
         self.level = level
-        self.timestamp = timestamp
         self.source = source
         self.content = content
 
