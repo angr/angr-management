@@ -164,7 +164,7 @@ class Style(Page):
     Preference pane for UI style choices
     """
 
-    NAME = "Styles"
+    NAME = "Style"
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -184,7 +184,10 @@ class Style(Page):
         self.log_format_entry.setText(Conf.log_timestamp_format)
         log_format_layout.addWidget(self.log_format_entry)
 
+        # Page layout
         page_layout.addLayout(log_format_layout)
+        page_layout.addStretch()
+
         self.setLayout(page_layout)
 
     def save_config(self):
