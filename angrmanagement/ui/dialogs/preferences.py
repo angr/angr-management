@@ -1,8 +1,8 @@
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
+from PySide2.QtGui import QColor
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
     QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, \
     QSizePolicy, QDialogButtonBox
-from PySide6.QtCore import QSize
+from PySide2.QtCore import QSize
 
 from ..widgets.qcolor_option import QColorOption
 from ...config.config_manager import ENTRIES
@@ -10,6 +10,8 @@ from ...config.color_schemes import COLOR_SCHEMES
 from ...config import Conf, save_config
 from ...logic.url_scheme import AngrUrlScheme
 from ..css import refresh_theme
+
+from darkdetect import isDark
 
 
 class Page(QWidget):
@@ -143,9 +145,13 @@ class ThemeAndColors(Page):
         self.setLayout(page_layout)
 
     def _load_color_scheme(self, name):
-        for prop, value in COLOR_SCHEMES[name].items():
-            row = self._to_save[prop][1]
-            row.set_color(value)
+        if name in COLOR_SCHEMES:
+            for prop, value in COLOR_SCHEMES[name].items():
+                row = self._to_save[prop][1]
+                row.set_color(value)
+        else:
+            name = "Dark" if isDark() else "Light"
+            self._load_color_scheme(name)
 
     def _on_load_scheme_clicked(self):
         self._load_color_scheme(self._schemes_combo.currentText())
