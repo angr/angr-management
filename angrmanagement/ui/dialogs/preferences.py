@@ -2,16 +2,15 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
     QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, \
     QSizePolicy, QDialogButtonBox
-    
+
 from PySide6.QtCore import QSize
+from darkdetect import isDark
 from ..widgets.qcolor_option import QColorOption
 from ...config.config_manager import ENTRIES
 from ...config.color_schemes import COLOR_SCHEMES
 from ...config import Conf, save_config
 from ...logic.url_scheme import AngrUrlScheme
 from ..css import refresh_theme
-
-from darkdetect import isDark
 
 
 class Page(QWidget):
