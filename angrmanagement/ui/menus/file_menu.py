@@ -1,5 +1,4 @@
 import os.path
-import sys
 
 from PySide6.QtGui import QKeySequence
 from PySide6.QtCore import Qt
@@ -26,8 +25,6 @@ class FileMenu(Menu):
     def __init__(self, main_window):
         super().__init__("&File", parent=main_window)
 
-        pref_key = Qt.CTRL | (Qt.Key_Comma if sys.platform == "darwin" else Qt.Key_Minus)
-
         self.recent_menu = Menu("Load recent")
         self.entries.extend([
             MenuEntry('L&oad a new binary...', main_window.open_file_button, shortcut=QKeySequence(Qt.CTRL | Qt.Key_O)),
@@ -43,7 +40,7 @@ class FileMenu(Menu):
             MenuSeparator(),
             MenuEntry('Load a new &trace...', main_window.load_trace),
             MenuSeparator(),
-            MenuEntry('&Preferences...', main_window.preferences, shortcut=QKeySequence(pref_key)),
+            MenuEntry('&Preferences...', main_window.preferences, shortcut=QKeySequence(Qt.CTRL | Qt.Key_Comma)),
             MenuSeparator(),
             MenuEntry('E&xit', main_window.quit),
         ])
