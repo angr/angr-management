@@ -38,6 +38,7 @@ from ..data.jobs import DependencyAnalysisJob
 from ..config import IMG_LOCATION, Conf, save_config
 from ..utils.io import isurl, download_url
 from ..utils.env import is_pyinstaller, app_root
+from ..utils.track_system_theme import TrackSystemTheme
 from ..errors import InvalidURLError, UnexpectedStatusCodeError
 from .menus.file_menu import FileMenu
 from .menus.analyze_menu import AnalyzeMenu
@@ -52,7 +53,6 @@ from .dialogs.about import LoadAboutDialog
 from .dialogs.preferences import Preferences
 from .toolbars import FileToolbar, DebugToolbar
 from .toolbar_manager import ToolbarManager
-from .theme import Theme
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
@@ -112,7 +112,12 @@ class MainWindow(QMainWindow):
 
         self._run_daemon(use_daemon=use_daemon)
 
-        self._theme = Theme.create(self)
+        # Allow system theme-ing
+        self._track_system_theme = TrackSystemTheme.create(self)
+        if Conf.theme_track_system:
+            self._track_system_theme.set_enabled(True)
+            self._track_system_theme.refresh_theme()
+
         # I'm ready to show off!
         if show:
             self.showMaximized()

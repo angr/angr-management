@@ -2,13 +2,16 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
     QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, \
     QSizePolicy, QDialogButtonBox
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 
-from angrmanagement.ui.widgets.qcolor_option import QColorOption
-from angrmanagement.logic.url_scheme import AngrUrlScheme
-from angrmanagement.config import Conf, save_config
 from angrmanagement.config.config_manager import ENTRIES
-from angrmanagement.ui.theme import Theme
+from angrmanagement.config.color_schemes import COLOR_SCHEMES
+from angrmanagement.config import Conf, save_config
+from angrmanagement.logic.url_scheme import AngrUrlScheme
+from angrmanagement.ui.widgets.qcolor_option import QColorOption
+from angrmanagement.ui.css import refresh_theme
+from angrmanagement.utils.track_system_theme import TrackSystemTheme
+
 
 class Page(QWidget):
     """
@@ -91,8 +94,9 @@ class ThemeAndColors(Page):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self._theme = Theme.get()
 
+        self._to_save = {}
+        self._auto = TrackSystemTheme.get()
         self._schemes_combo: QComboBox = None
 
         self._init_widgets()
@@ -107,7 +111,7 @@ class ThemeAndColors(Page):
 
         self._schemes_combo = QComboBox(self)
         current_theme_idx = 0
-        for idx, name in enumerate(self._theme.themes):
+        for idx, name in enumerate(list(sorted(COLOR_SCHEMES))):
             if name == Conf.theme_name:
                 current_theme_idx = idx
             self._schemes_combo.addItem(name)
@@ -125,6 +129,7 @@ class ThemeAndColors(Page):
                 continue
             row = QColorOption(getattr(Conf, ce.name), ce.name)
             edit_colors_layout.addWidget(row)
+            self._to_save[ce.name] = (ce, row)
 
         frame = QFrame()
         frame.setLayout(edit_colors_layout)
@@ -137,14 +142,35 @@ class ThemeAndColors(Page):
 
         page_layout.addLayout(scroll_layout)
 
+        self._track_system = QCheckBox("Override: Track System Theme", self)
+        self._track_system.setCheckState(Qt.CheckState.Checked if self._auto.enabled() else Qt.CheckState.Unchecked)
+        self._track_system.stateChanged.connect(self._toggle_system_tracking)
+        page_layout.addWidget(self._track_system)
+
         self.setLayout(page_layout)
 
+    def _toggle_system_tracking(self, state: int):
+        self._auto.set_enabled(state == Qt.CheckState.Checked.value)
+        if state == Qt.CheckState.Unchecked.value:
+            self._on_load_scheme_clicked()
+        self._on_load_scheme_clicked()
+
+    def _load_color_scheme(self, name):
+        for prop, value in COLOR_SCHEMES[name].items():
+            row = self._to_save[prop][1]
+            row.set_color(value)
+
     def _on_load_scheme_clicked(self):
-        self._theme.set(self._schemes_combo.currentText())
+        self._load_color_scheme(self._schemes_combo.currentText())
         self.save_config()
 
     def save_config(self):
-        self._theme.update_config_cache()
+        # pylint: disable=assigning-non-slot
+        Conf.theme_name = self._schemes_combo.currentText()
+        for ce, row in self._to_save.values():
+            setattr(Conf, ce.name, row.color.am_obj)
+        Conf.theme_track_system = self._auto.enabled()
+        self._auto.refresh_theme()
 
 
 class Preferences(QDialog):
