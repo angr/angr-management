@@ -74,9 +74,8 @@ class QStateTable(QTableWidget):
         self.states.am_subscribe(self._watch_states)
         self.reload()
 
-    def hideEvent(self, event):
+    def closeEvent(self, _):
         self.states.am_unsubscribe(self._watch_states)
-        return super().hideEvent(event)
 
     def current_state_record(self):
         selected_index = self.currentRow()
