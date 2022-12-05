@@ -173,7 +173,7 @@ class Style(Page):
         page_layout = QVBoxLayout(self)
 
         # Log format
-        log_format_layout = QHBoxLayout(self)
+        log_format_layout = QHBoxLayout()
         log_format_lbl = QLabel("Log datetime Format String:")
         log_format_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         log_format_layout.addWidget(log_format_lbl)
@@ -192,11 +192,11 @@ class Style(Page):
             # QFontOption("SymExc Font", "symexec_font", self),
             # QFontOption("Code Font", "code_font", self),
         ]
-        font_layout = QVBoxLayout(self)
+        font_layout = QVBoxLayout()
         for i in self._font_options:
             font_layout.addWidget(i)
-
         page_layout.addLayout(font_layout)
+
         page_layout.addStretch()
 
 
