@@ -1,0 +1,118 @@
+name: Bundle
+
+on:
+  schedule:
+  - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+          - windows-2022
+          - macos-12
+      fail-fast: false
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - run: |
+          sudo apt-get update;
+          sudo apt-get install -y \
+            libfuse2 \
+            libegl1 \
+            libxkbcommon-x11-0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0
+        if: startsWith(matrix.os, 'ubuntu')
+      - run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          bash .github\workflows\nightly-build.sh
+        shell: cmd
+        if: startsWith(matrix.os, 'windows')
+      - run: bash .github/workflows/nightly-build.sh
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
+      - uses: actions/upload-artifact@v3
+        with:
+          name: angr-management-onefile-${{ matrix.os }}
+          path: upload/*onefile*
+      - uses: actions/upload-artifact@v3
+        with:
+          name: angr-management-onedir-${{ matrix.os }}
+          path: |
+            upload/*.tar.gz
+            upload/*.zip
+            upload/*.dmg
+      - uses: actions/upload-artifact@v3
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          name: angr-management-appimage-${{ matrix.os }}
+          path: upload/*.AppImage
+
+  test_ubuntu:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-22.04
+      fail-fast: false
+    name: Test on ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: sudo apt-get update && sudo apt-get install -y xvfb x11-utils libegl1
+        name: Install X11 app testing utilities
+      - uses: actions/download-artifact@v3
+        with:
+          name: angr-management-onefile-${{ matrix.os }}
+      - run: |
+          set -x
+          . /etc/os-release
+          export binary="./angr-management-onefile-$ID-$VERSION_ID"
+          export QT_DEBUG_PLUGINS=1
+          chmod +x $binary
+          xvfb-run bash -x -c '
+            $binary &
+            sleep 30 && output=$(xwininfo -tree -root)
+            [[ "$output" == *"angr management"* ]] || exit 1
+          '
+
+  deploy:
+    name: Deploy release
+    needs: test_ubuntu
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+      - name: Run find
+        run: find .
+      - name: Delete old nightly
+        run: gh release -R angr/angr-management delete nightly --cleanup-tag --yes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
+      - name: Make new release
+        run: >
+          gh release create nightly \
+            --repo angr/angr-management \
+            --title "angr management nightly preview" \
+            --notes "$RELEASE_NOTES" \
+            --prerelease \
+            --target $GITHUB_SHA \
+            $(find . -type f)
+        env:
+          RELEASE_NOTES: >
+            This release is an automatically generated pre-release. We do our
+            best to make sure everything works, but please be advised that
+            features may break or change without notice.
+          GH_TOKEN: ${{ github.token }}
