@@ -1,13 +1,12 @@
 from typing import List, Optional, Tuple
-import math
 
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
-from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort, MemoryData
+from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
-from ...utils import get_label_text, is_printable
-from ...config import Conf
+from angrmanagement.utils import get_label_text, is_printable
+from angrmanagement.config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
 
@@ -94,7 +93,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 mem_bytes = self.instance.project.loader.memory.load(start_address, size)
             except KeyError:
                 mem_bytes = b""
-            self._bytes += [ b for b in mem_bytes ] + [ '??' ] * (size - len(mem_bytes))
+            self._bytes += list(mem_bytes) + [ '??' ] * (size - len(mem_bytes))
 
         # address
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)

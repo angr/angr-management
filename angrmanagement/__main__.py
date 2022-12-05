@@ -196,7 +196,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     # Initialize font-related configuration
     Conf.init_font_config()
     # Set global font
-    app.setFont(Conf.ui_default_font)
+    Conf.connect("ui_default_font", app.setFont, True)
 
     GlobalInfo.gui_thread = threading.get_ident()
 
