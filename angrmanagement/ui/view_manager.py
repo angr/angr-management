@@ -176,9 +176,9 @@ class ViewManager:
         """
 
         center_dockable_views = self.get_center_views()
-        for i in range(1,len(center_dockable_views)+1):
-            if center_dockable_views[i-1].visibleRegion().isEmpty() is False:
-                return i-1
+        for i, view in enumerate(center_dockable_views):
+            if view.isVisible():
+                return i
         return None
 
     def next_tab(self):
