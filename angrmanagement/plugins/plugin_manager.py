@@ -101,7 +101,7 @@ class PluginManager:
         basedir = os.path.join(os.path.dirname(desc.plugin_file_path))
         for plugin_cls in load_plugins_from_file(os.path.join(basedir, desc.entrypoints[0])):
             if isinstance(plugin_cls, Exception):
-                l.warning("Exception occurred during plugin loading: %s", plugin_cls)
+                l.warning("Exception occurred during plugin loading: %s", plugin_cls, exc_info=True)
             else:
                 self.activate_plugin(desc.shortname, plugin_cls)
 
