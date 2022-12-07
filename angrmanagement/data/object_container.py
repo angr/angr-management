@@ -1,3 +1,4 @@
+import traceback
 import logging
 
 from ..utils.namegen import NameGenerator
@@ -6,8 +7,9 @@ from ..utils.namegen import NameGenerator
 l = logging.getLogger(__name__)
 
 class EventSentinel:
-    def __init__(self):
+    def __init__(self, logging_permitted: bool = True):
         self.am_subscribers = []
+        self.am_logging_permitted: bool = logging_permitted
 
     def am_subscribe(self, listener):
         if listener is not None:
@@ -18,14 +20,22 @@ class EventSentinel:
             try:
                 self.am_subscribers.remove(listener)
             except ValueError:
-                l.warning("Double-unsubscribe of %s from %s", listener, self)
+                if self.am_logging_permitted:
+                    l.warning("Double-unsubscribe of %s from %s", listener, self)
+                else:
+                    print("Double-unsubscribe of listener")  # No f-string in case str uses logging
+                    traceback.print_exc()
 
     def am_event(self, **kwargs):
         for listener in self.am_subscribers:
             try:
                 listener(**kwargs)
             except Exception:  # pylint: disable=broad-except
-                l.exception("Error raised from event of %s", self)
+                if self.am_logging_permitted:
+                    l.exception("Error raised from event of %s", self)
+                else:
+                    print("Error raised from event")  # No f-string in case str uses logging
+                    traceback.print_exc()
 
 
 class ObjectContainer(EventSentinel):
@@ -35,8 +45,8 @@ class ObjectContainer(EventSentinel):
     the contents of the shared object are *not* synchronized between processes;
     only the kwargs passed to the am_event of EventSentinel are synchronized
     """
-    def __init__(self, obj, name=None, notes=''):
-        super().__init__()
+    def __init__(self, obj, name=None, notes='', **kwargs):
+        super().__init__(**kwargs)
         self._am_obj = None
         self.am_obj = obj
         self.am_name = name if name is not None else NameGenerator.random_name()

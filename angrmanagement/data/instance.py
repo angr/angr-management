@@ -78,7 +78,7 @@ class Instance:
                                 lambda: [PlainTextProtocol, BackslashTextProtocol],
                                 List[Type[ProtocolInteractor]],
                                 'Available interaction protocols')
-        self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages')
+        self.register_container('log', lambda: [], List[LogRecord], 'Saved log messages', logging_permitted=False)
         self.register_container('current_trace', lambda: None, Type[Trace], 'Currently selected trace')
         self.register_container('traces', lambda: [], List[Trace], 'Global traces list')
 
@@ -167,7 +167,7 @@ class Instance:
     # Public methods
     #
 
-    def register_container(self, name, default_val_func, ty, description):
+    def register_container(self, name, default_val_func, ty, description, **kwargs):
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:
@@ -175,7 +175,7 @@ class Instance:
 
         else:
             self._container_defaults[name] = (default_val_func, ty)
-            self.extra_containers[name] = ObjectContainer(default_val_func(), description)
+            self.extra_containers[name] = ObjectContainer(default_val_func(), description, **kwargs)
 
     def initialize(self, initialized=False, **kwargs):  # pylint:disable=unused-argument
         if self.project.am_none:
