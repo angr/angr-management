@@ -9,24 +9,32 @@ class MenuEntry:
         self.shortcut = shortcut
         self.checkable = checkable
         self.checked_initially = checked
-        self.default_enabled = enabled
+        self.enabled = enabled
         self.key = key
 
-        self.qaction = None
+        self._qaction = None
+
+    def set_qaction(self, qaction: QAction):
+        self._qaction = qaction
+        self._enable(self.enabled)
 
     def enable(self):
-        if self.qaction is not None:
-            self.qaction.setDisabled(False)
+        self._enable(True)
 
     def disable(self):
-        if self.qaction is not None:
-            self.qaction.setDisabled(True)
+        self._enable(False)
+
+    def _enable(self, b: bool):
+        self.enabled = b
+        if self._qaction is not None:
+            self._qaction.setEnabled(b)
 
     @property
     def checked(self):
-        if self.qaction is None or not self.checkable:
+        if self._qaction is None or not self.checkable:
             return False
-        return self.qaction.isChecked()
+        return self._qaction.isChecked()
+
 
 
 class MenuSeparator:
@@ -96,15 +104,13 @@ class Menu:
         if isinstance(entry, MenuEntry):
             action = QAction(entry.caption, menu)
             action.triggered.connect(entry.action)
-            entry.qaction = action
+            entry.set_qaction(action)
 
             if entry.shortcut is not None:
                 action.setShortcut(entry.shortcut)
             if entry.checkable:
                 action.setCheckable(True)
                 action.setChecked(entry.checked_initially)
-            if not entry.default_enabled:
-                action.setDisabled(True)
 
             if before is None:
                 menu.addAction(action)
