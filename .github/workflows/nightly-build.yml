@@ -45,7 +45,7 @@ jobs:
         shell: cmd
         if: startsWith(matrix.os, 'windows')
       - run: bash .github/workflows/nightly-build.sh
-        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
+        if: startsWith(matrix.os, 'ubuntu')
       - uses: actions/upload-artifact@v3
         with:
           name: angr-management-onefile-${{ matrix.os }}
