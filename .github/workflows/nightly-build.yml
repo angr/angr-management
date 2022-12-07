@@ -105,7 +105,7 @@ jobs:
         with:
           name: angr-management-onefile-${{ matrix.os }}
       - run: |
-          .\angr-management-onefile-windows-2022.exe
+          .\angr-management-onefile-win64.exe
           sleep 30
           [array]$am_windows = Get-Process |
             Where-Object {$_.MainWindowTitle -ne ""} |
