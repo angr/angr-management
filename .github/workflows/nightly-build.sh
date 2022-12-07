@@ -38,7 +38,9 @@ fi
 pip install -e .[binsync]
 
 # Bundle!
-python packaging/pyinstaller/bundle.py --onefile
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    python packaging/pyinstaller/bundle.py --onefile
+fi
 python packaging/pyinstaller/bundle.py --onedir
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     bash packaging/appimage/build.sh
@@ -48,9 +50,7 @@ mkdir upload
 
 # Prepare onefiles
 ONEFILE_DIR=packaging/pyinstaller/onefile
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-macos
-elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-$ID-$VERSION_ID
 else
