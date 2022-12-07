@@ -17,6 +17,12 @@ class StatesView(BaseView):
     def reload(self):
         self._state_table.state_manager = self.instance.states
 
+    def closeEvent(self, event):
+        """
+        Close children before exiting
+        """
+        self._state_table.close()
+
     def sizeHint(self):
         return QSize(400, 800)
 

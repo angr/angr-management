@@ -82,6 +82,16 @@ class SymexecView(BaseView):
             self._switch_to_disassembly_view(addr)
 
     #
+    # Events
+    #
+
+    def closeEvent(self, _):
+        """
+        Close children before exiting
+        """
+        self._simgrs.close()
+
+    #
     # Initialization
     #
 
