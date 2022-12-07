@@ -1,6 +1,10 @@
 name: Bundle
 
 on:
+  push:
+    branches:
+    - "**"
+  pull_request:
   schedule:
   - cron: "0 0 * * *"
   workflow_dispatch:
@@ -91,6 +95,7 @@ jobs:
     name: Deploy release
     needs: test_ubuntu
     runs-on: ubuntu-22.04
+    if: ${{ github.event_name == 'schedule' }}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
