@@ -71,6 +71,7 @@ class MainWindow(QMainWindow):
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
+        self.setWindowTitle("angr management")
 
         GlobalInfo.main_window = self
         self.shown_at_start = show
