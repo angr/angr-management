@@ -75,9 +75,9 @@ class ViewMenu(Menu):
         self.entries.extend([
             ToolbarMenu(main_window),
             MenuSeparator(),
-            MenuEntry('Next Tab', main_window.workspace.view_manager.next_tab, shortcut=QKeySequence("Alt+Tab")),
+            MenuEntry('Next Tab', main_window.workspace.view_manager.next_tab, shortcut=QKeySequence("Ctrl+Tab")),
             MenuEntry('Previous Tab', main_window.workspace.view_manager.previous_tab,
-                      shortcut=QKeySequence("Alt+Shift+Tab")),
+                      shortcut=QKeySequence("Ctrl+Shift+Tab")),
             MenuSeparator(),
             NewViewMenu(main_window),
             MenuSeparator(),
