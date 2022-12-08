@@ -72,6 +72,7 @@ class MainWindow(QMainWindow):
 
         icon_location = os.path.join(IMG_LOCATION, 'angr.png')
         self.setWindowIcon(QIcon(icon_location))
+        self.setWindowTitle("angr management")
 
         GlobalInfo.main_window = self
         self.shown_at_start = show
@@ -289,7 +290,7 @@ class MainWindow(QMainWindow):
 
         center_dockable_views = self.workspace.view_manager.get_center_views()
         for i in range(1, len(center_dockable_views) + 1):
-            QShortcut(QKeySequence('Ctrl+' + str(i)), self, center_dockable_views[i - 1].raise_)
+            QShortcut(QKeySequence('Alt+' + str(i)), self, center_dockable_views[i - 1].raise_)
 
         QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
 

@@ -185,6 +185,7 @@ ENTRIES = [
     CE('pseudocode_function_color', QColor, QColor(0x00, 0x00, 0xff, 0xff)),
     CE('pseudocode_quotation_color', QColor, QColor(0x00, 0x80, 0x00, 0xff)),
     CE('pseudocode_keyword_color', QColor, QColor(0x00, 0x00, 0x80, 0xff)),
+    CE('pseudocode_highlight_color', QColor, QColor(0xff, 0xff, 0x00, 0xff)),
     CE('proximity_node_background_color', QColor, QColor(0xfa, 0xfa, 0xfa)),
     CE('proximity_node_selected_background_color', QColor, QColor(0xcc, 0xcc, 0xcc)),
     CE('proximity_node_border_color', QColor, QColor(0xf0, 0xf0, 0xf0)),
@@ -196,6 +197,9 @@ ENTRIES = [
     CE('proximity_call_node_text_color', QColor, QColor(0x00, 0x00, 0xff)),
     CE('proximity_call_node_text_color_plt', QColor, QColor(0x8b, 0x00, 0x8b)),
     CE('proximity_call_node_text_color_simproc', QColor, QColor(0x8b, 0x00, 0x8b)),
+
+    # UI Style
+    CE('log_timestamp_format', str, "%H:%M:%S"),
 
     # FLIRT signatures
     CE('flirt_signatures_root', str, "./flirt_signatures/"),

@@ -130,11 +130,11 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
 
-    def zoom(self, out=False, at=None, reset=False, restore=False):
+    def zoom(self, out=False, at=None, reset=False, restore=False, factor=1.25):
         if at is None:
             at = self.scene().sceneRect().center().toPoint()
         lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
-        zoomInFactor = 1.25
+        zoomInFactor = factor
         zoomOutFactor = 1 / zoomInFactor
 
         if reset:
@@ -168,6 +168,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             self.zoom(
                 event.angleDelta().y() < 0,
                 QPoint(event.position().x(), event.position().y()),
+                factor=1 + 0.25 * abs(event.angleDelta().y()) / 120,
             )
         elif event.angleDelta().x() != 0:
             # if this is an angled zoom (e.g. touchpad) then just let the default handler take care of it

@@ -47,11 +47,10 @@ class QSimulationManagers(QFrame):
     def avoid_addrs(self):
         return list({int(item.text(0), 16) for item in self._get_checked_items(self._avoids_list)})
 
-    def hideEvent(self, event):  # pylint: disable=unused-argument
+    def closeEvent(self, _):
         self.simgr.am_unsubscribe(self._watch_simgr)
         self.simgrs.am_unsubscribe(self._watch_simgrs)
         self.state.am_unsubscribe(self._watch_state)
-        return super().destroy()
 
     #
     # Public methods

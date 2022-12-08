@@ -13,6 +13,7 @@ from ..widgets.qccode_edit import QCCodeEdit
 from ..widgets.qdecomp_options import QDecompilationOptions
 from ..documents import QCodeDocument
 from .view import BaseView
+from ...config import Conf
 from ...data.object_container import ObjectContainer
 from ...logic.disassembly import JumpHistory
 from ...data.jobs import DecompileFunctionJob, VariableRecoveryJob
@@ -164,7 +165,7 @@ class CodeView(BaseView):
             sel.cursor = self._textedit.textCursor()
             sel.cursor.setPosition(start)
             sel.cursor.setPosition(end, QTextCursor.KeepAnchor)
-            sel.format.setBackground(Qt.yellow)
+            sel.format.setBackground(Conf.pseudocode_highlight_color)
             extra_selections.append(sel)
         self._textedit.setExtraSelections(extra_selections)
 

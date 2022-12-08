@@ -9,6 +9,7 @@ import os
 import logging
 import importlib.util
 from typing import List, Tuple
+import sys
 
 from .plugin_description import PluginDescription
 
@@ -46,8 +47,11 @@ def load_default_plugins():
     return load_plugins_from_dir(os.path.dirname(os.path.abspath(__file__)),
                                  exclude=('base_plugin.py', 'plugin_manager.py', 'plugin_description.py'))
 
-
 def load_plugins_from_dir(path, exclude=()):
+    # hack.
+    if not exclude and path == os.path.dirname(__file__):
+        exclude = ('base_plugin.py', 'plugin_manager.py')
+
     out = []
     try:
         dlist = os.listdir(path)
@@ -74,31 +78,34 @@ def load_plugins_from_package(path):
 def load_plugins_from_file(path):
     basename = os.path.basename(path)
     if basename == '__init__.py':
-        modname = os.path.basename(os.path.dirname(path))
-        if modname.count('.') != 0:
+        modbasename = os.path.basename(os.path.dirname(path))
+        if modbasename.count('.') != 0:
             l.error("file %s cannot be loaded - weird name", path)
             return []
     else:
         if os.path.isfile(path):
-            modname = os.path.basename(os.path.dirname(path))
-            modname += "." + basename.split('.')[0]
-            if modname.count('.') != 1:
+            modbasename = os.path.basename(os.path.dirname(path))
+            modbasename += "." + basename.split('.')[0]
+            if modbasename.count('.') != 1:
                 l.error("package %s cannot be loaded - weird name", path)
                 return []
         else:
             # directory
-            modname = basename.split('.')[0]
-            if basename.count('.') != 1:
+            modbasename = basename.split('.')[0]
+            path = os.path.join(path, '__init__.py')
+            if basename.count('.') != 0:
                 l.error("package %s cannot be loaded - weird name", path)
                 return []
+    modname = "angrmanagement.plugins.%s" % modbasename
 
     # https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
-    spec = importlib.util.spec_from_file_location("angrmanagement.plugins.%s" % modname, path)
+    spec = importlib.util.spec_from_file_location(modname, path, submodule_search_locations=[])
     if spec is None:
         l.error("Not a python module: %s", path)
         return []
     try:
         mod = importlib.util.module_from_spec(spec)
+        sys.modules[modname] = mod
         spec.loader.exec_module(mod)
     except Exception as e:
         return [e]

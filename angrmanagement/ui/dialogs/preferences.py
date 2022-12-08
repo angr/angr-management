@@ -182,6 +182,42 @@ class ThemeAndColors(Page):
         self._auto.refresh_theme()
 
 
+class Style(Page):
+    """
+    Preference pane for UI style choices
+    """
+
+    NAME = "Style"
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self._init_widgets()
+
+    def _init_widgets(self):
+        page_layout = QVBoxLayout(self)
+
+        # Log format
+        log_format_layout = QHBoxLayout(self)
+        log_format_lbl = QLabel("Log datetime Format String:")
+        log_format_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        log_format_layout.addWidget(log_format_lbl)
+        self.log_format_entry = QLineEdit(self)
+        self.log_format_entry.setClearButtonEnabled(True)
+        self.log_format_entry.setText(Conf.log_timestamp_format)
+        log_format_layout.addWidget(self.log_format_entry)
+
+        # Page layout
+        page_layout.addLayout(log_format_layout)
+        page_layout.addStretch()
+
+        self.setLayout(page_layout)
+
+    def save_config(self):
+        fmt = self.log_format_entry.text()
+        if fmt:
+            Conf.log_timestamp_format = fmt
+
 class Preferences(QDialog):
     """
     Application preferences dialog.
@@ -214,6 +250,7 @@ class Preferences(QDialog):
 
         self._pages.append(Integration())
         self._pages.append(ThemeAndColors())
+        self._pages.append(Style())
 
         pages = QStackedWidget()
         for idx, page in enumerate(self._pages):

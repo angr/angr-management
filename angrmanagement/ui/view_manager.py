@@ -175,10 +175,9 @@ class ViewManager:
         :return:    The current tab ID, or None if no current tab exists in the central view area.
         """
 
-        center_dockable_views = self.get_center_views()
-        for i in range(1,len(center_dockable_views)+1):
-            if center_dockable_views[i-1].visibleRegion().isEmpty() is False:
-                return i-1
+        for i, view in enumerate(self.get_center_views()):
+            if not view.isHidden():
+                return i
         return None
 
     def next_tab(self):
@@ -192,25 +191,20 @@ class ViewManager:
         current_tab_id = self.get_current_tab_id()
         if current_tab_id is None:
             return
-        if (current_tab_id + 1) < len(center_dockable_views):
-            center_dockable_views[current_tab_id + 1].raise_()
-        else:
-            # Start from 1 again to prevent Index Out Of Range error
-            center_dockable_views[(current_tab_id + 1) % (len(center_dockable_views))].raise_()
+        center_dockable_views[(current_tab_id + 1) % len(center_dockable_views)].raise_()
 
     def previous_tab(self):
         """
-        Shift to the next tab
+        Shift to the previous tab
 
         :return:    None
         """
 
+        center_dockable_views = self.get_center_views()
         current_tab_id = self.get_current_tab_id()
         if current_tab_id is None:
             return
-
-        center_dockable_views = self.get_center_views()
-        center_dockable_views[current_tab_id - 1].raise_()
+        center_dockable_views[(current_tab_id - 1) % len(center_dockable_views)].raise_()  # this mod is superfluous
 
     @property
     def current_tab(self) -> Optional['BaseView']:
