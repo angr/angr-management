@@ -1,5 +1,6 @@
 # pylint:disable=import-outside-toplevel,unused-import,no-member
 import asyncio
+import multiprocessing
 import sys
 import os
 import ctypes
@@ -272,4 +273,5 @@ def main():
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     main()
