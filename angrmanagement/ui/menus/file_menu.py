@@ -24,6 +24,14 @@ class FileMenu(Menu):
     """
     def __init__(self, main_window):
         super().__init__("&File", parent=main_window)
+        self._project = main_window.workspace.main_instance.project
+
+        self._save_entries = [
+            MenuEntry('&Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_S)),
+            MenuEntry('S&ave angr database as...', main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
+        ]
+        self._edit_save()
+        self._project.am_subscribe(self._edit_save)
 
         self.recent_menu = Menu("Load recent")
         self.entries.extend([
@@ -35,8 +43,7 @@ class FileMenu(Menu):
             self.recent_menu,
             MenuSeparator(),
             MenuEntry('&Load angr database...', main_window.load_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_L)),
-            MenuEntry('&Save angr database...', main_window.save_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_S)),
-            MenuEntry('S&ave angr database as...', main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
+            *self._save_entries,
             MenuSeparator(),
             MenuEntry('Load a new &trace...', main_window.load_trace),
             MenuSeparator(),
@@ -44,6 +51,11 @@ class FileMenu(Menu):
             MenuSeparator(),
             MenuEntry('E&xit', main_window.quit),
         ])
+
+    def _edit_save(self, **_):
+        enable: bool = not self._project.am_none
+        for i in self._save_entries:
+            (i.enable if enable else i.disable)()
 
     def add_recent(self, path: str):
         for entry in list(self.recent_menu.entries):

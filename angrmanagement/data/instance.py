@@ -37,7 +37,7 @@ class Instance:
     """
     An object to give access to normal angr project objects like a Project, CFG, and other analyses.
     """
-    project: Union[angr.Project, ObjectContainer]
+    project: ObjectContainer
     cfg: Union[angr.analyses.cfg.CFGBase, ObjectContainer]
     cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
     log: Union[List[LogRecord], ObjectContainer]
