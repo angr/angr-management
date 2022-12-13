@@ -124,7 +124,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     set_windows_event_loop_policy()
 
     from PySide6.QtWidgets import QApplication, QSplashScreen
-    from PySide6.QtGui import QFontDatabase, QPixmap, QIcon
+    from PySide6.QtGui import QFontDatabase, QPixmap, QIcon, QCursor, QGuiApplication
     from PySide6.QtCore import Qt, QCoreApplication
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
@@ -166,7 +166,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
     splash_pixmap = QPixmap(splashscreen_location)
-    splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
+    current_screen = QGuiApplication.screenAt(QCursor.pos())
+    splash = QSplashScreen(current_screen, splash_pixmap, Qt.WindowStaysOnTopHint)
+
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     splash.setWindowIcon(QIcon(icon_location))
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
@@ -180,27 +182,22 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         sys.exit(1)
 
     from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
-
     refresh_theme()
 
     import angr
 
     angr.loggers.profiling_enabled = bool(profiling)
 
-    from .logic import GlobalInfo
-    from .ui.main_window import MainWindow
-
-    # Load fonts
+    # Load fonts, initialize font-related configuration
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "DejaVuSansMono.ttf"))
-
-    # Initialize font-related configuration
     Conf.init_font_config()
-    # Set global font
     Conf.connect("ui_default_font", app.setFont, True)
 
+    from .logic import GlobalInfo
     GlobalInfo.gui_thread = threading.get_ident()
 
+    from .ui.main_window import MainWindow
     file_to_open = filepath if filepath else None
     main_window = MainWindow(app=app, use_daemon=use_daemon)
     splash.finish(main_window)
