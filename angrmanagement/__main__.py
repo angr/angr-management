@@ -9,6 +9,7 @@ import time
 import warnings
 import platform
 import signal
+from typing import Optional
 
 from . import __version__
 
@@ -125,9 +126,42 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
 
     from PySide6.QtWidgets import QApplication, QSplashScreen
     from PySide6.QtGui import QFontDatabase, QPixmap, QIcon, QCursor, QGuiApplication
-    from PySide6.QtCore import Qt, QCoreApplication
+    from PySide6.QtCore import Qt, QCoreApplication, QRectF, QPointF, QMargins
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
+
+    class SplashScreen(QSplashScreen):
+        """
+        angr-management splash screen, showing version, a progress bar, and progress status message.
+
+        Note: Progress message is distinct from the one provided by QSplashScreen::showMessage.
+        """
+        _progress: float = 0.0
+        _progress_message: str = ''
+
+        def setProgress(self, progress: float, progress_message: Optional[str] = None):
+            self._progress = progress
+            if self._progress_message is not None:
+                self._progress_message = progress_message
+            self.repaint()
+
+        def drawContents(self, painter):
+            super().drawContents(painter)
+            contentsRect = self.contentsRect()
+
+            # Draw progress bar
+            pbar_height = 3
+            pbar_width = contentsRect.width() * max(0.0, min(self._progress, 1.0))
+            painter.setPen(Qt.transparent)
+            painter.setBrush(Qt.white)
+            painter.drawRect(QRectF(0, contentsRect.height() - pbar_height, pbar_width, pbar_height))
+
+            # Draw version and status text
+            pad = 6
+            r = contentsRect.marginsRemoved(QMargins(pad, pad, pad, pad + pbar_height))
+            painter.setPen(Qt.white)
+            painter.drawText(r, Qt.AlignTop | Qt.AlignRight, __version__)
+            painter.drawText(r, Qt.AlignBottom | Qt.AlignLeft, self._progress_message)
 
     # Enable High-DPI support
     # https://stackoverflow.com/questions/35714837/how-to-get-sharp-ui-on-high-dpi-with-qt-5-6
@@ -167,7 +201,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
     splash_pixmap = QPixmap(splashscreen_location)
     current_screen = QGuiApplication.screenAt(QCursor.pos())
-    splash = QSplashScreen(current_screen, splash_pixmap, Qt.WindowStaysOnTopHint)
+    splash = SplashScreen(current_screen, splash_pixmap, Qt.WindowStaysOnTopHint)
 
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     splash.setWindowIcon(QIcon(icon_location))
@@ -178,15 +212,19 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         time.sleep(0.01)
         app.processEvents()
 
+    splash.setProgress(0.1, 'Checking dependencies')
     if not check_dependencies():
         sys.exit(1)
 
+    splash.setProgress(0.4, 'Importing modules')
     from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
-    refresh_theme()
-
+    from .logic import GlobalInfo
+    from .ui.main_window import MainWindow
     import angr
-
     angr.loggers.profiling_enabled = bool(profiling)
+
+    splash.setProgress(0.6, 'Configuring theme')
+    refresh_theme()
 
     # Load fonts, initialize font-related configuration
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
@@ -194,12 +232,11 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     Conf.init_font_config()
     Conf.connect("ui_default_font", app.setFont, True)
 
-    from .logic import GlobalInfo
+    splash.setProgress(0.9, 'Initializing main window')
     GlobalInfo.gui_thread = threading.get_ident()
-
-    from .ui.main_window import MainWindow
     file_to_open = filepath if filepath else None
     main_window = MainWindow(app=app, use_daemon=use_daemon)
+    splash.setProgress(1.0, '')
     splash.finish(main_window)
 
     if file_to_open is not None:
