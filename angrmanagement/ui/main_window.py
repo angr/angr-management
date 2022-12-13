@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
 
         self.app: Optional['QApplication'] = app
         self.workspace: Workspace = None
-        self.central_widget: QMainWindow = None
+        self.dock_manager: QtAds.CDockManager
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar = None  # type: QProgressBar
@@ -253,7 +253,6 @@ class MainWindow(QMainWindow):
             & ~QtAds.CDockManager.DockAreaHasUndockButton)
         self.dock_manager = QtAds.CDockManager(self)
         self.dock_manager.setStyleSheet("")  # Clear stylesheet overrides
-        self.central_widget = self.dock_manager
         wk = Workspace(self, Instance())
         self.workspace = wk
 
@@ -281,14 +280,14 @@ class MainWindow(QMainWindow):
         :return:    None
         """
 
-        center_dockable_views = self.workspace.view_manager.get_center_views()
-        for i in range(1, len(center_dockable_views) + 1):
-            QShortcut(QKeySequence('Alt+' + str(i)), self, center_dockable_views[i - 1].raise_)
+        for i in range(1, 10):
+            QShortcut(QKeySequence(f"Alt+{i}"), self, lambda idx=i: self._raise_view(idx-1))
+        QShortcut(QKeySequence("Alt+0"), self, lambda: self._raise_view(9))
 
         QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
-        center_dockable_views[0].raise_()
+        self._raise_view(0)
 
         # Toggle exec breakpoint
         QShortcut(QKeySequence(Qt.Key_F2), self, self.workspace.toggle_exec_breakpoint)
@@ -756,3 +755,13 @@ class MainWindow(QMainWindow):
 
         self.workspace.main_instance.database_path = file_path
         return True
+
+    def _raise_view(self, idx: int):
+        """
+        Raise idx'th view in the dock manager
+        """
+        try:
+            dock = self.dock_manager.dockWidgets()[idx]
+        except IndexError:
+            return
+        dock.raise_()

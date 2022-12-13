@@ -3,6 +3,8 @@ from typing import Dict, List, Optional, Sequence
 import logging
 import functools
 
+from bidict import bidict
+
 import PySide6QtAds as QtAds
 
 from .views.view import BaseView
@@ -28,8 +30,7 @@ class ViewManager:
         self.workspace = workspace
         self.views: List[BaseView] = [ ]
         self.docks = [ ]
-        self.view_to_dock = { }
-        self.dock_to_view = { }
+        self.view_to_dock = bidict()
         self.views_by_category: Dict[str,List[BaseView]] = defaultdict(list)
 
     @property
@@ -72,12 +73,11 @@ class ViewManager:
         dw.setWidget(view)
 
         area = self.DOCKING_POSITIONS.get(view.default_docking_position, QtAds.RightDockWidgetArea)
-        self.main_window.central_widget.addDockWidgetTab(area, dw)
+        self.main_window.dock_manager.addDockWidgetTab(area, dw)
 
         self.views.append(view)
         self.docks.append(dw)
         self.view_to_dock[view] = dw
-        self.dock_to_view[dw] = view
 
     def _on_dock_widget_closed(self, dock):
         """
@@ -87,7 +87,7 @@ class ViewManager:
             return
 
         self.docks.remove(dock)
-        view = self.dock_to_view.pop(dock, None)
+        view = self.view_to_dock.inverse.pop(dock, None)
         if view:
             view.close()
             self.remove_view(view)
@@ -163,7 +163,7 @@ class ViewManager:
             return None
 
         current = self.get_center_views()[current_tab_id]
-        view = self.dock_to_view[current]
+        view = self.view_to_dock.inverse[current]
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
         return None
