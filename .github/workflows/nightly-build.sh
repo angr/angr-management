@@ -53,7 +53,7 @@ ONEFILE_DIR=packaging/pyinstaller/onefile
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-$ID-$VERSION_ID
-else
+elif [[ "$OSTYPE" == "msys" ]]; then
     cp $ONEFILE_DIR/angr-management.exe upload/angr-management-onefile-win64.exe
 fi
 
@@ -64,7 +64,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     tar -C $ONEDIR_DIR -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management
-else
+elif [[ "$OSTYPE" == "msys" ]]; then
     7z a upload/angr-management-win64.zip $ONEDIR_DIR/\*
 fi
 
