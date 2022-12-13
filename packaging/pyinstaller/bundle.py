@@ -122,7 +122,7 @@ def make_common_options(for_chess=False):
     args = [
         "pyinstaller",
         ] + hidden_import + [
-        "--name='angr management'",
+        "--name=angr-management",
         "-w",
         "-i",
         os.path.join(
