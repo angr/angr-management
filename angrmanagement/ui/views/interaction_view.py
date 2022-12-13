@@ -295,6 +295,7 @@ class InteractionView(BaseView):
             req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
             req_msg += '\n\nInstall them to enable this functionality.'
             req_msg += '\nRelaunch angr-management after install.'
+            req_msg += '\nNote: This cannot be done for pyinstaller builds.'
             QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
             return
 
