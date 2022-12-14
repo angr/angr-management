@@ -35,7 +35,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 fi
 
 # Install angr-mangement
-pip install -e .[binsync]
+pip install -e .
 
 # Bundle!
 if [[ "$OSTYPE" != "darwin"* ]]; then

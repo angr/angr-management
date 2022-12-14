@@ -254,10 +254,3 @@ def get_comment_for_display(kb, insn_addr):
         return kb.comments[insn_addr]
     else:
         return None
-
-def has_binsync():
-    try:
-        import binsync
-        return True
-    except ImportError:
-        return False
