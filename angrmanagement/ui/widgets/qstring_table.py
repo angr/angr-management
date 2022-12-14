@@ -131,7 +131,7 @@ class QStringModel(QAbstractTableModel):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
             if col == self.ADDRESS_COL and type(data) is int:
-                return hex(data)
+                return f'{data:x}'
             return data
 
     def _get_column_data(self, v: MemoryData, col: int) -> Any:

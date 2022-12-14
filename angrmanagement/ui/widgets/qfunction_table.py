@@ -167,7 +167,7 @@ class QFunctionTableModel(QAbstractTableModel):
         if idx < len(self.Headers):
             data = self._get_column_data(func, idx)
             if idx == self.ADDRESS_COL:
-                return hex(data)
+                return f'{data:x}'
             elif idx == self.TAGS_COL:
                 return self._get_tags_display_string(data)
             else:
