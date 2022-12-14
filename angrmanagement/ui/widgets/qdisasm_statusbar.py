@@ -130,7 +130,7 @@ class QDisasmStatusBar(QFrame):
 
     def _update_function_label(self):
         if self._function:
-            s = f'{self._function.name} ({self._function.addr:#x})'
+            s = f'{self._function.name} ({self._function.addr:x})'
         else:
             s = ''
         self._function_label.setText(s)
