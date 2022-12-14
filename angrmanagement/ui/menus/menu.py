@@ -149,4 +149,4 @@ class Menu:
     def remove(self, action):
         self.entries.remove(action)
         if self._qmenu is not None and type(action) is MenuEntry:
-            self._qmenu.removeAction(action.qaction)
+            self._qmenu.removeAction(action._qaction)

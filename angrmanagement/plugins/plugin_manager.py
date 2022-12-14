@@ -68,7 +68,11 @@ class PluginManager:
                 self.loaded_plugins[desc.shortname] = desc
 
             # activate all enabled plugins
-            for _, desc in self.loaded_plugins.items():
+            for plugin_name, desc in self.loaded_plugins.items():
+                # don't reactivate already active plugins
+                if plugin_name in self.active_plugins:
+                    continue
+
                 plugin_conf_key = f"plugin_{desc.name}_enabled"
 
                 # see if the plugin is enabled or not
