@@ -292,12 +292,9 @@ class InteractionView(BaseView):
         }
         is_missing = [ key for key, value in required.items() if value is None ]
         if len(is_missing) > 0:
-            if getattr(sys, "frozen", None) is None:
-                req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
-                req_msg += '\n\nInstall them to enable this functionality.'
-                req_msg += '\nRelaunch angr-management after install.'
-            else:
-                req_msg = "This feature is not available on this build of angr management")
+            req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
+            req_msg += '\n\nInstall them to enable this functionality.'
+            req_msg += '\nRelaunch angr-management after install.'
             QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
             return
 
