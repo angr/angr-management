@@ -15,11 +15,7 @@ import PySide6QtAds as QtAds
 
 import angr
 import angr.flirt
-
-try:
-    from angr.angrdb import AngrDB
-except ImportError:
-    AngrDB = None  # type: Optional[type]
+from angr.angrdb import AngrDB
 
 try:
     import archr
@@ -691,13 +687,6 @@ class MainWindow(QMainWindow):
         save_config()
 
     def _load_database(self, file_path: str):
-
-        if AngrDB is None:
-            QMessageBox.critical(None, 'Error',
-                                 'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
-            return
-
-
         other_kbs = {}
         extra_info = {}
 
@@ -735,11 +724,6 @@ class MainWindow(QMainWindow):
 
     def _save_database(self, file_path):
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
-            return False
-
-        if AngrDB is None:
-            QMessageBox.critical(None, 'Error',
-                                 'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
             return False
 
         self.workspace.plugins.handle_project_save(file_path)

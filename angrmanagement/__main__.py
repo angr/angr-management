@@ -7,8 +7,8 @@ import ctypes
 import threading
 import time
 import warnings
-import platform
 import signal
+from typing import Optional
 
 from . import __version__
 
@@ -21,65 +21,7 @@ def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
 warnings.simplefilter = shut_up
 
 
-BUGGY_PYSIDE2_VERSIONS = [
-    "5.12.1",  # https://github.com/angr/angr-management/issues/59
-    "5.14.2",  # Tiffany reported. Verified. Probably caused by
-               # https://code.qt.io/cgit/pyside/pyside-setup.git/commit/?h=5.14&id=52299827c64cccc1456f9050fdf3dd8596df3e6f
-    "5.14.2.1",  # deadlocks sometimes, although better than 5.14.2
-]
-
-
 name: str = "angr management"
-
-
-def check_dependencies_qt():
-
-    missing_dep = False
-
-    try:
-        import PySide6
-    except ImportError:
-        PySide6 = None
-        sys.stderr.write("Cannot find the PySide6 package. You may install it via pip:\n" +
-                         "    pip install pyside6\n")
-        missing_dep = True
-
-    try:
-        import qtconsole
-    except ImportError:
-        sys.stderr.write("Cannot find the qtconsole package. You may install it via pip:\n" +
-                         "    pip install qtconsole\n")
-        missing_dep = True
-
-    return not missing_dep
-
-
-def check_dependencies():
-
-    missing_dep = False
-
-    try:
-        import sqlalchemy
-    except ImportError:
-        sys.stderr.write("Cannot find the sqlalchemy package. You may install it via pip:\n" +
-                         "    pip install sqlalchemy\n")
-        missing_dep = True
-
-    try:
-        import pyqodeng.core
-    except ImportError:
-        sys.stderr.write("Cannot find the pyqodeng.core package. You may install it via pip:\n" +
-                         "    pip install pyqodeng.core\n")
-        missing_dep = True
-
-    try:
-        import xdg
-    except ImportError:
-        sys.stderr.write("Cannot find the xdg package. You may install it via pip:\n" +
-                         "    pip install pyxdg\n")
-        missing_dep = True
-
-    return not missing_dep
 
 
 def set_app_user_model_id():
@@ -97,52 +39,48 @@ def set_windows_event_loop_policy():
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def macos_bigsur_wants_layer():
-    # workaround for https://bugreports.qt.io/browse/QTBUG-87014
-    # this is because the latest PySide6 (5.15.2) does not include this fix
-    v, _, _ = platform.mac_ver()
-    vs = v.split(".")
-    if len(vs) >= 2:
-        major, minor = [int(x) for x in vs[:2]]
-    else:
-        return
-    if major >= 11 or major == 10 and minor == 16:
-        os.environ['QT_MAC_WANTS_LAYER'] = '1'
-
-
 def start_management(filepath=None, use_daemon=None, profiling=False):
-
-    if sys.platform == "darwin":
-        macos_bigsur_wants_layer()
-
-    if not check_dependencies_qt():
-        # it's likely that other dependencies are also missing. check them here before exiting.
-        check_dependencies()
-        sys.exit(1)
-
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
     from PySide6.QtWidgets import QApplication, QSplashScreen
-    from PySide6.QtGui import QFontDatabase, QPixmap, QIcon
-    from PySide6.QtCore import Qt, QCoreApplication
+    from PySide6.QtGui import QFontDatabase, QPixmap, QIcon, QCursor, QGuiApplication
+    from PySide6.QtCore import Qt, QRectF, QMargins
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
 
-    # Enable High-DPI support
-    # https://stackoverflow.com/questions/35714837/how-to-get-sharp-ui-on-high-dpi-with-qt-5-6
-    if ("QT_DEVICE_PIXEL_RATIO" not in os.environ
-        and "QT_AUTO_SCREEN_SCALE_FACTOR" not in os.environ
-        and "QT_SCALE_FACTOR" not in os.environ
-        and "QT_SCREEN_SCALE_FACTORS" not in os.environ
-        ):
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    # No more rounding
-    # https://github.com/pyqtgraph/pyqtgraph/issues/756
-    # https://lists.qt-project.org/pipermail/development/2019-September/037434.html
-    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    # Use highDPI pixmaps
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    class SplashScreen(QSplashScreen):
+        """
+        angr-management splash screen, showing version, a progress bar, and progress status message.
+
+        Note: Progress message is distinct from the one provided by QSplashScreen::showMessage.
+        """
+        _progress: float = 0.0
+        _progress_message: str = ''
+
+        def setProgress(self, progress: float, progress_message: Optional[str] = None):
+            self._progress = progress
+            if self._progress_message is not None:
+                self._progress_message = progress_message
+            self.repaint()
+
+        def drawContents(self, painter):
+            super().drawContents(painter)
+            contentsRect = self.contentsRect()
+
+            # Draw progress bar
+            pbar_height = 3
+            pbar_width = contentsRect.width() * max(0.0, min(self._progress, 1.0))
+            painter.setPen(Qt.transparent)
+            painter.setBrush(Qt.white)
+            painter.drawRect(QRectF(0, contentsRect.height() - pbar_height, pbar_width, pbar_height))
+
+            # Draw version and status text
+            pad = 6
+            r = contentsRect.marginsRemoved(QMargins(pad, pad, pad, pad + pbar_height))
+            painter.setPen(Qt.white)
+            painter.drawText(r, Qt.AlignTop | Qt.AlignRight, __version__)
+            painter.drawText(r, Qt.AlignBottom | Qt.AlignLeft, self._progress_message)
 
     # Fix app title on macOS
     if sys.platform.startswith("darwin"):
@@ -166,7 +104,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, 'angr-splash.png')
     splash_pixmap = QPixmap(splashscreen_location)
-    splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
+    current_screen = QGuiApplication.screenAt(QCursor.pos())
+    splash = SplashScreen(current_screen, splash_pixmap, Qt.WindowStaysOnTopHint)
+
     icon_location = os.path.join(IMG_LOCATION, 'angr.png')
     splash.setWindowIcon(QIcon(icon_location))
     splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
@@ -176,33 +116,27 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         time.sleep(0.01)
         app.processEvents()
 
-    if not check_dependencies():
-        sys.exit(1)
-
+    splash.setProgress(0.1, 'Importing modules')
     from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
-
-    refresh_theme()
-
-    import angr
-
-    angr.loggers.profiling_enabled = bool(profiling)
-
     from .logic import GlobalInfo
     from .ui.main_window import MainWindow
+    import angr
+    angr.loggers.profiling_enabled = bool(profiling)
 
-    # Load fonts
+    splash.setProgress(0.5, 'Configuring theme')
+    refresh_theme()
+
+    # Load fonts, initialize font-related configuration
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "DejaVuSansMono.ttf"))
-
-    # Initialize font-related configuration
     Conf.init_font_config()
-    # Set global font
     Conf.connect("ui_default_font", app.setFont, True)
 
+    splash.setProgress(0.9, 'Initializing main window')
     GlobalInfo.gui_thread = threading.get_ident()
-
     file_to_open = filepath if filepath else None
     main_window = MainWindow(app=app, use_daemon=use_daemon)
+    splash.setProgress(1.0, '')
     splash.finish(main_window)
 
     if file_to_open is not None:
