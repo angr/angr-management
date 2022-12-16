@@ -42,7 +42,7 @@ class ToolbarMenuEntry(MenuEntry):
         self.main_window.toolbar_manager.set_toolbar_visible_by_class(self.toolbar_cls, not self.is_visibile)
 
     def update_checked(self):
-        self.qaction.setChecked(self.is_visibile)
+        self.checked = self.is_visibile
 
 
 class ToolbarMenu(Menu):

@@ -4,7 +4,7 @@ import logging
 from typing import List, Any, Optional
 
 import PySide6
-from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView
+from PySide6.QtWidgets import QTableView, QAbstractItemView
 from PySide6.QtCore import QAbstractTableModel, Qt
 from PySide6.QtGui import QIcon, QCursor, QGuiApplication, QClipboard, QKeySequence
 
@@ -154,7 +154,7 @@ class QLogWidget(QTableView):
         self.setModel(self.model)
 
         self.setColumnWidth(0, 20)
-        hheader.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.setColumnWidth(1, 150)
 
         self.log_view.instance.log.am_subscribe(self._on_new_logrecord)
 

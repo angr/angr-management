@@ -113,7 +113,6 @@ def make_common_options(for_chess=False):
         "--hidden-import=pyxdg",
         "--hidden-import=pyzmq",
         "--hidden-import=xmlrpc.server",
-        "--hidden-import=angrmanagement.plugins.angr_binsync",
         "--hidden-import=PySide6.support.deprecated",
     ]
     if for_chess:

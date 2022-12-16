@@ -28,7 +28,7 @@ class QStateTableItem(QTableWidgetItem):
         base_name = state.gui_data.base_name
         is_changed = 'No' if state.gui_data.is_original else 'Yes'
         mode = state.mode
-        address = '%#x' % state.addr if isinstance(state.addr, int) else 'Symbolic'
+        address = '%x' % state.addr if isinstance(state.addr, int) else 'Symbolic'
         state_options = {o for o, v in state.options._options.items() if v is True}
         options_plus = state_options - angr.sim_options.modes[mode]
         options_minus = angr.sim_options.modes[mode] - state_options

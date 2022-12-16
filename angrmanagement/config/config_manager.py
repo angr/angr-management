@@ -1,7 +1,7 @@
 import os
 import logging
 import re
-from typing import Union, Type, Any, List, Optional
+from typing import Type, Any, List, Optional, Callable
 
 import tomlkit
 import tomlkit.exceptions
@@ -40,7 +40,7 @@ def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     return str(v) if isinstance(v, tomlkit.items.String) else v.unwrap()
 
 
-def color_parser(config_option, value) -> Union[QColor, None]:
+def color_parser(config_option, value) -> Optional[QColor]:
     if not isinstance(value, str) \
        or not color_re.match(value) \
        or len(value) not in (3, 6, 8, 12):
@@ -58,7 +58,7 @@ def color_serializer(config_option, value: QColor) -> str:
     return f'{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}'
 
 
-def font_parser(config_option, value) -> Union[QFont, None]:
+def font_parser(config_option, value) -> Optional[QFont]:
     if not isinstance(value, str) or 'px ' not in value:
         _l.error('Failed to parse value %r as font for option %s', value, config_option)
         return None
@@ -197,7 +197,6 @@ ENTRIES = [
     CE('proximity_call_node_text_color_plt', QColor, QColor(0x8b, 0x00, 0x8b)),
     CE('proximity_call_node_text_color_simproc', QColor, QColor(0x8b, 0x00, 0x8b)),
 
-    # UI Style
     CE('log_timestamp_format', str, "%H:%M:%S"),
 
     # FLIRT signatures
@@ -441,6 +440,21 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
             return
 
         raise AttributeError(key)
+
+    def connect(self, key: str, func: Callable[[Any], None], init: bool) -> None:
+        """
+        Connect func to the QT signal emitted when the key changes
+        If init, calls func on the value associated with key after connecting
+        """
+        self._entries[key].changed.connect(func)
+        if init:
+            func(getattr(self, key))
+
+    def disconnect(self, key: str, func: Callable[[Any], None]) -> None:
+        """
+        Disconnect func from the QT signal emitted when the key changes
+        """
+        self._entries[key].changed.disconnect(func)
 
     def __dir__(self):
         return list(super().__dir__()) + list(self._entries)

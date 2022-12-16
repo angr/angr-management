@@ -4,12 +4,13 @@ from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QL
     QSizePolicy, QDialogButtonBox
 from PySide6.QtCore import QSize
 
-from ..widgets.qcolor_option import QColorOption
-from ...config.config_manager import ENTRIES
-from ...config.color_schemes import COLOR_SCHEMES
-from ...config import Conf, save_config
-from ...logic.url_scheme import AngrUrlScheme
-from ..css import refresh_theme
+from angrmanagement.ui.widgets.qcolor_option import QColorOption
+from angrmanagement.ui.widgets.qfont_option import QFontOption
+from angrmanagement.ui.css import refresh_theme
+from angrmanagement.config.config_manager import ENTRIES
+from angrmanagement.config.color_schemes import COLOR_SCHEMES
+from angrmanagement.config import Conf, save_config
+from angrmanagement.logic.url_scheme import AngrUrlScheme
 
 
 class Page(QWidget):
@@ -156,8 +157,6 @@ class ThemeAndColors(Page):
         Conf.theme_name = self._schemes_combo.currentText()
         for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
-        refresh_theme()
-
 
 class Style(Page):
     """
@@ -168,14 +167,13 @@ class Style(Page):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-
         self._init_widgets()
 
     def _init_widgets(self):
         page_layout = QVBoxLayout(self)
 
         # Log format
-        log_format_layout = QHBoxLayout(self)
+        log_format_layout = QHBoxLayout()
         log_format_lbl = QLabel("Log datetime Format String:")
         log_format_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         log_format_layout.addWidget(log_format_lbl)
@@ -183,17 +181,32 @@ class Style(Page):
         self.log_format_entry.setClearButtonEnabled(True)
         self.log_format_entry.setText(Conf.log_timestamp_format)
         log_format_layout.addWidget(self.log_format_entry)
-
-        # Page layout
         page_layout.addLayout(log_format_layout)
+
+        # Font options
+        self._font_options = [
+            QFontOption("Application Font", "ui_default_font", self),
+            # TODO: other app fonts, things which set them respect updates to them in Conf
+            # QFontOption("Tab View Font", "tabular_view_font", self),
+            # QFontOption("Disassembly Font", "disasm_font", self),
+            # QFontOption("SymExc Font", "symexec_font", self),
+            # QFontOption("Code Font", "code_font", self),
+        ]
+        font_layout = QVBoxLayout()
+        for i in self._font_options:
+            font_layout.addWidget(i)
+        page_layout.addLayout(font_layout)
+
         page_layout.addStretch()
 
-        self.setLayout(page_layout)
 
     def save_config(self):
         fmt = self.log_format_entry.text()
         if fmt:
             Conf.log_timestamp_format = fmt
+        for i in self._font_options:
+            i.update()
+
 
 class Preferences(QDialog):
     """
@@ -258,4 +271,5 @@ class Preferences(QDialog):
         for page in self._pages:
             page.save_config()
         save_config()
+        refresh_theme()  # Apply updates to theme
         self.close()
