@@ -1,3 +1,4 @@
+import sys
 import enum
 import logging
 from typing import Optional
@@ -321,7 +322,7 @@ class InteractionView(BaseView):
                 return
             self._last_img_name = img_name
 
-        _l.debug('Initializing the connection to archr with image %s' % img_name)
+        _l.debug('Initializing the connection to archr with image %s', img_name)
         self._state_transition(InteractionState.RUNNING)
         Thread(target=self._socket_thread, args=(img_name,), daemon=True).start()
 
@@ -459,7 +460,7 @@ class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
             if event.modifiers() != QtCore.Qt.ShiftModifier:
                 self._callback()
                 return
-        super(SmartPlainTextEdit, self).keyPressEvent(event)
+        super().keyPressEvent(event)
 
 
 class PlainTextProtocol(ProtocolInteractor):
