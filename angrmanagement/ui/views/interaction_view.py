@@ -298,7 +298,7 @@ class InteractionView(BaseView):
                 req_msg += '\n\nInstall them to enable this functionality.'
                 req_msg += '\nRelaunch angr-management after install.'
             else:
-                req_msg = "This feature is not available on this build of angr management"
+                req_msg = "This feature is not available in this build of angr management"
             QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
             return
 
