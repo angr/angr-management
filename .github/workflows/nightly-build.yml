@@ -117,11 +117,37 @@ jobs:
             exit 1
           }
 
+  test_macos:
+    strategy:
+      matrix:
+        os:
+          - macos-12
+      fail-fast: false
+    name: Test on ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: angr-management-onedir-${{ matrix.os }}
+      - run: |
+          set -x
+          hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
+          open /tmp/am-mount/*/*.app
+          sleep 30
+          windows=$(osascript -e '
+            tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
+          ')
+          if [ "$windows" == "" ]; then
+            exit 1
+          fi
+
   deploy:
     name: Deploy release
     needs:
       - test_ubuntu
       - test_windows
+      - test_macos
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'schedule' }}
     steps:
