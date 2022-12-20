@@ -6,6 +6,11 @@ from PySide6.QtCore import Qt
 from .menu import Menu, MenuEntry, MenuSeparator
 from ...logic import GlobalInfo
 
+try:
+    import archr
+except ImportError:
+    archr = None
+
 
 class RecentMenuEntry(MenuEntry):
     """
@@ -36,8 +41,10 @@ class FileMenu(Menu):
         self.recent_menu = Menu("Load recent")
         self.entries.extend([
             MenuEntry('L&oad a new binary...', main_window.open_file_button, shortcut=QKeySequence(Qt.CTRL | Qt.Key_O)),
-            MenuEntry('Loa&d a new docker target...', main_window.open_docker_button,
-                      shortcut=QKeySequence(Qt.SHIFT | Qt.CTRL | Qt.Key_O)),
+            *([] if archr is None else [
+                MenuEntry('Loa&d a new docker target...', main_window.open_docker_button,
+                          shortcut=QKeySequence(Qt.SHIFT | Qt.CTRL | Qt.Key_O)),
+            ]),
             MenuEntry('Load a &trace file...', main_window.open_trace_file_button,
                       shortcut=QKeySequence(Qt.SHIFT | Qt.CTRL | Qt.Key_T)),
             self.recent_menu,

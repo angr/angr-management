@@ -1,3 +1,4 @@
+import sys
 import enum
 import logging
 from typing import Optional
@@ -292,9 +293,12 @@ class InteractionView(BaseView):
         }
         is_missing = [ key for key, value in required.items() if value is None ]
         if len(is_missing) > 0:
-            req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
-            req_msg += '\n\nInstall them to enable this functionality.'
-            req_msg += '\nRelaunch angr-management after install.'
+            if getattr(sys, "frozen", None) is None:
+                req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
+                req_msg += '\n\nInstall them to enable this functionality.'
+                req_msg += '\nRelaunch angr-management after install.'
+            else:
+                req_msg = "This feature is not available in this build of angr management"
             QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
             return
 
@@ -318,7 +322,7 @@ class InteractionView(BaseView):
                 return
             self._last_img_name = img_name
 
-        _l.debug('Initializing the connection to archr with image %s' % img_name)
+        _l.debug('Initializing the connection to archr with image %s', img_name)
         self._state_transition(InteractionState.RUNNING)
         Thread(target=self._socket_thread, args=(img_name,), daemon=True).start()
 
@@ -456,7 +460,7 @@ class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
             if event.modifiers() != QtCore.Qt.ShiftModifier:
                 self._callback()
                 return
-        super(SmartPlainTextEdit, self).keyPressEvent(event)
+        super().keyPressEvent(event)
 
 
 class PlainTextProtocol(ProtocolInteractor):
