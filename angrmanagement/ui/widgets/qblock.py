@@ -341,7 +341,7 @@ class QLinearBlock(QBlock):
 
     @staticmethod
     def format_address(addr):
-        return '{:08x}'.format(addr)
+        return f'{addr:08x}'
 
     def layout_widgets(self):
         y_offset = 0

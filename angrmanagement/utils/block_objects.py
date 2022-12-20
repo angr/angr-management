@@ -1,5 +1,3 @@
-
-
 class FunctionHeader:
 
     __slots__ = ('name', 'prototype', 'args', )

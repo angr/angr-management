@@ -171,7 +171,7 @@ class Instance:
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:
-                raise Exception("Container %s already registered with different type: %s != %s" % (name, ty, cur_ty))
+                raise Exception("Container {} already registered with different type: {} != {}".format(name, ty, cur_ty))
 
         else:
             self._container_defaults[name] = (default_val_func, ty)

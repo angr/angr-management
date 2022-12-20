@@ -225,7 +225,7 @@ class POIViewer(BasePlugin):
             poi_path = self._open_poi_dialog(tfilter='JSON files (*.json)')
 
         if poi_path is not None:
-            with open(poi_path, 'r') as f:
+            with open(poi_path) as f:
                 try:
                     return json.load(f)
                 except json.JSONDecodeError as ex:

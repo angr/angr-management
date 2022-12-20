@@ -47,7 +47,7 @@ class FuncDocDialog(QDialog):
         text_edit.setText(self._doc)
 
         url_label = QLabel(self)
-        hyperlink = "<a href=\"%s\">%s</a>" % (self._url, self._url)
+        hyperlink = "<a href=\"{}\">{}</a>".format(self._url, self._url)
         url_label.setText(hyperlink)
         url_label.setOpenExternalLinks(True)
 

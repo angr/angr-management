@@ -336,7 +336,7 @@ class TraceViewer(BasePlugin):
                                          "The HTTP request returned an unexpected status code %d." % ex.status_code)
                     trace = None
             else:
-                with open(trace_path, 'r') as f:
+                with open(trace_path) as f:
                     trace = json.load(f)
 
             if base_addr is None:
@@ -370,7 +370,7 @@ class TraceViewer(BasePlugin):
         if trace_file_name is None:
             return None, None
 
-        with open(trace_file_name, 'r') as f:
+        with open(trace_file_name) as f:
             trace = json.load(f)
 
         if not isinstance(trace, dict):

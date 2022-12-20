@@ -183,7 +183,7 @@ class DependencyAnalysisJob(Job):
             caller_func_addr = trace.current_function_address()
             callers: Set[int] = set(kb.functions.callgraph.predecessors(caller_func_addr))
             # remove the functions that we already came across - essentially bypassing recursive function calls
-            callers = set(addr for addr in callers if addr not in encountered)
+            callers = {addr for addr in callers if addr not in encountered}
             caller_depth = curr_depth + 1
             if caller_depth >= max_depth:
                 # reached the depth limit. add them to potential analysis starts

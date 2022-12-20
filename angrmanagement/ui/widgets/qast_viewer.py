@@ -8,7 +8,7 @@ from ...config import Conf
 
 class QASTViewer(QFrame):
     def __init__(self, ast, workspace=None, custom_painting=False, display_size=True, byte_format=None, parent=None):
-        super(QASTViewer, self).__init__(parent)
+        super().__init__(parent)
 
         # configs
         self._custom_painting = custom_painting
@@ -85,14 +85,14 @@ class QASTViewer(QFrame):
     @property
     def width(self):
         if not self._custom_painting:
-            return super(QASTViewer, self).width()
+            return super().width()
         else:
             return self._width
 
     @property
     def height(self):
         if not self._custom_painting:
-            return super(QASTViewer, self).height()
+            return super().height()
         else:
             return self._height
 

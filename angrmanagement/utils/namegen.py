@@ -1,4 +1,3 @@
-
 import random
 
 ADJECTIVES = [
@@ -2408,11 +2407,11 @@ ANIMALS = [
 "zorro",
 ]
 
-class NameGenerator(object):
+class NameGenerator:
 
     @staticmethod
     def random_name():
 
         global ADJECTIVES, ANIMALS
 
-        return "%s %s" % (random.choice(ADJECTIVES), random.choice(ANIMALS))
+        return "{} {}".format(random.choice(ADJECTIVES), random.choice(ANIMALS))

@@ -1,4 +1,3 @@
-
 from ..utils.graph import to_supergraph
 
 def edge_qualifies(data):

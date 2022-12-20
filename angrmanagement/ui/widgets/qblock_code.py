@@ -344,7 +344,7 @@ class QAilConstObj(QAilTextObj):
         if data_str:
             self.add_text(data_str)
         else:
-            self.add_text("%#x" % (obj.value,))
+            self.add_text("{:#x}".format(obj.value))
 
     def should_highlight(self) -> bool:
         return (isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj) and
@@ -388,7 +388,7 @@ class QAilRegisterObj(QAilTextObj):
             self.add_variable(obj.variable)
         else:
             if hasattr(obj, 'reg_name'):
-                s = "%s" % (obj.reg_name,)
+                s = "{}".format(obj.reg_name)
             else:
                 s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
             self.add_text(s)
@@ -623,7 +623,7 @@ class QIROpVexStoreObj(QIROpTextObj):
 
     def create_subobjs(self, obj:pyvex.stmt.Store):
         # "ST%s(%s) = %s" % (self.endness[-2:].lower(), self.addr, self.data)
-        self.add_text('ST%s(' % (obj.endness[-2:].lower(),))
+        self.add_text('ST{}('.format(obj.endness[-2:].lower()))
         self.add_irobj(obj.addr)
         self.add_text(') = ')
         self.add_irobj(obj.data)
@@ -635,7 +635,7 @@ class QIROpVexLoadObj(QIROpTextObj):
     """
 
     def create_subobjs(self, obj:pyvex.expr.Load):
-        self.add_text('LD%s:%s(' % (obj.end[-2:].lower(), obj.ty[4:]))
+        self.add_text('LD{}:{}('.format(obj.end[-2:].lower(), obj.ty[4:]))
         self.add_irobj(obj.addr)
         self.add_text(')')
 

@@ -41,7 +41,7 @@ class ExecutionStatisticsViewer(BasePlugin):
         """Prior to stepping the active states, increment the passthrough count on the basic block(s) that will be
         executed next."""
         if self.bb_addrs is None:
-            self.bb_addrs = set(b.addr for b in self.instance.cfg.nodes())
+            self.bb_addrs = {b.addr for b in self.instance.cfg.nodes()}
         for s in simgr.active:
             for i_addr in s.block().instruction_addrs:
                 if i_addr in self.bb_addrs:

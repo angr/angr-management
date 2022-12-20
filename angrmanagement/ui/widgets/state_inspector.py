@@ -11,7 +11,7 @@ class StateInspector(QTabWidget):
     Dispaly detail information for a selected state.
     '''
     def __init__(self, workspace, state, parent=None):
-        super(StateInspector, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         self.workspace = workspace
         self._state = state
 

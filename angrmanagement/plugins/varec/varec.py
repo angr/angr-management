@@ -91,7 +91,7 @@ class VaRec(BasePlugin):
 
         for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
             if not v.renamed:
-                v.name = "@@%s@@%s@@" % (v.name, VaRec.randstr())
+                v.name = "@@{}@@{}@@".format(v.name, VaRec.randstr())
 
         view.codegen.regenerate_text()
         d = {
@@ -165,7 +165,7 @@ class VaRec(BasePlugin):
                 var_name = m.group(1)
                 predicted = varname_to_predicted[var_name]
                 predicted = sorted(predicted, key=lambda x: x['confidence'], reverse=True)
-                v.candidate_names = set(pred['pred_name'] for pred in predicted)
+                v.candidate_names = {pred['pred_name'] for pred in predicted}
                 for pred in predicted:
                     if pred['pred_name'] not in used_names:
                         v.name = pred['pred_name']

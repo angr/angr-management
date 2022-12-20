@@ -1,10 +1,9 @@
-
 from .menu import Menu, MenuEntry, MenuSeparator
 
 
 class DisasmOptionsMenu(Menu):
     def __init__(self, disasm_view):
-        super(DisasmOptionsMenu, self).__init__("", parent=disasm_view)
+        super().__init__("", parent=disasm_view)
 
         self._show_minimap_action = MenuEntry('Show &minimap', self._show_minimap, checkable=True,
                                               checked=self.parent.show_minimap

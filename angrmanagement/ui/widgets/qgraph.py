@@ -238,7 +238,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         elif event.type() == QEvent.MouseButtonRelease:
             newtype = QEvent.GraphicsSceneMouseRelease
         else:
-            raise ValueError('Unknown event type {}'.format(event.type()))
+            raise ValueError(f'Unknown event type {event.type()}')
 
         # pulled from QGraphicsView::mousePressEvent in the qt codebase:
         mouseEvent = QGraphicsSceneMouseEvent(newtype)

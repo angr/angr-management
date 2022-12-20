@@ -21,7 +21,7 @@ class ToolbarAction:
 
 class ToolbarSplitter(ToolbarAction):
     def __init__(self):
-        super(ToolbarSplitter, self).__init__(None, None, None, None)
+        super().__init__(None, None, None, None)
 
 
 class Toolbar:

@@ -1,4 +1,3 @@
-
 import re
 
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
@@ -182,7 +181,7 @@ class QStateTable(QTableWidget):
             name = current_name + " copy"
 
         # Increment the counter until there is no conflict with existing names
-        all_names = set(s.gui_data.name for s in self.states)
+        all_names = {s.gui_data.name for s in self.states}
         while name in all_names:
             ctr += 1
             name = current_name + " copy %d" % ctr

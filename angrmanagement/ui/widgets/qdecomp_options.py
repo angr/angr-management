@@ -48,7 +48,7 @@ class QDecompilationOption(QTreeWidgetItem):
         if hasattr(self.option, "value_type") and self.option.value_type != bool and self.option.candidate_values:
             self._combo_box = QComboBox()
             self._combo_box.addItems(self.option.candidate_values)
-            self._combo_box.setToolTip("%s: %s" % (option.NAME, option.DESCRIPTION))
+            self._combo_box.setToolTip("{}: {}".format(option.NAME, option.DESCRIPTION))
             # XXX: causes an itemChanged event for the tree
             self._combo_box.currentTextChanged.connect(lambda x: self.setText(0, self._combo_box.currentText()))
             self.treeWidget().setItemWidget(self, 0, self._combo_box)

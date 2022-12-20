@@ -99,7 +99,7 @@ class GUIObjProxy:
         for name in cls._special_names:
             if hasattr(theclass, name):
                 namespace[name] = make_method(name)
-        return type("%s(%s)" % (cls.__name__, theclass.__name__), (cls,), namespace)
+        return type("{}({})".format(cls.__name__, theclass.__name__), (cls,), namespace)
 
     def __new__(cls, obj, *args, **kwargs):
         """

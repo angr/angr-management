@@ -399,7 +399,7 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
-        self._last_known_func_addrs = set(func.addr for func in self._table_view._model.func_list)
+        self._last_known_func_addrs = {func.addr for func in self._table_view._model.func_list}
         self.filter_functions(self._filter_box.text())
         self.update_displayed_function_count()
 

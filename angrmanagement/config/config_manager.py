@@ -522,7 +522,7 @@ class ConfigurationManager: # pylint: disable=assigning-non-slot
 
     @classmethod
     def parse_file(cls, path: str, ignore_unknown_entries: bool=False):
-        with open(path, 'r', encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 
     def save(self, f):

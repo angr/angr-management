@@ -13,7 +13,7 @@ l = logging.getLogger('ui.widgets.qpathtree')
 
 class QPathTree(QFrame):
     def __init__(self, simgr, state, symexec_view, workspace, parent=None):
-        super(QPathTree, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self.symexec_view = symexec_view
         self.workspace = workspace

@@ -27,7 +27,7 @@ class LibraryDocs:
             for filename in os.listdir(path):
                 if filename.endswith(".json"):
                     jpath = os.path.join(path, filename)
-                    with open(jpath, "r") as jfile:
+                    with open(jpath) as jfile:
                         data = json.load(jfile)
                         docs.append(data)
 
