@@ -136,7 +136,7 @@ jobs:
           open /tmp/am-mount/*/*.app
           sleep 30
           windows=$(osascript -e '
-            tell application "Finder" to get name of every process whose name contains "angr management"
+            tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
           ')
           if [ "$windows" == "" ]; then
             exit 1
