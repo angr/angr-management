@@ -35,6 +35,10 @@ class MenuEntry:
             return False
         return self._qaction.isChecked()
 
+    @checked.setter
+    def checked(self, checked: bool):
+        if self._qaction is not None:
+            self._qaction.setChecked(checked)
 
 
 class MenuSeparator:
