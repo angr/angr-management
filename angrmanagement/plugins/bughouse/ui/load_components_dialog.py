@@ -136,7 +136,7 @@ class LoadComponentsDialog(QDialog):
             try:
                 data = json.load(f)
             except ValueError as ex:
-                raise TypeError("File {} does not contain valid JSON data.\nException: {}.".format(path, ex))
+                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.")
 
         return self._load_json(data)
 
@@ -146,7 +146,7 @@ class LoadComponentsDialog(QDialog):
         try:
             data = json.loads(content.decode("utf-8"))
         except ValueError as ex:
-            raise TypeError("URL {} does not contain valid JSON data.\nException: {}.".format(url, ex))
+            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.")
         return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):

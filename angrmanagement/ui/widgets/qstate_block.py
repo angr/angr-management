@@ -74,9 +74,9 @@ class QStateBlock(QGraphicsItem):
             else:
                 offset = addr - the_func.addr
                 if not the_func.name:
-                    self._function_str = "{:#x}{:+x}".format(the_func.addr, offset)
+                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
                 else:
-                    self._function_str = "{}{:+x}".format(the_func.name, offset)
+                    self._function_str = f"{the_func.name}{offset:+x}"
         self._function_str = "Function: %s" % self._function_str
 
     def mousePressEvent(self, event): #pylint: disable=no-self-use

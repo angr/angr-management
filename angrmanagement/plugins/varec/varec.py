@@ -91,7 +91,7 @@ class VaRec(BasePlugin):
 
         for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
             if not v.renamed:
-                v.name = "@@{}@@{}@@".format(v.name, VaRec.randstr())
+                v.name = f"@@{v.name}@@{VaRec.randstr()}@@"
 
         view.codegen.regenerate_text()
         d = {

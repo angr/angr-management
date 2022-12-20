@@ -2414,4 +2414,4 @@ class NameGenerator:
 
         global ADJECTIVES, ANIMALS
 
-        return "{} {}".format(random.choice(ADJECTIVES), random.choice(ANIMALS))
+        return f"{random.choice(ADJECTIVES)} {random.choice(ANIMALS)}"

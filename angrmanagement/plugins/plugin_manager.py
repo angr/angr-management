@@ -282,7 +282,7 @@ class PluginManager:
             return None
 
     def _handle_error(self, plugin, func, sensitive, exc):
-        self.workspace.log("Plugin {} errored during {}".format(plugin.get_display_name(), func.__name__))
+        self.workspace.log(f"Plugin {plugin.get_display_name()} errored during {func.__name__}")
         self.workspace.log(exc)
         if sensitive:
             self.workspace.log("Deactivating %s for error during sensitive operation" % plugin.get_display_name())

@@ -71,9 +71,9 @@ class QDepGraphBlock(QCachedGraphicsItem):
             self._definition_str = f"Register {register_name} @ {addr_str}"
         elif isinstance(atom, MemoryLocation):
             if isinstance(atom.addr, SpOffset):
-                self._definition_str = "Stack sp{:+#x} @ {}".format(atom.addr.offset, addr_str)
+                self._definition_str = f"Stack sp{atom.addr.offset:+#x} @ {addr_str}"
             elif isinstance(atom.addr, int):
-                self._definition_str = "Memory {:#x} @ {}".format(atom.addr, addr_str)
+                self._definition_str = f"Memory {atom.addr:#x} @ {addr_str}"
 
         if not self._definition_str:
             # fallback
@@ -97,9 +97,9 @@ class QDepGraphBlock(QCachedGraphicsItem):
             else:
                 offset = self.addr - the_func.addr
                 if not the_func.name:
-                    self._function_str = "{:#x}{:+x}".format(the_func.addr, offset)
+                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
                 else:
-                    self._function_str = "{}{:+x}".format(the_func.name, offset)
+                    self._function_str = f"{the_func.name}{offset:+x}"
             # instruction
             self._instruction_str = "{}:  {}".format(self._function_str,
                                                  self._instance.get_instruction_text_at(self.addr))
