@@ -33,7 +33,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.session = None
         self.project_name = None
         self.project_md5 = None
-        self._log_list = list()
+        self._log_list = []
         self.user = gma()
         self.active = True
         self.slacrs_thread = None

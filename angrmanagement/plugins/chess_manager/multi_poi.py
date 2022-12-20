@@ -27,11 +27,11 @@ class MultiPOI:
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self._traces_summary = list()
-        self._pois = dict()
+        self._traces_summary = []
+        self._pois = {}
         self.function_info = {}
         self.is_active_tab = False
-        self.addr_color_map = dict()
+        self.addr_color_map = {}
         self.slacrs_url = "sqlite://"
         # self.base_addr = base_addr
 
@@ -175,13 +175,13 @@ class MultiPOI:
     def _make_addr_map(self, addrs_of_interest):
         #TODO: Probably exists a more efficient way to generate this mapping
         self.addr_color_map.clear()
-        hit_map = dict()
+        hit_map = {}
         for addr in addrs_of_interest:
             if addr not in hit_map.keys():
                 hit_map[addr] = 0
             hit_map[addr] += 1
 
-        buckets = dict()
+        buckets = {}
         for addr, count in hit_map.items():
             if count not in buckets.keys():
                 buckets[count] = []
