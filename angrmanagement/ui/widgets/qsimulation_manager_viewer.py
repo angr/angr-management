@@ -193,7 +193,7 @@ class QSimulationManagerViewer(QTreeWidget):
             QMessageBox.critical(None, 'Duplicate stash name',
                                  f"A stash with the name {stash_name} already exists in the current simulation manager.")
             return
-        self.simgr._stashes[stash_name] = list()
+        self.simgr._stashes[stash_name] = []
         self.refresh()
 
     def refresh(self, **kwargs):
