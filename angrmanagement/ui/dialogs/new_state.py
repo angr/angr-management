@@ -219,7 +219,7 @@ class NewState(QDialog):
             env_dialog = EnvConfig(env_config=self._env_config, instance=self.instance, parent=self)
             env_dialog.exec_()
             self._env_config = env_dialog.env_config
-            env_button.setText("{} Items".format(len(self._env_config)))
+            env_button.setText(f"{len(self._env_config)} Items")
 
         env_button.clicked.connect(env_edit_button)
 
@@ -238,7 +238,7 @@ class NewState(QDialog):
             fs_dialog = FilesystemMount(fs_config=self._fs_config, instance=self.instance, parent=self)
             fs_dialog.exec_()
             self._fs_config = fs_dialog.fs_config
-            fs_button.setText("{} Items".format(len(self._fs_config)))
+            fs_button.setText(f"{len(self._fs_config)} Items")
 
         fs_button.clicked.connect(fs_edit_button)
 

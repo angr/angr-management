@@ -1,4 +1,3 @@
-
 import itertools
 from collections import defaultdict
 
@@ -199,7 +198,7 @@ class OutBranch:
     def __repr__(self):
         if self.ins_addr is None:
             return "<OutBranch at None, type %s>" % self.type
-        return "<OutBranch at %#x, type %s>" % (self.ins_addr, self.type)
+        return f"<OutBranch at {self.ins_addr:#x}, type {self.type}>"
 
     def add_target(self, addr):
         self.targets.add(addr)

@@ -28,7 +28,7 @@ class querySignaler(QObject):
 class SeedTableModel(QAbstractTableModel):
 
     def __init__(self, workspace, table, dropdown, countlabel):
-        super(SeedTableModel, self).__init__()
+        super().__init__()
         self.query_signal = querySignaler()
         self.query_signal.querySignal.connect(self.querySignalHandle)
         self.seed_db = SeedTable(workspace, self.query_signal, seed_callback=self.add_seed)

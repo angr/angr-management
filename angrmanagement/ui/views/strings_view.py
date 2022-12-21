@@ -12,7 +12,7 @@ from ..widgets.qfunction_combobox import QFunctionComboBox
 
 class StringsView(BaseView):
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super(StringsView, self).__init__('strings', instance, default_docking_position, *args, **kwargs)
+        super().__init__('strings', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'Strings'
 

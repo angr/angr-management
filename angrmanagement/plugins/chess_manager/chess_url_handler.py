@@ -96,7 +96,7 @@ class ChessUrlHandler(BasePlugin):
         # load it if it exists
         entries = { }
         if os.path.isfile(rootdirs_path):
-            with open(rootdirs_path, "r") as f:
+            with open(rootdirs_path) as f:
                 try:
                     entries = tomlkit.load(f)
                 except tomlkit.exceptions.ParseError:
@@ -163,7 +163,7 @@ class ChessUrlHandler(BasePlugin):
         # load it
         entries = { }
         if os.path.isfile(rootdirs_path):
-            with open(rootdirs_path, "r") as f:
+            with open(rootdirs_path) as f:
                 try:
                     entries = tomlkit.load(f)
                 except tomlkit.exceptions.ParseError:

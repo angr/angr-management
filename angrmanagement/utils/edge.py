@@ -1,5 +1,3 @@
-
-
 class EdgeSort:
     DIRECT_JUMP = 0
     TRUE_BRANCH = 1

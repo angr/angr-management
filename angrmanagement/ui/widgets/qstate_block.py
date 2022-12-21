@@ -17,7 +17,7 @@ class QStateBlock(QGraphicsItem):
     LINE_MARGIN = 3
 
     def __init__(self, is_selected, symexec_view, state=None, history=None):
-        super(QStateBlock, self).__init__()
+        super().__init__()
 
         self.symexec_view = symexec_view
         self._instance = self.symexec_view.instance
@@ -74,9 +74,9 @@ class QStateBlock(QGraphicsItem):
             else:
                 offset = addr - the_func.addr
                 if not the_func.name:
-                    self._function_str = "%#x%+x" % (the_func.addr, offset)
+                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
                 else:
-                    self._function_str = "%s%+x" % (the_func.name, offset)
+                    self._function_str = f"{the_func.name}{offset:+x}"
         self._function_str = "Function: %s" % self._function_str
 
     def mousePressEvent(self, event): #pylint: disable=no-self-use

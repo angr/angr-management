@@ -15,7 +15,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
     TOP_PADDING = 2000
 
     def __init__(self, current_state, workspace, symexec_view, parent=None):
-        super(QSymExecGraph, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self.state = current_state
         self._symexec_view = symexec_view

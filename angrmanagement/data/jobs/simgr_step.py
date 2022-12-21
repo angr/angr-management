@@ -3,7 +3,7 @@ from .job import Job
 
 class SimgrStepJob(Job):
     def __init__(self, simgr, callback=None, until_branch=False, step_callback=None):
-        super(SimgrStepJob, self).__init__('Simulation manager stepping')
+        super().__init__('Simulation manager stepping')
         self._simgr = simgr
         self._callback = callback
         self._until_branch = until_branch
@@ -23,7 +23,7 @@ class SimgrStepJob(Job):
         return self._simgr
 
     def finish(self, inst, result):
-        super(SimgrStepJob, self).finish(inst, result)
+        super().finish(inst, result)
         if self._callback is not None:
             self._callback(result)
 

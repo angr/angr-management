@@ -39,7 +39,7 @@ class QRegisterViewer(QFrame):
     ARCH_REGISTERS['ARMHF'] = ARCH_REGISTERS['ARM']
 
     def __init__(self, state, parent, workspace):
-        super(QRegisterViewer, self).__init__(parent)
+        super().__init__(parent)
 
         self._state = state
         self.workspace = workspace

@@ -11,20 +11,20 @@ from .qast_viewer import QASTViewer
 l = logging.getLogger('ui.widgets.qregister_viewer')
 
 
-class AddressPiece(object):
+class AddressPiece:
     __slots__ = ['address']
 
     def __init__(self, address):
         self.address = address
 
 
-class NewLinePiece(object):
+class NewLinePiece:
     pass
 
 
 class QMemoryView(QWidget):
     def __init__(self, state, instance, parent=None):
-        super(QMemoryView, self).__init__(parent)
+        super().__init__(parent)
         self.instance = instance
 
         self.state = state
@@ -120,7 +120,7 @@ class QMemoryView(QWidget):
 
 class QMemoryViewer(QFrame):
     def __init__(self, state, parent, workspace):
-        super(QMemoryViewer, self).__init__(parent)
+        super().__init__(parent)
         self.workspace = workspace
 
         self._scrollarea = None  # type: QScrollArea

@@ -1,4 +1,3 @@
-
 from PySide6.QtCore import Qt, QRectF
 
 from .qgraph_object import QCachedGraphicsItem
@@ -72,7 +71,7 @@ class QPhiVariable(QCachedGraphicsItem):
         painter.drawText(x, self._config.disasm_font_ascent, " = ")
         x += self._config.disasm_font_width * 3
         painter.setPen(Qt.darkGreen)
-        painter.drawText(x, self._config.disasm_font_ascent, u'\u0278(')
+        painter.drawText(x, self._config.disasm_font_ascent, '\u0278(')
         x += self._config.disasm_font_width * 2
 
         for i, (subvar_ident, ident_width) in enumerate(zip(self._subvar_idents, self._subvar_ident_widths)):

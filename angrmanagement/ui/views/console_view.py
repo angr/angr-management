@@ -1,4 +1,3 @@
-
 import logging
 from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtCore import QSize

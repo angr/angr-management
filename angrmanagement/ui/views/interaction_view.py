@@ -452,7 +452,7 @@ class InteractionView(BaseView):
 # Subclass QPlainTextEdit
 class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
     def __init__(self, parent, callback):
-        super(SmartPlainTextEdit, self).__init__(parent)
+        super().__init__(parent)
         self._callback = callback
 
     def keyPressEvent(self, event):

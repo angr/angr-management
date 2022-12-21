@@ -32,7 +32,7 @@ class ManagementService(rpyc.Service):
             conn = TargetIDtoCONN[target_id]
         else:
             raise Exception(
-                "The specified target %s is not open in angr management. We have the following ones: %s." % (
+                "The specified target {} is not open in angr management. We have the following ones: {}.".format(
                 target_id,
                 str(TargetIDtoCONN)))
         return conn

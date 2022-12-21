@@ -1,4 +1,3 @@
-
 import os
 import sys
 import subprocess
@@ -107,7 +106,7 @@ class AngrUrlScheme:
 
     def _register_url_scheme_linux(self):
 
-        cmd_0 = ["xdg-mime", "default", "angr.desktop", "x-scheme-handler/{url_scheme}".format(url_scheme=self.URL_SCHEME)]
+        cmd_0 = ["xdg-mime", "default", "angr.desktop", f"x-scheme-handler/{self.URL_SCHEME}"]
 
         # test if xdg-mime is available
         retcode = subprocess.call(["xdg-mime"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -160,14 +159,14 @@ Type=Application
 
         # xdg-mine query
         proc = subprocess.Popen(["xdg-mime", "query", "default",
-            "x-scheme-handler/{url_scheme}".format(url_scheme=self.URL_SCHEME)],
+            f"x-scheme-handler/{self.URL_SCHEME}"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, _ = proc.communicate()
         if not stdout:
             return False, None
 
         # Load Exec=
-        with open(angr_desktop_path, "r") as f:
+        with open(angr_desktop_path) as f:
             data = f.read()
         lines = data.split("\n")
         cmdline = None

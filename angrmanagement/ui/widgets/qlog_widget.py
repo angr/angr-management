@@ -171,7 +171,7 @@ class QLogWidget(QTableView):
         selection = self.selectionModel().selectedRows()
         for row_index in selection:
             record = self.model.log[row_index.row()]
-            content.append("%s | %s | %s | %s" % (
+            content.append("{} | {} | {} | {}".format(
                 QLogTableModel.level_to_text(record.level),
                 str(record.timestamp),
                 record.source,
@@ -189,7 +189,7 @@ class QLogWidget(QTableView):
     def copy_all(self):
         content = [ ]
         for record in self.model.log:
-            content.append("%s | %s | %s | %s" % (
+            content.append("{} | {} | {} | {}".format(
                 QLogTableModel.level_to_text(record.level),
                 str(record.timestamp),
                 record.source,

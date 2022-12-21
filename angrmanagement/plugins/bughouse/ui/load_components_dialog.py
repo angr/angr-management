@@ -65,7 +65,7 @@ class LoadComponentsDialog(QDialog):
                 tree = self._load_json_from_file(path)
             self.tree = tree
             return True
-        except (ValueError, TypeError, IOError) as ex:
+        except (ValueError, TypeError, OSError) as ex:
             QMessageBox.critical(self,
                                  "Loading error",
                                  "Failed to load components information. Please make sure the component file is "
@@ -130,13 +130,13 @@ class LoadComponentsDialog(QDialog):
 
     def _load_json_from_file(self, path):
         if not os.path.isfile(path):
-            raise IOError("File %s does not exist." % path)
+            raise OSError("File %s does not exist." % path)
 
-        with open(path, "r") as f:
+        with open(path) as f:
             try:
                 data = json.load(f)
             except ValueError as ex:
-                raise TypeError("File %s does not contain valid JSON data.\nException: %s." % (path, ex))
+                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.")
 
         return self._load_json(data)
 
@@ -146,7 +146,7 @@ class LoadComponentsDialog(QDialog):
         try:
             data = json.loads(content.decode("utf-8"))
         except ValueError as ex:
-            raise TypeError("URL %s does not contain valid JSON data.\nException: %s." % (url, ex))
+            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.")
         return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):

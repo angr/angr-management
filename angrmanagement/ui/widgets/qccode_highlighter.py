@@ -1,4 +1,3 @@
-
 import re
 
 from pyqodeng.core.api import SyntaxHighlighter

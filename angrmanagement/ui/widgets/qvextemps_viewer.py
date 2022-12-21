@@ -11,7 +11,7 @@ l = logging.getLogger('ui.widgets.qvextemps_viewer')
 class QVEXTempsViewer(QFrame):
 
     def __init__(self, state, parent, workspace):
-        super(QVEXTempsViewer, self).__init__(parent)
+        super().__init__(parent)
         self.workspace = workspace
 
         self.state = state

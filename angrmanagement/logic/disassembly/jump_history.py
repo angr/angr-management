@@ -1,5 +1,3 @@
-
-
 class JumpHistory:
     """
     A class to store the navigation history of a reversing session. Typically found at DisassemblyView._jump_history

@@ -7,7 +7,7 @@ from ..widgets.qstate_table import QStateTable
 
 class StatesView(BaseView):
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super(StatesView, self).__init__('states', instance, default_docking_position, *args, **kwargs)
+        super().__init__('states', instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = 'States'
         self._state_table = None  # type: QStateTable

@@ -260,7 +260,7 @@ class QXRefViewer(QTableView):
 
     def __init__(self, addr=None, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None,
                  instance: 'Instance'=None, xref_dialog=None, parent=None):
-        super(QXRefViewer, self).__init__(parent)
+        super().__init__(parent)
 
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)

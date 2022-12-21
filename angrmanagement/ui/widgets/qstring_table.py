@@ -148,7 +148,7 @@ class QStringModel(QAbstractTableModel):
 
 class QStringTable(QTableView):
     def __init__(self, instance, parent, selection_callback=None):
-        super(QStringTable, self).__init__(parent)
+        super().__init__(parent)
 
         self._instance = instance
         self._selected = selection_callback

@@ -282,7 +282,7 @@ class PluginManager:
             return None
 
     def _handle_error(self, plugin, func, sensitive, exc):
-        self.workspace.log("Plugin %s errored during %s" % (plugin.get_display_name(), func.__name__))
+        self.workspace.log(f"Plugin {plugin.get_display_name()} errored during {func.__name__}")
         self.workspace.log(exc)
         if sensitive:
             self.workspace.log("Deactivating %s for error during sensitive operation" % plugin.get_display_name())
@@ -367,7 +367,7 @@ class PluginManager:
         raise IndexError("Not enough columns")
 
     def count_func_columns(self):
-        return sum((len(plugin.FUNC_COLUMNS) for plugin in self.active_plugins.values()))
+        return sum(len(plugin.FUNC_COLUMNS) for plugin in self.active_plugins.values())
 
     def extract_func_column(self, func, idx):
         for plugin in self.active_plugins.values():

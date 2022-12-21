@@ -70,7 +70,7 @@ class SingleInstance:
             self.fp.flush()
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except IOError:
+            except OSError:
                 logger.debug(
                     "Another instance is already running, quitting.")
                 raise SingleInstanceException()

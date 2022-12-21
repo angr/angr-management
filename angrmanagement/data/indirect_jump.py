@@ -1,5 +1,4 @@
-
-class IndirectJump(object):
+class IndirectJump:
     """
     A meta class describing an indirect jump instruction.
     """

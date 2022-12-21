@@ -12,7 +12,7 @@ except ImportError:
 
 class FileToolbar(Toolbar):
     def __init__(self, main_window):
-        super(FileToolbar, self).__init__(main_window, 'File')
+        super().__init__(main_window, 'File')
 
         self.actions = [
             ToolbarAction(QIcon(os.path.join(IMG_LOCATION, 'toolbar-file-open.ico')),

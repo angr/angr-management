@@ -66,7 +66,7 @@ class PluginDescription:
 
     @classmethod
     def from_toml(cls, file_path: str) -> List['PluginDescription']:
-        with open(file_path, "r", encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             data = tomlkit.load(f)
 
         # load metadata
