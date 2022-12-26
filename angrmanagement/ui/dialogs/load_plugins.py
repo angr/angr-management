@@ -1,5 +1,6 @@
 import logging
 from typing import List, TYPE_CHECKING
+from pathlib import Path
 
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
     QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
@@ -112,7 +113,7 @@ class LoadPlugins(QDialog):
             self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)")
         if not file_path:
             return
-        plugins = load_plugin_description(file_path)
+        plugins = load_plugin_description(str(Path(file_path).parent))
 
         if not plugins:
             QMessageBox.warning(self, "Error", "File contained no plugin descriptions")
