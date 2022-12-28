@@ -148,9 +148,10 @@ class CodeView(BaseView):
 
         if self._function.ran_cca is False:
             # run calling convention analysis for this function
+            options = self.instance._analysis_configuration['varec'].to_dict()
+            options['workers'] = 0
             varrec_job = VariableRecoveryJob(
-                **self.instance._analysis_configuration['varec'].to_dict(),
-                workers=0,
+                **options,
                 on_finish=decomp,
                 func_addr=self._function.addr
             )
