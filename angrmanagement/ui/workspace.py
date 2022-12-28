@@ -1,37 +1,30 @@
-import os
 from typing import TYPE_CHECKING, Callable, Optional, List, Union
+import os
 import logging
 import traceback
-import time
 
 from PySide6.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
-from angr.misc.testing import is_testing
 from cle import SymbolType
 
-from ..logic.debugger import DebuggerWatcher
-from ..logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.config import Conf
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.data.trace import BintraceTrace, Trace
+from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.data.jobs.loading import LoadBinaryJob
+from angrmanagement.data.jobs import VariableRecoveryJob
+from angrmanagement.data.analysis_options import AnalysesConfiguration
+from angrmanagement.plugins import PluginManager
 
-from ..config import Conf
-from ..data.breakpoint import Breakpoint, BreakpointType
-from ..data.trace import BintraceTrace, Trace
-from ..data.instance import ObjectContainer
-from ..data.jobs.loading import LoadBinaryJob
-from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob, \
-    CFGGenerationJob
-from ..data.analysis_options import AnalysesConfiguration, CFGAnalysisConfiguration, FlirtAnalysisConfiguration, \
-    VariableRecoveryConfiguration
 from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
                     InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
                     DataDepView, RegistersView, StackView, TracesView, TraceMapView, BreakpointsView,
                     CallExplorerView)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
-from .dialogs import AnalysisOptionsDialog
-from ..logic.threads import gui_thread_schedule_async
-
-from ..plugins import PluginManager
 
 if TYPE_CHECKING:
     from ..data.instance import Instance
