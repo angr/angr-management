@@ -1,4 +1,6 @@
-from typing import Mapping, Any, Sequence, Union
+from typing import Mapping, Any, Sequence, Union, Optional
+import platform
+import multiprocessing
 
 import angr
 
@@ -92,9 +94,10 @@ class AnalysisOption:
     Configurable option for an analysis.
     """
 
-    def __init__(self, name: str, display_name: str):
+    def __init__(self, name: str, display_name: str, tooltip: str):
         self.name: str = name
         self.display_name: str = display_name
+        self.tooltip: str = tooltip
 
     def update_dict(self, out: Mapping[str, Any]):
         """
@@ -107,8 +110,8 @@ class PrimitiveAnalysisOption(AnalysisOption):
     Configurable option for an analysis, with a fundamental type (e.g. bool)
     """
 
-    def __init__(self, name: str, description: str, default: Any):
-        super().__init__(name, description)
+    def __init__(self, name: str, description: str, default: Any, tooltip: str):
+        super().__init__(name, description, tooltip)
         self.default: Any = default
         self.value: Any = default
 
@@ -124,8 +127,20 @@ class BoolAnalysisOption(PrimitiveAnalysisOption):
     Boolean option for an analysis.
     """
 
-    def __init__(self, name: str, description: str, default: bool = False):
-        super().__init__(name, description, default)
+    def __init__(self, name: str, description: str, default: bool = False, tooltip: str = ''):
+        super().__init__(name, description, default, tooltip)
+
+
+class IntAnalysisOption(PrimitiveAnalysisOption):
+    """
+    Integer option for an analysis.
+    """
+
+    def __init__(self, name: str, description: str, default: int = 0, tooltip: str = '', minimum: Optional[int] = None,
+                 maximum: Optional[int] = None):
+        super().__init__(name, description, default, tooltip)
+        self.minimum_value = minimum
+        self.maximum_value = maximum
 
 
 class CFGAnalysisConfiguration(AnalysisConfiguration):
@@ -165,13 +180,59 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     Configuration for VariableRecovery analysis.
     """
 
+    SMALL_BINARY_SIZE = 65536
+    MEDIUM_BINARY_SIZE = 400000
+
     def __init__(self, instance):
         super().__init__(instance)
         self.name = 'varec'
-        self.display_name = 'Variable Recovery'
-        self.description = extract_first_paragraph_from_docstring(self.project.analyses.VariableRecovery.__doc__)
-        self.enabled = True
+        self.display_name = 'Complete Variable Recovery'
+        self.description = ("Perform a full-project variable recovery and calling-convention recovery analysis. " 
+                            "Recommended for small- to medium-sized binaries. This analysis takes a long time to "
+                            "finish on large binaries. You can manually perform a variable recovery and "
+                            "calling-convention recovery analysis on an individual basis after loading the project.")
+        self.enabled = self.get_main_obj_size() <= self.MEDIUM_BINARY_SIZE
         self.options = {o.name: o for o in [
+            IntAnalysisOption('workers',
+                              'Number of parallel workers',
+                              tooltip='0 to disable parallel analysis. Default to the number of available cores ' \
+                                      'minus one in the local system. Automatically default to 0 for small binaries ' \
+                                      'on all platforms, and small- to medium-sized binaries on Windows and MacOS ' \
+                                      '(to avoid the cost of spawning new angr-management processes).',
+                              default=self.get_default_workers(),
+                              minimum=0,
+                              ),
             BoolAnalysisOption('skip_signature_matched_functions', 'Skip variable recovery for signature-matched '
                                                                    'functions', True),
             ]}
+
+    def get_main_obj_size(self) -> int:
+        main_obj_size = 0
+        if self.project.loader.main_object is not None:
+            main_obj = self.project.loader.main_object
+            if main_obj.segments:
+                for seg in main_obj.segments:
+                    if seg.is_executable:
+                        main_obj_size += seg.memsize
+            if main_obj_size == 0 and main_obj.sections:
+                # fall back to sections
+                for sec in main_obj.sections:
+                    if sec.is_executable:
+                        main_obj_size += sec.memsize
+        return main_obj_size
+
+    def get_default_workers(self) -> int:
+        main_obj_size = self.get_main_obj_size()
+
+        default_workers = max(multiprocessing.cpu_count() - 1, 1)
+        if default_workers == 1:
+            return 0
+
+        if platform.system() in {"Windows", "Darwin"}:
+            if main_obj_size <= self.MEDIUM_BINARY_SIZE:
+                return 0
+            return default_workers
+
+        if main_obj_size <= self.SMALL_BINARY_SIZE:
+            return 0
+        return default_workers

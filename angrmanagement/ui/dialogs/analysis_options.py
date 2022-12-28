@@ -3,12 +3,12 @@ from typing import Optional, Sequence
 import logging
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QFrame, QGroupBox, \
-    QListWidgetItem, QListWidget, QDialogButtonBox, QLabel, QCheckBox, QSplitter, QWidget
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QFrame, QGroupBox, QHBoxLayout, \
+    QListWidgetItem, QListWidget, QDialogButtonBox, QLabel, QCheckBox, QSplitter, QWidget, QSpinBox
 from PySide6.QtCore import Qt, QSize
 
 from ...config import IMG_LOCATION
-from ...data.analysis_options import AnalysisOption, AnalysesConfiguration, BoolAnalysisOption
+from ...data.analysis_options import AnalysisOption, AnalysesConfiguration, BoolAnalysisOption, IntAnalysisOption
 
 l = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ class AnalysisOptionWidgetMapper:
     def get_mapper_for_option(cls, option: AnalysisOption) -> 'AnalysisOptionWidgetMapper':
         if isinstance(option, BoolAnalysisOption):
             return BoolAnalysisOptionWidgetMapper(option)
+        elif isinstance(option, IntAnalysisOption):
+            return IntAnalysisOptionWidgetMapper(option)
         else:
             raise ValueError('Mapper not implemented')
 
@@ -37,16 +39,53 @@ class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
     """
     Analysis option widget creation and event handling for boolean options.
     """
+    option: BoolAnalysisOption
 
     def create_widget(self, parent=None) -> QCheckBox:
         self.widget = QCheckBox(parent)
         self.widget.setText(self.option.display_name)
+        if self.option.tooltip:
+            self.widget.setToolTip(self.option.tooltip)
         self.widget.setChecked(self.option.value)
         self.widget.stateChanged.connect(self._on_checkbox_changed)
         return self.widget
 
     def _on_checkbox_changed(self, state):
         self.option.value = (state == Qt.Checked)
+
+
+class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
+    """
+    Analysis option widget creation and event handling for integer options.
+    """
+    option: IntAnalysisOption
+
+    def create_widget(self, parent=None) -> QWidget:
+        spinbox = QSpinBox()
+        spinbox.setValue(self.option.value)
+        if self.option.tooltip:
+            spinbox.setToolTip(self.option.tooltip)
+        spinbox.valueChanged.connect(self._on_dial_changed)
+        if self.option.minimum_value is not None:
+            spinbox.setMinimum(self.option.minimum_value)
+        if self.option.maximum_value is not None:
+            spinbox.setMaximum(self.option.maximum_value)
+
+        lbl = QLabel()
+        lbl.setText(self.option.display_name)
+        if self.option.tooltip:
+            lbl.setToolTip(self.option.tooltip)
+
+        layout = QHBoxLayout()
+        layout.addWidget(lbl)
+        layout.addWidget(spinbox)
+
+        self.widget = QWidget(parent)
+        self.widget.setLayout(layout)
+        return self.widget
+
+    def _on_dial_changed(self, value: int):
+        self.option.value = value
 
 
 class AnalysisOptionsDialog(QDialog):

@@ -120,6 +120,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
     from .logic import GlobalInfo
     from .ui.main_window import MainWindow
+    from .ui.awesome_tooltip_event_filter import QAwesomeTooltipEventFilter
     import angr
     angr.loggers.profiling_enabled = bool(profiling)
 
@@ -131,6 +132,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "DejaVuSansMono.ttf"))
     Conf.init_font_config()
     Conf.connect("ui_default_font", app.setFont, True)
+
+    # install the global tooltip filter
+    app.installEventFilter(QAwesomeTooltipEventFilter(app))
 
     splash.setProgress(0.9, 'Initializing main window')
     GlobalInfo.gui_thread = threading.get_ident()
