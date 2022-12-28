@@ -187,7 +187,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
         super().__init__(instance)
         self.name = 'varec'
         self.display_name = 'Complete Variable Recovery'
-        self.description = ("Perform a full-project variable recovery and calling-convention recovery analysis. " 
+        self.description = ("Perform a full-project variable recovery and calling-convention recovery analysis. "
                             "Recommended for small- to medium-sized binaries. This analysis takes a long time to "
                             "finish on large binaries. You can manually perform a variable recovery and "
                             "calling-convention recovery analysis on an individual basis after loading the project.")
