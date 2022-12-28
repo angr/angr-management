@@ -10,6 +10,8 @@ class CodeTaggingJob(Job):
 
         func_count = len(inst.kb.functions)
         for i, func in enumerate(inst.kb.functions.values()):
+            if func.alignment:
+                continue
             ct = inst.project.analyses.CodeTagging(func)
             func.tags = tuple(ct.tags)
 
