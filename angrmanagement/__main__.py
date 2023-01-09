@@ -93,7 +93,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
             info["CFBundleName"] = name
         except Exception as e:  # pylint: disable=broad-except
             # This happens before logging is setup so use stderr
-            print(f"{type(e).__name__}: {e}", file=sys.stderr)
+            print(f"Failed to set App name! {type(e).__name__}: {e}", file=sys.stderr)
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)

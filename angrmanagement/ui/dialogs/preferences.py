@@ -1,3 +1,6 @@
+from datetime import datetime
+from bidict import bidict
+
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDialog,
@@ -196,9 +199,17 @@ class Style(Page):
         log_format_lbl = QLabel("Log datetime Format String:")
         log_format_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         log_format_layout.addWidget(log_format_lbl)
-        self.log_format_entry = QLineEdit(self)
-        self.log_format_entry.setClearButtonEnabled(True)
-        self.log_format_entry.setText(Conf.log_timestamp_format)
+
+        self.log_format_entry = QComboBox(self)
+        fmt: str = Conf.log_timestamp_format
+        ts = datetime.now()
+        # pylint: disable=use-sequence-for-iteration
+        self._fmt_map = bidict({ ts.strftime(i): i for i in {fmt, "%X", "%c"} })
+        for i in self._fmt_map.keys():
+            self.log_format_entry.addItem(i)
+        # pylint: disable=unsubscriptable-object
+        self.log_format_entry.setCurrentText(self._fmt_map.inverse[fmt])
+        self.log_format_entry.setEditable(True)
         log_format_layout.addWidget(self.log_format_entry)
         page_layout.addLayout(log_format_layout)
 
@@ -219,9 +230,9 @@ class Style(Page):
         page_layout.addStretch()
 
     def save_config(self):
-        fmt = self.log_format_entry.text()
+        fmt = self.log_format_entry.currentText()
         if fmt:
-            Conf.log_timestamp_format = fmt
+            Conf.log_timestamp_format = self._fmt_map.get(fmt, fmt)
         for i in self._font_options:
             i.update()
 
