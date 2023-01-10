@@ -58,11 +58,6 @@ jobs:
             upload/*.tar.gz
             upload/*.zip
             upload/*.dmg
-      - uses: actions/upload-artifact@v3
-        if: startsWith(matrix.os, 'ubuntu')
-        with:
-          name: angr-management-appimage-${{ matrix.os }}
-          path: upload/*.AppImage
 
   test_ubuntu:
     strategy:
