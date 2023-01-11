@@ -33,7 +33,8 @@ class QBlock(QCachedGraphicsItem):
     SHADOW_OFFSET_Y = 0
 
     def __init__(
-        self, instance, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene, parent=None
+        self, instance, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene, parent=None,
+        idx=None
     ):
         super().__init__(parent=parent)
 
@@ -48,6 +49,7 @@ class QBlock(QCachedGraphicsItem):
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
         self.scene = scene
+        self.idx = idx
 
         self._config = Conf
 

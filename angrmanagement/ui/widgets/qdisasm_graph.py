@@ -139,6 +139,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
             nodefunc = lambda n: n
             branchfunc = lambda n: None
+            has_idx = True
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
             self.disasm = self.instance.project.analyses.Disassembly(
@@ -154,6 +155,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             self._supergraph = self._function_graph.supergraph
             nodefunc = lambda n: n.cfg_nodes
             branchfunc = get_out_branches
+            has_idx = False
 
         for n in self._supergraph.nodes():
             block = QGraphBlock(
@@ -166,6 +168,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                 nodefunc(n),
                 branchfunc(n),
                 scene,
+                idx=n.idx if has_idx else None,
             )
             if n.addr == self._function_graph.function.addr:
                 self.entry_block = block
@@ -275,7 +278,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         nodes = {}
         for node, coords in gl.node_coordinates.items():
-            nodes[node.addr] = coords
+            nodes[(node.addr, node.idx)] = coords
 
         return nodes, gl.edges
 
@@ -293,7 +296,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         # layout nodes
         for block in self.blocks:
-            x, y = node_coords[block.addr]
+            x, y = node_coords[(block.addr, block.idx)]
             block.setPos(x, y)
 
         scene = self.scene()
