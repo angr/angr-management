@@ -11,8 +11,9 @@ class LibraryDocs:
     """
     Implements the manager of library docs.
     """
+
     def __init__(self):
-        self.func_docs = [ ]
+        self.func_docs = []
 
     def load_func_docs(self, path):
         if not os.path.isabs(path):
@@ -22,7 +23,7 @@ class LibraryDocs:
                 path = os.path.join(app_root(), "..", path)
         path = os.path.normpath(path)
         _l.info("Loading library docs from %s.", path)
-        docs = [ ]
+        docs = []
         if os.path.isdir(path):
             for filename in os.listdir(path):
                 if filename.endswith(".json"):

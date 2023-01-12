@@ -18,6 +18,7 @@ class QBlockCodeOptions:
     """
     Various options to control display of QBlockCodeObj's
     """
+
     show_conditional_jump_targets: bool = True
     show_variables: bool = True
     show_variable_identifiers: bool = True
@@ -36,11 +37,11 @@ class QBlockCodeObj(QObject):
     infodock: InfoDock
     parent: Any
     options: QBlockCodeOptions
-    span: Optional[Tuple[int,int]]
-    subobjs: Sequence['QBlockCodeObj']
+    span: Optional[Tuple[int, int]]
+    subobjs: Sequence["QBlockCodeObj"]
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj:Any, infodock:InfoDock, parent:Any, options:QBlockCodeOptions=None):
+    def __init__(self, obj: Any, infodock: InfoDock, parent: Any, options: QBlockCodeOptions = None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
@@ -107,13 +108,13 @@ class QBlockCodeObj(QObject):
         span_max = cursor.position()
         self.span = (span_min, span_max)
 
-    def hit_test(self, pos:int) -> bool:
+    def hit_test(self, pos: int) -> bool:
         """
         Determine whether a character offset falls within the span of this object
         """
         return self.span[0] <= pos < self.span[1]
 
-    def get_hit_obj(self, pos:int) -> 'QBlockCodeObj':
+    def get_hit_obj(self, pos: int) -> "QBlockCodeObj":
         """
         Find the leaf node for a given character offset
         """
@@ -126,13 +127,13 @@ class QBlockCodeObj(QObject):
                     return hit
         return self
 
-    def _add_subobj(self, obj:'QBlockCodeObj'):
+    def _add_subobj(self, obj: "QBlockCodeObj"):
         """
         Add display object `obj` to the list of subobjects
         """
         self.subobjs.append(obj)
 
-    def add_text(self, text:str):
+    def add_text(self, text: str):
         """
         Add a text leaf
         """
@@ -141,19 +142,17 @@ class QBlockCodeObj(QObject):
     def add_variable(self, var):
         self._add_subobj(QVariableObj(var, self.infodock, parent=self, options=self.options))
 
-    def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
+    def mousePressEvent(self, event: QMouseEvent):  # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
         if event.button() == Qt.RightButton:
             self.infodock.disasm_view.show_context_menu_for_selected_object()
 
-    def mouseDoubleClickEvent(self, event:QMouseEvent):
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
         pass
 
     @property
     def should_highlight_line(self):
-        return any(obj.should_highlight_line
-            for obj in self.subobjs
-                if isinstance(obj, QBlockCodeObj))
+        return any(obj.should_highlight_line for obj in self.subobjs if isinstance(obj, QBlockCodeObj))
 
 
 class QVariableObj(QBlockCodeObj):
@@ -180,15 +179,15 @@ class QAilObj(QBlockCodeObj):
     Renders an AIL object
     """
 
-    def __init__(self, obj:Any, instance, *args, stmt=None, **kwargs):
+    def __init__(self, obj: Any, instance, *args, stmt=None, **kwargs):
         self.stmt = stmt or obj
         self.instance = instance
         super().__init__(obj, *args, **kwargs)
 
-    def create_subobjs(self, obj:Any):
+    def create_subobjs(self, obj: Any):
         self.add_ailobj(obj)
 
-    def add_ailobj(self, obj:Any):
+    def add_ailobj(self, obj: Any):
         """
         Map appropriate AIL type to the display type
         """
@@ -212,25 +211,26 @@ class QAilObj(QBlockCodeObj):
 
     @property
     def should_highlight_line(self):
-        ail_obj_ins_addr = getattr(self.obj, 'ins_addr', None)
+        ail_obj_ins_addr = getattr(self.obj, "ins_addr", None)
         if ail_obj_ins_addr is not None and self.infodock.is_instruction_selected(ail_obj_ins_addr):
             return True
         return super().should_highlight_line
 
-    def mousePressEvent(self, event:QMouseEvent): # pylint: disable=unused-argument
+    def mousePressEvent(self, event: QMouseEvent):  # pylint: disable=unused-argument
         super().mousePressEvent(event)
         button = event.button()
         if button == Qt.LeftButton:
-            ail_obj_ins_addr = getattr(self.obj, 'ins_addr', None)
+            ail_obj_ins_addr = getattr(self.obj, "ins_addr", None)
             if ail_obj_ins_addr is not None:
                 self.infodock.select_instruction(ail_obj_ins_addr)
+
 
 class QAilTextObj(QAilObj):
     """
     Renders an AIL object via __str__
     """
 
-    def create_subobjs(self, obj:Any):
+    def create_subobjs(self, obj: Any):
         self.add_text(str(obj))
 
 
@@ -239,9 +239,9 @@ class QAilAssignmentObj(QAilTextObj):
     Renders an ailment.statement.Assignment
     """
 
-    def create_subobjs(self, obj:ailment.statement.Assignment):
+    def create_subobjs(self, obj: ailment.statement.Assignment):
         self.add_ailobj(obj.dst)
-        self.add_text(' = ')
+        self.add_text(" = ")
         self.add_ailobj(obj.src)
 
 
@@ -250,15 +250,15 @@ class QAilStoreObj(QAilTextObj):
     Renders an ailment.statement.Store
     """
 
-    def create_subobjs(self, obj:ailment.statement.Store):
+    def create_subobjs(self, obj: ailment.statement.Store):
         if obj.variable is None or not self.options.show_variables:
-            self.add_text('*(')
+            self.add_text("*(")
             self.add_ailobj(obj.addr)
-            self.add_text(') = ')
+            self.add_text(") = ")
             self.add_ailobj(obj.data)
         else:
             self.add_variable(obj.variable)
-            self.add_text(' = ')
+            self.add_text(" = ")
             self.add_ailobj(obj.data)
 
 
@@ -267,7 +267,7 @@ class QAilJumpObj(QAilTextObj):
     Renders an ailment.statement.Jump
     """
 
-    def create_subobjs(self, obj:ailment.statement.Jump):
+    def create_subobjs(self, obj: ailment.statement.Jump):
         self.add_text("goto ")
         self.add_ailobj(obj.target)
 
@@ -277,14 +277,14 @@ class QAilConditionalJumpObj(QAilTextObj):
     Renders an ailment.statement.ConditionalJump
     """
 
-    def create_subobjs(self, obj:ailment.statement.ConditionalJump):
-        self.add_text('if ')
+    def create_subobjs(self, obj: ailment.statement.ConditionalJump):
+        self.add_text("if ")
         self.add_ailobj(obj.condition)
 
         if self.options.show_conditional_jump_targets:
-            self.add_text(' goto ')
+            self.add_text(" goto ")
             self.add_ailobj(obj.true_target)
-            self.add_text(' else goto ')
+            self.add_text(" else goto ")
             self.add_ailobj(obj.false_target)
 
 
@@ -293,8 +293,8 @@ class QAilReturnObj(QAilTextObj):
     Renders an ailment.statement.Return
     """
 
-    def create_subobjs(self, obj:ailment.statement.Return):
-        self.add_text('return ')
+    def create_subobjs(self, obj: ailment.statement.Return):
+        self.add_text("return ")
         for expr in obj.ret_exprs:
             self.add_ailobj(expr)
 
@@ -304,18 +304,18 @@ class QAilCallObj(QAilTextObj):
     Renders an ailment.statement.Call
     """
 
-    def create_subobjs(self, obj:ailment.statement.Call):
+    def create_subobjs(self, obj: ailment.statement.Call):
         if obj.ret_expr is not None and self.stmt is self.obj:
             self.add_ailobj(obj.ret_expr)
-            self.add_text(' = ')
+            self.add_text(" = ")
         self.add_ailobj(obj.target)
-        self.add_text('(')
+        self.add_text("(")
         if obj.args:
             for i, arg in enumerate(obj.args):
                 if i > 0:
-                    self.add_text(', ')
+                    self.add_text(", ")
                 self.add_ailobj(arg)
-        self.add_text(')')
+        self.add_text(")")
 
 
 class QAilConstObj(QAilTextObj):
@@ -329,7 +329,7 @@ class QAilConstObj(QAilTextObj):
         fmt.setForeground(Conf.disasm_view_operand_constant_color)
         return fmt
 
-    def create_subobjs(self, obj:ailment.expression.Const):
+    def create_subobjs(self, obj: ailment.expression.Const):
         # take care of labels first
         kb = self.infodock.disasm_view.disasm.kb
         if obj.value in kb.labels:
@@ -340,24 +340,24 @@ class QAilConstObj(QAilTextObj):
             self.instance.cfg,
             obj.value,
             self.instance.project,
-         )
+        )
         if data_str:
             self.add_text(data_str)
         else:
             self.add_text(f"{obj.value:#x}")
 
     def should_highlight(self) -> bool:
-        return (isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj) and
-                self.infodock.selected_qblock_code_obj.obj.value == self.obj.value)
+        return (
+            isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj)
+            and self.infodock.selected_qblock_code_obj.obj.value == self.obj.value
+        )
 
-    def mouseDoubleClickEvent(self, event:QMouseEvent):
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
         super().mouseDoubleClickEvent(event)
         button = event.button()
         if button == Qt.LeftButton:
-            src_ins_addr = getattr(self.stmt, 'ins_addr', None)
-            self.infodock.disasm_view.jump_to(self.obj.value,
-                src_ins_addr=src_ins_addr,
-                use_animation=True)
+            src_ins_addr = getattr(self.stmt, "ins_addr", None)
+            self.infodock.disasm_view.jump_to(self.obj.value, src_ins_addr=src_ins_addr, use_animation=True)
 
 
 class QAilTmpObj(QAilTextObj):
@@ -387,7 +387,7 @@ class QAilRegisterObj(QAilTextObj):
         if obj.variable is not None and self.options.show_variables:
             self.add_variable(obj.variable)
         else:
-            if hasattr(obj, 'reg_name'):
+            if hasattr(obj, "reg_name"):
                 s = f"{obj.reg_name}"
             else:
                 s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
@@ -395,8 +395,7 @@ class QAilRegisterObj(QAilTextObj):
 
     def should_highlight(self) -> bool:
         sel = self.infodock.selected_qblock_code_obj
-        return (isinstance(sel, QAilRegisterObj)
-                and sel.obj == self.obj)
+        return isinstance(sel, QAilRegisterObj) and sel.obj == self.obj
 
 
 class QAilUnaryOpObj(QAilTextObj):
@@ -404,11 +403,11 @@ class QAilUnaryOpObj(QAilTextObj):
     Renders an ailment.expression.UnaryOp
     """
 
-    def create_subobjs(self, obj:ailment.expression.UnaryOp):
-        self.add_text('(')
-        self.add_text(obj.op + ' ')
+    def create_subobjs(self, obj: ailment.expression.UnaryOp):
+        self.add_text("(")
+        self.add_text(obj.op + " ")
         self.add_ailobj(obj.operand)
-        self.add_text(')')
+        self.add_text(")")
 
 
 class QAilBinaryOpObj(QAilTextObj):
@@ -416,15 +415,15 @@ class QAilBinaryOpObj(QAilTextObj):
     Renders an ailment.expression.BinaryOp
     """
 
-    def create_subobjs(self, obj:ailment.expression.BinaryOp):
-        self.add_text('(')
+    def create_subobjs(self, obj: ailment.expression.BinaryOp):
+        self.add_text("(")
         self.add_ailobj(obj.operands[0])
         verbose_op = obj.OPSTR_MAP.get(obj.verbose_op, obj.verbose_op)
         if verbose_op is None:
             verbose_op = "unknown_op"
-        self.add_text(' ' + verbose_op + ' ')
+        self.add_text(" " + verbose_op + " ")
         self.add_ailobj(obj.operands[1])
-        self.add_text(')')
+        self.add_text(")")
 
 
 class QAilConvertObj(QAilTextObj):
@@ -432,7 +431,7 @@ class QAilConvertObj(QAilTextObj):
     Renders an ailment.expression.Convert
     """
 
-    def create_subobjs(self, obj:ailment.expression.Convert):
+    def create_subobjs(self, obj: ailment.expression.Convert):
         self.add_text("Conv(%d->%d, " % (obj.from_bits, obj.to_bits))
         self.add_ailobj(obj.operand)
         self.add_text(")")
@@ -443,13 +442,13 @@ class QAilLoadObj(QAilTextObj):
     Renders an ailment.expression.Load
     """
 
-    def create_subobjs(self, obj:ailment.expression.Load):
+    def create_subobjs(self, obj: ailment.expression.Load):
         if obj.variable is not None and self.options.show_variables:
             self.add_variable(obj.variable)
         else:
-            self.add_text('*(')
+            self.add_text("*(")
             self.add_ailobj(obj.addr)
-            self.add_text(')')
+            self.add_text(")")
 
 
 class QIROpObj(QBlockCodeObj):
@@ -463,7 +462,7 @@ class QIROpObj(QBlockCodeObj):
         fmt.setForeground(Conf.disasm_view_ir_default_color)
         return fmt
 
-    def __init__(self, obj:Any, *args, irobj=None, **kwargs):
+    def __init__(self, obj: Any, *args, irobj=None, **kwargs):
         self.irobj = irobj or obj
         super().__init__(obj, *args, **kwargs)
 
@@ -494,9 +493,9 @@ class QIROpTextObj(QIROpObj):
     if an integer type.
     """
 
-    def create_subobjs(self, obj:Any):
+    def create_subobjs(self, obj: Any):
         if type(obj) is int:
-            self.add_text('%#x' % obj)
+            self.add_text("%#x" % obj)
         else:
             self.add_text(str(obj))
 
@@ -513,8 +512,10 @@ class QIROpVexConstObj(QIROpTextObj):
         return fmt
 
     def should_highlight(self) -> bool:
-        return (isinstance(self.infodock.selected_qblock_code_obj, QIROpVexConstObj) and
-                self.infodock.selected_qblock_code_obj.obj._con == self.obj._con)
+        return (
+            isinstance(self.infodock.selected_qblock_code_obj, QIROpVexConstObj)
+            and self.infodock.selected_qblock_code_obj.obj._con == self.obj._con
+        )
 
 
 class VexIRTmpWrapper:
@@ -523,16 +524,16 @@ class VexIRTmpWrapper:
     """
 
     __slots__ = (
-        'tid',
-        'reg_name',
-        )
+        "tid",
+        "reg_name",
+    )
 
     tid: TmpVar
     reg_name: Optional[str]
 
     def __init__(self, tid: TmpVar, reg_name: Optional[str] = None):
         self.tid = tid
-        self.reg_name = reg_name or ('t%d' % self.tid)
+        self.reg_name = reg_name or ("t%d" % self.tid)
 
     def __str__(self):
         return self.reg_name
@@ -544,16 +545,16 @@ class VexIRRegWrapper:
     """
 
     __slots__ = (
-        'offset',
-        'reg_name',
-        )
+        "offset",
+        "reg_name",
+    )
 
     offset: RegisterOffset
     reg_name: Optional[str]
 
     def __init__(self, offset: RegisterOffset, reg_name: Optional[str] = None):
         self.offset = offset
-        self.reg_name = reg_name or ('offset=%s' % self.offset)
+        self.reg_name = reg_name or ("offset=%s" % self.offset)
 
     def __str__(self):
         return self.reg_name
@@ -564,13 +565,12 @@ class QIROpVexWrTmpObj(QIROpTextObj):
     Renders a pyvex.stmt.WrTmp
     """
 
-    def create_subobjs(self, obj:pyvex.stmt.WrTmp):
+    def create_subobjs(self, obj: pyvex.stmt.WrTmp):
         irsb = self.irobj.irsb
         self.add_irobj(VexIRTmpWrapper(obj.tmp))
-        self.add_text(' = ')
+        self.add_text(" = ")
         if isinstance(obj.data, pyvex.expr.Get):
-            reg_name = irsb.arch.translate_register_name(
-                obj.data.offset, obj.data.result_size(irsb.tyenv) // 8)
+            reg_name = irsb.arch.translate_register_name(obj.data.offset, obj.data.result_size(irsb.tyenv) // 8)
             self.add_irobj(VexIRRegWrapper(obj.data, reg_name))
         else:
             self.add_irobj(obj.data)
@@ -581,7 +581,7 @@ class QIROpVexRdTmpObj(QIROpTextObj):
     Renders a pyvex.expr.RdTmp
     """
 
-    def create_subobjs(self, obj:pyvex.expr.RdTmp):
+    def create_subobjs(self, obj: pyvex.expr.RdTmp):
         self.add_irobj(VexIRTmpWrapper(obj.tmp))
 
 
@@ -597,8 +597,11 @@ class QIROpVexTmpObj(QIROpTextObj):
         return fmt
 
     def should_highlight(self) -> bool:
-        return (isinstance(self.infodock.selected_qblock_code_obj, QIROpVexTmpObj) and
-                self.infodock.selected_qblock_code_obj.obj.tid == self.obj.tid)
+        return (
+            isinstance(self.infodock.selected_qblock_code_obj, QIROpVexTmpObj)
+            and self.infodock.selected_qblock_code_obj.obj.tid == self.obj.tid
+        )
+
 
 class QIROpVexRegObj(QIROpTextObj):
     """
@@ -612,8 +615,10 @@ class QIROpVexRegObj(QIROpTextObj):
         return fmt
 
     def should_highlight(self) -> bool:
-        return (isinstance(self.infodock.selected_qblock_code_obj, QIROpVexRegObj) and
-                self.infodock.selected_qblock_code_obj.obj.offset == self.obj.offset)
+        return (
+            isinstance(self.infodock.selected_qblock_code_obj, QIROpVexRegObj)
+            and self.infodock.selected_qblock_code_obj.obj.offset == self.obj.offset
+        )
 
 
 class QIROpVexStoreObj(QIROpTextObj):
@@ -621,11 +626,11 @@ class QIROpVexStoreObj(QIROpTextObj):
     Renders a pyvex.stmt.Store
     """
 
-    def create_subobjs(self, obj:pyvex.stmt.Store):
+    def create_subobjs(self, obj: pyvex.stmt.Store):
         # "ST%s(%s) = %s" % (self.endness[-2:].lower(), self.addr, self.data)
-        self.add_text(f'ST{obj.endness[-2:].lower()}(')
+        self.add_text(f"ST{obj.endness[-2:].lower()}(")
         self.add_irobj(obj.addr)
-        self.add_text(') = ')
+        self.add_text(") = ")
         self.add_irobj(obj.data)
 
 
@@ -634,10 +639,10 @@ class QIROpVexLoadObj(QIROpTextObj):
     Renders a pyvex.expr.Load
     """
 
-    def create_subobjs(self, obj:pyvex.expr.Load):
-        self.add_text(f'LD{obj.end[-2:].lower()}:{obj.ty[4:]}(')
+    def create_subobjs(self, obj: pyvex.expr.Load):
+        self.add_text(f"LD{obj.end[-2:].lower()}:{obj.ty[4:]}(")
         self.add_irobj(obj.addr)
-        self.add_text(')')
+        self.add_text(")")
 
 
 class QIROpVexPutObj(QIROpTextObj):
@@ -645,7 +650,7 @@ class QIROpVexPutObj(QIROpTextObj):
     Renders a pyvex.stmt.Put
     """
 
-    def create_subobjs(self, obj:pyvex.stmt.Put):
+    def create_subobjs(self, obj: pyvex.stmt.Put):
         irsb = self.irobj.irsb
         reg_name = irsb.arch.translate_register_name(obj.offset, obj.data.result_size(irsb.tyenv) // 8)
         self.add_text("PUT(")
@@ -659,7 +664,7 @@ class QIROpVexExitObj(QIROpTextObj):
     Renders a pyvex.stmt.Exit
     """
 
-    def create_subobjs(self, obj:pyvex.stmt.Exit):
+    def create_subobjs(self, obj: pyvex.stmt.Exit):
         irsb = self.irobj.irsb
         arch = irsb.arch
         reg_name = arch.translate_register_name(irsb.offsIP, arch.bits // 8)
@@ -679,13 +684,13 @@ class QIROpVexBinopObj(QIROpTextObj):
     Renders a pyvex.expr.Binop
     """
 
-    def create_subobjs(self, obj:pyvex.expr.Binop):
+    def create_subobjs(self, obj: pyvex.expr.Binop):
         self.add_text(obj.op[4:])
-        self.add_text('(')
+        self.add_text("(")
         self.add_irobj(obj.args[0])
-        self.add_text(',')
+        self.add_text(",")
         self.add_irobj(obj.args[1])
-        self.add_text(')')
+        self.add_text(")")
 
 
 class QIROpVexUnopObj(QIROpTextObj):
@@ -693,11 +698,11 @@ class QIROpVexUnopObj(QIROpTextObj):
     Renders a pyvex.expr.Unop
     """
 
-    def create_subobjs(self, obj:pyvex.expr.Unop):
+    def create_subobjs(self, obj: pyvex.expr.Unop):
         self.add_text(obj.op[4:])
-        self.add_text('(')
+        self.add_text("(")
         self.add_irobj(obj.args[0])
-        self.add_text(')')
+        self.add_text(")")
 
 
 class QBlockCode(QCachedGraphicsItem):
@@ -715,13 +720,20 @@ class QBlockCode(QCachedGraphicsItem):
     _addr_str: str
     obj: QBlockCodeObj
     _config: ConfigurationManager
-    disasm_view: 'QDisassemblyBaseControl'
+    disasm_view: "QDisassemblyBaseControl"
     infodock: InfoDock
     parent: Any
 
-    def __init__(self, addr:int, obj:QBlockCodeObj, config:ConfigurationManager,
-        disasm_view:'QDisassemblyBaseControl', instance,
-        infodock:InfoDock, parent:Any=None):
+    def __init__(
+        self,
+        addr: int,
+        obj: QBlockCodeObj,
+        config: ConfigurationManager,
+        disasm_view: "QDisassemblyBaseControl",
+        instance,
+        infodock: InfoDock,
+        parent: Any = None,
+    ):
         super().__init__(parent=parent)
         self.addr = addr
         self._addr_str = "%08x" % self.addr
@@ -756,12 +768,10 @@ class QBlockCode(QCachedGraphicsItem):
         cur = QTextCursor(self._qtextdoc)
         self.obj.render_to_doc(cur)
 
-    def paint(self, painter, option, widget):  #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         self.update_document()
-        painter.setRenderHints(QPainter.Antialiasing
-                               | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         painter.setFont(self._config.disasm_font)
-
 
         if self.infodock.is_instruction_selected(self.addr) or self.obj.should_highlight_line:
             highlight_color = Conf.disasm_view_node_instruction_selected_background_color
@@ -781,7 +791,7 @@ class QBlockCode(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def get_obj_for_mouse_event(self, event:QMouseEvent) -> QBlockCodeObj:
+    def get_obj_for_mouse_event(self, event: QMouseEvent) -> QBlockCodeObj:
         p = event.pos()
 
         if self._disasm_view.show_address:

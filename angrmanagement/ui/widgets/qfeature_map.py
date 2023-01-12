@@ -2,8 +2,16 @@ from typing import Optional, Sequence, Mapping
 import logging
 from sortedcontainers import SortedDict
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
-    QGraphicsPolygonItem, QGraphicsLineItem
+from PySide6.QtWidgets import (
+    QWidget,
+    QHBoxLayout,
+    QGraphicsScene,
+    QGraphicsView,
+    QGraphicsItem,
+    QGraphicsRectItem,
+    QGraphicsPolygonItem,
+    QGraphicsLineItem,
+)
 from PySide6.QtGui import QBrush, QPen, QPolygonF
 from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
 
@@ -25,8 +33,9 @@ class FeatureMapItem(QGraphicsItem):
 
     The feature map will be rendered horizontally, with addresses increasing from left to right.
     """
+
     ZVALUE_SEPARATOR = 1
-    ZVALUE_HOVER     = 2
+    ZVALUE_HOVER = 2
     ZVALUE_INDICATOR = 3
 
     def __init__(self, disasm_view, *args, **kwargs):
@@ -38,7 +47,7 @@ class FeatureMapItem(QGraphicsItem):
         self.workspace = disasm_view.instance.workspace
         self.instance = self.disasm_view.instance
 
-        self.addr = ObjectContainer(None, name='The current address of the Feature Map.')
+        self.addr = ObjectContainer(None, name="The current address of the Feature Map.")
 
         self._map_items: Sequence[QGraphicsItem] = []
         self._map_indicator_items: Sequence[QGraphicsItem] = []
@@ -120,7 +129,7 @@ class FeatureMapItem(QGraphicsItem):
     @staticmethod
     def _get_adjusted_region_size(mr: MemoryRegion):
         if isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject)):
-            return 80 # Draw unnecessary objects smaller
+            return 80  # Draw unnecessary objects smaller
         else:
             l.debug("memory_region.size: %x memory_region.object: %s", mr.size, mr.object)
             return mr.size
@@ -312,7 +321,7 @@ class FeatureMapItem(QGraphicsItem):
         if self._map_hover_region_item is not None:
             self._map_hover_region = None
             self._generate_hover_region()
-            self.setToolTip('')
+            self.setToolTip("")
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -337,7 +346,7 @@ class FeatureMapItem(QGraphicsItem):
         """
         Highlight memory region under cursor.
         """
-        self.setToolTip('')
+        self.setToolTip("")
         mr = self._get_region_from_point(point)
         if mr is None:
             self._remove_hover_region()
@@ -348,7 +357,7 @@ class FeatureMapItem(QGraphicsItem):
             item = self.instance.cfb.floor_item(addr)
             if item is not None:
                 _, item = item
-                self.setToolTip(f'{str(item)} in {str(mr)}')
+                self.setToolTip(f"{str(item)} in {str(mr)}")
         except KeyError:
             pass
 
@@ -415,7 +424,7 @@ class QFeatureMapView(QGraphicsView):
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
             self.adjust_viewport_scale(
-                1.25 if event.angleDelta() > 0 else 1/1.25,
+                1.25 if event.angleDelta() > 0 else 1 / 1.25,
                 QPoint(event.position().x(), event.position().y()),
             )
         else:
@@ -460,7 +469,7 @@ class QFeatureMapView(QGraphicsView):
                 event.accept()
                 return
             elif event.key() == Qt.Key_Minus:
-                self.adjust_viewport_scale(1/1.25)
+                self.adjust_viewport_scale(1 / 1.25)
                 event.accept()
                 return
         super().keyPressEvent(event)

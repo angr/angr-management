@@ -6,8 +6,14 @@ from PySide6.QtWidgets import QGraphicsSimpleTextItem
 from PySide6.QtGui import QPen
 from PySide6.QtCore import Qt, QRectF
 
-from angr.analyses.proximity_graph import FunctionProxiNode, CallProxiNode, StringProxiNode, \
-    IntegerProxiNode, UnknownProxiNode, VariableProxiNode
+from angr.analyses.proximity_graph import (
+    FunctionProxiNode,
+    CallProxiNode,
+    StringProxiNode,
+    IntegerProxiNode,
+    UnknownProxiNode,
+    VariableProxiNode,
+)
 
 from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
@@ -22,11 +28,12 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     """
     Base Block
     """
+
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, proximity_view: 'ProximityView', node: 'BaseProxiNode'):
+    def __init__(self, is_selected, proximity_view: "ProximityView", node: "BaseProxiNode"):
         super().__init__()
 
         self._proximity_view = proximity_view
@@ -144,7 +151,7 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
     Function Block
     """
 
-    def __init__(self, is_selected, proximity_view: 'ProximityView', node: FunctionProxiNode):
+    def __init__(self, is_selected, proximity_view: "ProximityView", node: FunctionProxiNode):
         self._text = None
         self._text_item: QGraphicsSimpleTextItem = None
         super().__init__(is_selected, proximity_view, node)
@@ -186,7 +193,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
     Call Block
     """
 
-    def __init__(self, is_selected, proximity_view: 'ProximityView', node: CallProxiNode):
+    def __init__(self, is_selected, proximity_view: "ProximityView", node: CallProxiNode):
         self._func_name: str = None
         self._args: List[Tuple[Type, str]] = None
 
@@ -287,11 +294,11 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
     def _update_size(self):
         width_candidates = [
-            self.HORIZONTAL_PADDING * 2 +
-            self._func_name_item.boundingRect().width() +
-            self._left_parenthesis_item.boundingRect().width() +
-            sum(map(lambda x: x.boundingRect().width(), self._args_list)) +
-            self._right_parenthesis_item.boundingRect().width()
+            self.HORIZONTAL_PADDING * 2
+            + self._func_name_item.boundingRect().width()
+            + self._left_parenthesis_item.boundingRect().width()
+            + sum(map(lambda x: x.boundingRect().width(), self._args_list))
+            + self._right_parenthesis_item.boundingRect().width()
         ]
 
         self._width = max(width_candidates)
@@ -307,7 +314,7 @@ class QProximityGraphStringBlock(QProximityGraphBlock):
     String Block
     """
 
-    def __init__(self, is_selected, proximity_view: 'ProximityView', node: StringProxiNode):
+    def __init__(self, is_selected, proximity_view: "ProximityView", node: StringProxiNode):
         self._text = None
         self._text_item: QGraphicsSimpleTextItem = None
         super().__init__(is_selected, proximity_view, node)

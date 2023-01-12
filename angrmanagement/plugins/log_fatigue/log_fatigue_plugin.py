@@ -28,9 +28,7 @@ from ..base_plugin import BasePlugin
 class LogFatiguePlugin(BasePlugin):
     def __init__(self, workspace):
         if not Slacrs:
-            raise Exception(
-                "Please install Slacrs to Initialize LogFatigue Plugin"
-            )
+            raise Exception("Please install Slacrs to Initialize LogFatigue Plugin")
         self._fatigue_flag = True
         super().__init__(workspace)
         self._fatigue = HumanFatigue()
@@ -79,9 +77,7 @@ class LogFatiguePlugin(BasePlugin):
                 y = event.pos().y()
                 old_y = event.oldPos().y()
 
-                self._fatigue.mouse_speed = int(
-                    math.sqrt((x - old_x) ** 2 + (y - old_y) ** 2)
-                )
+                self._fatigue.mouse_speed = int(math.sqrt((x - old_x) ** 2 + (y - old_y) ** 2))
             elif event.type() == QEvent.KeyPress:
                 timestamp = time.time()
                 i = 0

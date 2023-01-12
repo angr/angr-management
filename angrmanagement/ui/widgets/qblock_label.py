@@ -7,7 +7,6 @@ from .qgraph_object import QCachedGraphicsItem
 
 
 class QBlockLabel(QCachedGraphicsItem):
-
     def __init__(self, addr, text, config, disasm_view, instance, infodock, parent=None):
         super().__init__(parent=parent)
 
@@ -25,9 +24,8 @@ class QBlockLabel(QCachedGraphicsItem):
 
         self._init_widgets()
 
-    def paint(self, painter, option, widget):  #pylint: disable=unused-argument
-        painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         painter.setFont(self._config.code_font)
 
         # background

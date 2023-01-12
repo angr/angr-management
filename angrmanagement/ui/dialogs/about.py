@@ -16,16 +16,16 @@ class LoadAboutDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
-        self.setWindowTitle('About')
-        #mdiIcon
-        angr_icon_location = os.path.join(IMG_LOCATION, 'angr.png')
+        self.setWindowTitle("About")
+        # mdiIcon
+        angr_icon_location = os.path.join(IMG_LOCATION, "angr.png")
         self.setWindowIcon(QIcon(angr_icon_location))
         self._init_widgets()
 
     def _init_widgets(self):
         # icon
         icon_label = QLabel(self)
-        icon_location = os.path.join(IMG_LOCATION, 'angr-ds.png')
+        icon_location = os.path.join(IMG_LOCATION, "angr-ds.png")
         angr_icon = QPixmap(icon_location)
         icon_label.setPixmap(angr_icon)
         # textbox
@@ -35,7 +35,7 @@ class LoadAboutDialog(QDialog):
         version_text = QLabel(version_text_tup)
         version_text.setFont(QFont("Consolas", weight=QFont.Bold))
         version_text.setAlignment(Qt.AlignCenter)
-        credits_text = QLabel("<a href=\"http://angr.io/\">Credits</a>")
+        credits_text = QLabel('<a href="http://angr.io/">Credits</a>')
         credits_text.setFont(QFont("Consolas", weight=QFont.Bold))
         credits_text.setTextFormat(Qt.RichText)
         credits_text.setTextInteractionFlags(Qt.TextBrowserInteraction)

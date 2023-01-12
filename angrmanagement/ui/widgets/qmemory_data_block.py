@@ -28,15 +28,14 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         self._width = None
         self._height = None
 
-        self._bytes = [ ]
+        self._bytes = []
 
         # widgets
         self._addr_item: QGraphicsSimpleTextItem = None
         self._label_item: Optional[QGraphicsSimpleTextItem] = None
-        self._line_items: List[Tuple[int,
-                                     QGraphicsSimpleTextItem,
-                                     List[QGraphicsSimpleTextItem],
-                                     List[QGraphicsSimpleTextItem]]] = None
+        self._line_items: List[
+            Tuple[int, QGraphicsSimpleTextItem, List[QGraphicsSimpleTextItem], List[QGraphicsSimpleTextItem]]
+        ] = None
 
         self._init_widgets()
 
@@ -80,7 +79,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     def _init_widgets(self):
 
         self._addr_text = "%08x" % self.addr
-        self._bytes = [ ]
+        self._bytes = []
         if self.memory_data.content:
             for byt in self.memory_data.content:
                 self._bytes.append(byt)
@@ -93,7 +92,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 mem_bytes = self.instance.project.loader.memory.load(start_address, size)
             except KeyError:
                 mem_bytes = b""
-            self._bytes += list(mem_bytes) + [ '??' ] * (size - len(mem_bytes))
+            self._bytes += list(mem_bytes) + ["??"] * (size - len(mem_bytes))
 
         # address
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
@@ -140,7 +139,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             else:
                 end_pos = self.bytes_per_line - byte_offset
 
-            all_bytes = self._bytes[i : end_pos]
+            all_bytes = self._bytes[i:end_pos]
             # print("... print %#x, %d bytes, byte_offset %d" % (addr, len(all_bytes), byte_offset))
             addr_item, bytes_list, character_list = self._init_line(addr, byte_offset, all_bytes)
             self._line_items.append((byte_offset, addr_item, bytes_list, character_list))
@@ -165,7 +164,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         addr_item.setFont(Conf.disasm_font)
 
         # draw each byte
-        bytes_list = [ ]
+        bytes_list = []
         for idx, byt in enumerate(all_bytes):
             if type(byt) is int:
                 if is_printable(byt):
@@ -190,7 +189,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 bytes_list.append(o)
 
         # printable characters
-        character_list = [ ]
+        character_list = []
         for byt in all_bytes:
             if type(byt) is int:
                 if is_printable(byt):
@@ -250,7 +249,9 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 byte_.setPos(x, y)
                 x += byte_width
 
-                line_chars = byte_offset + all_bytes + 1  # the number of existing characters on this line, including spaces
+                line_chars = (
+                    byte_offset + all_bytes + 1
+                )  # the number of existing characters on this line, including spaces
                 if line_chars % 8 == 0 and line_chars != self.bytes_per_line:
                     # now we get a delimiter
                     pos += 1

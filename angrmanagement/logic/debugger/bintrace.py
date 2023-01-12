@@ -12,7 +12,7 @@ try:
     from bintrace import TraceEvent
 except ImportError as e:
     bintrace = None
-    TraceEvent = 'TraceEvent'
+    TraceEvent = "TraceEvent"
 
 from ...data.trace import BintraceTrace
 from ...data.breakpoint import BreakpointType
@@ -27,18 +27,20 @@ class BintraceDebugger(Debugger):
     Trace playback debugger.
     """
 
-    def __init__(self, trace: BintraceTrace, workspace: 'Workspace'):
+    def __init__(self, trace: BintraceTrace, workspace: "Workspace"):
         super().__init__(workspace)
         assert bintrace is not None
         assert isinstance(trace, BintraceTrace)
         self._trace: BintraceTrace = trace
         self._btrace: bintrace.Trace = trace.trace
-        self._trace_dbg: AngrTraceDebugger = AngrTraceDebugger(self._btrace, self.workspace.main_instance.project.am_obj)
+        self._trace_dbg: AngrTraceDebugger = AngrTraceDebugger(
+            self._btrace, self.workspace.main_instance.project.am_obj
+        )
         self._cached_simstate = None
 
     def __str__(self):
         pc = self.simstate.solver.eval(self.simstate.regs.pc)
-        return f'{os.path.basename(self._btrace.path)} @ {pc:x}'
+        return f"{os.path.basename(self._btrace.path)} @ {pc:x}"
 
     def _on_state_change(self):
         """
@@ -137,7 +139,7 @@ class BintraceDebugger(Debugger):
 
         until = t.get_nth_event(n)
         if until is None:
-            _l.error('Could not seek to event %d', n)
+            _l.error("Could not seek to event %d", n)
             return
 
         if self._trace_dbg.single_step_range is None:
@@ -148,7 +150,7 @@ class BintraceDebugger(Debugger):
 
         until = t.get_prev_exec_event(until, addr=step_region_addr, size=step_region_size)
         if until is None:
-            _l.error('No execution event prior to event %d', n)
+            _l.error("No execution event prior to event %d", n)
             return
 
         self._trace_dbg.state = t.replay(self._trace_dbg.state, until)
@@ -163,7 +165,6 @@ class BintraceDebugger(Debugger):
     def replay_to_event(self, until):
         self._trace_dbg.state = self._btrace.replay(self._trace_dbg.state, until)
         self._on_state_change()
-
 
     #
     # Trace Analysis
@@ -190,11 +191,12 @@ class BintraceDebugger(Debugger):
         if node.function_address in kb.functions:
             return kb.functions[node.function_address], event
         else:
-            _l.warning('Node %s not found in functions db', node)
+            _l.warning("Node %s not found in functions db", node)
             return None
 
-    def get_called_functions(self, event: Optional[TraceEvent] = None,
-                                   only_after_event: bool = False) -> Sequence[Tuple[Function, TraceEvent]]:
+    def get_called_functions(
+        self, event: Optional[TraceEvent] = None, only_after_event: bool = False
+    ) -> Sequence[Tuple[Function, TraceEvent]]:
         """
         Enumerate 1st order outgoing calls of function at `event`.
         """
@@ -207,11 +209,11 @@ class BintraceDebugger(Debugger):
         # Get current function
         func = self.get_function_for_event(event)
         if func is None:
-            _l.warning('Could not determine function for event %s', event)
+            _l.warning("Could not determine function for event %s", event)
             return []
 
         func, event = func
-        _l.debug('Function for event %s: %s', event, func.name)
+        _l.debug("Function for event %s: %s", event, func.name)
 
         if not only_after_event:
             # Rewind to function entry
@@ -219,7 +221,7 @@ class BintraceDebugger(Debugger):
             while event.Addr() != func.addr:
                 event = self._btrace.get_prev_bb_event(event, vcpu=self._trace_dbg.vcpu)
                 if event is None:
-                    _l.error('Did not find start of function %s (%#x) in trace', func.name, func.addr)
+                    _l.error("Did not find start of function %s (%#x) in trace", func.name, func.addr)
                     return []
 
         called_addrs = []
@@ -241,14 +243,14 @@ class BintraceDebugger(Debugger):
             # Check exit type
             exit_block_addr = event.Addr()
             b = self.workspace.main_instance.project.factory.block(exit_block_addr)
-            if b.vex.jumpkind == 'Ijk_Ret':
-                _l.debug('Exit is a return to caller')
+            if b.vex.jumpkind == "Ijk_Ret":
+                _l.debug("Exit is a return to caller")
                 break
 
             called_addrs.append((addr, called_func_entry_event))
 
-            if b.vex.jumpkind != 'Ijk_Call':
-                _l.debug('Exit is a tail-call')
+            if b.vex.jumpkind != "Ijk_Call":
+                _l.debug("Exit is a tail-call")
                 break
 
             # FIXME: fallthru might indicate trace vs cfg inconsistency
@@ -256,19 +258,23 @@ class BintraceDebugger(Debugger):
             event = called_func_entry_event
             ret_addr = b.instruction_addrs[0] + b.size
             num_nested_calls = 0
-            if self.workspace.main_instance.project.arch.name == 'AMD64':
+            if self.workspace.main_instance.project.arch.name == "AMD64":
                 # FIXME Remove this hardcoding
                 stack_reg = 7
                 expected_sp = called_func_entry_event.Regs(stack_reg) + 8
             else:
-                assert False, 'FIXME: Stack pointer check for non-x86_64'
+                assert False, "FIXME: Stack pointer check for non-x86_64"
 
-            _l.debug('Seeking to return site for call...')
+            _l.debug("Seeking to return site for call...")
             while True:
                 event = self._btrace.get_next_exec_event(event, addr=ret_addr, vcpu=self._trace_dbg.vcpu)
                 if event is None:
-                    _l.error('Unexpected end of trace while looking for return site in %s @ %#x '
-                             '(call may have caused termination)', func.name, ret_addr)
+                    _l.error(
+                        "Unexpected end of trace while looking for return site in %s @ %#x "
+                        "(call may have caused termination)",
+                        func.name,
+                        ret_addr,
+                    )
                     keep_looking = False
                     break
 
@@ -276,17 +282,18 @@ class BintraceDebugger(Debugger):
                 # and does not actually belong to a nested call
                 bb_event = self._btrace.get_prev_bb_event(event, vcpu=self._trace_dbg.vcpu)
                 if bb_event.Regs(stack_reg) == expected_sp:
-                    _l.debug('Found return block at event %s', bb_event)
+                    _l.debug("Found return block at event %s", bb_event)
                     event = bb_event
                     break
-                _l.debug('Skipping over nested call (%d)', num_nested_calls)
+                _l.debug("Skipping over nested call (%d)", num_nested_calls)
                 num_nested_calls += 1
 
         all_funcs = self.workspace.main_instance.project.kb.functions
         return [((all_funcs[addr] if (addr in all_funcs) else addr), e) for (addr, e) in called_addrs]
 
-    def get_called_functions_recursive(self, event: Optional[TraceEvent] = None,
-                                             max_depth: Optional[int] = None, depth: int = 0):
+    def get_called_functions_recursive(
+        self, event: Optional[TraceEvent] = None, max_depth: Optional[int] = None, depth: int = 0
+    ):
         if max_depth is not None and max_depth == depth:
             return
         for func_or_addr, sub_ev in self.get_called_functions(event):

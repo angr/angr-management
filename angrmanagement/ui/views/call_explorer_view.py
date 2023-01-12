@@ -9,7 +9,7 @@ from angr.knowledge_plugins import Function
 try:
     from bintrace import TraceEvent
 except ImportError as e:
-    TraceEvent = 'TraceEvent'
+    TraceEvent = "TraceEvent"
 
 from ...logic.debugger.bintrace import BintraceDebugger
 from ...logic.debugger import DebuggerWatcher
@@ -24,10 +24,11 @@ class CallTreeModel(QStandardItemModel):
     """
     Model for the call tree.
     """
-    Headers = ['Function']
+
+    Headers = ["Function"]
 
     def hasChildren(self, index):
-        item: Optional['CallTreeItem'] = self.itemFromIndex(index)
+        item: Optional["CallTreeItem"] = self.itemFromIndex(index)
         if isinstance(item, CallTreeItem):
             return item.expandable
         return super().hasChildren(index)
@@ -60,12 +61,12 @@ class CallExplorerView(BaseView):
     """
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('call_explorer', instance, default_docking_position, *args, **kwargs)
+        super().__init__("call_explorer", instance, default_docking_position, *args, **kwargs)
 
         self._last_updated_func: Optional[Union[int, Function]] = None
         self._inhibit_update: bool = False
 
-        self.base_caption = 'Call Explorer'
+        self.base_caption = "Call Explorer"
         self._tree: Optional[QTreeWidget] = None
         self._init_widgets()
         self.reload()
@@ -170,11 +171,11 @@ class CallExplorerView(BaseView):
         self._last_updated_func = func
 
         if func is not None and isinstance(dbg.am_obj, BintraceDebugger):
-            self._top_level_function_level.setText(f'Current function: {func.name}')
+            self._top_level_function_level.setText(f"Current function: {func.name}")
             for func, event in dbg.get_called_functions():
                 self._model.appendRow(CallTreeItem(func, event))
         else:
             self._reset_function_label()
 
     def _reset_function_label(self):
-        self._top_level_function_level.setText('Current function: Unknown')
+        self._top_level_function_level.setText("Current function: Unknown")

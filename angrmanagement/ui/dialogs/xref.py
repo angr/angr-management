@@ -9,8 +9,17 @@ class XRefDialog(QDialog):
     Dialog displaying cross-references.
     """
 
-    def __init__(self, addr=None, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None,
-                 instance=None, disassembly_view=None, parent=None):
+    def __init__(
+        self,
+        addr=None,
+        variable_manager=None,
+        variable=None,
+        xrefs_manager=None,
+        dst_addr=None,
+        instance=None,
+        disassembly_view=None,
+        parent=None,
+    ):
         super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
@@ -24,7 +33,7 @@ class XRefDialog(QDialog):
         self._disassembly_view = disassembly_view
 
         if variable is not None:
-            self.setWindowTitle(f'XRefs to variable {variable.name}({variable.ident})')
+            self.setWindowTitle(f"XRefs to variable {variable.name}({variable.ident})")
         elif dst_addr is not None:
             # is there a label for it?
             try:
@@ -32,9 +41,9 @@ class XRefDialog(QDialog):
             except KeyError:
                 lbl = None
             if lbl is not None:
-                self.setWindowTitle(f'XRefs to {lbl}')
+                self.setWindowTitle(f"XRefs to {lbl}")
             else:
-                self.setWindowTitle(f'XRefs to address {dst_addr:#x}')
+                self.setWindowTitle(f"XRefs to address {dst_addr:#x}")
         else:
             raise ValueError("Either variable or dst_addr must be specified.")
 
@@ -47,9 +56,14 @@ class XRefDialog(QDialog):
 
         # xref viewer
         xref_viewer = QXRefViewer(
-            addr=self._addr, variable_manager=self._variable_manager, variable=self._variable,
-            xrefs_manager=self._xrefs_manager, dst_addr=self._dst_addr,
-            instance=self._instance, xref_dialog=self, parent=self,
+            addr=self._addr,
+            variable_manager=self._variable_manager,
+            variable=self._variable,
+            xrefs_manager=self._xrefs_manager,
+            dst_addr=self._dst_addr,
+            instance=self._instance,
+            xref_dialog=self,
+            parent=self,
         )
 
         layout = QVBoxLayout()

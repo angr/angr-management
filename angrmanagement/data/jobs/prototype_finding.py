@@ -2,7 +2,6 @@ from .job import Job
 
 
 class PrototypeFindingJob(Job):
-
     def __init__(self, on_finish=None):
         super().__init__(name="Function prototype finding", on_finish=on_finish)
 

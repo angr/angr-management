@@ -1,8 +1,16 @@
 from typing import Optional, TYPE_CHECKING
 from collections import OrderedDict
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, \
-    QDialogButtonBox
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QLineEdit,
+    QListWidget,
+    QDialogButtonBox,
+)
 from PySide6.QtGui import Qt
 from angr.sim_type import SimType, TypeRef, SimTypePointer, NamedTypeMixin
 from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
@@ -32,7 +40,7 @@ class NodeNameBox(QLineEdit):
     @staticmethod
     def _is_valid_node_name(name):
         stripped = name.strip()
-        return stripped and ' ' not in stripped
+        return stripped and " " not in stripped
 
 
 class RenameNode(QDialog):
@@ -40,8 +48,13 @@ class RenameNode(QDialog):
     Dialog for renaming a node.
     """
 
-    def __init__(self, code_view: Optional['CodeView']=None, node: Optional[CConstruct]=None, parent=None,
-                 func: Optional['Function']=None):
+    def __init__(
+        self,
+        code_view: Optional["CodeView"] = None,
+        node: Optional[CConstruct] = None,
+        parent=None,
+        func: Optional["Function"] = None,
+    ):
         super().__init__(parent)
 
         # initialization
@@ -49,14 +62,14 @@ class RenameNode(QDialog):
 
         self._code_view = code_view
         self._node = node
-        self._func: Optional['Function'] = func
+        self._func: Optional["Function"] = func
 
         self._name_box: NodeNameBox = None
         self._status_label = None
         self._ok_button: QPushButton = None
         self._suggestion_box: QListWidget = None
 
-        self.setWindowTitle('Rename')
+        self.setWindowTitle("Rename")
 
         self.main_layout = QVBoxLayout()
 
@@ -83,7 +96,7 @@ class RenameNode(QDialog):
         # name label
 
         name_label = QLabel(self)
-        name_label.setText('New name')
+        name_label.setText("New name")
 
         name_box = NodeNameBox(self._on_name_changed, self)
         if self._node is not None:
@@ -144,12 +157,12 @@ class RenameNode(QDialog):
 
         if self._name_box.name is None:
             # the variable name is invalid
-            self._status_label.setText('Invalid')
-            self._status_label.setProperty('class', 'status_invalid')
+            self._status_label.setText("Invalid")
+            self._status_label.setProperty("class", "status_invalid")
             self._ok_button.setEnabled(False)
         else:
-            self._status_label.setText('Valid')
-            self._status_label.setProperty('class', 'status_valid')
+            self._status_label.setText("Valid")
+            self._status_label.setProperty("class", "status_valid")
             self._ok_button.setEnabled(True)
 
         self._status_label.style().unpolish(self._status_label)
@@ -166,7 +179,7 @@ class RenameNode(QDialog):
                 # stack variable
                 if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
                     # sanity check that we are a stack var
-                    if hasattr(self._node.variable, 'offset') and self._node.variable.offset is not None:
+                    if hasattr(self._node.variable, "offset") and self._node.variable.offset is not None:
                         workspace.plugins.handle_stack_var_renamed(
                             self._func,
                             self._node.variable.offset,
@@ -180,9 +193,7 @@ class RenameNode(QDialog):
                 # global variable
                 elif isinstance(self._node, CVariable) and not self._node.variable.region:
                     workspace.plugins.handle_global_var_renamed(
-                        self._node.variable.addr,
-                        self._node.variable.name,
-                        node_name
+                        self._node.variable.addr, self._node.variable.name, node_name
                     )
 
                     self._code_view.instance.kb.labels[self._node.variable.addr] = node_name
@@ -192,10 +203,7 @@ class RenameNode(QDialog):
                 # function arg
                 elif isinstance(self._node, CVariable):
                     workspace.plugins.handle_func_arg_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr],
-                        0,
-                        self._node.variable.name,
-                        node_name
+                        code_kb.functions[self._node.codegen.cfunc.addr], 0, self._node.variable.name, node_name
                     )
 
                     self._node.variable.name = node_name
@@ -204,9 +212,7 @@ class RenameNode(QDialog):
                 # function name
                 elif isinstance(self._node, CFunction):
                     workspace.plugins.handle_function_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr],
-                        self._node.name,
-                        node_name
+                        code_kb.functions[self._node.codegen.cfunc.addr], self._node.name, node_name
                     )
 
                     code_kb.functions.get_by_addr(self._node.addr).name = node_name
@@ -217,9 +223,7 @@ class RenameNode(QDialog):
                 elif isinstance(self._node, CFunctionCall):
                     if self._node.callee_func is not None:
                         workspace.plugins.handle_function_renamed(
-                            code_kb.functions[self._node.codegen.cfunc.addr],
-                            self._node.callee_func.name,
-                            node_name
+                            code_kb.functions[self._node.codegen.cfunc.addr], self._node.callee_func.name, node_name
                         )
 
                         self._node.callee_func.name = node_name
@@ -229,14 +233,12 @@ class RenameNode(QDialog):
                     # TODO add a better callback
                     # TODO prevent name duplication. reuse logic from CTypeEditor?
                     # TODO if this is a temporary struct, make it permanent and add it to kb.types
-                    fields = [(node_name if n == self._node.field else n, t)
-                              for n, t in self._node.struct_type.fields.items()]
+                    fields = [
+                        (node_name if n == self._node.field else n, t) for n, t in self._node.struct_type.fields.items()
+                    ]
                     self._node.struct_type.fields = OrderedDict(fields)
 
-                    workspace.plugins.handle_struct_changed(
-                        self._node.field,
-                        node_name
-                    )
+                    workspace.plugins.handle_struct_changed(self._node.field, node_name)
 
                     self._node.field = node_name
 

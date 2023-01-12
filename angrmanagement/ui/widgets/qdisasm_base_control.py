@@ -21,9 +21,9 @@ class QDisassemblyBaseControl:
 
     def __init__(self, instance, disasm_view, base_cls):
         self.instance = instance
-        self.disasm_view: 'DisassemblyView' = disasm_view
+        self.disasm_view: "DisassemblyView" = disasm_view
         self._base_cls = base_cls
-        self._insaddr_to_block = { }
+        self._insaddr_to_block = {}
         self._disassembly_level = disasm_view.disassembly_level
 
     @property
@@ -49,7 +49,7 @@ class QDisassemblyBaseControl:
     # Public methods
     #
 
-    def get_selected_operand_info(self) -> Optional[Tuple['QBlock',int,'QOperand']]:
+    def get_selected_operand_info(self) -> Optional[Tuple["QBlock", int, "QOperand"]]:
         if not self.infodock.selected_operands:
             return None
 
@@ -62,7 +62,7 @@ class QDisassemblyBaseControl:
 
         return None
 
-    def set_disassembly_level(self, level:DisassemblyLevel):
+    def set_disassembly_level(self, level: DisassemblyLevel):
         self._disassembly_level = level
         self.reload()
 

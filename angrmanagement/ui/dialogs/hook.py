@@ -1,5 +1,14 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QGridLayout, QRadioButton, QGroupBox, QScrollArea, \
-    QWidget, QDialogButtonBox
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QGridLayout,
+    QRadioButton,
+    QGroupBox,
+    QScrollArea,
+    QWidget,
+    QDialogButtonBox,
+)
 from PySide6.QtGui import QTextOption
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode
@@ -9,6 +18,7 @@ class HookDialog(QDialog):
     """
     Provide templetes of hook function.
     """
+
     def __init__(self, instance, addr=None, parent=None):
         super().__init__(parent)
 
@@ -21,7 +31,7 @@ class HookDialog(QDialog):
         self._add_templates(hex(addr))
         self._function_box = None
         self._ok_button = None
-        self.setWindowTitle('Change hook')
+        self.setWindowTitle("Change hook")
         self.main_layout = QVBoxLayout()
         self._init_widgets()
         self.setLayout(self.main_layout)
@@ -31,19 +41,25 @@ class HookDialog(QDialog):
     #
 
     def _add_templates(self, addr):
-        self.templates['base'] = f"""\
+        self.templates[
+            "base"
+        ] = f"""\
 @project.hook(addr={addr}, length=0)
 def hook(state):
     ..."""
 
-        self.templates['assertion'] = f"""\
+        self.templates[
+            "assertion"
+        ] = f"""\
 @project.hook(addr={addr}, length=0)
 def assertion(state):
     state.add_constraints(
         ...
     )"""
 
-        self.templates['disable unicorn'] = f"""\
+        self.templates[
+            "disable unicorn"
+        ] = f"""\
 @project.hook(addr={addr}, length=0)
 def disable_unicorn(state):
     state.options.discard("UNICORN")
@@ -53,7 +69,9 @@ def disable_unicorn(state):
     state.options.discard("UNICORN_TRACK_STACK_POINTERS")
 """
 
-        self.templates['enable unicorn'] = f"""\
+        self.templates[
+            "enable unicorn"
+        ] = f"""\
 @project.hook(addr={addr}, length=0)
 def enable_unicorn(state):
     state.options.add("UNICORN")
@@ -64,7 +82,7 @@ def enable_unicorn(state):
 """
 
     def update_function(self, template):
-        self._function_box.setPlainText(template, mime_type="text/x-python",encoding="utf-8")
+        self._function_box.setPlainText(template, mime_type="text/x-python", encoding="utf-8")
 
     def selected(self):
         btn = self.sender()
@@ -126,11 +144,13 @@ def enable_unicorn(state):
 
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        buttons.button(QDialogButtonBox.Ok).setText('Append to Console')
+        buttons.button(QDialogButtonBox.Ok).setText("Append to Console")
+
         def do_ok():
             code = function_box.toPlainText()
             self.instance.append_code_to_console(code)
             self.close()
+
         buttons.accepted.connect(do_ok)
         buttons.rejected.connect(self.close)
         self.main_layout.addWidget(buttons)

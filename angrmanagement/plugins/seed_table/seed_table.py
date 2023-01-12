@@ -20,10 +20,12 @@ class Seed:
         self._realid = seed.id
         self.id: str = hex(id)[2:].rjust(8, "0")
 
+
 class SeedTable:
     """
     Multiple POIs
     """
+
     query_signal = None
 
     def __init__(self, workspace, query_signal, seed_callback=None):
@@ -41,7 +43,6 @@ class SeedTable:
         self.slacrs_thread.setDaemon(True)
         self.slacrs_thread.start()
 
-
     def init_instance(self):
         self.connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
 
@@ -56,7 +57,6 @@ class SeedTable:
             return False
 
         return True
-
 
     def listen_for_events(self):
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
@@ -86,7 +86,12 @@ class SeedTable:
                 session = self.slacrs_instance.session()
                 if e.kind == "input":
                     obj = e.get_object(session)
-                    if session.query(Input).filter_by(id=e.object_id).filter_by(target_image_id=self.connector.target_image_id) == 1:
+                    if (
+                        session.query(Input)
+                        .filter_by(id=e.object_id)
+                        .filter_by(target_image_id=self.connector.target_image_id)
+                        == 1
+                    ):
                         seed = session.query(Input).filter_by(obj.object_id).one()
                         self.seed_callback(seed)
                 session.close()
@@ -103,7 +108,7 @@ class SeedTable:
             session.close()
         return seeds
 
-    def filter_seeds_by_tag(self, tags: List[str]=[]) -> List[Seed]:
+    def filter_seeds_by_tag(self, tags: List[str] = []) -> List[Seed]:
         self.query_signal.querySignal.emit(True)
         session = self.slacrs_instance.session()
         seeds: List[Seed] = []
@@ -120,9 +125,14 @@ class SeedTable:
         session = self.slacrs_instance.session()
         seeds: List[Seed] = []
         if session:
-            result = session.query(Input).filter_by(target_image_id=self.connector.target_image_id).order_by(Input.created_at).all()
+            result = (
+                session.query(Input)
+                .filter_by(target_image_id=self.connector.target_image_id)
+                .order_by(Input.created_at)
+                .all()
+            )
             seeds = [Seed(inp, idx) for idx, inp in enumerate(result)]
-            #seeds = list(map(lambda val, i: Seed(val, i), enumerate(result))
+            # seeds = list(map(lambda val, i: Seed(val, i), enumerate(result))
             session.close()
         if len(seeds) == 0:
             self.workspace.log("Unable to retrieve seeds for target_image_id: %s" % self.connector.target_image_id)

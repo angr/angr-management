@@ -25,13 +25,13 @@ class QStateTableItem(QTableWidgetItem):
 
         name = state.gui_data.name
         base_name = state.gui_data.base_name
-        is_changed = 'No' if state.gui_data.is_original else 'Yes'
+        is_changed = "No" if state.gui_data.is_original else "Yes"
         mode = state.mode
-        address = '%x' % state.addr if isinstance(state.addr, int) else 'Symbolic'
+        address = "%x" % state.addr if isinstance(state.addr, int) else "Symbolic"
         state_options = {o for o, v in state.options._options.items() if v is True}
         options_plus = state_options - angr.sim_options.modes[mode]
         options_minus = angr.sim_options.modes[mode] - state_options
-        options = ' '.join([' '.join('+' + o for o in options_plus), ' '.join('-' + o for o in options_minus)])
+        options = " ".join([" ".join("+" + o for o in options_plus), " ".join("-" + o for o in options_minus)])
 
         widgets = [
             QTableWidgetItem(name),
@@ -66,13 +66,13 @@ class QStateTable(QTableWidget):
 
         self._selected = selection_callback
 
-        header_labels = [ 'Name', 'Address', 'Changed?', 'Base State', 'Mode', 'Options' ]
+        header_labels = ["Name", "Address", "Changed?", "Base State", "Mode", "Options"]
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
 
-        self.items = [ ]
+        self.items = []
         self.instance = instance
         self.states = instance.states
 
@@ -92,7 +92,7 @@ class QStateTable(QTableWidget):
             return None
 
     def reload(self):
-        #current_row = self.currentRow()
+        # current_row = self.currentRow()
         self.clearContents()
 
         self.items = [QStateTableItem(f) for f in self.states]
@@ -103,10 +103,10 @@ class QStateTable(QTableWidget):
             for i, it in enumerate(item.widgets()):
                 self.setItem(idx, i, it)
 
-        #if 0 <= current_row < len(self.items):
+        # if 0 <= current_row < len(self.items):
         #    self.setCurrentItem(current_row, 0)
 
-    def _on_state_selected(self, *args): #pylint: disable=unused-argument
+    def _on_state_selected(self, *args):  # pylint: disable=unused-argument
         if self._selected is not None:
             self._selected(self.current_state_record())
 
@@ -115,18 +115,18 @@ class QStateTable(QTableWidget):
 
         menu = QMenu("", self)
 
-        menu.addAction('New state...', self._action_new_state)
+        menu.addAction("New state...", self._action_new_state)
         menu.addSeparator()
 
-        a = menu.addAction('Duplicate state', self._action_duplicate)
+        a = menu.addAction("Duplicate state", self._action_duplicate)
         if sr is None:
             a.setDisabled(True)
 
-        a = menu.addAction('Delete state', self._action_delete)
+        a = menu.addAction("Delete state", self._action_delete)
         if sr is None:
             a.setDisabled(True)
 
-        a = menu.addAction('New simulation manager', self._action_new_simulation_manager)
+        a = menu.addAction("New simulation manager", self._action_new_simulation_manager)
         if sr is None:
             a.setDisabled(True)
 
@@ -152,7 +152,7 @@ class QStateTable(QTableWidget):
         simgr_name = NameGenerator.random_name()
         self.instance.workspace.create_simulation_manager(state, simgr_name)
 
-    def _watch_states(self, **kwargs):  #pylint: disable=unused-argument
+    def _watch_states(self, **kwargs):  # pylint: disable=unused-argument
         self.reload()
 
     def _get_copied_state_name(self, current_name):

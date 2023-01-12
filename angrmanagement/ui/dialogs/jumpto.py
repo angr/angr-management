@@ -18,7 +18,7 @@ class JumpTo(QDialog):
         self._status_label = None
         self._ok_button = None
 
-        self.setWindowTitle('Jump to address')
+        self.setWindowTitle("Jump to address")
 
         self.main_layout = QVBoxLayout()
 
@@ -37,7 +37,7 @@ class JumpTo(QDialog):
         # address label
 
         address_label = QLabel(self)
-        address_label.setText('Address')
+        address_label.setText("Address")
 
         address = QAddressInput(self._on_address_changed, self._disasm_view.instance, parent=self)
         self._address_box = address
@@ -70,12 +70,12 @@ class JumpTo(QDialog):
         if self._address_box.target is None:
             # the address is invalid
 
-            self._status_label.setText('Invalid')
-            self._status_label.setProperty('class', 'status_invalid')
+            self._status_label.setText("Invalid")
+            self._status_label.setProperty("class", "status_invalid")
             self._ok_button.setEnabled(False)
         else:
-            self._status_label.setText('Valid')
-            self._status_label.setProperty('class', 'status_valid')
+            self._status_label.setText("Valid")
+            self._status_label.setProperty("class", "status_valid")
             self._ok_button.setEnabled(True)
 
         self._status_label.style().unpolish(self._status_label)

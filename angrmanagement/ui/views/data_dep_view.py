@@ -3,6 +3,7 @@ from typing import Optional, Dict, List, TYPE_CHECKING, Set
 
 # noinspection PyPackageRequirements
 from PySide6 import QtCore, QtWidgets, QtGui
+
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 
@@ -30,12 +31,12 @@ class DataDepView(BaseView):
     FUNCTION_SPECIFIC_VIEW = False
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('data_dependency', instance, default_docking_position, *args, **kwargs)
+        super().__init__("data_dependency", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Data Dependency'
+        self.base_caption = "Data Dependency"
 
         # Get all instructions in the program
-        self._instructions: Dict[int, 'CsInsn'] = {}
+        self._instructions: Dict[int, "CsInsn"] = {}
         inst = self.instance
         for _, func in inst.kb.functions.items():
             for block in func.blocks:
@@ -43,7 +44,7 @@ class DataDepView(BaseView):
                 for ins in disass.insns:
                     self._instructions[ins.address] = ins
 
-        self._end_state: Optional['SimState'] = None
+        self._end_state: Optional["SimState"] = None
         self._start_addr: Optional[int] = None
         self._end_addr: Optional[int] = None
         self._block_addrs: Optional[List[int]] = None
@@ -52,9 +53,9 @@ class DataDepView(BaseView):
         self._graph_widget: Optional[QDataDepGraph] = None
 
         # Data
-        self._data_dep: Optional['DataDependencyGraphAnalysis'] = None
-        self._ddg: Optional['DiGraph'] = None  # Derived from analysis, can be full, simplified, or subgraph
-        self._graph: Optional['DiGraph'] = None
+        self._data_dep: Optional["DataDependencyGraphAnalysis"] = None
+        self._ddg: Optional["DiGraph"] = None  # Derived from analysis, can be full, simplified, or subgraph
+        self._graph: Optional["DiGraph"] = None
         self._traced_ancestors: Set[QDataDepGraphBlock] = set()
         self._traced_descendants: Set[QDataDepGraphBlock] = set()
 
@@ -62,11 +63,11 @@ class DataDepView(BaseView):
         self._register_events()
 
     @property
-    def _data_dep_graph(self) -> Optional['DiGraph']:
+    def _data_dep_graph(self) -> Optional["DiGraph"]:
         return self._ddg
 
     @_data_dep_graph.setter
-    def _data_dep_graph(self, new_ddg: 'DiGraph'):
+    def _data_dep_graph(self, new_ddg: "DiGraph"):
         self._ddg = new_ddg
         self._graph_widget.ref_graph = new_ddg
 
@@ -89,16 +90,16 @@ class DataDepView(BaseView):
         self.redraw_graph()
 
     @property
-    def graph_widget(self) -> Optional['QDataDepGraph']:
+    def graph_widget(self) -> Optional["QDataDepGraph"]:
         return self._graph_widget
 
     @property
     def analysis_params(self) -> dict:
         return {
-            'end_state': self._end_state,
-            'start_addr': self._start_addr,
-            'end_addr': self._end_addr,
-            'block_addrs': self._block_addrs
+            "end_state": self._end_state,
+            "start_addr": self._start_addr,
+            "end_addr": self._end_addr,
+            "block_addrs": self._block_addrs,
         }
 
     @analysis_params.setter
@@ -108,10 +109,10 @@ class DataDepView(BaseView):
             return
 
         try:
-            self._end_state = new_params['end_state']
-            self._start_addr = new_params['start_addr']
-            self._end_addr = new_params['end_addr']
-            self._block_addrs = new_params['block_addrs']
+            self._end_state = new_params["end_state"]
+            self._start_addr = new_params["start_addr"]
+            self._end_addr = new_params["end_addr"]
+            self._block_addrs = new_params["block_addrs"]
 
             self.run_analysis()
         except OSError:
@@ -122,7 +123,7 @@ class DataDepView(BaseView):
     def run_analysis(self):
         inst = self.instance
 
-        data_dep: 'DataDependencyGraphAnalysis' = inst.project.analyses.DataDep(
+        data_dep: "DataDependencyGraphAnalysis" = inst.project.analyses.DataDep(
             self._end_state,
             self._start_addr,
             self._end_addr,
@@ -184,8 +185,9 @@ class DataDepView(BaseView):
     def _register_events(self):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
-    def _convert_node(self, node: 'BaseDepNode',
-                      converted: Dict['BaseDepNode', QDataDepGraphBlock]) -> Optional[QDataDepGraphBlock]:
+    def _convert_node(
+        self, node: "BaseDepNode", converted: Dict["BaseDepNode", QDataDepGraphBlock]
+    ) -> Optional[QDataDepGraphBlock]:
         if isinstance(node, (MemDepNode, RegDepNode)):
             cs_instr = self._instructions.get(node.ins_addr, None)
             if cs_instr:
@@ -232,8 +234,9 @@ class DataDepView(BaseView):
         if self._data_dep_graph is self._data_dep.simplified_graph:
             self._data_dep_graph = self._data_dep.graph
         elif self._data_dep_graph is self._data_dep.sub_graph:
-            self._data_dep_graph = self._data_dep.graph if self._graph_has_tmp_nodes() \
-                else self._data_dep.simplified_graph
+            self._data_dep_graph = (
+                self._data_dep.graph if self._graph_has_tmp_nodes() else self._data_dep.simplified_graph
+            )
         else:
             self._data_dep_graph = self._data_dep.simplified_graph
         self.reload()
@@ -262,11 +265,11 @@ class DataDepView(BaseView):
         if button == QtCore.Qt.RightButton and event:
             options_menu = QtWidgets.QMenu("Options", self)
             if self._data_dep_graph is self._data_dep.graph:
-                toggle_text = 'Hide temp nodes'
+                toggle_text = "Hide temp nodes"
             elif self._data_dep_graph is self._data_dep.simplified_graph:
-                toggle_text = 'Show temp nodes'
+                toggle_text = "Show temp nodes"
             else:
-                toggle_text = 'Untrack node'
+                toggle_text = "Untrack node"
 
             options_menu.addAction(toggle_text, self._toggle_graph)
 

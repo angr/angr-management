@@ -1,7 +1,12 @@
 import logging
 
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView, QStyleOptionGraphicsItem, QApplication,\
-    QGraphicsSceneMouseEvent
+from PySide6.QtWidgets import (
+    QGraphicsScene,
+    QGraphicsView,
+    QStyleOptionGraphicsItem,
+    QApplication,
+    QGraphicsSceneMouseEvent,
+)
 from PySide6.QtGui import QPainter, QMouseEvent, QImage, QVector2D
 from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF, QPoint
 
@@ -34,7 +39,7 @@ class QBaseGraphicsView(QGraphicsView):
         if scene is not None:
             scene.update(self.sceneRect())
 
-    def viewportEvent(self, event:QEvent) -> bool:
+    def viewportEvent(self, event: QEvent) -> bool:
         visible_scene_rect = self.mapToScene(self.viewport().geometry()).boundingRect()
         if visible_scene_rect != self._visibile_scene_rect:
             self._visibile_scene_rect = visible_scene_rect
@@ -42,8 +47,8 @@ class QBaseGraphicsView(QGraphicsView):
 
         return super().viewportEvent(event)
 
-class QSaveableGraphicsView(QBaseGraphicsView):
 
+class QSaveableGraphicsView(QBaseGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._is_extra_render_pass: bool = False
@@ -52,7 +57,7 @@ class QSaveableGraphicsView(QBaseGraphicsView):
     def is_extra_render_pass(self):
         return self._is_extra_render_pass
 
-    def set_extra_render_pass(self, is_extra_pass:bool):
+    def set_extra_render_pass(self, is_extra_pass: bool):
         """
         Trigger any post-render callbacks
         """
@@ -66,13 +71,11 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         minRect = self.scene().itemsBoundingRect()
         imgRect = minRect.marginsAdded(margins)
 
-
         image = QImage(imgRect.size().toSize(), QImage.Format_ARGB32)
         image.fill(Qt.white)
         painter = QPainter(image)
 
-        painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # draw the image
         self.scene().setSceneRect(imgRect)
@@ -109,8 +112,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         # the zoom factor, for preserving the zoom
         self.zoom_factor = None
 
-        #self.setRenderHints(
-                #QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        # self.setRenderHints(
+        # QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
     def _initial_position(self):
         raise NotImplementedError
@@ -238,7 +241,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         elif event.type() == QEvent.MouseButtonRelease:
             newtype = QEvent.GraphicsSceneMouseRelease
         else:
-            raise ValueError(f'Unknown event type {event.type()}')
+            raise ValueError(f"Unknown event type {event.type()}")
 
         # pulled from QGraphicsView::mousePressEvent in the qt codebase:
         mouseEvent = QGraphicsSceneMouseEvent(newtype)
@@ -249,7 +252,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         lastMouseMoveScreenPoint = mousePressScreenPoint
         mousePressButton = event.button()
 
-        #mouseEvent.setWidget(self.viewport()) # TODO figure out how to do this in python, or if it's really necessary
+        # mouseEvent.setWidget(self.viewport()) # TODO figure out how to do this in python, or if it's really necessary
         mouseEvent.setButtonDownScenePos(mousePressButton, mousePressScenePoint)
         mouseEvent.setButtonDownScreenPos(mousePressButton, mousePressScreenPoint)
         mouseEvent.setScenePos(mousePressScenePoint)
@@ -279,21 +282,25 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         if not event.isAccepted():
             # create a new event and dispatch it to the scene
-            pressy = QMouseEvent(QEvent.MouseButtonPress,
-                                 event.pos(),
-                                 event.globalPos(),
-                                 event.button(),
-                                 event.buttons(),
-                                 event.modifiers())
+            pressy = QMouseEvent(
+                QEvent.MouseButtonPress,
+                event.pos(),
+                event.globalPos(),
+                event.button(),
+                event.buttons(),
+                event.modifiers(),
+            )
 
             _ = self.dispatchMouseEventToScene(pressy)
 
-            releasy = QMouseEvent(QEvent.MouseButtonRelease,
-                                  event.pos(),
-                                  event.globalPos(),
-                                  event.buton(),
-                                  event.buttons(),
-                                  event.modifiers())
+            releasy = QMouseEvent(
+                QEvent.MouseButtonRelease,
+                event.pos(),
+                event.globalPos(),
+                event.buton(),
+                event.buttons(),
+                event.modifiers(),
+            )
             release_event = self.dispatchMouseEventToScene(releasy)
 
             if not release_event.isAccepted():

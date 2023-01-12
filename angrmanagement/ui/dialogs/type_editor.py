@@ -24,14 +24,15 @@ class CTypeEditor(QDialog):
                                 The entered types. Will only be one entry if allow_multiple is false, and will be empty
                                 if the dialog was cancelled.
     """
-    def __init__(self, parent, arch, base_text='', multiline=False, allow_multiple=False, predefined_types=None):
+
+    def __init__(self, parent, arch, base_text="", multiline=False, allow_multiple=False, predefined_types=None):
         super().__init__(parent)
 
         self._allow_multiple = allow_multiple
         self.arch = arch
         self._predefined_types = predefined_types
 
-        self.text = lambda: ''
+        self.text = lambda: ""
         self._ok_button = None  # type: Optional[QPushButton]
         self._init_widgets(base_text, multiline)
 
@@ -48,9 +49,9 @@ class CTypeEditor(QDialog):
         self._ok_button = buttons.button(QDialogButtonBox.Ok)
 
         if multiline:
-            editor = QCommentTextBox(parent=self,
-                                     textconfirmed_callback=self._on_ok_pressed,
-                                     textchanged_callback=self._evaluate)
+            editor = QCommentTextBox(
+                parent=self, textconfirmed_callback=self._on_ok_pressed, textchanged_callback=self._evaluate
+            )
             editor.setFont(Conf.disasm_font)
             self.text = editor.toPlainText
 
@@ -91,7 +92,7 @@ class CTypeEditor(QDialog):
         try:
             defs, typedefs = sim_type.parse_file(text, predefined_types=self._predefined_types)
             for k in list(typedefs):
-                if k.startswith('struct ') and k[7:] in typedefs:
+                if k.startswith("struct ") and k[7:] in typedefs:
                     typedefs.pop(k)
             result = list(typedefs.items()) + list(defs.items())
             result = [(name, ty.with_arch(self.arch)) for name, ty in result]
@@ -112,6 +113,7 @@ class CTypeEditor(QDialog):
         else:
             self._ok_button.setEnabled(True)
             self.result = result
+
 
 def edit_field(ty, field, predefined_types=None):
     if isinstance(ty, sim_type.SimStruct):

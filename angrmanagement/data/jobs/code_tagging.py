@@ -2,7 +2,6 @@ from .job import Job
 
 
 class CodeTaggingJob(Job):
-
     def __init__(self, on_finish=None):
         super().__init__(name="Code tagging", on_finish=on_finish)
 

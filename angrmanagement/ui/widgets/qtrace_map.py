@@ -1,8 +1,16 @@
 from typing import Optional, Sequence
 import logging
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItem, QGraphicsRectItem, \
-    QGraphicsPolygonItem, QGraphicsLineItem
+from PySide6.QtWidgets import (
+    QWidget,
+    QHBoxLayout,
+    QGraphicsScene,
+    QGraphicsView,
+    QGraphicsItem,
+    QGraphicsRectItem,
+    QGraphicsPolygonItem,
+    QGraphicsLineItem,
+)
 from PySide6.QtGui import QBrush, QPen, QPolygonF, QLinearGradient, QColor
 from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent
 
@@ -18,6 +26,7 @@ class TraceMapItem(QGraphicsItem):
     """
     Trace map item to be rendered in graphics scene.
     """
+
     ZVALUE_CHECKPOINT = 1
     ZVALUE_ADDR = 2
     ZVALUE_HOVER = 3
@@ -205,8 +214,7 @@ class TraceMapItem(QGraphicsItem):
         b.append(QPointF(pos_x + tri_width - 1, pos_y))
         b.append(QPointF(pos_x, pos_y))
 
-        for i in [QGraphicsPolygonItem(t, parent=self),
-                  QGraphicsPolygonItem(b, parent=self)]:
+        for i in [QGraphicsPolygonItem(t, parent=self), QGraphicsPolygonItem(b, parent=self)]:
             i.setPen(pen)
             i.setBrush(brush)
             if z is not None:
@@ -225,8 +233,7 @@ class TraceMapItem(QGraphicsItem):
         color = QColor(Qt.green)
 
         for checkpoint_addr in self._checkpoints:
-            self._create_line_indicator(checkpoint_addr, self._checkpoint_items, color=color,
-                                        z=self.ZVALUE_CHECKPOINT)
+            self._create_line_indicator(checkpoint_addr, self._checkpoint_items, color=color, z=self.ZVALUE_CHECKPOINT)
 
     def _gen_current_indicator(self, **kwargs):  # pylint: disable=unused-argument
         """
@@ -321,7 +328,7 @@ class QTraceMapView(QGraphicsView):
         self.fm: TraceMapItem = TraceMapItem(self.instance)
         self._scale: float = 1.0
         self._scene.addItem(self.fm)
-        self._orientation: str = 'horizontal'
+        self._orientation: str = "horizontal"
         self._base_width: int = 0
 
         self.setBackgroundBrush(Conf.palette_base)
@@ -347,10 +354,7 @@ class QTraceMapView(QGraphicsView):
         Handle wheel events to scale and translate the trace map.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(
-                1.25 if event.angleDelta().y() > 0 else 1/1.25,
-                QPoint(event.x(), event.y())
-            )
+            self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1 / 1.25, QPoint(event.x(), event.y()))
         else:
             self.translate(100 * (-1 if event.delta() < 0 else 1), 0)
             super().wheelEvent(event)
@@ -391,7 +395,7 @@ class QTraceMapView(QGraphicsView):
                 event.accept()
                 return
             elif event.key() == Qt.Key_Minus:
-                self.adjust_viewport_scale(1/1.25)
+                self.adjust_viewport_scale(1 / 1.25)
                 event.accept()
                 return
         super().keyPressEvent(event)
@@ -411,14 +415,14 @@ class QTraceMapView(QGraphicsView):
         rotation = 0
         vg = self.viewport().geometry()
         if vg.width() > vg.height():
-            if self._orientation != 'horizontal':
+            if self._orientation != "horizontal":
                 rotation = -90
-            self._orientation = 'horizontal'
+            self._orientation = "horizontal"
             w, h = vg.width(), vg.height()
         else:
-            if self._orientation != 'vertical':
+            if self._orientation != "vertical":
                 rotation = 90
-            self._orientation = 'vertical'
+            self._orientation = "vertical"
             w, h = vg.height(), vg.width()
 
         if rotation:

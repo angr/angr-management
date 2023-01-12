@@ -17,33 +17,39 @@ class DisasmInsnContextMenu(Menu):
     and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
 
-    def __init__(self, disasm_view: 'DisassemblyView'):
+    def __init__(self, disasm_view: "DisassemblyView"):
         super().__init__("", parent=disasm_view)
 
         self.insn_addr = None
 
-        self.entries.extend([
-            MenuEntry('T&oggle selection', self._toggle_instruction_selection),
-            MenuSeparator(),
-            MenuEntry('&XRefs...', self._popup_xrefs),
-            MenuSeparator(),
-        ])
-        if Conf.has_operation_mango:
-            self.entries.extend([
-                MenuEntry("&Depends on...", self._popup_dependson_dialog),
+        self.entries.extend(
+            [
+                MenuEntry("T&oggle selection", self._toggle_instruction_selection),
                 MenuSeparator(),
-            ])
-        self.entries.extend([
-            MenuEntry('E&xecute symbolically...', self._popup_newstate_dialog),
-            MenuEntry('&Avoid in execution', self._avoid_in_execution),
-            MenuEntry('&Find in execution', self._find_in_execution),
-            MenuEntry('Add &hook...', self._add_hook),
-            MenuEntry('View function &documentation...', self._view_docs),
-            MenuEntry('Toggle &breakpoint', self._toggle_breakpoint)
-        ])
+                MenuEntry("&XRefs...", self._popup_xrefs),
+                MenuSeparator(),
+            ]
+        )
+        if Conf.has_operation_mango:
+            self.entries.extend(
+                [
+                    MenuEntry("&Depends on...", self._popup_dependson_dialog),
+                    MenuSeparator(),
+                ]
+            )
+        self.entries.extend(
+            [
+                MenuEntry("E&xecute symbolically...", self._popup_newstate_dialog),
+                MenuEntry("&Avoid in execution", self._avoid_in_execution),
+                MenuEntry("&Find in execution", self._find_in_execution),
+                MenuEntry("Add &hook...", self._add_hook),
+                MenuEntry("View function &documentation...", self._view_docs),
+                MenuEntry("Toggle &breakpoint", self._toggle_breakpoint),
+            ]
+        )
 
     @property
-    def _disasm_view(self) -> 'DisassemblyView':
+    def _disasm_view(self) -> "DisassemblyView":
         return self.parent
 
     def _popup_newstate_dialog(self):
@@ -89,7 +95,7 @@ class DisasmInsnContextMenu(Menu):
     # Public Methods
     #
 
-    def add_menu_entry(self, text, callback: Callable[['DisasmInsnContextMenu'], None], add_separator_first=True):
+    def add_menu_entry(self, text, callback: Callable[["DisasmInsnContextMenu"], None], add_separator_first=True):
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))

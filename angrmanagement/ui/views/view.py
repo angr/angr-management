@@ -24,7 +24,7 @@ class BaseView(QFrame):
     def __init__(self, category: str, instance, default_docking_position, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.instance: 'Instance' = instance
+        self.instance: "Instance" = instance
         self.category = category
         self.default_docking_position = default_docking_position
 
@@ -33,7 +33,7 @@ class BaseView(QFrame):
         self.width_hint = -1
         self.height_hint = -1
         self.index: int = 1
-        self.base_caption: str = 'View'
+        self.base_caption: str = "View"
 
     @property
     def function(self):
@@ -78,7 +78,7 @@ class BaseView(QFrame):
     def caption(self):
         s = self.base_caption
         if self.index > 1:
-            s += f'-{self.index}'
+            s += f"-{self.index}"
         return s
 
 
@@ -92,7 +92,7 @@ class SynchronizedViewState:
         self.cursor_address: Optional[int] = None
         self.highlight_regions: Mapping[SynchronizedView, Sequence[SynchronizedHighlightRegion]] = {}
 
-    def register_view(self, view: 'SynchronizedView'):
+    def register_view(self, view: "SynchronizedView"):
         """
         Register a synchronized view.
         """
@@ -100,7 +100,7 @@ class SynchronizedViewState:
         for v in self.views:
             v.on_synchronized_view_group_changed()
 
-    def unregister_view(self, view: 'SynchronizedView'):
+    def unregister_view(self, view: "SynchronizedView"):
         """
         Unregister a synchronized view.
         """
@@ -139,7 +139,7 @@ class SynchronizedView(BaseView):
         self.sync_state.register_view(self)
         self.sync_from_state()
 
-    def sync_with_view(self, view: 'SynchronizedView'):
+    def sync_with_view(self, view: "SynchronizedView"):
         """
         Synchronize with another view.
         """
@@ -205,15 +205,18 @@ class SynchronizedView(BaseView):
         Get submenu for 'Synchronize with' context menu.
         """
         mnu = QMenu("&Synchronize with", self)
-        groups = {v.sync_state for v in self.instance.workspace.view_manager.views
-                  if (v is not self) and isinstance(v, SynchronizedView)}
+        groups = {
+            v.sync_state
+            for v in self.instance.workspace.view_manager.views
+            if (v is not self) and isinstance(v, SynchronizedView)
+        }
         if len(groups) == 0:
-            act = QAction('None available', self)
+            act = QAction("None available", self)
             act.setEnabled(False)
             mnu.addAction(act)
         else:
             for group in groups:
-                act = QAction(', '.join([v.caption for v in group.views if v is not self]), self)
+                act = QAction(", ".join([v.caption for v in group.views if v is not self]), self)
                 act.setCheckable(True)
                 act.setChecked(group is self.sync_state)
                 act.toggled.connect(lambda checked, s=group: self.sync_with_state_object(s if checked else None))

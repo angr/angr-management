@@ -4,8 +4,16 @@ from typing import List, Set, Tuple, Optional, TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 
-from PySide6.QtWidgets import (QWidget, QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QLineEdit, QLabel,
-                               QHBoxLayout)
+from PySide6.QtWidgets import (
+    QWidget,
+    QTableView,
+    QAbstractItemView,
+    QHeaderView,
+    QVBoxLayout,
+    QLineEdit,
+    QLabel,
+    QHBoxLayout,
+)
 from PySide6.QtGui import QBrush, QColor, QCursor
 from PySide6.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
 
@@ -25,7 +33,7 @@ class QFunctionTableModel(QAbstractTableModel):
     The table model for QFunctionTable.
     """
 
-    Headers = ['Name', 'Tags', 'Address', 'Binary', 'Size', 'Blocks']
+    Headers = ["Name", "Tags", "Address", "Binary", "Size", "Blocks"]
     NAME_COL = 0
     TAGS_COL = 1
     ADDRESS_COL = 2
@@ -50,7 +58,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return 0
 
     @property
-    def func_list(self) -> List['Function']:
+    def func_list(self) -> List["Function"]:
         if self._func_list is not None:
             return self._func_list
         return self._raw_func_list
@@ -68,21 +76,24 @@ class QFunctionTableModel(QAbstractTableModel):
             self._func_list = None
         else:
             extra_columns = self.instance.workspace.plugins.count_func_columns()
-            self._func_list = [ func for func in self._raw_func_list if
-                                self._func_match_keyword(func, keyword, extra_columns=extra_columns) ]
+            self._func_list = [
+                func
+                for func in self._raw_func_list
+                if self._func_match_keyword(func, keyword, extra_columns=extra_columns)
+            ]
 
         self._data_cache.clear()
         self.emit(SIGNAL("layoutChanged()"))
 
-    def rowCount(self, *args, **kwargs): # pylint:disable=unused-argument
+    def rowCount(self, *args, **kwargs):  # pylint:disable=unused-argument
         if self.func_list is None:
             return 0
         return len(self.func_list)
 
-    def columnCount(self, *args, **kwargs): # pylint:disable=unused-argument
+    def columnCount(self, *args, **kwargs):  # pylint:disable=unused-argument
         return len(self.Headers) + self.instance.workspace.plugins.count_func_columns()
 
-    def headerData(self, section, orientation, role): # pylint:disable=unused-argument
+    def headerData(self, section, orientation, role):  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
 
@@ -131,7 +142,7 @@ class QFunctionTableModel(QAbstractTableModel):
             else:
                 color = self._config.function_table_color
 
-            #for w in widgets:
+            # for w in widgets:
             #    w.setFlags(w.flags() & ~Qt.ItemIsEditable)
             #    w.setForeground(color)
 
@@ -152,8 +163,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        self.func_list = sorted(self.func_list, key=lambda f: self._get_column_data(f, column),
-                                reverse=order==Qt.DescendingOrder)
+        self.func_list = sorted(
+            self.func_list, key=lambda f: self._get_column_data(f, column), reverse=order == Qt.DescendingOrder
+        )
         self.layoutChanged.emit()
 
     #
@@ -180,7 +192,7 @@ class QFunctionTableModel(QAbstractTableModel):
         if idx < len(self.Headers):
             data = self._get_column_data(func, idx)
             if idx == self.ADDRESS_COL:
-                return f'{data:x}'
+                return f"{data:x}"
             elif idx == self.TAGS_COL:
                 return self._get_tags_display_string(data)
             else:
@@ -205,7 +217,7 @@ class QFunctionTableModel(QAbstractTableModel):
     def _get_tags_display_string(cls, tags):
         return ", ".join(cls.TAG_STRS.get(t, t) for t in tags)
 
-    def _func_match_keyword(self, func, keyword, extra_columns: int=0):
+    def _func_match_keyword(self, func, keyword, extra_columns: int = 0):
         """
         Check whether the function matches against the given keyword or not.
 
@@ -243,13 +255,14 @@ class QFunctionTableView(QTableView):
     """
     The table view for QFunctionTable.
     """
+
     def __init__(self, parent, instance, selection_callback=None):
         super().__init__(parent)
         self.instance = instance
         self._context_menu = FunctionContextMenu(self)
 
         self._function_table = parent  # type: QFunctionTable
-        self._selected_func = ObjectContainer(None, 'Currently selected function')
+        self._selected_func = ObjectContainer(None, "Currently selected function")
         self._selected_func.am_subscribe(selection_callback)
 
         self.horizontalHeader().setVisible(True)
@@ -274,9 +287,9 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
         self.doubleClicked.connect(self._on_function_selected)
 
-    def refresh(self, added_funcs: Optional[Set[int]]=None, removed_funcs: Optional[Set[int]]=None):
+    def refresh(self, added_funcs: Optional[Set[int]] = None, removed_funcs: Optional[Set[int]] = None):
         if added_funcs:
-            new_funcs = [ ]
+            new_funcs = []
             for addr in added_funcs:
                 try:
                     f_ = self._functions[addr]
@@ -286,7 +299,7 @@ class QFunctionTableView(QTableView):
                     new_funcs.append(f_)
             self._model.func_list += new_funcs
         if removed_funcs:
-            self._model.func_list = [ f_ for f_ in self._model.func_list if f_.addr not in removed_funcs ]
+            self._model.func_list = [f_ for f_ in self._model.func_list if f_.addr not in removed_funcs]
         self.viewport().update()
 
     @property
@@ -311,7 +324,7 @@ class QFunctionTableView(QTableView):
 
     def load_functions(self):
         if not self.show_alignment_functions:
-            self._model.func_list = [ v for v in self._functions.values() if not v.alignment ]
+            self._model.func_list = [v for v in self._functions.values() if not v.alignment]
         else:
             self._model.func_list = list(self._functions.values())
 
@@ -331,7 +344,7 @@ class QFunctionTableView(QTableView):
         self._function_table.show_filter_box(prefix=text)
         return True
 
-    def contextMenuEvent(self, event:'PySide6.QtGui.QContextMenuEvent') -> None: # pylint:disable=unused-argument
+    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:  # pylint:disable=unused-argument
         rows = self.selectionModel().selectedRows()
         funcs = [self.instance.kb.functions[r.data()] for r in rows]
         self._context_menu.set(funcs).qmenu().popup(QCursor.pos())
@@ -341,6 +354,7 @@ class QFunctionTableFilterBox(QLineEdit):
     """
     The filter box for QFunctionTable.
     """
+
     def __init__(self, parent):
         super().__init__()
 
@@ -348,7 +362,7 @@ class QFunctionTableFilterBox(QLineEdit):
 
         self.installEventFilter(self)
 
-    def eventFilter(self, obj, event): # pylint:disable=unused-argument
+    def eventFilter(self, obj, event):  # pylint:disable=unused-argument
         if event.type() == QEvent.KeyPress:
             if event.key() == Qt.Key_Escape:
                 if self.text():
@@ -371,11 +385,11 @@ class QFunctionTable(QWidget):
         super().__init__(parent)
         self.instance = instance
 
-        self._view: 'FunctionsView' = parent
+        self._view: "FunctionsView" = parent
         self._table_view = None  # type: QFunctionTableView
         self._filter_box = None  # type: QFunctionTableFilterBox
         self._toolbar = None  # type: FunctionTableToolbar
-        self._status_label = None # type: QLabel
+        self._status_label = None  # type: QLabel
 
         self._last_known_func_addrs: Set[int] = set()
 
@@ -386,7 +400,7 @@ class QFunctionTable(QWidget):
         return self._table_view.show_alignment_functions
 
     @property
-    def function_manager(self) -> Optional['FunctionManager']:
+    def function_manager(self) -> Optional["FunctionManager"]:
         if self._table_view is not None:
             return self._table_view.function_manager
         return None
@@ -496,7 +510,7 @@ class QFunctionTable(QWidget):
 
         self.setLayout(layout)
 
-    def _updated_functions(self, function_manager: 'FunctionManager') -> Tuple[Set[int],Set[int]]:
+    def _updated_functions(self, function_manager: "FunctionManager") -> Tuple[Set[int], Set[int]]:
         if len(self._last_known_func_addrs) == len(function_manager.function_addrs_set):
             return set(), set()
         new_func_addrs_set = function_manager.function_addrs_set.copy()

@@ -73,10 +73,12 @@ class InteractionState(enum.Enum):
 
 class InteractionView(BaseView):
     def __init__(self, instance, *args, **kwargs):
-        super().__init__('interaction', instance, *args, **kwargs)
-        self.base_caption = 'Interaction'
-        self.current_log = []  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
-                       # "in" here means it's input to the program
+        super().__init__("interaction", instance, *args, **kwargs)
+        self.base_caption = "Interaction"
+        self.current_log = (
+            []
+        )  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
+        # "in" here means it's input to the program
         self.log_controls = []
         self.sock = None  # type: nclib.Netcat
 
@@ -219,37 +221,44 @@ class InteractionView(BaseView):
 
     def _save_interaction(self):
         self.instance.interactions.am_obj.append(
-            SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log))
+            SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log)
+        )
         self.instance.interactions.am_event()
 
     def _upload_interaction(self):
         if slacrs is None:
-            QMessageBox.warning(self.instance.workspace.main_window,
-                                "slacrs module does not exist",
-                                "Failed to import slacrs package. Please make sure it is installed.")
+            QMessageBox.warning(
+                self.instance.workspace.main_window,
+                "slacrs module does not exist",
+                "Failed to import slacrs package. Please make sure it is installed.",
+            )
             return
         connector = self.instance.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
         if connector is None:
             # chess connector does not exist
-            QMessageBox.warning(self.instance.workspace.main_window,
-                                "CHESSConnector is not found",
-                                "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed "
-                                "and enabled.")
+            QMessageBox.warning(
+                self.instance.workspace.main_window,
+                "CHESSConnector is not found",
+                "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed " "and enabled.",
+            )
             return
         if not connector.target_image_id:
             # the target image ID does not exist
-            QMessageBox.warning(self.instance.workspace.main_window,
-                                "Target image ID is not specified",
-                                "The target image ID is unspecified. Please associate the binary with a remote "
-                                "challenge target.")
+            QMessageBox.warning(
+                self.instance.workspace.main_window,
+                "Target image ID is not specified",
+                "The target image ID is unspecified. Please associate the binary with a remote " "challenge target.",
+            )
             return
         slacrs_instance = connector.slacrs_instance()
         if slacrs_instance is None:
             # slacrs does not exist
-            QMessageBox.warning(self.instance.workspace.main_window,
-                                "CHECRS backend does not exist",
-                                "Cannot communicate with the CHECRS backend. Please make sure you have proper Internet "
-                                "access and have connected to the CHECRS backend.")
+            QMessageBox.warning(
+                self.instance.workspace.main_window,
+                "CHECRS backend does not exist",
+                "Cannot communicate with the CHECRS backend. Please make sure you have proper Internet "
+                "access and have connected to the CHECRS backend.",
+            )
             return
         session = slacrs_instance.session()
 
@@ -259,13 +268,13 @@ class InteractionView(BaseView):
         # upload it to the session
         data = b""
         for model in interaction.log:
-            if model['dir'] == "in":
+            if model["dir"] == "in":
                 data += model["data"] + b"\n"
 
         if data:
-            input_ = slacrs.model.Input(value=data,
-                                       target_image_id=connector.target_image_id,
-                                       created_by="interaction view")
+            input_ = slacrs.model.Input(
+                value=data, target_image_id=connector.target_image_id, created_by="interaction view"
+            )
             session.add(input_)
             session.commit()
 
@@ -288,32 +297,34 @@ class InteractionView(BaseView):
 
     def _start_interaction(self):
         required = {
-            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .':archr,
-            'keystone: pip install --no-binary keystone-engine keystone-engine':keystone
+            "archr: git clone https://github.com/angr/archr && cd archr && pip install -e .": archr,
+            "keystone: pip install --no-binary keystone-engine keystone-engine": keystone,
         }
-        is_missing = [ key for key, value in required.items() if value is None ]
+        is_missing = [key for key, value in required.items() if value is None]
         if len(is_missing) > 0:
             if getattr(sys, "frozen", None) is None:
-                req_msg = 'To use this feature you need to install the following:\n\n\t' + '\n\t'.join(is_missing)
-                req_msg += '\n\nInstall them to enable this functionality.'
-                req_msg += '\nRelaunch angr-management after install.'
+                req_msg = "To use this feature you need to install the following:\n\n\t" + "\n\t".join(is_missing)
+                req_msg += "\n\nInstall them to enable this functionality."
+                req_msg += "\nRelaunch angr-management after install."
             else:
                 req_msg = "This feature is not available in this build of angr management"
-            QtWidgets.QMessageBox.critical(None, 'Dependency error', req_msg)
+            QtWidgets.QMessageBox.critical(None, "Dependency error", req_msg)
             return
 
         img_name = self.instance.img_name
         if img_name is None:
             # Ask the user to provide a local image name
-            QtWidgets.QMessageBox.information(None,
-                                              'Docker image unspecified',
-                                              "The project was not loaded from a Docker image. You must specify a name "
-                                              "of a local Docker image to use for interaction in the next input box.")
+            QtWidgets.QMessageBox.information(
+                None,
+                "Docker image unspecified",
+                "The project was not loaded from a Docker image. You must specify a name "
+                "of a local Docker image to use for interaction in the next input box.",
+            )
             img_name, ok = QInputDialog.getText(
                 None,
                 "Local Docker image name",
                 "Please specify the name of a local Docker image that you will interact with. "
-                "You can run \"docker images\" in a terminal to see all available Docker "
+                'You can run "docker images" in a terminal to see all available Docker '
                 "images on your local machine.",
                 QLineEdit.Normal,
                 text="" if not self._last_img_name else self._last_img_name,
@@ -322,7 +333,7 @@ class InteractionView(BaseView):
                 return
             self._last_img_name = img_name
 
-        _l.debug('Initializing the connection to archr with image %s', img_name)
+        _l.debug("Initializing the connection to archr with image %s", img_name)
         self._state_transition(InteractionState.RUNNING)
         Thread(target=self._socket_thread, args=(img_name,), daemon=True).start()
 
@@ -484,7 +495,7 @@ class PlainTextProtocol(ProtocolInteractor):
         if self.view.widget_input is not None:
             cur_input = self.view.widget_input.toPlainText()
         else:
-            cur_input = ''
+            cur_input = ""
         txt = SmartPlainTextEdit(None, self._send_callback)
         txt.setPlainText(cur_input)
         return txt
@@ -493,32 +504,33 @@ class PlainTextProtocol(ProtocolInteractor):
         # will be called to render the entries added to the log
         txt = QtWidgets.QLabel()
         txt.setTextFormat(QtCore.Qt.PlainText)
-        txt.setText(model['data'].decode('latin-1'))
+        txt.setText(model["data"].decode("latin-1"))
         return txt
 
     def _send_callback(self):
-        data_bytes = self.view.widget_input.toPlainText().encode('latin-1')
+        data_bytes = self.view.widget_input.toPlainText().encode("latin-1")
         self.sock.send(data_bytes)
         self.view.log_add({"dir": "in", "data": data_bytes})
-        self.view.widget_input.setPlainText('')
+        self.view.widget_input.setPlainText("")
 
 
 class BackslashTextProtocol(PlainTextProtocol):
     def render_log_entry(self, model):
         txt = QtWidgets.QLabel()
         txt.setTextFormat(QtCore.Qt.PlainText)
-        data = "\n".join(line.decode('latin-1').encode("unicode_escape").decode("latin-1")
-                         for line in model['data'].split(b"\n"))
+        data = "\n".join(
+            line.decode("latin-1").encode("unicode_escape").decode("latin-1") for line in model["data"].split(b"\n")
+        )
         txt.setText(data)
         return txt
 
     def _send_callback(self):
         data_bytes = self.view.widget_input.toPlainText()
         try:
-            data_bytes = data_bytes.encode('latin-1').decode('unicode_escape').encode('latin-1')
+            data_bytes = data_bytes.encode("latin-1").decode("unicode_escape").encode("latin-1")
         except UnicodeDecodeError as e:
             _l.error(e)
             return
         self.sock.send(data_bytes)
         self.view.log_add({"dir": "in", "data": data_bytes})
-        self.view.widget_input.setPlainText('')
+        self.view.widget_input.setPlainText("")

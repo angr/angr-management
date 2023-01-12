@@ -9,7 +9,7 @@ class UrlActionBase:
     The base class for URL actions.
     """
 
-    def __init__(self, target_id: str=None):
+    def __init__(self, target_id: str = None):
         self.target_id = target_id
 
     def act(self, daemon_conn=None):
@@ -17,7 +17,7 @@ class UrlActionBase:
 
     @staticmethod
     def from_params(params):
-        action = params.get('action', None)
+        action = params.get("action", None)
 
         if action is None:
             raise ValueError("'action' is not specified.")
@@ -63,14 +63,14 @@ class UrlActionOpen(UrlActionBase):
         if self.bin_path is not None:
             daemon_conn.root.open(self.bin_path)
         else:
-            print('Incomplete URL: expected `path` parameter')
+            print("Incomplete URL: expected `path` parameter")
 
     @classmethod
     def _from_params(cls, params):
         return cls(
-            cls._one_param(params, 'path'),
-            target_id=cls._one_param(params, 'target_id'),
-            headless=cls._one_param(params, 'headless'),
+            cls._one_param(params, "path"),
+            target_id=cls._one_param(params, "target_id"),
+            headless=cls._one_param(params, "headless"),
         )
 
 
@@ -90,12 +90,12 @@ class UrlActionJumpTo(UrlActionBase):
     @classmethod
     def _from_params(cls, params):
 
-        addr = cls.str2addr(cls._one_param(params, 'addr'))
+        addr = cls.str2addr(cls._one_param(params, "addr"))
 
         return cls(
             addr=addr,
-            symbol=cls._one_param(params, 'symbol'),
-            target_id=cls._one_param(params, 'target_id'),
+            symbol=cls._one_param(params, "symbol"),
+            target_id=cls._one_param(params, "target_id"),
         )
 
 
@@ -117,16 +117,16 @@ class UrlActionCommentAt(UrlActionBase):
     @classmethod
     def _from_params(cls, params):
 
-        addr = cls.str2addr(cls._one_param(params, 'addr'))
+        addr = cls.str2addr(cls._one_param(params, "addr"))
         try:
-            comment = base64.b64decode(cls._one_param(params, 'comment')).decode("utf-8")
+            comment = base64.b64decode(cls._one_param(params, "comment")).decode("utf-8")
         except (TypeError, binascii.Error):
             comment = None
 
         return cls(
             addr=addr,
             comment=comment,
-            target_id=cls._one_param(params, 'target_id'),
+            target_id=cls._one_param(params, "target_id"),
         )
 
 
@@ -134,6 +134,7 @@ class UrlActionBinaryAware(UrlActionBase):
     """
     The base class of all binary-aware URL actions.
     """
+
     def __init__(self, target_id=None, action=None, kwargs=None):
         super().__init__(target_id)
         self.action = action
@@ -145,17 +146,15 @@ class UrlActionBinaryAware(UrlActionBase):
             raise TypeError("You must provide action.")
 
     def act(self, daemon_conn=None):
-        daemon_conn.root.custom_binary_aware_action(
-            self.target_id, self.action, self.kwargs
-        )
+        daemon_conn.root.custom_binary_aware_action(self.target_id, self.action, self.kwargs)
 
     @classmethod
     def _from_params(cls, params):
-        target_id: Optional[str] = cls._one_param(params, 'target_id')
-        action = cls._one_param(params, 'action')
+        target_id: Optional[str] = cls._one_param(params, "target_id")
+        action = cls._one_param(params, "action")
         kwargs = {}
         for k, v in params.items():
-            if k not in {'target_id', 'action'}:
+            if k not in {"target_id", "action"}:
                 if isinstance(v, (list, tuple)):
                     kwargs[k] = v[0]
                 else:
@@ -163,10 +162,10 @@ class UrlActionBinaryAware(UrlActionBase):
         return cls(target_id=target_id, action=action, kwargs=kwargs)
 
 
-_ACT2CLS: Dict[str,Type[UrlActionBase]] = {
-    'open': UrlActionOpen,
-    'jumpto': UrlActionJumpTo,
-    'commentat': UrlActionCommentAt,
+_ACT2CLS: Dict[str, Type[UrlActionBase]] = {
+    "open": UrlActionOpen,
+    "jumpto": UrlActionJumpTo,
+    "commentat": UrlActionCommentAt,
 }
 
 

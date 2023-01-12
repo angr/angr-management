@@ -5,7 +5,7 @@ class QFileSystemTable(QTableWidget):
     def __init__(self, items, parent):
         super().__init__(parent)
 
-        header_labels = ['Mount Point', 'Host Path']
+        header_labels = ["Mount Point", "Host Path"]
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
@@ -13,7 +13,6 @@ class QFileSystemTable(QTableWidget):
         header = self.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.Stretch)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
-
 
         self.setRowCount(len(items))
         for idx, item in enumerate(items):
@@ -25,19 +24,18 @@ class QFileSystemTable(QTableWidget):
 
         menu = QMenu("", self)
 
-        menu.addAction('Add a Row', self._action_new_row)
+        menu.addAction("Add a Row", self._action_new_row)
         menu.addSeparator()
 
-        a = menu.addAction('Delete this Row', self._action_delete)
+        a = menu.addAction("Delete this Row", self._action_delete)
         if sr is None:
             a.setDisabled(True)
-        b = menu.addAction('Select a File', self._action_select_file)
+        b = menu.addAction("Select a File", self._action_select_file)
         if sr is None:
             b.setDisabled(True)
-        c = menu.addAction('Select a directory', self._action_select_dir)
+        c = menu.addAction("Select a directory", self._action_select_dir)
         if sr is None:
             c.setDisabled(True)
-
 
         menu.exec_(event.globalPos())
 
@@ -48,14 +46,19 @@ class QFileSystemTable(QTableWidget):
         self.setItem(row, 1, QTableWidgetItem(""))
 
     def _action_select_file(self):
-        file_path, succ = QFileDialog.getOpenFileName(self, "Open a real file", "","All executables (*)",)
+        file_path, succ = QFileDialog.getOpenFileName(
+            self,
+            "Open a real file",
+            "",
+            "All executables (*)",
+        )
         if succ:
-            self.setItem(self.currentRow(),1,QTableWidgetItem(file_path))
+            self.setItem(self.currentRow(), 1, QTableWidgetItem(file_path))
 
     def _action_select_dir(self):
         dir_path = QFileDialog.getExistingDirectory(self, "Select a directory")
         if dir_path:
-            self.setItem(self.currentRow(),1,QTableWidgetItem(dir_path))
+            self.setItem(self.currentRow(), 1, QTableWidgetItem(dir_path))
 
     def _action_delete(self):
         self.removeRow(self.currentRow())
@@ -63,5 +66,5 @@ class QFileSystemTable(QTableWidget):
     def get_result(self):
         ret = []
         for i in range(self.rowCount()):
-            ret.append([self.item(i,0).text(), self.item(i,1).text()])
+            ret.append([self.item(i, 0).text(), self.item(i, 1).text()])
         return ret

@@ -56,14 +56,13 @@ class VaildLineNumberPanel(LineNumberPanel):
         painter.setFont(font)
         # draw every visible blocks
         for top, line, _block in self.editor.visible_blocks:
-            if line+1 in self._valid_line:
+            if line + 1 in self._valid_line:
                 painter.setPen(pen_selected)
                 painter.setFont(bold_font)
             else:
                 painter.setPen(pen)
                 painter.setFont(font)
-            painter.drawText(-3, top, width, height,
-                             QtCore.Qt.AlignRight, str(line + 1))
+            painter.drawText(-3, top, width, height, QtCore.Qt.AlignRight, str(line + 1))
 
 
 class SourceCodeViewer(CodeEdit):
@@ -71,6 +70,7 @@ class SourceCodeViewer(CodeEdit):
     CodeEdit for one source code file.
     Used by SourceCodeViewerTabWidget.
     """
+
     viewer = None  # type: SourceViewer
     current_line = -1  # type: int
 
@@ -81,12 +81,10 @@ class SourceCodeViewer(CodeEdit):
         self.linenumber_panel = VaildLineNumberPanel()
         self.breakpoint_panel = MarkerPanel()
         self.breakpoint_panel.add_marker_requested.connect(self.add_marker_fn)
-        self.breakpoint_panel.edit_marker_requested.connect(
-            self.edit_marker_fn)
-        self.breakpoint_panel.remove_marker_requested.connect(
-            self.remove_marker_fn)
+        self.breakpoint_panel.edit_marker_requested.connect(self.edit_marker_fn)
+        self.breakpoint_panel.remove_marker_requested.connect(self.remove_marker_fn)
 
-        #self.state_panel = MarkerPanel()
+        # self.state_panel = MarkerPanel()
 
         self.panels.append(self.linenumber_panel)
         self.panels.append(self.breakpoint_panel)
@@ -103,17 +101,14 @@ class SourceCodeViewer(CodeEdit):
     def add_find(self):
         icon = self.style().standardIcon(QStyle.SP_FileDialogContentsView)
         desc = self.viewer.add_point(self.file.path, self.current_line, "find")
-        self.breakpoint_panel.add_marker(
-            Marker(self.current_line-1, icon, desc))
+        self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
     def add_avoid(self):
         icon = self.style().standardIcon(QStyle.SP_BrowserStop)
-        desc = self.viewer.add_point(
-            self.file.path, self.current_line, "avoid")
-        self.breakpoint_panel.add_marker(
-            Marker(self.current_line-1, icon, desc))
+        desc = self.viewer.add_point(self.file.path, self.current_line, "avoid")
+        self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
-    def jump_to(self,addr):
+    def jump_to(self, addr):
         self.viewer.workspace.jump_to(addr)
 
     def add_marker_fn(self, line):
@@ -147,11 +142,9 @@ class SourceCodeViewer(CodeEdit):
         pass
 
     def setHighlighter(self):
-        self.modes.append(QCCodeHighlighter(
-            self.document(), color_scheme=ColorSchemeIDA()))
+        self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
         QPlainTextEdit.setReadOnly(self, True)
-        self.setTextInteractionFlags(
-            Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
+        self.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
 
     def event(self, event):
         if event.type() == QEvent.KeyPress and event.key() in (Qt.Key_Slash, Qt.Key_Question):
@@ -173,8 +166,7 @@ class SourceCodeViewer(CodeEdit):
         else:
             text, comment = text
             no_comment = False
-        new_comment, ok = QInputDialog.getText(
-            None, "Comment", "Comment", QLineEdit.Normal, comment)
+        new_comment, ok = QInputDialog.getText(None, "Comment", "Comment", QLineEdit.Normal, comment)
         if not ok:
             return
         cursor.movePosition(cursor.EndOfLine, cursor.MoveAnchor)
@@ -191,8 +183,8 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
     CodeEdit for one ELF file.
     It could contain more than one file.
     """
-    editors = {
-        mimetype: SourceCodeViewer for mimetype in SourceCodeViewer.mimetypes}
+
+    editors = {mimetype: SourceCodeViewer for mimetype in SourceCodeViewer.mimetypes}
     fallback_editor = SourceCodeViewer
     addr_to_line = None  # type: SortedDict
     line_to_addr = None  # type: dict
@@ -216,8 +208,7 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
             editor = self.open_document(fn)  # type: SourceCodeViewer
             editor.viewer = self.viewer
             editor.setHighlighter()
-            valid_line = {
-                line for (filename, line) in self.line_to_addr.keys() if filename == fn}
+            valid_line = {line for (filename, line) in self.line_to_addr.keys() if filename == fn}
             editor.set_valid_line(valid_line)
             self.tabs[fn] = editor
 
@@ -226,6 +217,7 @@ class SourceViewer(BaseView):
     """
     Main class of the Source Viewer Plugin
     """
+
     addr_to_line = None  # type: SortedDict
 
     main = None  # type: SourceCodeViewerTabWidget
@@ -239,12 +231,12 @@ class SourceViewer(BaseView):
         self._init_widgets()
 
     @property
-    def disasm_view(self) -> 'DisassemblyView':
+    def disasm_view(self) -> "DisassemblyView":
         return self.workspace.view_manager.first_view_in_category("disassembly")
 
     @property
-    def symexec_view(self) -> 'SymexecView':
-        return self.workspace.view_manager.first_view_in_category('symexec')
+    def symexec_view(self) -> "SymexecView":
+        return self.workspace.view_manager.first_view_in_category("symexec")
 
     def _init_widgets(self):
         self.main = SourceCodeViewerTabWidget()
@@ -257,8 +249,7 @@ class SourceViewer(BaseView):
         if self.instance.project.am_none:
             return
         loader = self.instance.project.loader  # type: Loader
-        if hasattr(loader.main_object, "addr_to_line") and \
-                loader.main_object.addr_to_line is not None:
+        if hasattr(loader.main_object, "addr_to_line") and loader.main_object.addr_to_line is not None:
             self.main.load(loader.main_object.addr_to_line)
 
     def add_point(self, fn, line, typ):

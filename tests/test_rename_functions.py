@@ -28,7 +28,7 @@ class TestRenameFunctions(unittest.TestCase):
     def _test_rename_a_function_in_disasm_and_pseudocode_views(self):
         main = self.main
 
-        func = main.workspace.main_instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions["main"]
         disasm_view = main.workspace._get_or_create_disassembly_view()
         pseudocode_view = main.workspace._get_or_create_pseudocode_view()
 
@@ -66,7 +66,7 @@ class TestRenameFunctions(unittest.TestCase):
         main.workspace.main_instance.project.am_event()
         main.workspace.main_instance.join_all_jobs()
 
-        func = main.workspace.main_instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
 
         # decompile the function
@@ -82,7 +82,7 @@ class TestRenameFunctions(unittest.TestCase):
     def _test_rename_a_callee_in_pseudocode_view(self):
         main = self.main
 
-        func = main.workspace.main_instance.project.kb.functions['authenticate']
+        func = main.workspace.main_instance.project.kb.functions["authenticate"]
         _ = main.workspace._get_or_create_disassembly_view()
         pseudocode_view = main.workspace._get_or_create_pseudocode_view()
 
@@ -109,7 +109,7 @@ class TestRenameFunctions(unittest.TestCase):
         main.workspace.main_instance.project.am_event()
         main.workspace.main_instance.join_all_jobs()
 
-        func = main.workspace.main_instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
 
         # decompile the function

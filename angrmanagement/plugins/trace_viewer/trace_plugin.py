@@ -26,10 +26,12 @@ class TraceViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace.main_instance.register_container('trace', lambda: None, Optional[TraceStatistics],
-                                                   'The current trace')
-        self.workspace.main_instance.register_container('multi_trace', lambda: None, Optional[MultiTrace],
-                                                   'The current set of multiple traces')
+        self.workspace.main_instance.register_container(
+            "trace", lambda: None, Optional[TraceStatistics], "The current trace"
+        )
+        self.workspace.main_instance.register_container(
+            "multi_trace", lambda: None, Optional[MultiTrace], "The current set of multiple traces"
+        )
 
         # Register event callbacks
         # self.trace.am_subscribe(self._on_trace_updated)
@@ -60,40 +62,44 @@ class TraceViewer(BasePlugin):
 
     def _on_trace_updated(self):
         # redraw disassembly view
-        view = self.workspace.view_manager.first_view_in_category('disassembly')
+        view = self.workspace.view_manager.first_view_in_category("disassembly")
         if view is not None:
             view.redraw_current_graph()
         # refresh function table
-        view = self.workspace.view_manager.first_view_in_category('functions')
+        view = self.workspace.view_manager.first_view_in_category("functions")
         if view is not None:
             view.refresh()
 
-    URL_ACTIONS = ['openbitmap', 'opentrace']
+    URL_ACTIONS = ["openbitmap", "opentrace"]
 
     def handle_url_action(self, action, kwargs):
-        if action == 'openbitmap':
+        if action == "openbitmap":
             try:
-                base = int(kwargs['base'], 16)
+                base = int(kwargs["base"], 16)
             except (ValueError, KeyError):
                 base = None
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
-            gui_thread_schedule_async(self.open_bitmap_multi_trace,
-                                      args=(kwargs['path'],),
-                                      kwargs={
-                                          'base_addr': base,
-                                      })
-        elif action == 'opentrace':
+            gui_thread_schedule_async(
+                self.open_bitmap_multi_trace,
+                args=(kwargs["path"],),
+                kwargs={
+                    "base_addr": base,
+                },
+            )
+        elif action == "opentrace":
             try:
-                base = int(kwargs['base'], 16)
+                base = int(kwargs["base"], 16)
             except (ValueError, KeyError):
                 base = None
-            path = kwargs['path']
+            path = kwargs["path"]
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
-            gui_thread_schedule_async(self.add_trace,
-                                     kwargs={
-                                         'trace_path': path,
-                                         'base_addr': base,
-                                     })
+            gui_thread_schedule_async(
+                self.add_trace,
+                kwargs={
+                    "trace_path": path,
+                    "base_addr": base,
+                },
+            )
         else:
             raise ValueError("Trace plugin cannot handle url action " + action)
 
@@ -155,13 +161,11 @@ class TraceViewer(BasePlugin):
 
             if count > self.GRAPH_TRACE_LEGEND_WIDTH:
                 jump = count / self.GRAPH_TRACE_LEGEND_WIDTH
-                return [(int(jump * i), 1) for i in
-                        range(self.GRAPH_TRACE_LEGEND_WIDTH)]
+                return [(int(jump * i), 1) for i in range(self.GRAPH_TRACE_LEGEND_WIDTH)]
             elif count > 0:
                 width = self.GRAPH_TRACE_LEGEND_WIDTH // count
                 remainder = self.GRAPH_TRACE_LEGEND_WIDTH % count
-                return [(i, width + 1) for i in range(remainder)] + \
-                       [(i, width) for i in range(remainder, count)]
+                return [(i, width + 1) for i in range(remainder)] + [(i, width) for i in range(remainder, count)]
 
         return None
 
@@ -182,17 +186,17 @@ class TraceViewer(BasePlugin):
 
         if not self.trace.am_none:
             if func.addr in self.trace.func_addr_in_trace:
-                return QColor(0xf0, 0xe7, 0xda)
-            return QColor(0xee, 0xee, 0xee)
+                return QColor(0xF0, 0xE7, 0xDA)
+            return QColor(0xEE, 0xEE, 0xEE)
         return None
 
-    FUNC_COLUMNS = ('Coverage',)
+    FUNC_COLUMNS = ("Coverage",)
 
     def extract_func_column(self, func, idx):
         assert idx == 0
         if self.multi_trace.am_none:
             cov = 0
-            rend = ''
+            rend = ""
         else:
             cov = self.multi_trace.get_coverage(func)
             rend = "%.2f%%" % cov
@@ -204,12 +208,12 @@ class TraceViewer(BasePlugin):
     #
 
     MENU_BUTTONS = [
-        'Open/Add trace...',
-        'Clear trace',
-        'Open AFL bitmap...',
-        'Open inverted AFL bitmap...',
-        'Reset AFL bitmap',
-        'Open traces from CHECRS...',
+        "Open/Add trace...",
+        "Clear trace",
+        "Open AFL bitmap...",
+        "Open inverted AFL bitmap...",
+        "Reset AFL bitmap",
+        "Open traces from CHECRS...",
     ]
     ADD_TRACE_ID = 0
     RESET_TRACE_ID = 1
@@ -275,8 +279,7 @@ class TraceViewer(BasePlugin):
         if r is None:
             return
         trace, base_addr = r
-        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr,
-                                                bits_inverted=True)
+        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr, bits_inverted=True)
         self.multi_trace.am_event()
 
     def reset_bitmap(self):
@@ -286,7 +289,7 @@ class TraceViewer(BasePlugin):
     def _open_bitmap_multi_trace(self, trace_path, base_addr):
 
         if trace_path is None:
-            trace_path = self._open_trace_dialog(tfilter='')
+            trace_path = self._open_trace_dialog(tfilter="")
             if trace_path is None:
                 return None
 
@@ -299,18 +302,22 @@ class TraceViewer(BasePlugin):
             try:
                 trace = download_url(trace_path, parent=self.workspace._main_window, to_file=False)
             except InvalidURLError:
-                QMessageBox.critical(self.workspace._main_window,
-                                     "Downloading failed",
-                                     "angr management failed to download the file. The URL is invalid.")
+                QMessageBox.critical(
+                    self.workspace._main_window,
+                    "Downloading failed",
+                    "angr management failed to download the file. The URL is invalid.",
+                )
                 return None
             except UnexpectedStatusCodeError as ex:
-                QMessageBox.critical(self.workspace._main_window,
-                                     "Downloading failed",
-                                     "angr management failed to retrieve the header of the file. "
-                                     "The HTTP request returned an unexpected status code %d." % ex.status_code)
+                QMessageBox.critical(
+                    self.workspace._main_window,
+                    "Downloading failed",
+                    "angr management failed to retrieve the header of the file. "
+                    "The HTTP request returned an unexpected status code %d." % ex.status_code,
+                )
                 return None
         else:
-            with open(trace_path, 'rb') as f:
+            with open(trace_path, "rb") as f:
                 trace = f.read()
 
         return trace, base_addr
@@ -321,19 +328,22 @@ class TraceViewer(BasePlugin):
         else:
             if isurl(trace_path):
                 try:
-                    trace_bytes = download_url(trace_path, parent=self.workspace._main_window,
-                                         to_file=False)
+                    trace_bytes = download_url(trace_path, parent=self.workspace._main_window, to_file=False)
                     trace = json.loads(trace_bytes)
                 except InvalidURLError:
-                    QMessageBox.critical(self.workspace._main_window,
-                                         "Downloading failed",
-                                         "angr management failed to download the file. The URL is invalid.")
+                    QMessageBox.critical(
+                        self.workspace._main_window,
+                        "Downloading failed",
+                        "angr management failed to download the file. The URL is invalid.",
+                    )
                     trace = None
                 except UnexpectedStatusCodeError as ex:
-                    QMessageBox.critical(self.workspace._main_window,
-                                         "Downloading failed",
-                                         "angr management failed to retrieve the header of the file. "
-                                         "The HTTP request returned an unexpected status code %d." % ex.status_code)
+                    QMessageBox.critical(
+                        self.workspace._main_window,
+                        "Downloading failed",
+                        "angr management failed to retrieve the header of the file. "
+                        "The HTTP request returned an unexpected status code %d." % ex.status_code,
+                    )
                     trace = None
             else:
                 with open(trace_path) as f:
@@ -347,7 +357,7 @@ class TraceViewer(BasePlugin):
     def _open_trace_dialog(self, tfilter):
         file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", tfilter)
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 f.read(1)
         except FileNotFoundError:
             return None
@@ -355,9 +365,9 @@ class TraceViewer(BasePlugin):
         return file_path
 
     def _open_baseaddr_dialog(self, default_base):
-        base_addr, _ = QInputDialog.getText(None, "Input Trace Base Address",
-                                            "Base Address:", QLineEdit.Normal,
-                                            hex(default_base))
+        base_addr, _ = QInputDialog.getText(
+            None, "Input Trace Base Address", "Base Address:", QLineEdit.Normal, hex(default_base)
+        )
         try:
             return int(base_addr, 16)
         except ValueError:
@@ -365,7 +375,7 @@ class TraceViewer(BasePlugin):
 
     def _open_json_trace_dialog(self) -> Tuple[Optional[List[int]], Optional[int]]:
         # project = self.workspace.instance.project
-        trace_file_name = self._open_trace_dialog(tfilter='json (*.json)')
+        trace_file_name = self._open_trace_dialog(tfilter="json (*.json)")
 
         if trace_file_name is None:
             return None, None
@@ -374,21 +384,25 @@ class TraceViewer(BasePlugin):
             trace = json.load(f)
 
         if not isinstance(trace, dict):
-            QMessageBox.critical(self.workspace._main_window,
-                                 "Incorrect trace format",
-                                 "Failed to open the JSON trace. We expect the JSON trace to be a dict.")
+            QMessageBox.critical(
+                self.workspace._main_window,
+                "Incorrect trace format",
+                "Failed to open the JSON trace. We expect the JSON trace to be a dict.",
+            )
             return None, None
         elif "bb_addrs" not in trace.keys():
-            QMessageBox.critical(self.workspace._main_window,
-                                 "Incorrect trace format",
-                                 "Failed to open the JSON trace."
-                                 " We expect the JSON trace to contain the field 'bb_addrs'.")
+            QMessageBox.critical(
+                self.workspace._main_window,
+                "Incorrect trace format",
+                "Failed to open the JSON trace." " We expect the JSON trace to contain the field 'bb_addrs'.",
+            )
             return None, None
         elif not isinstance(trace["bb_addrs"], list):
-            QMessageBox.critical(self.workspace._main_window,
-                                 "Incorrect trace format",
-                                 "Failed to open the JSON trace."
-                                 "We expect the JSON trace bb_addrs field to be a list of integers.")
+            QMessageBox.critical(
+                self.workspace._main_window,
+                "Incorrect trace format",
+                "Failed to open the JSON trace." "We expect the JSON trace bb_addrs field to be a list of integers.",
+            )
             return None, None
 
         base_addr = self._open_baseaddr_dialog(0x4000000000)
@@ -405,9 +419,11 @@ class TraceViewer(BasePlugin):
     def open_traces_from_checrs(self):
 
         if not Conf.checrs_rest_endpoint_url:
-            QMessageBox.critical(self.workspace.main_window,
-                                 "Unspecified CHECRS REST endpoint",
-                                 "The CHECRS REST endpoint is not specified.")
+            QMessageBox.critical(
+                self.workspace.main_window,
+                "Unspecified CHECRS REST endpoint",
+                "The CHECRS REST endpoint is not specified.",
+            )
             return
 
         connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
@@ -420,15 +436,16 @@ class TraceViewer(BasePlugin):
         dialog = QChessTraceListDialog(self.workspace, parent=self.workspace.main_window)
         dialog.exec_()
 
-        traces = [ ]
-        failures: List[Tuple[str,str]] = [ ]
+        traces = []
+        failures: List[Tuple[str, str]] = []
 
         if dialog.trace_ids:
             for input_id, trace_id in dialog.trace_ids:
                 # talk to the backend to get the trace
                 try:
-                    url = os.path.join(Conf.checrs_rest_endpoint_url,
-                                       f"v1/targets/{target_image_id}/seeds/{input_id}/trace")
+                    url = os.path.join(
+                        Conf.checrs_rest_endpoint_url, f"v1/targets/{target_image_id}/seeds/{input_id}/trace"
+                    )
                     r = requests.get(url)
                 except Exception as ex:
                     failures.append((trace_id, str(ex)))
@@ -445,11 +462,11 @@ class TraceViewer(BasePlugin):
             self._add_trace(trace, 0x4000000000)
 
         if failures:
-            msg = [ ]
+            msg = []
             for trace_id, exc in failures:
                 msg.append(f"Trace {trace_id}: {exc}.")
-            QMessageBox.warning(self.workspace.main_window,
-                                "Failed to load some traces",
-                                "angr management failed to load some traces.\n"
-                                "Details:\n"
-                                + "\n".join(msg))
+            QMessageBox.warning(
+                self.workspace.main_window,
+                "Failed to load some traces",
+                "angr management failed to load some traces.\n" "Details:\n" + "\n".join(msg),
+            )

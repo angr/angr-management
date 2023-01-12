@@ -22,6 +22,7 @@ def _load_autoreload():
     global m
     try:
         from IPython.extensions.autoreload import ModuleReloader  # pylint:disable=import-outside-toplevel
+
         m = ModuleReloader()
         m.enabled = True
         m.check_all = True
@@ -37,10 +38,10 @@ class Job:
 
     def __init__(self, name, on_finish=None, blocking=False):
         self.name = name
-        self.progress_percentage = 0.
+        self.progress_percentage = 0.0
         self.last_text: Optional[str] = None
-        self.start_at: float = 0.
-        self.last_gui_updated_at: float = 0.
+        self.start_at: float = 0.0
+        self.last_gui_updated_at: float = 0.0
         self.blocking = blocking
 
         # callbacks
@@ -67,7 +68,7 @@ class Job:
     def _run(self, inst):
         raise NotImplementedError()
 
-    def finish(self, inst, result): #pylint: disable=unused-argument
+    def finish(self, inst, result):  # pylint: disable=unused-argument
         inst.jobs = inst.jobs[1:]
 
         gui_thread_schedule_async(self._finish_progress)

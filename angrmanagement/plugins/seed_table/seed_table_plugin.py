@@ -12,7 +12,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QComboBox,
     QLabel,
-    QPushButton, QLineEdit, QCheckBox, QMenu, QFileDialog,
+    QPushButton,
+    QLineEdit,
+    QCheckBox,
+    QMenu,
+    QFileDialog,
 )
 
 from angrmanagement.plugins import BasePlugin
@@ -22,11 +26,12 @@ import codecs
 
 from .seed_table import SeedTable
 
+
 class querySignaler(QObject):
     querySignal = Signal(bool)
 
-class SeedTableModel(QAbstractTableModel):
 
+class SeedTableModel(QAbstractTableModel):
     def __init__(self, workspace, table, dropdown, countlabel):
         super().__init__()
         self.query_signal = querySignaler()
@@ -59,6 +64,7 @@ class SeedTableModel(QAbstractTableModel):
         if status:
             self.countlabel.setText("<font color=#ff0000>Querying..</font>")
             self.countlabel.repaint()
+
     # probably not useful anymore. kept for not wanting to do it again.
     # def canFetchMore(self, index=QModelIndex()):
     #     return len(self.seeds) > self.num_loaded
@@ -99,7 +105,7 @@ class SeedTableModel(QAbstractTableModel):
         self.max_pages = max(len(self.seeds) // self.entries_per_page, 1)
         self.set_page(self.current_page)
         self.page_dropdown.clear()
-        self.page_dropdown.addItems(list(map(str, range(1, self.max_pages+1))))
+        self.page_dropdown.addItems(list(map(str, range(1, self.max_pages + 1))))
         self.countlabel.setText("Count: " + str(len(self.seeds)))
         self.endResetModel()
 
@@ -109,7 +115,7 @@ class SeedTableModel(QAbstractTableModel):
         self.displayed_seeds = []
         self.max_pages = max(len(self.seeds) // self.entries_per_page, 1)
         self.page_dropdown.clear()
-        self.page_dropdown.addItems(list(map(str, range(1, self.max_pages+1))))
+        self.page_dropdown.addItems(list(map(str, range(1, self.max_pages + 1))))
         self.countlabel.setText("Count: " + str(len(self.seeds)))
         self.endResetModel()
         self.set_page(1)
@@ -146,13 +152,13 @@ class SeedTableModel(QAbstractTableModel):
     def go_next_page(self):
         if self.set_page(self.current_page + 1):
             self.page_dropdown.clear()
-            self.page_dropdown.addItems(list(map(str, range(1, self.max_pages+1))))
+            self.page_dropdown.addItems(list(map(str, range(1, self.max_pages + 1))))
             self.page_dropdown.setCurrentIndex(self.current_page - 1)
 
     def go_prev_page(self):
         if self.set_page(self.current_page - 1):
             self.page_dropdown.clear()
-            self.page_dropdown.addItems(list(map(str, range(1, self.max_pages+1))))
+            self.page_dropdown.addItems(list(map(str, range(1, self.max_pages + 1))))
             self.page_dropdown.setCurrentIndex(self.current_page - 1)
 
 
@@ -174,7 +180,7 @@ class SeedTableWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
-    def contextMenuEvent(self, event:'PySide6.QtGui.QContextMenuEvent') -> None:
+    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:
         rows = self.selectionModel().selectedIndexes()
         contextMenu = QMenu(self)
         saveSeed = contextMenu.addAction("&Save Seed")
@@ -192,7 +198,6 @@ class SeedTableWidget(QTableView):
                 outfile.write(data)
         except:
             self.workspace.log("Error saving seed.")
-
 
 
 class SeedTableView(BaseView):
@@ -257,7 +262,6 @@ class SeedTableView(BaseView):
         self.e_checkbox = QCheckBox("E")
         self.e_checkbox.stateChanged.connect(self._on_filter_change)
 
-
         self.bottom_widget.layout().addWidget(self.seed_count_label)
         self.bottom_widget.layout().addWidget(self.filter_box)
         self.bottom_widget.layout().addWidget(self.nc_checkbox)
@@ -287,7 +291,7 @@ class SeedTableView(BaseView):
         raw_filter = self.filter_box.text()
         inp = None
         if len(raw_filter) > 0:
-            inp, _ = codecs.escape_decode(raw_filter, 'hex')
+            inp, _ = codecs.escape_decode(raw_filter, "hex")
         flags = []
         if self.nc_checkbox.isChecked():
             flags.append("non-crashing")
@@ -330,6 +334,7 @@ class SeedTableFilterBox(QLineEdit):
 
         return False
 
+
 class SeedTablePlugin(BasePlugin):
     """
     Plugin loader
@@ -340,4 +345,3 @@ class SeedTablePlugin(BasePlugin):
         self.seed_table_view = SeedTableView(workspace, "center")
         workspace.default_tabs += [self.seed_table_view]
         workspace.add_view(self.seed_table_view)
-

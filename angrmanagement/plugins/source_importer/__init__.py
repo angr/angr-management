@@ -10,7 +10,8 @@ class SourceImporterPlugin(BasePlugin):
     A plugin that adds scraping source code from the local filesystem and displaying it as an alternative to the
     pseudocode.
     """
-    DISPLAY_NAME = 'Source Importer'
+
+    DISPLAY_NAME = "Source Importer"
 
     def __init__(self, workspace):
         super().__init__(workspace)
@@ -28,9 +29,11 @@ class SourceImporterPlugin(BasePlugin):
 
     def decompile_callback(self, func):
         for source_root in self.source_paths:
-            self.workspace.main_instance.project.analyses.ImportSourceCode(func, flavor='source', source_root=source_root)
+            self.workspace.main_instance.project.analyses.ImportSourceCode(
+                func, flavor="source", source_root=source_root
+            )
 
-    MENU_BUTTONS = ['Import source path']
+    MENU_BUTTONS = ["Import source path"]
 
     def handle_click_menu(self, idx):
         if idx != 0:
@@ -39,7 +42,7 @@ class SourceImporterPlugin(BasePlugin):
             self.workspace.main_window,
             "Select source root",
             ".",
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
         )
         if result is not None:
             self.source_paths.append(result)

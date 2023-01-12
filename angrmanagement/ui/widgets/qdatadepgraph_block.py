@@ -27,14 +27,14 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     CONSTANT_BACKGROUND = QtGui.QColor(0x87, 0xFF, 0x65)  # Green
     TMP_BACKGROUND = QtGui.QColor(0xEF, 0x47, 0x6F)  # Pink
 
-    def __init__(self, is_selected: bool, data_dep_view: 'DataDepView', node: 'BaseDepNode', instr: Optional['CsInsn']):
+    def __init__(self, is_selected: bool, data_dep_view: "DataDepView", node: "BaseDepNode", instr: Optional["CsInsn"]):
         super().__init__()
         self.setFlags(QtWidgets.QGraphicsItem.ItemIsFocusable)
 
         self._selected = is_selected
         self._data_dep_view = data_dep_view
         self._workspace = self._data_dep_view.workspace
-        self._node: 'BaseDepNode' = node
+        self._node: "BaseDepNode" = node
         self._instr = instr
 
         self._header_text: Optional[str] = None
@@ -58,7 +58,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self.update()
 
     @property
-    def node(self) -> 'BaseDepNode':
+    def node(self) -> "BaseDepNode":
         return self._node
 
     def _build_simple_text_item(self, text: str) -> QtWidgets.QGraphicsSimpleTextItem:
@@ -85,8 +85,11 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         header_font.setBold(True)
         self._header_text_item.setFont(header_font)
 
-        self._instruction_text = f"{hex(self._instr.address)}: {self._instr.mnemonic} {self._instr.op_str}" \
-            if self._instr else f"{hex(self._node.ins_addr)}:{self._node.stmt_idx}"  # TODO: Reset else to ''
+        self._instruction_text = (
+            f"{hex(self._instr.address)}: {self._instr.mnemonic} {self._instr.op_str}"
+            if self._instr
+            else f"{hex(self._node.ins_addr)}:{self._node.stmt_idx}"
+        )  # TODO: Reset else to ''
         self._instruction_text_item = self._build_simple_text_item(self._instruction_text)
         if self._instruction_text:
             self._y_off += self._instruction_text_item.boundingRect().height() + 3
@@ -111,15 +114,18 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         painter.setBrush(color)
 
         if self._selected:
-            border_color = QtGui.QColor(0, 0xfe, 0xfe)
+            border_color = QtGui.QColor(0, 0xFE, 0xFE)
         else:
-            border_color = QtGui.QColor(0xf0, 0xf0, 0xf0)
+            border_color = QtGui.QColor(0xF0, 0xF0, 0xF0)
         painter.setPen(QtGui.QPen(border_color, 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
-    def paint(self, painter: QtGui.QPainter,
-              option: QtWidgets.QStyleOptionGraphicsItem,  # pylint: disable=unused-argument
-              widget: Optional[QtWidgets.QWidget] = ...):  # pylint: disable=unused-argument
+    def paint(
+        self,
+        painter: QtGui.QPainter,
+        option: QtWidgets.QStyleOptionGraphicsItem,  # pylint: disable=unused-argument
+        widget: Optional[QtWidgets.QWidget] = ...,
+    ):  # pylint: disable=unused-argument
         self._paint_boundary(painter)
 
     def _boundingRect(self):

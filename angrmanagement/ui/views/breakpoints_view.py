@@ -18,7 +18,7 @@ class QBreakpointTableModel(QAbstractTableModel):
     Breakpoint table model.
     """
 
-    Headers = ['Type', 'Address', 'Size', 'Comment']
+    Headers = ["Type", "Address", "Size", "Comment"]
     COL_TYPE = 0
     COL_ADDR = 1
     COL_SIZE = 2
@@ -33,20 +33,22 @@ class QBreakpointTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
-    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.breakpoint_mgr.breakpoints)
 
-    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> Any:  # pylint:disable=unused-argument
+    def headerData(
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
+    ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -58,17 +60,15 @@ class QBreakpointTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, bp: 'Breakpoint', column: int) -> str:
+    def _get_column_text(self, bp: "Breakpoint", column: int) -> str:
         if column == self.COL_TYPE:
-            return {
-                BreakpointType.Execute: 'Execute',
-                BreakpointType.Read: 'Read',
-                BreakpointType.Write: 'Write'
-            }.get(bp.type)
+            return {BreakpointType.Execute: "Execute", BreakpointType.Read: "Read", BreakpointType.Write: "Write"}.get(
+                bp.type
+            )
         elif column == self.COL_ADDR:
-            return f'{bp.addr:#08x}'
+            return f"{bp.addr:#08x}"
         elif column == self.COL_SIZE:
-            return f'{bp.size:#x}'
+            return f"{bp.size:#x}"
         elif column == self.COL_COMMENT:
             return bp.comment
         else:
@@ -80,7 +80,7 @@ class QBreakpointTableWidget(QTableView):
     Breakpoint table widget.
     """
 
-    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: 'Workspace', *args, **kwargs):
+    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: "Workspace", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.breakpoint_mgr = breakpoint_mgr
@@ -117,11 +117,13 @@ class QBreakpointTableWidget(QTableView):
         menu = QMenu("", self)
         if len(breakpoints):
             if len(breakpoints) == 1:
-                menu.addAction('Edit breakpoint', lambda: self.edit_breakpoint(breakpoints[0]))
-            menu.addAction('Remove breakpoint' + ('s' if len(breakpoints) > 1 else ''),
-                           lambda: self.remove_breakpoints(breakpoints))
+                menu.addAction("Edit breakpoint", lambda: self.edit_breakpoint(breakpoints[0]))
+            menu.addAction(
+                "Remove breakpoint" + ("s" if len(breakpoints) > 1 else ""),
+                lambda: self.remove_breakpoints(breakpoints),
+            )
             menu.addSeparator()
-        menu.addAction('New breakpoint', self.new_breakpoint)
+        menu.addAction("New breakpoint", self.new_breakpoint)
         menu.exec_(event.globalPos())
 
     def _on_cell_double_click(self, index):
@@ -146,8 +148,8 @@ class BreakpointsView(BaseView):
     """
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('breakpoints', instance, default_docking_position, *args, **kwargs)
-        self.base_caption = 'Breakpoints'
+        super().__init__("breakpoints", instance, default_docking_position, *args, **kwargs)
+        self.base_caption = "Breakpoints"
         self._tbl_widget: Optional[QBreakpointTableWidget] = None
         self._init_widgets()
         self.reload()

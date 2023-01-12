@@ -9,7 +9,7 @@ from typing import Optional
 
 from getmac import get_mac_address as gma
 from sqlalchemy.exc import OperationalError
-from tornado.platform.asyncio import  AnyThreadEventLoopPolicy
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from angrmanagement.config import Conf
 
@@ -21,16 +21,17 @@ except ImportError as _:
     Poi = None
 
 l = logging.getLogger(__name__)
-l.setLevel('INFO')
+l.setLevel("INFO")
+
 
 def _init_logger():
-    user_dir = os.path.expanduser('~')
-    log_dir = os.path.join(user_dir, 'am-logging')
+    user_dir = os.path.expanduser("~")
+    log_dir = os.path.join(user_dir, "am-logging")
     os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, 'poi_diagnose.log')
+    log_file = os.path.join(log_dir, "poi_diagnose.log")
     fh = logging.FileHandler(log_file)
-    fh.setLevel('INFO')
-    formatter: Formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setLevel("INFO")
+    formatter: Formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     fh.setFormatter(formatter)
     l.addHandler(fh)
 
@@ -39,13 +40,14 @@ class DiagnoseHandler:
     """
     Handling POI records in slacrs
     """
+
     def __init__(self, project_name=None, project_md5=None):
         _init_logger()
 
         self.project_name = project_name
         self.project_md5 = project_md5
 
-        self._log_list = [ ]
+        self._log_list = []
         self.workspace = None
         self.slacrs_thread = None
         self.user = gma()
@@ -76,8 +78,7 @@ class DiagnoseHandler:
         # reference: https://github.com/checrs/slacrs7/blob/master/slacrs/plugins/arbiter.py#L81
         image_id = self.get_image_id()
         if image_id is None:
-            l.warning("Cannot submit POI %s since the current target ID is unknown.",
-                      poi_id)
+            l.warning("Cannot submit POI %s since the current target ID is unknown.", poi_id)
             return
 
         poi = Poi()
@@ -88,12 +89,12 @@ class DiagnoseHandler:
 
         # Additional fields according to Slacrs's Base and Poi classes.
         poi.source = self.user  # https://github.com/checrs/slacrs7/blob/master/slacrs/model/poi.py#L13
-        poi.created_by = self.user # https://github.com/checrs/slacrs7/blob/master/slacrs/model/base.py#L17
+        poi.created_by = self.user  # https://github.com/checrs/slacrs7/blob/master/slacrs/model/base.py#L17
 
-        l.debug('adding poi: %s', poi)
-        l.info('adding poi: %s, id: %s, id: %s ', poi, poi.id, poi_id)
+        l.debug("adding poi: %s", poi)
+        l.info("adding poi: %s, id: %s, id: %s ", poi, poi.id, poi_id)
         self._log_list.append(poi)
-        l.debug('current log list: %s', self._log_list)
+        l.debug("current log list: %s", self._log_list)
 
     def get_pois(self):
         if not Conf.checrs_backend_str:
@@ -115,13 +116,12 @@ class DiagnoseHandler:
 
         image_id = self.get_image_id()
         if image_id is not None:
-            result = session.query(Poi).filter(Poi.target_image_id==image_id).all()
+            result = session.query(Poi).filter(Poi.target_image_id == image_id).all()
         else:
             result = session.query(Poi).all()
         session.close()
-        l.debug('result: %s', result)
+        l.debug("result: %s", result)
         return result
-
 
     def deactivate(self):
         self._active = False
@@ -153,11 +153,11 @@ class DiagnoseHandler:
                         # query first to see if the poi id already exist
                         result = session.query(Poi).filter(Poi.id == poi.id).first()
                         if result is None:
-                            l.info('Adding poi %s to slacrs', poi)
+                            l.info("Adding poi %s to slacrs", poi)
                             session.add(poi)
                         else:
-                            l.info('Updating poi %s to slacrs', poi)
+                            l.info("Updating poi %s to slacrs", poi)
                             result.poi = poi.poi
-                        l.debug('log_list: %s', self._log_list)
+                        l.debug("log_list: %s", self._log_list)
                     session.commit()
                 session.close()

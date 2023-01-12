@@ -42,22 +42,13 @@ class ChessConnector(BasePlugin):
 
         status_bar_height = int(workspace.main_window.statusBar().height() * 0.75)
         self._connected_pixmap = QPixmap(os.path.join(image_file_root, "connected.png")).scaled(
-            status_bar_height,
-            status_bar_height,
-            Qt.AspectRatioMode.IgnoreAspectRatio,
-            Qt.SmoothTransformation
+            status_bar_height, status_bar_height, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.SmoothTransformation
         )
         self._connecting_pixmap = QPixmap(os.path.join(image_file_root, "connecting.png")).scaled(
-            status_bar_height,
-            status_bar_height,
-            Qt.AspectRatioMode.IgnoreAspectRatio,
-            Qt.SmoothTransformation
+            status_bar_height, status_bar_height, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.SmoothTransformation
         )
         self._disconnected_pixmap = QPixmap(os.path.join(image_file_root, "disconnected.png")).scaled(
-            status_bar_height,
-            status_bar_height,
-            Qt.AspectRatioMode.IgnoreAspectRatio,
-            Qt.SmoothTransformation
+            status_bar_height, status_bar_height, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.SmoothTransformation
         )
 
         self._status_button = QPushButton()
@@ -72,7 +63,7 @@ class ChessConnector(BasePlugin):
         self._target_description_label.clicked.connect(self.set_chess_target)
         self.target_id_updated()
 
-        self._slacrs_instance: Optional['Slacrs'] = None
+        self._slacrs_instance: Optional["Slacrs"] = None
         self._slacrs_database_str: Optional[str] = None
 
         self.connected: bool = False
@@ -94,7 +85,7 @@ class ChessConnector(BasePlugin):
         self.active = False
         self.summary_view.teardown()
 
-    def slacrs_instance(self, database: Optional[str]=None):
+    def slacrs_instance(self, database: Optional[str] = None):
         if not database:
             # load the default database str
             database = Conf.checrs_backend_str
@@ -135,11 +126,11 @@ class ChessConnector(BasePlugin):
         if self.target_id and self.target_image_id:
             desc = self.target_description if self.target_description else f"(no description) {self.target_id}"
             self._target_description_label.setText(desc)
-            self._target_description_label.setToolTip(f"Target ID: {self.target_id}\n"
-                                                      f"Target image ID: {self.target_image_id}")
+            self._target_description_label.setToolTip(
+                f"Target ID: {self.target_id}\n" f"Target image ID: {self.target_image_id}"
+            )
 
-            DaemonClient.register_binary(self.workspace.main_instance.project.loader.main_object.binary,
-                                         self.target_id)
+            DaemonClient.register_binary(self.workspace.main_instance.project.loader.main_object.binary, self.target_id)
         else:
             self._target_description_label.setText("No associated CHESS target")
             self._target_description_label.setToolTip("")
@@ -148,7 +139,7 @@ class ChessConnector(BasePlugin):
         yield self._target_description_label
         yield self._status_button
 
-    def on_workspace_initialized(self, workspace: 'Workspace'):
+    def on_workspace_initialized(self, workspace: "Workspace"):
         pass
 
     def _on_status_button_clicked(self):
@@ -185,10 +176,7 @@ class ChessConnector(BasePlugin):
     # Custom menu actions
     #
 
-    MENU_BUTTONS = [
-        'Connect to CHECRS backend...',
-        'Set associated CHESS target...'
-    ]
+    MENU_BUTTONS = ["Connect to CHECRS backend...", "Set associated CHESS target..."]
     CONNECT_TO_BACKEND = 0
     SET_CHESS_TARGET = 1
 
@@ -202,11 +190,13 @@ class ChessConnector(BasePlugin):
         mapping[idx]()
 
     def set_checrs_backend_str(self):
-        dialog = QBackendSelectorDialog(self.workspace,
-                                        backend_str=Conf.checrs_backend_str,
-                                        rest_backend_str=Conf.checrs_rest_endpoint_url,
-                                        chess_connector=self,
-                                        parent=self.workspace.main_window)
+        dialog = QBackendSelectorDialog(
+            self.workspace,
+            backend_str=Conf.checrs_backend_str,
+            rest_backend_str=Conf.checrs_rest_endpoint_url,
+            chess_connector=self,
+            parent=self.workspace.main_window,
+        )
         dialog.exec_()
 
         server_url = dialog.backend_str
@@ -223,22 +213,25 @@ class ChessConnector(BasePlugin):
     def set_chess_target(self):
 
         if not self.connected:
-            QMessageBox.critical(self.workspace.main_window,
-                                 "Backend is not connected",
-                                 "Your angr management instance is not connected to CHECRS backend. Please set a "
-                                 "correct connection string before setting the CHESS target.",
-                                 QMessageBox.Ok)
+            QMessageBox.critical(
+                self.workspace.main_window,
+                "Backend is not connected",
+                "Your angr management instance is not connected to CHECRS backend. Please set a "
+                "correct connection string before setting the CHESS target.",
+                QMessageBox.Ok,
+            )
             return
 
         if self.workspace.main_instance.project.am_none:
-            QMessageBox.critical(self.workspace.main_window,
-                                 "No binary is loaded",
-                                 "Please load a binary before associating it to a CHESS target.",
-                                 QMessageBox.Ok)
+            QMessageBox.critical(
+                self.workspace.main_window,
+                "No binary is loaded",
+                "Please load a binary before associating it to a CHESS target.",
+                QMessageBox.Ok,
+            )
             return
 
-        dialog = QTargetSelectorDialog(self.workspace,
-                                       parent=self.workspace.main_window)
+        dialog = QTargetSelectorDialog(self.workspace, parent=self.workspace.main_window)
         dialog.exec_()
 
         if dialog.ok:

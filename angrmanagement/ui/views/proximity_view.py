@@ -7,11 +7,20 @@ from PySide6.QtCore import QSize
 
 from angrmanagement.ui.views.view import BaseView
 from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph
-from angrmanagement.ui.widgets.qproximitygraph_block import QProximityGraphCallBlock, QProximityGraphStringBlock, \
-    QProximityGraphFunctionBlock, QProximityGraphBlock
+from angrmanagement.ui.widgets.qproximitygraph_block import (
+    QProximityGraphCallBlock,
+    QProximityGraphStringBlock,
+    QProximityGraphFunctionBlock,
+    QProximityGraphBlock,
+)
 
-from angr.analyses.proximity_graph import BaseProxiNode, FunctionProxiNode, StringProxiNode, CallProxiNode, \
-    VariableProxiNode
+from angr.analyses.proximity_graph import (
+    BaseProxiNode,
+    FunctionProxiNode,
+    StringProxiNode,
+    CallProxiNode,
+    VariableProxiNode,
+)
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
@@ -23,11 +32,11 @@ class ProximityView(BaseView):
     """
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('proximity', instance, default_docking_position, *args, **kwargs)
+        super().__init__("proximity", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Proximity'
+        self.base_caption = "Proximity"
 
-        self._function: Optional['Function'] = None
+        self._function: Optional["Function"] = None
         self._expand_function_addrs: Set[int] = set()
 
         # UI widgets
@@ -146,8 +155,9 @@ class ProximityView(BaseView):
         self._unregister_events()
         super().closeEvent(event)
 
-    def _convert_node(self, node: BaseProxiNode,
-                      converted: Dict[BaseProxiNode, QProximityGraphBlock]) -> Optional[QProximityGraphBlock]:
+    def _convert_node(
+        self, node: BaseProxiNode, converted: Dict[BaseProxiNode, QProximityGraphBlock]
+    ) -> Optional[QProximityGraphBlock]:
         if node in converted:
             return converted[node]
 

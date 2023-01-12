@@ -12,18 +12,22 @@ _l = logging.getLogger(name=__name__)
 
 class AFLQemuBitmap:
 
-    HIT_COLOR = QColor(0xee, 0xff, 0xee)
+    HIT_COLOR = QColor(0xEE, 0xFF, 0xEE)
     MISS_COLOR = QColor(0x99, 0x00, 0x00, 0x30)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
-    BUCKET_COLORS = [QColor(0xef, 0x65, 0x48, 0x20), QColor(0xfc, 0x8d, 0x59, 0x60),
-                     QColor(0xfd, 0xbb, 0x84, 0x60), QColor(0xfd, 0xd4, 0x9e, 0x60)]
+    BUCKET_COLORS = [
+        QColor(0xEF, 0x65, 0x48, 0x20),
+        QColor(0xFC, 0x8D, 0x59, 0x60),
+        QColor(0xFD, 0xBB, 0x84, 0x60),
+        QColor(0xFD, 0xD4, 0x9E, 0x60),
+    ]
 
     def __init__(self, workspace, bitmap, base_addr, bits_inverted=False):
         self.workspace = workspace
         self.virgin_bitmap = bitmap
         if bits_inverted:
             # invert all bits
-            self.virgin_bitmap = bytes([ b ^ 0xff for b in self.virgin_bitmap ])
+            self.virgin_bitmap = bytes([b ^ 0xFF for b in self.virgin_bitmap])
         self.bitmap_size = len(self.virgin_bitmap)
         assert self.bitmap_size == 1 << (self.bitmap_size.bit_length() - 1)
         self.function_info = {}
@@ -43,7 +47,7 @@ class AFLQemuBitmap:
             func = func_manager[func_addr]
 
             hitc_g = self._parse_bitmap(func)
-            node_hitc = {n.addr: data['hitcount'] for n, data in hitc_g.nodes(data=True)}
+            node_hitc = {n.addr: data["hitcount"] for n, data in hitc_g.nodes(data=True)}
             self._hitcount_graphs[func] = hitc_g
             self._node_hitcounts[func] = node_hitc
             for addr, hitcount in node_hitc.items():
@@ -86,13 +90,13 @@ class AFLQemuBitmap:
     def possible_dynamic_basic_block_succs(self, g, node):
 
         # we return two types of edges, may_takes and fallthroughs
-        may_takes = [ ]
-        fallthroughs = [ ]
+        may_takes = []
+        fallthroughs = []
 
         out_edges = g.out_edges(node, data=True)
         for _, dst, data in out_edges:
-            type_ = data.get('type', 'transition')
-            if type_ == 'fake_return':
+            type_ = data.get("type", "transition")
+            if type_ == "fake_return":
                 fallthroughs.append(dst)
             else:
                 may_takes.append(dst)
@@ -101,10 +105,10 @@ class AFLQemuBitmap:
     def _incoming_transition_edges(self, g, node):
 
         in_edges = g.in_edges(node, data=True)
-        r = [ ]
+        r = []
         for src, _, data in in_edges:
-            type_ = data.get('type', 'transition')
-            if type_ in ('transition', 'exception'):
+            type_ = data.get("type", "transition")
+            if type_ in ("transition", "exception"):
                 r.append((src, node))
         return r
 
@@ -128,12 +132,12 @@ class AFLQemuBitmap:
                 succ = may_takes[0]
                 hitcount_graph.add_node(succ)
                 hitcount_graph.add_edge(node, succ, hitcount=1)  # it may not be 1 but it's hard to figure out the real
-                                                                 # number
+                # number
                 _l.debug("%r -> %r (single successor, no fallthrough)", node, succ)
                 if len(self._incoming_transition_edges(func_graph, succ)) > 1:
                     _l.debug("... %r is probably a result of graph normalization.", succ)
                     worklist.append((succ, node.addr))  # the actual address for AFL address hashing is the address of
-                                                        # node
+                    # node
                 else:
                     _l.debug("... %r is the target of a jump.", succ)
                     worklist.append((succ, None))
@@ -175,12 +179,12 @@ class AFLQemuBitmap:
             done.add(node)
 
         for node in hitcount_graph.nodes():
-            succ_hitcount = sum(data['hitcount'] for o, data in hitcount_graph.succ[node].items())
-            pred_hitcount = sum(data['hitcount'] for o, data in hitcount_graph.pred[node].items())
+            succ_hitcount = sum(data["hitcount"] for o, data in hitcount_graph.succ[node].items())
+            pred_hitcount = sum(data["hitcount"] for o, data in hitcount_graph.pred[node].items())
 
             node_hitc = max(succ_hitcount, pred_hitcount)
             _l.debug("Marking node %r with hitcount %d", repr(node), node_hitc)
-            hitcount_graph.nodes[node]['hitcount'] = node_hitc
+            hitcount_graph.nodes[node]["hitcount"] = node_hitc
 
         return hitcount_graph
 

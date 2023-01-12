@@ -9,6 +9,7 @@ def _make_config_entry_value(init_value, type_):
         An object container that both calls am_event() and emits 'changed' on an update
         This object allows usage of both types of event triggers
         """
+
         changed = Signal(type_)
 
         def __init__(self, value):
@@ -37,7 +38,7 @@ class ConfigurationEntry:
     Describes a configuration entry in angr management.
     """
 
-    __slots__ = ('name', 'type_', '_value', 'default_value')
+    __slots__ = ("name", "type_", "_value", "default_value")
 
     def __init__(self, name, type_, value, default_value=None):
         self.name = name

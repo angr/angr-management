@@ -9,7 +9,7 @@ from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOp
 from ...logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 from .qgraph_object import QCachedGraphicsItem
 
-l = logging.getLogger('ui.widgets.qoperand')
+l = logging.getLogger("ui.widgets.qoperand")
 
 
 class QOperand(QCachedGraphicsItem):
@@ -18,8 +18,22 @@ class QOperand(QCachedGraphicsItem):
     LABEL_VARIABLE_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
 
-    def __init__(self, instance, func_addr, disasm_view, disasm, infodock, insn, operand, operand_index,
-                 is_branch_target, is_indirect_branch, branch_targets, config, parent=None):
+    def __init__(
+        self,
+        instance,
+        func_addr,
+        disasm_view,
+        disasm,
+        infodock,
+        insn,
+        operand,
+        operand_index,
+        is_branch_target,
+        is_indirect_branch,
+        branch_targets,
+        config,
+        parent=None,
+    ):
         super().__init__(parent=parent)
 
         self.instance = instance
@@ -81,11 +95,12 @@ class QOperand(QCachedGraphicsItem):
 
     @property
     def is_constant_memory(self):
-        return (isinstance(self.operand, MemoryOperand) and
-                len(self.operand.values) == 1 and
-                isinstance(self.operand.values[0], Value) and
-                isinstance(self.operand.values[0].val, int)
-                )
+        return (
+            isinstance(self.operand, MemoryOperand)
+            and len(self.operand.values) == 1
+            and isinstance(self.operand.values[0], Value)
+            and isinstance(self.operand.values[0].val, int)
+        )
 
     @property
     def constant_memory_value(self):
@@ -99,9 +114,12 @@ class QOperand(QCachedGraphicsItem):
 
     @property
     def operand_descriptor(self):
-        return OperandDescriptor(self.text, self.constant_value,
-                                 func_addr=self.func_addr,
-                                 variable_ident=self.variable.ident if self.variable is not None else None)
+        return OperandDescriptor(
+            self.text,
+            self.constant_value,
+            func_addr=self.func_addr,
+            variable_ident=self.variable.ident if self.variable is not None else None,
+        )
 
     #
     # Event handlers
@@ -114,7 +132,7 @@ class QOperand(QCachedGraphicsItem):
                 self.operand_index,
                 self.operand_descriptor,
                 insn_pos=self.parentItem().scenePos(),
-                unique=QApplication.keyboardModifiers() != Qt.ControlModifier
+                unique=QApplication.keyboardModifiers() != Qt.ControlModifier,
             )
             if selected:
                 # select the current instruction, too
@@ -144,7 +162,7 @@ class QOperand(QCachedGraphicsItem):
         self._init_widgets()
         self.recalculate_size()
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
         # Background
         if self.selected:
@@ -199,17 +217,18 @@ class QOperand(QCachedGraphicsItem):
     def _first_n_branch_targets(branch_targets, n):
 
         if not branch_targets:
-            return [ ]
+            return []
 
-        return list(branch_targets)[ : n]
+        return list(branch_targets)[:n]
 
     def _init_widgets(self):
 
         if self.is_branch_target:
             # a branch instruction
 
-            is_target_func = bool(self.branch_targets is not None
-                                  and next(iter(self.branch_targets)) in self.disasm.kb.functions)
+            is_target_func = bool(
+                self.branch_targets is not None and next(iter(self.branch_targets)) in self.disasm.kb.functions
+            )
 
             self._label = self.operand.render()[0]
             self._is_target_func = is_target_func
@@ -219,7 +238,7 @@ class QOperand(QCachedGraphicsItem):
                 self._branch_targets = self.branch_targets
                 first_n_targets = self._first_n_branch_targets(self._branch_targets, 3)
                 if first_n_targets:
-                    targets = [ ]
+                    targets = []
                     for t in first_n_targets:
                         txt = None
                         if is_target_func:
@@ -236,7 +255,7 @@ class QOperand(QCachedGraphicsItem):
                             # use the hex text
                             txt = "%#08x" % t
                         targets.append(txt)
-                    self._branch_targets_text = "[ " + ", ".join(targets) +  " ]"
+                    self._branch_targets_text = "[ " + ", ".join(targets) + " ]"
                 else:
                     self._branch_targets_text = "[ unknown ]"
 
@@ -251,9 +270,9 @@ class QOperand(QCachedGraphicsItem):
 
             formatting = {}
             if isinstance(self.operand, MemoryOperand):
-                variable_sort = 'memory'
+                variable_sort = "memory"
             elif isinstance(self.operand, RegisterOperand):
-                variable_sort = 'register'
+                variable_sort = "register"
             else:
                 variable_sort = None
 
@@ -262,9 +281,9 @@ class QOperand(QCachedGraphicsItem):
 
             if variable_sort:
                 # try find the corresponding variable
-                variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(self.insn.addr,
-                                                                                                    variable_sort
-                                                                                                    )
+                variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(
+                    self.insn.addr, variable_sort
+                )
                 if variable_and_offsets:
                     variable, offset = self._pick_variable(variable_and_offsets)
 
@@ -276,13 +295,16 @@ class QOperand(QCachedGraphicsItem):
 
                         variable_str = variable.name
 
-                        ident = (self.insn.addr, 'operand', self.operand_index)
-                        if 'custom_values_str' not in formatting: formatting['custom_values_str'] = { }
-                        if variable_sort == 'memory':
-                            if offset == 0: custom_value_str = variable_str
-                            else: custom_value_str = "%s[%d]" % (variable_str, offset)
+                        ident = (self.insn.addr, "operand", self.operand_index)
+                        if "custom_values_str" not in formatting:
+                            formatting["custom_values_str"] = {}
+                        if variable_sort == "memory":
+                            if offset == 0:
+                                custom_value_str = variable_str
+                            else:
+                                custom_value_str = "%s[%d]" % (variable_str, offset)
                         else:
-                            custom_value_str = ''
+                            custom_value_str = ""
 
                         ##
                         # Hacks
@@ -291,24 +313,31 @@ class QOperand(QCachedGraphicsItem):
                             r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
                             if r is not None and r.expr.__class__.__name__ == "InductionExpr":
                                 custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
-                            if r is not None and r.expr.__class__.__name__ == "Add" and r.expr.operands[0].__class__.__name__ == "InductionExpr":
-                                custom_value_str = "i*%d+%d" % (r.expr.operands[0].stride, r.expr.operands[0].init + r.expr.operands[1].value)
+                            if (
+                                r is not None
+                                and r.expr.__class__.__name__ == "Add"
+                                and r.expr.operands[0].__class__.__name__ == "InductionExpr"
+                            ):
+                                custom_value_str = "i*%d+%d" % (
+                                    r.expr.operands[0].stride,
+                                    r.expr.operands[0].init + r.expr.operands[1].value,
+                                )
 
-                        formatting['custom_values_str'][ident] = custom_value_str
+                        formatting["custom_values_str"][ident] = custom_value_str
 
-                        if 'show_prefix' not in formatting:
-                            formatting['show_prefix'] = { }
-                        formatting['show_prefix'][ident] = 'False'
+                        if "show_prefix" not in formatting:
+                            formatting["show_prefix"] = {}
+                        formatting["show_prefix"][ident] = "False"
 
-                        if 'values_style' not in formatting:
-                            formatting['values_style'] = { }
-                        formatting['values_style'][ident] = 'curly'
+                        if "values_style" not in formatting:
+                            formatting["values_style"] = {}
+                        formatting["values_style"][ident] = "curly"
 
                     # with variable displayed
-                    if variable_sort == 'memory':
+                    if variable_sort == "memory":
                         self._variable_label = self.operand.render(formatting=formatting)[0]
                     else:
-                        self._variable_label = ''
+                        self._variable_label = ""
 
         if self._branch_target or self._branch_targets:
             if self._is_target_func:
@@ -434,39 +463,41 @@ class QOperand(QCachedGraphicsItem):
                 # which variable is read here?
                 for var, offset in variable_and_offsets:
                     if arch.registers[reg_name][0] == var.reg:
-                        if self._variable_has_access(var, self.insn.addr, 'read'):
+                        if self._variable_has_access(var, self.insn.addr, "read"):
                             return var, offset
 
-                l.debug('Cannot find any source variable for operand %d at instruction %#x.',
-                        self.operand_index,
-                        self.insn.addr
-                        )
+                l.debug(
+                    "Cannot find any source variable for operand %d at instruction %#x.",
+                    self.operand_index,
+                    self.insn.addr,
+                )
                 return None, None
 
             # this is the destination operand
             # which variable is written here?
             for var, offset in variable_and_offsets:
                 if arch.registers[reg_name][0] == var.reg:
-                    if self._variable_has_access(var, self.insn.addr, 'write'):
+                    if self._variable_has_access(var, self.insn.addr, "write"):
                         return var, offset
 
-            l.debug('Cannot find any destination variable for operand %d at instruction %#x.',
-                    self.operand_index,
-                    self.insn.addr
-                    )
+            l.debug(
+                "Cannot find any destination variable for operand %d at instruction %#x.",
+                self.operand_index,
+                self.insn.addr,
+            )
             # just return the first one
             return None, None
 
         else:
             # what's this type? why am I here?
-            l.error('_pick_variable: Unsupported operand type %s.', self.operand.__class__)
+            l.error("_pick_variable: Unsupported operand type %s.", self.operand.__class__)
 
             return None, None
 
     def _variable_has_access(self, variable, ins_addr, access_type):
 
         if variable not in self.variable_manager[self.func_addr]._variable_accesses:
-            l.error('Variable %s does not have any accessing records.', variable)
+            l.error("Variable %s does not have any accessing records.", variable)
             return False
 
         accesses = self.variable_manager[self.func_addr]._variable_accesses[variable]

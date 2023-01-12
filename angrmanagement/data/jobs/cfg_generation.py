@@ -11,12 +11,12 @@ _l = logging.getLogger(name=__name__)
 class CFGGenerationJob(Job):
 
     DEFAULT_CFG_ARGS = {
-        'normalize': True,  # this is what people naturally expect
-        'resolve_indirect_jumps': True,
+        "normalize": True,  # this is what people naturally expect
+        "resolve_indirect_jumps": True,
     }
 
     def __init__(self, on_finish=None, **kwargs):
-        super().__init__(name='CFG generation', on_finish=on_finish)
+        super().__init__(name="CFG generation", on_finish=on_finish)
 
         # TODO: sanitize arguments
 
@@ -33,16 +33,17 @@ class CFGGenerationJob(Job):
 
     def _run(self, inst):
         self.instance = inst
-        exclude_region_types = {'kernel', 'tls'}
+        exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
         temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)
         self._cfb = temp_cfb
-        cfg = inst.project.analyses.CFG(progress_callback=self._progress_callback,
-                                        low_priority=True,
-                                        cfb=temp_cfb,
-                                        use_patches=True,
-                                        **self.cfg_args
-                                        )
+        cfg = inst.project.analyses.CFG(
+            progress_callback=self._progress_callback,
+            low_priority=True,
+            cfb=temp_cfb,
+            use_patches=True,
+            **self.cfg_args,
+        )
         self._cfb = None
         # Build the real one
         cfb = inst.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
@@ -80,7 +81,13 @@ class CFGGenerationJob(Job):
 
         if cfg is not None:
             # Peek into the CFG
-            gui_thread_schedule_async(self._refresh, args=(cfg, self._cfb, ))
+            gui_thread_schedule_async(
+                self._refresh,
+                args=(
+                    cfg,
+                    self._cfb,
+                ),
+            )
 
     def _refresh(self, cfg, cfb):
         # do not signal events. that will happen on a timer to not overwhelm the renderer

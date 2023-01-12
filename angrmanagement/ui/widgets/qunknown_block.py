@@ -10,7 +10,7 @@ from .qgraph_object import QCachedGraphicsItem
 class QUnknownBlock(QCachedGraphicsItem):
 
     LINEAR_INSTRUCTION_OFFSET = 120
-    DEFAULT_TEXT = 'Unknown'
+    DEFAULT_TEXT = "Unknown"
 
     def __init__(self, workspace, addr, bytes_, parent=None):
         super().__init__(parent=parent)
@@ -34,7 +34,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
 
         # painter.setRenderHints(
         #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
@@ -56,7 +56,7 @@ class QUnknownBlock(QCachedGraphicsItem):
         self._addr_item.setFont(Conf.disasm_font)
 
         # Bytes
-        self._byte_lines = [ ]
+        self._byte_lines = []
         if self.bytes:
             line = ""
             for i, b in enumerate(self.bytes):
