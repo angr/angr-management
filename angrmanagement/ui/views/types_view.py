@@ -22,9 +22,9 @@ class TypesView(BaseView):
     FUNCTION_SPECIFIC_VIEW = True
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('types', instance, default_docking_position, *args, **kwargs)
+        super().__init__("types", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Types'
+        self.base_caption = "Types"
 
         self._function = ObjectContainer(None, "Current function")
         self._function.am_subscribe(self.reload)
@@ -50,11 +50,10 @@ class TypesView(BaseView):
         self._function.am_event()
 
     @property
-    def current_typestore(self) -> 'TypesStore':
+    def current_typestore(self) -> "TypesStore":
         if self._function.am_none:
             return self.instance.kb.types
-        var_manager: 'VariableManagerInternal' = self.instance.pseudocode_variable_kb.variables[
-            self._function.addr]
+        var_manager: "VariableManagerInternal" = self.instance.pseudocode_variable_kb.variables[self._function.addr]
         return var_manager.types
 
     #
@@ -93,7 +92,7 @@ class TypesView(BaseView):
         self._layout.addStretch()
         # background color
         # TODO: Support dark mode
-        #scroll_contents.setStyleSheet("background-color: white;")
+        # scroll_contents.setStyleSheet("background-color: white;")
 
     def reload(self):
         for child in list(self._layout.parent().children()):
@@ -121,24 +120,24 @@ class TypesView(BaseView):
             self.instance.project.arch,
             multiline=True,
             allow_multiple=True,
-            predefined_types=self.instance.kb.types
+            predefined_types=self.instance.kb.types,
         )
         dialog.exec_()
 
         types_store = self.current_typestore
 
         for name, ty in dialog.result:
-            if name is None and type(ty) in (SimStruct, SimUnion) and ty.name != '<anon>':
+            if name is None and type(ty) in (SimStruct, SimUnion) and ty.name != "<anon>":
                 name = ty.name
             if name is None:
                 name = types_store.unique_type_name()
-            if name.startswith('struct '):
+            if name.startswith("struct "):
                 name = name[7:]
-            elif name.startswith('union '):
+            elif name.startswith("union "):
                 name = name[6:]
             if name in types_store:
                 if name in ALL_TYPES:
-                    QMessageBox.warning(None, "Redefined builtin", f'Type {name} is a builtin and cannot be redefined')
+                    QMessageBox.warning(None, "Redefined builtin", f"Type {name} is a builtin and cannot be redefined")
                 else:
                     types_store[name].type = ty
             else:

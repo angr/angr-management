@@ -21,11 +21,11 @@ class QComponentItem(QTreeWidgetItem):
         else:
             self.setText(0, "Component")
 
-        self.function_nodes: List[QFunctionItem] = [ ]
+        self.function_nodes: List[QFunctionItem] = []
 
 
 class QFunctionItem(QTreeWidgetItem):
-    def __init__(self, project: Project, parent, comp_func: ComponentFunction, function: Optional[Function]=None):
+    def __init__(self, project: Project, parent, comp_func: ComponentFunction, function: Optional[Function] = None):
         super().__init__(parent)
 
         self.project = project
@@ -48,7 +48,7 @@ class QFunctionItem(QTreeWidgetItem):
 
 class ComponentsView(BaseView):
     def __init__(self, workspace, default_docking_position, *args, **kwargs):
-        super().__init__('components', workspace, default_docking_position, *args, **kwargs)
+        super().__init__("components", workspace, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Components"
         self.width_hint = 100
@@ -83,7 +83,7 @@ class ComponentsView(BaseView):
 
         self._tree.clear()
 
-        queue: List[Tuple[ComponentTreeNode,Optional[QComponentItem]]] = [(tree.root, None)]
+        queue: List[Tuple[ComponentTreeNode, Optional[QComponentItem]]] = [(tree.root, None)]
         while queue:
             node, parent = queue.pop(0)
 
@@ -103,9 +103,7 @@ class ComponentsView(BaseView):
                 item.function_nodes.append(func_node)
             # insert all components into the queue
             for comp in node.components:
-                queue.append((
-                    comp, item
-                ))
+                queue.append((comp, item))
 
     def reset(self):
         self._tree.clear()

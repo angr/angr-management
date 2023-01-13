@@ -12,10 +12,10 @@ class Debugger:
     Provides a generic interface with common debugger operations to control program execution and inspect program state.
     """
 
-    def __init__(self, workspace: 'Workspace'):
+    def __init__(self, workspace: "Workspace"):
         super().__init__()
-        self.workspace: 'Workspace' = workspace
-        self.instance: 'Instance' = workspace.main_instance
+        self.workspace: "Workspace" = workspace
+        self.instance: "Instance" = workspace.main_instance
         self.state_changed: EventSentinel = EventSentinel()
 
     @property
@@ -23,7 +23,7 @@ class Debugger:
         """
         Get a string describing the current debugging state.
         """
-        return ''
+        return ""
 
     def init(self):
         """
@@ -136,7 +136,7 @@ class DebuggerListManager:
     """
 
     def __init__(self):
-        self.debugger_list = ObjectContainer([], 'List of active debuggers')
+        self.debugger_list = ObjectContainer([], "List of active debuggers")
 
     def add_debugger(self, dbg: Debugger):
         self.debugger_list.append(dbg)
@@ -153,12 +153,12 @@ class DebuggerManager:
     """
 
     def __init__(self, debugger_list_mgr: DebuggerListManager):
-        self.debugger: ObjectContainer = ObjectContainer(None, 'Current debugger')
+        self.debugger: ObjectContainer = ObjectContainer(None, "Current debugger")
         debugger_list_mgr.debugger_list.am_subscribe(self._on_debugger_list_event)
 
     def _on_debugger_list_event(self, **kwargs):
-        if 'removed' in kwargs:
-            self._on_debugger_removed(kwargs['removed'])
+        if "removed" in kwargs:
+            self._on_debugger_removed(kwargs["removed"])
 
     def _on_debugger_removed(self, dbg: Debugger):
         if self.debugger.am_obj is dbg:

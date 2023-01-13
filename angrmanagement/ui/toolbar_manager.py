@@ -11,16 +11,13 @@ class ToolbarManager:
     """
 
     def __init__(self, main_window):
-        self._main_window: 'MainWindow' = main_window
+        self._main_window: "MainWindow" = main_window
         self.active: Mapping[Type[Toolbar], Toolbar] = {}
         self.all_toolbars = [FileToolbar, DebugToolbar]
 
     @staticmethod
     def get_name_for_toolbar_class(toolbar_cls: Type[Toolbar]) -> str:
-        return {
-            FileToolbar: 'File',
-            DebugToolbar: 'Debug'
-        }[toolbar_cls]
+        return {FileToolbar: "File", DebugToolbar: "Debug"}[toolbar_cls]
 
     def show_toolbar_by_class(self, cls: Type[Toolbar]):
         if cls not in self.active:

@@ -25,7 +25,7 @@ class NameLineEdit(QLineEdit):
 
     @staticmethod
     def _is_valid_node_name(name):
-        return name and not ' ' in name.strip()
+        return name and not " " in name.strip()
 
 
 class RenameDialog(QDialog):
@@ -37,7 +37,7 @@ class RenameDialog(QDialog):
     property will remain `None`.
     """
 
-    def __init__(self, window_title:str = 'Rename', initial_text:str = '', parent=None):
+    def __init__(self, window_title: str = "Rename", initial_text: str = "", parent=None):
         super().__init__(parent)
         self._initial_text: str = initial_text
         self._name_box: NameLineEdit = None
@@ -55,7 +55,7 @@ class RenameDialog(QDialog):
 
     def _init_widgets(self):
         name_label = QLabel(self)
-        name_label.setText('New name')
+        name_label.setText("New name")
         name_box = NameLineEdit(self._on_name_changed, self)
         name_box.setText(self._initial_text)
         name_box.selectAll()
@@ -89,12 +89,12 @@ class RenameDialog(QDialog):
 
         if self._name_box.name is None:
             # the variable name is invalid
-            self._status_label.setText('Invalid')
-            self._status_label.setProperty('class', 'status_invalid')
+            self._status_label.setText("Invalid")
+            self._status_label.setProperty("class", "status_invalid")
             self._ok_button.setEnabled(False)
         else:
-            self._status_label.setText('Valid')
-            self._status_label.setProperty('class', 'status_valid')
+            self._status_label.setText("Valid")
+            self._status_label.setProperty("class", "status_valid")
             self._ok_button.setEnabled(True)
 
         self._status_label.style().unpolish(self._status_label)

@@ -26,19 +26,19 @@ class QLogIcons:
     @classmethod
     def benchmark(cls) -> QIcon:
         if cls.BENCHMARK is None:
-            cls.BENCHMARK = QIcon(os.path.join(IMG_LOCATION, 'benchmark-icon.png'))
+            cls.BENCHMARK = QIcon(os.path.join(IMG_LOCATION, "benchmark-icon.png"))
         return cls.BENCHMARK
 
     @classmethod
     def warning(cls) -> QIcon:
         if cls.WARNING is None:
-            cls.WARNING = QIcon(os.path.join(IMG_LOCATION, 'warning-icon.png'))
+            cls.WARNING = QIcon(os.path.join(IMG_LOCATION, "warning-icon.png"))
         return cls.WARNING
 
     @classmethod
     def error(cls) -> QIcon:
         if cls.ERROR is None:
-            cls.ERROR = QIcon(os.path.join(IMG_LOCATION, 'error-icon.png'))
+            cls.ERROR = QIcon(os.path.join(IMG_LOCATION, "error-icon.png"))
         return cls.ERROR
 
 
@@ -53,29 +53,29 @@ class QLogTableModel(QAbstractTableModel):
     COL_SOURCE = 2
     COL_CONTENT = 3
 
-    def __init__(self, log_widget: 'QLogWidget'=None):
+    def __init__(self, log_widget: "QLogWidget" = None):
         super().__init__()
         self._log_widget = log_widget
-        self._log: List[LogRecord] = [ ]
+        self._log: List[LogRecord] = []
 
     @property
     def log(self) -> List[LogRecord]:
         return self._log
 
-    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
         return len(self._log)
 
-    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> Any:
+    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -163,38 +163,36 @@ class QLogWidget(QTableView):
     #
 
     def clear_log(self):
-        self.log_view.instance.log.am_obj = [ ]
+        self.log_view.instance.log.am_obj = []
         self.log_view.instance.log.am_event()
 
     def copy_selected(self):
-        content = [ ]
+        content = []
         selection = self.selectionModel().selectedRows()
         for row_index in selection:
             record = self.model.log[row_index.row()]
-            content.append("{} | {} | {} | {}".format(
-                QLogTableModel.level_to_text(record.level),
-                str(record.timestamp),
-                record.source,
-                record.content
-            ))
+            content.append(
+                "{} | {} | {} | {}".format(
+                    QLogTableModel.level_to_text(record.level), str(record.timestamp), record.source, record.content
+                )
+            )
         self._copy_to_clipboard(os.linesep.join(content))
 
     def copy_selected_messages(self):
-        content = [ ]
+        content = []
         selection = self.selectionModel().selectedRows()
         for row_index in selection:
             content.append(self.model.log[row_index.row()].content)
         self._copy_to_clipboard(os.linesep.join(content))
 
     def copy_all(self):
-        content = [ ]
+        content = []
         for record in self.model.log:
-            content.append("{} | {} | {} | {}".format(
-                QLogTableModel.level_to_text(record.level),
-                str(record.timestamp),
-                record.source,
-                record.content
-            ))
+            content.append(
+                "{} | {} | {} | {}".format(
+                    QLogTableModel.level_to_text(record.level), str(record.timestamp), record.source, record.content
+                )
+            )
         self._copy_to_clipboard(os.linesep.join(content))
 
     def copy_all_messages(self):
@@ -239,7 +237,7 @@ class QLogWidget(QTableView):
         if self._auto_scroll:
             self.scrollToBottom()
 
-    def keyPressEvent(self, event:PySide6.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
         if event.matches(QKeySequence.Copy):
             self.copy_selected_messages()
         else:

@@ -2,8 +2,18 @@ import logging
 from typing import List, TYPE_CHECKING
 from pathlib import Path
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QFrame, QGroupBox, QListWidgetItem, \
-    QListWidget, QFileDialog, QMessageBox, QDialogButtonBox
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QPushButton,
+    QFrame,
+    QGroupBox,
+    QListWidgetItem,
+    QListWidget,
+    QFileDialog,
+    QMessageBox,
+    QDialogButtonBox,
+)
 from PySide6.QtCore import Qt
 
 from angrmanagement.plugins import load_plugin_description
@@ -22,11 +32,12 @@ class QPluginListWidgetItem(QListWidgetItem):
 
     def __init__(self, plugin_desc, **kwargs):
         super().__init__(**kwargs)
-        self.plugin_desc: 'PluginDescription' = plugin_desc
+        self.plugin_desc: "PluginDescription" = plugin_desc
         self.setText(plugin_desc.name)
 
 
 # TODO: Add plugin settings, reloading, etc.
+
 
 class LoadPlugins(QDialog):
     """
@@ -36,10 +47,10 @@ class LoadPlugins(QDialog):
     def __init__(self, plugin_mgr, parent=None):
         super().__init__(parent)
 
-        self._pm: 'PluginManager' = plugin_mgr
+        self._pm: "PluginManager" = plugin_mgr
         self._installed_plugin_list = None  # type: QListWidget
 
-        self.setWindowTitle('Installed Plugins')
+        self.setWindowTitle("Installed Plugins")
         self.main_layout = QVBoxLayout()
 
         self._init_widgets()
@@ -96,7 +107,7 @@ class LoadPlugins(QDialog):
     #
 
     def _on_ok_clicked(self):
-        list_items = self._installed_plugin_list.findItems('*', Qt.MatchWildcard)  # type: List[QPluginListWidgetItem]
+        list_items = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)  # type: List[QPluginListWidgetItem]
         for i in list_items:
             checked = i.checkState() == Qt.Checked
 
@@ -110,7 +121,8 @@ class LoadPlugins(QDialog):
 
     def _on_load_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)")
+            self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)"
+        )
         if not file_path:
             return
         plugins = load_plugin_description(str(Path(file_path).parent))

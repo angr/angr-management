@@ -10,6 +10,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
     """
     Dialog that allows the user to search for a DepNode based on its value, architecture name, or instruction address.
     """
+
     def __init__(self, parent: QtWidgets.QWidget, data_dep_graph):
         super().__init__(parent)
         self.setWindowTitle("Data Dependency Node Search")
@@ -17,7 +18,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._curr_value_text = ""
         self._curr_addr_text = ""
         self._curr_name_text = ""
-        self._rel_nodes: List['QDataDepGraphBlock'] = []
+        self._rel_nodes: List["QDataDepGraphBlock"] = []
         self._curr_search_idx = -1
 
         self._name_line_edit = QtWidgets.QLineEdit(self)
@@ -35,7 +36,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._search_btn.clicked.connect(self._on_search_click)
         self._close_btn.clicked.connect(self._on_close_click)
 
-    def _safe_node_retrieval(self) -> Optional['QDataDepGraphBlock']:
+    def _safe_node_retrieval(self) -> Optional["QDataDepGraphBlock"]:
         if self._rel_nodes and 0 <= self._curr_search_idx < len(self._rel_nodes):
             return self._rel_nodes[self._curr_search_idx]
         else:
@@ -52,7 +53,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         Iterate through matching nodes
         """
 
-        def _node_predicate(node: 'BaseDepNode'):
+        def _node_predicate(node: "BaseDepNode"):
             nonlocal val_as_int
             nonlocal addr_as_int
 
@@ -68,13 +69,15 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
 
         self._error_lbl.hide()
 
-        if self._curr_value_text != self._value_line_edit.text() \
-                or self._curr_addr_text != self._address_line_edit.text() \
-                or self._curr_name_text != self._name_line_edit.text():
+        if (
+            self._curr_value_text != self._value_line_edit.text()
+            or self._curr_addr_text != self._address_line_edit.text()
+            or self._curr_name_text != self._name_line_edit.text()
+        ):
             # Change in search criteria since last click, update matching nodes
-            self._curr_addr_text = self._address_line_edit.text() if self._address_line_edit.text() else ''
-            self._curr_value_text = self._value_line_edit.text() if self._value_line_edit.text() else ''
-            self._curr_name_text = self._name_line_edit.text() if self._name_line_edit.text() else ''
+            self._curr_addr_text = self._address_line_edit.text() if self._address_line_edit.text() else ""
+            self._curr_value_text = self._value_line_edit.text() if self._value_line_edit.text() else ""
+            self._curr_name_text = self._name_line_edit.text() if self._name_line_edit.text() else ""
             try:
                 val_as_int = int(self._curr_value_text, 16) if self._curr_value_text else None
                 addr_as_int = int(self._curr_addr_text, 16) if self._curr_addr_text else None
@@ -82,8 +85,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
                 self._error_lbl.setText("Input must be in hexadecimal format!")
                 self._error_lbl.show()
 
-            self._rel_nodes = [n for n in self._data_dep_graph.nodes
-                               if _node_predicate(n.node)]
+            self._rel_nodes = [n for n in self._data_dep_graph.nodes if _node_predicate(n.node)]
         if len(self._rel_nodes) == 0:
             # No matching nodes, display an error
             self._error_lbl.setText("No nodes match the given search criteria.")
@@ -95,7 +97,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
             curr_search_node.selected = False
 
         self._curr_search_idx = (self._curr_search_idx + 1) % len(self._rel_nodes)
-        search_node: 'QDataDepGraphBlock' = self._rel_nodes[self._curr_search_idx]
+        search_node: "QDataDepGraphBlock" = self._rel_nodes[self._curr_search_idx]
         search_node.selected = True
 
         self._data_dep_graph.zoom(reset=True)

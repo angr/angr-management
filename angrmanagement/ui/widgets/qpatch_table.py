@@ -21,11 +21,11 @@ class QPatchTableItem:
         patch = self.patch
 
         widgets = [
-            QTableWidgetItem(f'{patch.addr:x}'),
-            QTableWidgetItem(f'{len(patch)} bytes'),
+            QTableWidgetItem(f"{patch.addr:x}"),
+            QTableWidgetItem(f"{len(patch)} bytes"),
             QTableWidgetItem(binascii.hexlify(self.old_bytes).decode("ascii") if self.old_bytes else "<unknown>"),
             QTableWidgetItem(binascii.hexlify(patch.new_bytes).decode("ascii")),
-            QTableWidgetItem(patch.comment or ''),
+            QTableWidgetItem(patch.comment or ""),
         ]
 
         for w in widgets[:-1]:
@@ -39,7 +39,7 @@ class QPatchTable(QTableWidget):
     Table of all patches.
     """
 
-    HEADER = ['Address', 'Size', 'Old Bytes', 'New Bytes', 'Comment']
+    HEADER = ["Address", "Size", "Old Bytes", "New Bytes", "Comment"]
 
     def __init__(self, instance, parent):
         super().__init__(parent)
@@ -47,10 +47,10 @@ class QPatchTable(QTableWidget):
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.horizontalHeader().setSectionResizeMode(4,QHeaderView.Stretch)
+        self.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
         self.verticalHeader().setVisible(False)
 
-        self.items = [ ]
+        self.items = []
         self.instance = instance
         self.instance.patches.am_subscribe(self._watch_patches)
         self._reloading: bool = False
@@ -76,9 +76,10 @@ class QPatchTable(QTableWidget):
         self._reloading = True
         self.clearContents()
 
-        self.items = [QPatchTableItem(item,
-                                      self._get_bytes(self.instance.project, item.addr, len(item)))
-                      for item in self.instance.project.kb.patches.values()]
+        self.items = [
+            QPatchTableItem(item, self._get_bytes(self.instance.project, item.addr, len(item)))
+            for item in self.instance.project.kb.patches.values()
+        ]
         items_count = len(self.items)
         self.setRowCount(items_count)
 
@@ -135,7 +136,7 @@ class QPatchTable(QTableWidget):
         mnu = QMenu(self)
         selected_patches = self.get_selected_patches()
         if len(selected_patches) > 0:
-            act = QAction('Revert selected patches', mnu)
+            act = QAction("Revert selected patches", mnu)
             act.triggered.connect(self.revert_selected_patches)
             mnu.addAction(act)
         mnu.exec_(QCursor.pos())

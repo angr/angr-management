@@ -43,36 +43,35 @@ class SingleInstance:
         if lockfile:
             self.lockfile = lockfile
         else:
-            basename = os.path.splitext(os.path.abspath(__file__))[0].replace(
-                "/", "-").replace(":", "").replace("\\", "-") + '-%s' % flavor_id + '.lock'
-            self.lockfile = os.path.normpath(
-                tempfile.gettempdir() + '/' + basename)
+            basename = (
+                os.path.splitext(os.path.abspath(__file__))[0].replace("/", "-").replace(":", "").replace("\\", "-")
+                + "-%s" % flavor_id
+                + ".lock"
+            )
+            self.lockfile = os.path.normpath(tempfile.gettempdir() + "/" + basename)
 
         logger.debug("SingleInstance lockfile: " + self.lockfile)
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             try:
                 # file already exists, we try to remove (in case previous
                 # execution was interrupted)
                 if os.path.exists(self.lockfile):
                     os.unlink(self.lockfile)
-                self.fd = os.open(
-                    self.lockfile, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                self.fd = os.open(self.lockfile, os.O_CREAT | os.O_EXCL | os.O_RDWR)
             except OSError:
                 type, e, tb = sys.exc_info()
                 if e.errno == 13:
-                    logger.debug(
-                        "Another instance is already running, quitting.")
+                    logger.debug("Another instance is already running, quitting.")
                     raise SingleInstanceException()
                 print(e.errno)
                 raise
         else:  # non Windows
-            self.fp = open(self.lockfile, 'w')
+            self.fp = open(self.lockfile, "w")
             self.fp.flush()
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError:
-                logger.debug(
-                    "Another instance is already running, quitting.")
+                logger.debug("Another instance is already running, quitting.")
                 raise SingleInstanceException()
         self.initialized = True
 
@@ -80,8 +79,8 @@ class SingleInstance:
         if not self.initialized:
             return
         try:
-            if sys.platform == 'win32':
-                if hasattr(self, 'fd'):
+            if sys.platform == "win32":
+                if hasattr(self, "fd"):
                     os.close(self.fd)
                     os.unlink(self.lockfile)
             else:
@@ -110,14 +109,19 @@ def f(initializer: Initializer, name):
 
 
 class testSingleton(unittest.TestCase):
-
     def test_1(self):
         me = SingleInstance(flavor_id="test-1")
         del me  # now the lock should be removed
         assert True
 
     def test_2(self):
-        p = Process(target=f, args=(Initializer.get(), "test-2",))
+        p = Process(
+            target=f,
+            args=(
+                Initializer.get(),
+                "test-2",
+            ),
+        )
         p.start()
         p.join()
         # the called function should succeed
@@ -125,7 +129,13 @@ class testSingleton(unittest.TestCase):
 
     def test_3(self):
         me = SingleInstance(flavor_id="test-3")  # noqa -- me should still kept
-        p = Process(target=f, args=(Initializer.get(), "test-3",))
+        p = Process(
+            target=f,
+            args=(
+                Initializer.get(),
+                "test-3",
+            ),
+        )
         p.start()
         p.join()
         # the called function should fail because we already have another
@@ -133,7 +143,13 @@ class testSingleton(unittest.TestCase):
         assert p.exitcode != 0, "%s != 0 (2nd execution)" % p.exitcode
         # note, we return -1 but this translates to 255 meanwhile we'll
         # consider that anything different from 0 is good
-        p = Process(target=f, args=(Initializer.get(), "test-3",))
+        p = Process(
+            target=f,
+            args=(
+                Initializer.get(),
+                "test-3",
+            ),
+        )
         p.start()
         p.join()
         # the called function should fail because we already have another
@@ -141,7 +157,7 @@ class testSingleton(unittest.TestCase):
         assert p.exitcode != 0, "%s != 0 (3rd execution)" % p.exitcode
 
     def test_4(self):
-        lockfile = '/tmp/foo.lock'
+        lockfile = "/tmp/foo.lock"
         me = SingleInstance(lockfile=lockfile)
         assert me.lockfile == lockfile
 

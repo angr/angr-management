@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 # pylint: disable=no-self-use,unused-argument
 
+
 class BasePlugin:
     """
     Implements the base class for all angr management plugins.
@@ -33,7 +34,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-        self.workspace: 'Optional[Workspace]' = workspace
+        self.workspace: "Optional[Workspace]" = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
@@ -44,8 +45,8 @@ class BasePlugin:
         pass
 
     @classmethod
-    def get_display_name(cls: 'BasePlugin'):
-        display_name = getattr(cls, 'DISPLAY_NAME', None)
+    def get_display_name(cls: "BasePlugin"):
+        display_name = getattr(cls, "DISPLAY_NAME", None)
         if not display_name:
             return cls.__name__
         return display_name
@@ -60,7 +61,7 @@ class BasePlugin:
         """
         return None
 
-    def on_workspace_initialized(self, workspace: 'Workspace'):
+    def on_workspace_initialized(self, workspace: "Workspace"):
         """
         A handler that is called right after a workspace is initialized.
         """
@@ -99,10 +100,10 @@ class BasePlugin:
     def draw_block(self, qblock: QBlock, painter: QPainter):
         pass
 
-    def instrument_disassembly_view(self, dview: 'disassembly_view.DisassemblyView'):
+    def instrument_disassembly_view(self, dview: "disassembly_view.DisassemblyView"):
         pass
 
-    def instrument_code_view(self, cview: 'code_view.CodeView'):
+    def instrument_code_view(self, cview: "code_view.CodeView"):
         pass
 
     def handle_click_insn(self, qinsn, event: QGraphicsSceneMouseEvent):
@@ -131,7 +132,7 @@ class BasePlugin:
 
     def extract_func_column(self, func, idx) -> Tuple[Any, str]:
         # should return a tuple of the sortable column data and the rendered string
-        return 0, ''
+        return 0, ""
 
     def build_context_menu_insn(self, item) -> Iterator[Union[None, Tuple[str, Callable]]]:
         """
@@ -151,7 +152,6 @@ class BasePlugin:
         """
         return []
 
-
     def build_context_menu_functions(self, funcs) -> Iterator[Union[None, Tuple[str, Callable]]]:
         return []
 
@@ -164,17 +164,17 @@ class BasePlugin:
     def handle_url_action(self, action, kwargs):
         pass
 
-    def step_callback(self, simgr:SimulationManager):
+    def step_callback(self, simgr: SimulationManager):
         pass
 
     # Custom configuration entries
-    CONFIG_ENTRIES: List['ConfigurationEntry'] = [ ]
+    CONFIG_ENTRIES: List["ConfigurationEntry"] = []
 
     #
     # Decompiler Callbacks
     #
 
-    OPTIMIZATION_PASSES: List[Tuple[Type['OptimizationPass'], bool]] = []
+    OPTIMIZATION_PASSES: List[Tuple[Type["OptimizationPass"], bool]] = []
 
     def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         return False

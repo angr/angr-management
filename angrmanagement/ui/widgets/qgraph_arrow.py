@@ -13,22 +13,18 @@ if TYPE_CHECKING:
     from ..views.data_dep_view import DataDepView
 
 EDGE_COLORS = {
-    EdgeSort.BACK_EDGE: 'disasm_view_back_edge_color',
-    EdgeSort.TRUE_BRANCH: 'disasm_view_true_edge_color',
-    EdgeSort.FALSE_BRANCH: 'disasm_view_false_edge_color',
-    EdgeSort.DIRECT_JUMP: 'disasm_view_direct_jump_edge_color',
-    EdgeSort.EXCEPTION_EDGE: 'disasm_view_exception_edge_color',
+    EdgeSort.BACK_EDGE: "disasm_view_back_edge_color",
+    EdgeSort.TRUE_BRANCH: "disasm_view_true_edge_color",
+    EdgeSort.FALSE_BRANCH: "disasm_view_false_edge_color",
+    EdgeSort.DIRECT_JUMP: "disasm_view_direct_jump_edge_color",
+    EdgeSort.EXCEPTION_EDGE: "disasm_view_exception_edge_color",
 }
 
-EDGE_STYLES = {
-    EdgeSort.DIRECT_JUMP: Qt.SolidLine,
-    EdgeSort.EXCEPTION_EDGE: Qt.DashLine
-}
+EDGE_STYLES = {EdgeSort.DIRECT_JUMP: Qt.SolidLine, EdgeSort.EXCEPTION_EDGE: Qt.DashLine}
 
 
 class QGraphArrow(QGraphicsItem):
-
-    def __init__(self, edge, arrow_location="end", arrow_direction='down', parent=None):
+    def __init__(self, edge, arrow_location="end", arrow_direction="down", parent=None):
         super().__init__(parent)
 
         self.edge = edge
@@ -65,14 +61,23 @@ class QGraphArrow(QGraphicsItem):
             coord = self.end
 
         if direction == "down":
-            return [QPointF(coord.x() - 3, coord.y()), QPointF(coord.x() + 3, coord.y()),
-                    QPointF(coord.x(), coord.y() + 6)]
+            return [
+                QPointF(coord.x() - 3, coord.y()),
+                QPointF(coord.x() + 3, coord.y()),
+                QPointF(coord.x(), coord.y() + 6),
+            ]
         elif direction == "right":
-            return [QPointF(coord.x(), coord.y() - 3), QPointF(coord.x(), coord.y() + 3),
-                    QPointF(coord.x() + 6, coord.y())]
+            return [
+                QPointF(coord.x(), coord.y() - 3),
+                QPointF(coord.x(), coord.y() + 3),
+                QPointF(coord.x() + 6, coord.y()),
+            ]
         elif direction == "left":
-            return [QPointF(coord.x(), coord.y() - 3), QPointF(coord.x(), coord.y() + 3),
-                    QPointF(coord.x() - 6, coord.y())]
+            return [
+                QPointF(coord.x(), coord.y() - 3),
+                QPointF(coord.x(), coord.y() + 3),
+                QPointF(coord.x() - 6, coord.y()),
+            ]
         else:
             raise NotImplementedError("Direction %s is not supported yet." % direction)
 
@@ -87,7 +92,7 @@ class QGraphArrow(QGraphicsItem):
         should_highlight = self._should_highlight()
 
         if should_highlight:
-            pen = QPen(QColor(0, 0xfe, 0xfe), 2, self.style)
+            pen = QPen(QColor(0, 0xFE, 0xFE), 2, self.style)
         else:
             pen = QPen(self.color, 2, self.style)
 
@@ -101,7 +106,7 @@ class QGraphArrow(QGraphicsItem):
 
         # arrow
         if should_highlight:
-            brush = QBrush(QColor(0, 0xfe, 0xfe))
+            brush = QBrush(QColor(0, 0xFE, 0xFE))
         else:
             brush = QBrush(self.color)
         painter.setBrush(brush)
@@ -134,14 +139,16 @@ class QGraphArrow(QGraphicsItem):
 
 class QDisasmGraphArrow(QGraphArrow):
     def __init__(self, edge, disasm_view, infodock, parent=None):
-        super().__init__(edge, arrow_direction='down', parent=parent)
+        super().__init__(edge, arrow_direction="down", parent=parent)
         self.disasm_view = disasm_view
         self.infodock = infodock
 
     def _should_highlight(self) -> bool:
-        return self.infodock.is_edge_hovered(self.edge.src.addr, self.edge.dst.addr) or \
-               self.infodock.is_block_hovered(self.edge.src.addr) or \
-               self.infodock.is_block_hovered(self.edge.dst.addr)
+        return (
+            self.infodock.is_edge_hovered(self.edge.src.addr, self.edge.dst.addr)
+            or self.infodock.is_block_hovered(self.edge.src.addr)
+            or self.infodock.is_block_hovered(self.edge.dst.addr)
+        )
 
     #
     # Event handlers
@@ -166,10 +173,9 @@ class QDisasmGraphArrow(QGraphArrow):
 
 
 class QGraphArrowBezier(QGraphArrow):
-    def __init__(self, edge, arrow_location="end", arrow_direction='down', radius=18, parent=None):
+    def __init__(self, edge, arrow_location="end", arrow_direction="down", radius=18, parent=None):
         self._radius = radius
         super().__init__(edge, arrow_location=arrow_location, arrow_direction=arrow_direction, parent=parent)
-
 
     def _get_line_start(self, i: int) -> QPointF:
         pt0 = self.coords[i]
@@ -209,7 +215,7 @@ class QGraphArrowBezier(QGraphArrow):
 
 
 class QDepGraphArrow(QGraphArrowBezier):
-    def __init__(self, dep_view: 'DependencyView', *args, **kwargs):
+    def __init__(self, dep_view: "DependencyView", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._dep_view = dep_view
 
@@ -220,21 +226,22 @@ class QDepGraphArrow(QGraphArrowBezier):
 
 
 class QProximityGraphArrow(QGraphArrow):
-    def __init__(self, proximity_view: 'QProximityView', *args, **kwargs):
+    def __init__(self, proximity_view: "QProximityView", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._proximity_view = proximity_view
 
     def _should_highlight(self) -> bool:
         if self._proximity_view.hovered_block is None:
             return False
-        return self._proximity_view.hovered_block is self.edge.src or \
-               self._proximity_view.hovered_block is self.edge.dst
+        return (
+            self._proximity_view.hovered_block is self.edge.src or self._proximity_view.hovered_block is self.edge.dst
+        )
 
 
 class QDataDepGraphArrow(QGraphArrow):
     """Used to represent an edge between two QDataDepGraphBlocks"""
 
-    def __init__(self, data_dep_view: 'DataDepView', *args, **kwargs):
+    def __init__(self, data_dep_view: "DataDepView", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setFlags(QGraphicsItem.ItemIsFocusable)
         self._data_dep_view = data_dep_view
@@ -242,8 +249,11 @@ class QDataDepGraphArrow(QGraphArrow):
 
     def _should_highlight(self) -> bool:
         # Should be highlighted if in trace path
-        return self.is_hovered or self.edge.dst in self._data_dep_view.traced_ancestors \
-               or self.edge.src in self._data_dep_view.traced_descendants
+        return (
+            self.is_hovered
+            or self.edge.dst in self._data_dep_view.traced_ancestors
+            or self.edge.src in self._data_dep_view.traced_descendants
+        )
 
     def hoverEnterEvent(self, event):
         self.is_hovered = True
@@ -284,6 +294,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
     """
     Dashed line to differentiate between value dependencies and ancestor linking
     """
+
     dash_len = 5.0
 
     def _calculate_dash_pattern(self) -> List[float]:
@@ -312,7 +323,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
         should_highlight = self._should_highlight()
 
         if should_highlight:
-            pen = QPen(QColor(0, 0xfe, 0xfe), 2, self.style)
+            pen = QPen(QColor(0, 0xFE, 0xFE), 2, self.style)
         else:
             pen = QPen(self.color, 2, self.style)
 

@@ -19,7 +19,7 @@ class LabelNameBox(QLineEdit):
         return None
 
     def _is_valid_label_name(self, input_):  # pylint: disable=no-self-use
-        return input_ and not ' ' in input_.strip()
+        return input_ and not " " in input_.strip()
 
 
 class RenameLabel(QDialog):
@@ -40,7 +40,7 @@ class RenameLabel(QDialog):
         self._status_label = None
         self._ok_button: QPushButton = None
 
-        self.setWindowTitle(f'Rename Label at {self._label_addr:#08x}')
+        self.setWindowTitle(f"Rename Label at {self._label_addr:#08x}")
 
         self.main_layout = QVBoxLayout()
 
@@ -57,7 +57,7 @@ class RenameLabel(QDialog):
         # name label
 
         name_label = QLabel(self)
-        name_label.setText('New name')
+        name_label.setText("New name")
 
         name_box = LabelNameBox(self._on_name_changed, self)
         text = ""
@@ -97,7 +97,7 @@ class RenameLabel(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text): # pylint: disable=unused-argument
+    def _on_name_changed(self, new_text):  # pylint: disable=unused-argument
 
         if self._name_box is None:
             # initialization is not done yet
@@ -106,12 +106,12 @@ class RenameLabel(QDialog):
         if self._name_box.label is None:
             # the label name is invalid
 
-            self._status_label.setText('Invalid')
-            self._status_label.setProperty('class', 'status_invalid')
+            self._status_label.setText("Invalid")
+            self._status_label.setProperty("class", "status_invalid")
             self._ok_button.setEnabled(False)
         else:
-            self._status_label.setText('Valid')
-            self._status_label.setProperty('class', 'status_valid')
+            self._status_label.setText("Valid")
+            self._status_label.setProperty("class", "status_valid")
             self._ok_button.setEnabled(True)
 
         self._status_label.style().unpolish(self._status_label)
@@ -120,6 +120,7 @@ class RenameLabel(QDialog):
     def _on_ok_clicked(self):
         label = self._name_box.label
         if label is not None:
-            self._disasm_view.rename_label(self._label_addr, label, is_func=self._label_type == "function",
-                                           full_refresh=self._full_refresh)
+            self._disasm_view.rename_label(
+                self._label_addr, label, is_func=self._label_type == "function", full_refresh=self._full_refresh
+            )
             self.close()

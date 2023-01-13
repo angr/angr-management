@@ -31,8 +31,8 @@ class ComponentsPlugin(BasePlugin):
     #
 
     MENU_BUTTONS = [
-        'Load components...',
-        'Reset components',
+        "Load components...",
+        "Reset components",
     ]
     LOAD_COMPONENTS = 0
     RESET_COMPONENTS = 1
@@ -51,7 +51,7 @@ class ComponentsPlugin(BasePlugin):
         }
         mapping.get(idx)()
 
-    def load_components(self, url: Optional[str]=None):
+    def load_components(self, url: Optional[str] = None):
         """
         Open a new dialog and take a JSON URL or a file path. Then load components from that URL.
         """
@@ -72,12 +72,12 @@ class ComponentsPlugin(BasePlugin):
 
     # register actions
     URL_ACTIONS = [
-        'bughouse_component',
+        "bughouse_component",
     ]
 
     def handle_url_action(self, action, kwargs):
         mapping = {
-            'bughouse_component': self.handle_url_action_bughouse_component,
+            "bughouse_component": self.handle_url_action_bughouse_component,
         }
 
         func = mapping.get(action)

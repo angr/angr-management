@@ -21,9 +21,9 @@ class DependencyView(BaseView):
     """
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('dependencies', instance, default_docking_position, *args, **kwargs)
+        super().__init__("dependencies", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Dependencies'
+        self.base_caption = "Dependencies"
 
         # UI widgets
         self._graph_widget: QDependencyGraph = None
@@ -31,7 +31,7 @@ class DependencyView(BaseView):
         # data
         self.sink_atom: Optional[Atom] = None
         self.sink_ins_addr: Optional[int] = None
-        self.closures: Optional[Dict[Definition,networkx.DiGraph]] = None
+        self.closures: Optional[Dict[Definition, networkx.DiGraph]] = None
         self._graph: Optional[networkx.DiGraph] = None
         self.hovered_block: Optional[QDepGraphBlock] = None
 
@@ -85,7 +85,7 @@ class DependencyView(BaseView):
     def _register_events(self):
         self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
-    def _convert_node(self, node: Definition, converted: Dict[Definition,QDepGraphBlock]) -> Optional[QDepGraphBlock]:
+    def _convert_node(self, node: Definition, converted: Dict[Definition, QDepGraphBlock]) -> Optional[QDepGraphBlock]:
         if node in converted:
             return converted[node]
 
@@ -95,15 +95,17 @@ class DependencyView(BaseView):
 
         if self.instance.project.is_hooked(node.codeloc.block_addr):
             hook = self.instance.project.hooked_by(node.codeloc.block_addr)
-            if isinstance(hook, (SIM_PROCEDURES['stubs']['UnresolvableJumpTarget'],
-                                 SIM_PROCEDURES['stubs']['UnresolvableCallTarget'])):
+            if isinstance(
+                hook,
+                (SIM_PROCEDURES["stubs"]["UnresolvableJumpTarget"], SIM_PROCEDURES["stubs"]["UnresolvableCallTarget"]),
+            ):
                 return None
 
         new_node = QDepGraphBlock(False, self, definition=node, addr=node.codeloc.ins_addr)
         converted[node] = new_node
         return new_node
 
-    #def _is_edge_in_graph(self):
+    # def _is_edge_in_graph(self):
     def _create_ui_graph(self) -> networkx.DiGraph:
 
         g = networkx.DiGraph()

@@ -1,8 +1,17 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox, QGridLayout, \
-    QRadioButton, QButtonGroup
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QLineEdit,
+    QDialogButtonBox,
+    QGridLayout,
+    QRadioButton,
+    QButtonGroup,
+)
 
 from ...data.breakpoint import Breakpoint, BreakpointType
 from ..widgets import QAddressInput
@@ -14,11 +23,11 @@ class BreakpointDialog(QDialog):
     TODO: decouple breakpoints from workspace.instance (main_instance)
     """
 
-    def __init__(self, breakpoint_: Breakpoint, workspace: 'Workspace', parent=None):
+    def __init__(self, breakpoint_: Breakpoint, workspace: "Workspace", parent=None):
         super().__init__(parent)
         self.breakpoint = breakpoint_
         self.workspace = workspace
-        self.setWindowTitle('Edit Breakpoint')
+        self.setWindowTitle("Edit Breakpoint")
         self.main_layout: QVBoxLayout = QVBoxLayout()
         self._type_radio_group: Optional[QButtonGroup] = None
         self._address_box: Optional[QAddressInput] = None
@@ -40,31 +49,32 @@ class BreakpointDialog(QDialog):
         self._status_label = QLabel(self)
 
         row = 0
-        layout.addWidget(QLabel('Break on:', self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Break on:", self), row, 0, Qt.AlignRight)
         self._type_radio_group = QButtonGroup(self)
-        self._type_radio_group.addButton(QRadioButton('Execute', self), BreakpointType.Execute.value)
-        self._type_radio_group.addButton(QRadioButton('Write', self), BreakpointType.Write.value)
-        self._type_radio_group.addButton(QRadioButton('Read', self), BreakpointType.Read.value)
+        self._type_radio_group.addButton(QRadioButton("Execute", self), BreakpointType.Execute.value)
+        self._type_radio_group.addButton(QRadioButton("Write", self), BreakpointType.Write.value)
+        self._type_radio_group.addButton(QRadioButton("Read", self), BreakpointType.Read.value)
         for b in self._type_radio_group.buttons():
             layout.addWidget(b, row, 1)
             row += 1
 
         self._type_radio_group.button(self.breakpoint.type.value).setChecked(True)
 
-        layout.addWidget(QLabel('Address:', self), row, 0, Qt.AlignRight)
-        self._address_box = QAddressInput(self._on_address_changed, self.workspace, parent=self,
-                                          default=f'{self.breakpoint.addr:#x}')
+        layout.addWidget(QLabel("Address:", self), row, 0, Qt.AlignRight)
+        self._address_box = QAddressInput(
+            self._on_address_changed, self.workspace, parent=self, default=f"{self.breakpoint.addr:#x}"
+        )
         layout.addWidget(self._address_box, row, 1)
         row += 1
 
-        layout.addWidget(QLabel('Size:', self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Size:", self), row, 0, Qt.AlignRight)
         self._size_box = QLineEdit(self)
-        self._size_box.setText(f'{self.breakpoint.size:#x}')
+        self._size_box.setText(f"{self.breakpoint.size:#x}")
         self._size_box.textChanged.connect(self._on_size_changed)
         layout.addWidget(self._size_box, row, 1)
         row += 1
 
-        layout.addWidget(QLabel('Comment:', self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Comment:", self), row, 0, Qt.AlignRight)
         self._comment_box = QLineEdit(self)
         self._comment_box.setText(self.breakpoint.comment)
         layout.addWidget(self._comment_box, row, 1)
@@ -82,11 +92,11 @@ class BreakpointDialog(QDialog):
 
     def _set_valid(self, valid: bool):
         if not valid:
-            self._status_label.setText('Invalid')
-            self._status_label.setProperty('class', 'status_invalid')
+            self._status_label.setText("Invalid")
+            self._status_label.setProperty("class", "status_invalid")
         else:
-            self._status_label.setText('Valid')
-            self._status_label.setProperty('class', 'status_valid')
+            self._status_label.setText("Valid")
+            self._status_label.setProperty("class", "status_valid")
 
         self._ok_button.setEnabled(valid)
         self._status_label.style().unpolish(self._status_label)
@@ -102,7 +112,6 @@ class BreakpointDialog(QDialog):
     #
     # Event handlers
     #
-
 
     def _validate(self):
         self._set_valid(bool(self._address_box.target is not None and self._get_size()))

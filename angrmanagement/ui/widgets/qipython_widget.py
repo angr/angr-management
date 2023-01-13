@@ -4,6 +4,7 @@ from IPython.lib import guisupport
 
 from ..css import CSS
 
+
 class QIPythonWidget(RichJupyterWidget):
     def __init__(self, *args, banner=None, namespace=None, **kwargs):
         if banner is not None:
@@ -14,7 +15,7 @@ class QIPythonWidget(RichJupyterWidget):
 
         self.kernel_manager = kernel_manager = QtInProcessKernelManager()
         kernel_manager.start_kernel()
-        kernel_manager.kernel.gui = 'qt4'
+        kernel_manager.kernel.gui = "qt4"
 
         if namespace is not None:
             self.push_namespace(namespace)

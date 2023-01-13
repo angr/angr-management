@@ -52,7 +52,7 @@ class Menu:
         self.parent = parent
         self.caption = caption
 
-        self.entries = [ ]
+        self.entries = []
         self._keyed_entries = None
 
         self._qmenu = None  # type: QMenu
@@ -62,8 +62,7 @@ class Menu:
 
     def action_by_key(self, key):
         if not self._keyed_entries:
-            self._keyed_entries = {ent.key: ent for ent in
-                    self.entries if isinstance(ent, MenuEntry)}
+            self._keyed_entries = {ent.key: ent for ent in self.entries if isinstance(ent, MenuEntry)}
         return self._keyed_entries.get(key, None)
 
     def qmenu(self, extra_entries=None, cached=True):
@@ -102,7 +101,7 @@ class Menu:
             entry = MenuSeparator()
         elif type(entry) is tuple and len(entry) == 2 and callable(entry[1]):
             entry = MenuEntry(*entry)
-        elif type(entry) is tuple and len(entry) == 2 and hasattr(entry[1], '__iter__'):
+        elif type(entry) is tuple and len(entry) == 2 and hasattr(entry[1], "__iter__"):
             entry = Menu(*entry)
 
         if isinstance(entry, MenuEntry):
@@ -141,7 +140,7 @@ class Menu:
             else:
                 menu.insertAction(before, entry)
         else:
-            raise TypeError('Unsupported type', type(entry))
+            raise TypeError("Unsupported type", type(entry))
 
     def add(self, action, index=None):
         if index is None:

@@ -14,6 +14,7 @@ class QMiniMapViewportBox(QGraphicsItem):
     """
     Widget to indicate target viewport position/size on the minimap.
     """
+
     PEN_WIDTH: float = 2
 
     def __init__(self, *args, **kwargs):
@@ -53,7 +54,7 @@ class QMiniMapViewportBox(QGraphicsItem):
         painter.drawPath(path)
 
     def boundingRect(self):
-        half_pen_width = self.PEN_WIDTH/2
+        half_pen_width = self.PEN_WIDTH / 2
         margins = QMarginsF(half_pen_width, half_pen_width, half_pen_width, half_pen_width)
         return self._scene_rect.marginsAdded(margins)
 
@@ -65,7 +66,7 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
     For performance, the scene is cached in a QImage and only updated when update_scene_drawing is called.
     """
 
-    def __init__(self, target_view:QGraphicsView, *args, **kwargs):
+    def __init__(self, target_view: QGraphicsView, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._view: QGraphicsView = target_view
         self._minimap_scene_rect: QRectF = QRectF()
@@ -89,15 +90,14 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
             return
 
         dpr = self._view.devicePixelRatioF()
-        self._scene_img = QImage(dpr * self._minimap_scene_rect.width(),
-                                 dpr * self._minimap_scene_rect.height(),
-                                 QImage.Format_ARGB32)
+        self._scene_img = QImage(
+            dpr * self._minimap_scene_rect.width(), dpr * self._minimap_scene_rect.height(), QImage.Format_ARGB32
+        )
         self._scene_img.setDevicePixelRatio(dpr)
         self._scene_img.fill(Conf.palette_base)
         self._view.set_extra_render_pass(True)
         painter = QPainter(self._scene_img)
-        painter.setRenderHints(QPainter.Antialiasing
-                               | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         scene.render(painter, target=self._minimap_scene_rect)
         self._view.set_extra_render_pass(False)
         self.update()
@@ -118,7 +118,7 @@ class QMiniMapView(QGraphicsView):
     support viewport control.
     """
 
-    def __init__(self, target_view:QBaseGraphicsView, *args, **kwargs):
+    def __init__(self, target_view: QBaseGraphicsView, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._target_view: QBaseGraphicsView = target_view
         self._is_mouse_pressed: bool = False
@@ -146,14 +146,10 @@ class QMiniMapView(QGraphicsView):
         mm_scene_h = self.sceneRect().height()
 
         minimap_vp_rect = QRectF()
-        minimap_vp_rect.setTopLeft(QPoint(
-            int(clamp(x, 0, mm_scene_w)),
-            int(clamp(y, 0, mm_scene_h))
-            ))
-        minimap_vp_rect.setBottomRight(QPoint(
-            int(clamp(x + width, 0, mm_scene_w)),
-            int(clamp(y + height, 0, mm_scene_h))
-            ))
+        minimap_vp_rect.setTopLeft(QPoint(int(clamp(x, 0, mm_scene_w)), int(clamp(y, 0, mm_scene_h))))
+        minimap_vp_rect.setBottomRight(
+            QPoint(int(clamp(x + width, 0, mm_scene_w)), int(clamp(y + height, 0, mm_scene_h)))
+        )
 
         self._minimap_target_viewport_box.set_viewport_rect(minimap_vp_rect)
         self._minimap_target_viewport_box.update()
@@ -239,9 +235,7 @@ class QMiniMapView(QGraphicsView):
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
             pos = event.position()
-            self._target_view.centerOn(
-                self.map_event_pos_to_target_scene_pos(QPoint(pos.x(), pos.y()))
-            )
+            self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(QPoint(pos.x(), pos.y())))
 
         self._target_view.wheelEvent(event)
 

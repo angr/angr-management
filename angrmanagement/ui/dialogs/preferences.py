@@ -1,7 +1,24 @@
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListView, QStackedWidget, QWidget, \
-    QGroupBox, QLabel, QCheckBox, QPushButton, QLineEdit, QListWidgetItem, QScrollArea, QFrame, QComboBox, \
-    QSizePolicy, QDialogButtonBox
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QListWidget,
+    QListView,
+    QStackedWidget,
+    QWidget,
+    QGroupBox,
+    QLabel,
+    QCheckBox,
+    QPushButton,
+    QLineEdit,
+    QListWidgetItem,
+    QScrollArea,
+    QFrame,
+    QComboBox,
+    QSizePolicy,
+    QDialogButtonBox,
+)
 from PySide6.QtCore import QSize
 
 from angrmanagement.ui.widgets.qcolor_option import QColorOption
@@ -29,7 +46,8 @@ class Integration(Page):
     The integration page.
     """
 
-    NAME = 'OS Integration'
+    NAME = "OS Integration"
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -158,6 +176,7 @@ class ThemeAndColors(Page):
         for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
 
+
 class Style(Page):
     """
     Preference pane for UI style choices
@@ -199,7 +218,6 @@ class Style(Page):
 
         page_layout.addStretch()
 
-
     def save_config(self):
         fmt = self.log_format_entry.text()
         if fmt:
@@ -218,7 +236,7 @@ class Preferences(QDialog):
 
         self.workspace = workspace
 
-        self._pages = [ ]
+        self._pages = []
 
         self._init_widgets()
 
@@ -252,7 +270,7 @@ class Preferences(QDialog):
         # buttons
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Close | QDialogButtonBox.StandardButton.Ok)
-        buttons.button(QDialogButtonBox.Ok).setText('Save')
+        buttons.button(QDialogButtonBox.Ok).setText("Save")
         buttons.accepted.connect(self._on_ok_clicked)
         buttons.rejected.connect(self.close)
 

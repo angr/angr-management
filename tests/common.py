@@ -11,10 +11,10 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.main_window import MainWindow
 
 
-test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'binaries', 'tests')
+test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
 
 app = None
-container = { }
+container = {}
 thread = None
 
 
@@ -31,19 +31,19 @@ def _starter():
 
     while True:
         # sleep until we are told to start
-        while container.get('start', False) is False:
+        while container.get("start", False) is False:
             time.sleep(0.5)
         # remove the start flag
-        del container['start']
+        del container["start"]
 
-        event: threading.Event = container['event']
+        event: threading.Event = container["event"]
 
         app = create_qapp()
-        container['app'] = app
+        container["app"] = app
         main = MainWindow(show=False)
         GlobalInfo.gui_thread = threading.get_ident()
         GlobalInfo.is_test = True
-        container['main'] = main
+        container["main"] = main
 
         while True:
             while not GlobalInfo.events:
@@ -67,18 +67,18 @@ def _starter():
 def start_main_window_and_event_loop(event):
     global container, thread
 
-    container = { }
+    container = {}
     if thread is None:
         thread = threading.Thread(target=_starter, daemon=True)
         thread.start()
     else:
         # reuse the existing thread
         pass
-    container['event'] = event
-    container['start'] = True
+    container["event"] = event
+    container["start"] = True
 
     # wait until the main window is created
-    while 'main' not in container:
+    while "main" not in container:
         time.sleep(0.1)
 
-    return container['app'], container['main']
+    return container["app"], container["main"]

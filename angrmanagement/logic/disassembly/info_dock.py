@@ -10,7 +10,12 @@ class OperandHighlightMode:
 
 class OperandDescriptor:
 
-    __slots__ = ('text', 'num_value', 'func_addr', 'variable_ident', )
+    __slots__ = (
+        "text",
+        "num_value",
+        "func_addr",
+        "variable_ident",
+    )
 
     def __init__(self, text, num_value, func_addr=None, variable_ident=None):
         self.text = text
@@ -24,6 +29,7 @@ class InfoDock(QObject):
     Stores information associated to a disassembly view. Such information will be shared between the graph view and the
     linear view.
     """
+
     qblock_code_obj_selection_changed = Signal()
 
     def __init__(self, disasm_view):
@@ -35,12 +41,12 @@ class InfoDock(QObject):
 
         self.highlight_mode = OperandHighlightMode.SAME_IDENT  # default highlight mode
 
-        self.selected_insns = ObjectContainer(set(), 'The currently selected instructions')
-        self.selected_operands = ObjectContainer({}, 'The currently selected instruction operands')
-        self.selected_blocks = ObjectContainer(set(), 'The currently selected blocks')
-        self.hovered_block = ObjectContainer(None, 'The currently hovered block')
-        self.hovered_edge = ObjectContainer(None, 'The currently hovered edge')
-        self.selected_labels = ObjectContainer(set(), 'The currently selected labels')
+        self.selected_insns = ObjectContainer(set(), "The currently selected instructions")
+        self.selected_operands = ObjectContainer({}, "The currently selected instruction operands")
+        self.selected_blocks = ObjectContainer(set(), "The currently selected blocks")
+        self.hovered_block = ObjectContainer(None, "The currently hovered block")
+        self.hovered_edge = ObjectContainer(None, "The currently hovered edge")
+        self.selected_labels = ObjectContainer(set(), "The currently selected labels")
         self.selected_qblock_code_obj = None
 
     @property
@@ -60,7 +66,7 @@ class InfoDock(QObject):
         self.selected_operands.clear()
         self.hovered_block.am_obj = None
 
-    def copy(self) -> 'InfoDock':
+    def copy(self) -> "InfoDock":
         r = InfoDock(self.disasm_view)
         r.variable_manager = self.variable_manager
         r.highlight_mode = self.highlight_mode
@@ -128,7 +134,7 @@ class InfoDock(QObject):
             self.selected_insns.clear()
             self.selected_insns.am_event()
 
-    def select_operand(self, ins_addr: int, operand_index: int, operand: OperandDescriptor, unique: bool=False):
+    def select_operand(self, ins_addr: int, operand_index: int, operand: OperandDescriptor, unique: bool = False):
         """
         Mark an operand as selected.
 

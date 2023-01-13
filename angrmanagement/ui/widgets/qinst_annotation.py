@@ -1,8 +1,14 @@
 from typing import List, TYPE_CHECKING, Dict
 from PySide6.QtGui import QColor, QPainterPath, QBrush, QCursor
 from PySide6.QtCore import QMarginsF
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsSceneMouseEvent, QMenu, \
-    QInputDialog, QLineEdit
+from PySide6.QtWidgets import (
+    QGraphicsItem,
+    QGraphicsSimpleTextItem,
+    QGraphicsSceneMouseEvent,
+    QMenu,
+    QInputDialog,
+    QLineEdit,
+)
 
 from .qsimulation_managers import QSimulationManagers
 from ...config import Conf
@@ -23,11 +29,11 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     addr = None
 
     @property
-    def disasm_view(self) -> 'DisassemblyView':
+    def disasm_view(self) -> "DisassemblyView":
         return self.parentItem().disasm_view
 
     @property
-    def symexec_view(self) -> 'SymexecView':
+    def symexec_view(self) -> "SymexecView":
         return self.parentItem().disasm_view.instance.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, text, *args, **kwargs):
@@ -50,7 +56,7 @@ class QStatsAnnotation(QInstructionAnnotation):
     Abstract Stats Annotation Class.
     """
 
-    def __init__(self, addr, text,  *args, **kwargs):
+    def __init__(self, addr, text, *args, **kwargs):
         super().__init__(addr, text, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.hovered = False
@@ -58,12 +64,12 @@ class QStatsAnnotation(QInstructionAnnotation):
     def mousePressEvent(self, event):
         pass
 
-    def hoverEnterEvent(self, event): #pylint: disable=unused-argument
+    def hoverEnterEvent(self, event):  # pylint: disable=unused-argument
         self.hovered = True
         if self.disasm_view:
             self.disasm_view.redraw_current_graph()
 
-    def hoverLeaveEvent(self, event): #pylint: disable=unused-argument
+    def hoverLeaveEvent(self, event):  # pylint: disable=unused-argument
         self.hovered = False
         if self.disasm_view:
             self.disasm_view.redraw_current_graph()
@@ -86,6 +92,7 @@ class QActiveCount(QStatsAnnotation):
     We can select/move the set of states.
     Used by execution_statistics_viewer plugin.
     """
+
     background_color = QColor(0, 255, 0, 30)
     foreground_color = QColor(0, 60, 0)
 
@@ -93,7 +100,7 @@ class QActiveCount(QStatsAnnotation):
         super().__init__(addr, str(len(states)))
         self.states = states
 
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:  #pylint: disable=unused-argument
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:  # pylint: disable=unused-argument
         menu = QMenu()
 
         def _select_states():
@@ -125,6 +132,7 @@ class QPassthroughCount(QStatsAnnotation):
     Indicating how much states passthrough address.
     Used by execution_statistics_viewer plugin.
     """
+
     background_color = QColor(255, 0, 0, 30)
     foreground_color = QColor(60, 0, 0)
 
@@ -142,13 +150,14 @@ class QHookAnnotation(QInstructionAnnotation):
     It is added to the annotation list by fetch_qblock_annotations and
     displays an indicator next to hooked blocks.
     """
+
     background_color = QColor(230, 230, 230)
     foreground_color = QColor(50, 50, 50)
 
     def __init__(self, addr, *args, **kwargs):
         super().__init__(addr, "hook", *args, **kwargs)
 
-    def contextMenuEvent(self, event): #pylint: disable=unused-argument
+    def contextMenuEvent(self, event):  # pylint: disable=unused-argument
         menu = QMenu()
         menu.addAction("Delete", self.delete)
         menu.exec_(QCursor.pos())
@@ -171,7 +180,7 @@ class QExploreAnnotation(QInstructionAnnotation):
         super().__init__(addr, self.text, *args, **kwargs)
         self.qsimgrs = qsimgrs
 
-    def contextMenuEvent(self, event): #pylint: disable=unused-argument
+    def contextMenuEvent(self, event):  # pylint: disable=unused-argument
         menu = QMenu()
         menu.addAction("Delete", self.delete)
         menu.exec_(QCursor.pos())
@@ -185,6 +194,7 @@ class QFindAddrAnnotation(QExploreAnnotation):
     An instruction annotation for explore find address.
     It is added to the annotation list by fetch_qblock_annotations
     """
+
     background_color = QColor(200, 230, 100)
     foreground_color = QColor(30, 80, 30)
     text = "find"
@@ -199,6 +209,7 @@ class QBreakAnnotation(QInstructionAnnotation):
     An instruction annotation for address breakpoint.
     It is added to the annotation list by fetch_qblock_annotations
     """
+
     background_color = QColor(200, 10, 10)
     foreground_color = QColor(220, 220, 220)
     text = "break"
@@ -207,7 +218,7 @@ class QBreakAnnotation(QInstructionAnnotation):
         super().__init__(bp.addr, self.text, *args, **kwargs)
         self.bp = bp
 
-    def contextMenuEvent(self, event): #pylint: disable=unused-argument
+    def contextMenuEvent(self, event):  # pylint: disable=unused-argument
         menu = QMenu()
         menu.addAction("Delete", self.delete)
         menu.exec_(QCursor.pos())
@@ -221,6 +232,7 @@ class QAvoidAddrAnnotation(QExploreAnnotation):
     An instruction annotation for explore avoid address.
     It is added to the annotation list by fetch_qblock_annotations
     """
+
     background_color = QColor(230, 200, 100)
     foreground_color = QColor(80, 30, 30)
     text = "avoid"
@@ -237,7 +249,7 @@ class QBlockAnnotations(QGraphicsItem):
     """
 
     PADDING = 10
-    disasm_view = None # type: DisassemblyView
+    disasm_view = None  # type: DisassemblyView
 
     def __init__(self, addr_to_annotations: Dict[int, List[QInstructionAnnotation]], *, parent, disasm_view):
         super().__init__(parent=parent)

@@ -8,14 +8,16 @@ from .toolbar import Toolbar, ToolbarAction
 
 class FunctionTableToolbar(Toolbar):
     def __init__(self, function_table):
-        super().__init__(function_table, 'Function table options')
+        super().__init__(function_table, "Function table options")
 
         # TODO: An icon would be great
-        self._alignment_action = ToolbarAction(QIcon(os.path.join(IMG_LOCATION, 'toolbar-show-alignment.png')),
-                                               "Show alignment functions",
-                                               "Display alignment function stubs.",
-                                               function_table.toggle_show_alignment_functions,
-                                               checkable=True)
+        self._alignment_action = ToolbarAction(
+            QIcon(os.path.join(IMG_LOCATION, "toolbar-show-alignment.png")),
+            "Show alignment functions",
+            "Display alignment function stubs.",
+            function_table.toggle_show_alignment_functions,
+            checkable=True,
+        )
 
         self.actions = [
             self._alignment_action,

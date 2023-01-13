@@ -25,8 +25,8 @@ class TestQaddressInput(unittest.TestCase):
 
     def _test_address_conversion(self):
         main = self.main
-        main.workspace.main_instance.project.am_obj = load_shellcode(b'X', 'amd64')
-        main.workspace.main_instance.project.kb.functions.function(addr=0x1234, name='foo', create=True)
+        main.workspace.main_instance.project.am_obj = load_shellcode(b"X", "amd64")
+        main.workspace.main_instance.project.kb.functions.function(addr=0x1234, name="foo", create=True)
 
         obj = QAddressInput(None, main.workspace.main_instance)
 
@@ -55,7 +55,7 @@ class TestQaddressInput(unittest.TestCase):
 
         obj.setText("")
         QTest.keyClicks(obj, "main")
-        self.assertEqual(obj.target, cfg.kb.functions['main'].addr)
+        self.assertEqual(obj.target, cfg.kb.functions["main"].addr)
 
         obj.setText("")
         QTest.keyClicks(obj, "main_1")

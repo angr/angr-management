@@ -27,16 +27,16 @@ class BintraceTrace(Trace):
     Bintrace execution trace.
     """
 
-    def __init__(self, trace: 'bintrace.Trace'):
+    def __init__(self, trace: "bintrace.Trace"):
         assert BintraceTrace.trace_backend_enabled()
-        self.trace: 'bintrace.Trace' = trace
+        self.trace: "bintrace.Trace" = trace
 
     @property
     def source(self) -> str:
         return self.trace.path
 
     @classmethod
-    def load_trace(cls, path: str) -> 'BintraceTrace':
+    def load_trace(cls, path: str) -> "BintraceTrace":
         trace = bintrace.Trace()
         trace.load_trace(path)
         return cls(trace)

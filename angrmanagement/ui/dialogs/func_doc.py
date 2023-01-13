@@ -8,6 +8,7 @@ class FuncDocDialog(QDialog):
     """
     Implements the FuncDoc dialog.
     """
+
     def __init__(self, instance, addr=None, name="", doc_tuple=None, parent=None):
         super().__init__(parent)
 
@@ -20,7 +21,7 @@ class FuncDocDialog(QDialog):
         self._doc = doc_tuple[0].strip()
         self._url = doc_tuple[1].strip()
         self._ftype = doc_tuple[2].strip()
-        self.setWindowTitle('Function Documentation')
+        self.setWindowTitle("Function Documentation")
         self.main_layout = QVBoxLayout()
         self._init_widgets()
         self.setLayout(self.main_layout)
@@ -47,7 +48,7 @@ class FuncDocDialog(QDialog):
         text_edit.setText(self._doc)
 
         url_label = QLabel(self)
-        hyperlink = f"<a href=\"{self._url}\">{self._url}</a>"
+        hyperlink = f'<a href="{self._url}">{self._url}</a>'
         url_label.setText(hyperlink)
         url_label.setOpenExternalLinks(True)
 

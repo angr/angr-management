@@ -71,9 +71,9 @@ class QAwesomeTooltipEventFilter(QObject):
             if tooltip and not Qt.mightBeRichText(tooltip):
                 # Convert this plaintext tooltip into a rich text tooltip by:
                 #
-                #* Escaping all HTML syntax in this tooltip.
-                #* Embedding this tooltip in the Qt-specific "<qt>...</qt>" tag.
-                tooltip = '<qt>{}</qt>'.format(html.escape(tooltip))
+                # * Escaping all HTML syntax in this tooltip.
+                # * Embedding this tooltip in the Qt-specific "<qt>...</qt>" tag.
+                tooltip = "<qt>{}</qt>".format(html.escape(tooltip))
 
                 # Replace this widget's non-working plaintext tooltip with this
                 # working rich text tooltip.

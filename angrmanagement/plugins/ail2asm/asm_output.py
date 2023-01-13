@@ -14,7 +14,7 @@ class AsmOutput(QDialog):
 
         self._edit: QPlainTextEdit = None
 
-        self.setWindowTitle('Assembly code output')
+        self.setWindowTitle("Assembly code output")
 
         self.main_layout = QVBoxLayout()
 
@@ -35,7 +35,7 @@ class AsmOutput(QDialog):
         # Assembly label
 
         asm_label = QLabel(self)
-        asm_label.setText('Assembly code')
+        asm_label.setText("Assembly code")
 
         edit = QPlainTextEdit()
         edit.setMinimumWidth(600)

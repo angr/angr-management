@@ -15,11 +15,11 @@ def requires_daemon_conn(f):
         if self.conn is None:
             return None
         return f(self, *args, **kwargs)
+
     return with_daemon_conn
 
 
 class ClientService(rpyc.Service):
-
     @property
     def instance(self):
         return GlobalInfo.main_window.workspace.main_instance
@@ -58,7 +58,7 @@ class DaemonClientCls:
     def __init__(self, custom_handlers=None):
         self.custom_handlers = {} if custom_handlers is None else custom_handlers
 
-    def register_handler(self, action:str, handler):
+    def register_handler(self, action: str, handler):
         self.custom_handlers[action] = handler
 
     def invoke(self, action, kwargs):

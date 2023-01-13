@@ -9,12 +9,17 @@ from angr.errors import SimEngineError
 
 l = logging.getLogger(__name__)
 
+
 class ObjectAndBase:
     """
     Groups an object and its base address.
     """
 
-    __slots__ = ('obj_name', 'base_addr', 'proj_base_addr', )
+    __slots__ = (
+        "obj_name",
+        "base_addr",
+        "proj_base_addr",
+    )
 
     def __init__(self, obj_name: str, base_addr: int, proj_base_addr: Optional[int]):
         self.obj_name = obj_name
@@ -37,6 +42,7 @@ def _valid_addr(addr, project):
     except SimEngineError:
         return None
 
+
 @functools.lru_cache(1024)
 def _find_object_base_in_project(object_name, project):
     base_addr = None
@@ -50,8 +56,10 @@ def _find_object_base_in_project(object_name, project):
             base_addr = obj.mapped_base
             break
     if base_addr is None:
-        l.warning("Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the trace.",
-                  object_name)
+        l.warning(
+            "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the trace.",
+            object_name,
+        )
     return base_addr
 
 
@@ -59,7 +67,7 @@ def _find_object_base_in_project(object_name, project):
 last_obj_idx: Optional[int] = None
 
 
-def _find_obj_in_mapping(addr, mapping) -> Tuple[int,Optional[ObjectAndBase]]:
+def _find_obj_in_mapping(addr, mapping) -> Tuple[int, Optional[ObjectAndBase]]:
     idx = bisect.bisect_left(mapping, addr)
     obj = None
     if 0 <= idx < len(mapping):
@@ -120,10 +128,12 @@ def trace_to_bb_addrs(trace, project, trace_base):
     bbl_addrs = trace["bb_addrs"]
 
     mapping: Optional[List[ObjectAndBase]] = None
-    if 'map' in trace:
-        map_dict: Dict[str,int] = trace["map"]
-        mapping = [ObjectAndBase(name, base_addr, _find_object_base_in_project(name, project.am_obj))
-                   for name, base_addr in map_dict.items()]
+    if "map" in trace:
+        map_dict: Dict[str, int] = trace["map"]
+        mapping = [
+            ObjectAndBase(name, base_addr, _find_object_base_in_project(name, project.am_obj))
+            for name, base_addr in map_dict.items()
+        ]
         mapping = list(sorted(mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
 
     if project.am_none:
@@ -131,10 +141,11 @@ def trace_to_bb_addrs(trace, project, trace_base):
     else:
         # only used if self.mapping is not available
         project_baddr = project.loader.main_object.mapped_base
-    runtime_baddr = trace_base # this will not be used if self.mapping is available
+    runtime_baddr = trace_base  # this will not be used if self.mapping is available
 
     # convert over all the trace adders using info from the trace
-    to_return = filter(lambda a: _valid_addr(a, project), [
-        _apply_trace_offset(addr, mapping, project_baddr, runtime_baddr) for addr in bbl_addrs
-    ])
+    to_return = filter(
+        lambda a: _valid_addr(a, project),
+        [_apply_trace_offset(addr, mapping, project_baddr, runtime_baddr) for addr in bbl_addrs],
+    )
     return list(to_return)

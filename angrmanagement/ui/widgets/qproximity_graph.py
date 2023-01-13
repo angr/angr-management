@@ -22,7 +22,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, instance, proximity_view: 'ProximityView', parent=None):
+    def __init__(self, instance, proximity_view: "ProximityView", parent=None):
         super().__init__(parent=parent)
 
         self._instance = instance
@@ -30,10 +30,10 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
 
         self._graph = None
         self.blocks = set()
-        self._edges: List[Edge] = [ ]
-        self._arrows_by_src: Dict[Any,List[QProximityGraphArrow]] = defaultdict(list)
-        self._arrows_by_dst: Dict[Any,List[QProximityGraphArrow]] = defaultdict(list)
-        self._arrows: List[QProximityGraphArrow] = [ ]
+        self._edges: List[Edge] = []
+        self._arrows_by_src: Dict[Any, List[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows_by_dst: Dict[Any, List[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows: List[QProximityGraphArrow] = []
 
     @property
     def graph(self):
@@ -75,8 +75,9 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
         # gl = TreeGraphLayouter(self.graph, node_sizes, vertical=True, horizontal_spacing=5, vertical_spacing=30,
         #                        layer_sorter=self._sort_nodes,
         #                        )
-        gl = GraphLayouter(self.graph, node_sizes, node_sorter=self._sort_nodes, x_margin=2, y_margin=2,
-                           row_margin=2, col_margin=2)
+        gl = GraphLayouter(
+            self.graph, node_sizes, node_sorter=self._sort_nodes, x_margin=2, y_margin=2, row_margin=2, col_margin=2
+        )
 
         self._edges = gl.edges
 
@@ -111,7 +112,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
         ibr = self.scene().itemsBoundingRect()
         return ibr.center()
 
-    def _sort_nodes(self, nodes: List['QProximityGraphBlock']) -> List['QProximityGraphBlock']:
+    def _sort_nodes(self, nodes: List["QProximityGraphBlock"]) -> List["QProximityGraphBlock"]:
         # Sort nodes based on the address of their first ref_at address in each function
         sorted_nodes = sorted(nodes, key=lambda x: next(iter(x._node.ref_at)) if x._node.ref_at else 0)
         return sorted_nodes

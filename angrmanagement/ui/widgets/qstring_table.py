@@ -12,7 +12,7 @@ from ..dialogs.xref import XRefDialog
 
 class QStringModel(QAbstractTableModel):
 
-    HEADER = [ "Address", "Length", "String" ]
+    HEADER = ["Address", "Length", "String"]
 
     ADDRESS_COL = 0
     LENGTH_COL = 1
@@ -61,11 +61,11 @@ class QStringModel(QAbstractTableModel):
         self.endResetModel()
 
     def _get_all_string_memory_data(self):
-        lst = [ ]
+        lst = []
         if self.cfg is None:
             return lst
         for v in self.cfg.memory_data.values():
-            if v.sort == 'string':
+            if v.sort == "string":
                 if self._function is None:
                     lst.append(v)
                 else:
@@ -86,13 +86,13 @@ class QStringModel(QAbstractTableModel):
     def __len__(self):
         return self.rowCount()
 
-    def rowCount(self, parent=None) -> int: #pylint: disable=unused-argument
+    def rowCount(self, parent=None) -> int:  # pylint: disable=unused-argument
         return len(self.values)
 
-    def columnCount(self, parent=None) -> int: #pylint: disable=unused-argument
+    def columnCount(self, parent=None) -> int:  # pylint: disable=unused-argument
         return len(self.HEADER)
 
-    def headerData(self, section, orientation, role=None) -> Any: #pylint: disable=unused-argument
+    def headerData(self, section, orientation, role=None) -> Any:  # pylint: disable=unused-argument
         if role == Qt.DisplayRole:
             if section < len(self.HEADER):
                 return self.HEADER[section]
@@ -123,7 +123,8 @@ class QStringModel(QAbstractTableModel):
 
         self._values = sorted(
             self.values,
-            key=lambda x: self._get_column_data(x, column), reverse=order == Qt.DescendingOrder,
+            key=lambda x: self._get_column_data(x, column),
+            reverse=order == Qt.DescendingOrder,
         )
         self.layoutChanged.emit()
 
@@ -131,14 +132,16 @@ class QStringModel(QAbstractTableModel):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
             if col == self.ADDRESS_COL and type(data) is int:
-                return f'{data:x}'
+                return f"{data:x}"
             return data
 
     def _get_column_data(self, v: MemoryData, col: int) -> Any:
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
             self.LENGTH_COL: lambda x: x.size,
-            self.STRING_COL: lambda x: filter_string_for_display(x.content.decode("utf-8")) if x.content is not None else "<ERROR>",
+            self.STRING_COL: lambda x: filter_string_for_display(x.content.decode("utf-8"))
+            if x.content is not None
+            else "<ERROR>",
         }
 
         if col in mapping:
@@ -244,7 +247,7 @@ class QStringTable(QTableView):
         if self._selected is not None:
             self._selected(selected_item)
 
-    def keyPressEvent(self, event: 'PySide6.QtGui.QKeyEvent') -> None:
+    def keyPressEvent(self, event: "PySide6.QtGui.QKeyEvent") -> None:
 
         if event.key() == Qt.Key_X:
             # xrefs
@@ -257,8 +260,13 @@ class QStringTable(QTableView):
                 selected_index = model_index.row()
                 if 0 <= selected_index < len(self._model.values):
                     selected_item: MemoryData = self._model.values[selected_index]
-                    dialog = XRefDialog(addr=selected_item.addr, dst_addr=selected_item.addr, xrefs_manager=self.xrefs,
-                                        instance=self._instance, parent=self)
+                    dialog = XRefDialog(
+                        addr=selected_item.addr,
+                        dst_addr=selected_item.addr,
+                        xrefs_manager=self.xrefs,
+                        instance=self._instance,
+                        parent=self,
+                    )
                     dialog.exec_()
             return
 

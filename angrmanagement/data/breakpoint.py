@@ -19,11 +19,9 @@ class Breakpoint:
     A breakpoint / watchpoint.
     """
 
-    __slots__ = (
-        'type', 'addr', '_size', 'comment'
-    )
+    __slots__ = ("type", "addr", "_size", "comment")
 
-    def __init__(self, type_: BreakpointType, addr: int, size: int = 1, comment: str = ''):
+    def __init__(self, type_: BreakpointType, addr: int, size: int = 1, comment: str = ""):
         self.type: BreakpointType = type_
         self.addr: int = addr
         self._size: int = 1
@@ -47,7 +45,7 @@ class BreakpointManager:
     """
 
     def __init__(self):
-        self.breakpoints: ObjectContainer = ObjectContainer([], 'List of breakpoints')
+        self.breakpoints: ObjectContainer = ObjectContainer([], "List of breakpoints")
 
     def clear(self):
         self.breakpoints.clear()
@@ -79,5 +77,4 @@ class BreakpointManager:
             self.remove_breakpoint(found_bp)
 
     def get_breakpoints_at(self, addr: int) -> Sequence[Breakpoint]:
-        return [bp for bp in self.breakpoints
-                     if bp.addr <= addr < (bp.addr + bp.size)]
+        return [bp for bp in self.breakpoints if bp.addr <= addr < (bp.addr + bp.size)]

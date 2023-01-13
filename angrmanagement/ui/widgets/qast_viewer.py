@@ -61,25 +61,25 @@ class QASTViewer(QFrame):
     @property
     def x(self):
         if not self._custom_painting:
-            raise ValueError('QASTViewer does not have a size when custom painting is disabled.')
+            raise ValueError("QASTViewer does not have a size when custom painting is disabled.")
         return self._x
 
     @x.setter
     def x(self, v):
         if not self._custom_painting:
-            raise ValueError('QASTViewer does not have a size when custom painting is disabled.')
+            raise ValueError("QASTViewer does not have a size when custom painting is disabled.")
         self._x = v
 
     @property
     def y(self):
         if not self._custom_painting:
-            raise ValueError('QASTViewer does not have a size when custom painting is disabled.')
+            raise ValueError("QASTViewer does not have a size when custom painting is disabled.")
         return self._y
 
     @y.setter
     def y(self, v):
         if not self._custom_painting:
-            raise ValueError('QASTViewer does not have a size when custom painting is disabled.')
+            raise ValueError("QASTViewer does not have a size when custom painting is disabled.")
         self._y = v
 
     @property
@@ -135,7 +135,7 @@ class QASTViewer(QFrame):
 
         if self._display_size:
             size_label = QLabel(self)
-            size_label.setProperty('class', 'ast_viewer_size')
+            size_label.setProperty("class", "ast_viewer_size")
             size_label.setAlignment(Qt.AlignRight)
             size_label.setMaximumSize(QSize(24, 65536))
             self._size_label = size_label
@@ -159,9 +159,9 @@ class QASTViewer(QFrame):
 
         # set style
         if isinstance(ast, int) or not ast.symbolic:
-            self._ast_label.setProperty('class', 'ast_viewer_ast_concrete')
+            self._ast_label.setProperty("class", "ast_viewer_ast_concrete")
         else:
-            self._ast_label.setProperty('class', 'ast_viewer_ast_symbolic')
+            self._ast_label.setProperty("class", "ast_viewer_ast_symbolic")
 
         # set text
         if self._display_size:
@@ -186,7 +186,7 @@ class QASTViewer(QFrame):
         # set text
         if isinstance(ast, int):
             if self._display_size:
-                self._size_str = '[Unknown]'
+                self._size_str = "[Unknown]"
             format = "%02x" if self._byte_format is None else self._byte_format
             self._ast_str = format % ast
         else:
@@ -198,7 +198,7 @@ class QASTViewer(QFrame):
                 self._ast_str = format % self._ast._model_concrete.value
             else:
                 # symbolic
-                if isinstance(ast, claripy.ast.BV) and ast.op == 'BVS':
+                if isinstance(ast, claripy.ast.BV) and ast.op == "BVS":
                     var_name = ast.args[0]
                     self._ast_str = var_name
                 else:

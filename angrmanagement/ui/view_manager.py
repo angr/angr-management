@@ -19,19 +19,19 @@ class ViewManager:
     """
 
     DOCKING_POSITIONS = {
-        'center': QtAds.CenterDockWidgetArea,
-        'left': QtAds.LeftDockWidgetArea,
-        'right': QtAds.RightDockWidgetArea,
-        'top': QtAds.TopDockWidgetArea,
-        'bottom': QtAds.BottomDockWidgetArea,
+        "center": QtAds.CenterDockWidgetArea,
+        "left": QtAds.LeftDockWidgetArea,
+        "right": QtAds.RightDockWidgetArea,
+        "top": QtAds.TopDockWidgetArea,
+        "bottom": QtAds.BottomDockWidgetArea,
     }
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self.views: List[BaseView] = [ ]
-        self.docks = [ ]
+        self.views: List[BaseView] = []
+        self.docks = []
         self.view_to_dock = bidict()
-        self.views_by_category: Dict[str,List[BaseView]] = defaultdict(list)
+        self.views_by_category: Dict[str, List[BaseView]] = defaultdict(list)
 
     @property
     def main_window(self):
@@ -135,11 +135,11 @@ class ViewManager:
         docks = []
         for dock in self.docks:
             if dock.widget() is not None:
-                if dock.widget().default_docking_position == 'center':
+                if dock.widget().default_docking_position == "center":
                     docks.append(dock)
         return docks
 
-    def first_view_in_category(self, category: str) -> Optional['BaseView']:
+    def first_view_in_category(self, category: str) -> Optional["BaseView"]:
         """
         Return the first view in a specific category.
 
@@ -151,7 +151,7 @@ class ViewManager:
             return self.views_by_category[category][0]
         return None
 
-    def current_view_in_category(self, category: str) -> Optional['BaseView']:
+    def current_view_in_category(self, category: str) -> Optional["BaseView"]:
         """
         Return the current in a specific category.
 
@@ -207,7 +207,7 @@ class ViewManager:
         center_dockable_views[(current_tab_id - 1) % len(center_dockable_views)].raise_()  # this mod is superfluous
 
     @property
-    def current_tab(self) -> Optional['BaseView']:
+    def current_tab(self) -> Optional["BaseView"]:
         current_tab_id = self.get_current_tab_id()
         if current_tab_id is None:
             return None

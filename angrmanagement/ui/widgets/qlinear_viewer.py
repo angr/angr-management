@@ -28,7 +28,6 @@ _l = logging.getLogger(__name__)
 
 
 class QLinearDisassemblyView(QSaveableGraphicsView):
-
     def __init__(self, area, parent=None):
         super().__init__(parent=parent)
 
@@ -87,15 +86,15 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # The first line that is rendered of the first object in self.objects. Start from 0.
         self._start_line_in_object = 0
 
-        self._disasms = { }
-        self._ail_disasms = { }
-        self.objects = [ ]
+        self._disasms = {}
+        self._ail_disasms = {}
+        self.objects = []
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
         self._init_widgets()
 
-    def reload(self, old_infodock: Optional['InfoDock']=None):
+    def reload(self, old_infodock: Optional["InfoDock"] = None):
         curr_offset = self._offset
         self.initialize()
         self._offset = None  # force a re-generation of objects
@@ -191,14 +190,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         elif action == QAbstractSlider.SliderPageStepAdd:
             # Scroll down by one page
             lines_per_page = int(self.height() // self._line_height)
-            self.prepare_objects(self.offset, start_line=self._start_line_in_object
-                                                                       + lines_per_page)
+            self.prepare_objects(self.offset, start_line=self._start_line_in_object + lines_per_page)
             self.viewport().update()
         elif action == QAbstractSlider.SliderPageStepSub:
             # Scroll up by one page
             lines_per_page = int(self.height() // self._line_height)
-            self.prepare_objects(self.offset,
-                                        start_line=self._start_line_in_object - lines_per_page)
+            self.prepare_objects(self.offset, start_line=self._start_line_in_object - lines_per_page)
             self.viewport().update()
         elif action == QAbstractSlider.SliderMove:
             # Setting a new offset
@@ -234,7 +231,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # enumerate memory regions
         byte_offset = 0
         for mr in self.cfb.regions:  # type: MemoryRegion
-            if mr.type in {'tls', 'kernel'}:
+            if mr.type in {"tls", "kernel"}:
                 # Skip TLS objects and kernel objects
                 continue
             self._addr_to_region_offset[mr.addr] = byte_offset
@@ -245,10 +242,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def goto_function(self, func):
         if func.addr not in self._block_addr_map:
-            _l.error('Unable to find entry block for function %s', func)
+            _l.error("Unable to find entry block for function %s", func)
         view_height = self.viewport().height()
         desired_center_y = self._block_addr_map[func.addr].pos().y()
-        _l.debug('Going to function at 0x%x by scrolling to %s', func.addr, desired_center_y)
+        _l.debug("Going to function at 0x%x by scrolling to %s", func.addr, desired_center_y)
         self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
 
     def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False):
@@ -373,7 +370,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # remove existing objects
         for obj in self.objects:
             scene.removeItem(obj)
-        self.objects = [ ]
+        self.objects = []
 
         viewable_lines = int(self.height() // self._line_height)
         lines = 0
@@ -410,8 +407,15 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 y = -start_line * self._line_height
             else:
                 if start_line > 0:
-                    _l.debug("First object to paint: %s (size %d). Current offset %d. Start printing from line %d. "
-                             "Y pos %d.", obj, obj.size, offset, start_line, y)
+                    _l.debug(
+                        "First object to paint: %s (size %d). Current offset %d. Start printing from line %d. "
+                        "Y pos %d.",
+                        obj,
+                        obj.size,
+                        offset,
+                        start_line,
+                        y,
+                    )
                     # this is the first object to paint
                     start_line_in_object = start_line
                     start_line = 0
@@ -451,17 +455,34 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                                     ail_obj = n
                             # the corresponding AIL block may not exist
                             if ail_obj is not None:
-                                qobject = QLinearBlock(self.instance, func_addr, self.disasm_view, disasm,
-                                                       self.disasm_view.infodock, obj.addr, ail_obj, None, None
-                                                       )
+                                qobject = QLinearBlock(
+                                    self.instance,
+                                    func_addr,
+                                    self.disasm_view,
+                                    disasm,
+                                    self.disasm_view.infodock,
+                                    obj.addr,
+                                    ail_obj,
+                                    None,
+                                    None,
+                                )
                     else:
-                        qobject = QLinearBlock(self.instance, func_addr, self.disasm_view, disasm,
-                                               self.disasm_view.infodock, obj.addr, [obj], {}, None
-                                               )
+                        qobject = QLinearBlock(
+                            self.instance,
+                            func_addr,
+                            self.disasm_view,
+                            disasm,
+                            self.disasm_view.infodock,
+                            obj.addr,
+                            [obj],
+                            {},
+                            None,
+                        )
                 else:
                     # TODO: Get disassembly even if the function does not exist
-                    _l.warning("Function %s does not exist, and we cannot get disassembly for block %s.",
-                               func_addr, obj)
+                    _l.warning(
+                        "Function %s does not exist, and we cannot get disassembly for block %s.", func_addr, obj
+                    )
                     qobject = None
             else:
                 _l.warning("Failed to get a CFG node for address %#x.", obj_addr)

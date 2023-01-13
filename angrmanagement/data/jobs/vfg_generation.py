@@ -3,7 +3,7 @@ from .job import Job
 
 class VFGGenerationJob(Job):
     def __init__(self, addr):
-        super().__init__('VFG generation')
+        super().__init__("VFG generation")
         self._addr = addr
 
     def _run(self, inst):

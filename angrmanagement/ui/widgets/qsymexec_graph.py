@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QPointF
 from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QZoomableDraggableGraphicsView
 
-l = logging.getLogger('ui.widgets.qpg_graph')
+l = logging.getLogger("ui.widgets.qpg_graph")
 
 
 class QSymExecGraph(QZoomableDraggableGraphicsView):
@@ -24,7 +24,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
         self.blocks = set()
         self._edges = []
 
-        self._edge_paths = [ ]
+        self._edge_paths = []
 
         self.state.am_subscribe(self._watch_state)
 
@@ -53,7 +53,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         # remove all nodes
         self.blocks.clear()
-        #self.remove_all_children()
+        # self.remove_all_children()
         self._edge_paths = []
 
         node_sizes = {}
@@ -139,19 +139,24 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
                 start_point = QPointF(*from_)
                 end_point = QPointF(*to_)
                 # optimization: don't draw edges that are outside of the current scope
-                if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and \
-                        (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()):
+                if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and (
+                    end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()
+                ):
                     continue
-                elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and \
-                        (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()):
+                elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and (
+                    end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()
+                ):
                     continue
                 painter.drawPolyline((start_point, end_point))
 
             # arrow
             # end_point = self.mapToScene(*edges[-1])
             end_point = (edge_coords[-1][0], edge_coords[-1][1])
-            arrow = [QPointF(end_point[0] - 3, end_point[1]), QPointF(end_point[0] + 3, end_point[1]),
-                     QPointF(end_point[0], end_point[1] + 6)]
+            arrow = [
+                QPointF(end_point[0] - 3, end_point[1]),
+                QPointF(end_point[0] + 3, end_point[1]),
+                QPointF(end_point[0], end_point[1] + 6),
+            ]
             brush = QBrush(color)
             painter.setBrush(brush)
             painter.drawPolygon(arrow)

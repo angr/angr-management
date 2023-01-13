@@ -51,9 +51,7 @@ class ConsoleView(BaseView):
 
         img_name = self.workspace.main_instance.img_name
         if img_name is None:
-            QMessageBox.critical(
-                None, "Nothing to run", "The project was not loaded from a docker image"
-            )
+            QMessageBox.critical(None, "Nothing to run", "The project was not loaded from a docker image")
             return
 
         self.target = archr.targets.DockerImageTarget(img_name, companion=True)
@@ -68,13 +66,15 @@ class ConsoleView(BaseView):
 
         self.workspace.extract_conversations = self.analyzer.extract_conversations
 
-        self.terminal.execute([
-            "docker",
-            "exec",
-            "-it",
-            self.target.companion_container.id,
-            "bash",
-        ])
+        self.terminal.execute(
+            [
+                "docker",
+                "exec",
+                "-it",
+                self.target.companion_container.id,
+                "bash",
+            ]
+        )
 
     def disconnect(self):
         if self.target:
@@ -125,9 +125,7 @@ class ConsoleView(BaseView):
 
         name = hex(hash(str(conversation)) & 0xFFFFFFFFFFFFFFFF)[2:].rjust(16, "0")
 
-        self.workspace.main_instance.interactions.am_obj.append(
-            SavedInteraction(name, PlainTextProtocol, log)
-        )
+        self.workspace.main_instance.interactions.am_obj.append(SavedInteraction(name, PlainTextProtocol, log))
         self.workspace.main_instance.interactions.am_event()
 
 
@@ -142,7 +140,6 @@ class InteractionConsole(BasePlugin):
         self.console_view = ConsoleView(self.workspace, "center")
         self.workspace.default_tabs += [self.console_view]
         self.workspace.add_view(self.console_view)
-
 
     def teardown(self):
         if self.console_view.target:

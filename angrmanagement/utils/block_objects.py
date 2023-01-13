@@ -1,6 +1,10 @@
 class FunctionHeader:
 
-    __slots__ = ('name', 'prototype', 'args', )
+    __slots__ = (
+        "name",
+        "prototype",
+        "args",
+    )
 
     def __init__(self, name, prototype=None, args=None):
         self.name = name
@@ -10,7 +14,7 @@ class FunctionHeader:
 
 class Variables:
 
-    __slots__ = ['variables']
+    __slots__ = ["variables"]
 
     def __init__(self, variables):
         self.variables = variables
@@ -18,7 +22,7 @@ class Variables:
 
 class PhiVariable(Variables):
 
-    __slots__ = ['variable']
+    __slots__ = ["variable"]
 
     def __init__(self, variable, variables):
         super().__init__(variables)
@@ -27,7 +31,7 @@ class PhiVariable(Variables):
 
 class Label:
 
-    __slots__ = ['addr', 'text']
+    __slots__ = ["addr", "text"]
 
     def __init__(self, addr, text):
         self.addr = addr

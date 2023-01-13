@@ -5,11 +5,10 @@ from PySide6.QtCore import Qt, QSize
 
 from .qast_viewer import QASTViewer
 
-l = logging.getLogger('ui.widgets.qvextemps_viewer')
+l = logging.getLogger("ui.widgets.qvextemps_viewer")
 
 
 class QVEXTempsViewer(QFrame):
-
     def __init__(self, state, parent, workspace):
         super().__init__(parent)
         self.workspace = workspace
@@ -62,7 +61,7 @@ class QVEXTempsViewer(QFrame):
             sublayout = QHBoxLayout()
 
             lbl_tmp_name = QLabel(self)
-            lbl_tmp_name.setProperty('class', 'reg_viewer_label')
+            lbl_tmp_name.setProperty("class", "reg_viewer_label")
             lbl_tmp_name.setText("tmp_%d" % tmp_id)
             lbl_tmp_name.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
             sublayout.addWidget(lbl_tmp_name)

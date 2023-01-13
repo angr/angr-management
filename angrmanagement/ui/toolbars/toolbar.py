@@ -31,7 +31,7 @@ class Toolbar:
 
         self.actions = []
         self._cached = None  # type: QToolBar
-        self._cached_actions = { }
+        self._cached_actions = {}
 
     def qtoolbar(self):
         if self._cached is not None:

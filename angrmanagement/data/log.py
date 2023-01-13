@@ -37,7 +37,12 @@ class LogRecord:
     Stores a log record.
     """
 
-    __slots__ = ('level', 'timestamp', 'source', 'content', )
+    __slots__ = (
+        "level",
+        "timestamp",
+        "source",
+        "content",
+    )
 
     def __init__(self, level, unix_timestamp, source, content):
         self.timestamp = LogTimeStamp(unix_timestamp)

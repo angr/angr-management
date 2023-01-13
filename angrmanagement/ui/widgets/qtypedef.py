@@ -16,12 +16,13 @@ class QCTypeDef(QWidget):
     """
     A widget to display a C SimType.
     """
+
     def __init__(self, parent, ty: TypeRef, all_types: TypesStore):
         super().__init__(parent)
 
         self.type = ty
-        self.text = ''   # this will be used for full-text search
-        self.lines = ['']
+        self.text = ""  # this will be used for full-text search
+        self.lines = [""]
         self.highlight = None  # which line should be highlighted
         self.all_types = all_types
 
@@ -34,29 +35,29 @@ class QCTypeDef(QWidget):
         if self.type._arch is None:
             raise TypeError("Must provide SimTypes with arches to QTypeDef")
 
-        self.text = f'typedef {self.type.type.c_repr(name=self.type.name, full=1)};'
-        self.lines = self.text.split('\n')
+        self.text = f"typedef {self.type.type.c_repr(name=self.type.name, full=1)};"
+        self.lines = self.text.split("\n")
         fields = None
         offsets = None
         for i, line in enumerate(self.lines):
             type_size = self.type.size if not isinstance(self.type.type, SimTypeBottom) else 0
             if i == 0:
-                prefix = f'{type_size // self.type._arch.byte_width:08x}'
+                prefix = f"{type_size // self.type._arch.byte_width:08x}"
             elif isinstance(self.type.type, SimUnion):
-                prefix = '00000000'
+                prefix = "00000000"
             elif isinstance(self.type.type, SimStruct):
                 fieldno = i - 1
                 if fields is None:
                     fields = list(self.type.type.fields)
                     offsets = self.type.type.offsets
                 if fieldno < len(fields):
-                    prefix = f'{offsets[fields[fieldno]]:08x}'
+                    prefix = f"{offsets[fields[fieldno]]:08x}"
                 else:
-                    prefix = f'{type_size // self.type._arch.byte_width:08x}'
+                    prefix = f"{type_size // self.type._arch.byte_width:08x}"
             else:
                 raise TypeError("I don't know why a %s renders with more than one line" % type(self.type.type))
 
-            self.lines[i] = f'{prefix}  {line}'
+            self.lines[i] = f"{prefix}  {line}"
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         height = len(self.lines) * LINE_HEIGHT + LINE_HEIGHT // 2
@@ -83,13 +84,7 @@ class QCTypeDef(QWidget):
 
         if self.highlight is not None:
             # TODO use config colors
-            painter.fillRect(
-                0,
-                5 + 20*self.highlight,
-                self.width(),
-                20,
-                QBrush(QColor(0xc0, 0xc0, 0xc0, 0xff))
-            )
+            painter.fillRect(0, 5 + 20 * self.highlight, self.width(), 20, QBrush(QColor(0xC0, 0xC0, 0xC0, 0xFF)))
 
         painter.setFont(Conf.disasm_font)
         y = 20
@@ -113,12 +108,7 @@ class QCTypeDef(QWidget):
                 return
 
         dialog = CTypeEditor(
-            None,
-            self.type._arch,
-            self.text,
-            multiline=True,
-            allow_multiple=False,
-            predefined_types=self.all_types
+            None, self.type._arch, self.text, multiline=True, allow_multiple=False, predefined_types=self.all_types
         )
         dialog.exec_()
         if dialog.result:

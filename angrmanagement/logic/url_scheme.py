@@ -130,14 +130,12 @@ Type=Application
         angr_desktop_base = os.path.dirname(angr_desktop_path)
         pathlib.Path(angr_desktop_base).mkdir(parents=True, exist_ok=True)
         with open(angr_desktop_path, "w") as f:
-            f.write(
-                angr_desktop.format(app_path=app_path(), url_scheme=self.URL_SCHEME)
-            )
+            f.write(angr_desktop.format(app_path=app_path(), url_scheme=self.URL_SCHEME))
 
         # register the scheme
         retcode = subprocess.call(cmd_0)
         if retcode != 0:
-            raise ValueError("Failed to setup the URL scheme. Command \"%s\" failed." % " ".join(cmd_0))
+            raise ValueError('Failed to setup the URL scheme. Command "%s" failed.' % " ".join(cmd_0))
 
     def _unregister_url_scheme_linux(self):
 
@@ -158,9 +156,12 @@ Type=Application
             return False, None
 
         # xdg-mine query
-        proc = subprocess.Popen(["xdg-mime", "query", "default",
-            f"x-scheme-handler/{self.URL_SCHEME}"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = subprocess.Popen(
+            ["xdg-mime", "query", "default", f"x-scheme-handler/{self.URL_SCHEME}"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         stdout, _ = proc.communicate()
         if not stdout:
             return False, None

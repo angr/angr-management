@@ -13,6 +13,7 @@ class PoisonKnowledge(KnowledgeBasePlugin):
     """
     See PoisonPlugin. This is the storage mechanism in the knowledgebase.
     """
+
     def __init__(self, kb):
         self.kb = kb
         self.global_poison = set()
@@ -32,6 +33,7 @@ class PoisonKnowledge(KnowledgeBasePlugin):
         out.global_poison = set(self.global_poison)
         out.local_poison = defaultdict(set, {key: set(val) for key, val in self.local_poison.items()})
         return out
+
 
 class PoisonPass(OptimizationPass):
     """
@@ -60,7 +62,7 @@ class PoisonPass(OptimizationPass):
         for block in list(self._graph.nodes()):
             block: ailment.Block
             for stmt in block.statements:
-                if isinstance(stmt, ailment.statement.Call) and self.is_poisoned(getattr(stmt.target, 'value', None)):
+                if isinstance(stmt, ailment.statement.Call) and self.is_poisoned(getattr(stmt.target, "value", None)):
                     poisoned.append(block)
                     break
 
@@ -76,10 +78,11 @@ class PoisonPass(OptimizationPass):
                         if isinstance(stmt, ailment.statement.ConditionalJump):
                             pred.statements.pop(i)
                             break
-                    #else:
+                    # else:
                     #    raise Exception("uh oh")
 
             self._remove_block(block)
+
 
 class PoisonPlugin(BasePlugin):
     """
@@ -93,26 +96,22 @@ class PoisonPlugin(BasePlugin):
         if isinstance(node, CFunctionCall) and node.callee_func is not None:
             yield None
             if self.knowledge.is_poisoned_local(node.codegen._func.addr, node.callee_func.addr):
-                yield 'Remove poison for this function', lambda: self.set_poison_local(
-                    node.codegen._func.addr,
-                    node.callee_func.addr,
-                    False
+                yield "Remove poison for this function", lambda: self.set_poison_local(
+                    node.codegen._func.addr, node.callee_func.addr, False
                 )
             else:
-                yield 'Poison call for this function', lambda: self.set_poison_local(
-                    node.codegen._func.addr,
-                    node.callee_func.addr,
-                    True
+                yield "Poison call for this function", lambda: self.set_poison_local(
+                    node.codegen._func.addr, node.callee_func.addr, True
                 )
             if self.knowledge.is_poisoned_global(node.callee_func.addr):
-                yield 'Remove global poison', lambda: self.set_poison_global(node.callee_func.addr, False)
+                yield "Remove global poison", lambda: self.set_poison_global(node.callee_func.addr, False)
             else:
-                yield 'Poison call globally', lambda: self.set_poison_global(node.callee_func.addr, True)
+                yield "Poison call globally", lambda: self.set_poison_global(node.callee_func.addr, True)
         else:
             pass
 
     @property
-    def knowledge(self) -> 'PoisonKnowledge':
+    def knowledge(self) -> "PoisonKnowledge":
         return self.workspace.main_instance.kb.decompiler_poison
 
     def set_poison_local(self, func, callee, value):
@@ -133,25 +132,26 @@ class PoisonPlugin(BasePlugin):
 
     @staticmethod
     def _poison_to_string(a_set):
-        return ','.join(hex(a) for a in a_set)
+        return ",".join(hex(a) for a in a_set)
 
     @staticmethod
     def _string_to_poison(a_string):
-        return {int(a, 16) for a in a_string.split(',')}
+        return {int(a, 16) for a in a_string.split(",")}
 
     def angrdb_store_entries(self):
         poison = self.workspace.main_instance.kb.decompiler_poison.global_poison
         if poison:
-            yield ('global_poison', self._poison_to_string(poison))
+            yield ("global_poison", self._poison_to_string(poison))
         for func, poison in self.workspace.main_instance.kb.decompiler_poison.local_poison.items():
             if poison:
-                yield ('local_poison_' + hex(func), self._poison_to_string(poison))
+                yield ("local_poison_" + hex(func), self._poison_to_string(poison))
 
     def angrdb_load_entry(self, key: str, value: str):
-        if key == 'global_poison':
+        if key == "global_poison":
             self.workspace.main_instance.kb.decompiler_poison.global_poison = self._string_to_poison(value)
-        elif key.startswith('local_poison_'):
-            func = int(key.split('_')[2], 16)
+        elif key.startswith("local_poison_"):
+            func = int(key.split("_")[2], 16)
             self.workspace.main_instance.kb.decompiler_poison.local_poison[func] = self._string_to_poison(value)
 
-PoisonKnowledge.register_default('decompiler_poison', PoisonKnowledge)
+
+PoisonKnowledge.register_default("decompiler_poison", PoisonKnowledge)

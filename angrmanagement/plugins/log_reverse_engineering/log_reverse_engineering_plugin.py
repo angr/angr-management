@@ -19,9 +19,7 @@ class LogReverseEngineeringPlugin(BasePlugin):
 
     def __init__(self, workspace):
         if not Slacrs:
-            raise Exception(
-                "Please install Slacrs to Initialize LogReverseEngineering Plugin"
-            )
+            raise Exception("Please install Slacrs to Initialize LogReverseEngineering Plugin")
         super().__init__(workspace)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
         self.project = (
@@ -38,12 +36,12 @@ class LogReverseEngineeringPlugin(BasePlugin):
             new_name = old_name
         variable_rename = (
             self.session.query(VariableRename)
-                .filter(
+            .filter(
                 VariableRename.project == self.project,
                 VariableRename.function == func._name,
                 VariableRename.variable == old_name,
-                )
-                .first()
+            )
+            .first()
         )
         if variable_rename:
             self.session.delete(variable_rename)
@@ -80,13 +78,9 @@ class LogReverseEngineeringPlugin(BasePlugin):
         at teardown.
         """
         variables_renamed_count = len(
-            self.session.query(VariableRename)
-            .filter(VariableRename.project == self.project)
-            .all()
+            self.session.query(VariableRename).filter(VariableRename.project == self.project).all()
         )
-        total_variables_count = len(
-            self.workspace.main_instance.project.kb.variables.global_manager._variables
-        )
+        total_variables_count = len(self.workspace.main_instance.project.kb.variables.global_manager._variables)
         reverse_eng_progress = (
             self.session.query(ReverseEngineeringProgress)
             .filter(ReverseEngineeringProgress.project == self.project)
@@ -117,24 +111,17 @@ class LogReverseEngineeringPlugin(BasePlugin):
     def get_function_rename_stats(self):
         functions_renamed = [
             func.function
-            for func in self.session.query(FunctionRename)
-            .filter(FunctionRename.project == self.project)
-            .all()
+            for func in self.session.query(FunctionRename).filter(FunctionRename.project == self.project).all()
         ]
 
         functions_renamed_count = 0
         total_functions_count = 0
 
         for key in self.workspace.main_instance.project.kb.functions._function_map:
-            if (
-                self.workspace.main_instance.project.kb.functions._function_map[key]._name
-                in functions_renamed
-            ):
+            if self.workspace.main_instance.project.kb.functions._function_map[key]._name in functions_renamed:
                 functions_renamed_count = functions_renamed_count + 1
                 total_functions_count = total_functions_count + 1
-            elif self.workspace.main_instance.project.kb.functions._function_map[
-                key
-            ]._name.startswith("sub"):
+            elif self.workspace.main_instance.project.kb.functions._function_map[key]._name.startswith("sub"):
                 total_functions_count = total_functions_count + 1
 
         return [functions_renamed_count, total_functions_count]

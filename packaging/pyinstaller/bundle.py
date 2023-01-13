@@ -56,9 +56,7 @@ def make_common_options(for_chess=False):
             "cle/backends/elf/relocation",
         ),
         (
-            os.path.join(
-                os.path.dirname(angr.__file__), "analyses/identifier/functions"
-            ),
+            os.path.join(os.path.dirname(angr.__file__), "analyses/identifier/functions"),
             "angr/analyses/identifier/functions",
         ),
         (os.path.join(os.path.dirname(angr.__file__), "procedures"), "angr/procedures"),
@@ -98,11 +96,11 @@ def make_common_options(for_chess=False):
 
     if sys.platform == "linux":
         import keystone
+
         included_libs.append((os.path.dirname(keystone.__file__), "keystone"))
 
     all_mappings = [
-        (";" if sys.platform.startswith("win") else ":").join(mapping)
-        for mapping in (included_data + included_libs)
+        (";" if sys.platform.startswith("win") else ":").join(mapping) for mapping in (included_data + included_libs)
     ]
 
     # include ipython because it's not autodetected for some reason
@@ -120,25 +118,23 @@ def make_common_options(for_chess=False):
         hidden_import.append("--hidden-import=slacrs")
         hidden_import.append("--hidden-import=getmac")
         hidden_import.append("--hidden-import=qtterm")
-    args = [
-        "pyinstaller",
-        ] + hidden_import + [
-        "--name=angr-management",
-        "-w",
-        "-i",
-        os.path.join(
-            os.path.dirname(angrmanagement.__file__), "resources", "images", "angr.ico"
-        ),
-    ]
+    args = (
+        [
+            "pyinstaller",
+        ]
+        + hidden_import
+        + [
+            "--name=angr-management",
+            "-w",
+            "-i",
+            os.path.join(os.path.dirname(angrmanagement.__file__), "resources", "images", "angr.ico"),
+        ]
+    )
 
     for mapping in all_mappings:
         args.append("--add-data")
         args.append(mapping)
-    args.append(
-        os.path.realpath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "start.py")
-        )
-    )
+    args.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..", "start.py")))
     args.append("--noconfirm")
 
     return args

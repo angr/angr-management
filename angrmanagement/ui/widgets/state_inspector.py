@@ -6,10 +6,12 @@ from .qvextemps_viewer import QVEXTempsViewer
 from .qconstraint_viewer import QConstraintViewer
 from .qfiledesc_viewer import QFileDescriptorViewer
 
+
 class StateInspector(QTabWidget):
-    '''
+    """
     Dispaly detail information for a selected state.
-    '''
+    """
+
     def __init__(self, workspace, state, parent=None):
         super().__init__(parent=parent)
         self.workspace = workspace
@@ -18,8 +20,8 @@ class StateInspector(QTabWidget):
         self._register_viewer = None  # type: QRegisterViewer
         self._memory_viewer = None  # type: QMemoryViewer
         self._vextemps_viewer = None  # type: QVEXTempsViewer
-        self._constraint_viewer = None # type: QConstraintViewer
-        self._filedesc_viewer = None # type: QFileDescriptorViewer
+        self._constraint_viewer = None  # type: QConstraintViewer
+        self._filedesc_viewer = None  # type: QFileDescriptorViewer
 
         self._init_widgets()
 
