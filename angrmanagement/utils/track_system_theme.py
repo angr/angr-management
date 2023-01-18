@@ -23,20 +23,14 @@ class _QListener(QObject):
         """
         :param callback: The callback to be invoked on theme change
         """
-        self._listener = darkdetect.Listener(callback)
+        self.listener = darkdetect.Listener(callback)
         super().__init__()
 
     def listen(self) -> None:
         """
         Start listening
         """
-        self._listener.listen()
-
-    def stop(self, timeout: Optional[int]) -> None:
-        """
-        Stop listening
-        """
-        self._listener.stop(timeout)
+        self.listener.listen()
 
 
 class TrackSystemTheme:
@@ -78,31 +72,31 @@ class TrackSystemTheme:
         with self._lock:
             if enabled == self.enabled():
                 return
+            self._enabled = enabled
             if enabled:
                 self._thread = QThread(self._parent)  # Keep a reference to keep the thread alive
-                self._listener = _QListener(self._set_system)
+                self._listener = _QListener(self._set_theme)
                 self._listener.moveToThread(self._thread)
                 self._thread.started.connect(self._listener.listen)
                 self._thread.start()
             else:
-                self._listener.stop(.1)  # .1 to give a moment to clean up
+                self._listener.listener.stop(.05)  # .05 to give a moment to clean up
                 self._thread.terminate()
                 self._listener = None
                 self._thread = None  # Remove reference counted reference
-            assert enabled == self.enabled(), "sanity"
 
     def enabled(self) -> bool:
         """
         Return True iff system theme tracking is enabled
         """
-        return self._listener is not None
+        return self._enabled
 
     def refresh_theme(self):
         """
         Force a refresh of the theme
         """
         if self.enabled():
-            self._set_system(darkdetect.theme(), force=True)
+            self._set_theme(darkdetect.theme(), force=True)
         else:
             gui_thread_schedule_async(refresh_theme)
 
@@ -120,15 +114,17 @@ class TrackSystemTheme:
         self._lock = Lock()
         self._parent = parent
         self._underlying: str = darkdetect.theme()
-        self._listener: Optional[Listener] = None
+        self._enabled: bool = False
+        self._listener: Optional[_QListener] = None
+        self._thread: Optional[QThread] = None
 
-    def _set_system(self, theme: str, *, force: bool = False):
+    def _set_theme(self, theme: str, *, force: bool = False):
         """
         Set the underlying theme according to the system theme if needed
         """
         if force or theme != self._underlying:
             self._underlying = theme
-            Conf.theme_name = self._system if self.enabled() else self._underlying
+            Conf.theme_name = self._underlying
             for prop, value in COLOR_SCHEMES[theme].items():
                 setattr(Conf, prop, value)
             gui_thread_schedule_async(refresh_theme)

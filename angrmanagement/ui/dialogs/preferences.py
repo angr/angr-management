@@ -176,9 +176,8 @@ class ThemeAndColors(Page):
 
     def _toggle_system_tracking(self, state: int):
         self._auto.set_enabled(state == Qt.CheckState.Checked.value)
-        if state == Qt.CheckState.Unchecked.value:
-            self._on_load_scheme_clicked()
-        self._on_load_scheme_clicked()
+        Conf.theme_track_system = self._auto.enabled()
+        (self._auto.refresh_theme if Conf.theme_track_system else self._on_load_scheme_clicked)()
 
     def _load_color_scheme(self, name):
         for prop, value in COLOR_SCHEMES[name].items():
@@ -193,12 +192,12 @@ class ThemeAndColors(Page):
         pass
 
     def save_config(self):
-        # pylint: disable=assigning-non-slot
+        if Conf.theme_track_system:
+            return
         Conf.theme_name = self._schemes_combo.currentText()
         for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
-        Conf.theme_track_system = self._auto.enabled()
-        self._auto.refresh_theme()
+        refresh_theme()
 
 
 class Style(Page):
