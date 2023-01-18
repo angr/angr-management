@@ -56,7 +56,9 @@ class QDisasmStatusBar(QFrame):
             self.disasm_view.jump_back,
             self.disasm_view.jump_forward,
             self.disasm_view.jump_to_history_position,
-            True, self)
+            True,
+            self,
+        )
 
         # current function
         self._function_label = QLabel()
@@ -78,12 +80,12 @@ class QDisasmStatusBar(QFrame):
 
         # options button
         option_btn = QPushButton()
-        option_btn.setText('Options')
+        option_btn.setText("Options")
         option_btn.setMenu(self._options_menu.qmenu())
 
         # Save image button
         saveimage_btn = QPushButton()
-        saveimage_btn.setText('Save image...')
+        saveimage_btn.setText("Save image...")
         saveimage_btn.clicked.connect(self._on_saveimage_btn_clicked)
 
         layout = QHBoxLayout()
@@ -108,10 +110,10 @@ class QDisasmStatusBar(QFrame):
     # Private methods
     #
 
-    def _view_combo_changed(self, index:int):
+    def _view_combo_changed(self, index: int):
         {
             QLinearDisassembly: self.disasm_view.display_linear_viewer,
-            QDisassemblyGraph: self.disasm_view.display_disasm_graph
+            QDisassemblyGraph: self.disasm_view.display_disasm_graph,
         }[self._view_combo.itemData(index)]()
 
     def _update_view_combo(self):
@@ -119,7 +121,7 @@ class QDisasmStatusBar(QFrame):
         index = self._view_combo.findData(graph_type)
         self._view_combo.setCurrentIndex(index)
 
-    def _disasm_level_combo_changed(self, index:int):
+    def _disasm_level_combo_changed(self, index: int):
         new_level = self._disasm_level_combo.itemData(index)
         self.disasm_view.set_disassembly_level(new_level)
 
@@ -130,17 +132,14 @@ class QDisasmStatusBar(QFrame):
 
     def _update_function_label(self):
         if self._function:
-            s = f'{self._function.name} ({self._function.addr:#x})'
+            s = f"{self._function.name} ({self._function.addr:x})"
         else:
-            s = ''
+            s = ""
         self._function_label.setText(s)
 
     def _on_saveimage_btn_clicked(self):
 
-        filename, folder = QFileDialog.getSaveFileName(self, 'Save image...',
-                                           '',
-                                           'PNG Files (*.png);;Bitmaps (*.bmp)'
-                                           )
+        filename, folder = QFileDialog.getSaveFileName(self, "Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
         if not filename or not folder:
             return
 

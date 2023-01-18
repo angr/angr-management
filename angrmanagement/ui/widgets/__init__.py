@@ -1,4 +1,3 @@
-
 from .qaddress_input import QAddressInput
 from .qstate_combobox import QStateComboBox
 from .qdisasm_statusbar import QDisasmStatusBar

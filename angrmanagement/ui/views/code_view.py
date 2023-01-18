@@ -32,15 +32,16 @@ class CodeView(BaseView):
     FUNCTION_SPECIFIC_VIEW = True
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('pseudocode', instance, default_docking_position, *args, **kwargs)
+        super().__init__("pseudocode", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Pseudocode'
+        self.base_caption = "Pseudocode"
 
-        self._function: Union[ObjectContainer, Function] = ObjectContainer(None, 'The function to decompile')
-        self.current_node = ObjectContainer(None, 'Current selected C-code node')
+        self._function: Union[ObjectContainer, Function] = ObjectContainer(None, "The function to decompile")
+        self.current_node = ObjectContainer(None, "Current selected C-code node")
         self.addr: Union[ObjectContainer, int] = ObjectContainer(0, "Current cursor address")
-        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = \
-            ObjectContainer(None, "The currently-displayed codegen object")
+        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(
+            None, "The currently-displayed codegen object"
+        )
 
         self._last_function: Optional[Function] = None
         self._textedit: Optional[QCCodeEdit] = None
@@ -101,8 +102,15 @@ class CodeView(BaseView):
         self._options.reload(force=True)
         self.vars_must_struct = set()
 
-    def decompile(self, clear_prototype: bool=True, focus=False, focus_addr=None, flavor='pseudocode',
-                  reset_cache: bool=False, regen_clinic: bool=True):
+    def decompile(
+        self,
+        clear_prototype: bool = True,
+        focus=False,
+        focus_addr=None,
+        flavor="pseudocode",
+        reset_cache: bool = False,
+        regen_clinic: bool = True,
+    ):
         if self._function.am_none:
             return
 
@@ -123,8 +131,7 @@ class CodeView(BaseView):
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr,
-                                                                                  chosen_flavor)].codegen
+                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, chosen_flavor)].codegen
                 self.codegen.am_event(already_regenerated=True)
                 self._focus_core(focus, focus_addr)
                 if focus_addr is not None:
@@ -148,18 +155,18 @@ class CodeView(BaseView):
 
         if self._function.ran_cca is False:
             # run calling convention analysis for this function
-            varrec_job = VariableRecoveryJob(
-                **self.instance._analysis_configuration['varec'].to_dict(),
-                workers=0,
-                on_finish=decomp,
-                func_addr=self._function.addr
-            )
+            if self.instance._analysis_configuration:
+                options = self.instance._analysis_configuration["varec"].to_dict()
+            else:
+                options = {}
+            options["workers"] = 0
+            varrec_job = VariableRecoveryJob(**options, on_finish=decomp, func_addr=self._function.addr)
             self.instance.add_job(varrec_job)
         else:
             decomp()
 
     def highlight_chunks(self, chunks):
-        extra_selections = [ ]
+        extra_selections = []
         for start, end in chunks:
             sel = QTextEdit.ExtraSelection()
             sel.cursor = self._textedit.textCursor()
@@ -206,7 +213,7 @@ class CodeView(BaseView):
         self.addr.am_event(already_moved=True)
 
     # pylint: disable=unused-argument
-    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str]=None, **kwargs):
+    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str] = None, **kwargs):
         """
         The callback function that triggers an update of the codegen.
 
@@ -244,11 +251,9 @@ class CodeView(BaseView):
         else:
             if event == "retype_variable":
                 dec = self.instance.project.analyses.Decompiler(
-                    self._function,
-                    variable_kb=self.instance.pseudocode_variable_kb,
-                    decompile=False
+                    self._function, variable_kb=self.instance.pseudocode_variable_kb, decompile=False
                 )
-                dec_cache = self.instance.kb.structured_code[(self._function.addr, 'pseudocode')]
+                dec_cache = self.instance.kb.structured_code[(self._function.addr, "pseudocode")]
                 new_codegen = dec.reflow_variable_types(
                     dec_cache.type_constraints,
                     dec_cache.var_to_typevar or {},
@@ -279,14 +284,14 @@ class CodeView(BaseView):
             if old_node is not None:
                 # find the first node starting from the current position
                 for pos in self.codegen.map_pos_to_node._posmap.irange(
-                        minimum=new_cursor.position(),
-                        maximum=new_cursor.position() + the_block.length()):
+                    minimum=new_cursor.position(), maximum=new_cursor.position() + the_block.length()
+                ):
                     elem = self.codegen.map_pos_to_node._posmap[pos]
                     if elem.obj is old_node:
                         new_cursor.setPosition(pos)
             self._textedit.setTextCursor(new_cursor)
 
-        if self.codegen.flavor == 'pseudocode':
+        if self.codegen.flavor == "pseudocode":
             self._options.show()
         else:
             self._options.hide()
@@ -295,7 +300,7 @@ class CodeView(BaseView):
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
             if self.codegen.am_none:
-                flavor = 'pseudocode'
+                flavor = "pseudocode"
             else:
                 flavor = self.codegen.flavor
 
@@ -331,7 +336,7 @@ class CodeView(BaseView):
             # highlight these chunks
             self.highlight_chunks(chunks)
         else:
-            self.highlight_chunks([ ])
+            self.highlight_chunks([])
 
         self.current_node.am_obj = selected_node
         self.current_node.am_event()
@@ -347,7 +352,7 @@ class CodeView(BaseView):
             if isinstance(selected_node, CFunctionCall):
                 # decompile this new function
                 if selected_node.callee_func is not None:
-                    self.jump_history.record_address(selected_node.tags['ins_addr'])
+                    self.jump_history.record_address(selected_node.tags["ins_addr"])
                     self.jump_history.jump_to(selected_node.callee_func.addr)
                     self.instance.workspace.decompile_function(selected_node.callee_func, view=self)
             elif isinstance(selected_node, CConstant):
@@ -355,7 +360,7 @@ class CodeView(BaseView):
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.instance.workspace.jump_to(selected_node.value)
 
-    def _jump_to(self, addr:int):
+    def _jump_to(self, addr: int):
         self.addr.am_obj = addr
         self.addr.am_event()
 
@@ -371,7 +376,7 @@ class CodeView(BaseView):
         if addr is not None:
             self._jump_to(addr)
 
-    def jump_to_history_position(self, pos:int):
+    def jump_to_history_position(self, pos: int):
         addr = self.jump_history.step_position(pos)
         if addr is not None:
             self._jump_to(addr)
@@ -391,8 +396,7 @@ class CodeView(BaseView):
                 flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
                 idx = flavors.index(flavor)
                 newidx = (idx + 1) % len(flavors)
-                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr,
-                                                                                  flavors[newidx])].codegen
+                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, flavors[newidx])].codegen
                 self.codegen.am_event()
                 return True
 
@@ -423,25 +427,21 @@ class CodeView(BaseView):
         self._textedit = QCCodeEdit(self)
         self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self._textedit.setLineWrapMode(QCCodeEdit.NoWrap)
-        textedit_dock = QDockWidget('Code', self._textedit)
+        textedit_dock = QDockWidget("Code", self._textedit)
         window.setCentralWidget(textedit_dock)
         textedit_dock.setWidget(self._textedit)
 
         # decompilation
         self._options = QDecompilationOptions(self, self.instance)
-        options_dock = QDockWidget('Decompilation Options', self._options)
+        options_dock = QDockWidget("Decompilation Options", self._options)
         window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
 
         # status bar
         status_bar = QFrame()
         self._nav_toolbar = NavToolbar(
-            self.jump_history,
-            self.jump_back,
-            self.jump_forward,
-            self.jump_to_history_position,
-            True,
-            self)
+            self.jump_history, self.jump_back, self.jump_forward, self.jump_to_history_position, True, self
+        )
         self._view_selector = QComboBox()
         self._view_selector.addItems(["Pseudocode"])
         self._view_selector.activated.connect(self._on_view_selector_changed)

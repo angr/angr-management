@@ -1,4 +1,3 @@
-
 class AngrManagementError(Exception):
     pass
 

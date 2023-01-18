@@ -1,4 +1,3 @@
-
 import networkx
 
 from .job import Job
@@ -6,7 +5,7 @@ from .job import Job
 
 class DDGGenerationJob(Job):
     def __init__(self, addr):
-        super(DDGGenerationJob, self).__init__('DDG generation')
+        super().__init__("DDG generation")
         self._addr = addr
 
     def _run(self, inst):
@@ -14,7 +13,7 @@ class DDGGenerationJob(Job):
         return ddg, networkx.relabel_nodes(ddg.graph, lambda n: n.insn_addr)
 
     def finish(self, inst, result):
-        super(DDGGenerationJob, self).finish(inst, result)
+        super().finish(inst, result)
         inst.ddgs[self._addr] = result
 
     def __repr__(self):

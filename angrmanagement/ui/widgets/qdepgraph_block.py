@@ -26,8 +26,14 @@ class QDepGraphBlock(QCachedGraphicsItem):
     VERTICAL_PADDING = 20
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, dep_view: 'DependencyView', definition: 'Definition'=None, atom: Atom=None,
-                 addr: int=None):
+    def __init__(
+        self,
+        is_selected,
+        dep_view: "DependencyView",
+        definition: "Definition" = None,
+        atom: Atom = None,
+        addr: int = None,
+    ):
         super().__init__()
 
         self._dep_view = dep_view
@@ -68,12 +74,12 @@ class QDepGraphBlock(QCachedGraphicsItem):
             # convert it to a register name
             arch = self._instance.project.arch
             register_name = arch.translate_register_name(atom.reg_offset, size=atom.size)
-            self._definition_str = "Register {} @ {}".format(register_name, addr_str)
+            self._definition_str = f"Register {register_name} @ {addr_str}"
         elif isinstance(atom, MemoryLocation):
             if isinstance(atom.addr, SpOffset):
-                self._definition_str = "Stack sp%+#x @ %s" % (atom.addr.offset, addr_str)
+                self._definition_str = f"Stack sp{atom.addr.offset:+#x} @ {addr_str}"
             elif isinstance(atom.addr, int):
-                self._definition_str = "Memory %#x @ %s" % (atom.addr, addr_str)
+                self._definition_str = f"Memory {atom.addr:#x} @ {addr_str}"
 
         if not self._definition_str:
             # fallback
@@ -91,24 +97,26 @@ class QDepGraphBlock(QCachedGraphicsItem):
                 # is it a SimProcedure?
                 if self._instance.project.is_hooked(self.addr):
                     hooker = self._instance.project.hooked_by(self.addr)
-                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split('.')[-1]
+                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split(".")[-1]
                 else:
                     self._function_str = "Unknown"
             else:
                 offset = self.addr - the_func.addr
                 if not the_func.name:
-                    self._function_str = "%#x%+x" % (the_func.addr, offset)
+                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
                 else:
-                    self._function_str = "%s%+x" % (the_func.name, offset)
+                    self._function_str = f"{the_func.name}{offset:+x}"
             # instruction
-            self._instruction_str = "%s:  %s" % (self._function_str,
-                                                 self._instance.get_instruction_text_at(self.addr))
+            self._instruction_str = "{}:  {}".format(
+                self._function_str, self._instance.get_instruction_text_at(self.addr)
+            )
             # text
-            self._text = get_string_for_display(self._instance.cfg,
-                                                self.addr,
-                                                self._instance.project,
-                                                max_size=60,
-                                                )
+            self._text = get_string_for_display(
+                self._instance.cfg,
+                self.addr,
+                self._instance.project,
+                max_size=60,
+            )
 
         x = self.HORIZONTAL_PADDING
         y = self.VERTICAL_PADDING
@@ -147,7 +155,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event): #pylint: disable=no-self-use
+    def mousePressEvent(self, event):  # pylint: disable=no-self-use
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -173,7 +181,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
     def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
         self._dep_view.hover_leave_block()
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -182,15 +190,15 @@ class QDepGraphBlock(QCachedGraphicsItem):
         """
 
         painter.setFont(Conf.symexec_font)
-        normal_background = QColor(0xfa, 0xfa, 0xfa)
-        selected_background = QColor(0xcc, 0xcc, 0xcc)
+        normal_background = QColor(0xFA, 0xFA, 0xFA)
+        selected_background = QColor(0xCC, 0xCC, 0xCC)
 
         # The node background
         if self.selected:
             painter.setBrush(selected_background)
         else:
             painter.setBrush(normal_background)
-        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
+        painter.setPen(QPen(QColor(0xF0, 0xF0, 0xF0), 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
     def _boundingRect(self):
@@ -205,12 +213,15 @@ class QDepGraphBlock(QCachedGraphicsItem):
             # definition string
             self._definition_item.boundingRect().width(),
             # instruction & text
-            self.HORIZONTAL_PADDING * 2 + self._instruction_item.boundingRect().width() +
-             ((10 + self._text_item.boundingRect().width()) if self._text_item is not None else 0),
+            self.HORIZONTAL_PADDING * 2
+            + self._instruction_item.boundingRect().width()
+            + ((10 + self._text_item.boundingRect().width()) if self._text_item is not None else 0),
         ]
 
         self._width = max(width_candidates)
-        self._height = self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + self._definition_item.boundingRect().height()) * 2
+        self._height = (
+            self.VERTICAL_PADDING * 2 + (self.LINE_MARGIN + self._definition_item.boundingRect().height()) * 2
+        )
 
         self._width = max(100, self._width)
         self._height = max(50, self._height)

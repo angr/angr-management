@@ -5,10 +5,26 @@ import logging
 
 import angr
 import PySide6
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QFrame, QGraphicsView, \
-    QGraphicsScene, QGraphicsItem, QGraphicsObject, QGraphicsSimpleTextItem, \
-    QGraphicsSceneMouseEvent, QLabel, QMenu, QPushButton, QMessageBox, QAbstractScrollArea, \
-    QAbstractSlider, QComboBox
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QMainWindow,
+    QVBoxLayout,
+    QFrame,
+    QGraphicsView,
+    QGraphicsScene,
+    QGraphicsItem,
+    QGraphicsObject,
+    QGraphicsSimpleTextItem,
+    QGraphicsSceneMouseEvent,
+    QLabel,
+    QMenu,
+    QPushButton,
+    QMessageBox,
+    QAbstractScrollArea,
+    QAbstractSlider,
+    QComboBox,
+)
 from PySide6.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor, QAction
 from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
 
@@ -38,6 +54,7 @@ class HexDataSource(Enum):
     """
     Data source to be displayed in the hex view.
     """
+
     Loader = 0
     Debugger = 1
 
@@ -72,19 +89,19 @@ class BreakpointHighlightRegion(HexHighlightRegion):
     Defines a highlighted region indicating a patch.
     """
 
-    def __init__(self, bp: Breakpoint, view: 'HexView'):
+    def __init__(self, bp: Breakpoint, view: "HexView"):
         super().__init__(Qt.cyan, bp.addr, bp.size)
         self.bp: Breakpoint = bp
-        self.view: 'HexView' = view
+        self.view: "HexView" = view
 
     def gen_context_menu_actions(self) -> Optional[QMenu]:
         """
         Get submenu for this highlight region.
         """
         bp_type_str = {
-            BreakpointType.Execute: 'Execute',
-            BreakpointType.Read: 'Read',
-            BreakpointType.Write: 'Write'
+            BreakpointType.Execute: "Execute",
+            BreakpointType.Read: "Read",
+            BreakpointType.Write: "Write",
         }.get(self.bp.type)
         mnu = QMenu(f"Breakpoint 0x{self.bp.addr:x} {bp_type_str} ({self.bp.size} bytes)")
         act = QAction("&Remove", mnu)
@@ -103,9 +120,9 @@ class BreakpointHighlightRegion(HexHighlightRegion):
         Return a tooltip for this region.
         """
         bp_type_str = {
-            BreakpointType.Execute: 'Execute',
-            BreakpointType.Read: 'Read',
-            BreakpointType.Write: 'Write'
+            BreakpointType.Execute: "Execute",
+            BreakpointType.Read: "Read",
+            BreakpointType.Write: "Write",
         }.get(self.bp.type)
         return f"Breakpoint 0x{self.bp.addr:x} {bp_type_str} ({self.bp.size} bytes)"
 
@@ -115,10 +132,10 @@ class PatchHighlightRegion(HexHighlightRegion):
     Defines a highlighted region indicating a patch.
     """
 
-    def __init__(self, patch: Patch, view: 'HexView'):
+    def __init__(self, patch: Patch, view: "HexView"):
         super().__init__(Qt.yellow, patch.addr, len(patch))
         self.patch: Patch = patch
-        self.view: 'HexView' = view
+        self.view: "HexView" = view
 
     def get_tooltip(self) -> Optional[str]:
         """
@@ -186,13 +203,13 @@ class PatchHighlightRegion(HexHighlightRegion):
             pm.add_patch_obj(new_patch)
             pm.am_event()
 
-    def can_merge_with(self, other: 'PatchHighlightRegion') -> bool:
+    def can_merge_with(self, other: "PatchHighlightRegion") -> bool:
         """
         Determine if this patch can be merged with `other`. We only consider directly adjacent patches.
         """
         return other.patch.addr == (self.patch.addr + len(self.patch))
 
-    def merge_with(self, other: 'PatchHighlightRegion'):
+    def merge_with(self, other: "PatchHighlightRegion"):
         """
         Merge `other` into this patch.
         """
@@ -206,7 +223,7 @@ class PatchHighlightRegion(HexHighlightRegion):
         """
         Set the comment for this patch.
         """
-        dlg = InputPromptDialog('Set Patch Comment', 'Patch comment:', self.patch.comment, parent=self.view)
+        dlg = InputPromptDialog("Set Patch Comment", "Patch comment:", self.patch.comment, parent=self.view)
         dlg.exec_()
         if dlg.result:
             self.patch.comment = dlg.result
@@ -302,7 +319,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Set the visible byte range.
         """
-        offset = max(0, min(offset & ~0xf, self.end_addr - self.start_addr - 0x10))
+        offset = max(0, min(offset & ~0xF, self.end_addr - self.start_addr - 0x10))
         self.display_offset_addr = offset
         self.display_start_addr = self.start_addr + self.display_offset_addr
         self.display_num_rows = num_rows or self.num_rows
@@ -318,8 +335,9 @@ class HexGraphicsObject(QGraphicsObject):
 
         if preserve_relative_offset and (self.display_start_addr <= self.cursor < self.display_end_addr):
             # Let the target addr be on the same relative row from top of screen
-            self.set_display_offset_range(addr - self.cursor + self.display_start_addr - self.start_addr,
-                                          self.display_num_rows)
+            self.set_display_offset_range(
+                addr - self.cursor + self.display_start_addr - self.start_addr, self.display_num_rows
+            )
             return
 
         if addr < self.display_start_addr:
@@ -339,7 +357,7 @@ class HexGraphicsObject(QGraphicsObject):
         Common handler for set_data_*
         """
         assert self.num_bytes >= 0
-        self.num_rows = int((self.num_bytes + (self.start_addr & 0xf) + 0xf) / 16)
+        self.num_rows = int((self.num_bytes + (self.start_addr & 0xF) + 0xF) / 16)
         self.end_addr = self.start_addr + self.num_bytes
         self.clear_selection()
         self.set_display_offset_range(offset=0, num_rows=None)  # Show all
@@ -385,7 +403,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Clear the current buffer.
         """
-        self.set_data(b'')
+        self.set_data(b"")
 
     def point_to_row(self, p: QPointF) -> Optional[int]:
         """
@@ -401,7 +419,7 @@ class HexGraphicsObject(QGraphicsObject):
         is not contained.
         """
         x = p.x()
-        for i in range(len(columns)-1):
+        for i in range(len(columns) - 1):
             if columns[i] <= x < columns[i + 1]:
                 return i
         return None
@@ -471,13 +489,13 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Get address for a given row, column.
         """
-        return (self.display_start_addr & ~15) + row*16 + col
+        return (self.display_start_addr & ~15) + row * 16 + col
 
     def addr_to_row_col(self, addr: int) -> RowCol:
         """
         Get (row, column) for a given address.
         """
-        addr = addr - (self.display_start_addr & ~0xf)
+        addr = addr - (self.display_start_addr & ~0xF)
         row = addr >> 4
         col = addr & 15
         return row, col
@@ -541,8 +559,9 @@ class HexGraphicsObject(QGraphicsObject):
         """
         return self.get_highlight_regions_at_addr(self.cursor)
 
-    def set_cursor(self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None,
-                   update_viewport: bool = True):
+    def set_cursor(
+        self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None, update_viewport: bool = True
+    ):
         """
         Move cursor to address `addr`.
         """
@@ -667,9 +686,9 @@ class HexGraphicsObject(QGraphicsObject):
                 new_cursor = min(self.end_addr - 1, self.cursor + (self.display_num_rows - 1) * 16)
                 preserve_relative_offset = True
             elif event.key() == Qt.Key_Home:
-                new_cursor = max(self.start_addr, self.cursor & ~0xf)
+                new_cursor = max(self.start_addr, self.cursor & ~0xF)
             elif event.key() == Qt.Key_End:
-                new_cursor = min(self.end_addr - 1, (self.cursor & ~0xf) + 0xf)
+                new_cursor = min(self.end_addr - 1, (self.cursor & ~0xF) + 0xF)
             else:
                 new_cursor = self.cursor + movement_keys[event.key()]
             if self.start_addr <= new_cursor < self.end_addr:
@@ -691,7 +710,7 @@ class HexGraphicsObject(QGraphicsObject):
                         event.accept()
                         return
                 else:
-                    if t in '0123456789abcdefABCDEF':
+                    if t in "0123456789abcdefABCDEF":
                         self._set_nibble_value(int(t, 16))
                         event.accept()
                         return
@@ -705,14 +724,14 @@ class HexGraphicsObject(QGraphicsObject):
 
         ti = QGraphicsSimpleTextItem()  # Get font metrics using text item
         ti.setFont(self.font)
-        ti.setText('0')
+        ti.setText("0")
 
         self.row_padding = int(ti.boundingRect().height() * 0.25)
         self.row_height = ti.boundingRect().height() + self.row_padding
         self.char_width = ti.boundingRect().width()
         self.section_space = self.char_width * 4
         self.addr_offset = self.char_width * 1
-        self.addr_width = self.char_width * len(f'{self.display_end_addr:8x}')
+        self.addr_width = self.char_width * len(f"{self.display_end_addr:8x}")
         self.byte_width = self.char_width * 2
         self.byte_space = self.char_width * 1
         self.byte_group_space = self.char_width * 2
@@ -734,8 +753,9 @@ class HexGraphicsObject(QGraphicsObject):
 
         self.update()
 
-    def build_selection_path(self, min_addr: HexAddress, max_addr: HexAddress,
-                             ascii_section: bool = False, shrink: float = 0.0) -> QPainterPath:
+    def build_selection_path(
+        self, min_addr: HexAddress, max_addr: HexAddress, ascii_section: bool = False, shrink: float = 0.0
+    ) -> QPainterPath:
         """
         Build a QPainterPath that selects a given (inclusive addresses) range of bytes.
         """
@@ -758,8 +778,10 @@ class HexGraphicsObject(QGraphicsObject):
         p = self.row_to_point(row_start)
         p.setX(column_offsets[col_start] - column_space / 2)
         trect.setTopLeft(p)
-        p = QPointF(column_offsets[col_end if num_selected_rows == 1 else 15] + column_width + column_space / 2,
-                    p.y() + self.row_height)
+        p = QPointF(
+            column_offsets[col_end if num_selected_rows == 1 else 15] + column_width + column_space / 2,
+            p.y() + self.row_height,
+        )
         trect.setBottomRight(p)
         trect = trect.marginsRemoved(QMarginsF(shrink, shrink, shrink, shrink))
 
@@ -769,8 +791,9 @@ class HexGraphicsObject(QGraphicsObject):
             p = self.row_to_point(row_start + 1)
             p.setX(column_offsets[0] - column_space / 2)
             mrect.setTopLeft(p)
-            p = QPointF(column_offsets[15] + column_width + column_space / 2,
-                        p.y() + self.row_height * (num_selected_rows - 2))
+            p = QPointF(
+                column_offsets[15] + column_width + column_space / 2, p.y() + self.row_height * (num_selected_rows - 2)
+            )
             mrect.setBottomRight(p)
             mrect = mrect.marginsRemoved(QMarginsF(shrink, shrink, shrink, shrink))
         else:
@@ -782,8 +805,7 @@ class HexGraphicsObject(QGraphicsObject):
             p = self.row_to_point(row_end)
             p.setX(column_offsets[0] - column_space / 2)
             brect.setTopLeft(p)
-            p = QPointF(column_offsets[col_end] + column_width + column_space / 2,
-                        p.y() + self.row_height)
+            p = QPointF(column_offsets[col_end] + column_width + column_space / 2, p.y() + self.row_height)
             brect.setBottomRight(p)
             brect = brect.marginsRemoved(QMarginsF(shrink, shrink, shrink, shrink))
         else:
@@ -932,7 +954,7 @@ class HexGraphicsObject(QGraphicsObject):
             pt.setY(pt.y() + self.row_height - self.row_padding)
 
             # Paint address
-            addr_text = '%08x' % row_addr
+            addr_text = "%08x" % row_addr
             pt.setX(self.addr_offset)
             painter.setPen(Conf.disasm_view_node_address_color)
             painter.drawText(pt, addr_text)
@@ -950,12 +972,12 @@ class HexGraphicsObject(QGraphicsObject):
                         color = Conf.disasm_view_printable_byte_color
                     else:
                         color = Conf.disasm_view_unprintable_byte_color
-                    byte_text = '%02x' % val
+                    byte_text = "%02x" % val
                 else:
                     if type(val) is str and len(val) == 1:
                         byte_text = val * 2
                     else:
-                        byte_text = '??'
+                        byte_text = "??"
                     color = Conf.disasm_view_unknown_byte_color
 
                 pt.setX(self.byte_column_offsets[col])
@@ -976,13 +998,13 @@ class HexGraphicsObject(QGraphicsObject):
                         ch = chr(val)
                     else:
                         color = Conf.disasm_view_unprintable_character_color
-                        ch = '.'
+                        ch = "."
                 else:
                     color = Conf.disasm_view_unknown_character_color
                     if type(val) is str and len(val) == 1:
                         ch = val
                     else:
-                        ch = '?'
+                        ch = "?"
 
                 pt.setX(self.ascii_column_offsets[col])
                 painter.setPen(color)
@@ -991,6 +1013,7 @@ class HexGraphicsObject(QGraphicsObject):
         # Paint cursor
         if self.show_cursor and (self.display_start_addr <= self.cursor < self.display_end_addr):
             cursor_height = self.row_padding / 2
+
             def set_pen_brush_for_active_cursor(active):
                 painter.setPen(Qt.NoPen)
                 if active:
@@ -1021,19 +1044,18 @@ class HexGraphicsObject(QGraphicsObject):
     def boundingRect(self) -> PySide6.QtCore.QRectF:
         return QRectF(0, 0, self.max_x, self.max_y)
 
-
     def on_mouse_move_event_from_view(self, point: QPointF):
         """
         Highlight memory region under cursor.
         """
-        self.setToolTip('')
+        self.setToolTip("")
         addr = self.point_to_addr(point)
         if addr is None:
             return
         addr, _ = addr
         regions = self.get_highlight_regions_at_addr(addr)
         if len(regions):
-            t = '\n'.join(t for t in [r.get_tooltip() for r in regions] if t)
+            t = "\n".join(t for t in [r.get_tooltip() for r in regions] if t)
             self.setToolTip(t)
 
 
@@ -1070,6 +1092,7 @@ class HexGraphicsSubView(QGraphicsView):
         item_pt = self.mapFromScene(scene_pt)
         self.parent().hex.on_mouse_move_event_from_view(item_pt)
         super().mouseMoveEvent(event)
+
 
 class HexGraphicsView(QAbstractScrollArea):
     """
@@ -1130,7 +1153,7 @@ class HexGraphicsView(QAbstractScrollArea):
         else:
             self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.horizontalScrollBar().setRange(0, scroll_range)
-            self.horizontalScrollBar().setPageStep(hex_rect.width()/10)
+            self.horizontalScrollBar().setPageStep(hex_rect.width() / 10)
             self.horizontalScrollBar().setValue(vp_rect.left())
 
     def _get_num_rows_visible(self, fully_visible: bool = False):
@@ -1174,7 +1197,7 @@ class HexGraphicsView(QAbstractScrollArea):
                 sb = 1.0
             else:
                 sb = sb_value / self.scrollbar_range
-            display_offset_addr = int(sb * addr_range) & ~0xf
+            display_offset_addr = int(sb * addr_range) & ~0xF
             self.set_display_offset(display_offset_addr)
         self._processing_scroll_event = False
 
@@ -1190,7 +1213,7 @@ class HexGraphicsView(QAbstractScrollArea):
 
     def wheelEvent(self, event: QWheelEvent):
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1/1.25)
+            self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1 / 1.25)
         else:
             d = event.angleDelta().y()
             if d != 0:
@@ -1221,7 +1244,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self._view.setSceneRect(vp_rect)
         self._update_horizontal_scrollbar()
 
-    def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
+    def resizeEvent(self, event: PySide6.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
         self._view.resize(self.viewport().size())
         self.update_scene_rect()
         self.set_display_offset(self.hex.display_offset_addr)
@@ -1283,7 +1306,7 @@ class HexGraphicsView(QAbstractScrollArea):
                 event.accept()
                 return
             elif event.key() == Qt.Key_Minus:
-                self.adjust_viewport_scale(1/1.25)
+                self.adjust_viewport_scale(1 / 1.25)
                 event.accept()
                 return
         super().keyPressEvent(event)
@@ -1297,8 +1320,8 @@ class HexView(SynchronizedView):
     _widgets_initialized: bool = False
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('hex', instance, default_docking_position, *args, **kwargs)
-        self.base_caption: str = 'Hex'
+        super().__init__("hex", instance, default_docking_position, *args, **kwargs)
+        self.base_caption: str = "Hex"
         self.smart_highlighting_enabled: bool = True
         self._clipboard = None
         self._cfb_highlights: Sequence[HexHighlightRegion] = []
@@ -1350,7 +1373,7 @@ class HexView(SynchronizedView):
                 self.project_memory_write_func,
                 self.project_memory_read_func,
                 loader.min_addr,
-                loader.max_addr - loader.min_addr + 1
+                loader.max_addr - loader.min_addr + 1,
             )
             self._update_highlight_regions_from_patches()
         elif source == HexDataSource.Debugger:
@@ -1359,7 +1382,7 @@ class HexView(SynchronizedView):
                 self.debugger_memory_write_func,
                 self.debugger_memory_read_func,
                 0,
-                0x10000000000000000  # FIXME: Get actual ranges and add them
+                0x10000000000000000,  # FIXME: Get actual ranges and add them
             )
         else:
             raise NotImplementedError()
@@ -1408,18 +1431,18 @@ class HexView(SynchronizedView):
         if addr not in self._data_cache:
             dbg = self.instance.debugger_mgr.debugger
             if dbg.am_none:
-                v = '?'
+                v = "?"
             else:
                 state: Optional[angr.SimState] = dbg.simstate
                 if state is None:
-                    v = '?'
+                    v = "?"
                 else:
                     try:
                         r = state.memory.load(addr, 1)
-                        v = 'S' if r.symbolic else state.solver.eval(r)
+                        v = "S" if r.symbolic else state.solver.eval(r)
                     except:  # pylint:disable=bare-except
-                        l.exception('Failed to read @ %#x', addr)
-                        v = '?'
+                        l.exception("Failed to read @ %#x", addr)
+                        v = "?"
             self._data_cache[addr] = v
         return self._data_cache[addr]
 
@@ -1444,7 +1467,7 @@ class HexView(SynchronizedView):
         try:
             return p.loader.memory[addr]
         except KeyError:
-            return '?'
+            return "?"
 
     def auto_patch(self, addr: int, new_bytes: bytearray):
         """
@@ -1457,7 +1480,7 @@ class HexView(SynchronizedView):
             patch_max_addr = p.addr + len(p) - 1
             if (p.addr <= addr) and (patch_max_addr >= max_addr):
                 # Existing patch contains new patch entirely. Update it.
-                p.new_bytes[(addr - p.addr):(max_addr - p.addr + 1)] = new_bytes
+                p.new_bytes[(addr - p.addr) : (max_addr - p.addr + 1)] = new_bytes
                 return
             elif (p.addr >= addr) and (patch_max_addr <= max_addr):
                 # Patch will be entirely overwritten, remove it.
@@ -1466,13 +1489,13 @@ class HexView(SynchronizedView):
                 # Lower portion of patch will be overwritten, shrink patch up.
                 pm.remove_patch(p.addr)
                 new_p_addr = max_addr + 1
-                p.new_bytes = p.new_bytes[(new_p_addr - p.addr):]
+                p.new_bytes = p.new_bytes[(new_p_addr - p.addr) :]
                 p.addr = new_p_addr
                 pm.add_patch_obj(p)
             elif (p.addr < addr) and (patch_max_addr <= max_addr):
                 # Upper portion of patch will be overwritten, shrink patch down.
                 pm.remove_patch(p.addr)
-                p.new_bytes = p.new_bytes[0:(addr - p.addr)]
+                p.new_bytes = p.new_bytes[0 : (addr - p.addr)]
                 pm.add_patch_obj(p)
             else:
                 assert False
@@ -1524,7 +1547,7 @@ class HexView(SynchronizedView):
         status_lyt.setContentsMargins(3, 3, 3, 3)
 
         self._status_lbl = QLabel()
-        self._status_lbl.setText('Address: ')
+        self._status_lbl.setText("Address: ")
 
         status_lyt.addWidget(self._status_lbl)
         status_lyt.addStretch(0)
@@ -1536,9 +1559,9 @@ class HexView(SynchronizedView):
         status_lyt.addWidget(self._data_source_combo)
 
         option_btn = QPushButton()
-        option_btn.setText('Options')
+        option_btn.setText("Options")
         option_mnu = QMenu(self)
-        smart_hl_act = QAction('Smart &highlighting', self)
+        smart_hl_act = QAction("Smart &highlighting", self)
         smart_hl_act.setCheckable(True)
         smart_hl_act.setChecked(self.smart_highlighting_enabled)
         smart_hl_act.toggled.connect(self.set_smart_highlighting_enabled)
@@ -1588,13 +1611,14 @@ class HexView(SynchronizedView):
         """
         Merge selected directly-adjacent patches.
         """
-        selected_patches = [r for r in self.inner_widget.hex.get_active_highlight_regions()
-                            if isinstance(r, PatchHighlightRegion)]
+        selected_patches = [
+            r for r in self.inner_widget.hex.get_active_highlight_regions() if isinstance(r, PatchHighlightRegion)
+        ]
         i = 0
         did_patch = False
         while i < (len(selected_patches) - 1):
             patch = selected_patches[i]
-            for j, neighbor in enumerate(selected_patches[i+1:]):
+            for j, neighbor in enumerate(selected_patches[i + 1 :]):
                 if patch.can_merge_with(neighbor):
                     if trial_only:
                         return True
@@ -1633,7 +1657,7 @@ class HexView(SynchronizedView):
         for addr in range(minaddr, maxaddr + 1):
             d = self.project_memory_read_func(addr)  # FIXME: Support multibyte read
             if type(d) is int:
-                self._clipboard[addr-minaddr] = d
+                self._clipboard[addr - minaddr] = d
 
     def _paste_copied_bytes_at_cursor(self):
         """
@@ -1656,22 +1680,20 @@ class HexView(SynchronizedView):
         else:
             minaddr = self.inner_widget.hex.cursor
             num_bytes_selected = 1
-        self.instance.breakpoint_mgr.add_breakpoint(
-            Breakpoint(bp_type, minaddr, num_bytes_selected)
-        )
+        self.instance.breakpoint_mgr.add_breakpoint(Breakpoint(bp_type, minaddr, num_bytes_selected))
 
     def _get_breakpoint_submenu(self) -> QMenu:
         """
         Get context menu to add new breakpoints.
         """
-        mnu = QMenu('Set &breakpoint', self)
-        act = QAction('Break on &Execute', mnu)
+        mnu = QMenu("Set &breakpoint", self)
+        act = QAction("Break on &Execute", mnu)
         act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Execute))
         mnu.addAction(act)
-        act = QAction('Break on &Read', mnu)
+        act = QAction("Break on &Read", mnu)
         act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Read))
         mnu.addAction(act)
-        act = QAction('Break on &Write', mnu)
+        act = QAction("Break on &Write", mnu)
         act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Write))
         mnu.addAction(act)
         return mnu
@@ -1719,11 +1741,11 @@ class HexView(SynchronizedView):
         # Get context menu for groups of items
         selected_regions = self.inner_widget.hex.get_active_highlight_regions()
         if any(isinstance(r, PatchHighlightRegion) for r in selected_regions):
-            act = QAction('Merge selected patches', mnu)
+            act = QAction("Merge selected patches", mnu)
             act.triggered.connect(self._merge_selected_patches)
             act.setEnabled(self._can_merge_any_selected_patches())
             mnu.addAction(act)
-            act = QAction('Revert selected patches', mnu)
+            act = QAction("Revert selected patches", mnu)
             act.triggered.connect(self.revert_selected_patches)
             mnu.addAction(act)
             add_sep = True
@@ -1758,9 +1780,9 @@ class HexView(SynchronizedView):
             minaddr, maxaddr = sel
             bytes_selected = maxaddr - minaddr + 1
             plural = "s" if bytes_selected != 1 else ""
-            s = f'Address: [{minaddr:08x}, {maxaddr:08x}], {bytes_selected} byte{plural} selected'
+            s = f"Address: [{minaddr:08x}, {maxaddr:08x}], {bytes_selected} byte{plural} selected"
         else:
-            s = 'Address: %08x' % self.inner_widget.hex.cursor
+            s = "Address: %08x" % self.inner_widget.hex.cursor
         self._status_lbl.setText(s)
 
     def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
@@ -1815,11 +1837,11 @@ class HexView(SynchronizedView):
                 if item_addr >= self.inner_widget.hex.display_end_addr:
                     break
                 if isinstance(item, MemoryData):
-                    color = Conf.hex_view_string_color if item.sort == 'string' else Conf.hex_view_data_color
+                    color = Conf.hex_view_string_color if item.sort == "string" else Conf.hex_view_data_color
                     regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
                 elif isinstance(item, Block):
                     for insn in item.disassembly.insns:
-                        s = f'{insn} in {item}'
+                        s = f"{insn} in {item}"
                         regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size, s))
         self._cfb_highlights = regions
         self._set_highlighted_regions()
@@ -1844,8 +1866,9 @@ class HexView(SynchronizedView):
         if self.instance.project.am_none:
             self._patch_highlights = []
         else:
-            self._patch_highlights = [PatchHighlightRegion(patch, self)
-                                      for patch in self.instance.project.kb.patches.values()]
+            self._patch_highlights = [
+                PatchHighlightRegion(patch, self) for patch in self.instance.project.kb.patches.values()
+            ]
         self._set_highlighted_regions()
 
     def _update_highlight_regions_from_breakpoints(self, **kwargs):  # pylint:disable=unused-argument
@@ -1855,8 +1878,9 @@ class HexView(SynchronizedView):
         if self.instance.project.am_none:
             self._breakpoint_highlights = []
         else:
-            self._breakpoint_highlights = [BreakpointHighlightRegion(bp, self)
-                                            for bp in self.instance.breakpoint_mgr.breakpoints]
+            self._breakpoint_highlights = [
+                BreakpointHighlightRegion(bp, self) for bp in self.instance.breakpoint_mgr.breakpoints
+            ]
         self._set_highlighted_regions()
 
     def _set_highlighted_regions(self):

@@ -26,5 +26,5 @@ class TestWorkflow(unittest.TestCase):
         main.workspace.main_instance.join_all_jobs()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(argv=sys.argv)

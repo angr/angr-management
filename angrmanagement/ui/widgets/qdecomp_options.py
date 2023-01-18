@@ -15,6 +15,7 @@ class OptionType:
     """
     An enum to determine what the .option field of a QDecompilationOption contains
     """
+
     OPTION = 1
     OPTIMIZATION_PASS = 2
     PEEPHOLE_OPTIMIZATION = 3
@@ -24,6 +25,7 @@ class QDecompilationOption(QTreeWidgetItem):
     """
     The UI entry for a single decompliation option. Get status with item.state.
     """
+
     def __init__(self, parent, option, type_: int, enabled=True):
         super().__init__(parent)
         self.option = option
@@ -48,7 +50,7 @@ class QDecompilationOption(QTreeWidgetItem):
         if hasattr(self.option, "value_type") and self.option.value_type != bool and self.option.candidate_values:
             self._combo_box = QComboBox()
             self._combo_box.addItems(self.option.candidate_values)
-            self._combo_box.setToolTip("%s: %s" % (option.NAME, option.DESCRIPTION))
+            self._combo_box.setToolTip(f"{option.NAME}: {option.DESCRIPTION}")
             # XXX: causes an itemChanged event for the tree
             self._combo_box.currentTextChanged.connect(lambda x: self.setText(0, self._combo_box.currentText()))
             self.treeWidget().setItemWidget(self, 0, self._combo_box)
@@ -77,6 +79,7 @@ class QDecompilationOptions(QWidget):
     Since some options have default values depending on the current arch and os, it is important to call
     reload(force=True) to reset values to their defaults whenever the current project changes.
     """
+
     def __init__(self, code_view, instance):
         super().__init__()
 
@@ -93,9 +96,9 @@ class QDecompilationOptions(QWidget):
         self._treewidget = None  # type:QTreeWidget
         self._apply_btn = None  # type:QPushButton
 
-        self._qoptions = [ ]
-        self._qoptipasses = [ ]
-        self._qpeephole_opts = [ ]
+        self._qoptions = []
+        self._qoptipasses = []
+        self._qpeephole_opts = []
 
         self._init_widgets()
 
@@ -118,7 +121,7 @@ class QDecompilationOptions(QWidget):
         self._set_visibility(self._search_box.text())
 
     def _on_item_changed(self, item, _column):
-        if getattr(item.option, 'clears_cache', True):
+        if getattr(item.option, "clears_cache", True):
             self.dirty = True
 
     def _on_apply_pressed(self):
@@ -133,7 +136,7 @@ class QDecompilationOptions(QWidget):
 
     @property
     def selected_passes(self):
-        selected = [ ]
+        selected = []
         for item in self._qoptipasses:
             if item.state:
                 selected.append(item.option)
@@ -157,14 +160,16 @@ class QDecompilationOptions(QWidget):
     def get_default_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
-        return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + \
-            [x for x, de, in self._code_view.instance.workspace.plugins.optimization_passes() if de]
+        return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
+            x for x, de, in self._code_view.instance.workspace.plugins.optimization_passes() if de
+        ]
 
     def get_all_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
-        return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + \
-            [x for x, _, in self._code_view.instance.workspace.plugins.optimization_passes()]
+        return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
+            x for x, _, in self._code_view.instance.workspace.plugins.optimization_passes()
+        ]
 
     def get_default_peephole_opts(self):  # pylint: disable=no-self-use
         return STMT_OPTS + EXPR_OPTS
@@ -204,7 +209,7 @@ class QDecompilationOptions(QWidget):
         self._qoptipasses.clear()
         self._qpeephole_opts.clear()
 
-        categories = { }
+        categories = {}
 
         # populate the tree widget with new options
         for option in sorted(self._options, key=lambda x: x.NAME):
@@ -219,7 +224,7 @@ class QDecompilationOptions(QWidget):
             self._qoptions.append(w)
 
         passes_category = QTreeWidgetItem(self._treewidget, ["Optimization Passes"])
-        categories['passes'] = passes_category
+        categories["passes"] = passes_category
 
         default_passes = set(self.get_default_passes())
         for pass_ in self._opti_passes:
@@ -228,7 +233,7 @@ class QDecompilationOptions(QWidget):
             self._qoptipasses.append(w)
 
         po_category = QTreeWidgetItem(self._treewidget, ["Peephole Optimizations"])
-        categories['peephole_opts'] = po_category
+        categories["peephole_opts"] = po_category
 
         default_peephole_opts = self.get_default_peephole_opts()
         for opt_ in self._peephole_opts:
@@ -239,7 +244,7 @@ class QDecompilationOptions(QWidget):
         # expand all
         self._treewidget.expandAll()
 
-    def _set_visibility(self, filter_by: Optional[str]=None):
+    def _set_visibility(self, filter_by: Optional[str] = None):
         for w in self._qoptions:
             w.setHidden(
                 bool(filter_by) and not (filter_by in w.option.NAME.lower() or filter_by in w.option.category.lower())
@@ -250,9 +255,8 @@ class QDecompilationOptions(QWidget):
             )
         for w in self._qpeephole_opts:
             w.setHidden(
-                bool(filter_by) and not (
-                        filter_by in w.option.NAME.lower() or filter_by in w.option.DESCRIPTION.lower()
-                )
+                bool(filter_by)
+                and not (filter_by in w.option.NAME.lower() or filter_by in w.option.DESCRIPTION.lower())
             )
 
     def _on_search_box_text_changed(self, text: str):

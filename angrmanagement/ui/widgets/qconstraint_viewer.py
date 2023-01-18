@@ -1,11 +1,12 @@
-from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QVBoxLayout,QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QVBoxLayout, QTableWidget, QTableWidgetItem
 
 
 class QConstraintViewer(QFrame):
     """
     `QConstraintViewer` in `StateInspector`
     """
-    COLUMNS = [ "Constraint", "Cardinality", "Depth", "# Variables" ]
+
+    COLUMNS = ["Constraint", "Cardinality", "Depth", "# Variables"]
 
     def __init__(self, state, parent, workspace):
         super().__init__(parent)
@@ -47,17 +48,16 @@ class QConstraintViewer(QFrame):
         table = QTableWidget(self)
         table.setColumnCount(len(self.COLUMNS))
         table.setHorizontalHeaderLabels(self.COLUMNS)
-        table.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+        table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        table.horizontalHeader().setSectionResizeMode(0,QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
 
         self.table = table
         layout.addWidget(table)
 
         self.setLayout(layout)
 
-
-    def _watch_state(self, **kwargs):  #pylint: disable=unused-argument
+    def _watch_state(self, **kwargs):  # pylint: disable=unused-argument
         if self.table is None:
             self._init_widgets()
         self.reload()

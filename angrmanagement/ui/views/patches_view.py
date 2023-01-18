@@ -1,4 +1,3 @@
-
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog
 
 from .view import BaseView
@@ -7,7 +6,7 @@ from ..widgets.qpatch_table import QPatchTable
 
 class PatchesView(BaseView):
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('patches', instance, default_docking_position, *args, **kwargs)
+        super().__init__("patches", instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Patches"
         self._patch_table = None  # type: QPatchTable
@@ -54,8 +53,10 @@ class PatchesView(BaseView):
         # select where the new binary will be stored
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save the patched binary to...",
-            self.instance.project.loader.main_object.binary + ".patched",  # FIXME: this will not work if we are loading from an angrdb
+            self,
+            "Save the patched binary to...",
+            self.instance.project.loader.main_object.binary
+            + ".patched",  # FIXME: this will not work if we are loading from an angrdb
             "Any file (*)",
         )
 

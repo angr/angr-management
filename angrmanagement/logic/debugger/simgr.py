@@ -17,7 +17,7 @@ class SimulationDebugger(Debugger):
     Simulation debugger.
     """
 
-    def __init__(self, sim_mgrs: QSimulationManagers, workspace: 'Workspace'):
+    def __init__(self, sim_mgrs: QSimulationManagers, workspace: "Workspace"):
         super().__init__(workspace)
         self._sim_mgr_view: QSimulationManagers = sim_mgrs
         self._sim_mgr = sim_mgrs.simgr
@@ -26,9 +26,9 @@ class SimulationDebugger(Debugger):
 
     def __str__(self):
         if self._sim_mgr.am_none:
-            return 'No Simulation Manager'
+            return "No Simulation Manager"
         if self.simstate is None:
-            return 'Simulation (No active states)'
+            return "Simulation (No active states)"
         else:
             pc = self.simstate.solver.eval(self.simstate.regs.pc)
             return f'Simulation @ {pc:x} ({len(self._sim_mgr.stashes["active"])} active)'
@@ -60,11 +60,11 @@ class SimulationDebugger(Debugger):
 
     @property
     def can_step_forward(self) -> bool:
-        return not self._sim_mgr.am_none and self.is_halted and len(self._sim_mgr.stashes['active']) > 0
+        return not self._sim_mgr.am_none and self.is_halted and len(self._sim_mgr.stashes["active"]) > 0
 
     def step_forward(self, until_addr: Optional[int] = None):
         if until_addr is not None:
-            _l.warning('Step-until not implemented for SimulationDebugger')
+            _l.warning("Step-until not implemented for SimulationDebugger")
         if self.can_step_forward:
             self._sim_mgr_view._on_step_clicked()
 

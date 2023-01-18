@@ -11,21 +11,26 @@ except ImportError as ex:
     Slacrs = None
     HumanFatigue = None
 
+
 class MultiTrace:
 
     HIT_COLOR = QColor(0x00, 0x99, 0x00, 0x60)
-    MISS_COLOR = QColor(0xee, 0xee, 0xee)
+    MISS_COLOR = QColor(0xEE, 0xEE, 0xEE)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
-    BUCKET_COLORS = [QColor(0xef, 0x65, 0x48, 0x20), QColor(0xfc, 0x8d, 0x59, 0x60),
-                     QColor(0xfd, 0xbb, 0x84, 0x60), QColor(0xfd, 0xd4, 0x9e, 0x60)]
+    BUCKET_COLORS = [
+        QColor(0xEF, 0x65, 0x48, 0x20),
+        QColor(0xFC, 0x8D, 0x59, 0x60),
+        QColor(0xFD, 0xBB, 0x84, 0x60),
+        QColor(0xFD, 0xD4, 0x9E, 0x60),
+    ]
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self._traces_summary = list()
-        self._traces = dict()
+        self._traces_summary = []
+        self._traces = {}
         self.function_info = {}
         self.is_active_tab = False
-        self.addr_color_map = dict()
+        self.addr_color_map = {}
         # self.base_addr = base_addr
 
     def add_trace(self, trace, base_addr):
@@ -123,15 +128,15 @@ class MultiTrace:
         self._make_addr_map(addrs_of_interest)
 
     def _make_addr_map(self, addrs_of_interest):
-        #TODO: Probably exists a more efficient way to generate this mapping
+        # TODO: Probably exists a more efficient way to generate this mapping
         self.addr_color_map.clear()
-        hit_map = dict()
+        hit_map = {}
         for addr in addrs_of_interest:
             if addr not in hit_map.keys():
                 hit_map[addr] = 0
             hit_map[addr] += 1
 
-        buckets = dict()
+        buckets = {}
         for addr, count in hit_map.items():
             if count not in buckets.keys():
                 buckets[count] = []

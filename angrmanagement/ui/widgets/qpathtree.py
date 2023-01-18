@@ -8,12 +8,12 @@ from .qsymexec_graph import QSymExecGraph
 from .qstate_block import QStateBlock
 
 
-l = logging.getLogger('ui.widgets.qpathtree')
+l = logging.getLogger("ui.widgets.qpathtree")
 
 
 class QPathTree(QFrame):
     def __init__(self, simgr, state, symexec_view, workspace, parent=None):
-        super(QPathTree, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         self.symexec_view = symexec_view
         self.workspace = workspace
@@ -35,7 +35,7 @@ class QPathTree(QFrame):
         if self.simgr.am_none:
             return
 
-        states = [state for (stash, states) in self.simgr.stashes.items() if stash != 'pruned' for state in states]
+        states = [state for (stash, states) in self.simgr.stashes.items() if stash != "pruned" for state in states]
         hierarchy = self.simgr._hierarchy
 
         graph = self._generate_graph([state.history for state in states], hierarchy, self.symexec_view)
@@ -115,7 +115,7 @@ class QPathTree(QFrame):
                         working_history = parent_history
                 except KeyError:
                     # the parent history is not found in the path mapping
-                    l.error('Parent history %s is not found', parent_history)
+                    l.error("Parent history %s is not found", parent_history)
                     break
 
     @staticmethod
@@ -123,7 +123,7 @@ class QPathTree(QFrame):
 
         g = networkx.DiGraph()
 
-        history_to_block = { }
+        history_to_block = {}
 
         for state_history in state_histories:
             if state_history not in history_to_block:

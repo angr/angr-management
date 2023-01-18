@@ -5,7 +5,7 @@ from angr.knowledge_plugins import FunctionManager
 
 class QFunctionComboBox(QComboBox):
     def __init__(self, show_all_functions=False, selection_callback=None, parent=None):
-        super(QFunctionComboBox, self).__init__(parent)
+        super().__init__(parent)
 
         self._show_all_functions = show_all_functions
         self._selection_callback = selection_callback

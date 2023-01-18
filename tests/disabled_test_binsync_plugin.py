@@ -37,14 +37,14 @@ class TestBinsyncPlugin(unittest.TestCase):
             main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
             main.workspace.main_instance.project.am_event()
             main.workspace.main_instance.join_all_jobs()
-            func = main.workspace.main_instance.project.kb.functions['main']
+            func = main.workspace.main_instance.project.kb.functions["main"]
             self.assertIsNotNone(func)
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(iter(
-                [p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)]
-            ))  # type: BinsyncPlugin
+            binsync_plugin = next(
+                iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
+            )  # type: BinsyncPlugin
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
@@ -90,14 +90,14 @@ class TestBinsyncPlugin(unittest.TestCase):
             main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
             main.workspace.main_instance.project.am_event()
             main.workspace.main_instance.join_all_jobs()
-            func = main.workspace.main_instance.project.kb.functions['main']
+            func = main.workspace.main_instance.project.kb.functions["main"]
             self.assertIsNotNone(func)
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(iter(
-                [p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)]
-            ))  # type: BinsyncPlugin
+            binsync_plugin = next(
+                iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
+            )  # type: BinsyncPlugin
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
@@ -138,14 +138,14 @@ class TestBinsyncPlugin(unittest.TestCase):
             main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
             main.workspace.main_instance.project.am_event()
             main.workspace.main_instance.join_all_jobs()
-            func = main.workspace.main_instance.project.kb.functions['main']
+            func = main.workspace.main_instance.project.kb.functions["main"]
             self.assertIsNotNone(func)
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(iter(
-                [p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)]
-            ))  # type: BinsyncPlugin
+            binsync_plugin = next(
+                iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
+            )  # type: BinsyncPlugin
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
@@ -168,9 +168,11 @@ class TestBinsyncPlugin(unittest.TestCase):
             main.workspace.main_instance.join_all_jobs()
             pseudocode_view = main.workspace._get_or_create_pseudocode_view()
             for _, item in pseudocode_view.codegen.map_pos_to_node.items():
-                if isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CVariable) and \
-                        isinstance(item.obj.variable, angr.sim_variable.SimStackVariable) and \
-                        item.obj.variable.offset == var_offset:
+                if (
+                    isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CVariable)
+                    and isinstance(item.obj.variable, angr.sim_variable.SimStackVariable)
+                    and item.obj.variable.offset == var_offset
+                ):
                     var_node = item.obj
                     break
             else:
@@ -202,14 +204,14 @@ class TestBinsyncPlugin(unittest.TestCase):
             main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
             main.workspace.main_instance.project.am_event()
             main.workspace.main_instance.join_all_jobs()
-            func = main.workspace.main_instance.project.kb.functions['main']
+            func = main.workspace.main_instance.project.kb.functions["main"]
             self.assertIsNotNone(func)
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(iter(
-                [p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)]
-            ))  # type: BinsyncPlugin
+            binsync_plugin = next(
+                iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
+            )  # type: BinsyncPlugin
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)

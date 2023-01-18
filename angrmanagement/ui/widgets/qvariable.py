@@ -10,7 +10,7 @@ class QVariable(QCachedGraphicsItem):
     OFFSET_LEFT_PADDING = 12
 
     def __init__(self, instance, disasm_view, variable, config, parent=None):
-        super(QVariable, self).__init__(parent=parent)
+        super().__init__(parent=parent)
 
         # initialization
         self.instance = instance
@@ -35,7 +35,7 @@ class QVariable(QCachedGraphicsItem):
         pass
 
     def refresh(self):
-        super(QVariable, self).refresh()
+        super().refresh()
 
         if self._variable_ident_item is not None:
             self._variable_ident_item.setVisible(self.disasm_view.show_variable_identifier)

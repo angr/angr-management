@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class LoadComponentsDialog(QDialog):
-    def __init__(self, workspace: 'Workspace', url: Optional[str]=None, parent=None):
+    def __init__(self, workspace: "Workspace", url: Optional[str] = None, parent=None):
         super().__init__(parent)
 
         self.url_box: QLineEdit = None
@@ -65,12 +65,14 @@ class LoadComponentsDialog(QDialog):
                 tree = self._load_json_from_file(path)
             self.tree = tree
             return True
-        except (ValueError, TypeError, IOError) as ex:
-            QMessageBox.critical(self,
-                                 "Loading error",
-                                 "Failed to load components information. Please make sure the component file is "
-                                 "valid.\nException: %s" % ex,
-                                 QMessageBox.Ok)
+        except (ValueError, TypeError, OSError) as ex:
+            QMessageBox.critical(
+                self,
+                "Loading error",
+                "Failed to load components information. Please make sure the component file is "
+                "valid.\nException: %s" % ex,
+                QMessageBox.Ok,
+            )
         return False
 
     def close_dialog(self):
@@ -130,13 +132,13 @@ class LoadComponentsDialog(QDialog):
 
     def _load_json_from_file(self, path):
         if not os.path.isfile(path):
-            raise IOError("File %s does not exist." % path)
+            raise OSError("File %s does not exist." % path)
 
-        with open(path, "r") as f:
+        with open(path) as f:
             try:
                 data = json.load(f)
             except ValueError as ex:
-                raise TypeError("File %s does not contain valid JSON data.\nException: %s." % (path, ex))
+                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.")
 
         return self._load_json(data)
 
@@ -146,57 +148,59 @@ class LoadComponentsDialog(QDialog):
         try:
             data = json.loads(content.decode("utf-8"))
         except ValueError as ex:
-            raise TypeError("URL %s does not contain valid JSON data.\nException: %s." % (url, ex))
+            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.")
         return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):
 
         # ok let's do this
         tree = ComponentTree()
-        queue: List[Tuple[Dict, Optional[ComponentTreeNode]]] = [ (child, None) for child in data ]
+        queue: List[Tuple[Dict, Optional[ComponentTreeNode]]] = [(child, None) for child in data]
 
         for node, parent in queue:
-            label = node['label']
+            label = node["label"]
             if not label:
                 # root?
                 if parent is not None:
                     raise TypeError("Found a root node with a parent node.")
 
-                binary = node['binary']
-                blob_type = binary.get('blob_type')
+                binary = node["binary"]
+                blob_type = binary.get("blob_type")
                 if blob_type != "bin":
-                    raise TypeError("Unsupported blob_type \"%s\"." % blob_type)
-                file_hash = binary.get('file_hash')
+                    raise TypeError('Unsupported blob_type "%s".' % blob_type)
+                file_hash = binary.get("file_hash")
                 if self.workspace.main_instance.project.am_none:
                     raise ValueError("No project has been loaded.")
                 sha256 = self.workspace.main_instance.project.loader.main_object.sha256
                 if binascii.unhexlify(file_hash) != sha256:
                     # warn user about it
-                    r = QMessageBox.warning(None,
-                                            "File hash mismatch",
-                                            "The SHA256 hash of the main object is:\n"
-                                            "    {main_obj_hash},\n"
-                                            "while the ShA256 hash of the given components file is:\n"
-                                            "    {hash}.\n"
-                                            "Do you want to continue loading the components from the "
-                                            "given JSON file?".format(
-                                                main_obj_hash=binascii.hexlify(sha256),
-                                                hash=file_hash,
-                                            ),
-                                            QMessageBox.Yes | QMessageBox.No)
+                    r = QMessageBox.warning(
+                        None,
+                        "File hash mismatch",
+                        "The SHA256 hash of the main object is:\n"
+                        "    {main_obj_hash},\n"
+                        "while the ShA256 hash of the given components file is:\n"
+                        "    {hash}.\n"
+                        "Do you want to continue loading the components from the "
+                        "given JSON file?".format(
+                            main_obj_hash=binascii.hexlify(sha256),
+                            hash=file_hash,
+                        ),
+                        QMessageBox.Yes | QMessageBox.No,
+                    )
                     if r == QMessageBox.No:
                         return False
 
                 root = ComponentTreeNode(name="Root")
                 tree.root = root
 
-                for child in node['children']:
+                for child in node["children"]:
                     queue.append((child, root))
 
             else:
                 tree_node = ComponentTreeNode(label)
-                tree_node.functions = [ self._load_function(f) for f in node['functions'] ]
-                for child in node['children']:
+                tree_node.functions = [self._load_function(f) for f in node["functions"]]
+                for child in node["children"]:
                     queue.append((child, tree_node))
                 if parent is None:
                     if tree.root is not None:
@@ -208,10 +212,10 @@ class LoadComponentsDialog(QDialog):
         return tree
 
     def _load_function(self, func: Dict):
-        rebased_addr = func['start']['rebased_addr']
-        f_node = ComponentFunction(rebased_addr['mapped_base'],
-                                   rebased_addr['virtual_addr'],
-                                   symbol_name=func.get('symbol_name', None))
+        rebased_addr = func["start"]["rebased_addr"]
+        f_node = ComponentFunction(
+            rebased_addr["mapped_base"], rebased_addr["virtual_addr"], symbol_name=func.get("symbol_name", None)
+        )
         return f_node
 
     #
@@ -226,8 +230,11 @@ class LoadComponentsDialog(QDialog):
         self.close_dialog()
 
     def _on_browse_file_btn_clicked(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a components JSON file", "",
-                                                   "All files (*);;JSON file (*.json)",
-                                                   )
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open a components JSON file",
+            "",
+            "All files (*);;JSON file (*.json)",
+        )
         if file_path is not None:
             self.url_box.setText(file_path)

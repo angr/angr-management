@@ -45,11 +45,12 @@ jobs:
         shell: cmd
         if: startsWith(matrix.os, 'windows')
       - run: bash .github/workflows/nightly-build.sh
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
       - uses: actions/upload-artifact@v3
         with:
           name: angr-management-onefile-${{ matrix.os }}
           path: upload/*onefile*
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'windows')
       - uses: actions/upload-artifact@v3
         with:
           name: angr-management-onedir-${{ matrix.os }}
@@ -57,11 +58,6 @@ jobs:
             upload/*.tar.gz
             upload/*.zip
             upload/*.dmg
-      - uses: actions/upload-artifact@v3
-        if: startsWith(matrix.os, 'ubuntu')
-        with:
-          name: angr-management-appimage-${{ matrix.os }}
-          path: upload/*.AppImage
 
   test_ubuntu:
     strategy:
@@ -91,9 +87,62 @@ jobs:
             [[ "$output" == *"angr management"* ]] || exit 1
           '
 
+  test_windows:
+    strategy:
+      matrix:
+        os:
+          - windows-2022
+      fail-fast: false
+    name: Test on ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: angr-management-onefile-${{ matrix.os }}
+      - run: |
+          .\angr-management-onefile-win64.exe
+          sleep 30
+          [array]$am_windows = Get-Process |
+            Where-Object {$_.MainWindowTitle -ne ""} |
+            Select-Object MainWindowTitle |
+            where {$_ -match 'angr management'}
+          if ($am_windows.Length -ne 1) {
+            echo "Number of open angr management windows" $am_windows.Length
+            exit 1
+          }
+
+  test_macos:
+    strategy:
+      matrix:
+        os:
+          - macos-12
+      fail-fast: false
+    name: Test on ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: angr-management-onedir-${{ matrix.os }}
+      - run: |
+          set -x
+          hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
+          open /tmp/am-mount/*/*.app
+          sleep 30
+          windows=$(osascript -e '
+            tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
+          ')
+          if [ "$windows" == "" ]; then
+            exit 1
+          fi
+
   deploy:
     name: Deploy release
-    needs: test_ubuntu
+    needs:
+      - test_ubuntu
+      - test_windows
+      - test_macos
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'schedule' }}
     steps:

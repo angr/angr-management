@@ -10,10 +10,10 @@ def is_pyinstaller() -> bool:
     :return:    True if we are running as a PyInstaller-packaged program. False if we are running in Python directly
                 (e.g., development mode).
     """
-    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-def app_path(pythonw=None, as_list=False) -> Union[str,List[str]]:
+def app_path(pythonw=None, as_list=False) -> Union[str, List[str]]:
     """
     Return the path of the application.
 

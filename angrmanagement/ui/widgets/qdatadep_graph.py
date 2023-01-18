@@ -27,14 +27,14 @@ class QDataDepPreviewGraph(QZoomableDraggableGraphicsView):
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
-        self._display_node: Optional['QDataDepGraphBlock'] = None
+        self._display_node: Optional["QDataDepGraphBlock"] = None
 
     @property
-    def node(self) -> Optional['QDataDepGraphBlock']:
+    def node(self) -> Optional["QDataDepGraphBlock"]:
         return self._display_node
 
     @node.setter
-    def node(self, n: Optional['QDataDepGraphBlock']):
+    def node(self, n: Optional["QDataDepGraphBlock"]):
         self._display_node = n
         if not self._display_node:
             return
@@ -67,6 +67,7 @@ class QDataDepPreviewGraph(QZoomableDraggableGraphicsView):
 
 class QDataDepPreview(QtWidgets.QFrame):
     """Frame for holding a preview scene"""
+
     _SRC_JUMP_TEXT = "Jump to source node?"
     _DST_JUMP_TEXT = "Jump to destination node?"
 
@@ -94,10 +95,11 @@ class QDataDepPreview(QtWidgets.QFrame):
 
 class QDataDepGraph(QZoomableDraggableGraphicsView):
     """Graph that displays a collection of QDataDepGraphBlocks"""
+
     LEFT_PADDING = 4000
     TOP_PADDING = 4000
 
-    def __init__(self, workspace: 'Workspace', data_dep_view: 'DataDepView', parent: QtWidgets.QWidget):
+    def __init__(self, workspace: "Workspace", data_dep_view: "DataDepView", parent: QtWidgets.QWidget):
         super().__init__(parent)
 
         self._workspace = workspace
@@ -107,8 +109,8 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         self._node_preview.preview_graph._reset_scene()
         self._node_preview.hide()
 
-        self._graph: Optional['DiGraph'] = None  # Graph to render
-        self._reference_data_dep_graph: Optional['DiGraph'] = None  # Graph from analysis, used to check edge data
+        self._graph: Optional["DiGraph"] = None  # Graph to render
+        self._reference_data_dep_graph: Optional["DiGraph"] = None  # Graph from analysis, used to check edge data
         self.nodes = set()
         self._edges: List[Edge] = []
         self._arrows_by_src: Dict[Any, List[QDataDepGraphArrow]] = defaultdict(list)
@@ -116,21 +118,21 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         self._arrows: List[QDataDepGraphArrow] = []
 
     @property
-    def graph(self) -> Optional['DiGraph']:
+    def graph(self) -> Optional["DiGraph"]:
         return self._graph
 
     @graph.setter
-    def graph(self, new_graph: 'DiGraph'):
+    def graph(self, new_graph: "DiGraph"):
         if new_graph is not self._graph:
             self._graph = new_graph
             self.reload()
 
     @property
-    def ref_graph(self) -> Optional['DiGraph']:
+    def ref_graph(self) -> Optional["DiGraph"]:
         return self._reference_data_dep_graph
 
     @ref_graph.setter
-    def ref_graph(self, new_ref: 'DiGraph'):
+    def ref_graph(self, new_ref: "DiGraph"):
         self._reference_data_dep_graph = new_ref
 
     def reload(self):
@@ -160,8 +162,15 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         for node in self.graph.nodes():
             self.nodes.add(node)
             node_sizes[node] = node.width, node.height
-        gl = GraphLayouter(self.graph, node_sizes, node_sorter=lambda nodes: nodes,
-                           x_margin=5, y_margin=5, row_margin=20, col_margin=10)
+        gl = GraphLayouter(
+            self.graph,
+            node_sizes,
+            node_sorter=lambda nodes: nodes,
+            x_margin=5,
+            y_margin=5,
+            row_margin=20,
+            col_margin=10,
+        )
 
         self._edges = gl.edges
 
@@ -179,12 +188,11 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         # Draw edges
         for edge in self._edges:
             edge_data = self.ref_graph.get_edge_data(edge.src.node, edge.dst.node)
-            edge_label = edge_data.get('label', None) if edge_data else None
-            if edge_label and edge_label == 'ancestor':
-                arrow = QDataDepGraphAncestorLine(self._data_dep_view,
-                                                  edge,
-                                                  arrow_location="end",
-                                                  arrow_direction="down")
+            edge_label = edge_data.get("label", None) if edge_data else None
+            if edge_label and edge_label == "ancestor":
+                arrow = QDataDepGraphAncestorLine(
+                    self._data_dep_view, edge, arrow_location="end", arrow_direction="down"
+                )
             else:
                 arrow = QDataDepGraphArrow(self._data_dep_view, edge, arrow_location="end", arrow_direction="down")
             self._arrows.append(arrow)
@@ -229,18 +237,13 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         prv_w = dim.width()
         prv_h = dim.height()
 
-        self._node_preview.setGeometry(
-            self.rect().topRight().x() - prv_w,
-            0,
-            prv_w,
-            prv_h
-        )
+        self._node_preview.setGeometry(self.rect().topRight().x() - prv_w, 0, prv_w, prv_h)
         self._node_preview.show()
 
     def hide_preview(self):
         self._node_preview.hide()
 
-    def jump_to_neighbor(self, arrow: 'QDataDepGraphArrow', jump_to_dst: bool, event_pos: QtCore.QPoint):
+    def jump_to_neighbor(self, arrow: "QDataDepGraphArrow", jump_to_dst: bool, event_pos: QtCore.QPoint):
         """
         Handler for double click on a QDataDepGraphArrow, recenters view on the source or destination block
         :param arrow: Calling arrow
@@ -251,18 +254,18 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
 
         # Get center position of the block
         jump_block_bottom_right_pos = QtCore.QPoint(
-            jump_block_origin_pos.x() + jump_block.width,
-            jump_block_origin_pos.y() + jump_block.height
+            jump_block_origin_pos.x() + jump_block.width, jump_block_origin_pos.y() + jump_block.height
         )
         jump_block_center_pos = QtCore.QPoint(
             (jump_block_origin_pos.x() + jump_block_bottom_right_pos.x()) // 2,
-            (jump_block_origin_pos.y() + jump_block_bottom_right_pos.y()) // 2
+            (jump_block_origin_pos.y() + jump_block_bottom_right_pos.y()) // 2,
         )
         delta = event_pos - jump_block_center_pos
         self.translate(delta.x(), delta.y())
 
-    def get_ancestors(self, node: 'QDataDepGraphBlock',
-                      parent_nodes: Optional[Set['QDataDepGraphBlock']] = None) -> Set['QDataDepGraphBlock']:
+    def get_ancestors(
+        self, node: "QDataDepGraphBlock", parent_nodes: Optional[Set["QDataDepGraphBlock"]] = None
+    ) -> Set["QDataDepGraphBlock"]:
         if parent_nodes is None:
             parent_nodes = set()
         parent_nodes.add(node)
@@ -272,8 +275,9 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
 
         return parent_nodes
 
-    def get_descendants(self, node: 'QDataDepGraphBlock',
-                        child_nodes: Optional[Set['QDataDepGraphBlock']] = None) -> Set['QDataDepGraphBlock']:
+    def get_descendants(
+        self, node: "QDataDepGraphBlock", child_nodes: Optional[Set["QDataDepGraphBlock"]] = None
+    ) -> Set["QDataDepGraphBlock"]:
         if child_nodes is None:
             child_nodes = set()
         child_nodes.add(node)

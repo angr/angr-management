@@ -14,24 +14,29 @@ except ImportError as ex:
     Slacrs = None
     HumanFatigue = None
 
+
 class MultiPOI:
     """
     Multiple POIs
     """
 
     HIT_COLOR = QColor(0x00, 0x99, 0x00, 0x60)
-    MISS_COLOR = QColor(0xee, 0xee, 0xee)
+    MISS_COLOR = QColor(0xEE, 0xEE, 0xEE)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
-    BUCKET_COLORS = [QColor(0xef, 0x65, 0x48, 0x20), QColor(0xfc, 0x8d, 0x59, 0x60),
-                     QColor(0xfd, 0xbb, 0x84, 0x60), QColor(0xfd, 0xd4, 0x9e, 0x60)]
+    BUCKET_COLORS = [
+        QColor(0xEF, 0x65, 0x48, 0x20),
+        QColor(0xFC, 0x8D, 0x59, 0x60),
+        QColor(0xFD, 0xBB, 0x84, 0x60),
+        QColor(0xFD, 0xD4, 0x9E, 0x60),
+    ]
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self._traces_summary = list()
-        self._pois = dict()
+        self._traces_summary = []
+        self._pois = {}
         self.function_info = {}
         self.is_active_tab = False
-        self.addr_color_map = dict()
+        self.addr_color_map = {}
         self.slacrs_url = "sqlite://"
         # self.base_addr = base_addr
 
@@ -53,16 +58,16 @@ class MultiPOI:
         poi = self.get_poi_by_id(poi_id)
         if column == 1:
             if content.isdecimal():
-                poi['output']['bbl'] = int(content, 10)
+                poi["output"]["bbl"] = int(content, 10)
             else:
                 try:
-                    poi['output']['bbl'] = int(content, 16)
+                    poi["output"]["bbl"] = int(content, 16)
                 except ValueError:
-                    poi['output']['bbl'] = ''
+                    poi["output"]["bbl"] = ""
         if column == 2:
-            poi['category'] = content
+            poi["category"] = content
         if column == 3:
-            poi['output']['diagnose'] = content
+            poi["output"]["diagnose"] = content
         self._pois[poi_id] = poi
         return poi
 
@@ -74,12 +79,12 @@ class MultiPOI:
             return poi_id
         poi = self.get_poi_by_id(poi_id)
         if column == 1:
-            return poi['output'].get('bbl', '')
+            return poi["output"].get("bbl", "")
         if column == 2:
-            return poi.get('category', '')
+            return poi.get("category", "")
         if column == 3:
-            return poi['output'].get('diagnose', '')
-        return ''
+            return poi["output"].get("diagnose", "")
+        return ""
 
     def get_hit_miss_color(self, addr):
         # hexstr_addr = hex(addr)
@@ -114,7 +119,7 @@ class MultiPOI:
         return None
 
     def get_all_poi_ids(self):
-        _l.debug('get_all_poi_ids: current pois: %s', self._pois)
+        _l.debug("get_all_poi_ids: current pois: %s", self._pois)
         return self._pois.keys()
 
     def get_input_id_for_trace_id(self, trace_id):
@@ -156,7 +161,7 @@ class MultiPOI:
         if session:
             result = session.query(Input).filter_by(id=trace_id).first()
             if result:
-                input_seed_string = result.values('value')
+                input_seed_string = result.values("value")
             session.close()
         if input_seed_string == "<>":
             self.workspace.log("Unable to retrieve seed input for trace: %s" % trace_id)
@@ -166,22 +171,22 @@ class MultiPOI:
         self._make_addr_map([])
 
     def reload_heatmap(self, poi_id):
-        _l.debug('reloading heatmap')
+        _l.debug("reloading heatmap")
         addrs_of_interest = []
-        addr_list = self._pois[poi_id]['output']['bbl_history']
+        addr_list = self._pois[poi_id]["output"]["bbl_history"]
         addrs_of_interest.extend(addr_list)
         self._make_addr_map(addrs_of_interest)
 
     def _make_addr_map(self, addrs_of_interest):
-        #TODO: Probably exists a more efficient way to generate this mapping
+        # TODO: Probably exists a more efficient way to generate this mapping
         self.addr_color_map.clear()
-        hit_map = dict()
+        hit_map = {}
         for addr in addrs_of_interest:
             if addr not in hit_map.keys():
                 hit_map[addr] = 0
             hit_map[addr] += 1
 
-        buckets = dict()
+        buckets = {}
         for addr, count in hit_map.items():
             if count not in buckets.keys():
                 buckets[count] = []
@@ -198,7 +203,6 @@ class MultiPOI:
             for addr in addrs:
                 self.addr_color_map[addr] = color
             total += len(addrs)
-
 
     def _calc_function_info(self, func):
         blocks = list(func.block_addrs)

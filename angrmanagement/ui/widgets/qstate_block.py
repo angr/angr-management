@@ -17,7 +17,7 @@ class QStateBlock(QGraphicsItem):
     LINE_MARGIN = 3
 
     def __init__(self, is_selected, symexec_view, state=None, history=None):
-        super(QStateBlock, self).__init__()
+        super().__init__()
 
         self.symexec_view = symexec_view
         self._instance = self.symexec_view.instance
@@ -68,18 +68,18 @@ class QStateBlock(QGraphicsItem):
                 # is it a SimProcedure?
                 if self._instance.project.is_hooked(addr):
                     hooker = self._instance.project.hooked_by(addr)
-                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split('.')[-1]
+                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split(".")[-1]
                 else:
                     self._function_str = "Unknown"
             else:
                 offset = addr - the_func.addr
                 if not the_func.name:
-                    self._function_str = "%#x%+x" % (the_func.addr, offset)
+                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
                 else:
-                    self._function_str = "%s%+x" % (the_func.name, offset)
+                    self._function_str = f"{the_func.name}{offset:+x}"
         self._function_str = "Function: %s" % self._function_str
 
-    def mousePressEvent(self, event): #pylint: disable=no-self-use
+    def mousePressEvent(self, event):  # pylint: disable=no-self-use
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -103,7 +103,7 @@ class QStateBlock(QGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def paint(self, painter, option, widget): #pylint: disable=unused-argument
+    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -112,15 +112,15 @@ class QStateBlock(QGraphicsItem):
         """
 
         painter.setFont(Conf.symexec_font)
-        normal_background = QColor(0xfa, 0xfa, 0xfa)
-        selected_background = QColor(0xcc, 0xcc, 0xcc)
+        normal_background = QColor(0xFA, 0xFA, 0xFA)
+        selected_background = QColor(0xCC, 0xCC, 0xCC)
 
         # The node background
         if self.selected:
             painter.setBrush(selected_background)
         else:
             painter.setBrush(normal_background)
-        painter.setPen(QPen(QColor(0xf0, 0xf0, 0xf0), 1.5))
+        painter.setPen(QPen(QColor(0xF0, 0xF0, 0xF0), 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
         x = 0
@@ -156,10 +156,11 @@ class QStateBlock(QGraphicsItem):
     #
 
     def _update_size(self):
-        width_candidates = [ self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width,
-                             self.HORIZONTAL_PADDING * 2 + len(self._function_str) * self._config.symexec_font_width
-                             ]
-        height_candidates = [ 0 ]
+        width_candidates = [
+            self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width,
+            self.HORIZONTAL_PADDING * 2 + len(self._function_str) * self._config.symexec_font_width,
+        ]
+        height_candidates = [0]
         self._width = max(width_candidates)
         self._height = max(height_candidates)
 

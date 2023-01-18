@@ -1,30 +1,29 @@
 import logging
 
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit,\
-    QWidget
+from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit, QWidget
 from PySide6.QtGui import QPainter, QPen
 from PySide6.QtCore import Qt, QSize
 
 from ...config import Conf
 from .qast_viewer import QASTViewer
 
-l = logging.getLogger('ui.widgets.qregister_viewer')
+l = logging.getLogger("ui.widgets.qregister_viewer")
 
 
-class AddressPiece(object):
-    __slots__ = ['address']
+class AddressPiece:
+    __slots__ = ["address"]
 
     def __init__(self, address):
         self.address = address
 
 
-class NewLinePiece(object):
+class NewLinePiece:
     pass
 
 
 class QMemoryView(QWidget):
     def __init__(self, state, instance, parent=None):
-        super(QMemoryView, self).__init__(parent)
+        super().__init__(parent)
         self.instance = instance
 
         self.state = state
@@ -34,7 +33,7 @@ class QMemoryView(QWidget):
         # The current address being displayed. Must be set through .address
         self._address = None
 
-        self._objects = [ ]
+        self._objects = []
 
     @property
     def address(self):
@@ -85,7 +84,7 @@ class QMemoryView(QWidget):
 
                 x += obj.width + 2
             else:
-                raise TypeError('paintEvent(): Unsupported object type %s.' % obj_type)
+                raise TypeError("paintEvent(): Unsupported object type %s." % obj_type)
 
     def _reload_objects(self):
         """
@@ -94,7 +93,7 @@ class QMemoryView(QWidget):
         :return: None
         """
 
-        objects = [ ]
+        objects = []
 
         addr_base = self.address
         for row in range(self.rows):
@@ -108,7 +107,9 @@ class QMemoryView(QWidget):
             # QASTViewer objects
             for col in range(self.cols):
                 data = self.state.memory.load(addr + col, 1, inspect=False, disable_actions=True)
-                ast_viewer = QASTViewer(data, workspace=self.instance.workspace, custom_painting=True, display_size=False)
+                ast_viewer = QASTViewer(
+                    data, workspace=self.instance.workspace, custom_painting=True, display_size=False
+                )
                 objects.append(ast_viewer)
 
             # end of the line
@@ -120,7 +121,7 @@ class QMemoryView(QWidget):
 
 class QMemoryViewer(QFrame):
     def __init__(self, state, parent, workspace):
-        super(QMemoryViewer, self).__init__(parent)
+        super().__init__(parent)
         self.workspace = workspace
 
         self._scrollarea = None  # type: QScrollArea

@@ -20,8 +20,15 @@ class QBackendSelectorDialog(QDialog):
     """
     Implements a CHESS backend URL input dialog.
     """
-    def __init__(self, workspace: 'Workspace', backend_str: Optional[str]=None, rest_backend_str: Optional[str]=None,
-                 chess_connector: 'ChessConnector'=None, parent=None):
+
+    def __init__(
+        self,
+        workspace: "Workspace",
+        backend_str: Optional[str] = None,
+        rest_backend_str: Optional[str] = None,
+        chess_connector: "ChessConnector" = None,
+        parent=None,
+    ):
         super().__init__(parent)
 
         self.workspace = workspace
@@ -178,10 +185,12 @@ class QBackendSelectorDialog(QDialog):
                 r = False
 
             if not r:
-                QMessageBox.critical(self,
-                                     "Connection failed",
-                                     f"Cannot connect to CHECRS backend {connection_str}. Please check if the backend "
-                                     f"string is correct.")
+                QMessageBox.critical(
+                    self,
+                    "Connection failed",
+                    f"Cannot connect to CHECRS backend {connection_str}. Please check if the backend "
+                    f"string is correct.",
+                )
                 self._status_label.setText("")
                 self._ok_button.setEnabled(True)
                 return

@@ -10,7 +10,7 @@ class VulnerabilityType:
     @staticmethod
     def to_string(vuln_type: int):
         if vuln_type == VulnerabilityType.PATH_TRAVERSAL:
-            return 'Path travesal'
+            return "Path travesal"
         elif vuln_type == VulnerabilityType.COMMAND_INJECTION:
             return "Command injection"
         elif vuln_type == VulnerabilityType.SQL_INJECTION:
@@ -24,7 +24,7 @@ class BaseSink:
 
 
 class FunctionArgumentSink(BaseSink):
-    def __init__(self, lib: Optional[str], func_name, arg_idx, platforms: Optional[List[str]]=None):
+    def __init__(self, lib: Optional[str], func_name, arg_idx, platforms: Optional[List[str]] = None):
         self.lib = lib
         self.func_name = func_name
         self.arg_idx = arg_idx
@@ -35,11 +35,11 @@ class FunctionArgumentSink(BaseSink):
 
 
 class SinkManager:
-    def __init__(self, sinks: Dict[int,List[BaseSink]]):
+    def __init__(self, sinks: Dict[int, List[BaseSink]]):
         self.sinks = sinks
 
         # lookup caches
-        self._func_to_sinks: Dict[str,List[Tuple[int,FunctionArgumentSink]]] = defaultdict(list)
+        self._func_to_sinks: Dict[str, List[Tuple[int, FunctionArgumentSink]]] = defaultdict(list)
 
         self._init_caches()
 
@@ -49,7 +49,7 @@ class SinkManager:
                 if isinstance(sink, FunctionArgumentSink):
                     self._func_to_sinks[sink.func_name].append((vuln_type, sink))
 
-    def has_function_sink(self, func_name, lib: Optional[str]=None) -> bool:
+    def has_function_sink(self, func_name, lib: Optional[str] = None) -> bool:
         if func_name not in self._func_to_sinks:
             return False
         if lib is None:
@@ -58,9 +58,9 @@ class SinkManager:
         sinks = self._func_to_sinks[func_name]
         return any(sink[1].lib == lib for sink in sinks)
 
-    def get_function_sinks(self, func_name, lib: Optional[str]=None) -> List[Tuple[int,FunctionArgumentSink]]:
+    def get_function_sinks(self, func_name, lib: Optional[str] = None) -> List[Tuple[int, FunctionArgumentSink]]:
         if func_name not in self._func_to_sinks:
-            return [ ]
+            return []
         if lib is None:
             return self._func_to_sinks[func_name]
         # compare lib name
@@ -71,20 +71,20 @@ class SinkManager:
 FAS = FunctionArgumentSink
 
 _path_traversal_sinks = [
-    FAS('libc', 'fopen', 0),
-    FAS('libc', 'chdir', 0),
-    FAS(None, 'std::basic_ifstream::__ctor__', 1),
+    FAS("libc", "fopen", 0),
+    FAS("libc", "chdir", 0),
+    FAS(None, "std::basic_ifstream::__ctor__", 1),
 ]
 
 _command_injection_sinks = [
-    FAS('libc', 'system', 0),
-    FAS('libc', 'popen', 0),
+    FAS("libc", "system", 0),
+    FAS("libc", "popen", 0),
 ]
 
 # TODO: SQL injection sinks require certain conditions to be met
 _sql_injection_sinks = [
-    FAS('libc', 'asprintf', 0),
-    FAS('libc', 'sprintf', 0),
+    FAS("libc", "asprintf", 0),
+    FAS("libc", "sprintf", 0),
 ]
 
 _sinks = {

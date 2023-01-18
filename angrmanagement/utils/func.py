@@ -15,7 +15,7 @@ def type2str(ty: Optional[SimType]) -> str:
     if ty is None:
         return "void"
     if isinstance(ty, SimTypePointer):
-        return "{}*".format(type2str(ty.pts_to))
+        return f"{type2str(ty.pts_to)}*"
     if ty.label:
         return ty.label
     return repr(ty)

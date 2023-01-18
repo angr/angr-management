@@ -15,11 +15,7 @@ import PySide6QtAds as QtAds
 
 import angr
 import angr.flirt
-
-try:
-    from angr.angrdb import AngrDB
-except ImportError:
-    AngrDB = None  # type: Optional[type]
+from angr.angrdb import AngrDB
 
 try:
     import archr
@@ -66,11 +62,11 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
 
-    def __init__(self, app: Optional['QApplication'] = None, parent=None, show=True, use_daemon=False):
+    def __init__(self, app: Optional["QApplication"] = None, parent=None, show=True, use_daemon=False):
         super().__init__(parent)
         self.initialized = False
 
-        icon_location = os.path.join(IMG_LOCATION, 'angr.png')
+        icon_location = os.path.join(IMG_LOCATION, "angr.png")
         self.setWindowIcon(QIcon(icon_location))
         self.setWindowTitle("angr management")
 
@@ -81,13 +77,13 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(400, 400))
         self.setDockNestingEnabled(True)
 
-        self.app: Optional['QApplication'] = app
+        self.app: Optional["QApplication"] = app
         self.workspace: Workspace = None
-        self.central_widget: QMainWindow = None
+        self.dock_manager: QtAds.CDockManager
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar = None  # type: QProgressBar
-        self._progress_dialog = None # type: QProgressDialog
+        self._progress_dialog = None  # type: QProgressDialog
 
         self.defaultWindowFlags = None
 
@@ -149,12 +145,12 @@ class MainWindow(QMainWindow):
     def open_mainfile_dialog(self):
         # pylint: disable=assigning-non-slot
         # https://github.com/PyCQA/pylint/issues/3793
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a binary", Conf.last_used_directory,
-                                                   "All executables (*);;"
-                                                   "Windows PE files (*.exe);;"
-                                                   "Core Dumps (*.core);;"
-                                                   "angr database (*.adb)",
-                                                   )
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open a binary",
+            Conf.last_used_directory,
+            "All executables (*);;" "Windows PE files (*.exe);;" "Core Dumps (*.core);;" "angr database (*.adb)",
+        )
         Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
 
@@ -174,9 +170,7 @@ class MainWindow(QMainWindow):
 
     def open_newstate_dialog(self):
         if self.workspace.main_instance.project.am_none:
-            QMessageBox.critical(self,
-                                 "Cannot create new states",
-                                 "Please open a binary to analyze first.")
+            QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
             return
         new_state_dialog = NewState(self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
@@ -206,6 +200,7 @@ class MainWindow(QMainWindow):
         self._progress_dialog.setWindowFlags(self._progress_dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self._progress_dialog.setModal(True)
         self._progress_dialog.setMinimumDuration(2**31 - 1)
+
         def on_cancel():
             if self.workspace is None:
                 return
@@ -213,6 +208,7 @@ class MainWindow(QMainWindow):
                 if job.blocking:
                     job.keyboard_interrupt()
                     break
+
         self._progress_dialog.canceled.connect(on_cancel)
         self._progress_dialog.close()
 
@@ -236,7 +232,7 @@ class MainWindow(QMainWindow):
 
         # TODO: Eventually fix menu bars to have native support on MacOS
         # if on a Mac, don't use the native menu bar (bug mitigation from QT)
-        if sys.platform == 'darwin':
+        if sys.platform == "darwin":
             self.menuBar().setNativeMenuBar(False)
 
         self.menuBar().addMenu(self._file_menu.qmenu())
@@ -257,16 +253,16 @@ class MainWindow(QMainWindow):
         """
         QtAds.CDockManager.setConfigFlags(
             (QtAds.CDockManager.DefaultBaseConfig | QtAds.CDockManager.OpaqueSplitterResize)
-            & ~QtAds.CDockManager.DockAreaHasUndockButton)
+            & ~QtAds.CDockManager.DockAreaHasUndockButton
+        )
         self.dock_manager = QtAds.CDockManager(self)
         self.dock_manager.setStyleSheet("")  # Clear stylesheet overrides
-        self.central_widget = self.dock_manager
         wk = Workspace(self, Instance())
         self.workspace = wk
 
         def set_caption(**kwargs):  # pylint: disable=unused-argument
             if self.workspace.main_instance.project.am_none:
-                self.caption = ''
+                self.caption = ""
             elif self.workspace.main_instance.project.filename is None:
                 self.caption = "Loaded from stream"
             else:
@@ -288,14 +284,14 @@ class MainWindow(QMainWindow):
         :return:    None
         """
 
-        center_dockable_views = self.workspace.view_manager.get_center_views()
-        for i in range(1, len(center_dockable_views) + 1):
-            QShortcut(QKeySequence('Alt+' + str(i)), self, center_dockable_views[i - 1].raise_)
+        for i in range(1, 10):
+            QShortcut(QKeySequence(f"Alt+{i}"), self, lambda idx=i: self._raise_view(idx - 1))
+        QShortcut(QKeySequence("Alt+0"), self, lambda: self._raise_view(9))
 
         QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
-        center_dockable_views[0].raise_()
+        self._raise_view(0)
 
         # Toggle exec breakpoint
         QShortcut(QKeySequence(Qt.Key_F2), self, self.workspace.toggle_exec_breakpoint)
@@ -374,6 +370,7 @@ class MainWindow(QMainWindow):
             break
 
         from rpyc import BgServingThread  # pylint:disable=import-outside-toplevel
+
         _ = BgServingThread(GlobalInfo.daemon_conn)
 
     #
@@ -392,20 +389,24 @@ class MainWindow(QMainWindow):
             return
 
         if not registered and supported:
-            btn = QMessageBox.question(None, "Setting up angr URL scheme",
-                                       "angr URL scheme allows \"deep linking\" from browsers and other applications "
-                                       "by registering the angr:// protocol to the current user. Do you want to "
-                                       "register it? You may unregister at any "
-                                       "time in Preferences.",
-                                       defaultButton=QMessageBox.Yes)
+            btn = QMessageBox.question(
+                None,
+                "Setting up angr URL scheme",
+                'angr URL scheme allows "deep linking" from browsers and other applications '
+                "by registering the angr:// protocol to the current user. Do you want to "
+                "register it? You may unregister at any "
+                "time in Preferences.",
+                defaultButton=QMessageBox.Yes,
+            )
             if btn == QMessageBox.Yes:
                 try:
                     AngrUrlScheme().register_url_scheme()
                 except (ValueError, FileNotFoundError) as ex:
-                    QMessageBox.warning(None, "Error in registering angr URL scheme",
-                                        "Failed to register the angr URL scheme.\n"
-                                        "The following exception occurred:\n"
-                                        + str(ex))
+                    QMessageBox.warning(
+                        None,
+                        "Error in registering angr URL scheme",
+                        "Failed to register the angr URL scheme.\n" "The following exception occurred:\n" + str(ex),
+                    )
 
     #
     # Event
@@ -414,9 +415,11 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
 
         # Ask if the user wants to save things
-        if self.workspace.main_instance is not None \
-                and not self.workspace.main_instance.project.am_none \
-                and self.shown_at_start:
+        if (
+            self.workspace.main_instance is not None
+            and not self.workspace.main_instance.project.am_none
+            and self.shown_at_start
+        ):
             msgbox = QMessageBox()
             msgbox.setWindowTitle("Save database")
             msgbox.setText("angr management is about to exit. Do you want to save the database?")
@@ -476,10 +479,12 @@ class MainWindow(QMainWindow):
         self.load_file(file_path)
 
     def open_trace_file_button(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open a trace file", Conf.last_used_directory,
-                                                   "All files (*);;"
-                                                   "Trace files (*.trace);;",
-                                                   )
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open a trace file",
+            Conf.last_used_directory,
+            "All files (*);;" "Trace files (*.trace);;",
+        )
         Conf.last_used_directory = os.path.dirname(file_path)
         if not file_path:
             return
@@ -487,15 +492,15 @@ class MainWindow(QMainWindow):
 
     def open_docker_button(self):
         required = {
-            'archr: git clone https://github.com/angr/archr && cd archr && pip install -e .': archr,
-            'keystone: pip install --no-binary keystone-engine keystone-engine': keystone
+            "archr: git clone https://github.com/angr/archr && cd archr && pip install -e .": archr,
+            "keystone: pip install --no-binary keystone-engine keystone-engine": keystone,
         }
         is_missing = [key for key, value in required.items() if value is None]
         if len(is_missing) > 0:
-            req_msg = 'You need to install the following:\n\n\t' + '\n\t'.join(is_missing)
-            req_msg += '\n\nInstall them to enable this functionality.'
-            req_msg += '\nRelaunch angr-management after install.'
-            QMessageBox(self).critical(None, 'Dependency error', req_msg)
+            req_msg = "You need to install the following:\n\n\t" + "\n\t".join(is_missing)
+            req_msg += "\n\nInstall them to enable this functionality."
+            req_msg += "\nRelaunch angr-management after install."
+            QMessageBox(self).critical(None, "Dependency error", req_msg)
             return
 
         img_name = self._pick_image_dialog()
@@ -507,33 +512,35 @@ class MainWindow(QMainWindow):
 
     def load_trace_file(self, file_path):
         if isurl(file_path):
-            QMessageBox.critical(self,
-                                 "Unsupported Action",
-                                 "Downloading trace files is not yet supported."
-                                 "Please specify a path to a file on disk.")
+            QMessageBox.critical(
+                self,
+                "Unsupported Action",
+                "Downloading trace files is not yet supported." "Please specify a path to a file on disk.",
+            )
         else:
             # File
             if os.path.isfile(file_path):
                 try:
-                    with open(file_path, 'rb') as f:
+                    with open(file_path, "rb") as f:
                         loaded_sim_state = pickle.load(f)
                         analysis_params = {
-                            'end_state': loaded_sim_state,
-                            'start_addr': None,
-                            'end_addr': None,
-                            'block_addrs': None,
+                            "end_state": loaded_sim_state,
+                            "start_addr": None,
+                            "end_addr": None,
+                            "block_addrs": None,
                         }
                         self.workspace.view_data_dependency_graph(analysis_params)
                     self._recent_file(file_path)
                 except pickle.PickleError:
-                    QMessageBox.critical(self,
-                                         "Unable to load trace file",
-                                         "Trace file must contain a serialized SimState.")
+                    QMessageBox.critical(
+                        self, "Unable to load trace file", "Trace file must contain a serialized SimState."
+                    )
             else:
-                QMessageBox.critical(self,
-                                     "File not found",
-                                     f"angr management cannot open file {file_path}. "
-                                     "Please make sure that the file exists.")
+                QMessageBox.critical(
+                    self,
+                    "File not found",
+                    f"angr management cannot open file {file_path}. " "Please make sure that the file exists.",
+                )
 
     def load_file(self, file_path):
 
@@ -552,29 +559,34 @@ class MainWindow(QMainWindow):
                     self._recent_file(file_path)
                     self.workspace.main_instance.add_job(LoadBinaryJob(file_path))
             else:
-                QMessageBox.critical(self,
-                                     "File not found",
-                                     f"angr management cannot open file {file_path}. "
-                                     "Please make sure that the file exists.")
+                QMessageBox.critical(
+                    self,
+                    "File not found",
+                    f"angr management cannot open file {file_path}. " "Please make sure that the file exists.",
+                )
         else:
             # url
-            r = QMessageBox.question(self,
-                                     "Downloading a file",
-                                     f"Do you want to download a file from {file_path} and open it in angr management?",
-                                     defaultButton=QMessageBox.Yes)
+            r = QMessageBox.question(
+                self,
+                "Downloading a file",
+                f"Do you want to download a file from {file_path} and open it in angr management?",
+                defaultButton=QMessageBox.Yes,
+            )
             if r == QMessageBox.Yes:
                 try:
                     target_path = download_url(file_path, parent=self, to_file=True, file_path=None)
                 except InvalidURLError:
-                    QMessageBox.critical(self,
-                                         "Downloading failed",
-                                         "angr management failed to download the file. The URL is invalid.")
+                    QMessageBox.critical(
+                        self, "Downloading failed", "angr management failed to download the file. The URL is invalid."
+                    )
                     return
                 except UnexpectedStatusCodeError as ex:
-                    QMessageBox.critical(self,
-                                         "Downloading failed",
-                                         "angr management failed to retrieve the header of the file. "
-                                         f"The HTTP request returned an unexpected status code {ex.status_code}.")
+                    QMessageBox.critical(
+                        self,
+                        "Downloading failed",
+                        "angr management failed to retrieve the header of the file. "
+                        f"The HTTP request returned an unexpected status code {ex.status_code}.",
+                    )
                     return
 
                 if target_path:
@@ -586,7 +598,9 @@ class MainWindow(QMainWindow):
     def load_database(self):
         # Open File window
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Load angr database", ".",
+            self,
+            "Load angr database",
+            ".",
             "angr databases (*.adb)",
         )
 
@@ -615,7 +629,9 @@ class MainWindow(QMainWindow):
 
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save angr database", default_database_path,
+            self,
+            "Save angr database",
+            default_database_path,
             "angr databases (*.adb)",
         )
 
@@ -641,7 +657,7 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = 'accurate'
+        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = "accurate"
 
     def run_induction_variable_analysis(self):
         self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
@@ -672,7 +688,7 @@ class MainWindow(QMainWindow):
     #
 
     def progress(self, status, progress):
-        self.statusBar().showMessage(f'Working... {status}')
+        self.statusBar().showMessage(f"Working... {status}")
         self._progress_dialog.setLabelText(status)
         self._progressbar.show()
         self._progressbar.setValue(progress)
@@ -699,13 +715,6 @@ class MainWindow(QMainWindow):
         save_config()
 
     def _load_database(self, file_path: str):
-
-        if AngrDB is None:
-            QMessageBox.critical(None, 'Error',
-                                 'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
-            return
-
-
         other_kbs = {}
         extra_info = {}
 
@@ -721,7 +730,7 @@ class MainWindow(QMainWindow):
 
         self._recent_file(job.file_path)
 
-        cfg = proj.kb.cfgs['CFGFast']
+        cfg = proj.kb.cfgs["CFGFast"]
         cfb = proj.analyses.CFB()  # it will load functions from kb
 
         self.workspace.main_instance.database_path = job.file_path
@@ -745,21 +754,28 @@ class MainWindow(QMainWindow):
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 
-        if AngrDB is None:
-            QMessageBox.critical(None, 'Error',
-                                 'AngrDB is not enabled. Maybe you do not have SQLAlchemy installed?')
-            return False
-
         self.workspace.plugins.handle_project_save(file_path)
 
         angrdb = AngrDB(project=self.workspace.main_instance.project)
         extra_info = self.workspace.plugins.angrdb_store_entries()
-        angrdb.dump(file_path, kbs=[
+        angrdb.dump(
+            file_path,
+            kbs=[
                 self.workspace.main_instance.kb,
                 self.workspace.main_instance.pseudocode_variable_kb,
-                ],
+            ],
             extra_info=extra_info,
-            )
+        )
 
         self.workspace.main_instance.database_path = file_path
         return True
+
+    def _raise_view(self, idx: int):
+        """
+        Raise idx'th view in the dock manager
+        """
+        try:
+            dock = self.dock_manager.dockWidgets()[idx]
+        except IndexError:
+            return
+        dock.raise_()

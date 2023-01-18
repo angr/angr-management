@@ -21,11 +21,11 @@ class QRegisterTableModel(QAbstractTableModel):
     Register table model.
     """
 
-    Headers = ['Name', 'Value']
+    Headers = ["Name", "Value"]
     COL_REGISTER = 0
     COL_VALUE = 1
 
-    def __init__(self, log_widget: 'QRegisterTableWidget' = None):
+    def __init__(self, log_widget: "QRegisterTableWidget" = None):
         super().__init__()
         self._log_widget = log_widget
         self.state: angr.SimState = None
@@ -34,20 +34,22 @@ class QRegisterTableModel(QAbstractTableModel):
     def _filtered_register_list(self):
         return [reg for reg in self.state.arch.register_list if reg.general_purpose]
 
-    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return 0 if self.state is None else len(self._filtered_register_list())
 
-    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> Any:  # pylint:disable=unused-argument
+    def headerData(
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
+    ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -79,6 +81,7 @@ class QRegisterTableModel(QAbstractTableModel):
     def update_state(self, state):
         self._last_state = self.state.copy() if self.state else None
         self.state = None if state is None else state
+
 
 class QRegisterTableWidget(QTableView):
     """
@@ -133,9 +136,9 @@ class RegistersView(BaseView):
     """
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('registers', instance, default_docking_position, *args, **kwargs)
+        super().__init__("registers", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Registers'
+        self.base_caption = "Registers"
         self._tbl_widget: Optional[QRegisterTableWidget] = None
         self._init_widgets()
         self.reload()

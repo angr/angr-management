@@ -12,9 +12,9 @@ from ..widgets.qfunction_combobox import QFunctionComboBox
 
 class StringsView(BaseView):
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super(StringsView, self).__init__('strings', instance, default_docking_position, *args, **kwargs)
+        super().__init__("strings", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Strings'
+        self.base_caption = "Strings"
 
         self._string_table = None  # type: QStringTable
         self._function_list = None  # type: QFunctionComboBox
@@ -58,16 +58,16 @@ class StringsView(BaseView):
         :return:
         """
 
-        if len(self.instance.workspace.view_manager.views_by_category['disassembly']) == 1:
-            disasm_view = self.instance.workspace.view_manager.first_view_in_category('disassembly')
+        if len(self.instance.workspace.view_manager.views_by_category["disassembly"]) == 1:
+            disasm_view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
         else:
-            disasm_view = self.instance.workspace.view_manager.current_view_in_category('disassembly')
+            disasm_view = self.instance.workspace.view_manager.current_view_in_category("disassembly")
         if disasm_view is not None:
             disasm_view.jump_to(s.addr)
             disasm_view.select_label(s.addr)
             self.instance.workspace.view_manager.raise_view(disasm_view)
 
-    def on_filter_change(self, **kwargs): #pylint: disable=unused-argument
+    def on_filter_change(self, **kwargs):  # pylint: disable=unused-argument
         pattern = self._filter_string.text()
         regex = self._regex_checkbox.isChecked()
         if regex:
@@ -83,9 +83,9 @@ class StringsView(BaseView):
 
     def _init_widgets(self):
 
-        self._function_list = QFunctionComboBox(show_all_functions=True, selection_callback=self._on_function_selected,
-                                                parent=self
-                                                )
+        self._function_list = QFunctionComboBox(
+            show_all_functions=True, selection_callback=self._on_function_selected, parent=self
+        )
 
         self._filter_string = QLineEdit(self)
         self._regex_checkbox = QCheckBox("Regex", self)
@@ -93,9 +93,9 @@ class StringsView(BaseView):
         self._regex_checkbox.stateChanged.connect(self.on_filter_change)
 
         function_layout = QHBoxLayout()
-        function_layout.addWidget(QLabel("Function:",self))
+        function_layout.addWidget(QLabel("Function:", self))
         function_layout.addWidget(self._function_list, 10)
-        function_layout.addWidget(QLabel("Filter:",self))
+        function_layout.addWidget(QLabel("Filter:", self))
         function_layout.addWidget(self._filter_string, 10)
         function_layout.addWidget(self._regex_checkbox)
         function_layout.setContentsMargins(3, 3, 3, 3)

@@ -2,7 +2,7 @@ import logging
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
 from PySide6.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
-from PySide6.QtWidgets import  QMessageBox, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QMessageBox, QTableWidget, QTableWidgetItem
 from PySide6.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
 from PySide6.QtCore import Qt, QPoint, QEvent
 
@@ -44,7 +44,6 @@ class QTraceViewer(QWidget):
         self.legend_img = None
         self.trace_func_unit_height = 0
 
-
         self.trace_func = None
         self.trace_id = None
 
@@ -82,7 +81,7 @@ class QTraceViewer(QWidget):
         return self.disasm_view.infodock.selected_insns
 
     def _init_widgets(self):
-        self.view = QTabWidget() # QGraphicsView()
+        self.view = QTabWidget()  # QGraphicsView()
 
         self.traceTab = QWidget()
         tracelayout = QVBoxLayout()
@@ -91,7 +90,7 @@ class QTraceViewer(QWidget):
         self.traceScene = QGraphicsScene()
         self.traceView.setScene(self.traceScene)
 
-        self.listView = QTableWidget(0,2) # row, col
+        self.listView = QTableWidget(0, 2)  # row, col
         self.listView.setHorizontalHeaderItem(0, QTableWidgetItem("Trace ID"))
         self.listView.setHorizontalHeaderItem(1, QTableWidgetItem("Input ID"))
         self.listView.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -110,7 +109,7 @@ class QTraceViewer(QWidget):
 
         self.multiView = QWidget()
         multiLayout = QVBoxLayout()
-        self.multiTraceList = QTableWidget(0,2) # row, col
+        self.multiTraceList = QTableWidget(0, 2)  # row, col
         self.multiTraceList.setSelectionMode(QAbstractItemView.MultiSelection)
         self.multiTraceList.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.multiTraceList.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
@@ -139,7 +138,7 @@ class QTraceViewer(QWidget):
         self.setLayout(layout)
 
     def _reset(self):
-        self.traceScene.clear() #clear items
+        self.traceScene.clear()  # clear items
         self.listView.clearContents()
         self.multiTraceList.clearContents()
         self.mark = None
@@ -185,8 +184,7 @@ class QTraceViewer(QWidget):
         if self.trace.am_none or self.trace.count is None:
             return
 
-        l.debug('minheight: %d, count: %d', self.TRACE_FUNC_MINHEIGHT,
-                self.trace.count)
+        l.debug("minheight: %d, count: %d", self.TRACE_FUNC_MINHEIGHT, self.trace.count)
         if self.trace.count <= 0:
             l.warning("No valid addresses found in trace to show. Check base address offsets?")
             self.trace.am_obj = None
@@ -211,7 +209,7 @@ class QTraceViewer(QWidget):
         windowSize = boundingSize
         if boundingSize > self.MAX_WINDOW_SIZE:
             windowSize = self.MAX_WINDOW_SIZE
-        self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect()) #resize
+        self.traceScene.setSceneRect(self.traceScene.itemsBoundingRect())  # resize
         self.setFixedWidth(windowSize)
 
         # self.listScene.setSceneRect(self.listScene.itemsBoundingRect()) #resize
@@ -230,7 +228,7 @@ class QTraceViewer(QWidget):
         numIDs = len(trace_ids)
         view.clearContents()
         view.setRowCount(numIDs)
-        row = 0 #start after label row
+        row = 0  # start after label row
         for traceID in trace_ids:
             inputID = self.multi_trace.am_obj.get_input_id_for_trace_id(traceID)
             if inputID is None:
@@ -260,8 +258,8 @@ class QTraceViewer(QWidget):
         self.multiTraceList.clearContents()
         self._populate_trace_table(self.multiTraceList, trace_ids)
         if self._selected_traces and self.multiTraceList.rowCount() > 0:
-            self.multiTraceList.item(0,0).setSelected(True)
-            self.multiTraceList.item(0,1).setSelected(True)
+            self.multiTraceList.item(0, 0).setSelected(True)
+            self.multiTraceList.item(0, 1).setSelected(True)
         else:
             for row in range(self.multiTraceList.rowCount()):
                 item = self.multiTraceList.item(row, 0)
@@ -270,7 +268,6 @@ class QTraceViewer(QWidget):
                     item.setSelected(True)
                     inputItem.setSelected(True)
         self.multi_trace.am_event()
-
 
     def _on_tab_change(self):
         # self._reset()
@@ -283,7 +280,7 @@ class QTraceViewer(QWidget):
             multiTrace.is_active_tab = False
             self._show_trace_ids()
 
-    def _on_select_ins(self, **kwargs): # pylint: disable=unused-argument
+    def _on_select_ins(self, **kwargs):  # pylint: disable=unused-argument
         if self.trace.am_none:
             return
 
@@ -299,21 +296,32 @@ class QTraceViewer(QWidget):
         if self.selected_ins:
             addr = next(iter(self.selected_ins))
             positions = self.trace.get_positions(addr)
-            if positions: #if addr is in list of positions
-                if not self._use_precise_position: #handle case where insn was selected from disas view
+            if positions:  # if addr is in list of positions
+                if not self._use_precise_position:  # handle case where insn was selected from disas view
                     self.curr_position = positions[0] - self.trace.count
                 for p in positions:
                     color = self._get_mark_color(p, self.trace.count)
                     y = self._get_mark_y(p)
 
-                    if p == self.trace.count + self.curr_position: #add thicker line for 'current' mark
-                        self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                            self.MARK_HEIGHT*4, QPen(QColor('black')), QBrush(color)))
+                    if p == self.trace.count + self.curr_position:  # add thicker line for 'current' mark
+                        self.mark.addToGroup(
+                            self.traceScene.addRect(
+                                self.MARK_X,
+                                y,
+                                self.MARK_WIDTH,
+                                self.MARK_HEIGHT * 4,
+                                QPen(QColor("black")),
+                                QBrush(color),
+                            )
+                        )
                     else:
-                        self.mark.addToGroup(self.traceScene.addRect(self.MARK_X, y, self.MARK_WIDTH,
-                                                                self.MARK_HEIGHT, QPen(color), QBrush(color)))
+                        self.mark.addToGroup(
+                            self.traceScene.addRect(
+                                self.MARK_X, y, self.MARK_WIDTH, self.MARK_HEIGHT, QPen(color), QBrush(color)
+                            )
+                        )
 
-                self.traceScene.update() #force redraw of the traceScene
+                self.traceScene.update()  # force redraw of the traceScene
                 self.scroll_to_position(self.curr_position)
 
     def scroll_to_position(self, position):
@@ -328,7 +336,7 @@ class QTraceViewer(QWidget):
         self._use_precise_position = False
 
     def jump_next_insn(self):
-        if self.curr_position + self.trace.count < self.trace.count - 1: #for some reason indexing is done backwards
+        if self.curr_position + self.trace.count < self.trace.count - 1:  # for some reason indexing is done backwards
             self.curr_position += 1
             self._use_precise_position = True
             bbl_addr = self.trace.get_bbl_from_position(self.curr_position)
@@ -343,10 +351,10 @@ class QTraceViewer(QWidget):
             func = self.trace.get_func_from_position(self.curr_position)
             self._jump_bbl(func, bbl_addr)
 
-    def eventFilter(self, obj, event): #specifically to catch arrow keys #pylint: disable=unused-argument
+    def eventFilter(self, obj, event):  # specifically to catch arrow keys #pylint: disable=unused-argument
         # more elegant solution to link w/ self.view's scroll bar keypressevent?
         if event.type() == QEvent.Type.KeyPress:
-            if not event.modifiers() & Qt.ShiftModifier: #shift + arrowkeys
+            if not event.modifiers() & Qt.ShiftModifier:  # shift + arrowkeys
                 return False
             key = event.key()
             if key in [Qt.Key_Up, Qt.Key_Left]:
@@ -381,12 +389,10 @@ class QTraceViewer(QWidget):
 
     def _get_mark_color(self, i, total):
         relative_gradient_pos = i * 1000 // total
-        return self.legend_img.pixelColor(self.LEGEND_WIDTH // 2,
-                                          relative_gradient_pos)
+        return self.legend_img.pixelColor(self.LEGEND_WIDTH // 2, relative_gradient_pos)
 
     def _get_mark_y(self, i):
         return self.TRACE_FUNC_Y + self.trace_func_unit_height * i
-
 
     def _show_trace_ids(self):
         trace_ids = self.multi_trace.get_all_trace_ids()
@@ -403,8 +409,6 @@ class QTraceViewer(QWidget):
                     inputItem.setSelected(True)
                     break
 
-
-
     def _show_trace_func(self, show_func_tag):
         x = self.TRACE_FUNC_X
         y = self.TRACE_FUNC_Y
@@ -412,20 +416,20 @@ class QTraceViewer(QWidget):
         for position in self.trace.trace_func:
             bbl_addr = position.bbl_addr
             func_name = position.func_name
-            l.debug('Draw function %x, %s', bbl_addr, func_name)
+            l.debug("Draw function %x, %s", bbl_addr, func_name)
             color = self.trace.get_func_color(func_name)
-            self.trace_func.addToGroup(self.traceScene.addRect(x, y,
-                                                          self.TRACE_FUNC_WIDTH, self.trace_func_unit_height,
-                                                          QPen(color), QBrush(color)))
+            self.trace_func.addToGroup(
+                self.traceScene.addRect(
+                    x, y, self.TRACE_FUNC_WIDTH, self.trace_func_unit_height, QPen(color), QBrush(color)
+                )
+            )
             if show_func_tag is True and func_name != prev_name:
                 tag = self.traceScene.addText(func_name, QFont("Source Code Pro", 7))
-                tag.setPos(x + self.TRACE_FUNC_WIDTH +
-                           self.TAG_SPACING, y -
-                           tag.boundingRect().height() // 2)
+                tag.setPos(x + self.TRACE_FUNC_WIDTH + self.TAG_SPACING, y - tag.boundingRect().height() // 2)
                 self.trace_func.addToGroup(tag)
                 anchor = self.traceScene.addLine(
-                    self.TRACE_FUNC_X + self.TRACE_FUNC_WIDTH, y,
-                    x + self.TRACE_FUNC_WIDTH + self.TAG_SPACING, y)
+                    self.TRACE_FUNC_X + self.TRACE_FUNC_WIDTH, y, x + self.TRACE_FUNC_WIDTH + self.TAG_SPACING, y
+                )
                 self.trace_func.addToGroup(anchor)
                 prev_name = func_name
             y += self.trace_func_unit_height
@@ -440,22 +444,22 @@ class QTraceViewer(QWidget):
         gradient.setColorAt(1.0, Qt.darkBlue)
         return gradient
 
-
     def _show_legend(self):
         pen = QPen(Qt.transparent)
 
-        gradient = self._make_legend_gradient(self.LEGEND_X, self.LEGEND_Y,
-                                   self.LEGEND_X, self.LEGEND_Y + self.legend_height)
+        gradient = self._make_legend_gradient(
+            self.LEGEND_X, self.LEGEND_Y, self.LEGEND_X, self.LEGEND_Y + self.legend_height
+        )
         brush = QBrush(gradient)
-        self.legend = self.traceScene.addRect(self.LEGEND_X, self.LEGEND_Y,
-                                         self.LEGEND_WIDTH, self.legend_height, pen, brush)
+        self.legend = self.traceScene.addRect(
+            self.LEGEND_X, self.LEGEND_Y, self.LEGEND_WIDTH, self.legend_height, pen, brush
+        )
 
         reference_gradient = self._make_legend_gradient(0, 0, self.LEGEND_WIDTH, 1000)
         base_img = QImage(self.LEGEND_WIDTH, 1000, QImage.Format.Format_ARGB32)
         p = QPainter(base_img)
-        p.fillRect(base_img.rect(),reference_gradient)
-        self.legend_img = base_img #reference shade
-
+        p.fillRect(base_img.rect(), reference_gradient)
+        self.legend_img = base_img  # reference shade
 
     def _set_mark_color(self):
         for p in range(self.trace.count):
@@ -465,8 +469,10 @@ class QTraceViewer(QWidget):
     def _at_legend(self, pos):
         x = pos.x()
         y = pos.y()
-        return self.TRACE_FUNC_X + self.LEGEND_X < x < self.traceView.width() and \
-           self.TRACE_FUNC_Y < y < self.TRACE_FUNC_Y + self.legend_height
+        return (
+            self.TRACE_FUNC_X + self.LEGEND_X < x < self.traceView.width()
+            and self.TRACE_FUNC_Y < y < self.TRACE_FUNC_Y + self.legend_height
+        )
 
     def _to_logical_pos(self, pos):
         x_offset = self.traceView.horizontalScrollBar().value()

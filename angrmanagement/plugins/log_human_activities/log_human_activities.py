@@ -11,7 +11,7 @@ from ..base_plugin import BasePlugin
 
 
 l = logging.getLogger(__name__)
-l.setLevel('INFO')
+l.setLevel("INFO")
 
 
 try:
@@ -25,6 +25,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
     """
     Log human activities
     """
+
     def __init__(self, *args, **kwargs):
         if not Slacrs:
             raise Exception("Skipping LogHumanActivities Plugin. Please install Slacrs.")
@@ -33,19 +34,19 @@ class LogHumanActivitiesPlugin(BasePlugin):
         self.session = None
         self.project_name = None
         self.project_md5 = None
-        self._log_list = list()
+        self._log_list = []
         self.user = gma()
         self.active = True
         self.slacrs_thread = None
 
-    def _init_logger(self): # pylint:disable=no-self-use
-        user_dir = os.path.expanduser('~')
+    def _init_logger(self):  # pylint:disable=no-self-use
+        user_dir = os.path.expanduser("~")
         log_dir = os.path.join(user_dir, "am-logging")
         os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, 'human_activities.log')
+        log_file = os.path.join(log_dir, "human_activities.log")
         fh = logging.FileHandler(log_file)
-        fh.setLevel('INFO')
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh.setLevel("INFO")
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh.setFormatter(formatter)
         l.addHandler(fh)
 
@@ -84,8 +85,12 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(function_rename)
-        l.debug("Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s",
-                self.project_name, old_name, new_name)
+        l.debug(
+            "Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s",
+            self.project_name,
+            old_name,
+            new_name,
+        )
 
     def handle_click_block(self, qblock, event):
         block_click = HumanActivity(
@@ -127,7 +132,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             view=view_name,
             created_by=self.user,
             function=func_name,
-            addr=addr
+            addr=addr,
         )
         self._log_list.append(raise_view)
         l.debug("View %s is raised with function %s", view_name, func_name)

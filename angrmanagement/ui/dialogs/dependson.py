@@ -1,7 +1,17 @@
 from typing import Optional
 
-from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QGroupBox, QRadioButton, QHBoxLayout, \
-    QVBoxLayout, QMessageBox, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QGroupBox,
+    QRadioButton,
+    QHBoxLayout,
+    QVBoxLayout,
+    QMessageBox,
+    QWidget,
+)
 
 from angr.knowledge_plugins import Function
 from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE, OP_AFTER
@@ -10,7 +20,7 @@ from ...utils.func import function_prototype_str
 
 
 class DependsOn(QDialog):
-    def __init__(self, addr: int, operand, instr=None, func: Optional[Function]=None, parent=None):
+    def __init__(self, addr: int, operand, instr=None, func: Optional[Function] = None, parent=None):
         super().__init__(parent)
 
         self._addr = addr
@@ -169,11 +179,13 @@ class DependsOn(QDialog):
                 self.arg = int(self._arg_box.text())
             except ValueError:
                 # invalid argument index
-                QMessageBox(self).critical(self,
-                            "Invalid argument index",
-                            "The given function argument index \"%s\" is unsupported. Only integers are allowed." % self._arg_box.text(),
-                            buttons=QMessageBox.Ok,
-                            )
+                QMessageBox(self).critical(
+                    self,
+                    "Invalid argument index",
+                    'The given function argument index "%s" is unsupported. Only integers are allowed.'
+                    % self._arg_box.text(),
+                    buttons=QMessageBox.Ok,
+                )
                 return
         else:
             raise NotImplementedError()

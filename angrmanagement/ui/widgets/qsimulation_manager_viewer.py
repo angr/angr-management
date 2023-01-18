@@ -14,8 +14,8 @@ class SimgrViewerAbstractTreeItem(QTreeWidgetItem):
         """Handles right-click actions on the specific QTreeWidgetItem that was clicked in the view"""
         raise NotImplementedError
 
-class StashTreeItem(SimgrViewerAbstractTreeItem):
 
+class StashTreeItem(SimgrViewerAbstractTreeItem):
     def __init__(self, stash_name, simgr_viewer):
         self.simgr_viewer = simgr_viewer
         self.stash_name = stash_name
@@ -62,15 +62,15 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
         self.simgr_viewer.simgr.drop(stash=self.stash_name, filter_func=lambda state: state in self.states)
         self.refresh()
 
-    def delete_stash(self, *args, **kwargs): #pylint: disable=unused-argument
+    def delete_stash(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.simgr._stashes.pop(self.stash_name)
         self.simgr_viewer.refresh()
 
-    def paste_states(self, *args, **kwargs): #pylint: disable=unused-argument
+    def paste_states(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.paste_from_clipboard(self.stash_name)
         self.refresh()
 
-    def move_states(self, *args, **kwargs): #pylint: disable=unused-argument
+    def move_states(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.move_to_stash(self.stash_name)
         self.refresh()
 
@@ -101,16 +101,16 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
             plural = "s"
         menu.addAction(string + plural, action)
 
-    def copy_states(self, *args, **kwargs): #pylint: disable=unused-argument
+    def copy_states(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.copy_selected_to_clipboard()
 
-    def cut_states(self, *args, **kwargs): #pylint: disable=unused-argument
+    def cut_states(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.cut_selected_to_clipboard()
 
-    def delete_states(self, *args, **kwargs): #pylint: disable=unused-argument
+    def delete_states(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.delete_selected_states()
 
-    def paste_states(self, *args, **kwargs): #pylint: disable=unused-argument
+    def paste_states(self, *args, **kwargs):  # pylint: disable=unused-argument
         self.simgr_viewer.paste_from_clipboard(self.stash_name)
 
 
@@ -158,12 +158,13 @@ class QSimulationManagerViewer(QTreeWidget):
         lambda_str = ""
         lambda_func = None
         while True:
-            lambda_str, accepted = QInputDialog.getText(self, "Move state from active to here", "Condition lambda",
-                                                        text=lambda_str)
+            lambda_str, accepted = QInputDialog.getText(
+                self, "Move state from active to here", "Condition lambda", text=lambda_str
+            )
             if not accepted:
                 return
             try:
-                lambda_func = eval(lambda_str) #pylint: disable=eval-used
+                lambda_func = eval(lambda_str)  # pylint: disable=eval-used
                 if not isfunction(lambda_func):
                     raise ValueError()
             except Exception as e:  # pylint: disable=broad-except
@@ -181,7 +182,7 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.addAction("Create new stash", self._create_new_stash)
             menu.exec_(QCursor.pos())
 
-    def _create_new_stash(self, *args, **kwargs): #pylint: disable=unused-argument
+    def _create_new_stash(self, *args, **kwargs):  # pylint: disable=unused-argument
 
         stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
 
@@ -190,14 +191,17 @@ class QSimulationManagerViewer(QTreeWidget):
             return
 
         if stash_name in self.simgr.stashes:
-            QMessageBox.critical(None, 'Duplicate stash name',
-                                 f"A stash with the name {stash_name} already exists in the current simulation manager.")
+            QMessageBox.critical(
+                None,
+                "Duplicate stash name",
+                f"A stash with the name {stash_name} already exists in the current simulation manager.",
+            )
             return
-        self.simgr._stashes[stash_name] = list()
+        self.simgr._stashes[stash_name] = []
         self.refresh()
 
     def refresh(self, **kwargs):
-        if kwargs.get('src',"") != 'simgr_viewer':
+        if kwargs.get("src", "") != "simgr_viewer":
             self._init_widgets()
 
     def current_state(self):
@@ -242,7 +246,7 @@ class QSimulationManagerViewer(QTreeWidget):
             return
 
         self.stash_tree_items = {}
-        for stash_name, stash in self.simgr.stashes.items(): #pylint: disable=unused-variable
+        for stash_name, stash in self.simgr.stashes.items():  # pylint: disable=unused-variable
             # if not stash and stash_name not in ('active', 'deadended', 'avoided'):
             #     continue
             item = StashTreeItem(stash_name, simgr_viewer=self)

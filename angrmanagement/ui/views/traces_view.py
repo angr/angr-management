@@ -16,7 +16,7 @@ class QTraceTableModel(QAbstractTableModel):
     Trace table model.
     """
 
-    Headers = ['Source']
+    Headers = ["Source"]
     COL_SOURCE = 0
 
     def __init__(self, instance):
@@ -33,20 +33,22 @@ class QTraceTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
-    def rowCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.instance.traces)
 
-    def columnCount(self, parent:PySide6.QtCore.QModelIndex=...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
-    def headerData(self, section:int, orientation:PySide6.QtCore.Qt.Orientation, role:int=...) -> Any:  # pylint:disable=unused-argument
+    def headerData(
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
+    ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index:PySide6.QtCore.QModelIndex, role:int=...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -58,9 +60,9 @@ class QTraceTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, trace: 'Trace', col: int) -> Any:
+    def _get_column_text(self, trace: "Trace", col: int) -> Any:
         if col == QTraceTableModel.COL_SOURCE:
-            return trace.source + (' (Current)' if self.instance.current_trace.am_obj is trace else '')
+            return trace.source + (" (Current)" if self.instance.current_trace.am_obj is trace else "")
         else:
             return None
 
@@ -105,12 +107,13 @@ class QTraceTableWidget(QTableView):
             menu = QMenu("", self)
             if len(traces) == 1:
                 if not self.instance.workspace.is_current_trace(traces[0]):
-                    menu.addAction('Use as current trace', lambda: self.instance.workspace.set_current_trace(traces[0]))
+                    menu.addAction("Use as current trace", lambda: self.instance.workspace.set_current_trace(traces[0]))
 
             def remove_selected_traces():
                 for t in traces:
                     self.instance.workspace.remove_trace(t)
-            menu.addAction('Remove trace' + ('s' if len(traces) > 1 else ''), remove_selected_traces)
+
+            menu.addAction("Remove trace" + ("s" if len(traces) > 1 else ""), remove_selected_traces)
             menu.exec_(event.globalPos())
 
 
@@ -120,9 +123,9 @@ class TracesView(BaseView):
     """
 
     def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__('traces', instance, default_docking_position, *args, **kwargs)
+        super().__init__("traces", instance, default_docking_position, *args, **kwargs)
 
-        self.base_caption = 'Traces'
+        self.base_caption = "Traces"
         self._tbl_widget: Optional[QTraceTableWidget] = None
         self._init_widgets()
         self.reload()

@@ -7,8 +7,17 @@ from time import sleep
 
 from sqlalchemy import func as sqlalchemy_func
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, \
-    QAbstractItemView, QTableWidgetItem, QWidget, QTabWidget, QLabel
+from PySide6.QtWidgets import (
+    QVBoxLayout,
+    QHBoxLayout,
+    QTableWidget,
+    QHeaderView,
+    QAbstractItemView,
+    QTableWidgetItem,
+    QWidget,
+    QTabWidget,
+    QLabel,
+)
 
 from angrmanagement.ui.views.view import BaseView
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -26,6 +35,7 @@ if TYPE_CHECKING:
 #
 # Plugin Log
 #
+
 
 class QPluginItem:
     def __init__(self, plugin, kind, image_id, msg):
@@ -50,10 +60,10 @@ class QPluginItem:
 
 class QPluginsLogTable(QTableWidget):
     HEADER = [
-        'Plugin',
-        'Kind',
-        'Image ID',
-        'Message',
+        "Plugin",
+        "Kind",
+        "Image ID",
+        "Message",
     ]
 
     def __init__(self, workspace, parent=None):
@@ -88,14 +98,7 @@ class QPluginsLogTable(QTableWidget):
         self.items = []
 
         for msg in messages:
-            self.items.append(
-                QPluginItem(
-                    msg.plugin,
-                    msg.kind,
-                    msg.target_image_id,
-                    msg.message
-                )
-            )
+            self.items.append(QPluginItem(msg.plugin, msg.kind, msg.target_image_id, msg.message))
 
         self.reload()
 
@@ -103,6 +106,7 @@ class QPluginsLogTable(QTableWidget):
 #
 #
 #
+
 
 class QFuzztainerItem:
     def __init__(self, data):
@@ -121,49 +125,49 @@ class QFuzztainerItem:
 
 class QFuzztainerTable(QTableWidget):
     DISPLAY_ORDER = [
-        'execs_per_sec',
-        'unique_crashes',
-        'unique_hangs',
-        'paths_found',
-        'paths_total',
-        'testcache_size',
-        'testcache_count',
-        'testcache_evict',
-        'run_time',
-        'cycles_done',
-        'cycles_wo_finds',
-        'execs_done',
-        'paths_favored',
-        'max_depth',
-        'pending_favs',
-        'pending_total',
-        'variable_paths',
-        'execs_since_crash',
-        'slowest_exec_ms',
-        'edges_found',
+        "execs_per_sec",
+        "unique_crashes",
+        "unique_hangs",
+        "paths_found",
+        "paths_total",
+        "testcache_size",
+        "testcache_count",
+        "testcache_evict",
+        "run_time",
+        "cycles_done",
+        "cycles_wo_finds",
+        "execs_done",
+        "paths_favored",
+        "max_depth",
+        "pending_favs",
+        "pending_total",
+        "variable_paths",
+        "execs_since_crash",
+        "slowest_exec_ms",
+        "edges_found",
     ]
 
     HEADER = [
-        'execs/sec',
-        'unique crashes',
-        'unique hangs',
-        'paths found',
-        'paths total',
-        'testcache size',
-        'testcache count',
-        'testcache evict',
-        'run time',
-        'cycles done',
-        'cycles w/o finds',
-        'execs done',
-        'paths favored',
-        'max depth',
-        'pending favs',
-        'pending total',
-        'variable paths',
-        'execs since crash',
-        'slowest exec ms',
-        'edges found',
+        "execs/sec",
+        "unique crashes",
+        "unique hangs",
+        "paths found",
+        "paths total",
+        "testcache size",
+        "testcache count",
+        "testcache evict",
+        "run time",
+        "cycles done",
+        "cycles w/o finds",
+        "execs done",
+        "paths favored",
+        "max depth",
+        "pending favs",
+        "pending total",
+        "variable paths",
+        "execs since crash",
+        "slowest exec ms",
+        "edges found",
     ]
 
     def __init__(self, workspace, idx, parent=None):
@@ -171,8 +175,8 @@ class QFuzztainerTable(QTableWidget):
         self.workspace = workspace
         self.idx = idx
 
-        self.setRowCount(len(self.HEADER[self.idx*10:self.idx*10 + 10]))
-        self.setVerticalHeaderLabels(self.HEADER[self.idx*10:self.idx*10 + 10])
+        self.setRowCount(len(self.HEADER[self.idx * 10 : self.idx * 10 + 10]))
+        self.setVerticalHeaderLabels(self.HEADER[self.idx * 10 : self.idx * 10 + 10])
         self.setColumnCount(1)
 
         self.verticalHeader().setVisible(True)
@@ -184,7 +188,7 @@ class QFuzztainerTable(QTableWidget):
 
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        #self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        # self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
 
         self.items = []
 
@@ -213,16 +217,14 @@ class QFuzztainerTable(QTableWidget):
                     continue
 
                 try:
-                    stats['execs_per_sec']
+                    stats["execs_per_sec"]
                 except KeyError as e:
                     print(e)
                     continue
 
-                for stat_name in self.DISPLAY_ORDER[self.idx*10:self.idx*10 + 10]:
+                for stat_name in self.DISPLAY_ORDER[self.idx * 10 : self.idx * 10 + 10]:
                     stat_data = stats[stat_name]
-                    self.items.append(
-                        QFuzztainerItem(stat_data)
-                    )
+                    self.items.append(QFuzztainerItem(stat_data))
 
                 break
 
@@ -230,7 +232,7 @@ class QFuzztainerTable(QTableWidget):
 
 
 class SummaryView(BaseView):
-    def __init__(self, workspace, default_docking_position, connector: 'ChessConnector', *args, **kwargs):
+    def __init__(self, workspace, default_docking_position, connector: "ChessConnector", *args, **kwargs):
         super().__init__("chess_summary", workspace, default_docking_position, *args, **kwargs)
         self.base_caption = "CHESS"
 
@@ -309,18 +311,18 @@ class SummaryView(BaseView):
     def worker_routine(self):
         while self.should_work:
             if self.connector is None or not self.connector.connected:
-                gui_thread_schedule_async(self.set_status, args=('Not connected to CHECRS backend.',))
+                gui_thread_schedule_async(self.set_status, args=("Not connected to CHECRS backend.",))
                 sleep(10)
                 continue
 
             if not self.connector.target_image_id:
-                gui_thread_schedule_async(self.set_status, args=('No associated remote target.',))
+                gui_thread_schedule_async(self.set_status, args=("No associated remote target.",))
                 sleep(2)
                 continue
 
             sleep(5)
 
-            gui_thread_schedule_async(self.set_status, args=('Refreshing...', ))
+            gui_thread_schedule_async(self.set_status, args=("Refreshing...",))
             session = None
             try:
                 session = self._init_session()
@@ -334,7 +336,7 @@ class SummaryView(BaseView):
                     session.close()
 
             last_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            gui_thread_schedule_async(self.set_status, args=(f'Ready. Last updated at {last_updated}.',))
+            gui_thread_schedule_async(self.set_status, args=(f"Ready. Last updated at {last_updated}.",))
 
     def _init_session(self):
         if self.connector is None:
@@ -365,7 +367,7 @@ class SummaryView(BaseView):
                     continue
 
                 try:
-                    stats['execs_per_sec']
+                    stats["execs_per_sec"]
                 except KeyError as e:
                     print(e)
                     continue
@@ -374,13 +376,16 @@ class SummaryView(BaseView):
         return None
 
     def _update_tables(self, session, target_image_id: str):
-        res = session.query(PluginMessage).filter(
-            sqlalchemy_func.lower(PluginMessage.plugin)=="fuzztainer",
-            PluginMessage.kind=="info",
-            PluginMessage.target_image_id==target_image_id,
-        ).order_by(
-            PluginMessage.created_at.desc()
-        ).limit(50)
+        res = (
+            session.query(PluginMessage)
+            .filter(
+                sqlalchemy_func.lower(PluginMessage.plugin) == "fuzztainer",
+                PluginMessage.kind == "info",
+                PluginMessage.target_image_id == target_image_id,
+            )
+            .order_by(PluginMessage.created_at.desc())
+            .limit(50)
+        )
         if not res:
             return
 

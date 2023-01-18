@@ -23,13 +23,14 @@ class POIViewer(BasePlugin):
     """
     POI Viewer Plugin
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.workspace.main_instance.register_container('poi_trace', lambda: None, Optional[TraceStatistics],
-                                                   'The trace of selected POI')
-        self.workspace.main_instance.register_container('multi_poi', lambda: None, Optional[MultiPOI],
-                                                   'POI list')
+        self.workspace.main_instance.register_container(
+            "poi_trace", lambda: None, Optional[TraceStatistics], "The trace of selected POI"
+        )
+        self.workspace.main_instance.register_container("multi_poi", lambda: None, Optional[MultiPOI], "POI list")
 
         self._views = []
 
@@ -58,18 +59,17 @@ class POIViewer(BasePlugin):
     def multi_poi(self) -> Union[ObjectContainer, Optional[MultiPOI]]:
         return self.workspace.main_instance.multi_poi
 
-
     #
     # Event handlers
     #
 
     def _on_poi_selected(self):
         # redraw disassembly view
-        view = self.workspace.view_manager.first_view_in_category('disassembly')
+        view = self.workspace.view_manager.first_view_in_category("disassembly")
         if view is not None:
             view.redraw_current_graph()
         # refresh function table
-        view = self.workspace.view_manager.first_view_in_category('functions')
+        view = self.workspace.view_manager.first_view_in_category("functions")
         if view is not None:
             view.refresh()
 
@@ -126,13 +126,11 @@ class POIViewer(BasePlugin):
 
             if count > self.GRAPH_TRACE_LEGEND_WIDTH:
                 jump = count / self.GRAPH_TRACE_LEGEND_WIDTH
-                return [(int(jump * i), 1) for i in
-                        range(self.GRAPH_TRACE_LEGEND_WIDTH)]
+                return [(int(jump * i), 1) for i in range(self.GRAPH_TRACE_LEGEND_WIDTH)]
             elif count > 0:
                 width = self.GRAPH_TRACE_LEGEND_WIDTH // count
                 remainder = self.GRAPH_TRACE_LEGEND_WIDTH % count
-                return [(i, width + 1) for i in range(remainder)] + \
-                       [(i, width) for i in range(remainder, count)]
+                return [(i, width + 1) for i in range(remainder)] + [(i, width) for i in range(remainder, count)]
 
         return None
 
@@ -147,17 +145,17 @@ class POIViewer(BasePlugin):
         if not self.poi_trace.am_none:
             for itr_func in self.poi_trace.trace_func:
                 if itr_func.bbl_addr == func.addr:
-                    return QColor(0xf0, 0xe7, 0xda)
-            return QColor(0xee, 0xee, 0xee)
+                    return QColor(0xF0, 0xE7, 0xDA)
+            return QColor(0xEE, 0xEE, 0xEE)
         return None
 
-    FUNC_COLUMNS = ('Coverage',)
+    FUNC_COLUMNS = ("Coverage",)
 
     def extract_func_column(self, func, idx):
         assert idx == 0
         if self.multi_poi.am_none:
             cov = 0
-            rend = ''
+            rend = ""
         else:
             cov = self.multi_poi.get_coverage(func)
             rend = "%.2f%%" % cov
@@ -168,8 +166,8 @@ class POIViewer(BasePlugin):
     # Menu
     #
     MENU_BUTTONS = [
-        'Create a POI from a JSON file...',
-        'Load POIs from CHECRS',
+        "Create a POI from a JSON file...",
+        "Load POIs from CHECRS",
     ]
     ADD_POI = 0
     LOAD_POI_FROM_SLACRS = 1
@@ -186,7 +184,7 @@ class POIViewer(BasePlugin):
         mapping.get(idx)()
 
     def _menu_add_poi(self):
-        _l.debug('adding poi')
+        _l.debug("adding poi")
         poi_record = self._open_poi()
         if poi_record is not None:
             poi_id = poi_record["id"]
@@ -200,7 +198,7 @@ class POIViewer(BasePlugin):
             self.multi_poi.am_event()
 
     def _menu_load_pois_from_slacrs(self):
-        _l.debug('loading pois from slacrs')
+        _l.debug("loading pois from slacrs")
         pois = self._diagnose_handler.get_pois()
         if not pois:
             return
@@ -208,12 +206,12 @@ class POIViewer(BasePlugin):
         if self.multi_poi.am_none:
             self.multi_poi.am_obj = MultiPOI(self.workspace)
         for poi_object in pois:
-            _l.debug('poi: %s', poi_object.poi)
-            if poi_object.poi != '':
+            _l.debug("poi: %s", poi_object.poi)
+            if poi_object.poi != "":
                 poi_json = json.loads(poi_object.poi)
             else:
                 poi_json = deepcopy(EMPTY_POI)
-            _l.debug('poi json: %s', poi_json)
+            _l.debug("poi json: %s", poi_json)
             # self._pois[poi_object.id] =poi_json
             self.multi_poi.am_obj.add_poi(poi_object.id, poi_json)
 
@@ -222,16 +220,18 @@ class POIViewer(BasePlugin):
 
     def _open_poi(self, poi_path=None):
         if poi_path is None:
-            poi_path = self._open_poi_dialog(tfilter='JSON files (*.json)')
+            poi_path = self._open_poi_dialog(tfilter="JSON files (*.json)")
 
         if poi_path is not None:
-            with open(poi_path, 'r') as f:
+            with open(poi_path) as f:
                 try:
                     return json.load(f)
                 except json.JSONDecodeError as ex:
-                    QMessageBox.critical(self.workspace.main_window,
-                                         "JSON decoding error",
-                                         f"Cannot decode {poi_path} as a JSON file. Exception: {ex}")
+                    QMessageBox.critical(
+                        self.workspace.main_window,
+                        "JSON decoding error",
+                        f"Cannot decode {poi_path} as a JSON file. Exception: {ex}",
+                    )
                     return None
 
         return None

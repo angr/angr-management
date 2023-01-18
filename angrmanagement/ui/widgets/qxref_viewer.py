@@ -14,13 +14,13 @@ if TYPE_CHECKING:
 
 
 class XRefMode:
-    Variable = 'variable'
-    Address = 'address'
+    Variable = "variable"
+    Address = "address"
 
 
 class QXRefModel(QAbstractTableModel):
 
-    HEADER = [ ]
+    HEADER = []
 
     def __init__(self, addr, instance, view):
         super().__init__()
@@ -30,8 +30,8 @@ class QXRefModel(QAbstractTableModel):
         self.view = view
 
     @property
-    def xrefs(self):
-        return self.view.items  # type: List[VariableAccess]
+    def xrefs(self) -> List[VariableAccess]:
+        return self.view.items
 
     @xrefs.setter
     def xrefs(self, v):
@@ -79,7 +79,8 @@ class QXRefModel(QAbstractTableModel):
 
         self.xrefs = sorted(
             self.xrefs,
-            key=lambda x: self._get_column_data(x, column), reverse=order == Qt.DescendingOrder,
+            key=lambda x: self._get_column_data(x, column),
+            reverse=order == Qt.DescendingOrder,
         )
         self.layoutChanged.emit()
 
@@ -100,7 +101,7 @@ class QXRefModel(QAbstractTableModel):
 
 class QXRefVariableModel(QXRefModel):
 
-    HEADER = [('Direction', 70), ('Type', 50), ('Variable', 80), ('VarId', 80), ('PC', 160), ('Text', 300)]
+    HEADER = [("Direction", 70), ("Type", 50), ("Variable", 80), ("VarId", 80), ("PC", 160), ("Text", 300)]
 
     DIRECTION_COL = 0
     TYPE_COL = 1
@@ -134,7 +135,7 @@ class QXRefVariableModel(QXRefModel):
         addr = _r.location.ins_addr
         node = self.instance.cfg.get_any_node(addr, anyaddr=True)
         if node is not None and node.function_address is not None:
-            return f'{addr:#x} ({self.instance.kb.functions[node.function_address].name})'
+            return f"{addr:#x} ({self.instance.kb.functions[node.function_address].name})"
         return hex(addr)
 
     def _direction(self, _r):
@@ -190,7 +191,7 @@ class QXRefVariableModel(QXRefModel):
 
 class QXRefAddressModel(QXRefModel):
 
-    HEADER = [('Direction', 70), ('Type', 50), ('PC', 160), ('Text', 300)]
+    HEADER = [("Direction", 70), ("Type", 50), ("PC", 160), ("Text", 300)]
 
     DIRECTION_COL = 0
     TYPE_COL = 1
@@ -220,7 +221,7 @@ class QXRefAddressModel(QXRefModel):
         addr = _r.ins_addr
         node = self.instance.cfg.get_any_node(addr, anyaddr=True)
         if node is not None and node.function_address is not None:
-            return f'{addr:#x} ({self.instance.kb.functions[node.function_address].name})'
+            return f"{addr:#x} ({self.instance.kb.functions[node.function_address].name})"
         return hex(addr)
 
     def _direction(self, _r):
@@ -257,10 +258,18 @@ class QXRefAddressModel(QXRefModel):
 
 
 class QXRefViewer(QTableView):
-
-    def __init__(self, addr=None, variable_manager=None, variable=None, xrefs_manager=None, dst_addr=None,
-                 instance: 'Instance'=None, xref_dialog=None, parent=None):
-        super(QXRefViewer, self).__init__(parent)
+    def __init__(
+        self,
+        addr=None,
+        variable_manager=None,
+        variable=None,
+        xrefs_manager=None,
+        dst_addr=None,
+        instance: "Instance" = None,
+        xref_dialog=None,
+        parent=None,
+    ):
+        super().__init__(parent)
 
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -342,9 +351,13 @@ class QXRefViewer(QTableView):
                             ins_addr = pred.instruction_addrs[-1]
                     else:
                         ins_addr = pred.addr
-                    yield XRef(ins_addr=ins_addr, block_addr=pred.addr, stmt_idx=None, dst=self._dst_addr,
-                               xref_type=XRefType.Offset,
-                               )
+                    yield XRef(
+                        ins_addr=ins_addr,
+                        block_addr=pred.addr,
+                        stmt_idx=None,
+                        dst=self._dst_addr,
+                        xref_type=XRefType.Offset,
+                    )
 
     #
     # Signal handlers

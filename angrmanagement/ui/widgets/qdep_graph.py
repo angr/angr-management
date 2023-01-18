@@ -22,7 +22,7 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, workspace: 'Workspace', dep_view: 'DependencyView', parent=None):
+    def __init__(self, workspace: "Workspace", dep_view: "DependencyView", parent=None):
         super().__init__(parent=parent)
 
         self._workspace = workspace
@@ -30,10 +30,10 @@ class QDependencyGraph(QZoomableDraggableGraphicsView):
 
         self._graph = None
         self.blocks = set()
-        self._edges: List[Edge] = [ ]
-        self._arrows_by_src: Dict[Any,List[QDepGraphArrow]] = defaultdict(list)
-        self._arrows_by_dst: Dict[Any,List[QDepGraphArrow]] = defaultdict(list)
-        self._arrows: List[QDepGraphArrow] = [ ]
+        self._edges: List[Edge] = []
+        self._arrows_by_src: Dict[Any, List[QDepGraphArrow]] = defaultdict(list)
+        self._arrows_by_dst: Dict[Any, List[QDepGraphArrow]] = defaultdict(list)
+        self._arrows: List[QDepGraphArrow] = []
 
     @property
     def graph(self):

@@ -11,12 +11,16 @@ from PySide6.QtGui import QColor
 from angr.errors import SimEngineError
 
 l = logging.getLogger(name=__name__)
-l.setLevel('DEBUG')
+l.setLevel("DEBUG")
 
 
 class TraceFunc:
 
-    __slots__ = ('bbl_addr', 'func_name', 'func', )
+    __slots__ = (
+        "bbl_addr",
+        "func_name",
+        "func",
+    )
 
     def __init__(self, bbl_addr=None, func_name=None, func=None):
         self.bbl_addr = bbl_addr
@@ -26,7 +30,10 @@ class TraceFunc:
 
 class ObjectAndBase:
 
-    __slots__ = ('obj_name', 'base_addr', )
+    __slots__ = (
+        "obj_name",
+        "base_addr",
+    )
 
     def __init__(self, obj_name: str, base_addr: int):
         self.obj_name = obj_name
@@ -42,13 +49,13 @@ class ObjectAndBase:
 
 class TraceStatistics:
 
-    BBL_FILL_COLOR = QColor(0, 0xf0, 0xf0, 0xf)
-    BBL_BORDER_COLOR = QColor(0, 0xf0, 0xf0)
+    BBL_FILL_COLOR = QColor(0, 0xF0, 0xF0, 0xF)
+    BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")
 
     def __init__(self, workspace, trace, baddr):
         self.workspace = workspace
-        self.trace: Dict[str,Any] = trace
+        self.trace: Dict[str, Any] = trace
         self.bbl_addrs = trace["bb_addrs"]
         self.syscalls = trace["syscalls"]
         self.id = trace["id"]
@@ -56,8 +63,8 @@ class TraceStatistics:
         self.input_id = trace["input_id"]
         self.complete = trace["complete"]
         self.mapping: Optional[List[ObjectAndBase]] = None
-        if 'map' in trace:
-            map_dict: Dict[str,int] = trace["map"]
+        if "map" in trace:
+            map_dict: Dict[str, int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
             self.mapping = list(sorted(self.mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
         self.trace_func: List[TraceFunc] = []
@@ -76,7 +83,7 @@ class TraceStatistics:
             self.project_baddr = self.project.loader.main_object.mapped_base
         self.runtime_baddr = baddr  # this will not be used if self.mapping is available
 
-        self._cached_object_project_base_addrs: Dict[str,int] = {}
+        self._cached_object_project_base_addrs: Dict[str, int] = {}
 
         self._statistics(self.bbl_addrs)
 
@@ -106,8 +113,10 @@ class TraceStatistics:
                 break
 
         if base_addr is None:
-            l.warning("Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the "
-                      "trace.", object_name)
+            l.warning(
+                "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the " "trace.",
+                object_name,
+            )
         self._cached_object_project_base_addrs[object_name] = base_addr
         return base_addr
 
@@ -182,7 +191,7 @@ class TraceStatistics:
         """
         :param trace: basic block address list
         """
-        self.mapped_trace = [ ]
+        self.mapped_trace = []
         for addr in trace_addrs:
             converted_addr = self._apply_trace_offset(addr)
             if converted_addr is not None:

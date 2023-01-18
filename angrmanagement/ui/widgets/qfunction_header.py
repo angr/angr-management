@@ -13,7 +13,6 @@ from .qgraph_object import QCachedGraphicsItem
 
 
 class QFunctionHeader(QCachedGraphicsItem):
-
     def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None):
         super().__init__(parent=parent)
 
@@ -44,8 +43,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         pass
 
     def paint(self, painter, option, widget):
-        painter.setRenderHints(
-                QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         if self.infodock.is_label_selected(self.addr):
             highlight_color = Conf.disasm_view_label_highlight_color
@@ -72,7 +70,7 @@ class QFunctionHeader(QCachedGraphicsItem):
     def _init_widgets(self):
 
         if self.args is not None:
-            self._arg_str_list = [ ]
+            self._arg_str_list = []
             for arg in self.args:
                 if isinstance(arg, SimRegArg):
                     self._arg_str_list.append(arg.reg_name)
@@ -135,7 +133,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
         # arguments
         if self._arg_str_list is not None:
-            s = 'Args: (' + ", ".join(self._arg_str_list) + ")"
+            s = "Args: (" + ", ".join(self._arg_str_list) + ")"
             self._args_str_item = QGraphicsSimpleTextItem(s, self)
             self._args_str_item.setFont(self._config.code_font)
             self._args_str_item.setBrush(self._config.disasm_view_function_color)

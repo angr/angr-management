@@ -24,7 +24,7 @@ from angrmanagement.config import Conf
 from angrmanagement.config.config_entry import ConfigurationEntry
 
 
-Conf._entries['checrs_backend_str'] = ConfigurationEntry("checrs_backend_str", str, "", default_value="")
+Conf._entries["checrs_backend_str"] = ConfigurationEntry("checrs_backend_str", str, "", default_value="")
 Conf.checrs_backend_str = "sqlite:////tmp/testtest.sqlite"
 
 
@@ -53,7 +53,7 @@ class TestHumanActivities(unittest.TestCase):
     def test_rename_a_function_in_disasm_and_pseudocode_views(self):
         main = self._open_a_project()
 
-        func = main.workspace.main_instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
 
         # decompile the function
@@ -93,19 +93,23 @@ class TestHumanActivities(unittest.TestCase):
 
         sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
-        function_rename = self.session.query(HumanActivity).filter(
-            HumanActivity.project_md5 == self.project_md5,
-            HumanActivity.category == HumanActivityEnum.FunctionRename,
-            HumanActivity.old_name == "main",
-            HumanActivity.new_name == "fdsa",
-        ).one()
+        function_rename = (
+            self.session.query(HumanActivity)
+            .filter(
+                HumanActivity.project_md5 == self.project_md5,
+                HumanActivity.category == HumanActivityEnum.FunctionRename,
+                HumanActivity.old_name == "main",
+                HumanActivity.new_name == "fdsa",
+            )
+            .one()
+        )
         self.session.close()
         self.assertIsNotNone(function_rename)
 
     def test_rename_a_variable_in_pseudocode_view(self):
         main = self._open_a_project()
 
-        func = main.workspace.main_instance.project.kb.functions['main']
+        func = main.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
 
         # decompile the function
@@ -118,8 +122,10 @@ class TestHumanActivities(unittest.TestCase):
 
         # find an arbitrary node for a variable
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
-            if isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CVariable) \
-                    and item.obj.unified_variable is not None:
+            if (
+                isinstance(item.obj, angr.analyses.decompiler.structured_codegen.c.CVariable)
+                and item.obj.unified_variable is not None
+            ):
                 variable_node = item.obj
                 break
         else:
@@ -135,16 +141,20 @@ class TestHumanActivities(unittest.TestCase):
 
         sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
-        variable_rename = self.session.query(HumanActivity).filter(
-            HumanActivity.project_md5 == self.project_md5,
-            HumanActivity.new_name == "fdsa",
-        ).one()
+        variable_rename = (
+            self.session.query(HumanActivity)
+            .filter(
+                HumanActivity.project_md5 == self.project_md5,
+                HumanActivity.new_name == "fdsa",
+            )
+            .one()
+        )
         self.session.close()
         self.assertIsNotNone(variable_rename)
 
     def test_click_block(self):
         main_window = self._open_a_project()
-        func = main_window.workspace.main_instance.project.kb.functions['main']
+        func = main_window.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
 
         # display function main
@@ -162,16 +172,20 @@ class TestHumanActivities(unittest.TestCase):
         # assert that slacrs logged the information
         sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
-        result = self.session.query(HumanActivity).filter(
-            HumanActivity.project_md5 == self.project_md5,
-            HumanActivity.addr == func.addr,
-        ).one()
+        result = (
+            self.session.query(HumanActivity)
+            .filter(
+                HumanActivity.project_md5 == self.project_md5,
+                HumanActivity.addr == func.addr,
+            )
+            .one()
+        )
         self.session.close()
         self.assertIsNotNone(result)
 
     def test_click_insn(self):
         main_window = self._open_a_project()
-        func = main_window.workspace.main_instance.project.kb.functions['main']
+        func = main_window.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
 
         # display function main
@@ -190,10 +204,14 @@ class TestHumanActivities(unittest.TestCase):
         # assert that slacrs logged the information
         sleep(5)
         self.session = Slacrs(database=Conf.checrs_backend_str).session()
-        result = self.session.query(HumanActivity).filter(
-            HumanActivity.project_md5 == self.project_md5,
-            HumanActivity.addr == insn.addr,
-        ).one()
+        result = (
+            self.session.query(HumanActivity)
+            .filter(
+                HumanActivity.project_md5 == self.project_md5,
+                HumanActivity.addr == insn.addr,
+            )
+            .one()
+        )
         self.session.close()
         self.assertIsNotNone(result)
 

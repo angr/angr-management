@@ -32,8 +32,9 @@ class QBlock(QCachedGraphicsItem):
     SHADOW_OFFSET_X = 0
     SHADOW_OFFSET_Y = 0
 
-    def __init__(self, instance, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene,
-                 parent=None):
+    def __init__(
+        self, instance, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene, parent=None
+    ):
         super().__init__(parent=parent)
 
         # initialization
@@ -50,12 +51,12 @@ class QBlock(QCachedGraphicsItem):
 
         self._config = Conf
 
-        self.objects = [ ]  # instructions and labels
+        self.objects = []  # instructions and labels
         self._block_item = None  # type: QPainterPath
         self._block_item_obj = None  # type: QGraphicsPathItem
-        self.addr_to_insns = { }
-        self.addr_to_labels = { }
-        self.qblock_annotations = { }
+        self.addr_to_insns = {}
+        self.addr_to_labels = {}
+        self.qblock_annotations = {}
 
         self._block_code_options: QBlockCodeOptions = QBlockCodeOptions()
         self._update_block_code_options()
@@ -137,31 +138,43 @@ class QBlock(QCachedGraphicsItem):
             self._block_item_obj = None
 
         self._block_item = QPainterPath()
-        self._block_item.addRoundedRect(0, 0, self.width - self.SHADOW_OFFSET_X, self.height - self.SHADOW_OFFSET_Y,
+        self._block_item.addRoundedRect(
+            0,
+            0,
+            self.width - self.SHADOW_OFFSET_X,
+            self.height - self.SHADOW_OFFSET_Y,
             self._config.disasm_view_node_rounding,
-            self._config.disasm_view_node_rounding)
+            self._config.disasm_view_node_rounding,
+        )
 
     def _init_ail_block_widgets(self):
         bn = self.cfg_nodes
         if bn.addr in self.disasm.kb.labels:
-            label = QBlockLabel(bn.addr, get_label_text(bn.addr, self.disasm.kb),
-                                self._config, self.disasm_view, self.instance,
-                                self.infodock, parent=self)
+            label = QBlockLabel(
+                bn.addr,
+                get_label_text(bn.addr, self.disasm.kb),
+                self._config,
+                self.disasm_view,
+                self.instance,
+                self.infodock,
+                parent=self,
+            )
             self.objects.append(label)
             self.addr_to_labels[bn.addr] = label
 
         # always add the block name as a label and instruction:
-        block_name_label = QBlockLabel(bn.addr, f"loc_{hex(bn.addr)}:", self._config,
-                                       self.disasm_view, self.instance,
-                                       self.infodock, parent=self)
+        block_name_label = QBlockLabel(
+            bn.addr, f"loc_{hex(bn.addr)}:", self._config, self.disasm_view, self.instance, self.infodock, parent=self
+        )
         self.objects.append(block_name_label)
         self.addr_to_labels[bn.addr] = block_name_label
 
         for stmt in bn.statements:
             code_obj = QAilObj(stmt, self.instance, self.infodock, parent=None, options=self._block_code_options)
-            obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.disasm_view,
-                             self.instance, self.infodock, parent=self)
-            code_obj.parent = obj # Reparent
+            obj = QBlockCode(
+                stmt.ins_addr, code_obj, self._config, self.disasm_view, self.instance, self.infodock, parent=self
+            )
+            code_obj.parent = obj  # Reparent
             self.objects.append(obj)
             self.addr_to_insns[bn.addr] = obj
 
@@ -169,20 +182,31 @@ class QBlock(QCachedGraphicsItem):
         for obj in get_block_objects(self.disasm, self.cfg_nodes, self.func_addr):
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
-                insn = QInstruction(self.instance, self.func_addr, self.disasm_view, self.disasm,
-                                    self.infodock, obj, out_branch, self._config, parent=self)
+                insn = QInstruction(
+                    self.instance,
+                    self.func_addr,
+                    self.disasm_view,
+                    self.disasm,
+                    self.infodock,
+                    obj,
+                    out_branch,
+                    self._config,
+                    parent=self,
+                )
                 self.objects.append(insn)
                 self.addr_to_insns[obj.addr] = insn
             elif isinstance(obj, Label):
-                label = QBlockLabel(obj.addr, obj.text, self._config, self.disasm_view, self.instance, self.infodock,
-                                    parent=self)
+                label = QBlockLabel(
+                    obj.addr, obj.text, self._config, self.disasm_view, self.instance, self.infodock, parent=self
+                )
                 self.objects.append(label)
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, IROp):
                 code_obj = QIROpObj(obj, self.infodock, parent=None)
-                disp_obj = QBlockCode(obj.addr, code_obj, self._config, self.disasm_view,
-                                 self.instance, self.infodock, parent=self)
-                code_obj.parent = disp_obj # Reparent
+                disp_obj = QBlockCode(
+                    obj.addr, code_obj, self._config, self.disasm_view, self.instance, self.infodock, parent=self
+                )
+                code_obj.parent = disp_obj  # Reparent
                 self.objects.append(disp_obj)
             elif isinstance(obj, PhiVariable):
                 if not isinstance(obj.variable, SimRegisterVariable):
@@ -193,8 +217,19 @@ class QBlock(QCachedGraphicsItem):
                     variable = QVariable(self.instance, self.disasm_view, var, self._config, parent=self)
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
-                self.objects.append(QFunctionHeader(self.func_addr, obj.name, obj.prototype, obj.args, self._config,
-                                                    self.disasm_view, self.instance, self.infodock, parent=self))
+                self.objects.append(
+                    QFunctionHeader(
+                        self.func_addr,
+                        obj.name,
+                        obj.prototype,
+                        obj.args,
+                        self._config,
+                        self.disasm_view,
+                        self.instance,
+                        self.infodock,
+                        parent=self,
+                    )
+                )
 
     def _init_widgets(self):
         if self.scene is not None:
@@ -223,7 +258,7 @@ class QGraphBlock(QBlock):
 
     @property
     def mode(self):
-        return 'graph'
+        return "graph"
 
     def layout_widgets(self):
         x, y = self.LEFT_PADDING, self.TOP_PADDING
@@ -273,7 +308,7 @@ class QGraphBlock(QBlock):
 
         return self._config.disasm_view_node_background_color
 
-    def _set_block_objects_visibility(self, visible:bool):
+    def _set_block_objects_visibility(self, visible: bool):
         for obj in self.objects:
             obj.setVisible(visible)
             obj.setEnabled(visible)
@@ -321,9 +356,12 @@ class QGraphBlock(QBlock):
 
     def _boundingRect(self):
         cbr = self.childrenBoundingRect()
-        margins = QMarginsF(self.LEFT_PADDING, self.TOP_PADDING,
-                            self.RIGHT_PADDING + self.SHADOW_OFFSET_X,
-                            self.BOTTOM_PADDING + self.SHADOW_OFFSET_Y)
+        margins = QMarginsF(
+            self.LEFT_PADDING,
+            self.TOP_PADDING,
+            self.RIGHT_PADDING + self.SHADOW_OFFSET_X,
+            self.BOTTOM_PADDING + self.SHADOW_OFFSET_Y,
+        )
         return cbr.marginsAdded(margins)
 
 
@@ -337,11 +375,11 @@ class QLinearBlock(QBlock):
 
     @property
     def mode(self):
-        return 'linear'
+        return "linear"
 
     @staticmethod
     def format_address(addr):
-        return '{:08x}'.format(addr)
+        return f"{addr:08x}"
 
     def layout_widgets(self):
         y_offset = 0

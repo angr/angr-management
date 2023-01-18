@@ -1,37 +1,49 @@
-import os
 from typing import TYPE_CHECKING, Callable, Optional, List, Union
+import os
 import logging
 import traceback
-import time
 
 from PySide6.QtWidgets import QMessageBox
 from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
-from angr.misc.testing import is_testing
 from cle import SymbolType
 
-from ..logic.debugger import DebuggerWatcher
-from ..logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.config import Conf
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.data.trace import BintraceTrace, Trace
+from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.data.jobs.loading import LoadBinaryJob
+from angrmanagement.data.jobs import VariableRecoveryJob
+from angrmanagement.data.analysis_options import AnalysesConfiguration
+from angrmanagement.plugins import PluginManager
 
-from ..config import Conf
-from ..data.breakpoint import Breakpoint, BreakpointType
-from ..data.trace import BintraceTrace, Trace
-from ..data.instance import ObjectContainer
-from ..data.jobs.loading import LoadBinaryJob
-from ..data.jobs import CodeTaggingJob, PrototypeFindingJob, VariableRecoveryJob, FlirtSignatureRecognitionJob, \
-    CFGGenerationJob
-from ..data.analysis_options import AnalysesConfiguration, CFGAnalysisConfiguration, FlirtAnalysisConfiguration, \
-    VariableRecoveryConfiguration
-from .views import (FunctionsView, DisassemblyView, SymexecView, StatesView, StringsView, ConsoleView, CodeView,
-                    InteractionView, PatchesView, DependencyView, ProximityView, TypesView, HexView, LogView,
-                    DataDepView, RegistersView, StackView, TracesView, TraceMapView, BreakpointsView,
-                    CallExplorerView)
+from .views import (
+    FunctionsView,
+    DisassemblyView,
+    SymexecView,
+    StatesView,
+    StringsView,
+    ConsoleView,
+    CodeView,
+    InteractionView,
+    PatchesView,
+    DependencyView,
+    ProximityView,
+    TypesView,
+    HexView,
+    LogView,
+    DataDepView,
+    RegistersView,
+    StackView,
+    TracesView,
+    TraceMapView,
+    BreakpointsView,
+    CallExplorerView,
+)
 from .view_manager import ViewManager
 from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
-from .dialogs import AnalysisOptionsDialog
-from ..logic.threads import gui_thread_schedule_async
-
-from ..plugins import PluginManager
 
 if TYPE_CHECKING:
     from ..data.instance import Instance
@@ -45,9 +57,10 @@ class Workspace:
     """
     This class implements the angr management workspace.
     """
+
     def __init__(self, main_window, instance):
 
-        self.main_window: 'MainWindow' = main_window
+        self.main_window: "MainWindow" = main_window
         self._main_instance = instance
         instance.workspace = self
 
@@ -58,29 +71,27 @@ class Workspace:
         self.current_screen = ObjectContainer(None, name="current_screen")
 
         self.default_tabs = [
-            DisassemblyView(self._main_instance, 'center'),
-            HexView(self._main_instance, 'center'),
-            ProximityView(self._main_instance, 'center'),
-            CodeView(self._main_instance, 'center'),
-            FunctionsView(self._main_instance, 'left'),
+            DisassemblyView(self._main_instance, "center"),
+            HexView(self._main_instance, "center"),
+            ProximityView(self._main_instance, "center"),
+            CodeView(self._main_instance, "center"),
+            FunctionsView(self._main_instance, "left"),
         ]
         if Conf.has_operation_mango:
-            self.default_tabs.append(
-                DependencyView(self._main_instance, 'center')
-            )
+            self.default_tabs.append(DependencyView(self._main_instance, "center"))
         self.default_tabs += [
-            StringsView(self._main_instance, 'center'),
-            PatchesView(self._main_instance, 'center'),
-            SymexecView(self._main_instance, 'center'),
-            StatesView(self._main_instance, 'center'),
-            InteractionView(self._main_instance, 'center'),
-            ConsoleView(self._main_instance, 'bottom'),
-            LogView(self._main_instance, 'bottom'),
+            StringsView(self._main_instance, "center"),
+            PatchesView(self._main_instance, "center"),
+            SymexecView(self._main_instance, "center"),
+            StatesView(self._main_instance, "center"),
+            InteractionView(self._main_instance, "center"),
+            ConsoleView(self._main_instance, "bottom"),
+            LogView(self._main_instance, "bottom"),
         ]
 
         enabled_tabs = [x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
         for tab in self.default_tabs:
-            if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs)==0:
+            if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs) == 0:
                 self.add_view(tab)
 
         self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.main_instance.debugger_mgr.debugger)
@@ -93,11 +104,11 @@ class Workspace:
     #
 
     @property
-    def _main_window(self) -> 'MainWindow':
+    def _main_window(self) -> "MainWindow":
         return self.main_window
 
     @property
-    def main_instance(self) -> 'Instance':
+    def main_instance(self) -> "Instance":
         return self._main_instance
 
     #
@@ -116,8 +127,9 @@ class Workspace:
             state = dbg.simstate
             if state is not None:
                 addr = state.solver.eval(state.regs.pc)
-                view = self.view_manager.current_view_in_category('disassembly') or \
-                       self.view_manager.first_view_in_category('disassembly')
+                view = self.view_manager.current_view_in_category(
+                    "disassembly"
+                ) or self.view_manager.first_view_in_category("disassembly")
                 if view:
                     view.jump_to(addr, True)
 
@@ -144,7 +156,7 @@ class Workspace:
         else:
             current_addr = None
 
-        view = DisassemblyView(self._main_instance, 'center')
+        view = DisassemblyView(self._main_instance, "center")
         self.add_view(view)
         self.raise_view(view)
         view._linear_viewer.initialize()  # FIXME: Don't access protected member
@@ -169,7 +181,7 @@ class Workspace:
 
         self.view_manager.raise_view(view)
 
-    def reload(self, categories: Optional[List[str]]=None):
+    def reload(self, categories: Optional[List[str]] = None):
         """
         Ask all or specified views to reload the underlying data and regenerate the UI. This is usually expensive.
 
@@ -180,9 +192,9 @@ class Workspace:
         if categories is None:
             views = self.view_manager.views
         else:
-            views = [ ]
+            views = []
             for category in categories:
-                views.extend(self.view_manager.views_by_category.get(category, [ ]))
+                views.extend(self.view_manager.views_by_category.get(category, []))
 
         for view in views:
             try:
@@ -190,7 +202,7 @@ class Workspace:
             except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
 
-    def refresh(self, categories: Optional[List[str]]=None):
+    def refresh(self, categories: Optional[List[str]] = None):
         """
         Ask all or specified views to refresh based on changes in the underlying data and refresh the UI if needed. This
         may be called frequently so it must be extremely fast.
@@ -202,9 +214,9 @@ class Workspace:
         if categories is None:
             views = self.view_manager.views
         else:
-            views = [ ]
+            views = []
             for category in categories:
-                views.extend(self.view_manager.views_by_category.get(category, [ ]))
+                views.extend(self.view_manager.views_by_category.get(category, []))
 
         for view in views:
             try:
@@ -231,7 +243,7 @@ class Workspace:
             self.jump_to(obj.addr)
 
     def jump_to(self, addr, view=None, use_animation=False):
-        if view is None or view.category != 'disassembly':
+        if view is None or view.category != "disassembly":
             view = self._get_or_create_disassembly_view()
 
         self.raise_view(view)
@@ -260,15 +272,15 @@ class Workspace:
                 size = sym.size
             if not type_:
                 if sym.type == SymbolType.TYPE_FUNCTION:
-                    type_ = 'execute'
+                    type_ = "execute"
                 else:
-                    type_ = 'write'
+                    type_ = "write"
         elif type(obj) is Function:
             addr = obj.addr
             if not type_:
-                type_ = 'execute'
+                type_ = "execute"
         else:
-            _l.error('Unexpected target object type. Expected int | str | Function')
+            _l.error("Unexpected target object type. Expected int | str | Function")
             return
 
         if not size:
@@ -276,13 +288,12 @@ class Workspace:
 
         bp_type_map = {
             None: BreakpointType.Execute,
-            'execute': BreakpointType.Execute,
-            'write': BreakpointType.Write,
-            'read': BreakpointType.Read,
+            "execute": BreakpointType.Execute,
+            "write": BreakpointType.Write,
+            "read": BreakpointType.Read,
         }
         if type_ not in bp_type_map:
-            _l.error("Unknown breakpoint type '%s'. Expected %s",
-                     type_, ' | '.join(bp_type_map.keys()))
+            _l.error("Unknown breakpoint type '%s'. Expected %s", type_, " | ".join(bp_type_map.keys()))
             return
 
         bp = Breakpoint(bp_type_map[type_], addr, size)
@@ -346,7 +357,7 @@ class Workspace:
         simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
         simgr_container = ObjectContainer(simgr, name=state_name)
         inst.simgrs.append(simgr_container)
-        inst.simgrs.am_event(src='new_path')
+        inst.simgrs.am_event(src="new_path")
 
         if view is None:
             view = self._get_or_create_symexec_view()
@@ -356,7 +367,7 @@ class Workspace:
 
     def create_trace_debugger(self):
         if self.main_instance.current_trace.am_none:
-            _l.error('No trace available')
+            _l.error("No trace available")
             return
 
         if isinstance(self.main_instance.current_trace.am_obj, BintraceTrace):
@@ -406,16 +417,19 @@ class Workspace:
         load_options = trace.get_project_load_options()
 
         if load_options is None:
-            QMessageBox.warning(None, "Error", "Failed to determine load options for binary from trace. "
-                                      "Please select binary.")
+            QMessageBox.warning(
+                None, "Error", "Failed to determine load options for binary from trace. " "Please select binary."
+            )
             load_options = {}
         else:
             thing = load_options["thing"]
             load_options = load_options["load_options"]
             if not os.path.exists(thing):
-                QMessageBox.warning(None, "Unable to find target binary!",
-                                          f"Unable to find the traced binary at: \n\n{thing}\n\n"
-                                          "Please select target binary.")
+                QMessageBox.warning(
+                    None,
+                    "Unable to find target binary!",
+                    f"Unable to find the traced binary at: \n\n{thing}\n\n" "Please select target binary.",
+                )
                 thing = None
 
         if not thing:
@@ -431,7 +445,7 @@ class Workspace:
         self.main_instance.add_job(job)
 
     def interact_program(self, img_name, view=None):
-        if view is None or view.category != 'interaction':
+        if view is None or view.category != "interaction":
             view = self._get_or_create_interaction_view()
         view.initialize(img_name)
 
@@ -440,14 +454,14 @@ class Workspace:
 
     def log(self, msg):
         if isinstance(msg, BaseException):
-            msg = ''.join(traceback.format_exception(type(msg), msg, msg.__traceback__))
+            msg = "".join(traceback.format_exception(type(msg), msg, msg.__traceback__))
 
-        console = self.view_manager.first_view_in_category('console')
+        console = self.view_manager.first_view_in_category("console")
         if console is None or not console.ipython_widget_available:
             print(msg)
         else:
             console.print_text(msg)
-            console.print_text('\n')
+            console.print_text("\n")
 
     def show_linear_disassembly_view(self):
         view = self._get_or_create_disassembly_view()
@@ -579,7 +593,7 @@ class Workspace:
         if self.main_instance is None:
             return
 
-        view: Optional[DisassemblyView] = self.view_manager.first_view_in_category('disassembly')
+        view: Optional[DisassemblyView] = self.view_manager.first_view_in_category("disassembly")
         if view is not None:
             selected_insns = view.current_graph.infodock.selected_insns
             if selected_insns:
@@ -603,11 +617,11 @@ class Workspace:
     #
 
     def _get_or_create_disassembly_view(self) -> DisassemblyView:
-        view = self.view_manager.current_view_in_category('disassembly')
+        view = self.view_manager.current_view_in_category("disassembly")
         if view is None:
-            view = self.view_manager.first_view_in_category('disassembly')
+            view = self.view_manager.first_view_in_category("disassembly")
         if view is None:
-            view = DisassemblyView(self._main_instance, 'center')
+            view = DisassemblyView(self._main_instance, "center")
             self.add_view(view)
             view.reload()
 
@@ -617,12 +631,12 @@ class Workspace:
         """
         Create a new hex view.
         """
-        view = HexView(self._main_instance, 'center')
+        view = HexView(self._main_instance, "center")
         self.add_view(view)
         return view
 
     def _get_or_create_hex_view(self) -> HexView:
-        view = self.view_manager.first_view_in_category('hex')
+        view = self.view_manager.first_view_in_category("hex")
 
         if view is None:
             view = self._create_hex_view()
@@ -635,7 +649,7 @@ class Workspace:
 
         if view is None:
             # Create a new pseudo-code view
-            view = CodeView(self._main_instance, 'center')
+            view = CodeView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -646,7 +660,7 @@ class Workspace:
 
         if view is None:
             # Create a new symexec view
-            view = SymexecView(self._main_instance, 'center')
+            view = SymexecView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -657,7 +671,7 @@ class Workspace:
 
         if view is None:
             # Create a new states view
-            view = StatesView(self._main_instance, 'center')
+            view = StatesView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -668,7 +682,7 @@ class Workspace:
 
         if view is None:
             # Create a new states view
-            view = StringsView(self._main_instance, 'center')
+            view = StringsView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -679,7 +693,7 @@ class Workspace:
 
         if view is None:
             # Create a new states view
-            view = PatchesView(self._main_instance, 'center')
+            view = PatchesView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -688,7 +702,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("interaction")
         if view is None:
             # Create a new interaction view
-            view = InteractionView(self._main_instance, 'center')
+            view = InteractionView(self._main_instance, "center")
             self.add_view(view)
         return view
 
@@ -696,17 +710,17 @@ class Workspace:
         view = self.view_manager.first_view_in_category("types")
         if view is None:
             # Create a new interaction view
-            view = TypesView(self._main_instance, 'center')
+            view = TypesView(self._main_instance, "center")
             self.add_view(view)
         return view
 
     def _get_or_create_data_dependency_graph(self, analysis_params: dict) -> Optional[DataDepView]:
         # Take the first data dependency view
-        view = self.view_manager.first_view_in_category('data_dependency')
+        view = self.view_manager.first_view_in_category("data_dependency")
 
         if view is None:
             # Create a new data dependency view
-            view = DataDepView(self._main_instance, 'center')
+            view = DataDepView(self._main_instance, "center")
             self.add_view(view)
 
         # Update DataDepView to utilize new analysis params
@@ -720,7 +734,7 @@ class Workspace:
 
         if view is None:
             # Create a new proximity view
-            view = ProximityView(self._main_instance, 'center')
+            view = ProximityView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -731,7 +745,7 @@ class Workspace:
 
         if view is None:
             # Create a new console view
-            view = ConsoleView(self._main_instance, 'bottom')
+            view = ConsoleView(self._main_instance, "bottom")
             self.add_view(view)
 
         return view
@@ -742,7 +756,7 @@ class Workspace:
 
         if view is None:
             # Create a new log view
-            view = LogView(self._main_instance, 'bottom')
+            view = LogView(self._main_instance, "bottom")
             self.add_view(view)
 
         return view
@@ -753,7 +767,7 @@ class Workspace:
 
         if view is None:
             # Create a new functions view
-            view = FunctionsView(self._main_instance, 'left')
+            view = FunctionsView(self._main_instance, "left")
             self.add_view(view)
 
         return view
@@ -763,7 +777,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("registers")
 
         if view is None:
-            view = RegistersView(self._main_instance, 'right')
+            view = RegistersView(self._main_instance, "right")
             self.add_view(view)
 
         return view
@@ -773,7 +787,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("stack")
 
         if view is None:
-            view = StackView(self._main_instance, 'right')
+            view = StackView(self._main_instance, "right")
             self.add_view(view)
 
         return view
@@ -783,7 +797,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("traces")
 
         if view is None:
-            view = TracesView(self._main_instance, 'center')
+            view = TracesView(self._main_instance, "center")
             self.add_view(view)
 
         return view
@@ -793,7 +807,7 @@ class Workspace:
         view = self.view_manager.first_view_in_category("tracemap")
 
         if view is None:
-            view = TraceMapView(self._main_instance, 'top')
+            view = TraceMapView(self._main_instance, "top")
             self.add_view(view)
 
         return view
@@ -803,17 +817,17 @@ class Workspace:
         view = self.view_manager.first_view_in_category("breakpoints")
 
         if view is None:
-            view = BreakpointsView(self._main_instance, 'center')
+            view = BreakpointsView(self._main_instance, "center")
             self.add_view(view)
 
         return view
 
     def _get_or_create_call_explorer_view(self) -> CallExplorerView:
         # Take the first function call explorer view
-        view = self.view_manager.first_view_in_category('call_explorer')
+        view = self.view_manager.first_view_in_category("call_explorer")
 
         if view is None:
-            view = CallExplorerView(self._main_instance, 'right')
+            view = CallExplorerView(self._main_instance, "right")
             self.add_view(view)
 
         return view
@@ -825,47 +839,48 @@ class Workspace:
     # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
 
     def set_cb_function_backcolor(self, callback: Callable[[Function], None]):
-        fv = self.view_manager.first_view_in_category('functions')  # type: FunctionsView
+        fv = self.view_manager.first_view_in_category("functions")  # type: FunctionsView
         if fv:
             fv.backcolor_callback = callback
 
     def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category["disassembly"]) == 1:
+            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
         else:
-            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
         if dv:
             dv.insn_backcolor_callback = callback
 
     def set_cb_label_rename(self, callback):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category["disassembly"]) == 1:
+            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
         else:
-            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
         if dv:
             dv.label_rename_callback = callback
 
-    def add_disasm_insn_ctx_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None],
-                                       add_separator_first=True):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+    def add_disasm_insn_ctx_menu_entry(
+        self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True
+    ):
+        if len(self.view_manager.views_by_category["disassembly"]) == 1:
+            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
         else:
-            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback, add_separator_first)
 
     def remove_disasm_insn_ctx_menu_entry(self, text, remove_preceding_separator=True):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category["disassembly"]) == 1:
+            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
         else:
-            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
         if dv._insn_menu:
             dv._insn_menu.remove_menu_entry(text, remove_preceding_separator)
 
     def set_cb_set_comment(self, callback):
-        if len(self.view_manager.views_by_category['disassembly']) == 1:
-            dv = self.view_manager.first_view_in_category('disassembly')  # type: DisassemblyView
+        if len(self.view_manager.views_by_category["disassembly"]) == 1:
+            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
         else:
-            dv = self.view_manager.current_view_in_category('disassembly')  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
         if dv:
             dv.set_comment_callback = callback

@@ -12,8 +12,18 @@ from ailment.statement import Store, Assignment
 from ailment.expression import Load, Op, UnaryOp, BinaryOp
 from angr.sim_type import SimType
 from angr.sim_variable import SimVariable, SimTemporaryVariable
-from angr.analyses.decompiler.structured_codegen.c import CBinaryOp, CVariable, CFunctionCall, CFunction, \
-    CStructField, CIndexedVariable, CVariableField, CUnaryOp, CConstant, CExpression
+from angr.analyses.decompiler.structured_codegen.c import (
+    CBinaryOp,
+    CVariable,
+    CFunctionCall,
+    CFunction,
+    CStructField,
+    CIndexedVariable,
+    CVariableField,
+    CUnaryOp,
+    CConstant,
+    CExpression,
+)
 from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 
 from ..documents.qcodedocument import QCodeDocument
@@ -33,12 +43,12 @@ class ColorSchemeIDA(api.ColorScheme):
     """
 
     def __init__(self):
-        super().__init__('default')
+        super().__init__("default")
 
         # override existing formats
         function_format = QTextCharFormat()
         function_format.setForeground(self._get_brush("0000ff"))
-        self.formats['function'] = function_format
+        self.formats["function"] = function_format
 
 
 class QCCodeEdit(api.CodeEdit):
@@ -50,7 +60,7 @@ class QCCodeEdit(api.CodeEdit):
     def __init__(self, code_view):
         super().__init__(create_default_actions=True)
 
-        self._code_view: 'CodeView' = code_view
+        self._code_view: "CodeView" = code_view
 
         self.panels.append(panels.LineNumberPanel())
         self.panels.append(panels.FoldingPanel())
@@ -82,7 +92,7 @@ class QCCodeEdit(api.CodeEdit):
         self.remove_action(self.action_swap_line_down)
 
     def node_under_cursor(self):
-        doc: 'QTextDocument' = self.document()
+        doc: "QTextDocument" = self.document()
         if not isinstance(doc, QCodeDocument):
             # this is not the qcodedocument that the decompiler generates. this means the pseudocode view is empty
             return None
@@ -115,9 +125,11 @@ class QCCodeEdit(api.CodeEdit):
             # operator in selection
             self._selected_node = under_cursor
             mnu.addActions(self.operator_actions)
-        if isinstance(under_cursor, CFunctionCall) \
-                and "vex_block_addr" in under_cursor.tags \
-                and "ins_addr" in under_cursor.tags:
+        if (
+            isinstance(under_cursor, CFunctionCall)
+            and "vex_block_addr" in under_cursor.tags
+            and "ins_addr" in under_cursor.tags
+        ):
             # function call in selection
             self._selected_node = under_cursor
             mnu.addActions(self.call_actions)
@@ -130,7 +142,8 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node = under_cursor
             mnu.addActions(self.function_name_actions)
             for entry in self.workspace.plugins.build_context_menu_functions(
-                    [self.instance.kb.functions[under_cursor.name]]):
+                [self.instance.kb.functions[under_cursor.name]]
+            ):
                 Menu.translate_element(mnu, entry)
         else:
             mnu.addActions(self.default_actions)
@@ -165,17 +178,18 @@ class QCCodeEdit(api.CodeEdit):
         return super().event(event)
 
     def get_closest_insaddr(self, node, expr=None) -> Optional[int]:
-        addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+        addr = (getattr(node, "tags", None) or {}).get("ins_addr", None)
         if addr is None:
             if expr:
                 addr = self.get_src_to_inst()
             else:
                 pos = self.textCursor().position()
-                while self.document().characterAt(pos) not in ('\n', '\u2029') and \
-                        pos < self.document().characterCount():  # qt WHAT are you doing
+                while (
+                    self.document().characterAt(pos) not in ("\n", "\u2029") and pos < self.document().characterCount()
+                ):  # qt WHAT are you doing
                     pos += 1
                 node = self.document().get_stmt_node_at_position(pos)
-                addr = (getattr(node, 'tags', None) or {}).get('ins_addr', None)
+                addr = (getattr(node, "tags", None) or {}).get("ins_addr", None)
 
         return addr
 
@@ -189,7 +203,7 @@ class QCCodeEdit(api.CodeEdit):
         """
 
         # get the Qt document
-        doc: 'QCodeDocument' = self.document()
+        doc: "QCodeDocument" = self.document()
 
         # get the current position of the cursor
         cursor = self.textCursor()
@@ -198,9 +212,13 @@ class QCCodeEdit(api.CodeEdit):
         # get the node at the associated cursor position
         current_node = doc.get_stmt_node_at_position(pos)
 
-        if current_node is not None and hasattr(current_node, 'tags') and \
-                current_node.tags is not None and 'ins_addr' in current_node.tags:
-            asm_ins_addr = current_node.tags['ins_addr']
+        if (
+            current_node is not None
+            and hasattr(current_node, "tags")
+            and current_node.tags is not None
+            and "ins_addr" in current_node.tags
+        ):
+            asm_ins_addr = current_node.tags["ins_addr"]
 
         else:
             # the top of the function decompiled
@@ -230,8 +248,9 @@ class QCCodeEdit(api.CodeEdit):
                 return True
 
         if key in (Qt.Key_Slash, Qt.Key_Question):
-            self.comment(expr=event.modifiers() & Qt.KeyboardModifier.ShiftModifier
-                              == Qt.KeyboardModifier.ShiftModifier)
+            self.comment(
+                expr=event.modifiers() & Qt.KeyboardModifier.ShiftModifier == Qt.KeyboardModifier.ShiftModifier
+            )
             return True
         if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.KeyboardModifier.ControlModifier != 0:
             self.zoomOut()
@@ -242,8 +261,16 @@ class QCCodeEdit(api.CodeEdit):
             return True
 
         saved_mode = self.textInteractionFlags()
-        if key in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down,
-                   Qt.Key_PageDown, Qt.Key_PageUp, Qt.Key_Home, Qt.Key_End):
+        if key in (
+            Qt.Key_Left,
+            Qt.Key_Right,
+            Qt.Key_Up,
+            Qt.Key_Down,
+            Qt.Key_PageDown,
+            Qt.Key_PageUp,
+            Qt.Key_Home,
+            Qt.Key_End,
+        ):
             self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
         result = super().keyPressEvent(event)
         self.setTextInteractionFlags(saved_mode)
@@ -283,8 +310,7 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
             return
-        dialog = RetypeNode(self.instance, code_view=self._code_view, node=node,
-                            node_type=node_type)
+        dialog = RetypeNode(self.instance, code_view=self._code_view, node=node, node_type=node_type)
         dialog.exec_()
 
         new_node_type = dialog.new_type
@@ -315,11 +341,8 @@ class QCCodeEdit(api.CodeEdit):
         text = cdict.get(addr, "")
 
         text, ok = QInputDialog.getText(
-            self._code_view,
-            "Expression Comment" if expr else "Statement Comment",
-            "",
-            QLineEdit.Normal,
-            text)
+            self._code_view, "Expression Comment" if expr else "Statement Comment", "", QLineEdit.Normal, text
+        )
 
         if ok:
             exists = addr in cdict
@@ -349,22 +372,22 @@ class QCCodeEdit(api.CodeEdit):
             self._code_view.decompile()
 
     def collapse_expr(self):
-        if hasattr(self._selected_node, 'collapsed'):
+        if hasattr(self._selected_node, "collapsed"):
             self._selected_node.collapsed = True
             self._code_view.codegen.am_event()
 
     def expand_expr(self):
-        if hasattr(self._selected_node, 'collapsed'):
+        if hasattr(self._selected_node, "collapsed"):
             self._selected_node.collapsed = False
             self._code_view.codegen.am_event()
 
     def hex_constant(self):
-        if hasattr(self._selected_node, 'fmt_hex'):
+        if hasattr(self._selected_node, "fmt_hex"):
             self._selected_node.fmt_hex ^= True
             self._code_view.codegen.am_event()
 
     def neg_constant(self):
-        if hasattr(self._selected_node, 'fmt_neg'):
+        if hasattr(self._selected_node, "fmt_neg"):
             self._selected_node.fmt_neg ^= True
             self._code_view.codegen.am_event()
 
@@ -398,7 +421,7 @@ class QCCodeEdit(api.CodeEdit):
             return
 
         op = ailexpr.op
-        if op in {'CmpEQ', 'CmpNE'}:
+        if op in {"CmpEQ", "CmpNE"}:
             negated_op = op
         else:
             negated_op = BinaryOp.COMPARISON_NEGATION.get(op, None)
@@ -413,11 +436,12 @@ class QCCodeEdit(api.CodeEdit):
         cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
         if cache.binop_operators is None:
             cache.binop_operators = {}
-        op_desc = OpDescriptor(ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
-                               ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
-                               addr,
-                               op,
-                               )
+        op_desc = OpDescriptor(
+            ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
+            ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
+            addr,
+            op,
+        )
         cache.binop_operators[op_desc] = negated_op
 
         if negated_op != op:
@@ -432,7 +456,6 @@ class QCCodeEdit(api.CodeEdit):
         self._code_view.decompile(clear_prototype=False, regen_clinic=False)
 
     def expr2armasm(self):
-
         def _assemble(expr, expr_addr) -> str:
             return converter.assemble(expr, self._code_view.function.addr, expr_addr)
 
@@ -455,7 +478,7 @@ class QCCodeEdit(api.CodeEdit):
         if not isinstance(node, (CVariable, CIndexedVariable, CVariableField, CStructField)):
             return
 
-        doc: 'QCodeDocument' = self.document()
+        doc: "QCodeDocument" = self.document()
         cursor = self.textCursor()
         pos = cursor.position()
         current_node = doc.get_stmt_node_at_position(pos)
@@ -520,24 +543,24 @@ class QCCodeEdit(api.CodeEdit):
             self.action_select_all,
         ]
 
-        self.action_rename_node = QAction('Rename...', self)
+        self.action_rename_node = QAction("Rename...", self)
         self.action_rename_node.triggered.connect(self.rename_node)
-        self.action_rename_node.setShortcut(QKeySequence('N'))
+        self.action_rename_node.setShortcut(QKeySequence("N"))
         self.action_retype_node = QAction("Retype variable", self)
         self.action_retype_node.triggered.connect(self.retype_node)
-        self.action_retype_node.setShortcut(QKeySequence('Y'))
-        self.action_toggle_struct = QAction('Toggle &struct/array')
+        self.action_retype_node.setShortcut(QKeySequence("Y"))
+        self.action_toggle_struct = QAction("Toggle &struct/array")
         self.action_toggle_struct.triggered.connect(self.toggle_struct)
-        self.action_collapse_expr = QAction('Collapse expression', self)
+        self.action_collapse_expr = QAction("Collapse expression", self)
         self.action_collapse_expr.triggered.connect(self.collapse_expr)
-        self.action_expand_expr = QAction('Expand expression', self)
+        self.action_expand_expr = QAction("Expand expression", self)
         self.action_expand_expr.triggered.connect(self.expand_expr)
-        self.action_hex = QAction('Toggle hex', self)
+        self.action_hex = QAction("Toggle hex", self)
         self.action_hex.triggered.connect(self.hex_constant)
-        self.action_hex.setShortcut(QKeySequence('H'))
-        self.action_neg = QAction('Toggle negative', self)
+        self.action_hex.setShortcut(QKeySequence("H"))
+        self.action_neg = QAction("Toggle negative", self)
         self.action_neg.triggered.connect(self.neg_constant)
-        self.action_neg.setShortcut(QKeySequence('_'))
+        self.action_neg.setShortcut(QKeySequence("_"))
         self.action_to_ite_expr = QAction("Create a ternary expression")
         self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
         self.action_swap_binop_operands = QAction("Swap operands")

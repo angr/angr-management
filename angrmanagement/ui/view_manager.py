@@ -3,6 +3,8 @@ from typing import Dict, List, Optional, Sequence
 import logging
 import functools
 
+from bidict import bidict
+
 import PySide6QtAds as QtAds
 
 from .views.view import BaseView
@@ -17,20 +19,19 @@ class ViewManager:
     """
 
     DOCKING_POSITIONS = {
-        'center': QtAds.CenterDockWidgetArea,
-        'left': QtAds.LeftDockWidgetArea,
-        'right': QtAds.RightDockWidgetArea,
-        'top': QtAds.TopDockWidgetArea,
-        'bottom': QtAds.BottomDockWidgetArea,
+        "center": QtAds.CenterDockWidgetArea,
+        "left": QtAds.LeftDockWidgetArea,
+        "right": QtAds.RightDockWidgetArea,
+        "top": QtAds.TopDockWidgetArea,
+        "bottom": QtAds.BottomDockWidgetArea,
     }
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self.views: List[BaseView] = [ ]
-        self.docks = [ ]
-        self.view_to_dock = { }
-        self.dock_to_view = { }
-        self.views_by_category: Dict[str,List[BaseView]] = defaultdict(list)
+        self.views: List[BaseView] = []
+        self.docks = []
+        self.view_to_dock = bidict()
+        self.views_by_category: Dict[str, List[BaseView]] = defaultdict(list)
 
     @property
     def main_window(self):
@@ -72,12 +73,11 @@ class ViewManager:
         dw.setWidget(view)
 
         area = self.DOCKING_POSITIONS.get(view.default_docking_position, QtAds.RightDockWidgetArea)
-        self.main_window.central_widget.addDockWidgetTab(area, dw)
+        self.main_window.dock_manager.addDockWidgetTab(area, dw)
 
         self.views.append(view)
         self.docks.append(dw)
         self.view_to_dock[view] = dw
-        self.dock_to_view[dw] = view
 
     def _on_dock_widget_closed(self, dock):
         """
@@ -87,7 +87,7 @@ class ViewManager:
             return
 
         self.docks.remove(dock)
-        view = self.dock_to_view.pop(dock, None)
+        view = self.view_to_dock.inverse.pop(dock, None)
         if view:
             view.close()
             self.remove_view(view)
@@ -135,11 +135,11 @@ class ViewManager:
         docks = []
         for dock in self.docks:
             if dock.widget() is not None:
-                if dock.widget().default_docking_position == 'center':
+                if dock.widget().default_docking_position == "center":
                     docks.append(dock)
         return docks
 
-    def first_view_in_category(self, category: str) -> Optional['BaseView']:
+    def first_view_in_category(self, category: str) -> Optional["BaseView"]:
         """
         Return the first view in a specific category.
 
@@ -151,7 +151,7 @@ class ViewManager:
             return self.views_by_category[category][0]
         return None
 
-    def current_view_in_category(self, category: str) -> Optional['BaseView']:
+    def current_view_in_category(self, category: str) -> Optional["BaseView"]:
         """
         Return the current in a specific category.
 
@@ -163,7 +163,7 @@ class ViewManager:
             return None
 
         current = self.get_center_views()[current_tab_id]
-        view = self.dock_to_view[current]
+        view = self.view_to_dock.inverse[current]
         if category.capitalize() in view.caption and view.caption == current.windowTitle():
             return view
         return None
@@ -207,7 +207,7 @@ class ViewManager:
         center_dockable_views[(current_tab_id - 1) % len(center_dockable_views)].raise_()  # this mod is superfluous
 
     @property
-    def current_tab(self) -> Optional['BaseView']:
+    def current_tab(self) -> Optional["BaseView"]:
         current_tab_id = self.get_current_tab_id()
         if current_tab_id is None:
             return None
