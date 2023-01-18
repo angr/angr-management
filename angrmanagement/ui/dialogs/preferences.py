@@ -1,6 +1,6 @@
 from datetime import datetime
-from bidict import bidict
 
+from bidict import bidict
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDialog,
@@ -203,7 +203,7 @@ class Style(Page):
         self.log_format_entry = QComboBox(self)
         fmt: str = Conf.log_timestamp_format
         ts = datetime.now()
-        # pylint: disable=use-sequence-for-iteration
+        # pylint: disable=use-sequence-for-iteration (set also dedups)
         self._fmt_map = bidict({ ts.strftime(i): i for i in {fmt, "%X", "%c"} })
         for i in self._fmt_map.keys():
             self.log_format_entry.addItem(i)
