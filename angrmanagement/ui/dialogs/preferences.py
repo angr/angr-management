@@ -122,7 +122,6 @@ class ThemeAndColors(Page):
 
         self._to_save = {}
         self._auto = TrackSystemTheme.get()
-        self._auto_original: bool = self._auto.enabled()
         self._schemes_combo: QComboBox = None
 
         self._init_widgets()
@@ -191,7 +190,7 @@ class ThemeAndColors(Page):
         self.save_config()
 
     def revert_unsaved(self):
-        self._auto.set_enabled(self._auto_original)
+        pass
 
     def save_config(self):
         # pylint: disable=assigning-non-slot
@@ -249,6 +248,9 @@ class Style(Page):
             Conf.log_timestamp_format = fmt
         for i in self._font_options:
             i.update()
+
+    def revert_unsaved(self):
+        pass
 
 
 class Preferences(QDialog):
