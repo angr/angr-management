@@ -57,5 +57,8 @@ elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     tar -C $ONEDIR_DIR -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management
 elif [[ "$OSTYPE" == "msys" ]]; then
-    7z a upload/angr-management-win64.zip $ONEDIR_DIR/\*
+    OUTDIR=$(pwd)/upload
+    pushd $ONEDIR_DIR
+    7z a $OUTDIR/angr-management-win64.zip \*
+    popd
 fi
