@@ -246,7 +246,7 @@ class OutBranch:
 class SuperCFGNode:
     def __init__(self, addr, idx=None):
         self.addr = addr
-        self.idx = None
+        self.idx = idx
 
         self.cfg_nodes = []
 
