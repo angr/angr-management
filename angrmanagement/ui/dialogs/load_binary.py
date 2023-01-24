@@ -240,8 +240,7 @@ class LoadBinary(QDialog):
         layout.addLayout(arch_layout)
         layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
-        layout.addWidget(dep_group)
-        layout.addStretch(0)
+        layout.addWidget(dep_group, stretch=1)
 
         frame = QFrame(self)
         frame.setLayout(layout)
