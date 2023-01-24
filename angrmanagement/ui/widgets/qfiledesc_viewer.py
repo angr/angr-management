@@ -23,7 +23,7 @@ class QFileDescriptorViewer(QFrame):
     def __init__(self, state, parent, workspace):
         super().__init__(parent)
 
-        self._state = state  # type: SimState
+        self._state: SimState = state
         self.workspace = workspace
 
         self.select_fd = None

@@ -133,7 +133,7 @@ class RetypeNode(QDialog):
 
     def _init_widgets(self):
 
-        # type label
+        # Type label
 
         type_label = QLabel(self)
         type_label.setText("New type")

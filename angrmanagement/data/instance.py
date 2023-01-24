@@ -106,9 +106,9 @@ class Instance:
         self.project.am_subscribe(self.initialize)
 
         # Callbacks
-        self._insn_backcolor_callback = None  # type: Union[None, Callable[[int, bool], None]]   #  (addr, is_selected)
-        self._label_rename_callback = None  # type: Union[None, Callable[[int, str], None]]      #  (addr, new_name)
-        self._set_comment_callback = None  # type: Union[None, Callable[[int, str], None]]       #  (addr, comment_text)
+        self._insn_backcolor_callback: Union[None, Callable[[int, bool], None]] = None  # (addr, is_selected)
+        self._label_rename_callback: Union[None, Callable[[int, str], None]] = None  # (addr, new_name)
+        self._set_comment_callback: Union[None, Callable[[int, str], None]] = None  # (addr, comment_text)
 
         # Setup logging
         initialize(self)

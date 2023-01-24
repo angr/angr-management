@@ -261,7 +261,7 @@ class QFunctionTableView(QTableView):
         self.instance = instance
         self._context_menu = FunctionContextMenu(self)
 
-        self._function_table = parent  # type: QFunctionTable
+        self._function_table: QFunctionTable = parent
         self._selected_func = ObjectContainer(None, "Currently selected function")
         self._selected_func.am_subscribe(selection_callback)
 
@@ -386,10 +386,10 @@ class QFunctionTable(QWidget):
         self.instance = instance
 
         self._view: "FunctionsView" = parent
-        self._table_view = None  # type: QFunctionTableView
-        self._filter_box = None  # type: QFunctionTableFilterBox
-        self._toolbar = None  # type: FunctionTableToolbar
-        self._status_label = None  # type: QLabel
+        self._table_view: QFunctionTableView
+        self._filter_box: QFunctionTableFilterBox
+        self._toolbar: FunctionTableToolbar
+        self._status_label: QLabel
 
         self._last_known_func_addrs: Set[int] = set()
 

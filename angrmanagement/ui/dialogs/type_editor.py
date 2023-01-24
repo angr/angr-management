@@ -33,7 +33,7 @@ class CTypeEditor(QDialog):
         self._predefined_types = predefined_types
 
         self.text = lambda: ""
-        self._ok_button = None  # type: Optional[QPushButton]
+        self._ok_button: Optional[QPushButton]
         self._init_widgets(base_text, multiline)
 
         self.setWindowTitle("Type editor")

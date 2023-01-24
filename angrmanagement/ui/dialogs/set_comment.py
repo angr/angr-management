@@ -40,7 +40,7 @@ class SetComment(QDialog):
         self._workspace = workspace
         self._comment_addr = comment_addr
 
-        self._comment_textbox = None  # type: QCommentTextBox
+        self._comment_textbox: QCommentTextBox
 
         self.setWindowTitle("Set Comment")
         self.main_layout = QVBoxLayout()

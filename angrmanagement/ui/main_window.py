@@ -81,8 +81,8 @@ class MainWindow(QMainWindow):
         self.dock_manager: QtAds.CDockManager
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
-        self._progressbar = None  # type: QProgressBar
-        self._progress_dialog = None  # type: QProgressDialog
+        self._progressbar: QProgressBar
+        self._progress_dialog: QProgressDialog
 
         self.defaultWindowFlags = None
 

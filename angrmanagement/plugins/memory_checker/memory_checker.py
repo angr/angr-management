@@ -20,7 +20,7 @@ class MemoryChecker(BasePlugin):
     def install_state_plugin(self, **kwargs):
         if kwargs.get("src", None) != "new":
             return
-        state = kwargs.get("state")  # type: SimState
+        state: SimState = kwargs.get("state")
         state.register_plugin("heap", SimHeapPTMalloc())
         state.options.update({options.TRACK_MEMORY_ACTIONS})
 
@@ -30,8 +30,7 @@ class MemoryChecker(BasePlugin):
 
     @staticmethod
     def check_address_is_free(state: "SimState", ptr_list: "List[SimAction]"):
-        ptr_dict = [(MemoryChecker.eval_ptr(state, x.addr.ast), x) for x in ptr_list]
-        ptr_dict = SortedDict(ptr_dict)
+        ptr_dict = SortedDict([(MemoryChecker.eval_ptr(state, x.addr.ast), x) for x in ptr_list])
         len_list = len(ptr_dict)
         for chunk in state.heap.free_chunks():
             base = chunk.base
@@ -47,10 +46,10 @@ class MemoryChecker(BasePlugin):
 
     @staticmethod
     def check_use_after_free(state: "SimState"):
-        # heap = state.heap #type: SimHeapPTMalloc
+        # heap: SimHeapPTMalloc = state.heap
         # heap.print_heap_state()
 
-        actions = state.history.actions.hardcopy  # type: List[SimAction]
+        actions: List[SimAction] = state.history.actions.hardcopy
         last_bbl_addr = actions[-1].bbl_addr
         address_list = []
         for act in reversed(actions):

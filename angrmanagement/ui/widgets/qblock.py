@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from PySide6.QtGui import QPen, QPainterPath
 from PySide6.QtCore import QRectF, QMarginsF
@@ -54,8 +55,8 @@ class QBlock(QCachedGraphicsItem):
         self._config = Conf
 
         self.objects = []  # instructions and labels
-        self._block_item = None  # type: QPainterPath
-        self._block_item_obj = None  # type: QGraphicsPathItem
+        self._block_item: Optional[QPainterPath] = None
+        self._block_item_obj: Optional[QGraphicsPathItem] = None
         self.addr_to_insns = {}
         self.addr_to_labels = {}
         self.qblock_annotations = {}

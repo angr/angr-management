@@ -1,4 +1,6 @@
-from PySide6.QtWidgets import QComboBox, QHBoxLayout
+from typing import Optional
+
+from PySide6.QtWidgets import QComboBox
 
 from angr.knowledge_plugins import FunctionManager
 
@@ -10,7 +12,7 @@ class QFunctionComboBox(QComboBox):
         self._show_all_functions = show_all_functions
         self._selection_callback = selection_callback
 
-        self._function_manager = None  # type: FunctionManager
+        self._function_manager: Optional[FunctionManager] = None
 
         self.currentIndexChanged.connect(self._on_current_index_changed)
 

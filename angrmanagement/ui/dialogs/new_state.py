@@ -1,5 +1,5 @@
 import os
-import typing
+from typing import List, Optional, Tuple
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -33,7 +33,7 @@ class StateMetadata(angr.SimStatePlugin):
         super().__init__()
         self.name = None  # the state's name
         self.base_name = None  # the name of the base state this was created from
-        self.is_original = False  # is this the original instanciation of this name?
+        self.is_original = False  # is this the original instantiation of this name?
         self.is_base = False  # is this state created with nothing else as a base?
 
     def copy(self, memo=None):  # pylint: disable=unused-argument
@@ -75,15 +75,15 @@ class NewState(QDialog):
         # Shall we push the new state to instance.stats and call states.am_event(src="new", state=self.state)
         self._push_to_instance = push_to_instance
 
-        self._name_edit = None  # type: QLineEdit
-        self._base_state_combo = None  # type: QStateComboBox
-        self._mode_combo = None  # type: QComboBox
-        self._editor = None  # type: QTextEdit
+        self._name_edit: Optional[QLineEdit] = None
+        self._base_state_combo: Optional[QStateComboBox] = None
+        self._mode_combo: Optional[QComboBox] = None
+        self._editor: Optional[QTextEdit] = None
         self._ok_button = None
 
-        self._args = None  # type: typing.List[str]
-        self._env_config = []  # type: typing.List[(str,str)]
-        self._fs_config = None  # type: typing.List[(str,str)]
+        self._args: Optional[List[str]] = None
+        self._env_config: List[Tuple[str, str]] = []
+        self._fs_config: Optional[List[Tuple[str,str]]] = None
         self._sockets_config = None
 
         self.setWindowTitle("New State")

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar
 from PySide6.QtCore import QSize
@@ -30,7 +32,7 @@ class Toolbar:
         self.name = name
 
         self.actions = []
-        self._cached = None  # type: QToolBar
+        self._cached: Optional[QToolBar] = None
         self._cached_actions = {}
 
     def qtoolbar(self):

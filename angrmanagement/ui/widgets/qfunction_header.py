@@ -19,7 +19,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         self.workspace = workspace
         self.addr = addr
         self.name = name
-        self.prototype = prototype  # type: SimTypeFunction
+        self.prototype: SimTypeFunction = prototype
         self.args = args
         self.infodock = infodock
 
@@ -96,7 +96,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
             proto_str = ""
 
-            # type of the return value
+            # Type of the return value
             rt = type2str(self.prototype.returnty)
             proto_str += rt
 

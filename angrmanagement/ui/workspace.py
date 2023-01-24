@@ -839,48 +839,53 @@ class Workspace:
     # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
 
     def set_cb_function_backcolor(self, callback: Callable[[Function], None]):
-        fv = self.view_manager.first_view_in_category("functions")  # type: FunctionsView
+        fv: FunctionsView = self.view_manager.first_view_in_category("functions")
         if fv:
             fv.backcolor_callback = callback
 
     def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
+        dv: DisassemblyView
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.first_view_in_category("disassembly")
         else:
-            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")
         if dv:
             dv.insn_backcolor_callback = callback
 
     def set_cb_label_rename(self, callback):
+        dv: DisassemblyView
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.first_view_in_category("disassembly")
         else:
-            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")
         if dv:
             dv.label_rename_callback = callback
 
     def add_disasm_insn_ctx_menu_entry(
         self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True
     ):
+        dv: DisassemblyView
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.first_view_in_category("disassembly")
         else:
-            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")
         if dv._insn_menu:
             dv._insn_menu.add_menu_entry(text, callback, add_separator_first)
 
     def remove_disasm_insn_ctx_menu_entry(self, text, remove_preceding_separator=True):
+        dv: DisassemblyView
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.first_view_in_category("disassembly")
         else:
-            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")
         if dv._insn_menu:
             dv._insn_menu.remove_menu_entry(text, remove_preceding_separator)
 
     def set_cb_set_comment(self, callback):
+        dv: DisassemblyView
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.first_view_in_category("disassembly")
         else:
-            dv = self.view_manager.current_view_in_category("disassembly")  # type: DisassemblyView
+            dv = self.view_manager.current_view_in_category("disassembly")
         if dv:
             dv.set_comment_callback = callback

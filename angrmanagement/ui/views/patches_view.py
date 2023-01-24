@@ -9,7 +9,7 @@ class PatchesView(BaseView):
         super().__init__("patches", instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Patches"
-        self._patch_table = None  # type: QPatchTable
+        self._patch_table: QPatchTable
 
         self._init_widgets()
 

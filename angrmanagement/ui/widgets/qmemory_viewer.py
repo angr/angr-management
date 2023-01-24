@@ -124,9 +124,9 @@ class QMemoryViewer(QFrame):
         super().__init__(parent)
         self.workspace = workspace
 
-        self._scrollarea = None  # type: QScrollArea
-        self._txt_addr = None  # type: QLineEdit
-        self._view = None  # type: QMemoryView
+        self._scrollarea: QScrollArea
+        self._txt_addr: QLineEdit
+        self._view: QMemoryView
 
         self._addr = None  # the address to display
         self.state = state

@@ -18,7 +18,7 @@ try:
     from slacrs import Slacrs
     from slacrs.model import HumanActivity, HumanActivityEnum
 except ImportError as ex:
-    Slacrs = None  # type: Optional[type]
+    Slacrs: Optional[type] = None
 
 
 class LogHumanActivitiesPlugin(BasePlugin):

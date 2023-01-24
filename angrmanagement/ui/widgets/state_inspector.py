@@ -17,11 +17,11 @@ class StateInspector(QTabWidget):
         self.workspace = workspace
         self._state = state
 
-        self._register_viewer = None  # type: QRegisterViewer
-        self._memory_viewer = None  # type: QMemoryViewer
-        self._vextemps_viewer = None  # type: QVEXTempsViewer
-        self._constraint_viewer = None  # type: QConstraintViewer
-        self._filedesc_viewer = None  # type: QFileDescriptorViewer
+        self._register_viewer: QRegisterViewer
+        self._memory_viewer: QMemoryViewer
+        self._vextemps_viewer: QVEXTempsViewer
+        self._constraint_viewer: QConstraintViewer
+        self._filedesc_viewer: QFileDescriptorViewer
 
         self._init_widgets()
 

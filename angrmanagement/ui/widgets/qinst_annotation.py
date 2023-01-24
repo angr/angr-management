@@ -249,12 +249,11 @@ class QBlockAnnotations(QGraphicsItem):
     """
 
     PADDING = 10
-    disasm_view = None  # type: DisassemblyView
 
     def __init__(self, addr_to_annotations: Dict[int, List[QInstructionAnnotation]], *, parent, disasm_view):
         super().__init__(parent=parent)
         self.addr_to_annotations = addr_to_annotations
-        self.disasm_view = disasm_view
+        self.disasm_view: DisassemblyView = disasm_view
         max_width = 0
         for _addr, annotations in self.addr_to_annotations.items():
             width = sum(a.boundingRect().width() + self.PADDING for a in annotations)

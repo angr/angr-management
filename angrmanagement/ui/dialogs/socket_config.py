@@ -303,8 +303,9 @@ class SocketConfig(QDialog):
         self._instance = instance
         self._editor = SimPackagePersistentEditor(instance=instance)
         self._parent = parent
+        self.socket_config: SocketModel
         if socket_config:
-            self.socket_config = socket_config  # type: SocketModel
+            self.socket_config = socket_config
         else:
             self.socket_config = SocketModel()
         self._init_widgets()
