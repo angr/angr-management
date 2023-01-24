@@ -83,7 +83,7 @@ class NewState(QDialog):
 
         self._args: Optional[List[str]] = None
         self._env_config: List[Tuple[str, str]] = []
-        self._fs_config: Optional[List[Tuple[str,str]]] = None
+        self._fs_config: Optional[List[Tuple[str, str]]] = None
         self._sockets_config = None
 
         self.setWindowTitle("New State")
