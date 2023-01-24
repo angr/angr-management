@@ -25,6 +25,11 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+try:
+    import pypcode
+except ImportError:
+    pypcode = None
+
 
 l = logging.getLogger("dialogs.load_binary")
 
@@ -50,6 +55,11 @@ class LoadBinary(QDialog):
         self.option_widgets = {}
         self.is_blob = isinstance(partial_ld.main_object, Blob)
         self.arch = partial_ld.main_object.arch
+        self.available_archs = archinfo.all_arches[::]
+
+        if pypcode:
+            for a in pypcode.Arch.enumerate():
+                self.available_archs.extend(a.languages)
 
         # return values
         self.load_options = None
@@ -162,10 +172,20 @@ class LoadBinary(QDialog):
         arch_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         arch_layout.addWidget(arch_caption)
         arch_combo = QComboBox(self)
-        for arch in archinfo.all_arches:
-            addendum = " (P-code Engine)" if hasattr(arch, "pcode_arch") else ""
-            arch_combo.addItem(f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]}){addendum}", str(arch))
-        index = arch_combo.findData(str(self.arch))
+
+        index = 0
+        for i, arch in enumerate(self.available_archs):
+            if isinstance(arch, archinfo.Arch):
+                arch_combo.addItem(f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]})", str(arch))
+                if str(self.arch) == str(arch):
+                    index = i
+            elif pypcode and isinstance(arch, pypcode.ArchLanguage):
+                arch_combo.addItem(f"{arch.id} (P-code Engine)")
+                if self.arch.name == arch.id:
+                    index = i
+            else:
+                assert False, "Unknown architecture type"
+
         arch_combo.setCurrentIndex(index)
         arch_layout.addWidget(arch_combo)
         self.option_widgets["arch"] = arch_combo
@@ -247,7 +267,11 @@ class LoadBinary(QDialog):
         self.load_options = {}
         self.load_options["auto_load_libs"] = self.option_widgets["auto_load_libs"].isChecked()
         self.load_options["load_debug_info"] = self.option_widgets["load_debug_info"].isChecked()
-        self.load_options["arch"] = archinfo.all_arches[self.option_widgets["arch"].currentIndex()]
+
+        arch = self.available_archs[self.option_widgets["arch"].currentIndex()]
+        if pypcode and isinstance(arch, pypcode.ArchLanguage):
+            arch = archinfo.ArchPcode.arch_from_lang_id(arch.id)
+        self.load_options["arch"] = arch
 
         if self.is_blob:
             self.load_options["main_opts"] = {
