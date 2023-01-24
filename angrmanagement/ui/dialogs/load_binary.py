@@ -91,7 +91,7 @@ class LoadBinary(QDialog):
 
         # dependencies
 
-        dep_list = self.option_widgets["dep_list"]  # type: QListWidget
+        dep_list: QListWidget = self.option_widgets["dep_list"]
         for dep in deps:
             dep_item = QListWidgetItem(dep)
             dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
@@ -236,9 +236,9 @@ class LoadBinary(QDialog):
         force_load_libs = []
         skip_libs = set()
 
-        dep_list = self.option_widgets["dep_list"]  # type: QListWidget
+        dep_list: QListWidget = self.option_widgets["dep_list"]
         for i in range(dep_list.count()):
-            item = dep_list.item(i)  # type: QListWidgetItem
+            item: QListWidgetItem = dep_list.item(i)
             if item.checkState() == Qt.Checked:
                 force_load_libs.append(item.text())
             else:

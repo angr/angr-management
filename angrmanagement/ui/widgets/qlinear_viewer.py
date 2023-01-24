@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QRectF, QRect, QEvent
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
 from angr.knowledge_plugins import Function
-from angr.analyses.cfg.cfb import Unknown
+from angr.analyses.cfg.cfb import Unknown, MemoryRegion
 from angr.analyses.decompiler import Clinic
 from angr.analyses import Disassembly
 
@@ -31,7 +31,7 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
     def __init__(self, area, parent=None):
         super().__init__(parent=parent)
 
-        self.area = area  # type: QLinearDisassembly
+        self.area: QLinearDisassembly = area
         self._scene = QGraphicsScene(0, 0, self.width(), self.height())
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.setScene(self._scene)
@@ -73,7 +73,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # self.setResizeAnchor(QGraphicsView.NoAnchor)
         # self.setAlignment(Qt.AlignLeft)
 
-        self._viewer = None  # type: QLinearDisassemblyView
+        self._viewer: QLinearDisassemblyView
 
         self._line_height = Conf.disasm_font_height
 
@@ -230,7 +230,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         # enumerate memory regions
         byte_offset = 0
-        for mr in self.cfb.regions:  # type: MemoryRegion
+        mr: MemoryRegion
+        for mr in self.cfb.regions:
             if mr.type in {"tls", "kernel"}:
                 # Skip TLS objects and kernel objects
                 continue
@@ -327,7 +328,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             return
 
         # Convert the offset to memory region
-        base_offset, mr = self._region_from_offset(offset)  # type: int, MemoryRegion
+        base_offset: int
+        mr: MemoryRegion
+        base_offset, mr = self._region_from_offset(offset)
         if mr is None:
             return
 
@@ -388,7 +391,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 continue
 
             if isinstance(qobject, QLinearBlock):
-                for insn_addr in qobject.addr_to_insns.keys():
+                for insn_addr in qobject.addr_to_insns:
                     self._insaddr_to_block[insn_addr] = qobject
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -498,7 +501,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _calculate_max_offset(self):
         try:
             max_off = next(self._offset_to_region.irange(reverse=True))
-            mr = self._offset_to_region[max_off]  # type: MemoryRegion
+            mr: MemoryRegion = self._offset_to_region[max_off]
             return max_off + mr.size
         except StopIteration:
             return 0

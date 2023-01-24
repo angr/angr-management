@@ -42,9 +42,9 @@ class TestBinsyncPlugin(unittest.TestCase):
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(
+            binsync_plugin: BinsyncPlugin = next(
                 iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
-            )  # type: BinsyncPlugin
+            )
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
@@ -95,9 +95,9 @@ class TestBinsyncPlugin(unittest.TestCase):
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(
+            binsync_plugin: BinsyncPlugin = next(
                 iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
-            )  # type: BinsyncPlugin
+            )
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
@@ -143,9 +143,9 @@ class TestBinsyncPlugin(unittest.TestCase):
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(
+            binsync_plugin: BinsyncPlugin = next(
                 iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
-            )  # type: BinsyncPlugin
+            )
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)
@@ -209,9 +209,9 @@ class TestBinsyncPlugin(unittest.TestCase):
 
             # find the binsync plugin
             # noinspection PyTypeChecker
-            binsync_plugin = next(
+            binsync_plugin: BinsyncPlugin = next(
                 iter([p for p in main.workspace.plugins.active_plugins if "Binsync" in str(p)])
-            )  # type: BinsyncPlugin
+            )
 
             # configure, and connect
             config = SyncConfig(main.workspace.main_instance, binsync_plugin.controller)

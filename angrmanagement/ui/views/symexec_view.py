@@ -14,9 +14,9 @@ class SymexecView(BaseView):
 
         self.base_caption = "Symbolic Execution"
 
-        self._pathtree = None  # type: QPathTree
-        self._simgrs = None  # type: QSimulationManagers
-        self._state_viewer = None  # type: StateInspector
+        self._pathtree: QPathTree
+        self._simgrs: QSimulationManagers
+        self._state_viewer: StateInspector
 
         # I think the best way to do this is for this to be a container containing the container containing the simgr?
         self.current_simgr = ObjectContainer(None, name="Active simulation manager")

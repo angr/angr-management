@@ -23,7 +23,7 @@ class QCodeDocument(QTextDocument):
     def __init__(self, codegen):
         super().__init__()
 
-        self._codegen = codegen  # type: BaseStructuredCodeGenerator
+        self._codegen: BaseStructuredCodeGenerator = codegen
 
         # default font
         self.setDefaultFont(Conf.code_font)

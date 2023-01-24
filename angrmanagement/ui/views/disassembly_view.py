@@ -70,22 +70,22 @@ class DisassemblyView(SynchronizedView):
         # whether we want to show exception edges and all nodes that are only reachable through exception edges
         self._show_exception_edges = True
 
-        self._linear_viewer = None  # type: Optional[QLinearDisassembly]
-        self._flow_graph = None  # type: Optional[QDisassemblyGraph]
+        self._linear_viewer: Optional[QLinearDisassembly] = None
+        self._flow_graph: Optional[QDisassemblyGraph] = None
         self._prefer_graph = True
         self._statusbar = None
         self.jump_history: JumpHistory = JumpHistory()
         self.infodock = InfoDock(self)
         self._variable_recovery_flavor = "fast"
-        self.variable_manager = None  # type: Optional[VariableManager]
+        self.variable_manager: Optional[VariableManager] = None
         self._current_function = ObjectContainer(None, "The currently selected function")
 
         # For tests only
         self._t_linear_viewer_visible: bool = False
         self._t_flow_graph_visible: bool = False
 
-        self._insn_menu = None  # type: Optional[DisasmInsnContextMenu]
-        self._label_menu = None  # type: Optional[DisasmLabelContextMenu]
+        self._insn_menu: Optional[DisasmInsnContextMenu] = None
+        self._label_menu: Optional[DisasmLabelContextMenu] = None
 
         self._insn_addr_on_context_menu = None
         self._label_addr_on_context_menu = None

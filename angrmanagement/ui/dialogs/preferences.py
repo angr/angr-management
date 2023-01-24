@@ -54,8 +54,8 @@ class Integration(Page):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._url_scheme_chk = None  # type:QCheckBox
-        self._url_scheme_text = None  # type:QLineEdit
+        self._url_scheme_chk: QCheckBox
+        self._url_scheme_text: QLineEdit
 
         self._init_widgets()
         self._load_config()
@@ -262,7 +262,7 @@ class Preferences(QDialog):
         contents.setSpacing(12)
 
         def item_changed(item: QListWidgetItem):
-            pageno = item.data(1)  # type: Page
+            pageno: Page = item.data(1)
             pages.setCurrentIndex(pageno)
 
         contents.itemClicked.connect(item_changed)

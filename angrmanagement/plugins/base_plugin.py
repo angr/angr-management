@@ -1,24 +1,22 @@
 # pylint:disable=unused-private-member
 import logging
-from typing import Optional, Tuple, Callable, Iterator, Generator, List, Any, Union, TYPE_CHECKING, Type
+from typing import Optional, Tuple, Callable, Iterable, Generator, List, Any, Union, TYPE_CHECKING, Type
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QGraphicsSceneMouseEvent
 
-from angr.sim_manager import SimulationManager
-
-from ..ui.widgets.qblock import QBlock
-from ..ui.widgets.qinstruction import QInstruction
-from ..ui.widgets.qinst_annotation import QInstructionAnnotation
+from angrmanagement.ui.widgets.qblock import QBlock
+from angrmanagement.ui.widgets.qinstruction import QInstruction
+from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation
 
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from angr.sim_manager import SimulationManager
     from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass
     from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.ui.views import disassembly_view, code_view
     from angrmanagement.config.config_entry import ConfigurationEntry
-    from ..ui.views import disassembly_view, code_view
-    from ..ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
 
@@ -34,7 +32,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-        self.workspace: "Optional[Workspace]" = workspace
+        self.workspace: Optional["Workspace"] = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
@@ -45,7 +43,7 @@ class BasePlugin:
         pass
 
     @classmethod
-    def get_display_name(cls: "BasePlugin"):
+    def get_display_name(cls):
         display_name = getattr(cls, "DISPLAY_NAME", None)
         if not display_name:
             return cls.__name__
@@ -116,46 +114,46 @@ class BasePlugin:
         pass
 
     # iterable of tuples (icon, tooltip)
-    TOOLBAR_BUTTONS = []  # type: List[Tuple[QIcon, str]]
+    TOOLBAR_BUTTONS: List[Tuple[QIcon, str]] = []
 
     def handle_click_toolbar(self, idx):
         pass
 
     # Iterable of button texts
-    MENU_BUTTONS = []  # type: List[str]
+    MENU_BUTTONS: List[str] = []
 
     def handle_click_menu(self, idx):
         pass
 
     # Iterable of column names
-    FUNC_COLUMNS = []  # type: List[str]
+    FUNC_COLUMNS: List[str] = []
 
     def extract_func_column(self, func, idx) -> Tuple[Any, str]:
         # should return a tuple of the sortable column data and the rendered string
         return 0, ""
 
-    def build_context_menu_insn(self, item) -> Iterator[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_insn(self, item) -> Iterable[Union[None, Tuple[str, Callable]]]:
         """
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
 
-    def build_context_menu_block(self, item) -> Iterator[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_block(self, item) -> Iterable[Union[None, Tuple[str, Callable]]]:
         """
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
 
-    def build_context_menu_node(self, node) -> Iterator[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_node(self, node) -> Iterable[Union[None, Tuple[str, Callable]]]:
         """
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
 
-    def build_context_menu_functions(self, funcs) -> Iterator[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_functions(self, funcs) -> Iterable[Union[None, Tuple[str, Callable]]]:
         return []
 
-    def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:
+    def build_qblock_annotations(self, qblock: QBlock) -> Iterable[QInstructionAnnotation]:
         return []
 
     # Iterable of URL actions
@@ -164,7 +162,7 @@ class BasePlugin:
     def handle_url_action(self, action, kwargs):
         pass
 
-    def step_callback(self, simgr: SimulationManager):
+    def step_callback(self, simgr: "SimulationManager"):
         pass
 
     # Custom configuration entries

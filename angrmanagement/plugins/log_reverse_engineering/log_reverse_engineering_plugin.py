@@ -1,15 +1,16 @@
-from angrmanagement.config import Conf
+from typing import Optional
 
-from ..base_plugin import BasePlugin
+from angrmanagement.config import Conf
+from angrmanagement.plugins.base_plugin import BasePlugin
 
 try:
     from slacrs import Slacrs
     from slacrs.model import VariableRename, FunctionRename, ReverseEngineeringProgress
 except ImportError as ex:
-    Slacrs = None  # type: Optional[type]
-    VariableRename = None  # type: Optional[type]
-    FunctionRename = None  # type: Optional[type]
-    ReverseEngineeringProgress = None  # type: Optional[type]
+    Slacrs: Optional[type] = None
+    VariableRename: Optional[type] = None
+    FunctionRename: Optional[type] = None
+    ReverseEngineeringProgress: Optional[type] = None
 
 
 class LogReverseEngineeringPlugin(BasePlugin):

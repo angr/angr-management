@@ -40,8 +40,8 @@ class SavedInteraction:
 
 class ProtocolInteractor:
     def __init__(self, view, sock):
-        self.view = view  # type: InteractionView
-        self.sock = sock  # type: nclib.Netcat
+        self.view: InteractionView = view
+        self.sock: Optional["nclib.Netcat"] = sock
 
     def consume_data(self, data):
         # try to decode it
@@ -80,7 +80,7 @@ class InteractionView(BaseView):
         )  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
         # "in" here means it's input to the program
         self.log_controls = []
-        self.sock = None  # type: nclib.Netcat
+        self.sock: Optional["nclib.Netcat"] = None
 
         self._state = None
         self._last_img_name: Optional[str] = None
@@ -97,8 +97,8 @@ class InteractionView(BaseView):
         self.widget_group_save = None
         self.widget_group_load = None
 
-        self.running_protocol = None  # type: ProtocolInteractor
-        self.chosen_protocol = None  # type: type
+        self.running_protocol: Optional[ProtocolInteractor] = None
+        self.chosen_protocol: Optional[type] = None
 
         self._init_widgets()
         self._state_transition(InteractionState.BEGINNING)

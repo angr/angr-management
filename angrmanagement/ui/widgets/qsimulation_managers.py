@@ -37,11 +37,11 @@ class QSimulationManagers(QFrame):
         self.simgr = simgr
         self.state = state
 
-        self._simgrs_list = None  # type: QComboBox
-        self._avoids_list = None  # type: QTreeWidget
-        self._finds_list = None  # type: QTreeWidget
-        self._simgr_viewer = None  # type: QSimulationManagerViewer
-        self._oneactive_checkbox = None  # type: QCheckBox
+        self._simgrs_list: QComboBox
+        self._avoids_list: QTreeWidget
+        self._finds_list: QTreeWidget
+        self._simgr_viewer: QSimulationManagerViewer
+        self._oneactive_checkbox: QCheckBox
 
         self._init_widgets()
         self.refresh()
@@ -89,7 +89,7 @@ class QSimulationManagers(QFrame):
     @staticmethod
     def add_address_to_list(qtreelist: QTreeWidget, addr):
         for i in range(qtreelist.topLevelItemCount()):
-            item = qtreelist.topLevelItem(i)  # type: QTreeWidgetItem
+            item: QTreeWidgetItem = qtreelist.topLevelItem(i)
             if int(item.text(0), 16) == addr:
                 return None  # deduplicate
 

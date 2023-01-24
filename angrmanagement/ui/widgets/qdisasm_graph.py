@@ -315,11 +315,11 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     def _update_scene_boundary(self):
         scene = self.scene()
         # Leave some margins
-        rect = scene.itemsBoundingRect()  # type: QRectF
+        rect: QRectF = scene.itemsBoundingRect()
         scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
 
     def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=True):
-        block = self._insaddr_to_block.get(insn_addr, None)  # type: QGraphBlock
+        block: QGraphBlock = self._insaddr_to_block.get(insn_addr, None)
         if block is not None:
             if use_block_pos:
                 x, y = block.mapToScene(block.x(), block.y())
@@ -346,7 +346,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                 self.centerOn(x, y)
 
     def update_label(self, addr, is_renaming=False):
-        block = self._insaddr_to_block.get(addr, None)  # type: QGraphBlock
+        block: QGraphBlock = self._insaddr_to_block.get(addr, None)
         if block is not None:
             if is_renaming:
                 # we just need to refresh the current block

@@ -13,7 +13,7 @@ class FunctionsView(BaseView):
         super().__init__("functions", instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Functions"
-        self._function_table = None  # type: QFunctionTable
+        self._function_table: QFunctionTable
 
         self.instance.cfg.am_subscribe(self.reload)
 

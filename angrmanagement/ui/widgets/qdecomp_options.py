@@ -85,16 +85,16 @@ class QDecompilationOptions(QWidget):
 
         self.dirty = True
 
-        self._code_view = code_view  # type: CodeView
+        self._code_view: CodeView = code_view
         self._instance = instance
         self._options = None
         self._opti_passes = None
         self._peephole_opts = None
 
         # widgets
-        self._search_box = None  # type:QLineEdit
-        self._treewidget = None  # type:QTreeWidget
-        self._apply_btn = None  # type:QPushButton
+        self._search_box: QLineEdit
+        self._treewidget: QTreeWidget
+        self._apply_btn: QPushButton
 
         self._qoptions = []
         self._qoptipasses = []

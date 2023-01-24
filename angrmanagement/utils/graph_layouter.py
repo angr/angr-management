@@ -330,7 +330,7 @@ class GraphLayouter:
         self._col_widths = []
         self._grid_coordinates = {}
 
-        self.edges = []  # type: List[Edge]
+        self.edges: List[Edge] = []
         self.node_coordinates = {}
 
         self._layout()

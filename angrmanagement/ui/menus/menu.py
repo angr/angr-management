@@ -1,3 +1,5 @@
+from typing import Optional
+
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu
 
@@ -55,7 +57,7 @@ class Menu:
         self.entries = []
         self._keyed_entries = None
 
-        self._qmenu = None  # type: QMenu
+        self._qmenu: Optional[QMenu] = None
 
         for child in children:
             self.add(child)

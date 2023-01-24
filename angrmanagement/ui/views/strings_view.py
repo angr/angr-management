@@ -16,8 +16,8 @@ class StringsView(BaseView):
 
         self.base_caption = "Strings"
 
-        self._string_table = None  # type: QStringTable
-        self._function_list = None  # type: QFunctionComboBox
+        self._string_table: QStringTable
+        self._function_list: QFunctionComboBox
 
         self._selected_function = None
 

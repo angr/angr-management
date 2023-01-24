@@ -25,7 +25,7 @@ def function_prototype_str(func: Function) -> str:
     if func.prototype is None:
         return func.name
 
-    # type of the return value
+    # Type of the return value
     s = ""
     rt = type2str(func.prototype.returnty)
     s += rt + " "
