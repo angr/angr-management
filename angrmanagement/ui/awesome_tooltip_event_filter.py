@@ -62,7 +62,7 @@ class QAwesomeTooltipEventFilter(QObject):
             # raise a human-readable exception. While this should *NEVER* be the
             # case, edge cases are edge cases because they sometimes happen.
             if not isinstance(widget, QWidget):
-                raise ValueError('QObject "{}" not a widget.'.format(widget))
+                raise ValueError(f'QObject "{widget}" not a widget.')
 
             # Tooltip for this widget if any *OR* the empty string otherwise.
             tooltip = widget.toolTip()
@@ -73,7 +73,7 @@ class QAwesomeTooltipEventFilter(QObject):
                 #
                 # * Escaping all HTML syntax in this tooltip.
                 # * Embedding this tooltip in the Qt-specific "<qt>...</qt>" tag.
-                tooltip = "<qt>{}</qt>".format(html.escape(tooltip))
+                tooltip = f"<qt>{html.escape(tooltip)}</qt>"
 
                 # Replace this widget's non-working plaintext tooltip with this
                 # working rich text tooltip.

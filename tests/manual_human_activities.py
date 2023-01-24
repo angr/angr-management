@@ -34,7 +34,7 @@ class TestHumanActivities(unittest.TestCase):
 
     def tearDown(self):
         pass
-        os.remove(f"/tmp/testtest.sqlite")
+        os.remove("/tmp/testtest.sqlite")
 
     def _open_a_project(self):
         main = MainWindow(show=False)
