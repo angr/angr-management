@@ -3,8 +3,11 @@ import logging
 import threading
 import os
 from time import sleep
+from typing import Optional
+
 from getmac import get_mac_address as gma
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
 from angrmanagement.config import Conf
 import angrmanagement.ui.views as Views
 from ..base_plugin import BasePlugin

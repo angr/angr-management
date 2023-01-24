@@ -39,7 +39,11 @@ class MemoryChecker(BasePlugin):
             if p < len_list and base <= ptr_dict.peekitem(p)[0] < base + size:
                 if state.posix.stderr.writable:
                     addr, act = ptr_dict.peekitem(p)
-                    err_str = f"\n=== Use-After-Free Plugin ===\nMemory Address:{addr:#x}\nInstrument Address:{act.ins_addr:#x}\n"
+                    err_str = (
+                        f"\n=== Use-After-Free Plugin ===\n"
+                        f"Memory Address:{addr:#x}\n"
+                        f"Instrument Address:{act.ins_addr:#x}\n"
+                    )
                     state.posix.stderr.write(None, err_str.encode())
                 return True
         return False

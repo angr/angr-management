@@ -3,6 +3,7 @@ from typing import Optional
 
 from PySide6.QtGui import QPen, QPainterPath
 from PySide6.QtCore import QRectF, QMarginsF
+from PySide6.QtWidgets import QGraphicsPathItem
 
 from angr.analyses.disassembly import Instruction, IROp
 from angr.analyses.decompiler.clinic import Clinic

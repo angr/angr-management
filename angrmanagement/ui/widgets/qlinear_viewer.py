@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QRectF, QRect, QEvent
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
 from angr.knowledge_plugins import Function
-from angr.analyses.cfg.cfb import Unknown
+from angr.analyses.cfg.cfb import Unknown, MemoryRegion
 from angr.analyses.decompiler import Clinic
 from angr.analyses import Disassembly
 
@@ -391,7 +391,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 continue
 
             if isinstance(qobject, QLinearBlock):
-                for insn_addr in qobject.addr_to_insns.keys():
+                for insn_addr in qobject.addr_to_insns:
                     self._insaddr_to_block[insn_addr] = qobject
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
