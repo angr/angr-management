@@ -69,9 +69,9 @@ class LoadBinaryJob(Job):
         try:
             # Try automatic loading
             partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
-        except archinfo.arch.ArchNotFound as e:
-            partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False, arch="x86")
-            gui_thread_schedule(LoadBinary.binary_arch_detect_failed, (self.fname, str(e)))
+        except archinfo.arch.ArchNotFound:
+            _l.warning("Could not identify binary architecture")
+            partial_ld = None
         except cle.CLECompatibilityError:
             # Continue loading as blob
             pass
