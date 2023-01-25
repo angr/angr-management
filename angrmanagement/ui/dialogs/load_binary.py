@@ -269,7 +269,7 @@ class LoadBinary(QDialog):
 
         arch = self.available_archs[self.option_widgets["arch"].currentIndex()]
         if pypcode and isinstance(arch, pypcode.ArchLanguage):
-            arch = archinfo.ArchPcode.arch_from_lang_id(arch.id)
+            arch = archinfo.ArchPcode(arch.id)
         self.load_options["arch"] = arch
 
         if self.is_blob:
