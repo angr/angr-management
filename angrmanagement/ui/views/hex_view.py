@@ -1840,9 +1840,14 @@ class HexView(SynchronizedView):
                     color = Conf.hex_view_string_color if item.sort == "string" else Conf.hex_view_data_color
                     regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
                 elif isinstance(item, Block):
-                    for insn in item.disassembly.insns:
-                        s = f"{insn} in {item}"
-                        regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size, s))
+                    try:
+                        for insn in item.disassembly.insns:
+                            s = f"{insn} in {item}"
+                            regions.append(
+                                HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size, s)
+                            )
+                    except angr.errors.SimEngineError:
+                        pass  # We may get a node in CFB to a non-decodeable address
         self._cfb_highlights = regions
         self._set_highlighted_regions()
 
