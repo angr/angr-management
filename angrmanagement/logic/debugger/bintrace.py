@@ -1,23 +1,26 @@
-import os
 import logging
-from typing import Optional, Tuple, Sequence
+import os
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
-from angr import SimState
-from angr.knowledge_plugins import Function
+from angrmanagement.data.breakpoint import BreakpointType
+from angrmanagement.data.trace import BintraceTrace
+
+from .debugger import Debugger
+
+if TYPE_CHECKING:
+    from angr import SimState
+    from angr.knowledge_plugins import Function
+
+    from angrmanagement.ui.workspace import Workspace
 
 
 try:
     import bintrace
-    from bintrace.debugger_angr import AngrTraceDebugger
     from bintrace import TraceEvent
-except ImportError as e:
+    from bintrace.debugger_angr import AngrTraceDebugger
+except ImportError:
     bintrace = None
     TraceEvent = "TraceEvent"
-
-from ...data.trace import BintraceTrace
-from ...data.breakpoint import BreakpointType
-from .debugger import Debugger
-
 
 _l = logging.getLogger(name=__name__)
 
@@ -64,7 +67,7 @@ class BintraceDebugger(Debugger):
         }
 
     @property
-    def simstate(self) -> SimState:
+    def simstate(self) -> "SimState":
         if self._cached_simstate is None:
             self._cached_simstate = self._trace_dbg.simstate
         return self._cached_simstate
@@ -172,7 +175,7 @@ class BintraceDebugger(Debugger):
     # FIXME: Factor this out of debugger
     #
 
-    def get_function_for_event(self, event: TraceEvent) -> Optional[Function]:
+    def get_function_for_event(self, event: TraceEvent) -> Optional["Function"]:
         """
         Find currently execution function at `event`.
         """
@@ -196,7 +199,7 @@ class BintraceDebugger(Debugger):
 
     def get_called_functions(
         self, event: Optional[TraceEvent] = None, only_after_event: bool = False
-    ) -> Sequence[Tuple[Function, TraceEvent]]:
+    ) -> Sequence[Tuple["Function", TraceEvent]]:
         """
         Enumerate 1st order outgoing calls of function at `event`.
         """

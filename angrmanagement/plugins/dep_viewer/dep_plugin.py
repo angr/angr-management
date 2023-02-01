@@ -1,12 +1,12 @@
-from typing import Set, Tuple, Optional, Dict
-from sortedcontainers import SortedDict
-
-from PySide6.QtGui import QColor, Qt
+from typing import Optional, Set, Tuple
 
 from angr.sim_type import normalize_cpp_function_name
+from PySide6.QtGui import QColor, Qt
+from sortedcontainers import SortedDict
 
-from ..base_plugin import BasePlugin
-from .sinks import sink_manager, VulnerabilityType
+from angrmanagement.plugins.base_plugin import BasePlugin
+
+from .sinks import VulnerabilityType, sink_manager
 
 
 class DependencyViewer(BasePlugin):

@@ -1,13 +1,12 @@
 import re
 
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
-from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt
-
 import angr
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QAbstractItemView, QMenu, QTableWidget, QTableWidgetItem
 
-from ...utils.namegen import NameGenerator
-from ..dialogs.new_state import NewState
+from angrmanagement.ui.dialogs.new_state import NewState
+from angrmanagement.utils.namegen import NameGenerator
 
 
 class QStateTableItem(QTableWidgetItem):

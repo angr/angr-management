@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import QRectF, Qt
 
 from .qgraph_object import QCachedGraphicsItem
 

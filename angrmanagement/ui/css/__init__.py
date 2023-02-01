@@ -1,18 +1,17 @@
-import sys
-import os
 import logging
+import os
+import sys
 from string import Template
 
-from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QApplication
 
-from ..widgets.qccode_highlighter import reset_formats
-from ...data.object_container import ObjectContainer
-from ...config import Conf, THEME_LOCATION, RES_LOCATION
-from ...logic import GlobalInfo
+from angrmanagement.config import RES_LOCATION, THEME_LOCATION, Conf
+from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.ui.widgets.qccode_highlighter import reset_formats
 
-
-l = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 #
@@ -33,8 +32,8 @@ class CSS:
         try:
             with open(base_css_path, encoding="utf-8") as f:
                 css = f.read()
-        except:  # pylint: disable=bare-except
-            l.warning("Failed to load base theme at %s", base_css_path)
+        except Exception:  # pylint: disable=braod-except
+            log.warning("Failed to load base theme at %s", base_css_path)
             css = ""
 
         theme_path = os.path.join(THEME_LOCATION, Conf.theme_name)
@@ -43,8 +42,8 @@ class CSS:
             try:
                 with open(css_path, encoding="utf-8") as f:
                     css += "\n" + f.read()
-            except:  # pylint: disable=bare-except
-                l.warning("Failed to load theme CSS at %s", css_path)
+            except Exception:  # pylint: disable=broad-except
+                log.warning("Failed to load theme CSS at %s", css_path)
 
         theme_resources_path = RES_LOCATION
         if sys.platform == "win32":

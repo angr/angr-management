@@ -1,6 +1,7 @@
 import logging
-from PySide6.QtWidgets import QHBoxLayout
+
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 from traitlets.config.configurable import MultipleInstanceError
 
 from .view import BaseView
@@ -35,7 +36,9 @@ class ConsoleView(BaseView):
         if self._ipython_widget is None:
             return
 
-        import angr, claripy, cle  # pylint: disable=import-outside-toplevel,multiple-imports
+        import angr  # pylint: disable=import-outside-toplevel,multiple-imports
+        import claripy
+        import cle
 
         namespace = {
             "angr": angr,
@@ -70,7 +73,9 @@ class ConsoleView(BaseView):
 
     def _init_widgets(self):
 
-        import angr, claripy, cle  # pylint: disable=import-outside-toplevel,multiple-imports
+        import angr  # pylint: disable=import-outside-toplevel,multiple-imports
+        import claripy
+        import cle
 
         namespace = {
             "angr": angr,
@@ -78,7 +83,7 @@ class ConsoleView(BaseView):
             "cle": cle,
         }
 
-        from ..widgets.qipython_widget import QIPythonWidget  # pylint:disable=import-outside-toplevel
+        from angrmanagement.ui.widgets.qipython_widget import QIPythonWidget  # pylint:disable=import-outside-toplevel
 
         try:
             ipython_widget = QIPythonWidget(namespace=namespace)

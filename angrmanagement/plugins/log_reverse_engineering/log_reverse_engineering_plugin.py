@@ -5,8 +5,8 @@ from angrmanagement.plugins.base_plugin import BasePlugin
 
 try:
     from slacrs import Slacrs
-    from slacrs.model import VariableRename, FunctionRename, ReverseEngineeringProgress
-except ImportError as ex:
+    from slacrs.model import FunctionRename, ReverseEngineeringProgress, VariableRename
+except ImportError:
     Slacrs: Optional[type] = None
     VariableRename: Optional[type] = None
     FunctionRename: Optional[type] = None

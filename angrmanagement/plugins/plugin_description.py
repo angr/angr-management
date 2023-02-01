@@ -1,7 +1,7 @@
 from typing import List
 
 import tomlkit
-from tomlkit.items import String, Integer, AoT, Table
+from tomlkit.items import AoT, Integer, String, Table
 
 
 class PluginDescription:

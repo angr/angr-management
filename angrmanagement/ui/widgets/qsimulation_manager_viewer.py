@@ -1,12 +1,13 @@
 from collections import defaultdict
-from typing import List
-
-from PySide6.QtGui import QCursor, QContextMenuEvent
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QInputDialog, QAbstractItemView
-from PySide6.QtCore import Qt
-
-from angr import SimState
 from inspect import isfunction
+from typing import TYPE_CHECKING, List
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QContextMenuEvent, QCursor
+from PySide6.QtWidgets import QAbstractItemView, QInputDialog, QMenu, QMessageBox, QTreeWidget, QTreeWidgetItem
+
+if TYPE_CHECKING:
+    from angr import SimState
 
 
 class SimgrViewerAbstractTreeItem(QTreeWidgetItem):
@@ -115,7 +116,7 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
 
 
 class QSimulationManagerViewer(QTreeWidget):
-    state_clipboard: List[SimState]
+    state_clipboard: List["SimState"]
 
     def __init__(self, simgr, parent=None):
         super().__init__(parent)

@@ -2,10 +2,10 @@ import logging
 import random
 from collections import defaultdict
 
-from PySide6.QtGui import QColor
 from angr.errors import SimEngineError
+from PySide6.QtGui import QColor
 
-l = logging.getLogger(name=__name__)
+log = logging.getLogger(__name__)
 
 
 class TraceFunc:
@@ -68,7 +68,7 @@ class TraceStatistics:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
         except (IndexError, KeyError) as e:
-            l.error(e)
+            log.error(e)
             return self.BBL_EMPTY_COLOR
         return mark_color
 
@@ -125,7 +125,7 @@ class TraceStatistics:
                 else:
                     func_name = "Unknown"
             else:
-                l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
+                log.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
 
         self.count = len(self.trace_func)

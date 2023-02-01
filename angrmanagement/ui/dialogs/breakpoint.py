@@ -1,20 +1,23 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QDialog,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
-    QLineEdit,
     QDialogButtonBox,
     QGridLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
     QRadioButton,
-    QButtonGroup,
+    QVBoxLayout,
 )
 
-from ...data.breakpoint import Breakpoint, BreakpointType
-from ..widgets import QAddressInput
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.ui.widgets import QAddressInput
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class BreakpointDialog(QDialog):

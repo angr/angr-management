@@ -1,24 +1,26 @@
-from typing import List, Optional, Dict, TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING, Dict, List, Optional
 
+import angr
+import archinfo
+import cle
+from angr.angrdb import AngrDB
 from PySide6.QtWidgets import QMessageBox
 
-import cle
-import angr
-from angr.angrdb import AngrDB
-import archinfo
+from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.dialogs import LoadBinary
+
+from .job import Job
 
 try:
     import archr
 except ImportError:
     archr = None
 
-from .job import Job
-from ...logic.threads import gui_thread_schedule
-from ...ui.dialogs import LoadBinary
 
 if TYPE_CHECKING:
     from angr.knowledge_base import KnowledgeBase
+
 
 _l = logging.getLogger(__name__)
 

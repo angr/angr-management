@@ -1,30 +1,32 @@
-import time
+import codecs
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QEvent, Signal, QObject
-from PySide6.QtGui import QCursor
+from PySide6.QtCore import QAbstractTableModel, QEvent, QModelIndex, QObject, Qt, Signal
+from PySide6.QtGui import QContextMenuEvent, QCursor
 from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QMainWindow,
-    QTableView,
     QAbstractItemView,
-    QHeaderView,
-    QWidget,
-    QHBoxLayout,
-    QComboBox,
-    QLabel,
-    QPushButton,
-    QLineEdit,
     QCheckBox,
-    QMenu,
+    QComboBox,
     QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
 )
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import BaseView
-from angrmanagement.ui.workspace import Workspace
-import codecs
 
 from .seed_table import SeedTable
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class querySignaler(QObject):
@@ -180,7 +182,7 @@ class SeedTableWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
-    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         rows = self.selectionModel().selectedIndexes()
         contextMenu = QMenu(self)
         saveSeed = contextMenu.addAction("&Save Seed")
@@ -196,7 +198,7 @@ class SeedTableWidget(QTableView):
         try:
             with open(filename, "wb") as outfile:
                 outfile.write(data)
-        except:
+        except Exception:
             self.workspace.log("Error saving seed.")
 
 

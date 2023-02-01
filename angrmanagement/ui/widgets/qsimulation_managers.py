@@ -1,27 +1,28 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
     QFrame,
+    QHBoxLayout,
     QInputDialog,
     QLabel,
-    QComboBox,
-    QHBoxLayout,
-    QVBoxLayout,
     QPushButton,
-    QCheckBox,
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
-from ...data.jobs import SimgrStepJob, SimgrExploreJob
-from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
-from ...logic.threads import gui_thread_schedule
+from angrmanagement.data.jobs import SimgrExploreJob, SimgrStepJob
+from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 
 if TYPE_CHECKING:
     from angr import SimState
-    from typing import List
+
+    from angrmanagement.data.instance import Instance
 
 
 class QSimulationManagers(QFrame):
@@ -356,7 +357,7 @@ class QSimulationManagers(QFrame):
             try:
                 addr = int(line, 16)
                 self.add_address_to_list(qlist, addr)
-            except ValueError as e:  # pylint: disable=unused-variable
+            except ValueError:  # pylint: disable=unused-variable
                 pass
 
     @staticmethod

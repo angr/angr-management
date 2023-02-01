@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtWidgets import QComboBox
 
-from angr.knowledge_plugins import FunctionManager
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import FunctionManager
 
 
 class QFunctionComboBox(QComboBox):

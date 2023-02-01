@@ -1,17 +1,25 @@
+import logging
 import sys
 import time
-import logging
-from threading import Thread
 from queue import Queue
-from typing import List, Optional, Type, Union, Callable, TYPE_CHECKING
+from threading import Thread
+from typing import TYPE_CHECKING, Callable, List, Optional, Type, Union
 
 import angr
+from angr.analyses.disassembly import Instruction
 from angr.block import Block
 from angr.knowledge_base import KnowledgeBase
-from angr.analyses.disassembly import Instruction
 from angr.knowledge_plugins import Function
 from angr.misc.testing import is_testing
 from cle import SymbolType
+
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
+from angrmanagement.data.trace import Trace
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
+from angrmanagement.logic.debugger.simgr import SimulationDebugger
+from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
+from angrmanagement.ui.dialogs import AnalysisOptionsDialog
 
 from .analysis_options import (
     AnalysesConfiguration,
@@ -20,24 +28,17 @@ from .analysis_options import (
     VariableRecoveryConfiguration,
 )
 from .jobs import (
-    VariableRecoveryJob,
-    PrototypeFindingJob,
+    CFGGenerationJob,
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
-    CFGGenerationJob,
+    PrototypeFindingJob,
+    VariableRecoveryJob,
 )
-from .object_container import ObjectContainer
 from .log import LogRecord, initialize
-from ..logic import GlobalInfo
-from ..logic.threads import gui_thread_schedule_async, gui_thread_schedule
-from ..logic.debugger import DebuggerListManager, DebuggerManager
-from ..logic.debugger.simgr import SimulationDebugger
-from ..data.trace import Trace
-from ..data.breakpoint import BreakpointManager, BreakpointType, Breakpoint
-from ..ui.dialogs import AnalysisOptionsDialog
+from .object_container import ObjectContainer
 
 if TYPE_CHECKING:
-    from ..ui.workspace import Workspace
+    from angrmanagement.ui.workspace import Workspace
 
 _l = logging.getLogger(__name__)
 
@@ -53,11 +54,11 @@ class Instance:
     log: Union[List[LogRecord], ObjectContainer]
 
     def __init__(self):
-        # pylint:disable=import-outside-toplevel)
+        # pylint:disable=import-outside-toplevel
         # delayed import
-        from ..ui.views.interaction_view import (
-            PlainTextProtocol,
+        from angrmanagement.ui.views.interaction_view import (
             BackslashTextProtocol,
+            PlainTextProtocol,
             ProtocolInteractor,
             SavedInteraction,
         )

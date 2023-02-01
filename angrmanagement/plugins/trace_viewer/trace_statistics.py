@@ -2,16 +2,14 @@
 import logging
 import os
 import random
-from collections import defaultdict
 from bisect import bisect_left
-from typing import Dict, Any, List, Set, Optional
-
-from PySide6.QtGui import QColor
+from collections import defaultdict
+from typing import Any, Dict, List, Optional, Set
 
 from angr.errors import SimEngineError
+from PySide6.QtGui import QColor
 
-l = logging.getLogger(name=__name__)
-l.setLevel("DEBUG")
+log = logging.getLogger(name=__name__)
 
 
 class TraceFunc:
@@ -113,7 +111,7 @@ class TraceStatistics:
                 break
 
         if base_addr is None:
-            l.warning(
+            log.warning(
                 "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the " "trace.",
                 object_name,
             )
@@ -136,7 +134,7 @@ class TraceStatistics:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
         except (IndexError, KeyError) as e:
-            l.error(e)
+            log.error(e)
             return self.BBL_EMPTY_COLOR
         return mark_color
 
@@ -226,7 +224,7 @@ class TraceStatistics:
             else:
                 # Node is not found in the CFG. It's possible that the library is not loaded
                 func_name = hex(bbl_addr)  # default to using bbl_addr as name if none is not found
-                # l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
+                # log.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
 
             if p % 5000 == 0:

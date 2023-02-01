@@ -1,8 +1,8 @@
-from qtconsole.rich_jupyter_widget import RichJupyterWidget
-from qtconsole.inprocess import QtInProcessKernelManager
 from IPython.lib import guisupport
+from qtconsole.inprocess import QtInProcessKernelManager
+from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
-from ..css import CSS
+from angrmanagement.ui.css import CSS
 
 
 class QIPythonWidget(RichJupyterWidget):

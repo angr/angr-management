@@ -1,18 +1,17 @@
 import os
-import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
-from angr.knowledge_plugins import Function
+from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton
 
-from ..menus.disasm_options_menu import DisasmOptionsMenu
-from ..toolbars import NavToolbar
+from angrmanagement.ui.menus.disasm_options_menu import DisasmOptionsMenu
+from angrmanagement.ui.toolbars import NavToolbar
+
 from .qdisasm_base_control import DisassemblyLevel
 from .qdisasm_graph import QDisassemblyGraph
 from .qlinear_viewer import QLinearDisassembly
 
-
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import Function
 
 
 class QDisasmStatusBar(QFrame):

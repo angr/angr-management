@@ -1,26 +1,26 @@
-from typing import Optional, Dict, List, Tuple, TYPE_CHECKING
-import os
-import json
 import binascii
+import json
+import os
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from PySide6.QtWidgets import (
     QDialog,
-    QLineEdit,
-    QLabel,
-    QHBoxLayout,
-    QVBoxLayout,
-    QPushButton,
-    QProgressBar,
-    QMessageBox,
-    QSizePolicy,
     QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
 )
 
-from ....utils.io import isurl, download_url
-from ..data.component_tree import ComponentTree, ComponentTreeNode, ComponentFunction
+from angrmanagement.data.component_tree import ComponentFunction, ComponentTree, ComponentTreeNode
+from angrmanagement.utils.io import download_url, isurl
 
 if TYPE_CHECKING:
-    from ....ui.workspace import Workspace
+    from angrmanagement.ui.workspace import Workspace
 
 
 class LoadComponentsDialog(QDialog):

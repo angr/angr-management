@@ -1,30 +1,30 @@
-from typing import Optional, Sequence, Mapping
 import logging
-from sortedcontainers import SortedDict
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
-    QGraphicsScene,
-    QGraphicsView,
-    QGraphicsItem,
-    QGraphicsRectItem,
-    QGraphicsPolygonItem,
-    QGraphicsLineItem,
-)
-from PySide6.QtGui import QBrush, QPen, QPolygonF
-from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent, QMarginsF
+from typing import TYPE_CHECKING, Mapping, Optional, Sequence
 
 import cle
 from angr.block import Block
-from angr.analyses.cfg.cfb import MemoryRegion
 from angr.knowledge_plugins.cfg import MemoryData
+from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, QSize, Qt
+from PySide6.QtGui import QBrush, QPen, QPolygonF
+from PySide6.QtWidgets import (
+    QGraphicsItem,
+    QGraphicsLineItem,
+    QGraphicsPolygonItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QHBoxLayout,
+    QWidget,
+)
+from sortedcontainers import SortedDict
 
-from ...config import Conf
-from ...data.object_container import ObjectContainer
+from angrmanagement.config import Conf
+from angrmanagement.data.object_container import ObjectContainer
 
+if TYPE_CHECKING:
+    from angr.analyses.cfg.cfb import MemoryRegion
 
-l = logging.getLogger(name=__name__)
+log = logging.getLogger(name=__name__)
 
 
 class FeatureMapItem(QGraphicsItem):
@@ -127,11 +127,11 @@ class FeatureMapItem(QGraphicsItem):
             self._total_size += self._get_adjusted_region_size(mr)
 
     @staticmethod
-    def _get_adjusted_region_size(mr: MemoryRegion):
+    def _get_adjusted_region_size(mr: "MemoryRegion"):
         if isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject)):
             return 80  # Draw unnecessary objects smaller
         else:
-            l.debug("memory_region.size: %x memory_region.object: %s", mr.size, mr.object)
+            log.debug("memory_region.size: %x memory_region.object: %s", mr.size, mr.object)
             return mr.size
 
     def _get_pos_from_addr(self, addr: int) -> Optional[int]:
@@ -161,7 +161,7 @@ class FeatureMapItem(QGraphicsItem):
         region_addr = self._offset_to_regionaddr[base_offset]
         return region_addr + offset - base_offset
 
-    def _get_region_from_point(self, point: QPoint) -> Optional[MemoryRegion]:
+    def _get_region_from_point(self, point: QPoint) -> Optional["MemoryRegion"]:
         """
         Get the memory region from X coordinate, or None if it could not be mapped.
         """
@@ -181,7 +181,7 @@ class FeatureMapItem(QGraphicsItem):
         width = size / self._total_size * self._width
         return QRectF(x, 0, width, self._height)
 
-    def _get_region_rect(self, mr: MemoryRegion) -> QRectF:
+    def _get_region_rect(self, mr: "MemoryRegion") -> QRectF:
         """
         Get the rect to draw this memory region.
         """

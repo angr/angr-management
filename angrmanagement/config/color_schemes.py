@@ -1,6 +1,5 @@
 from PySide6.QtGui import QColor
 
-
 COLOR_SCHEMES = {
     "Light": {
         "disasm_view_operand_color": QColor(0x00, 0x00, 0x80),

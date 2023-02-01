@@ -1,29 +1,28 @@
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional, Dict
-from sortedcontainers import SortedDict
-
-from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
-from PySide6.QtCore import QEvent, Qt
+from typing import TYPE_CHECKING, Dict, Optional
 
 from pyqodeng.core.api import CodeEdit
-from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker
-from pyqodeng.core.widgets import SplittableCodeEditTabWidget
 from pyqodeng.core.api.panel import Panel
 from pyqodeng.core.api.utils import drift_color
-
+from pyqodeng.core.panels import LineNumberPanel, Marker, MarkerPanel
+from pyqodeng.core.widgets import SplittableCodeEditTabWidget
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
 from qtpy import QtCore, QtGui
-from cle import Loader
 
-from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
-from angrmanagement.ui.views import BaseView
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.workspace import Workspace
+from angrmanagement.ui.views import BaseView
+from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
+    from cle import Loader
+    from sortedcontainers import SortedDict
+
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.symexec_view import SymexecView
+    from angrmanagement.ui.workspace import Workspace
 
 
 class VaildLineNumberPanel(LineNumberPanel):

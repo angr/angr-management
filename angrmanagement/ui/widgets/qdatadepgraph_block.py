@@ -1,17 +1,18 @@
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from PySide6 import QtWidgets, QtCore, QtGui
-
-
 from angr.analyses.data_dep import ConstantDepNode, TmpDepNode
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from angrmanagement.config import Conf
+
 from .qgraph_object import QCachedGraphicsItem
-from ...config import Conf
 
 if TYPE_CHECKING:
     from angr.analyses.data_dep import BaseDepNode
-    from angrmanagement.ui.views.data_dep_view import DataDepView
     from capstone import CsInsn
+
+    from angrmanagement.ui.views.data_dep_view import DataDepView
 
 _l = logging.getLogger(__name__)
 

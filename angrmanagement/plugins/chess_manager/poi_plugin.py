@@ -1,22 +1,24 @@
 import json
 import logging
-from copy import deepcopy
 import os
-from typing import Optional, Union
+from copy import deepcopy
+from typing import TYPE_CHECKING, Optional, Union
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
-from ...data.object_container import ObjectContainer
-from ..base_plugin import BasePlugin
-from .trace_statistics import TraceStatistics
-from .qpoi_viewer import POIView, EMPTY_POI
-from .multi_poi import MultiPOI
+from angrmanagement.plugins.base_plugin import BasePlugin
+
 from .diagnose_handler import DiagnoseHandler
+from .multi_poi import MultiPOI
+from .qpoi_viewer import EMPTY_POI, POIView
+from .trace_statistics import TraceStatistics
+
+if TYPE_CHECKING:
+    from angrmanagement.data.object_container import ObjectContainer
 
 
 _l = logging.getLogger(__name__)
-# _l.setLevel('DEBUG')
 
 
 class POIViewer(BasePlugin):

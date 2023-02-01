@@ -1,15 +1,15 @@
 import threading
 
 import archr
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QVBoxLayout, QHBoxLayout, QPushButton
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QPushButton, QVBoxLayout
 from qtterm import TerminalWidget
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import BaseView
 from angrmanagement.ui.views.interaction_view import (
-    SavedInteraction,
     PlainTextProtocol,
+    SavedInteraction,
 )
 
 

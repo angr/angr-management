@@ -1,22 +1,21 @@
 # pylint:disable=unused-private-member
 import logging
-from typing import Optional, Tuple, Callable, Iterable, Generator, List, Any, Union, TYPE_CHECKING, Type
-from PySide6.QtGui import QColor, QPainter
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QGraphicsSceneMouseEvent
-
-from angrmanagement.ui.widgets.qblock import QBlock
-from angrmanagement.ui.widgets.qinstruction import QInstruction
-from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation
+from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable, List, Optional, Tuple, Type, Union
 
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from angr.sim_manager import SimulationManager
     from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass
-    from angrmanagement.ui.workspace import Workspace
-    from angrmanagement.ui.views import disassembly_view, code_view
+    from angr.sim_manager import SimulationManager
+    from PySide6.QtGui import QColor, QIcon, QPainter
+    from PySide6.QtWidgets import QGraphicsSceneMouseEvent
+
     from angrmanagement.config.config_entry import ConfigurationEntry
+    from angrmanagement.ui.views import code_view, disassembly_view
+    from angrmanagement.ui.widgets.qblock import QBlock
+    from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation
+    from angrmanagement.ui.widgets.qinstruction import QInstruction
+    from angrmanagement.ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
 
@@ -83,19 +82,19 @@ class BasePlugin:
     # UI Callbacks
     #
 
-    def color_insn(self, addr, selected) -> Optional[QColor]:
+    def color_insn(self, addr, selected) -> Optional["QColor"]:
         return None
 
-    def color_block(self, addr) -> Optional[QColor]:
+    def color_block(self, addr) -> Optional["QColor"]:
         return None
 
-    def color_func(self, func) -> Optional[QColor]:
+    def color_func(self, func) -> Optional["QColor"]:
         return None
 
-    def draw_insn(self, qinsn: QInstruction, painter: QPainter):
+    def draw_insn(self, qinsn: "QInstruction", painter: "QPainter"):
         pass
 
-    def draw_block(self, qblock: QBlock, painter: QPainter):
+    def draw_block(self, qblock: "QBlock", painter: "QPainter"):
         pass
 
     def instrument_disassembly_view(self, dview: "disassembly_view.DisassemblyView"):
@@ -104,17 +103,17 @@ class BasePlugin:
     def instrument_code_view(self, cview: "code_view.CodeView"):
         pass
 
-    def handle_click_insn(self, qinsn, event: QGraphicsSceneMouseEvent):
+    def handle_click_insn(self, qinsn, event: "QGraphicsSceneMouseEvent"):
         return False
 
-    def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent):
+    def handle_click_block(self, qblock, event: "QGraphicsSceneMouseEvent"):
         return False
 
     def handle_raise_view(self, view):
         pass
 
     # iterable of tuples (icon, tooltip)
-    TOOLBAR_BUTTONS: List[Tuple[QIcon, str]] = []
+    TOOLBAR_BUTTONS: List[Tuple["QIcon", str]] = []
 
     def handle_click_toolbar(self, idx):
         pass
@@ -153,7 +152,7 @@ class BasePlugin:
     def build_context_menu_functions(self, funcs) -> Iterable[Union[None, Tuple[str, Callable]]]:
         return []
 
-    def build_qblock_annotations(self, qblock: QBlock) -> Iterable[QInstructionAnnotation]:
+    def build_qblock_annotations(self, qblock: "QBlock") -> Iterable["QInstructionAnnotation"]:
         return []
 
     # Iterable of URL actions

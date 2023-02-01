@@ -1,8 +1,9 @@
-from typing import Mapping, Any, Sequence, Union, Optional
-import platform
 import multiprocessing
+import platform
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
 
-import angr
+if TYPE_CHECKING:
+    import angr
 
 
 def extract_first_paragraph_from_docstring(desc: str) -> str:
@@ -22,7 +23,7 @@ def extract_first_paragraph_from_docstring(desc: str) -> str:
             last_line = len(desc)
         desc = desc[first_line:last_line]
         num_whitespace_chars = len(desc[0]) - len(desc[0].lstrip())
-        desc = " ".join(l[num_whitespace_chars:] for l in desc)
+        desc = " ".join(line[num_whitespace_chars:] for line in desc)
     else:
         desc = ""
 

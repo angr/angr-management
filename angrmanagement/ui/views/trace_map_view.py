@@ -1,10 +1,10 @@
 from typing import Optional
 
-from PySide6.QtWidgets import QVBoxLayout
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QVBoxLayout
 
-from ..views import BaseView
-from ..widgets import QTraceMap
+from angrmanagement.ui.views.view import BaseView
+from angrmanagement.ui.widgets import QTraceMap
 
 
 class TraceMapView(BaseView):

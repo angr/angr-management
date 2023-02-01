@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 
 class LabelNameBox(QLineEdit):
@@ -19,7 +19,7 @@ class LabelNameBox(QLineEdit):
         return None
 
     def _is_valid_label_name(self, input_):  # pylint: disable=no-self-use
-        return input_ and not " " in input_.strip()
+        return input_ and " " not in input_.strip()
 
 
 class RenameLabel(QDialog):

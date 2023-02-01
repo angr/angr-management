@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QMessageBox, QLabel
+from angr.sim_type import ALL_TYPES, SimStruct, SimUnion, TypeRef
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
-from angr.sim_type import TypeRef, ALL_TYPES, SimStruct, SimUnion
+from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.ui.dialogs.type_editor import CTypeEditor
+from angrmanagement.ui.widgets.qtypedef import QCTypeDef
 
-from ...data.object_container import ObjectContainer
-from ..dialogs.type_editor import CTypeEditor
-from ..widgets.qtypedef import QCTypeDef
 from .view import BaseView
 
 if TYPE_CHECKING:

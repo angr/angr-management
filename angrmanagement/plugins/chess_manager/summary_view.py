@@ -1,31 +1,31 @@
 # pylint:disable=missing-class-docstring
-from typing import TYPE_CHECKING
+import datetime
 import json
 import threading
-import datetime
 from time import sleep
+from typing import TYPE_CHECKING
 
-from sqlalchemy import func as sqlalchemy_func
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
-    QTableWidget,
-    QHeaderView,
     QAbstractItemView,
-    QTableWidgetItem,
-    QWidget,
-    QTabWidget,
+    QHBoxLayout,
+    QHeaderView,
     QLabel,
+    QTableWidget,
+    QTableWidgetItem,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
+from sqlalchemy import func as sqlalchemy_func
 
-from angrmanagement.ui.views.view import BaseView
 from angrmanagement.logic.threads import gui_thread_schedule_async
+from angrmanagement.ui.views.view import BaseView
 
 try:
     from slacrs import Slacrs
     from slacrs.model import PluginMessage
-except ImportError as ex:
+except ImportError:
     Slacrs = None
 
 if TYPE_CHECKING:

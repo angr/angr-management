@@ -1,7 +1,11 @@
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLabel, QFontDialog
+from typing import TYPE_CHECKING
+
+from PySide6.QtWidgets import QFontDialog, QHBoxLayout, QLabel, QPushButton, QWidget
 
 from angrmanagement.config import Conf
+
+if TYPE_CHECKING:
+    from PySide6.QtGui import QFont
 
 
 class QFontOption(QWidget):

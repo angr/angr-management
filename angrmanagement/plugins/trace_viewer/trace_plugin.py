@@ -1,25 +1,27 @@
 import json
 import os
-from typing import Optional, Union, List, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
+import requests
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
-import requests
+from angrmanagement.config import Conf
+from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule_async
+from angrmanagement.plugins.base_plugin import BasePlugin
+from angrmanagement.utils.io import download_url, isurl
 
-from ...config import Conf
-from ...data.object_container import ObjectContainer
-from ...logic import GlobalInfo
-from ...logic.threads import gui_thread_schedule_async
-from ...utils.io import isurl, download_url
-from ...errors import InvalidURLError, UnexpectedStatusCodeError
-from ..base_plugin import BasePlugin
-from .trace_statistics import TraceStatistics
-from .multi_trace import MultiTrace
 from .afl_qemu_bitmap import AFLQemuBitmap
 from .chess_trace_list import QChessTraceListDialog
+from .multi_trace import MultiTrace
 from .qtrace_viewer import QTraceViewer
+from .trace_statistics import TraceStatistics
+
+if TYPE_CHECKING:
+    from angrmanagement.data.object_container import ObjectContainer
 
 
 class TraceViewer(BasePlugin):

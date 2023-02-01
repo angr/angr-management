@@ -1,28 +1,21 @@
-import hashlib
 import os
-import random
 import sys
-import string
 import unittest
 from time import sleep
 
-from PySide6.QtTest import QTest
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
-
 import angr
-from angrmanagement.ui.main_window import MainWindow
-from angrmanagement.ui.dialogs.rename_label import RenameLabel
-from angrmanagement.ui.dialogs.rename_node import RenameNode
-
 from common import setUp, test_location
-
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
 from slacrs import Slacrs
 from slacrs.model import HumanActivity, HumanActivityEnum
 
 from angrmanagement.config import Conf
 from angrmanagement.config.config_entry import ConfigurationEntry
-
+from angrmanagement.ui.dialogs.rename_label import RenameLabel
+from angrmanagement.ui.dialogs.rename_node import RenameNode
+from angrmanagement.ui.main_window import MainWindow
 
 Conf._entries["checrs_backend_str"] = ConfigurationEntry("checrs_backend_str", str, "", default_value="")
 Conf.checrs_backend_str = "sqlite:////tmp/testtest.sqlite"

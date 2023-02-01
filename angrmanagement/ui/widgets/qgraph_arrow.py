@@ -1,16 +1,17 @@
 import math
 from typing import TYPE_CHECKING, List
 
-from PySide6.QtWidgets import QGraphicsItem, QApplication, QToolTip
-from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker, QKeyEvent
 from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QBrush, QColor, QKeyEvent, QPainterPath, QPainterPathStroker, QPen
+from PySide6.QtWidgets import QApplication, QGraphicsItem
 
-from ...utils.edge import EdgeSort
-from ...config import Conf
+from angrmanagement.config import Conf
+from angrmanagement.utils.edge import EdgeSort
 
 if TYPE_CHECKING:
-    from ..views.dep_view import DependencyView
-    from ..views.data_dep_view import DataDepView
+    from angrmanagement.ui.views.data_dep_view import DataDepView
+    from angrmanagement.ui.views.dep_view import DependencyView
+    from angrmanagement.ui.views.proximity_view import ProximityView
 
 EDGE_COLORS = {
     EdgeSort.BACK_EDGE: "disasm_view_back_edge_color",
@@ -196,7 +197,8 @@ class QGraphArrowBezier(QGraphArrow):
     def _make_path(self):
         if len(self.coords) < 3:
             return super()._make_path()
-            # raise ValueError("At least 3 coordinates are required.")  # programming error - don't use this class for a simple segment!
+            # programming error - don't use this class for a simple segment!
+            # raise ValueError("At least 3 coordinates are required.")
 
         path = QPainterPath(self.coords[0])
 
@@ -226,7 +228,7 @@ class QDepGraphArrow(QGraphArrowBezier):
 
 
 class QProximityGraphArrow(QGraphArrow):
-    def __init__(self, proximity_view: "QProximityView", *args, **kwargs):
+    def __init__(self, proximity_view: "ProximityView", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._proximity_view = proximity_view
 

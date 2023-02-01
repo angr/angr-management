@@ -1,37 +1,33 @@
-from typing import Tuple, Dict, Optional
-import os
 import binascii
-import logging
+import os
+from typing import Dict, Optional, Tuple
+
 import archinfo
 from cle import Blob
-
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
     QDialog,
-    QVBoxLayout,
+    QDialogButtonBox,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
-    QTabWidget,
-    QCheckBox,
-    QFrame,
-    QGroupBox,
-    QListWidgetItem,
-    QListWidget,
-    QMessageBox,
     QLineEdit,
-    QGridLayout,
-    QComboBox,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
     QSizePolicy,
-    QDialogButtonBox,
+    QTabWidget,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
 try:
     import pypcode
 except ImportError:
     pypcode = None
-
-
-l = logging.getLogger("dialogs.load_binary")
 
 
 class LoadBinaryError(Exception):

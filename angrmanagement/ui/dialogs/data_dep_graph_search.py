@@ -1,9 +1,11 @@
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
+
 from PySide6 import QtWidgets
 
 if TYPE_CHECKING:
     from angr.analyses.data_dep import BaseDepNode
-    from ..widgets.qdatadepgraph_block import QDataDepGraphBlock
+
+    from angrmanagement.ui.widgets.qdatadepgraph_block import QDataDepGraphBlock
 
 
 class QDataDepGraphSearch(QtWidgets.QDialog):

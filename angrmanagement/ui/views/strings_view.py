@@ -1,13 +1,17 @@
 import re
-from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLineEdit, QVBoxLayout, QLabel
-from PySide6.QtCore import QSize
+from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins import Function
-from angr.knowledge_plugins.cfg.memory_data import MemoryData
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout
+
+from angrmanagement.ui.widgets.qfunction_combobox import QFunctionComboBox
+from angrmanagement.ui.widgets.qstring_table import QStringTable
 
 from .view import BaseView
-from ..widgets.qstring_table import QStringTable
-from ..widgets.qfunction_combobox import QFunctionComboBox
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 
 class StringsView(BaseView):
@@ -50,7 +54,7 @@ class StringsView(BaseView):
 
         self.reload()
 
-    def _on_string_selected(self, s: MemoryData):
+    def _on_string_selected(self, s: "MemoryData"):
         """
         A string reference is selected.
 
@@ -73,7 +77,7 @@ class StringsView(BaseView):
         if regex:
             try:
                 pattern = re.compile(pattern)
-            except re.error as _e:
+            except re.error:
                 return
         self._string_table.filter_string = pattern
 

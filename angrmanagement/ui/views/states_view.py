@@ -1,8 +1,9 @@
-from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
+
+from angrmanagement.ui.widgets.qstate_table import QStateTable
 
 from .view import BaseView
-from ..widgets.qstate_table import QStateTable
 
 
 class StatesView(BaseView):

@@ -1,14 +1,13 @@
-from typing import TYPE_CHECKING, Optional, Mapping, Sequence
+from typing import TYPE_CHECKING, Mapping, Optional, Sequence
 
-import PySide6.QtGui
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFrame, QMenu
-from PySide6.QtCore import QSize
-
-from ...data.highlight_region import SynchronizedHighlightRegion
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
+    import PySide6.QtGui
+
+    from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
     from angrmanagement.ui.workspace import Instance
 
 
@@ -24,7 +23,7 @@ class BaseView(QFrame):
     def __init__(self, category: str, instance, default_docking_position, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.instance: "Instance" = instance
+        self.instance: Instance = instance
         self.category = category
         self.default_docking_position = default_docking_position
 
@@ -63,7 +62,7 @@ class BaseView(QFrame):
         self.old_width = event.oldSize().width()
         self.old_height = event.oldSize().height()
 
-    def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
+    def closeEvent(self, event: "PySide6.QtGui.QCloseEvent"):
         self.instance.workspace.view_manager.remove_view(self)
         event.accept()
 
@@ -174,7 +173,7 @@ class SynchronizedView(BaseView):
         finally:
             self._processing_synchronized_cursor_update = False
 
-    def set_synchronized_highlight_regions(self, regions: Sequence[SynchronizedHighlightRegion]):
+    def set_synchronized_highlight_regions(self, regions: Sequence["SynchronizedHighlightRegion"]):
         """
         Set synchronized highlight regions for this view.
         """
@@ -193,7 +192,7 @@ class SynchronizedView(BaseView):
         Handle view being added to or removed from the view synchronization group.
         """
 
-    def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
+    def closeEvent(self, event: "PySide6.QtGui.QCloseEvent"):
         """
         View close event handler.
         """

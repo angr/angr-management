@@ -1,25 +1,23 @@
-from typing import Dict, Optional, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional, Set
 
 import networkx
-
-from PySide6.QtWidgets import QHBoxLayout
+from angr.analyses.proximity_graph import (
+    BaseProxiNode,
+    CallProxiNode,
+    FunctionProxiNode,
+    StringProxiNode,
+    VariableProxiNode,
+)
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 
 from angrmanagement.ui.views.view import BaseView
 from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph
 from angrmanagement.ui.widgets.qproximitygraph_block import (
-    QProximityGraphCallBlock,
-    QProximityGraphStringBlock,
-    QProximityGraphFunctionBlock,
     QProximityGraphBlock,
-)
-
-from angr.analyses.proximity_graph import (
-    BaseProxiNode,
-    FunctionProxiNode,
-    StringProxiNode,
-    CallProxiNode,
-    VariableProxiNode,
+    QProximityGraphCallBlock,
+    QProximityGraphFunctionBlock,
+    QProximityGraphStringBlock,
 )
 
 if TYPE_CHECKING:

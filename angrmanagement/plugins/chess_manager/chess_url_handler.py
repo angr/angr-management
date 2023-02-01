@@ -1,20 +1,19 @@
 # pylint:disable=global-statement,missing-class-docstring,no-self-use,unspecified-encoding
-import os
-import sys
-import subprocess
 import logging
+import os
+import subprocess
+import sys
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import tomlkit
 import tomlkit.exceptions
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 from xdg import BaseDirectory
-from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QMessageBox, QFileDialog
 
-from angrmanagement.plugins import BasePlugin
-from angrmanagement.daemon.url_handler import UrlActionBase, register_url_action
 from angrmanagement.daemon.server import register_server_exposed_method
+from angrmanagement.daemon.url_handler import UrlActionBase, register_url_action
+from angrmanagement.plugins import BasePlugin
 
 _l = logging.getLogger(name=__name__)
 

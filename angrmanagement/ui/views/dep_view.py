@@ -1,18 +1,19 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import networkx
-
-from PySide6.QtWidgets import QHBoxLayout
-from PySide6.QtCore import QSize
-
-from angr.knowledge_plugins.key_definitions.definition import Definition
-from angr.knowledge_plugins.key_definitions.atoms import Atom
-from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
 from angr import SIM_PROCEDURES
+from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 
-from ..widgets.qdep_graph import QDependencyGraph
-from ..widgets.qdepgraph_block import QDepGraphBlock
+from angrmanagement.ui.widgets.qdep_graph import QDependencyGraph
+from angrmanagement.ui.widgets.qdepgraph_block import QDepGraphBlock
+
 from .view import BaseView
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.key_definitions.atoms import Atom
+    from angr.knowledge_plugins.key_definitions.definition import Definition
 
 
 class DependencyView(BaseView):
@@ -85,7 +86,9 @@ class DependencyView(BaseView):
     def _register_events(self):
         self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
-    def _convert_node(self, node: Definition, converted: Dict[Definition, QDepGraphBlock]) -> Optional[QDepGraphBlock]:
+    def _convert_node(
+        self, node: "Definition", converted: Dict["Definition", QDepGraphBlock]
+    ) -> Optional[QDepGraphBlock]:
         if node in converted:
             return converted[node]
 

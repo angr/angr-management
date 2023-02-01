@@ -1,17 +1,17 @@
-from typing import List, Optional
-import logging
-
-import PySide6
-from PySide6.QtGui import QPainter, QCursor, QBrush
-from PySide6.QtCore import Qt, QRectF
-from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
+from typing import TYPE_CHECKING, List, Optional
 
 from angr.analyses.disassembly import Value
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QCursor, QPainter
+from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
+
+from angrmanagement.utils import get_comment_for_display, get_string_for_display, should_display_string_label
+
 from .qgraph_object import QCachedGraphicsItem
 from .qoperand import QOperand
-from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
 
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    import PySide6
 
 
 class QInstruction(QCachedGraphicsItem):
@@ -57,7 +57,7 @@ class QInstruction(QCachedGraphicsItem):
 
         self._init_widgets()
 
-    def contextMenuEvent(self, event: PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
+    def contextMenuEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneContextMenuEvent") -> None:
         pass
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):

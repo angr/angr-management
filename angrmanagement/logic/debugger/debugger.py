@@ -1,10 +1,10 @@
-import logging
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
-from ...data.object_container import EventSentinel, ObjectContainer
+from angrmanagement.data.object_container import EventSentinel, ObjectContainer
 
-
-_l = logging.getLogger(name=__name__)
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class Debugger:
@@ -14,8 +14,8 @@ class Debugger:
 
     def __init__(self, workspace: "Workspace"):
         super().__init__()
-        self.workspace: "Workspace" = workspace
-        self.instance: "Instance" = workspace.main_instance
+        self.workspace: Workspace = workspace
+        self.instance: Instance = workspace.main_instance
         self.state_changed: EventSentinel = EventSentinel()
 
     @property

@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import List
 
 import networkx
-
 from angr.analyses.cfg.cfg_utils import CFGUtils
 
 from .edge import Edge, EdgeSort
@@ -66,7 +65,6 @@ class EdgeRouter:
         """
 
         MOVE_LEFT = 0
-        NO_MOVE = 1
         MOVE_RIGHT = 2
 
         # build the edge
@@ -417,7 +415,7 @@ class GraphLayouter:
 
         global_max_row = 0
 
-        min_rows, max_rows = {}, {}
+        max_rows = {}
 
         """
         # assign min row ID top-down

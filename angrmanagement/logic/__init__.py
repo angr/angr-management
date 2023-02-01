@@ -1,10 +1,10 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
-    from angrmanagement.logic.threads import ExecuteCodeEvent
     from angrmanagement.data.library_docs import LibraryDocs
-    from angrmanagement.ui.main_window import MainWindow
+    from angrmanagement.logic.threads import ExecuteCodeEvent
     from angrmanagement.plugins.plugin_manager import PluginManager
+    from angrmanagement.ui.main_window import MainWindow
 
 
 class GlobalInfo:

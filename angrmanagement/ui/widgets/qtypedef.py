@@ -1,12 +1,15 @@
-from PySide6.QtGui import QPainter, QBrush, QColor
-from PySide6.QtWidgets import QWidget, QSizePolicy, QMessageBox
-from PySide6.QtCore import Qt, QSize
+from typing import TYPE_CHECKING
 
-from angr.sim_type import TypeRef, SimUnion, SimStruct, SimTypeBottom
-from angr.knowledge_plugins.types import TypesStore
+from angr.sim_type import SimStruct, SimTypeBottom, SimUnion, TypeRef
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter
+from PySide6.QtWidgets import QMessageBox, QSizePolicy, QWidget
 
-from ..dialogs.type_editor import CTypeEditor, edit_field
-from ...config import Conf
+from angrmanagement.config import Conf
+from angrmanagement.ui.dialogs.type_editor import CTypeEditor, edit_field
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.types import TypesStore
 
 LINE_HEIGHT = 20
 COL_WIDTH = 8
@@ -17,7 +20,7 @@ class QCTypeDef(QWidget):
     A widget to display a C SimType.
     """
 
-    def __init__(self, parent, ty: TypeRef, all_types: TypesStore):
+    def __init__(self, parent, ty: TypeRef, all_types: "TypesStore"):
         super().__init__(parent)
 
         self.type = ty

@@ -1,11 +1,12 @@
 import binascii
-from typing import Set
+from typing import TYPE_CHECKING, Set
 
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu, QMessageBox, QHeaderView
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QContextMenuEvent, QCursor, QAction
+from PySide6.QtGui import QAction, QContextMenuEvent, QCursor
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QMessageBox, QTableWidget, QTableWidgetItem
 
-from angr.knowledge_plugins.patches import Patch
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.patches import Patch
 
 
 class QPatchTableItem:
@@ -104,7 +105,7 @@ class QPatchTable(QTableWidget):
         except KeyError:
             return None
 
-    def get_selected_patches(self) -> Set[Patch]:
+    def get_selected_patches(self) -> Set["Patch"]:
         """
         Get the set of selected patches.
         """

@@ -1,27 +1,25 @@
-import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtGui import QPen, QPainterPath
-from PySide6.QtCore import QRectF, QMarginsF
-from PySide6.QtWidgets import QGraphicsPathItem
-
-from angr.analyses.disassembly import Instruction, IROp
 from angr.analyses.decompiler.clinic import Clinic
+from angr.analyses.disassembly import Instruction, IROp
 from angr.sim_variable import SimRegisterVariable
+from PySide6.QtCore import QMarginsF, QRectF
+from PySide6.QtGui import QPainterPath, QPen
 
-from ...utils import get_block_objects, get_out_branches_for_insn, get_label_text
-from ...utils.block_objects import FunctionHeader, Variables, PhiVariable, Label
-from ...config import Conf
-from .qinstruction import QInstruction
-from .qfunction_header import QFunctionHeader
+from angrmanagement.config import Conf
+from angrmanagement.utils import get_block_objects, get_label_text, get_out_branches_for_insn
+from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
+
+from .qblock_code import QAilObj, QBlockCode, QBlockCodeOptions, QIROpObj
 from .qblock_label import QBlockLabel
-from .qblock_code import QBlockCode, QBlockCodeOptions, QAilObj, QIROpObj
+from .qfunction_header import QFunctionHeader
+from .qgraph_object import QCachedGraphicsItem
+from .qinstruction import QInstruction
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
-from .qgraph_object import QCachedGraphicsItem
 
-
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QGraphicsPathItem
 
 
 class QBlock(QCachedGraphicsItem):

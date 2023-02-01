@@ -4,7 +4,8 @@
 # credit: Cecil Curry
 
 import html
-from PySide6.QtCore import Qt, QEvent, QObject
+
+from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import QWidget
 
 

@@ -7,7 +7,7 @@ from .trace_statistics import TraceStatistics
 try:
     from slacrs import Slacrs
     from slacrs.model import Input
-except ImportError as ex:
+except ImportError:
     Slacrs = None
     HumanFatigue = None
 

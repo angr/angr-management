@@ -1,13 +1,11 @@
-from typing import List, TYPE_CHECKING
-
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
-from PySide6.QtCore import Qt, QAbstractTableModel
+from typing import TYPE_CHECKING, List
 
 from angr.knowledge_plugins.variables.variable_access import VariableAccess
 from angr.knowledge_plugins.xrefs.xref import XRef, XRefType
+from PySide6.QtCore import QAbstractTableModel, Qt
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
-
-from ...config import Conf
+from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance

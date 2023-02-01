@@ -1,9 +1,9 @@
 from typing import Optional
 
-from angrmanagement.logic.threads import is_gui_thread, gui_thread_schedule_async
+from angrmanagement.logic.threads import gui_thread_schedule_async, is_gui_thread
 from angrmanagement.plugins.base_plugin import BasePlugin
 
-from .ui import LoadComponentsDialog, ComponentsView
+from .ui import ComponentsView, LoadComponentsDialog
 
 
 class ComponentsPlugin(BasePlugin):

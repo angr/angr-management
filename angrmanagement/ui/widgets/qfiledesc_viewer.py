@@ -1,8 +1,8 @@
 import os
 import typing
-from PySide6.QtWidgets import QFileDialog, QFrame, QComboBox, QMessageBox, QPushButton, QVBoxLayout, QTextEdit
-from angr.storage.file import SimFileDescriptor
 
+from angr.storage.file import SimFileDescriptor
+from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QPushButton, QTextEdit, QVBoxLayout
 
 if typing.TYPE_CHECKING:
     from angr.sim_state import SimState

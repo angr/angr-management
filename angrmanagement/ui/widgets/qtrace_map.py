@@ -1,25 +1,21 @@
 from typing import Optional, Sequence
-import logging
 
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPen, QPolygonF
 from PySide6.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
+    QGraphicsItem,
+    QGraphicsLineItem,
+    QGraphicsPolygonItem,
+    QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
-    QGraphicsItem,
-    QGraphicsRectItem,
-    QGraphicsPolygonItem,
-    QGraphicsLineItem,
+    QHBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QBrush, QPen, QPolygonF, QLinearGradient, QColor
-from PySide6.QtCore import Qt, QRectF, QSize, QPointF, QPoint, QEvent
 
-from ...config import Conf
-from ...logic.debugger import DebuggerWatcher
-from ...logic.debugger.bintrace import BintraceDebugger
-
-
-l = logging.getLogger(name=__name__)
+from angrmanagement.config import Conf
+from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 
 
 class TraceMapItem(QGraphicsItem):

@@ -1,11 +1,12 @@
-from typing import Optional, TYPE_CHECKING
 import time
+from typing import TYPE_CHECKING, Optional
 
-from ...logic.threads import gui_thread_schedule_async
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
 from .job import Job
 
 if TYPE_CHECKING:
-    from ..instance import Instance
+    from angrmanagement.data.instance import Instance
 
 
 class VariableRecoveryJob(Job):

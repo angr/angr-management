@@ -1,47 +1,46 @@
 import functools
-from typing import Sequence, Union, Optional, Tuple, Callable
-from enum import Enum
 import logging
+from enum import Enum
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import angr
 import PySide6
-from PySide6.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QMainWindow,
-    QVBoxLayout,
-    QFrame,
-    QGraphicsView,
-    QGraphicsScene,
-    QGraphicsItem,
-    QGraphicsObject,
-    QGraphicsSimpleTextItem,
-    QGraphicsSceneMouseEvent,
-    QLabel,
-    QMenu,
-    QPushButton,
-    QMessageBox,
-    QAbstractScrollArea,
-    QAbstractSlider,
-    QComboBox,
-)
-from PySide6.QtGui import QPainterPath, QPen, QFont, QColor, QWheelEvent, QCursor, QAction
-from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal, QEvent, QMarginsF, QTimer
-
 from angr import Block
 from angr.knowledge_plugins.cfg import MemoryData
 from angr.knowledge_plugins.patches import Patch
+from PySide6.QtCore import QEvent, QMarginsF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
+from PySide6.QtGui import QAction, QColor, QCursor, QFont, QPainterPath, QPen, QWheelEvent
+from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QAbstractSlider,
+    QApplication,
+    QComboBox,
+    QFrame,
+    QGraphicsItem,
+    QGraphicsObject,
+    QGraphicsScene,
+    QGraphicsSceneMouseEvent,
+    QGraphicsSimpleTextItem,
+    QGraphicsView,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+)
+
+from angrmanagement.config import Conf
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
+from angrmanagement.ui.dialogs.jumpto import JumpTo
+from angrmanagement.utils import is_printable
 
 from .view import SynchronizedView
-from ..dialogs.jumpto import JumpTo
-from ..dialogs.input_prompt import InputPromptDialog
-from ...utils import is_printable
-from ...config import Conf
-from ...logic.debugger import DebuggerWatcher
-from ...data.breakpoint import Breakpoint, BreakpointType
 
-
-l = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 RowCol = Tuple[int, int]
 HexByteValue = Union[int, str]
@@ -1440,8 +1439,8 @@ class HexView(SynchronizedView):
                     try:
                         r = state.memory.load(addr, 1)
                         v = "S" if r.symbolic else state.solver.eval(r)
-                    except:  # pylint:disable=bare-except
-                        l.exception("Failed to read @ %#x", addr)
+                    except Exception:  # pylint:disable=broad-except
+                        log.exception("Failed to read @ %#x", addr)
                         v = "?"
             self._data_cache[addr] = v
         return self._data_cache[addr]

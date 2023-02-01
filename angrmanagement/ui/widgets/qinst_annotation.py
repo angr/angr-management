@@ -1,21 +1,23 @@
-from typing import List, TYPE_CHECKING, Dict
-from PySide6.QtGui import QColor, QPainterPath, QBrush, QCursor
+from typing import TYPE_CHECKING, Dict, List
+
 from PySide6.QtCore import QMarginsF
+from PySide6.QtGui import QBrush, QColor, QCursor, QPainterPath
 from PySide6.QtWidgets import (
     QGraphicsItem,
-    QGraphicsSimpleTextItem,
     QGraphicsSceneMouseEvent,
-    QMenu,
+    QGraphicsSimpleTextItem,
     QInputDialog,
     QLineEdit,
+    QMenu,
 )
 
-from .qsimulation_managers import QSimulationManagers
-from ...config import Conf
+from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
-    from ..views.symexec_view import SymexecView
-    from ..views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.symexec_view import SymexecView
+
+    from .qsimulation_managers import QSimulationManagers
 
 
 class QInstructionAnnotation(QGraphicsSimpleTextItem):
@@ -176,7 +178,7 @@ class QExploreAnnotation(QInstructionAnnotation):
     foreground_color = QColor(230, 230, 230)
     text = None
 
-    def __init__(self, addr, qsimgrs: QSimulationManagers, *args, **kwargs):
+    def __init__(self, addr, qsimgrs: "QSimulationManagers", *args, **kwargs):
         super().__init__(addr, self.text, *args, **kwargs)
         self.qsimgrs = qsimgrs
 

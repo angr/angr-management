@@ -1,8 +1,8 @@
-import os
 import json
 import logging
+import os
 
-from ..utils.env import is_pyinstaller, app_root
+from angrmanagement.utils.env import app_root, is_pyinstaller
 
 _l = logging.getLogger(name=__name__)
 

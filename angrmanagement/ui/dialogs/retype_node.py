@@ -1,17 +1,15 @@
-from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
-from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QLineEdit
-
-import pycparser
-
-from angr.sim_variable import SimVariable
-from angr.analyses.decompiler.structured_codegen.c import CVariable, CConstruct
 import angr
-
+import pycparser
+from angr.analyses.decompiler.structured_codegen.c import CConstruct, CVariable
+from angr.sim_variable import SimVariable
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 if TYPE_CHECKING:
     from angr.sim_type import SimType
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
 

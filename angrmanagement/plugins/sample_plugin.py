@@ -1,8 +1,12 @@
-from typing import List, Iterator
-from angr.sim_manager import SimulationManager
-from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
-from angrmanagement.ui.widgets.qblock import QBlock
+from typing import TYPE_CHECKING, Iterator, List
+
 from angrmanagement.plugins import BasePlugin
+from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
+
+if TYPE_CHECKING:
+    from angr.sim_manager import SimulationManager
+
+    from angrmanagement.ui.widgets.qblock import QBlock
 
 
 class SamplePlugin(BasePlugin):

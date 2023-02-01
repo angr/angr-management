@@ -1,47 +1,51 @@
-from collections import defaultdict
 import logging
-from typing import Union, Optional, Tuple, TYPE_CHECKING
+from collections import defaultdict
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
-import PySide6
-from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QMessageBox, QMenu
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QCursor, QAction
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QAction, QCursor
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
 
-from ...logic import GlobalInfo
-from ...data.instance import ObjectContainer
-from ...utils import locate_function
-from ...data.function_graph import FunctionGraph
-from ...data.highlight_region import SynchronizedHighlightRegion
-from ...logic.disassembly import JumpHistory, InfoDock
-from ..widgets import (
-    QDisassemblyGraph,
-    QDisasmStatusBar,
-    QLinearDisassembly,
-    QFeatureMap,
-    QLinearDisassemblyView,
+from angrmanagement.data.function_graph import FunctionGraph
+from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
+from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.disassembly import InfoDock, JumpHistory
+from angrmanagement.ui.dialogs.dependson import DependsOn
+from angrmanagement.ui.dialogs.func_doc import FuncDocDialog
+from angrmanagement.ui.dialogs.hook import HookDialog
+from angrmanagement.ui.dialogs.jumpto import JumpTo
+from angrmanagement.ui.dialogs.new_state import NewState
+from angrmanagement.ui.dialogs.rename import RenameDialog
+from angrmanagement.ui.dialogs.rename_label import RenameLabel
+from angrmanagement.ui.dialogs.set_comment import SetComment
+from angrmanagement.ui.dialogs.xref import XRefDialog
+from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
+from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
+from angrmanagement.ui.widgets import (
     DisassemblyLevel,
+    QAvoidAddrAnnotation,
+    QBlockAnnotations,
+    QDisasmStatusBar,
+    QDisassemblyGraph,
+    QFeatureMap,
+    QFindAddrAnnotation,
+    QLinearDisassembly,
+    QLinearDisassemblyView,
 )
-from ..dialogs.dependson import DependsOn
-from ..dialogs.jumpto import JumpTo
-from ..dialogs.rename import RenameDialog
-from ..dialogs.rename_label import RenameLabel
-from ..dialogs.set_comment import SetComment
-from ..dialogs.new_state import NewState
-from ..dialogs.xref import XRefDialog
-from ..dialogs.hook import HookDialog
-from ..dialogs.func_doc import FuncDocDialog
-from ..menus.disasm_insn_context_menu import DisasmInsnContextMenu
-from ..menus.disasm_label_context_menu import DisasmLabelContextMenu
+from angrmanagement.ui.widgets.qblock_code import QVariableObj
+from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
+from angrmanagement.utils import locate_function
+
 from .view import SynchronizedView
-from ..widgets import QFindAddrAnnotation, QAvoidAddrAnnotation, QBlockAnnotations
-from ..widgets.qblock_code import QVariableObj
-from ...ui.widgets.qinst_annotation import QHookAnnotation, QBreakAnnotation
 
 if TYPE_CHECKING:
-    from angrmanagement.logic.disassembly.info_dock import OperandDescriptor
+    import PySide6
     from angr.knowledge_plugins import VariableManager
+
+    from angrmanagement.logic.disassembly.info_dock import OperandDescriptor
 
 
 _l = logging.getLogger(__name__)
@@ -301,7 +305,7 @@ class DisassemblyView(SynchronizedView):
         menu.addSeparator()
         menu.addMenu(self.get_synchronize_with_submenu())
 
-    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
+    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent"):  # pylint: disable=unused-argument
         """
         Display view context menu.
         """

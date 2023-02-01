@@ -1,13 +1,12 @@
-import re
 import os
+import re
 import urllib.parse
 
 import requests
-
 from PySide6.QtWidgets import QFileDialog
 
-from ..config import Conf
-from ..errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.config import Conf
+from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 
 
 def isurl(uri):

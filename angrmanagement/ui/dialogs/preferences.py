@@ -1,36 +1,36 @@
 from datetime import datetime
 
 from bidict import bidict
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QListWidget,
-    QListView,
-    QStackedWidget,
-    QWidget,
-    QGroupBox,
-    QLabel,
     QCheckBox,
-    QPushButton,
-    QLineEdit,
-    QListWidgetItem,
-    QScrollArea,
-    QFrame,
     QComboBox,
-    QSizePolicy,
+    QDialog,
     QDialogButtonBox,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListView,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import QSize
 
+from angrmanagement.config import Conf, save_config
+from angrmanagement.config.color_schemes import COLOR_SCHEMES
+from angrmanagement.config.config_manager import ENTRIES
+from angrmanagement.logic.url_scheme import AngrUrlScheme
+from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qcolor_option import QColorOption
 from angrmanagement.ui.widgets.qfont_option import QFontOption
-from angrmanagement.ui.css import refresh_theme
-from angrmanagement.config.config_manager import ENTRIES
-from angrmanagement.config.color_schemes import COLOR_SCHEMES
-from angrmanagement.config import Conf, save_config
-from angrmanagement.logic.url_scheme import AngrUrlScheme
 
 
 class Page(QWidget):

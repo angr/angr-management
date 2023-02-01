@@ -1,28 +1,28 @@
-from uuid import uuid4
-from copy import deepcopy
 import logging
+from copy import deepcopy
+from uuid import uuid4
 
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QBrush, QColor, QContextMenuEvent, QFont, QImage, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QAbstractItemView,
+    QGraphicsItemGroup,
     QGraphicsScene,
     QGraphicsView,
-    QGraphicsItemGroup,
-    QMessageBox,
-    QTabWidget,
-    QAbstractItemView,
+    QHeaderView,
     QMenu,
+    QMessageBox,
     QTableWidget,
     QTableWidgetItem,
-    QHeaderView,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont, QContextMenuEvent
-from PySide6.QtCore import Qt, QPoint
 
 from angrmanagement.ui.views.view import BaseView
 
-from .trace_statistics import TraceStatistics
 from .multi_poi import MultiPOI
+from .trace_statistics import TraceStatistics
 
 _l = logging.getLogger(name=__name__)
 

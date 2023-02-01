@@ -1,34 +1,34 @@
 # pylint:disable=unused-argument
-import typing
-from typing import List, Optional, Tuple, TYPE_CHECKING
-import threading
-
 import asyncio
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+import threading
+import typing
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-import PySide6
+from PySide6.QtCore import QAbstractTableModel, Qt
 from PySide6.QtWidgets import (
-    QDialog,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QMessageBox,
-    QTableView,
     QAbstractItemView,
+    QDialog,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt, QAbstractTableModel
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
+if TYPE_CHECKING:
+    import PySide6
+
+    from angrmanagement.ui.workspace import Workspace
 
 try:
     import slacrs
 except ImportError:
     slacrs = None
-
-from angrmanagement.logic.threads import gui_thread_schedule_async
-
-if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
 
 
 class TraceDescriptor:

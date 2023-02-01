@@ -1,4 +1,4 @@
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, Optional
 
 from PySide6.QtWidgets import QLineEdit
 

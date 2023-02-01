@@ -1,12 +1,14 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+
 from angr import options
-from angr.state_plugins.sim_action import SimAction
 from angr.state_plugins.heap import SimHeapPTMalloc
 from sortedcontainers.sorteddict import SortedDict
+
 from angrmanagement.plugins.base_plugin import BasePlugin
 
 if TYPE_CHECKING:
     from angr.sim_state import SimState
+    from angr.state_plugins.sim_action import SimAction
 
 
 class MemoryChecker(BasePlugin):

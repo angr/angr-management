@@ -1,10 +1,9 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-import sqlalchemy
 import requests
-
+import sqlalchemy
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
 try:
     import slacrs
@@ -13,6 +12,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+
     from .chess_connector import ChessConnector
 
 

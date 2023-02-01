@@ -1,9 +1,13 @@
-from PySide6.QtCore import QPoint, QPointF, Qt, QRectF, QMarginsF, QEvent
-from PySide6.QtGui import QPainter, QPainterPath, QPen, QMouseEvent, QWheelEvent, QImage
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QFrame
+from typing import TYPE_CHECKING
 
-from ...config import Conf
-from .qgraph import QBaseGraphicsView
+from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, Qt
+from PySide6.QtGui import QImage, QMouseEvent, QPainter, QPainterPath, QPen, QWheelEvent
+from PySide6.QtWidgets import QFrame, QGraphicsItem, QGraphicsScene, QGraphicsView
+
+from angrmanagement.config import Conf
+
+if TYPE_CHECKING:
+    from .qgraph import QBaseGraphicsView
 
 
 def clamp(v, min_, max_):
@@ -118,7 +122,7 @@ class QMiniMapView(QGraphicsView):
     support viewport control.
     """
 
-    def __init__(self, target_view: QBaseGraphicsView, *args, **kwargs):
+    def __init__(self, target_view: "QBaseGraphicsView", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._target_view: QBaseGraphicsView = target_view
         self._is_mouse_pressed: bool = False

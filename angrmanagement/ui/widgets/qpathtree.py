@@ -1,14 +1,13 @@
 import logging
 
 import networkx
-from PySide6.QtWidgets import QFrame, QHBoxLayout
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QFrame, QHBoxLayout
 
-from .qsymexec_graph import QSymExecGraph
 from .qstate_block import QStateBlock
+from .qsymexec_graph import QSymExecGraph
 
-
-l = logging.getLogger("ui.widgets.qpathtree")
+log = logging.getLogger(__name__)
 
 
 class QPathTree(QFrame):
@@ -115,7 +114,7 @@ class QPathTree(QFrame):
                         working_history = parent_history
                 except KeyError:
                     # the parent history is not found in the path mapping
-                    l.error("Parent history %s is not found", parent_history)
+                    log.error("Parent history %s is not found", parent_history)
                     break
 
     @staticmethod

@@ -1,14 +1,14 @@
 import logging
 
+from PySide6.QtCore import QEvent, QMarginsF, QPoint, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QImage, QMouseEvent, QPainter, QVector2D
 from PySide6.QtWidgets import (
+    QApplication,
     QGraphicsScene,
+    QGraphicsSceneMouseEvent,
     QGraphicsView,
     QStyleOptionGraphicsItem,
-    QApplication,
-    QGraphicsSceneMouseEvent,
 )
-from PySide6.QtGui import QPainter, QMouseEvent, QImage, QVector2D
-from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF, QPoint
 
 _l = logging.getLogger(__name__)
 

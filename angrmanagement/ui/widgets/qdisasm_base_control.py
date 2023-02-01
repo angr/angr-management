@@ -1,11 +1,12 @@
-from typing import Optional, Tuple, TYPE_CHECKING
-from PySide6.QtCore import Qt
 from enum import Enum
+from typing import TYPE_CHECKING, Optional, Tuple
+
+from PySide6.QtCore import Qt
 
 if TYPE_CHECKING:
+    from angrmanagement.ui.views import DisassemblyView
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qoperand import QOperand
-    from angrmanagement.ui.views import DisassemblyView
 
 
 class DisassemblyLevel(Enum):
