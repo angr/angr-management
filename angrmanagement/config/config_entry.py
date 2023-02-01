@@ -53,7 +53,7 @@ class ConfigurationEntry:
         return ConfigurationEntry(self.name, self.type_, self.value, default_value=self.default_value)
 
     @property
-    def value(self) -> "self.type_":
+    def value(self):
         return self._value.get()
 
     @value.setter

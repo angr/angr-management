@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Optional, Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 class VulnerabilityType:

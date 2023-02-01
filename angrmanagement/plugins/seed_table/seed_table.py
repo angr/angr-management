@@ -1,14 +1,14 @@
 import asyncio
 import threading
-
 from time import sleep
-from typing import Dict, List
+from typing import List
+
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 try:
     from slacrs import Slacrs
     from slacrs.model import Input, InputTag
-except ImportError as ex:
+except ImportError:
     Slacrs = None
 
 

@@ -1,11 +1,11 @@
 import logging
 
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from .qast_viewer import QASTViewer
 
-l = logging.getLogger("ui.widgets.qregister_viewer")
+log = logging.getLogger(__name__)
 
 
 class QRegisterViewer(QFrame):
@@ -128,7 +128,7 @@ class QRegisterViewer(QFrame):
             return
 
         if self._state.arch.name not in self.ARCH_REGISTERS:
-            l.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", self._state.arch.name)
+            log.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", self._state.arch.name)
             return
 
         layout = QVBoxLayout()

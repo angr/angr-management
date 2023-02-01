@@ -2,7 +2,6 @@ import itertools
 from collections import defaultdict
 
 import networkx
-
 from angr.knowledge_plugins import Function
 
 

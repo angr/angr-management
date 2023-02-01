@@ -1,11 +1,7 @@
-import logging
-
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from .qast_viewer import QASTViewer
-
-l = logging.getLogger("ui.widgets.qvextemps_viewer")
 
 
 class QVEXTempsViewer(QFrame):

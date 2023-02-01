@@ -1,16 +1,12 @@
-from collections import defaultdict
-from typing import Dict, List, Optional, Sequence
-import logging
 import functools
-
-from bidict import bidict
+from collections import defaultdict
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 import PySide6QtAds as QtAds
+from bidict import bidict
 
-from .views.view import BaseView
-
-
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from .views.view import BaseView
 
 
 class ViewManager:
@@ -45,7 +41,7 @@ class ViewManager:
         for view in self.views:
             view.mainWindowInitializedEvent()
 
-    def _update_view_index_in_category(self, view: BaseView):
+    def _update_view_index_in_category(self, view: "BaseView"):
         """
         Set lowest available index value in category for a view not yet added.
         """
@@ -57,7 +53,7 @@ class ViewManager:
         candidates = set(range(1, max_id + 2)) - existing_ids
         view.index = min(candidates)
 
-    def add_view(self, view: BaseView):
+    def add_view(self, view: "BaseView"):
         """
         Add a view to this workspace.
 
@@ -92,7 +88,7 @@ class ViewManager:
             view.close()
             self.remove_view(view)
 
-    def remove_view(self, view: BaseView):
+    def remove_view(self, view: "BaseView"):
         """
         Remove a view from this workspace
 
@@ -107,7 +103,7 @@ class ViewManager:
         if dock:
             dock.closeDockWidget()
 
-    def raise_view(self, view: BaseView):
+    def raise_view(self, view: "BaseView"):
         """
         Find the dock widget of a view, and then bring that dock widget to front.
 
@@ -213,5 +209,5 @@ class ViewManager:
             return None
         return self.get_center_views()[current_tab_id].widget()
 
-    def _handle_raise_view(self, view: BaseView):
+    def _handle_raise_view(self, view: "BaseView"):
         self.workspace.plugins.handle_raise_view(view)

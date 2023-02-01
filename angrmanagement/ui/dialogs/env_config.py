@@ -1,11 +1,11 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QDialog,
+    QHeaderView,
+    QMenu,
     QTableWidget,
     QTableWidgetItem,
-    QAbstractItemView,
-    QMenu,
-    QHeaderView,
-    QDialog,
     QVBoxLayout,
 )
 

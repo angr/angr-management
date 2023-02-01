@@ -1,22 +1,23 @@
-from typing import Optional, TYPE_CHECKING
 from collections import OrderedDict
+from typing import TYPE_CHECKING, Optional
 
+from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CFunctionCall, CStructField, CVariable
+from angr.sim_type import NamedTypeMixin, SimType, SimTypePointer, TypeRef
+from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
+    QDialogButtonBox,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QLineEdit,
     QListWidget,
-    QDialogButtonBox,
+    QPushButton,
+    QVBoxLayout,
 )
-from PySide6.QtGui import Qt
-from angr.sim_type import SimType, TypeRef, SimTypePointer, NamedTypeMixin
-from angr.analyses.decompiler.structured_codegen.c import CVariable, CFunction, CConstruct, CFunctionCall, CStructField
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
+
     from angrmanagement.ui.views.code_view import CodeView
 
 

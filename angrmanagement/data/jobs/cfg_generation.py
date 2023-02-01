@@ -1,8 +1,8 @@
-import time
 import logging
+import time
 
-from ...logic import GlobalInfo
-from ...logic.threads import gui_thread_schedule_async
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
 from .job import Job
 
 _l = logging.getLogger(name=__name__)

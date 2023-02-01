@@ -1,21 +1,21 @@
 # pylint:disable=ungrouped-imports
-from typing import Optional, TYPE_CHECKING
 import os
 import threading
 import time
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtWidgets import QPushButton, QMessageBox
-from PySide6.QtGui import QPixmap, Qt, QIcon
+from PySide6.QtGui import QIcon, QPixmap, Qt
+from PySide6.QtWidgets import QMessageBox, QPushButton
 
-from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.config import Conf, save_config
 from angrmanagement.config.config_entry import ConfigurationEntry
-from angrmanagement.plugins import BasePlugin
 from angrmanagement.daemon.client import DaemonClient
+from angrmanagement.logic.threads import gui_thread_schedule_async
+from angrmanagement.plugins import BasePlugin
 
 from .backend_selector_dialog import QBackendSelectorDialog
-from .target_selector import QTargetSelectorDialog
 from .summary_view import SummaryView
+from .target_selector import QTargetSelectorDialog
 
 try:
     import slacrs
@@ -23,8 +23,9 @@ except ImportError:
     slacrs = None
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
     from slacrs import Slacrs
+
+    from angrmanagement.ui.workspace import Workspace
 
 
 class ChessConnector(BasePlugin):

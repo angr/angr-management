@@ -1,23 +1,20 @@
 from typing import TYPE_CHECKING, Optional
-import logging
 
-import PySide6.QtWidgets
+from angr.knowledge_plugins.key_definitions.atoms import Atom, MemoryLocation, Register, SpOffset
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen
-from PySide6.QtCore import Qt, QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
-from angr.knowledge_plugins.key_definitions.atoms import Atom, Register, MemoryLocation, SpOffset
+from angrmanagement.config import Conf
+from angrmanagement.utils import get_string_for_display, locate_function
 
-from ...config import Conf
-from ...utils import locate_function, get_string_for_display
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
+    import PySide6.QtWidgets
     from angr.knowledge_plugins.key_definitions.definition import Definition
+
     from angrmanagement.ui.views.dep_view import DependencyView
-
-
-_l = logging.getLogger(__name__)
 
 
 class QDepGraphBlock(QCachedGraphicsItem):
@@ -175,10 +172,10 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverEnterEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):
         self._dep_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
+    def hoverLeaveEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):
         self._dep_view.hover_leave_block()
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument

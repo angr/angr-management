@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import QVBoxLayout
 
+from angrmanagement.ui.widgets.qfunction_table import QFunctionTable
+
 from .view import BaseView
-from ..widgets.qfunction_table import QFunctionTable
 
 
 class FunctionsView(BaseView):

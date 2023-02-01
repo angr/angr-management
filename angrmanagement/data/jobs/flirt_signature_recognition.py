@@ -1,5 +1,5 @@
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
 import angr.flirt
 

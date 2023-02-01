@@ -1,13 +1,15 @@
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
-from angr.knowledge_plugins.cfg.memory_data import MemoryData
-
-from angrmanagement.utils import get_label_text, is_printable
 from angrmanagement.config import Conf
+from angrmanagement.utils import get_label_text, is_printable
+
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 
 class QMemoryDataBlock(QCachedGraphicsItem):

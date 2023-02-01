@@ -1,10 +1,11 @@
-from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QDockWidget
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDockWidget, QHBoxLayout, QMainWindow
 
-from ...data.instance import ObjectContainer
-from ..widgets.state_inspector import StateInspector
-from ..widgets.qpathtree import QPathTree
-from ..widgets.qsimulation_managers import QSimulationManagers
+from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.ui.widgets.qpathtree import QPathTree
+from angrmanagement.ui.widgets.qsimulation_managers import QSimulationManagers
+from angrmanagement.ui.widgets.state_inspector import StateInspector
+
 from .view import BaseView
 
 

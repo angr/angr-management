@@ -1,16 +1,15 @@
-import math
 import logging
+import math
 
 from PySide6.QtGui import QColor
 
 _l = logging.getLogger(__name__)
-# _l.setLevel('DEBUG')
 
 
 try:
     from slacrs import Slacrs
     from slacrs.model import Input
-except ImportError as ex:
+except ImportError:
     Slacrs = None
     HumanFatigue = None
 

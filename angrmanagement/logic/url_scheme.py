@@ -1,11 +1,11 @@
 import os
-import sys
-import subprocess
 import pathlib
+import subprocess
+import sys
 
 from PySide6.QtCore import QSettings
 
-from ..utils.env import app_path
+from angrmanagement.utils.env import app_path
 
 
 class AngrUrlScheme:
@@ -171,9 +171,9 @@ Type=Application
             data = f.read()
         lines = data.split("\n")
         cmdline = None
-        for l in lines:
-            if l.startswith("Exec="):
-                cmdline = l[5:]
+        for line in lines:
+            if line.startswith("Exec="):
+                cmdline = line[5:]
                 break
         if cmdline is None:
             return False, None

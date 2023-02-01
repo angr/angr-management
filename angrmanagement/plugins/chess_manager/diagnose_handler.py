@@ -16,12 +16,11 @@ from angrmanagement.config import Conf
 try:
     from slacrs import Slacrs
     from slacrs.model import Poi
-except ImportError as _:
+except ImportError:
     Slacrs = None
     Poi = None
 
-l = logging.getLogger(__name__)
-l.setLevel("INFO")
+log = logging.getLogger(__name__)
 
 
 def _init_logger():
@@ -33,7 +32,7 @@ def _init_logger():
     fh.setLevel("INFO")
     formatter: Formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     fh.setFormatter(formatter)
-    l.addHandler(fh)
+    log.addHandler(fh)
 
 
 class DiagnoseHandler:
@@ -58,7 +57,7 @@ class DiagnoseHandler:
             self._active = True
 
     def init(self, workspace):
-        l.debug("workspace initing")
+        log.debug("workspace initing")
         self.workspace = workspace
         self._active = True
         self.slacrs_thread = threading.Thread(target=self._commit_pois)
@@ -78,7 +77,7 @@ class DiagnoseHandler:
         # reference: https://github.com/checrs/slacrs7/blob/master/slacrs/plugins/arbiter.py#L81
         image_id = self.get_image_id()
         if image_id is None:
-            l.warning("Cannot submit POI %s since the current target ID is unknown.", poi_id)
+            log.warning("Cannot submit POI %s since the current target ID is unknown.", poi_id)
             return
 
         poi = Poi()
@@ -91,10 +90,10 @@ class DiagnoseHandler:
         poi.source = self.user  # https://github.com/checrs/slacrs7/blob/master/slacrs/model/poi.py#L13
         poi.created_by = self.user  # https://github.com/checrs/slacrs7/blob/master/slacrs/model/base.py#L17
 
-        l.debug("adding poi: %s", poi)
-        l.info("adding poi: %s, id: %s, id: %s ", poi, poi.id, poi_id)
+        log.debug("adding poi: %s", poi)
+        log.info("adding poi: %s, id: %s, id: %s ", poi, poi.id, poi_id)
         self._log_list.append(poi)
-        l.debug("current log list: %s", self._log_list)
+        log.debug("current log list: %s", self._log_list)
 
     def get_pois(self):
         if not Conf.checrs_backend_str:
@@ -120,14 +119,14 @@ class DiagnoseHandler:
         else:
             result = session.query(Poi).all()
         session.close()
-        l.debug("result: %s", result)
+        log.debug("result: %s", result)
         return result
 
     def deactivate(self):
         self._active = False
 
     def _commit_pois(self):
-        l.debug("database: %s", Conf.checrs_backend_str)
+        log.debug("database: %s", Conf.checrs_backend_str)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while self._active:
             sleep(3)
@@ -144,7 +143,7 @@ class DiagnoseHandler:
                         continue
                     session = slacrs_instance.session()
                 except OperationalError:
-                    l.error("Failed to CHECRS backend. Try again later...")
+                    log.error("Failed to CHECRS backend. Try again later...")
                     continue
 
                 with session.no_autoflush:
@@ -153,11 +152,11 @@ class DiagnoseHandler:
                         # query first to see if the poi id already exist
                         result = session.query(Poi).filter(Poi.id == poi.id).first()
                         if result is None:
-                            l.info("Adding poi %s to slacrs", poi)
+                            log.info("Adding poi %s to slacrs", poi)
                             session.add(poi)
                         else:
-                            l.info("Updating poi %s to slacrs", poi)
+                            log.info("Updating poi %s to slacrs", poi)
                             result.poi = poi.poi
-                        l.debug("log_list: %s", self._log_list)
+                        log.debug("log_list: %s", self._log_list)
                     session.commit()
                 session.close()

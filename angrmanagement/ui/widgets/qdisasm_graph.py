@@ -1,18 +1,18 @@
-from typing import Optional, TYPE_CHECKING
 import logging
-
-from PySide6.QtCore import QRect, QPointF, Qt, QSize, QEvent, QRectF, QTimeLine
-from PySide6.QtWidgets import QFrame
+from typing import TYPE_CHECKING, Optional
 
 from angr.analyses.decompiler.utils import to_ail_supergraph
+from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimeLine
+from PySide6.QtWidgets import QFrame
 
-from ...utils import get_out_branches
-from ...utils.graph_layouter import GraphLayouter
-from ...utils.cfg import categorize_edges
+from angrmanagement.utils import get_out_branches
+from angrmanagement.utils.cfg import categorize_edges
+from angrmanagement.utils.graph_layouter import GraphLayouter
+
 from .qblock import QGraphBlock
-from .qgraph_arrow import QDisasmGraphArrow
+from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
 from .qgraph import QZoomableDraggableGraphicsView
-from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
+from .qgraph_arrow import QDisasmGraphArrow
 from .qminimap import QMiniMapView
 
 if TYPE_CHECKING:
@@ -137,8 +137,13 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                 self.disasm = self.instance.project.analyses.Clinic(func)
 
             self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
-            nodefunc = lambda n: n
-            branchfunc = lambda n: None
+
+            def nodefunc(n):
+                return n
+
+            def branchfunc(n):
+                return None
+
             has_idx = True
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
@@ -153,7 +158,10 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                     }
                 )
             self._supergraph = self._function_graph.supergraph
-            nodefunc = lambda n: n.cfg_nodes
+
+            def nodefunc(n):
+                return n.cfg_nodes
+
             branchfunc = get_out_branches
             has_idx = False
 

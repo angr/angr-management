@@ -1,29 +1,34 @@
 import os
-from typing import Optional, Sequence
-import logging
+from typing import TYPE_CHECKING, Optional, Sequence
 
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
-    QVBoxLayout,
+    QDialogButtonBox,
     QFrame,
     QGroupBox,
     QHBoxLayout,
-    QListWidgetItem,
-    QListWidget,
-    QDialogButtonBox,
     QLabel,
-    QCheckBox,
-    QSplitter,
-    QWidget,
+    QListWidget,
+    QListWidgetItem,
     QSpinBox,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QSize
 
-from ...config import IMG_LOCATION
-from ...data.analysis_options import AnalysisOption, AnalysesConfiguration, BoolAnalysisOption, IntAnalysisOption
+from angrmanagement.config import IMG_LOCATION
+from angrmanagement.data.analysis_options import (
+    AnalysesConfiguration,
+    AnalysisOption,
+    BoolAnalysisOption,
+    IntAnalysisOption,
+)
 
-l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class AnalysisOptionWidgetMapper:

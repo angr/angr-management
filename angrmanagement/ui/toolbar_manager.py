@@ -1,8 +1,12 @@
-from typing import Type, Mapping
+from typing import TYPE_CHECKING, Mapping, Type
 
 from PySide6.QtCore import Qt
-from angrmanagement.ui.toolbars import FileToolbar, DebugToolbar
-from angrmanagement.ui.toolbars.toolbar import Toolbar
+
+from angrmanagement.ui.toolbars import DebugToolbar, FileToolbar
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.main_window import MainWindow
+    from angrmanagement.ui.toolbars.toolbar import Toolbar
 
 
 class ToolbarManager:
@@ -11,26 +15,26 @@ class ToolbarManager:
     """
 
     def __init__(self, main_window):
-        self._main_window: "MainWindow" = main_window
+        self._main_window: MainWindow = main_window
         self.active: Mapping[Type[Toolbar], Toolbar] = {}
         self.all_toolbars = [FileToolbar, DebugToolbar]
 
     @staticmethod
-    def get_name_for_toolbar_class(toolbar_cls: Type[Toolbar]) -> str:
+    def get_name_for_toolbar_class(toolbar_cls: Type["Toolbar"]) -> str:
         return {FileToolbar: "File", DebugToolbar: "Debug"}[toolbar_cls]
 
-    def show_toolbar_by_class(self, cls: Type[Toolbar]):
+    def show_toolbar_by_class(self, cls: Type["Toolbar"]):
         if cls not in self.active:
             tb = cls(self._main_window)
             self.active[cls] = tb
             self._main_window.addToolBar(Qt.TopToolBarArea, tb.qtoolbar())
 
-    def hide_toolbar_by_class(self, cls: Type[Toolbar]):
+    def hide_toolbar_by_class(self, cls: Type["Toolbar"]):
         if cls in self.active:
             tb = self.active.pop(cls)
             self._main_window.removeToolBar(tb.qtoolbar())
 
-    def set_toolbar_visible_by_class(self, cls: Type[Toolbar], visible: bool):
+    def set_toolbar_visible_by_class(self, cls: Type["Toolbar"], visible: bool):
         if visible:
             self.show_toolbar_by_class(cls)
         else:

@@ -1,15 +1,15 @@
-from typing import Optional
 import logging
+from typing import Optional
 
+from angr.analyses.disassembly import ConstantOperand, MemoryOperand, RegisterOperand, Value
+from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
-from PySide6.QtCore import Qt, QRectF, QPointF
 
-from angr.analyses.disassembly import ConstantOperand, RegisterOperand, MemoryOperand, Value
+from angrmanagement.logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 
-from ...logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 from .qgraph_object import QCachedGraphicsItem
 
-l = logging.getLogger("ui.widgets.qoperand")
+log = logging.getLogger(__name__)
 
 
 class QOperand(QCachedGraphicsItem):
@@ -209,7 +209,7 @@ class QOperand(QCachedGraphicsItem):
                 return t
 
         # ouch not sure what to do
-        l.warning('Cannot determine branch targets for operand "%s". Please report on GitHub.', rendered)
+        log.warning('Cannot determine branch targets for operand "%s". Please report on GitHub.', rendered)
         # return a random one
         return next(iter(branch_targets))
 
@@ -437,7 +437,7 @@ class QOperand(QCachedGraphicsItem):
 
         if isinstance(self.operand, MemoryOperand):
             if len(variable_and_offsets) > 1:
-                l.error("Instruction %#x has two memory operands. Please report it on GitHub.", self.insn.addr)
+                log.error("Instruction %#x has two memory operands. Please report it on GitHub.", self.insn.addr)
             return variable_and_offsets[0]
 
         elif isinstance(self.operand, RegisterOperand):
@@ -466,7 +466,7 @@ class QOperand(QCachedGraphicsItem):
                         if self._variable_has_access(var, self.insn.addr, "read"):
                             return var, offset
 
-                l.debug(
+                log.debug(
                     "Cannot find any source variable for operand %d at instruction %#x.",
                     self.operand_index,
                     self.insn.addr,
@@ -480,7 +480,7 @@ class QOperand(QCachedGraphicsItem):
                     if self._variable_has_access(var, self.insn.addr, "write"):
                         return var, offset
 
-            l.debug(
+            log.debug(
                 "Cannot find any destination variable for operand %d at instruction %#x.",
                 self.operand_index,
                 self.insn.addr,
@@ -490,14 +490,14 @@ class QOperand(QCachedGraphicsItem):
 
         else:
             # what's this type? why am I here?
-            l.error("_pick_variable: Unsupported operand type %s.", self.operand.__class__)
+            log.error("_pick_variable: Unsupported operand type %s.", self.operand.__class__)
 
             return None, None
 
     def _variable_has_access(self, variable, ins_addr, access_type):
 
         if variable not in self.variable_manager[self.func_addr]._variable_accesses:
-            l.error("Variable %s does not have any accessing records.", variable)
+            log.error("Variable %s does not have any accessing records.", variable)
             return False
 
         accesses = self.variable_manager[self.func_addr]._variable_accesses[variable]

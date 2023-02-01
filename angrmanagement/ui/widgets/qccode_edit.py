@@ -1,40 +1,37 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QTextCharFormat, QKeySequence, QAction
-from PySide6.QtWidgets import QMenu, QInputDialog, QLineEdit, QApplication
-
-from pyqodeng.core import api
-from pyqodeng.core import modes
-from pyqodeng.core import panels
-
-from ailment.statement import Store, Assignment
-from ailment.expression import Load, Op, UnaryOp, BinaryOp
-from angr.sim_type import SimType
-from angr.sim_variable import SimVariable, SimTemporaryVariable
+from ailment.expression import BinaryOp, Load, Op, UnaryOp
+from ailment.statement import Assignment, Store
+from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 from angr.analyses.decompiler.structured_codegen.c import (
     CBinaryOp,
-    CVariable,
-    CFunctionCall,
-    CFunction,
-    CStructField,
-    CIndexedVariable,
-    CVariableField,
-    CUnaryOp,
     CConstant,
     CExpression,
+    CFunction,
+    CFunctionCall,
+    CIndexedVariable,
+    CStructField,
+    CUnaryOp,
+    CVariable,
+    CVariableField,
 )
-from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
+from angr.sim_type import SimType
+from angr.sim_variable import SimTemporaryVariable, SimVariable
+from pyqodeng.core import api, modes, panels
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QAction, QKeySequence, QTextCharFormat
+from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
 
-from ..documents.qcodedocument import QCodeDocument
-from ..dialogs.rename_node import RenameNode
-from ..dialogs.retype_node import RetypeNode
-from ..widgets.qccode_highlighter import QCCodeHighlighter
-from ..menus.menu import Menu
+from angrmanagement.ui.dialogs.rename_node import RenameNode
+from angrmanagement.ui.dialogs.retype_node import RetypeNode
+from angrmanagement.ui.documents.qcodedocument import QCodeDocument
+from angrmanagement.ui.menus.menu import Menu
+from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QTextDocument
-    from ..views.code_view import CodeView
+
+    from angrmanagement.ui.views.code_view import CodeView
 
 
 class ColorSchemeIDA(api.ColorScheme):

@@ -1,15 +1,13 @@
 import os
-import time
 import threading
+import time
 
-from PySide6 import QtGui
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 
 from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.main_window import MainWindow
-
 
 test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
 

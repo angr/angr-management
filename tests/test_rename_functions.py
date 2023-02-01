@@ -4,16 +4,15 @@ import sys
 import threading
 import unittest
 
-from PySide6.QtTest import QTest
-from PySide6.QtCore import Qt
-
 import angr
 from angr.analyses.decompiler.structured_codegen.c import CFunction, CFunctionCall
+from common import start_main_window_and_event_loop, test_location
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
+
+from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.rename_node import RenameNode
-from angrmanagement.logic.threads import gui_thread_schedule
-
-from common import start_main_window_and_event_loop, test_location
 
 
 class TestRenameFunctions(unittest.TestCase):

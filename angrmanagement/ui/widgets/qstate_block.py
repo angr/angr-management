@@ -1,11 +1,11 @@
 import logging
 
-from PySide6.QtWidgets import QGraphicsItem
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QGraphicsItem
 
-from ...config import Conf
-from ...utils import locate_function
+from angrmanagement.config import Conf
+from angrmanagement.utils import locate_function
 
 _l = logging.getLogger(__name__)
 

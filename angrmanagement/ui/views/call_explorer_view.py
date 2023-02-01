@@ -1,23 +1,22 @@
-import logging
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
-from PySide6.QtGui import QFont, QStandardItemModel, QStandardItem
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QHeaderView, QVBoxLayout, QTreeWidget, QTreeView, QLabel
-from angr.knowledge_plugins import Function
+from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
+from PySide6.QtWidgets import QHeaderView, QLabel, QTreeView, QTreeWidget, QVBoxLayout
+
+from angrmanagement.config import Conf
+from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+
+from .view import BaseView
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import Function
 
 try:
     from bintrace import TraceEvent
-except ImportError as e:
+except ImportError:
     TraceEvent = "TraceEvent"
-
-from ...logic.debugger.bintrace import BintraceDebugger
-from ...logic.debugger import DebuggerWatcher
-from ...config import Conf
-from .view import BaseView
-
-
-_l = logging.getLogger(name=__name__)
 
 
 class CallTreeModel(QStandardItemModel):

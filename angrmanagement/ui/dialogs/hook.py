@@ -1,17 +1,17 @@
+from pyqodeng.core.api import CodeEdit
+from pyqodeng.core.modes import AutoIndentMode, CaretLineHighlighterMode, PygmentsSyntaxHighlighter
+from PySide6.QtGui import QTextOption
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
-    QLabel,
-    QGridLayout,
-    QRadioButton,
-    QGroupBox,
-    QScrollArea,
-    QWidget,
     QDialogButtonBox,
+    QGridLayout,
+    QGroupBox,
+    QLabel,
+    QRadioButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QTextOption
-from pyqodeng.core.api import CodeEdit
-from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode
 
 
 class HookDialog(QDialog):

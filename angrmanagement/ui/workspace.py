@@ -1,53 +1,54 @@
-from typing import TYPE_CHECKING, Callable, Optional, List, Union
-import os
 import logging
+import os
 import traceback
+from typing import TYPE_CHECKING, Callable, List, Optional, Union
 
-from PySide6.QtWidgets import QMessageBox
-from angr.knowledge_plugins.functions.function import Function
 from angr import StateHierarchy
+from angr.knowledge_plugins.functions.function import Function
 from cle import SymbolType
+from PySide6.QtWidgets import QMessageBox
 
-from angrmanagement.logic.debugger import DebuggerWatcher
-from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
-from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.data.instance import ObjectContainer
 from angrmanagement.data.jobs.loading import LoadBinaryJob
-from angrmanagement.data.jobs import VariableRecoveryJob
-from angrmanagement.data.analysis_options import AnalysesConfiguration
+from angrmanagement.data.trace import BintraceTrace, Trace
+from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.plugins import PluginManager
 
+from .view_manager import ViewManager
 from .views import (
-    FunctionsView,
-    DisassemblyView,
-    SymexecView,
-    StatesView,
-    StringsView,
-    ConsoleView,
-    CodeView,
-    InteractionView,
-    PatchesView,
-    DependencyView,
-    ProximityView,
-    TypesView,
-    HexView,
-    LogView,
-    DataDepView,
-    RegistersView,
-    StackView,
-    TracesView,
-    TraceMapView,
     BreakpointsView,
     CallExplorerView,
+    CodeView,
+    ConsoleView,
+    DataDepView,
+    DependencyView,
+    DisassemblyView,
+    FunctionsView,
+    HexView,
+    InteractionView,
+    LogView,
+    PatchesView,
+    ProximityView,
+    RegistersView,
+    StackView,
+    StatesView,
+    StringsView,
+    SymexecView,
+    TraceMapView,
+    TracesView,
+    TypesView,
 )
-from .view_manager import ViewManager
-from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
 if TYPE_CHECKING:
-    from ..data.instance import Instance
+    from angrmanagement.data.analysis_options import AnalysesConfiguration
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.data.jobs import VariableRecoveryJob
     from angrmanagement.ui.main_window import MainWindow
+
+    from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
 
 
 _l = logging.getLogger(__name__)
@@ -862,7 +863,7 @@ class Workspace:
             dv.label_rename_callback = callback
 
     def add_disasm_insn_ctx_menu_entry(
-        self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True
+        self, text, callback: Callable[["DisasmInsnContextMenu"], None], add_separator_first=True
     ):
         dv: DisassemblyView
         if len(self.view_manager.views_by_category["disassembly"]) == 1:

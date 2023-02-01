@@ -3,15 +3,13 @@ import sys
 import threading
 import unittest
 
-from PySide6.QtTest import QTest
-
 import angr
 from angr import load_shellcode
+from common import start_main_window_and_event_loop, test_location
+from PySide6.QtTest import QTest
 
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.widgets.qaddress_input import QAddressInput
-
-from common import start_main_window_and_event_loop, test_location
 
 
 class TestQaddressInput(unittest.TestCase):

@@ -1,7 +1,7 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout
 from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout
 
-from ..widgets.qxref_viewer import QXRefViewer
+from angrmanagement.ui.widgets.qxref_viewer import QXRefViewer
 
 
 class XRefDialog(QDialog):

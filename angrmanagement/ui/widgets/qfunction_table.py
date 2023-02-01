@@ -1,31 +1,31 @@
 import os
 import string
-from typing import List, Set, Tuple, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from angr.analyses.code_tagging import CodeTags
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QTableView,
-    QAbstractItemView,
-    QHeaderView,
-    QVBoxLayout,
-    QLineEdit,
-    QLabel,
-    QHBoxLayout,
-)
+from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QBrush, QColor, QCursor
-from PySide6.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ..menus.function_context_menu import FunctionContextMenu
-from ...data.instance import ObjectContainer
-from ...config import Conf
-from ..toolbars import FunctionTableToolbar
+from angrmanagement.config import Conf
+from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
+from angrmanagement.ui.toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
     import PySide6
-    from ..views.functions_view import FunctionsView
     from angr.knowledge_plugins.functions import Function, FunctionManager
+
+    from angrmanagement.ui.views.functions_view import FunctionsView
 
 
 class QFunctionTableModel(QAbstractTableModel):

@@ -1,24 +1,22 @@
-import socket
 import base64
+import socket
 
 import claripy
-from PySide6.QtGui import QIntValidator, QContextMenuEvent, QColor
-from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QComboBox,
-    QLineEdit,
-    QStyledItemDelegate,
-    QTreeView,
-    QTextEdit,
-    QMenu,
-)
-from PySide6.QtCore import QSize, Qt, QAbstractItemModel, QModelIndex
-
 from angr.storage.file import SimPacketsStream
-
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, QSize, Qt
+from PySide6.QtGui import QColor, QContextMenuEvent, QIntValidator
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QHBoxLayout,
+    QLineEdit,
+    QMenu,
+    QPushButton,
+    QStyledItemDelegate,
+    QTextEdit,
+    QTreeView,
+    QVBoxLayout,
+)
 
 _socket_families_wanted = ["AF_INET", "AF_INET6", "AF_UNIX", "AF_CAN", "AF_PACKET", "AF_RDS"]
 

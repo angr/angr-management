@@ -1,9 +1,12 @@
-from typing import Type
+from typing import TYPE_CHECKING, Type
 
 from PySide6.QtGui import QKeySequence
-from angrmanagement.ui.toolbars.toolbar import Toolbar
 
 from .menu import Menu, MenuEntry, MenuSeparator
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.main_window import MainWindow
+    from angrmanagement.ui.toolbars.toolbar import Toolbar
 
 
 class NewViewMenu(Menu):
@@ -33,7 +36,7 @@ class ToolbarMenuEntry(MenuEntry):
     Menu item to control toolbar visibility.
     """
 
-    def __init__(self, toolbar_cls: Type[Toolbar], main_window: "MainWindow"):
+    def __init__(self, toolbar_cls: Type["Toolbar"], main_window: "MainWindow"):
         tm = main_window.toolbar_manager
         super().__init__(tm.get_name_for_toolbar_class(toolbar_cls), self.on_toggle, checkable=True)
         self.main_window = main_window

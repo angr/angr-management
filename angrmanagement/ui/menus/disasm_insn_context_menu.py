@@ -1,12 +1,12 @@
 from functools import partial
-from typing import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
-    from ...ui.views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 
 class DisasmInsnContextMenu(Menu):

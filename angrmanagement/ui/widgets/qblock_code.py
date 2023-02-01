@@ -1,17 +1,21 @@
-from typing import Any, Sequence, Optional, Tuple
-
-from PySide6.QtGui import QPainter, QTextDocument, QTextCursor, QTextCharFormat, QFont, QMouseEvent
-from PySide6.QtCore import Qt, QPointF, QRectF, QObject
-from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple
 
 import ailment
 import pyvex
-from archinfo import RegisterOffset, TmpVar
+from PySide6.QtCore import QObject, QPointF, QRectF, Qt
+from PySide6.QtGui import QFont, QMouseEvent, QPainter, QTextCharFormat, QTextCursor, QTextDocument
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
-from ...config import Conf, ConfigurationManager
-from ...logic.disassembly.info_dock import InfoDock
-from ...utils import string_at_addr
+from angrmanagement.config import Conf, ConfigurationManager
+from angrmanagement.utils import string_at_addr
+
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from archinfo import RegisterOffset, TmpVar
+
+    from angrmanagement.logic.disassembly.info_dock import InfoDock
+    from angrmanagement.ui.widgets.qdisasm_base_control import QDisassemblyBaseControl
 
 
 class QBlockCodeOptions:
@@ -34,14 +38,14 @@ class QBlockCodeObj(QObject):
     """
 
     obj: Any
-    infodock: InfoDock
+    infodock: "InfoDock"
     parent: Any
     options: QBlockCodeOptions
     span: Optional[Tuple[int, int]]
     subobjs: Sequence["QBlockCodeObj"]
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj: Any, infodock: InfoDock, parent: Any, options: QBlockCodeOptions = None):
+    def __init__(self, obj: Any, infodock: "InfoDock", parent: Any, options: QBlockCodeOptions = None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
@@ -528,10 +532,10 @@ class VexIRTmpWrapper:
         "reg_name",
     )
 
-    tid: TmpVar
+    tid: "TmpVar"
     reg_name: Optional[str]
 
-    def __init__(self, tid: TmpVar, reg_name: Optional[str] = None):
+    def __init__(self, tid: "TmpVar", reg_name: Optional[str] = None):
         self.tid = tid
         self.reg_name = reg_name or ("t%d" % self.tid)
 
@@ -549,10 +553,10 @@ class VexIRRegWrapper:
         "reg_name",
     )
 
-    offset: RegisterOffset
+    offset: "RegisterOffset"
     reg_name: Optional[str]
 
-    def __init__(self, offset: RegisterOffset, reg_name: Optional[str] = None):
+    def __init__(self, offset: "RegisterOffset", reg_name: Optional[str] = None):
         self.offset = offset
         self.reg_name = reg_name or ("offset=%s" % self.offset)
 
@@ -721,7 +725,7 @@ class QBlockCode(QCachedGraphicsItem):
     obj: QBlockCodeObj
     _config: ConfigurationManager
     disasm_view: "QDisassemblyBaseControl"
-    infodock: InfoDock
+    infodock: "InfoDock"
     parent: Any
 
     def __init__(
@@ -731,7 +735,7 @@ class QBlockCode(QCachedGraphicsItem):
         config: ConfigurationManager,
         disasm_view: "QDisassemblyBaseControl",
         instance,
-        infodock: InfoDock,
+        infodock: "InfoDock",
         parent: Any = None,
     ):
         super().__init__(parent=parent)

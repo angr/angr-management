@@ -1,27 +1,26 @@
 from typing import TYPE_CHECKING, List, Tuple, Type
-import logging
-
-import PySide6.QtWidgets
-from PySide6.QtWidgets import QGraphicsSimpleTextItem
-from PySide6.QtGui import QPen
-from PySide6.QtCore import Qt, QRectF
 
 from angr.analyses.proximity_graph import (
-    FunctionProxiNode,
+    BaseProxiNode,
     CallProxiNode,
-    StringProxiNode,
+    FunctionProxiNode,
     IntegerProxiNode,
+    StringProxiNode,
     UnknownProxiNode,
     VariableProxiNode,
 )
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QPen
+from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.views.proximity_view import ProximityView
+    import PySide6.QtWidgets
 
-_l = logging.getLogger(__name__)
+    from angrmanagement.ui.views.proximity_view import ProximityView
 
 
 class QProximityGraphBlock(QCachedGraphicsItem):
@@ -33,7 +32,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, proximity_view: "ProximityView", node: "BaseProxiNode"):
+    def __init__(self, is_selected, proximity_view: "ProximityView", node: BaseProxiNode):
         super().__init__()
 
         self._proximity_view = proximity_view
@@ -92,10 +91,10 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
+    def hoverEnterEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):  # pylint:disable=unused-argument
         self._proximity_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
+    def hoverLeaveEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):  # pylint:disable=unused-argument
         self._proximity_view.hover_leave_block(self)
 
     def _paint_boundary(self, painter):

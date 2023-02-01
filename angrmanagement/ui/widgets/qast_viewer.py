@@ -1,9 +1,8 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
-from PySide6.QtCore import QSize, Qt
-
 import claripy
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
-from ...config import Conf
+from angrmanagement.config import Conf
 
 
 class QASTViewer(QFrame):

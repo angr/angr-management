@@ -1,10 +1,8 @@
-import math
 import logging
+import math
 
 import networkx as nx
-
 from angr.knowledge_plugins.functions import Function
-
 from PySide6.QtGui import QColor
 
 _l = logging.getLogger(name=__name__)

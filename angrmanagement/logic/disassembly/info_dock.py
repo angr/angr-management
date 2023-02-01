@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Signal
 
-from ...data.object_container import ObjectContainer
+from angrmanagement.data.object_container import ObjectContainer
 
 
 class OperandHighlightMode:

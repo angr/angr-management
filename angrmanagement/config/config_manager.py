@@ -1,17 +1,17 @@
-import os
 import logging
+import os
 import re
-from typing import Type, Any, List, Optional, Callable
+from typing import Any, Callable, List, Optional, Type
 
 import tomlkit
 import tomlkit.exceptions
 import tomlkit.items
-from PySide6.QtGui import QFont, QFontMetricsF, QColor
+from PySide6.QtGui import QColor, QFont, QFontMetricsF
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from ..utils.env import app_root
-from .config_entry import ConfigurationEntry as CE
+from angrmanagement.utils.env import app_root
 
+from .config_entry import ConfigurationEntry as CE
 
 _l = logging.getLogger(__name__)
 color_re = re.compile("[0-9a-fA-F]+")
@@ -604,7 +604,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
     @property
     def has_operation_mango(self) -> bool:
         try:
-            import argument_resolver  # pylint:disable=import-outside-toplevel,unused-import
+            import argument_resolver  # noqa
 
             return True
         except ImportError:

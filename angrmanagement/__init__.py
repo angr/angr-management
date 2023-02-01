@@ -6,7 +6,7 @@ try:
     import os
 
     os.environ["QT_API"] = "pyside6"
-    import qtpy
+    import qtpy  # noqa
 except ImportError:
     # qtpy is not installed
     pass

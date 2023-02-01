@@ -1,13 +1,10 @@
-import logging
-
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit, QWidget
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPainter, QPen
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QScrollArea, QVBoxLayout, QWidget
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .qast_viewer import QASTViewer
-
-l = logging.getLogger("ui.widgets.qregister_viewer")
 
 
 class AddressPiece:

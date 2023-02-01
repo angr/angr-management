@@ -1,27 +1,28 @@
 import os
 from typing import List, Optional, Tuple
 
+import angr
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
     QDialogButtonBox,
     QGridLayout,
-    QComboBox,
+    QLabel,
     QLineEdit,
+    QPushButton,
     QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
-import angr
+
+from angrmanagement.ui.dialogs.env_config import EnvConfig
+from angrmanagement.ui.dialogs.fs_mount import FilesystemMount
+from angrmanagement.ui.widgets import QStateComboBox
+from angrmanagement.utils.namegen import NameGenerator
 
 from .socket_config import SocketConfig
-from ..widgets import QStateComboBox
-from ...utils.namegen import NameGenerator
-from ...ui.dialogs.fs_mount import FilesystemMount
-from ...ui.dialogs.env_config import EnvConfig
 
 
 class StateMetadata(angr.SimStatePlugin):

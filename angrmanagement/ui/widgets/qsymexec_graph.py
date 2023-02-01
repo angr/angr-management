@@ -1,12 +1,9 @@
-import logging
+from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QBrush, QColor, QPen
 
-from PySide6.QtGui import QColor, QPen, QBrush
-from PySide6.QtCore import Qt, QPointF
+from angrmanagement.utils.graph_layouter import GraphLayouter
 
-from ...utils.graph_layouter import GraphLayouter
 from .qgraph import QZoomableDraggableGraphicsView
-
-l = logging.getLogger("ui.widgets.qpg_graph")
 
 
 class QSymExecGraph(QZoomableDraggableGraphicsView):
@@ -79,8 +76,8 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
         max_x += self.LEFT_PADDING
         min_y -= self.TOP_PADDING
         max_y += self.TOP_PADDING
-        width = (max_x - min_x) + 2 * self.LEFT_PADDING
-        height = (max_y - min_y) + 2 * self.TOP_PADDING
+        (max_x - min_x) + 2 * self.LEFT_PADDING
+        (max_y - min_y) + 2 * self.TOP_PADDING
 
         self._reset_view()
 

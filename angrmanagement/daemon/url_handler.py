@@ -1,7 +1,7 @@
-from typing import Dict, Type, Optional
 import base64
 import binascii
 import urllib.parse
+from typing import Dict, Optional, Type
 
 
 class UrlActionBase:

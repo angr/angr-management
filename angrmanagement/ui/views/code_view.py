@@ -1,26 +1,28 @@
-from typing import Set, Union, Optional
 import logging
+from typing import TYPE_CHECKING, Any, Optional, Set, Union
 
-from PySide6.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget, QVBoxLayout, QWidget, QFrame, QComboBox
-from PySide6.QtGui import QTextCursor
-from PySide6.QtCore import Qt
-
-from angr.analyses.decompiler.structured_codegen.c import CFunctionCall, CConstant, CStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
-from angr.knowledge_plugins.functions.function import Function
+from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QComboBox, QDockWidget, QFrame, QHBoxLayout, QMainWindow, QTextEdit, QVBoxLayout, QWidget
 
-from ..widgets.qccode_edit import QCCodeEdit
-from ..widgets.qdecomp_options import QDecompilationOptions
-from ..documents import QCodeDocument
+from angrmanagement.config import Conf
+from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
+from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.logic.disassembly import JumpHistory
+from angrmanagement.ui.documents import QCodeDocument
+from angrmanagement.ui.toolbars import NavToolbar
+from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
+from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
+
 from .view import BaseView
-from ...config import Conf
-from ...data.object_container import ObjectContainer
-from ...logic.disassembly import JumpHistory
-from ...data.jobs import DecompileFunctionJob, VariableRecoveryJob
-from ..toolbars import NavToolbar
 
+if TYPE_CHECKING:
 
-l = logging.getLogger(__name__)
+    from angr.knowledge_plugins.functions.function import Function
+
+log = logging.getLogger(__name__)
 
 
 class CodeView(BaseView):
@@ -206,7 +208,9 @@ class CodeView(BaseView):
                     self._function.am_obj = func
                     self._function.am_event(focus_addr=self.addr.am_obj, focus=focus)
                 else:
-                    l.error("There is a block which is in the current function but find_closest_node_pos failed on it")
+                    log.error(
+                        "There is a block which is in the current function " "but find_closest_node_pos failed on it"
+                    )
 
     def _on_new_node(self, **kwargs):  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
@@ -230,7 +234,7 @@ class CodeView(BaseView):
             return
 
         old_lineno: Optional[int] = None
-        old_node: Optional = None
+        old_node: Optional[Any] = None
         old_font = None
         if self._last_function is self._function.am_obj and self._doc is not None:
             # we are re-rendering the current function (e.g., triggered by a node renaming). the cursor should stay at

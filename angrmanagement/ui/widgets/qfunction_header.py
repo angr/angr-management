@@ -1,15 +1,17 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtGui import QPainter, QCursor
-from PySide6.QtCore import Qt, QRectF
+from angr.calling_conventions import SimRegArg
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QCursor, QPainter
 from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
-from angr.sim_type import SimTypeFunction
-from angr.calling_conventions import SimRegArg
+from angrmanagement.config import Conf
+from angrmanagement.utils.func import type2str
 
-from ...utils.func import type2str
-from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angr.sim_type import SimTypeFunction
 
 
 class QFunctionHeader(QCachedGraphicsItem):

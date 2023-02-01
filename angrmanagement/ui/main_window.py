@@ -1,21 +1,45 @@
 # pylint:disable=no-self-use
-import os
 import logging
+import os
 import pickle
 import sys
 import time
 from functools import partial
-from typing import Optional, TYPE_CHECKING
-
-from PySide6.QtWidgets import QMainWindow, QFileDialog, QProgressBar, QProgressDialog
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtGui import QIcon, QDesktopServices, QKeySequence, QShortcut
-from PySide6.QtCore import Qt, QSize, QEvent, QUrl
-import PySide6QtAds as QtAds
+from typing import TYPE_CHECKING, Optional
 
 import angr
 import angr.flirt
+import PySide6QtAds as QtAds
 from angr.angrdb import AngrDB
+from PySide6.QtCore import QEvent, QSize, Qt, QUrl
+from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QProgressBar, QProgressDialog
+
+from angrmanagement.config import IMG_LOCATION, Conf, save_config
+from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
+from angrmanagement.daemon.client import ClientService
+from angrmanagement.data.instance import Instance
+from angrmanagement.data.jobs import DependencyAnalysisJob
+from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadTargetJob
+from angrmanagement.data.library_docs import LibraryDocs
+from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.utils.env import app_root, is_pyinstaller
+from angrmanagement.utils.io import download_url, isurl
+
+from .dialogs.about import LoadAboutDialog
+from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
+from .dialogs.load_plugins import LoadPlugins
+from .dialogs.new_state import NewState
+from .dialogs.preferences import Preferences
+from .menus.analyze_menu import AnalyzeMenu
+from .menus.file_menu import FileMenu
+from .menus.help_menu import HelpMenu
+from .menus.plugin_menu import PluginMenu
+from .menus.view_menu import ViewMenu
+from .toolbar_manager import ToolbarManager
+from .toolbars import DebugToolbar, FileToolbar
+from .workspace import Workspace
 
 try:
     import archr
@@ -23,31 +47,6 @@ try:
 except ImportError:
     archr = None
     keystone = None
-
-from ..daemon import daemon_exists, run_daemon_process, daemon_conn
-from ..daemon.client import ClientService
-from ..logic import GlobalInfo
-from ..data.instance import Instance
-from ..data.library_docs import LibraryDocs
-from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob, LoadAngrDBJob
-from ..data.jobs import DependencyAnalysisJob
-from ..config import IMG_LOCATION, Conf, save_config
-from ..utils.io import isurl, download_url
-from ..utils.env import is_pyinstaller, app_root
-from ..errors import InvalidURLError, UnexpectedStatusCodeError
-from .menus.file_menu import FileMenu
-from .menus.analyze_menu import AnalyzeMenu
-from .menus.help_menu import HelpMenu
-from .menus.view_menu import ViewMenu
-from .menus.plugin_menu import PluginMenu
-from .workspace import Workspace
-from .dialogs.load_plugins import LoadPlugins
-from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
-from .dialogs.new_state import NewState
-from .dialogs.about import LoadAboutDialog
-from .dialogs.preferences import Preferences
-from .toolbars import FileToolbar, DebugToolbar
-from .toolbar_manager import ToolbarManager
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
@@ -372,7 +371,7 @@ class MainWindow(QMainWindow):
 
     def _init_url_scheme_handler(self):
         # URL scheme
-        from ..logic.url_scheme import AngrUrlScheme  # pylint:disable=import-outside-toplevel
+        from angrmanagement.logic.url_scheme import AngrUrlScheme  # pylint:disable=import-outside-toplevel
 
         scheme = AngrUrlScheme()
         registered, _ = scheme.is_url_scheme_registered()

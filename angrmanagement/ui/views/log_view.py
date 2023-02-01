@@ -1,9 +1,10 @@
 import logging
 
-from PySide6.QtWidgets import QHBoxLayout
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 
-from ..widgets.qlog_widget import QLogWidget
+from angrmanagement.ui.widgets.qlog_widget import QLogWidget
+
 from .view import BaseView
 
 _l = logging.getLogger(name=__name__)

@@ -1,18 +1,21 @@
+from typing import TYPE_CHECKING
+
+from angr.analyses.decompiler.structured_codegen.c import (
+    CClosingObject,
+    CConstant,
+    CFunction,
+    CFunctionCall,
+    CStructField,
+    CVariable,
+)
+from angr.sim_type import SimType
 from PySide6.QtGui import QTextDocument
 from PySide6.QtWidgets import QPlainTextDocumentLayout
 
-from angr.sim_type import SimType
-from angr.analyses.decompiler.structured_codegen.c import (
-    CConstant,
-    CVariable,
-    CFunctionCall,
-    CStructField,
-    CClosingObject,
-    CFunction,
-)
-from angr.analyses.decompiler.structured_codegen.base import BaseStructuredCodeGenerator
+from angrmanagement.config import Conf
 
-from ...config import Conf
+if TYPE_CHECKING:
+    from angr.analyses.decompiler.structured_codegen.base import BaseStructuredCodeGenerator
 
 
 class QCodeDocument(QTextDocument):
@@ -84,12 +87,12 @@ class QCodeDocument(QTextDocument):
 
             # special case where cursor is off the screen, reposition to before the end
             if pos >= len(self._codegen.text) - 2:
-                l = len(self._codegen.text) - 4
+                length = len(self._codegen.text) - 4
             else:
-                l = pos - 1
+                length = pos - 1
 
             r = pos + 1
-            inc_l = not self._pos_is_newline_or_oob(l)
+            inc_l = not self._pos_is_newline_or_oob(length)
             inc_r = not self._pos_is_newline_or_oob(r)
 
             # iterate until we hit start or end of document
@@ -97,11 +100,11 @@ class QCodeDocument(QTextDocument):
 
                 # continue left search if we are still at a valid char
                 if inc_l:
-                    n = self._codegen.map_pos_to_addr.get_node(l)
+                    n = self._codegen.map_pos_to_addr.get_node(length)
                     if n is not None:
                         break
-                    l -= 1
-                    inc_l = not self._pos_is_newline_or_oob(l)
+                    length -= 1
+                    inc_l = not self._pos_is_newline_or_oob(length)
 
                 # continue right search if we are still at a valid char
                 if inc_r:

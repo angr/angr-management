@@ -79,7 +79,7 @@ repos:
     rev: v1.10.0
     hooks:
     # Python
-    # -   id: python-use-type-annotations
+    -   id: python-use-type-annotations
     -   id: python-no-log-warn
     # Documentation
     -   id: rst-backticks
@@ -93,7 +93,7 @@ repos:
     -   id: check-builtin-literals
     -   id: check-docstring-first
 
-# -   repo: https://github.com/charliermarsh/ruff-pre-commit
-#     rev: v0.0.230
-#     hooks:
-#     - id: ruff
+-   repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.238
+    hooks:
+    - id: ruff

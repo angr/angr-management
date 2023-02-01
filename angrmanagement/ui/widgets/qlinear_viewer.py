@@ -1,26 +1,27 @@
-from typing import Optional, TYPE_CHECKING, Union
 import logging
-from sortedcontainers import SortedDict
+from typing import TYPE_CHECKING, Optional, Union
 
-from PySide6.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
-from PySide6.QtGui import QPainter
-from PySide6.QtCore import Qt, QRectF, QRect, QEvent
-
+from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
-from angr.knowledge_plugins import Function
-from angr.analyses.cfg.cfb import Unknown, MemoryRegion
-from angr.analyses.decompiler import Clinic
-from angr.analyses import Disassembly
+from PySide6.QtCore import QEvent, QRect, QRectF, Qt
+from PySide6.QtGui import QPainter
+from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
+from sortedcontainers import SortedDict
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .qblock import QLinearBlock
+from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
+from .qgraph import QSaveableGraphicsView
 from .qmemory_data_block import QMemoryDataBlock
 from .qunknown_block import QUnknownBlock
-from .qgraph import QSaveableGraphicsView
-from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
 
 if TYPE_CHECKING:
+    from angr.analyses import Disassembly
+    from angr.analyses.decompiler import Clinic
+    from angr.knowledge_plugins import Function
+
     from angrmanagement.logic.disassembly import InfoDock
 
 
@@ -516,7 +517,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _addr_from_offset(self, mr, base_offset, offset):
         return mr.addr + (offset - base_offset)
 
-    def _get_disasm(self, func: Function) -> Optional[Union[Clinic, Disassembly]]:
+    def _get_disasm(self, func: "Function") -> Optional[Union["Clinic", "Disassembly"]]:
         """
         Get disassembly analysis object for a given function
         """

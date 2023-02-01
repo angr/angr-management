@@ -1,13 +1,22 @@
 import logging
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsItemGroup
-from PySide6.QtWidgets import QTabWidget, QPushButton, QAbstractItemView
-from PySide6.QtWidgets import QMessageBox, QTableWidget, QTableWidgetItem
-from PySide6.QtGui import QPen, QBrush, QLinearGradient, QColor, QPainter, QImage, QFont
-from PySide6.QtCore import Qt, QPoint, QEvent
+from PySide6.QtCore import QEvent, QPoint, Qt
+from PySide6.QtGui import QBrush, QColor, QFont, QImage, QLinearGradient, QPainter, QPen
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QGraphicsItemGroup,
+    QGraphicsScene,
+    QGraphicsView,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
-
-l = logging.getLogger(name=__name__)
+log = logging.getLogger(name=__name__)
 
 
 class QTraceViewer(QWidget):
@@ -184,9 +193,9 @@ class QTraceViewer(QWidget):
         if self.trace.am_none or self.trace.count is None:
             return
 
-        l.debug("minheight: %d, count: %d", self.TRACE_FUNC_MINHEIGHT, self.trace.count)
+        log.debug("minheight: %d, count: %d", self.TRACE_FUNC_MINHEIGHT, self.trace.count)
         if self.trace.count <= 0:
-            l.warning("No valid addresses found in trace to show. Check base address offsets?")
+            log.warning("No valid addresses found in trace to show. Check base address offsets?")
             self.trace.am_obj = None
             self.trace.am_event()
             return
@@ -416,7 +425,7 @@ class QTraceViewer(QWidget):
         for position in self.trace.trace_func:
             bbl_addr = position.bbl_addr
             func_name = position.func_name
-            l.debug("Draw function %x, %s", bbl_addr, func_name)
+            log.debug("Draw function %x, %s", bbl_addr, func_name)
             color = self.trace.get_func_color(func_name)
             self.trace_func.addToGroup(
                 self.traceScene.addRect(

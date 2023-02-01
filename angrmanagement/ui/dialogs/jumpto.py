@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QVBoxLayout
 
-from ..widgets import QAddressInput
+from angrmanagement.ui.widgets import QAddressInput
 
 
 class JumpTo(QDialog):

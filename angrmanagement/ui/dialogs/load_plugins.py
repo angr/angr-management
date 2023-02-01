@@ -1,25 +1,25 @@
 import logging
-from typing import List, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING, List
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
-    QPushButton,
+    QDialogButtonBox,
+    QFileDialog,
     QFrame,
     QGroupBox,
-    QListWidgetItem,
     QListWidget,
-    QFileDialog,
+    QListWidgetItem,
     QMessageBox,
-    QDialogButtonBox,
+    QPushButton,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
 from angrmanagement.plugins import load_plugin_description
 
 if TYPE_CHECKING:
-    from angrmanagement.plugins import PluginManager, PluginDescription
+    from angrmanagement.plugins import PluginDescription, PluginManager
 
 
 _l = logging.getLogger(__name__)

@@ -1,12 +1,16 @@
 import functools
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from angr import SimState
+from angrmanagement.data.jobs import SimgrExploreJob
 
-from ...data.jobs import SimgrExploreJob
-from ...ui.widgets.qsimulation_managers import QSimulationManagers
 from .debugger import Debugger
+
+if TYPE_CHECKING:
+    from angr import SimState
+
+    from angrmanagement.ui.widgets.qsimulation_managers import QSimulationManagers
+    from angrmanagement.ui.workspace import Workspace
 
 
 _l = logging.getLogger(name=__name__)
@@ -17,7 +21,7 @@ class SimulationDebugger(Debugger):
     Simulation debugger.
     """
 
-    def __init__(self, sim_mgrs: QSimulationManagers, workspace: "Workspace"):
+    def __init__(self, sim_mgrs: "QSimulationManagers", workspace: "Workspace"):
         super().__init__(workspace)
         self._sim_mgr_view: QSimulationManagers = sim_mgrs
         self._sim_mgr = sim_mgrs.simgr
@@ -46,7 +50,7 @@ class SimulationDebugger(Debugger):
         self.state_changed.am_event()
 
     @property
-    def simstate(self) -> SimState:
+    def simstate(self) -> "SimState":
         if not self._sim_mgr_view.state.am_none:
             return self._sim_mgr_view.state.am_obj
         elif not self._sim_mgr.am_none and len(self._sim_mgr.stashes["active"]) > 0:

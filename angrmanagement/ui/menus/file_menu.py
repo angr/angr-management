@@ -1,10 +1,11 @@
 import os.path
 
-from PySide6.QtGui import QKeySequence
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
+
+from angrmanagement.logic import GlobalInfo
 
 from .menu import Menu, MenuEntry, MenuSeparator
-from ...logic import GlobalInfo
 
 try:
     import archr
