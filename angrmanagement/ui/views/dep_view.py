@@ -74,7 +74,6 @@ class DependencyView(BaseView):
         return QSize(400, 800)
 
     def _init_widgets(self):
-
         self._graph_widget = QDependencyGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
@@ -110,7 +109,6 @@ class DependencyView(BaseView):
 
     # def _is_edge_in_graph(self):
     def _create_ui_graph(self) -> networkx.DiGraph:
-
         g = networkx.DiGraph()
         source_node = QDepGraphBlock(False, self, atom=self.sink_atom, addr=self.sink_ins_addr)
         g.add_node(source_node)

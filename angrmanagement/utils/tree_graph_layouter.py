@@ -145,7 +145,6 @@ class TreeGraphLayouter:
         self._layout()
 
     def _layout(self):
-
         layers: List[List[Any]] = []
 
         if not self._initial_nodes:

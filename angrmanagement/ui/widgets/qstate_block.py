@@ -11,7 +11,6 @@ _l = logging.getLogger(__name__)
 
 
 class QStateBlock(QGraphicsItem):
-
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
@@ -49,7 +48,6 @@ class QStateBlock(QGraphicsItem):
             return None
 
     def _init_widgets(self):
-
         addr = None
         if self.state.regs._ip.symbolic:
             self._label_str = str(self.state.regs._ip)

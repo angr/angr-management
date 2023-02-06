@@ -149,7 +149,7 @@ class TraceViewer(BasePlugin):
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
-            for (i, w) in strata:
+            for i, w in strata:
                 color = self.trace.get_mark_color(qinsn.insn.addr, i)
                 painter.setPen(color)
                 painter.setBrush(color)
@@ -225,7 +225,6 @@ class TraceViewer(BasePlugin):
     OPEN_TRACES_FROM_CHECRS = 5
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -289,7 +288,6 @@ class TraceViewer(BasePlugin):
         self.multi_trace.am_event()
 
     def _open_bitmap_multi_trace(self, trace_path, base_addr):
-
         if trace_path is None:
             trace_path = self._open_trace_dialog(tfilter="")
             if trace_path is None:
@@ -419,7 +417,6 @@ class TraceViewer(BasePlugin):
         self.trace.am_event()
 
     def open_traces_from_checrs(self):
-
         if not Conf.checrs_rest_endpoint_url:
             QMessageBox.critical(
                 self.workspace.main_window,

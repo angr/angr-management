@@ -52,7 +52,6 @@ class DependsOn(QDialog):
         self._init_widgets()
 
     def _init_widgets(self):
-
         # the instruction
         instr_lbl = QLabel("Instruction")
         instr_box = QLineEdit("TODO")

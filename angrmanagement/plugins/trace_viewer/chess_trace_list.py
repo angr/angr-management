@@ -183,7 +183,6 @@ class QChessTraceListDialog(QDialog):
         th.start()
 
     def _init_widgets(self):
-
         # table
         self._table = QTraceTableView()
 
@@ -254,7 +253,6 @@ class QChessTraceListDialog(QDialog):
     #
 
     def _on_ok_button_clicked(self):
-
         selection_model = self._table.selectionModel()
         if not selection_model.hasSelection():
             QMessageBox.warning(

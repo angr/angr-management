@@ -334,7 +334,6 @@ class QFunctionTableView(QTableView):
         self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def keyPressEvent(self, key_event):
-
         text = key_event.text()
         if not text or text not in string.printable or text in string.whitespace:
             # modifier keys
@@ -479,7 +478,6 @@ class QFunctionTable(QWidget):
     #
 
     def _init_widgets(self, selection_callback=None):
-
         # function table view
         self._table_view = QFunctionTableView(self, self.instance, selection_callback)
 

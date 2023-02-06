@@ -36,7 +36,6 @@ class QFunctionComboBox(QComboBox):
     #
 
     def reload(self):
-
         if self._function_manager is None:
             return
 
@@ -53,7 +52,6 @@ class QFunctionComboBox(QComboBox):
     #
 
     def _on_current_index_changed(self):
-
         idx = self.currentIndex()
         if idx == -1:
             return

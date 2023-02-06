@@ -13,7 +13,6 @@ log = logging.getLogger(name=__name__)
 
 
 class TraceFunc:
-
     __slots__ = (
         "bbl_addr",
         "func_name",
@@ -27,7 +26,6 @@ class TraceFunc:
 
 
 class ObjectAndBase:
-
     __slots__ = (
         "obj_name",
         "base_addr",
@@ -46,7 +44,6 @@ class ObjectAndBase:
 
 
 class TraceStatistics:
-
     BBL_FILL_COLOR = QColor(0, 0xF0, 0xF0, 0xF)
     BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")

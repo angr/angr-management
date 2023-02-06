@@ -27,7 +27,6 @@ def locate_function(inst, addr):
 
 
 def get_label_text(addr, kb, function=None):
-
     if addr in kb.labels:
         return kb.labels[addr] + ":"
 
@@ -133,7 +132,6 @@ def address_to_text(addr, kb):
 
 
 def get_out_branches_for_insn(out_branch_dict, ins_addr):
-
     if ins_addr not in out_branch_dict:
         return None
 
@@ -191,7 +189,6 @@ def string_at_addr(cfg, addr, project, max_size=50):
 
 
 def should_display_string_label(cfg, insn_addr, project):
-
     if insn_addr not in cfg.insn_addr_to_memory_data:
         return False
 
@@ -225,7 +222,6 @@ def filter_string_for_display(s):
 
 
 def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str]:
-
     str_content = None
 
     try:

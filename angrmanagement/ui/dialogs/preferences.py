@@ -61,7 +61,6 @@ class Integration(Page):
         self._load_config()
 
     def _init_widgets(self):
-
         # os integration
         os_integration = QGroupBox("OS integration")
         self._url_scheme_chk = QCheckBox("Register angr URL scheme (angr://).")
@@ -252,7 +251,6 @@ class Preferences(QDialog):
         self._init_widgets()
 
     def _init_widgets(self):
-
         # contents
         contents = QListWidget()
         contents.setViewMode(QListView.IconMode)

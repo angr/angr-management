@@ -7,7 +7,6 @@ from .qgraph import QZoomableDraggableGraphicsView
 
 
 class QSymExecGraph(QZoomableDraggableGraphicsView):
-
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 

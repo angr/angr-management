@@ -19,7 +19,6 @@ from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 from .view import BaseView
 
 if TYPE_CHECKING:
-
     from angr.knowledge_plugins.functions.function import Function
 
 log = logging.getLogger(__name__)
@@ -423,7 +422,6 @@ class CodeView(BaseView):
     #
 
     def _init_widgets(self):
-
         window = QMainWindow()
         window.setWindowFlags(Qt.Widget)
 

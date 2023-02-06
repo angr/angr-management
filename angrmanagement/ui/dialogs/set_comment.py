@@ -52,7 +52,6 @@ class SetComment(QDialog):
     #
 
     def _init_widgets(self):
-
         # name label
         comment_lbl = QLabel(self)
         comment_lbl.setText("Comment text")

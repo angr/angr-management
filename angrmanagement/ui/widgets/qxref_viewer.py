@@ -17,7 +17,6 @@ class XRefMode:
 
 
 class QXRefModel(QAbstractTableModel):
-
     HEADER = []
 
     def __init__(self, addr, instance, view):
@@ -98,7 +97,6 @@ class QXRefModel(QAbstractTableModel):
 
 
 class QXRefVariableModel(QXRefModel):
-
     HEADER = [("Direction", 70), ("Type", 50), ("Variable", 80), ("VarId", 80), ("PC", 160), ("Text", 300)]
 
     DIRECTION_COL = 0
@@ -188,7 +186,6 @@ class QXRefVariableModel(QXRefModel):
 
 
 class QXRefAddressModel(QXRefModel):
-
     HEADER = [("Direction", 70), ("Type", 50), ("PC", 160), ("Text", 300)]
 
     DIRECTION_COL = 0
@@ -333,7 +330,6 @@ class QXRefViewer(QTableView):
             self.items = sorted(self.items, key=lambda item: item.ins_addr)
 
     def _xrefs_from_control_flow_transitions(self):
-
         if self._instance is not None:
             cfg = self._instance.cfg
             node = cfg.get_any_node(self._dst_addr)

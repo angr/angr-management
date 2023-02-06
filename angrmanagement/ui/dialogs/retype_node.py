@@ -130,7 +130,6 @@ class RetypeNode(QDialog):
         return r
 
     def _init_widgets(self):
-
         # Type label
 
         type_label = QLabel(self)

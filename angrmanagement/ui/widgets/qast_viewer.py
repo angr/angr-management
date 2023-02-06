@@ -126,7 +126,6 @@ class QASTViewer(QFrame):
     #
 
     def _init_widgets(self):
-
         layout = QHBoxLayout()
 
         ast_label = QLabel(self)
@@ -149,7 +148,6 @@ class QASTViewer(QFrame):
         self.setLayout(layout)
 
     def _reload_widgets(self):
-
         if self._ast is None:
             self._ast_label.setText("")
             return
@@ -175,7 +173,6 @@ class QASTViewer(QFrame):
         self._ast_label.style().polish(self._ast_label)
 
     def _build_strings(self):
-
         if self._ast is None:
             self._ast_label.setText("")
             return
@@ -204,7 +201,6 @@ class QASTViewer(QFrame):
                     self._ast_str = ast.__repr__(max_depth=1)
 
     def _determine_size(self):
-
         self._height = Conf.symexec_font_height
         self._width = Conf.symexec_font_width * len(self._ast_str)
         if self._display_size:

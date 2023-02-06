@@ -9,7 +9,6 @@ class OperandHighlightMode:
 
 
 class OperandDescriptor:
-
     __slots__ = (
         "text",
         "num_value",
@@ -153,7 +152,6 @@ class InfoDock(QObject):
             self.selected_operands.am_event()
 
     def unselect_operand(self, insn_addr, operand_idx):
-
         if (insn_addr, operand_idx) in self.selected_operands:
             self.selected_operands.pop((insn_addr, operand_idx))
             self.selected_operands.am_event()

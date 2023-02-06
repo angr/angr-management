@@ -47,7 +47,6 @@ class LoadComponentsDialog(QDialog):
     #
 
     def exec_(self) -> int:
-
         if self.url is not None:
             self.show()
             self._on_ok_clicked()
@@ -83,7 +82,6 @@ class LoadComponentsDialog(QDialog):
     #
 
     def _init_widgets(self):
-
         # URL
         url_caption = QLabel(self)
         url_caption.setText("Path or URL:")
@@ -152,7 +150,6 @@ class LoadComponentsDialog(QDialog):
         return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):
-
         # ok let's do this
         tree = ComponentTree()
         queue: List[Tuple[Dict, Optional[ComponentTreeNode]]] = [(child, None) for child in data]

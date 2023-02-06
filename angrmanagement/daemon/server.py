@@ -112,7 +112,6 @@ def monitor_thread(server):
 
 
 def start_daemon(port=DEFAULT_PORT):
-
     try:
         from angrmanagement.logic import GlobalInfo
 

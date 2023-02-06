@@ -92,7 +92,6 @@ class QPathTree(QFrame):
 
     @staticmethod
     def _all_edges_gen(state_histories, hierarchy):
-
         # TODO: reduce duplication with above function
         work = set(state_histories)
         while len(work) > 0:
@@ -119,7 +118,6 @@ class QPathTree(QFrame):
 
     @staticmethod
     def _generate_graph(state_histories, hierarchy, symexec_view):
-
         g = networkx.DiGraph()
 
         history_to_block = {}

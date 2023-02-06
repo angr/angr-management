@@ -29,7 +29,6 @@ class QVEXTempsViewer(QFrame):
     #
 
     def _init_widgets(self):
-
         area = QScrollArea()
         area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)

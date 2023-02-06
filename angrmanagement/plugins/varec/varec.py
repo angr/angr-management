@@ -34,7 +34,6 @@ class VaRec(BasePlugin):
     INFER_VARIABLE_NAMES = 0
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 

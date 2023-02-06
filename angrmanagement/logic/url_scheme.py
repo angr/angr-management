@@ -9,7 +9,6 @@ from angrmanagement.utils.env import app_path
 
 
 class AngrUrlScheme:
-
     URL_SCHEME = "angr"
     WIN_REG_PATH = "HKEY_CURRENT_USER\\Software\\Classes\\{}"
 
@@ -59,7 +58,6 @@ class AngrUrlScheme:
     #
 
     def _register_url_scheme_windows(self):
-
         app_path_ = app_path(pythonw=True)
 
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
@@ -81,14 +79,12 @@ class AngrUrlScheme:
         reg.endGroup()
 
     def _unregister_url_scheme_windows(self):
-
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.NativeFormat)
 
         reg.remove("")
 
     def _is_url_scheme_registered_windows(self):
-
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.NativeFormat)
 
@@ -105,7 +101,6 @@ class AngrUrlScheme:
     #
 
     def _register_url_scheme_linux(self):
-
         cmd_0 = ["xdg-mime", "default", "angr.desktop", f"x-scheme-handler/{self.URL_SCHEME}"]
 
         # test if xdg-mime is available
@@ -138,13 +133,11 @@ Type=Application
             raise ValueError('Failed to setup the URL scheme. Command "%s" failed.' % " ".join(cmd_0))
 
     def _unregister_url_scheme_linux(self):
-
         angr_desktop_path = self._angr_desktop_path()
         if os.path.isfile(angr_desktop_path):
             os.unlink(angr_desktop_path)
 
     def _is_url_scheme_registered_linux(self):
-
         # angr.desktop
         angr_desktop_path = self._angr_desktop_path()
         if not os.path.isfile(angr_desktop_path):

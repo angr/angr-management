@@ -2,7 +2,6 @@ from typing import List, Optional
 
 
 class ComponentFunction:
-
     __slots__ = (
         "mapped_base",
         "virtual_addr",

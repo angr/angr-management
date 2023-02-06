@@ -212,7 +212,6 @@ class ChessConnector(BasePlugin):
             save_config()
 
     def set_chess_target(self):
-
         if not self.connected:
             QMessageBox.critical(
                 self.workspace.main_window,

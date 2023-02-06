@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 
 class QInstruction(QCachedGraphicsItem):
-
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
@@ -134,7 +133,6 @@ class QInstruction(QCachedGraphicsItem):
             self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
-
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # background color
@@ -152,7 +150,6 @@ class QInstruction(QCachedGraphicsItem):
     #
 
     def _init_widgets(self):
-
         self.load_comment()
         self._operands.clear()
 
@@ -217,7 +214,6 @@ class QInstruction(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _init_comments_or_string(self):
-
         # remove existing comments or strings
         if self._comment_items:
             for comm in self._comment_items:
@@ -245,7 +241,6 @@ class QInstruction(QCachedGraphicsItem):
             self._string_item.setBrush(Qt.gray)  # TODO: Expose it as a setting in Config
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         # address

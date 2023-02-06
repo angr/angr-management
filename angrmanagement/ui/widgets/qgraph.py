@@ -14,7 +14,6 @@ _l = logging.getLogger(__name__)
 
 
 class QBaseGraphicsView(QGraphicsView):
-
     visible_scene_rect_changed = Signal(QRectF)
 
     #
@@ -64,7 +63,6 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         self._is_extra_render_pass = is_extra_pass
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
-
         margins = QMarginsF(left_margin, top_margin, right_margin, bottom_margin)
 
         oldRect = self.scene().sceneRect()
@@ -202,7 +200,6 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def mousePressEvent(self, event):
         # _l.debug('Received press')
         if event.button() == Qt.LeftButton:
-
             self._is_mouse_pressed = True
             self._is_dragging = False
 

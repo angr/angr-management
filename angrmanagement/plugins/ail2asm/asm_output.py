@@ -31,7 +31,6 @@ class AsmOutput(QDialog):
     #
 
     def _init_widgets(self):
-
         # Assembly label
 
         asm_label = QLabel(self)

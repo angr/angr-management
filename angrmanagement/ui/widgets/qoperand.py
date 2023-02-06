@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class QOperand(QCachedGraphicsItem):
-
     BRANCH_TARGETS_SPACING = 5
     LABEL_VARIABLE_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
@@ -163,7 +162,6 @@ class QOperand(QCachedGraphicsItem):
         self.recalculate_size()
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
-
         # Background
         if self.selected:
             painter.setPen(self._config.disasm_view_operand_select_color)
@@ -215,14 +213,12 @@ class QOperand(QCachedGraphicsItem):
 
     @staticmethod
     def _first_n_branch_targets(branch_targets, n):
-
         if not branch_targets:
             return []
 
         return list(branch_targets)[:n]
 
     def _init_widgets(self):
-
         if self.is_branch_target:
             # a branch instruction
 
@@ -390,7 +386,6 @@ class QOperand(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         # label
@@ -495,7 +490,6 @@ class QOperand(QCachedGraphicsItem):
             return None, None
 
     def _variable_has_access(self, variable, ins_addr, access_type):
-
         if variable not in self.variable_manager[self.func_addr]._variable_accesses:
             log.error("Variable %s does not have any accessing records.", variable)
             return False

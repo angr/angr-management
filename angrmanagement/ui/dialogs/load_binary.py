@@ -104,7 +104,6 @@ class LoadBinary(QDialog):
             dep_list.addItem(dep_item)
 
     def _init_widgets(self):
-
         layout = QGridLayout()
         self.main_layout.addLayout(layout)
 
@@ -247,7 +246,6 @@ class LoadBinary(QDialog):
     #
 
     def _on_ok_clicked(self):
-
         force_load_libs = []
         skip_libs = set()
 

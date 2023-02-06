@@ -335,7 +335,6 @@ class MainWindow(QMainWindow):
     #
 
     def _run_daemon(self, use_daemon=None):
-
         if use_daemon is None:
             # Load it from the configuration file
             use_daemon = Conf.use_daemon
@@ -405,7 +404,6 @@ class MainWindow(QMainWindow):
     #
 
     def closeEvent(self, event):
-
         # Ask if the user wants to save things
         if (
             self.workspace.main_instance is not None
@@ -436,7 +434,6 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def event(self, event):
-
         if event.type() == QEvent.User:
             # our event callback
 
@@ -535,7 +532,6 @@ class MainWindow(QMainWindow):
                 )
 
     def load_file(self, file_path):
-
         if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
@@ -611,7 +607,6 @@ class MainWindow(QMainWindow):
             return self._save_database(self.workspace.main_instance.database_path)
 
     def save_database_as(self):
-
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 

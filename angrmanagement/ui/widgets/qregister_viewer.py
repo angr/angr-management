@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 
 class QRegisterViewer(QFrame):
-
     ARCH_REGISTERS = {
         "X86": {"common": ["eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "eip"]},
         "AMD64": {

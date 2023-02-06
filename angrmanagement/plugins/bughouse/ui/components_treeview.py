@@ -115,7 +115,6 @@ class ComponentsView(BaseView):
     #
 
     def on_item_doubleclicked(self, item: QTreeWidgetItem, column: int):
-
         if isinstance(item, QFunctionItem):
             if item.function is not None:
                 # display the function, either in the disassembly view or in the pseudo code view

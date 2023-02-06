@@ -38,7 +38,6 @@ class ComponentsPlugin(BasePlugin):
     RESET_COMPONENTS = 1
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 

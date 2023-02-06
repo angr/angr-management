@@ -9,7 +9,6 @@ from .qgraph_object import QCachedGraphicsItem
 
 
 class QUnknownBlock(QCachedGraphicsItem):
-
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = "Unknown"
 
@@ -36,7 +35,6 @@ class QUnknownBlock(QCachedGraphicsItem):
     #
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
-
         # painter.setRenderHints(
         #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         # painter.setFont(self._config.disasm_font)
@@ -84,7 +82,6 @@ class QUnknownBlock(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         # address

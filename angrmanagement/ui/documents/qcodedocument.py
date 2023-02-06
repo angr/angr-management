@@ -84,7 +84,6 @@ class QCodeDocument(QTextDocument):
         # if we can't find a node at the current position, start the algorithm search
         # from the left and right iteratively.
         if n is None:
-
             # special case where cursor is off the screen, reposition to before the end
             if pos >= len(self._codegen.text) - 2:
                 length = len(self._codegen.text) - 4
@@ -97,7 +96,6 @@ class QCodeDocument(QTextDocument):
 
             # iterate until we hit start or end of document
             while inc_l or inc_r:
-
                 # continue left search if we are still at a valid char
                 if inc_l:
                     n = self._codegen.map_pos_to_addr.get_node(length)
@@ -120,7 +118,6 @@ class QCodeDocument(QTextDocument):
         return self._codegen.map_addr_to_pos.get_nearest_pos(ins_addr)
 
     def find_related_text_chunks(self, node):
-
         if self._codegen is None or self._codegen.map_ast_to_pos is None:
             return None
 

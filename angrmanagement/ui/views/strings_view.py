@@ -44,7 +44,6 @@ class StringsView(BaseView):
     #
 
     def _on_function_selected(self, function):
-
         if isinstance(function, str) and function == "all":
             # all functions
             self._selected_function = None
@@ -86,7 +85,6 @@ class StringsView(BaseView):
     #
 
     def _init_widgets(self):
-
         self._function_list = QFunctionComboBox(
             show_all_functions=True, selection_callback=self._on_function_selected, parent=self
         )

@@ -533,7 +533,6 @@ class QCCodeEdit(api.CodeEdit):
         return sep
 
     def _initialize_context_menus(self):
-
         base_actions = [
             self._separator(),
             self.action_copy,

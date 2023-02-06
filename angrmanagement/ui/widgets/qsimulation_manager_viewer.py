@@ -184,7 +184,6 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.exec_(QCursor.pos())
 
     def _create_new_stash(self, *args, **kwargs):  # pylint: disable=unused-argument
-
         stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
 
         if not accepted or stash_name.strip() == "":

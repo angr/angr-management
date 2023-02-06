@@ -3,7 +3,6 @@ from .url_handler import handle_url
 
 
 def monkeypatch_rpyc():
-
     # The AsyncResult in rpyc has a bug that causes a race condition when clients are cascaded. this monkeypatch fixes
     # the bug.
     from rpyc.core.async_ import AsyncResult, AsyncResultTimeout

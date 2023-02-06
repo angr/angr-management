@@ -137,7 +137,6 @@ class QDisasmStatusBar(QFrame):
         self._function_label.setText(s)
 
     def _on_saveimage_btn_clicked(self):
-
         filename, folder = QFileDialog.getSaveFileName(self, "Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
         if not filename or not folder:
             return

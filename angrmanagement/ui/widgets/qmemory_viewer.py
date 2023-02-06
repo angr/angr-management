@@ -43,7 +43,6 @@ class QMemoryView(QWidget):
             self._reload_objects()
 
     def paintEvent(self, event):
-
         if self.address is None:
             return
 
@@ -60,7 +59,6 @@ class QMemoryView(QWidget):
         y = MARGIN_TOP
 
         for obj in self._objects:
-
             obj_type = type(obj)
 
             if obj_type is NewLinePiece:
@@ -94,7 +92,6 @@ class QMemoryView(QWidget):
 
         addr_base = self.address
         for row in range(self.rows):
-
             addr = addr_base + row * self.cols
 
             # address
@@ -138,7 +135,6 @@ class QMemoryViewer(QFrame):
 
     @addr.setter
     def addr(self, v):
-
         if self._addr != v:
             self._addr = v
 

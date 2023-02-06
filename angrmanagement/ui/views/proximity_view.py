@@ -134,7 +134,6 @@ class ProximityView(BaseView):
         return QSize(400, 800)
 
     def _init_widgets(self):
-
         self._graph_widget = QProximityGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
@@ -175,7 +174,6 @@ class ProximityView(BaseView):
         return new_node
 
     def _create_ui_graph(self) -> networkx.DiGraph:
-
         g = networkx.DiGraph()
 
         converted = {}

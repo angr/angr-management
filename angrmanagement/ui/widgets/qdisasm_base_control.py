@@ -72,7 +72,6 @@ class QDisassemblyBaseControl:
     #
 
     def keyPressEvent(self, event):
-
         key = event.key()
 
         if key == Qt.Key_N:
