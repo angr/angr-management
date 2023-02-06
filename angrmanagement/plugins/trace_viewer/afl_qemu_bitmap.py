@@ -9,7 +9,6 @@ _l = logging.getLogger(name=__name__)
 
 
 class AFLQemuBitmap:
-
     HIT_COLOR = QColor(0xEE, 0xFF, 0xEE)
     MISS_COLOR = QColor(0x99, 0x00, 0x00, 0x30)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
@@ -86,7 +85,6 @@ class AFLQemuBitmap:
         return ((addr >> 4) ^ (addr << 8)) & (self.bitmap_size - 1)
 
     def possible_dynamic_basic_block_succs(self, g, node):
-
         # we return two types of edges, may_takes and fallthroughs
         may_takes = []
         fallthroughs = []
@@ -101,7 +99,6 @@ class AFLQemuBitmap:
         return may_takes, fallthroughs
 
     def _incoming_transition_edges(self, g, node):
-
         in_edges = g.in_edges(node, data=True)
         r = []
         for src, _, data in in_edges:

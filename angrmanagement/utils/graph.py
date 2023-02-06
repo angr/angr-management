@@ -73,7 +73,6 @@ def to_supergraph(transition_graph):
     function_nodes = set()  # it will be traversed after all other nodes are added into the supergraph
 
     for node in transition_graph.nodes():
-
         if isinstance(node, Function):
             function_nodes.add(node)
             # don't put functions into the supergraph
@@ -104,11 +103,9 @@ def to_supergraph(transition_graph):
             existing_out_edges = []
 
         for dst, data in dests_and_data.items():
-
             edge = (node, dst)
 
             if edge in edges_to_shrink:
-
                 if dst in supernodes_map:
                     dst_supernode = supernodes_map[dst]
                 else:

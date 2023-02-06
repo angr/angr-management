@@ -50,7 +50,6 @@ class MenuSeparator:
 
 class Menu:
     def __init__(self, caption, children=(), parent=None):
-
         self.parent = parent
         self.caption = caption
 

@@ -177,7 +177,6 @@ class QDecompilationOptions(QWidget):
         return STMT_OPTS + EXPR_OPTS
 
     def _init_widgets(self):
-
         # search box
         self._search_box = QLineEdit()
         self._search_box.textChanged.connect(self._on_search_box_text_changed)

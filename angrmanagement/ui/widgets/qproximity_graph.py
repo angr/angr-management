@@ -19,7 +19,6 @@ _l = logging.getLogger(name=__name__)
 
 
 class QProximityGraph(QZoomableDraggableGraphicsView):
-
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 

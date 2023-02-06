@@ -114,7 +114,7 @@ class POIViewer(BasePlugin):
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
-            for (i, w) in strata:
+            for i, w in strata:
                 color = self.poi_trace.get_mark_color(qinsn.insn.addr, i)
                 painter.setPen(color)
                 painter.setBrush(color)

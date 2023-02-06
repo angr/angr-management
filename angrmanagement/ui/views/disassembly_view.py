@@ -115,7 +115,6 @@ class DisassemblyView(SynchronizedView):
         self.redraw_current_graph()
 
     def reload(self):
-
         old_infodock = self.infodock.copy()
 
         self.infodock.initialize()
@@ -314,7 +313,6 @@ class DisassemblyView(SynchronizedView):
         mnu.exec_(QCursor.pos())
 
     def instruction_context_menu(self, insn, pos):
-
         self._insn_addr_on_context_menu = insn.addr
 
         # pass in the instruction address
@@ -329,7 +327,6 @@ class DisassemblyView(SynchronizedView):
         self._insn_addr_on_context_menu = None
 
     def label_context_menu(self, addr: int, pos):
-
         self._label_addr_on_context_menu = addr
         self._label_menu.addr = addr
         mnu = self._label_menu.qmenu(cached=False)
@@ -499,7 +496,6 @@ class DisassemblyView(SynchronizedView):
                 self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value, async_=async_)
 
     def popup_xref_dialog(self, addr=None, variable=None, dst_addr=None, async_=True):
-
         if variable is not None:
             dialog = XRefDialog(
                 addr=addr,
@@ -579,7 +575,6 @@ class DisassemblyView(SynchronizedView):
         self._display_function(function)
 
     def decompile_current_function(self):
-
         if self._current_function.am_obj is not None:
             try:
                 curr_ins = next(iter(self.infodock.selected_insns))
@@ -663,7 +658,6 @@ class DisassemblyView(SynchronizedView):
                 self._flow_graph.reload()
 
     def jump_to(self, addr, src_ins_addr=None, use_animation=False):
-
         # Record the current instruction address first
         if src_ins_addr is not None:
             self.jump_history.record_address(src_ins_addr)
@@ -693,7 +687,6 @@ class DisassemblyView(SynchronizedView):
 
     def rename_label(self, addr, new_name, is_func: bool = False, full_refresh: bool = False):
         if self._flow_graph.disasm is not None:
-
             is_renaming = False
 
             kb = self._flow_graph.disasm.kb

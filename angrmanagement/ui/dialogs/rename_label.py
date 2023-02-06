@@ -53,7 +53,6 @@ class RenameLabel(QDialog):
     #
 
     def _init_widgets(self):
-
         # name label
 
         name_label = QLabel(self)
@@ -98,7 +97,6 @@ class RenameLabel(QDialog):
     #
 
     def _on_name_changed(self, new_text):  # pylint: disable=unused-argument
-
         if self._name_box is None:
             # initialization is not done yet
             return

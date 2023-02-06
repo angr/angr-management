@@ -70,7 +70,6 @@ class QFunctionHeader(QCachedGraphicsItem):
     #
 
     def _init_widgets(self):
-
         if self.args is not None:
             self._arg_str_list = []
             for arg in self.args:
@@ -143,7 +142,6 @@ class QFunctionHeader(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         if self._function_name_item is not None:

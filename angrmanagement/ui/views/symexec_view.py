@@ -99,7 +99,6 @@ class SymexecView(BaseView):
     #
 
     def _init_widgets(self):
-
         main = QMainWindow()
         main.setWindowFlags(Qt.Widget)
 

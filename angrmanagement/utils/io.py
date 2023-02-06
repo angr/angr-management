@@ -21,7 +21,6 @@ def isurl(uri):
 
 
 def download_url(url, parent=None, to_file=True, file_path=None, use_proxies=True):
-
     if not isurl(url):
         raise TypeError("The given URL %s is not a valid URL.", url)
 

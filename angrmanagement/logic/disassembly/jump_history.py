@@ -27,7 +27,6 @@ class JumpHistory:
         return len(self._history)
 
     def jump_to(self, addr):
-
         if self._pos != len(self._history) - 1:
             self.trim()
 

@@ -9,7 +9,6 @@ _l = logging.getLogger(name=__name__)
 
 
 class CFGGenerationJob(Job):
-
     DEFAULT_CFG_ARGS = {
         "normalize": True,  # this is what people naturally expect
         "resolve_indirect_jumps": True,
@@ -69,7 +68,6 @@ class CFGGenerationJob(Job):
     #
 
     def _progress_callback(self, percentage, text=None, cfg=None):
-
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return

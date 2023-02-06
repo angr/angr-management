@@ -177,7 +177,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self.reload()
 
     def _on_vertical_scroll_bar_triggered(self, action):
-
         action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
 
         if action == QAbstractSlider.SliderSingleStepAdd:
@@ -217,7 +216,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.redraw()
 
     def initialize(self):
-
         if self.cfb.am_none:
             return
 
@@ -298,7 +296,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.setLayout(layout)
 
     def _update_size(self):
-
         # ask all objects to update their sizes
         for obj in self.objects:
             obj.clear_cache()

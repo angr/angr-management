@@ -176,7 +176,6 @@ class EdgeRouter:
             self.horizontal_edges.append(h_edges)
 
     def _assign_edge_to(self, edge, sort, col, row, blocks, index=None):
-
         if sort == "vertical":
             d = self.vertical_edges
         elif sort == "horizontal":
@@ -199,14 +198,12 @@ class EdgeRouter:
         return index
 
     def _edge_available(self, col, start_row, end_row):
-
         for i in range(start_row, end_row):
             if not self._edge_valid[col][i]:
                 return False
         return True
 
     def _first_unused_index(self, indices):
-
         # find the first unused index
         last_i = None
         for i in sorted(indices):
@@ -219,7 +216,6 @@ class EdgeRouter:
         return 0 if last_i is None else last_i + 1
 
     def _find_vertical_available_edge_index(self, col, start_row, end_row):
-
         # collect all used indices
         indices = set()
 
@@ -230,7 +226,6 @@ class EdgeRouter:
         return self._first_unused_index(indices)
 
     def _find_horizontal_available_edge_index(self, start_col, end_col, row):
-
         # collect all used indices
         indices = set()
 
@@ -252,7 +247,6 @@ class EdgeRouter:
         self._in_edges[edge.dst].append(edge)
 
     def _set_in_edge_indices(self):
-
         # assign in-edge indices
         for _, edges in self._in_edges.items():
             max_idx = None
@@ -269,7 +263,6 @@ class EdgeRouter:
                 edge.max_end_index = max_idx
 
     def _set_out_edge_indices(self):
-
         for _, edges in self._out_edges.items():
             max_idx = None
             if len(edges) == 2:
@@ -334,7 +327,6 @@ class GraphLayouter:
         self._layout()
 
     def _layout(self):
-
         self._initialize()
 
         # order the nodes
@@ -410,7 +402,6 @@ class GraphLayouter:
         self._assign_columns(acyclic_graph)
 
     def _assign_rows(self, graph, acyclic_graph, ordered_nodes):
-
         row_to_nodes = defaultdict(list)
 
         global_max_row = 0
@@ -477,7 +468,6 @@ class GraphLayouter:
         self._row_to_nodes = row_to_nodes
 
     def _assign_columns(self, acyclic_graph):
-
         global_max_col = 0
 
         # First iteration: assign column ID bottom-up
@@ -720,7 +710,6 @@ class GraphLayouter:
 
         # edges
         for edge in self.edges:
-
             src_node_x, src_node_y = self.node_coordinates[edge.src]
             src_node_width, src_node_height = self._node_sizes[edge.src]
 
@@ -804,11 +793,9 @@ class GraphLayouter:
             edge.add_coordinate(*end_point)
 
     def _indexed_x(self, base_x, idx):
-
         return base_x + idx * self.x_margin
 
     def _indexed_y(self, base_y, idx):
-
         return base_y + idx * self.y_margin
 
     def _nointersecting_y(self, row, starting_col, ending_col, default=None):

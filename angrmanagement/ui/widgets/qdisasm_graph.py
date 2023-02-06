@@ -92,7 +92,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
     @function_graph.setter
     def function_graph(self, v):
-
         if v is not self._function_graph:
             self._function_graph = v
 
@@ -111,7 +110,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     #
 
     def reload(self, old_infodock: Optional["InfoDock"] = None):
-
         # if there is an instruction in selection, we will want to select that instruction again after reloading this
         # view.
         if old_infodock is not None:
@@ -260,7 +258,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     #
 
     def _graph_size(self):
-
         width, height = 0, 0
 
         for block in self.blocks:
@@ -274,7 +271,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         return QSize(width, height)
 
     def _layout_graph(self):
-
         node_sizes = {}
         node_map = {}
         for block in self.blocks:
@@ -291,7 +287,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         return nodes, gl.edges
 
     def request_relayout(self):
-
         node_coords, edges = self._layout_graph()
 
         self._edges = edges

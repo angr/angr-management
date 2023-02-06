@@ -60,7 +60,6 @@ class Workspace:
     """
 
     def __init__(self, main_window, instance):
-
         self.main_window: "MainWindow" = main_window
         self._main_instance = instance
         instance.workspace = self
@@ -352,7 +351,6 @@ class Workspace:
         view.function.am_event(focus=True, focus_addr=curr_ins)
 
     def create_simulation_manager(self, state, state_name, view=None):
-
         inst = self.main_instance
         hierarchy = StateHierarchy()
         simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)

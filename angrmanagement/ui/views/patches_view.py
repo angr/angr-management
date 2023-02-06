@@ -22,7 +22,6 @@ class PatchesView(BaseView):
     #
 
     def _init_widgets(self):
-
         # patch table
         self._patch_table = QPatchTable(self.instance, self)
 
@@ -50,7 +49,6 @@ class PatchesView(BaseView):
     #
 
     def _on_apply_patches_clicked(self):
-
         # select where the new binary will be stored
         # Open File window
         file_path, _ = QFileDialog.getSaveFileName(

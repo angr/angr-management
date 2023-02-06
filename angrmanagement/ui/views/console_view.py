@@ -32,7 +32,6 @@ class ConsoleView(BaseView):
         self.reload()
 
     def reload(self):
-
         if self._ipython_widget is None:
             return
 
@@ -72,7 +71,6 @@ class ConsoleView(BaseView):
         return QSize(0, 50)
 
     def _init_widgets(self):
-
         import angr  # pylint: disable=import-outside-toplevel,multiple-imports
         import claripy
         import cle

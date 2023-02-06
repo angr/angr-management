@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 
 class QDependencyGraph(QZoomableDraggableGraphicsView):
-
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 

@@ -53,7 +53,6 @@ class XRefDialog(QDialog):
         return QSize(600, 400)
 
     def _init_widgets(self):
-
         # xref viewer
         xref_viewer = QXRefViewer(
             addr=self._addr,

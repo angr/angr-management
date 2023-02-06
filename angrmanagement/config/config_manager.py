@@ -429,7 +429,6 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         self.recent_files.append(file_path)
 
     def __getattr__(self, item):
-
         if item in self.__slots__ or item in type(self).__dict__:
             return super().__getattribute__(item)
 
@@ -439,7 +438,6 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         raise AttributeError(item)
 
     def __setattr__(self, key, value):
-
         if key in self.__slots__ or key in type(self).__dict__:
             super().__setattr__(key, value)
             return

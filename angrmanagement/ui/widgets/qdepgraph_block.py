@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 
 class QDepGraphBlock(QCachedGraphicsItem):
-
     HORIZONTAL_PADDING = 20
     VERTICAL_PADDING = 20
     LINE_MARGIN = 3
@@ -59,7 +58,6 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self.setAcceptHoverEvents(True)
 
     def _init_widgets(self):
-
         # definition
         self._definition_str = ""
         if self.definition is not None:

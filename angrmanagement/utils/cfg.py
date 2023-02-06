@@ -11,7 +11,6 @@ log = logging.getLogger("utils.cfg")
 
 
 def _get_branch_instr(disassembly, node):
-
     if len(node.out_branches) > 1:
         log.warning(
             "_get_branch_instr(): %s has more than one out_branches. Only the first one is considered for now. "

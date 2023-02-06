@@ -9,13 +9,11 @@ from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.utils import filter_string_for_display
 
 if TYPE_CHECKING:
-
     from angr.analyses.cfg.cfg_fast import MemoryData
     from PySide6.QtGui import QKeyEvent
 
 
 class QStringModel(QAbstractTableModel):
-
     HEADER = ["Address", "Length", "String"]
 
     ADDRESS_COL = 0
@@ -252,7 +250,6 @@ class QStringTable(QTableView):
             self._selected(selected_item)
 
     def keyPressEvent(self, event: "QKeyEvent") -> None:
-
         if event.key() == Qt.Key_X:
             # xrefs
             if self._model is None:

@@ -89,7 +89,6 @@ class UrlActionJumpTo(UrlActionBase):
 
     @classmethod
     def _from_params(cls, params):
-
         addr = cls.str2addr(cls._one_param(params, "addr"))
 
         return cls(
@@ -116,7 +115,6 @@ class UrlActionCommentAt(UrlActionBase):
 
     @classmethod
     def _from_params(cls, params):
-
         addr = cls.str2addr(cls._one_param(params, "addr"))
         try:
             comment = base64.b64decode(cls._one_param(params, "comment")).decode("utf-8")
