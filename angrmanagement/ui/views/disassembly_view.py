@@ -118,14 +118,12 @@ class DisassemblyView(SynchronizedView):
         old_infodock = self.infodock.copy()
 
         self.infodock.initialize()
-        self._feature_map.refresh()
 
         # Reload the current graph to make sure it gets the latest information, such as variables.
         self.current_graph.reload(old_infodock=old_infodock)
 
     def refresh(self):
         self.current_graph.refresh()
-        self._feature_map.refresh()
 
     def save_image_to(self, path):
         if self._flow_graph is not None:
