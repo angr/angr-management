@@ -5,28 +5,12 @@ from sortedcontainers import SortedDict
 
 class TaggedIntervalMap:
     """
-    Catalogs interval features via tag bits, with binning to enable reduced levels of detail.
-
-    Intervals can be added to the map with the `add` method: this method takes an address and size to create interval
-    start and stop points, rounded to the alignment value. Interval tags are stored as bits of an integer. Gaps between
-    added intervals are populated with implicit intervals having a tag value of 0.
-
-    Intervals are aligned to 2**nbits. Interval starting points (address) are rounded down to alignment, and stop
-    points (address + size) are rounded up to alignment. If nbits is equal to zero (the default case), alignment will
-    be 1 byte, and in effect there will be no binning applied to intervals.
-
-    Adjacent intervals in the interval map have unique feature tags. When new intervals are added to the map, any
-    adjacent or overlapping intervals with identical tags will be normalized so the map retains this property. For
-    example: if an interval (addr=0, size=100, tags=1) is added, followed by (100, 100, 1), the resulting interval in
-    the map will be (0, 200, 1).
-
-    Intervals in the map can be iterated over using the `irange` method. Implicit gap intervals are also returned by
-    this method.
+    Catalogs features of intervals.
     """
 
     def __init__(self, nbits: int = 0):
         """
-        :param nbits: Number of binning bits. Higher bin values reduce detail. 0 for no binning (full detail).
+        :param nbits: Number of binning bits. Higher values reduce detail. 0 for no binning.
         """
         self._nbits: int = nbits
         self._map: SortedDict = SortedDict()  # SortedDict[int, int]
@@ -37,9 +21,16 @@ class TaggedIntervalMap:
 
     def add(self, addr: int, size: int, tags: int) -> None:
         """
-        Add interval starting at `addr` of `size` bytes with `tag` tag bits.
+        Add interval starting at `addr` of `size` bytes.
 
-        Overlapping intervals will have tag bits OR'd together.
+        When binning, intervals endpoints are aligned to 2^nbits. Gaps between added intervals are populated with
+        implicit intervals having tag value of 0. Overlapping intervals will have tag bits OR'd together.
+
+        Adjacent intervals in the interval map have unique tags. When intervals are added to the map, any adjacent stops
+        with identical tags will be eliminated so the map retains this property.
+
+        For example: if an interval(addr=0, size=100, tags=1) is added, followed by (100, 100, 1), the resulting
+        interval in the map will be (0, 200, 1).
         """
         assert addr >= 0
         assert size >= 0
@@ -65,9 +56,8 @@ class TaggedIntervalMap:
 
     def _insert_stop(self, addr: int) -> None:
         """
-        If one is not already present in the map, insert a new interval stop point at `addr`.
-
-        Tags are copied from nearest stop before `addr`.
+        Insert a new interval stop point at `addr`, if one is not already present in the map. Tags are copied from
+        nearest stop before `addr`.
         """
         if addr not in self._map:
             idx = self._map.bisect(addr) - 1
@@ -86,8 +76,8 @@ class TaggedIntervalMap:
 
     def _eliminate_extraneous_stops(self, min_addr: int, max_addr: int) -> None:
         """
-        Canonicalize the map by eliminating adjacent stops with identical tags. Stops directly outside
-        [min_addr, max_addr] and within are considered.
+        Canonicalize the map by eliminating adjacent stops with identical tags both inside and directly outside of
+        [min_addr, max_addr].
         """
         keys_to_drop = []
         prev_tags = None
@@ -102,14 +92,11 @@ class TaggedIntervalMap:
 
     def irange(self, min_addr: Optional[int] = None, max_addr: Optional[int] = None) -> Iterator[Tuple[int, int, int]]:
         """
-        Iterate over intervals intersecting [min_addr, max_addr], yielding
-        interval (addr, size, tags) tuples. Gaps between added intervals are
-        populated with intervals with tags == 0 and are yielded by this method
-        as well.
+        Iterate over intervals intersecting [min_addr, max_addr], yielding interval (addr, size, tags) tuples. Implicit
+        gap intervals (with tags=0) are also returned.
 
         :param min_addr: Minimum address (inclusive) to begin iterating from. If None, iterate from start of map.
         :param max_addr: Maximum address (inclusive) to iterate to. If None, iterate to end of map.
-
         """
         if not self._map:
             return
