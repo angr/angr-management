@@ -570,6 +570,7 @@ class QFeatureMapView(QGraphicsView):
         self._scale: float = 1.0
         self._base_width: int = 0
         self._scene.addItem(self._feature_map_item)
+        self._orientation: str = "horizontal"
 
         self.setBackgroundBrush(Conf.palette_base)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
@@ -650,22 +651,43 @@ class QFeatureMapView(QGraphicsView):
         """
         Resize feature map.
         """
+        rotation = 0
         vg = self.viewport().geometry()
+
+        if vg.width() > vg.height():
+            if self._orientation != "horizontal":
+                rotation = -90
+            self._orientation = "horizontal"
+            w, h = vg.width(), vg.height()
+        else:
+            if self._orientation != "vertical":
+                rotation = 90
+            self._orientation = "vertical"
+            w, h = vg.height(), vg.width()
+
+        if rotation:
+            self._scale = 1.0
+
         if self._scale <= 1.0:
             # Only resize to feature map to viewport width if scale is at base level to not disturb preferred size
-            self._base_width = vg.width()
+            self._base_width = w
+
         new_width = int(self._base_width * self._scale)
         changed = False
         if new_width != self._feature_map_item.width:
             self._feature_map_item.width = new_width
             changed = True
-        new_height = vg.height()
+        new_height = h
+
         if new_height != self._feature_map_item.height:
             self._feature_map_item.height = new_height
             changed = True
+
         if changed:
             self._feature_map_item.refresh()
             self.setSceneRect(self._scene.itemsBoundingRect())
+        if rotation:
+            self.rotate(rotation)
 
 
 class QFeatureMap(QWidget):
