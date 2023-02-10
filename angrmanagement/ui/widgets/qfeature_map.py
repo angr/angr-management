@@ -97,16 +97,15 @@ class FeatureMapItem(QGraphicsItem):
     ZVALUE_HOVER = 1
     ZVALUE_CURSOR = 2
 
-    def __init__(self, disasm_view, *args, **kwargs):
+    def __init__(self, instance, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.instance = instance
+
         self.setFlag(QGraphicsItem.ItemUsesExtendedStyleOption, True)  # Give me more specific paint update rect info
         self.setFlag(QGraphicsItem.ItemClipsToShape, True)
         self.setAcceptHoverEvents(True)
 
         self.addr = ObjectContainer(None, name="The current address of the Feature Map.")
-
-        self.disasm_view = disasm_view
-        self.cfb = self.disasm_view.instance.cfb
 
         self._width: int = 1
         self._height: int = 1
@@ -132,9 +131,7 @@ class FeatureMapItem(QGraphicsItem):
         self.reload()
 
     def _register_events(self):
-        self.cfb.am_subscribe(self._on_cfb_update)
-        self.disasm_view.infodock.selected_insns.am_subscribe(self._create_cursor_items)
-        self.disasm_view.infodock.selected_labels.am_subscribe(self._create_cursor_items)
+        self.instance.cfb.am_subscribe(self._on_cfb_update)
 
     def reload(self):
         self._build_cfb_feature_maps()
@@ -178,14 +175,14 @@ class FeatureMapItem(QGraphicsItem):
         self._cfb_feature_maps = [TaggedIntervalMap(nbits) for nbits in self._nbits_per_lod]
 
     def _build_cfb_feature_maps(self):
-        if self.cfb.am_none:
+        if self.instance.cfb.am_none:
             return
 
         self._clear_cfb_feature_maps()
 
         num_items = 0
         time_start = time.time()
-        for addr, item in self.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
+        for addr, item in self.instance.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
             if not item.size:
                 continue
             tags = _get_tags_for_item(item)
@@ -239,11 +236,11 @@ class FeatureMapItem(QGraphicsItem):
         self._region_to_position.clear()
         self._region_to_width.clear()
 
-        if self.cfb.am_none:
+        if self.instance.cfb.am_none:
             return
 
         # Add regions from largest to smallest
-        for new_mr in sorted(self.cfb.regions, key=lambda mr: mr.size, reverse=True):
+        for new_mr in sorted(self.instance.cfb.regions, key=lambda mr: mr.size, reverse=True):
             mr = self._find_first_overlapping_region(new_mr)
             if mr is not None:
                 log.debug("Skipping CFB region %s, which overlaps %s", new_mr, mr)
@@ -432,7 +429,13 @@ class FeatureMapItem(QGraphicsItem):
     def _create_cursor_items(self, **_):
         self._remove_cursor_items()
 
-        for addr in list(self.disasm_view.infodock.selected_insns) + list(self.disasm_view.infodock.selected_labels):
+        cursor_addrs = []
+
+        # FIXME: Update from most recently selected view
+        # self.instance.infodock.selected_insns
+        # self.instance.infodock.selected_labels
+
+        for addr in cursor_addrs:
             pos = self._get_position_at_addr(addr)
             if pos is None:
                 continue
@@ -511,7 +514,7 @@ class FeatureMapItem(QGraphicsItem):
             addr = self._get_addr_at_position(pos)
             if addr is None:
                 return
-            item = self.cfb.floor_item(addr)
+            item = self.instance.cfb.floor_item(addr)
             if item is not None:
                 _, item = item
                 new_tooltip = f"{str(item)} in {str(hovered_region)}"
@@ -555,7 +558,7 @@ class QFeatureMapView(QGraphicsView):
     Main view for feature map scene.
     """
 
-    def __init__(self, disasm_view, parent=None):
+    def __init__(self, instance, parent=None):
         super().__init__(parent)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -563,7 +566,7 @@ class QFeatureMapView(QGraphicsView):
         self._scene = QGraphicsScene(parent=self)
         self.setScene(self._scene)
 
-        self._feature_map_item: FeatureMapItem = FeatureMapItem(disasm_view)
+        self._feature_map_item: FeatureMapItem = FeatureMapItem(instance)
         self._scale: float = 1.0
         self._base_width: int = 0
         self._scene.addItem(self._feature_map_item)
@@ -670,9 +673,9 @@ class QFeatureMap(QWidget):
     Byte-level map of the memory space.
     """
 
-    def __init__(self, disasm_view, parent=None):
+    def __init__(self, instance, parent=None):
         super().__init__(parent)
-        self.disasm_view = disasm_view
+        self.instance = instance
         self.addr = None
         self._init_widgets()
 
@@ -685,7 +688,7 @@ class QFeatureMap(QWidget):
     #
 
     def _init_widgets(self):
-        self.view = QFeatureMapView(self.disasm_view, self)
+        self.view = QFeatureMapView(self.instance, self)
         layout = QHBoxLayout()
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
