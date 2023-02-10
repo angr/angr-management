@@ -30,7 +30,6 @@ from angrmanagement.ui.widgets import (
     QBlockAnnotations,
     QDisasmStatusBar,
     QDisassemblyGraph,
-    QFeatureMap,
     QFindAddrAnnotation,
     QLinearDisassembly,
     QLinearDisassemblyView,
@@ -769,19 +768,15 @@ class DisassemblyView(SynchronizedView):
     def _init_widgets(self):
         self._linear_viewer = QLinearDisassembly(self.instance, self, parent=self)
         self._flow_graph = QDisassemblyGraph(self.instance, self, parent=self)
-        self._feature_map = QFeatureMap(self, parent=self)
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._statusbar)
-        vlayout.addWidget(self._feature_map)
         vlayout.addWidget(self._flow_graph)
         vlayout.addWidget(self._linear_viewer)
         vlayout.setSpacing(0)
         vlayout.setContentsMargins(0, 0, 0, 0)
 
-        self._feature_map.setMaximumHeight(25)
-        vlayout.setStretchFactor(self._feature_map, 0)
         vlayout.setStretchFactor(self._flow_graph, 1)
         vlayout.setStretchFactor(self._linear_viewer, 1)
         vlayout.setStretchFactor(self._statusbar, 0)
@@ -812,12 +807,8 @@ class DisassemblyView(SynchronizedView):
         self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
-        self._feature_map.addr.am_subscribe(self._on_feature_map_addr_changed)
         self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
-
-    def _on_feature_map_addr_changed(self):
-        self._jump_to(self._feature_map.addr.am_obj)
 
     def _on_breakpoints_updated(self, **kwargs):  # pylint:disable=unused-argument
         self.refresh()
@@ -831,7 +822,6 @@ class DisassemblyView(SynchronizedView):
         self.infodock.hovered_edge.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_unsubscribe(self.redraw_current_graph)
         self.infodock.qblock_code_obj_selection_changed.disconnect(self.redraw_current_graph)
-        self._feature_map.addr.am_unsubscribe(self._on_feature_map_addr_changed)
         self.instance.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
 
