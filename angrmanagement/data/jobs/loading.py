@@ -67,25 +67,45 @@ class LoadBinaryJob(Job):
     def _run(self, inst):
         self._progress_callback(5)
 
+        load_as_blob = False
+        load_with_libraries = True
+
         partial_ld = None
         try:
             # Try automatic loading
             partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
         except archinfo.arch.ArchNotFound:
-            _l.warning("Could not identify binary architecture")
+            _l.warning("Could not identify binary architecture.")
             partial_ld = None
+            load_as_blob = True
         except cle.CLECompatibilityError:
             # Continue loading as blob
-            pass
+            load_as_blob = True
+        except cle.CLEError:
+            # try loading as a single binary without libraries
+            _l.warning("Failed to load the binary with libraries.")
+            load_with_libraries = False
 
         if partial_ld is None:
-            try:
-                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
-                partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
-            except cle.CLECompatibilityError:
-                # Failed to load executable, even as blob!
-                gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
-                return
+            if not load_with_libraries:
+                try:
+                    # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                    partial_ld = cle.Loader(
+                        self.fname, perform_relocations=False, load_debug_info=False, auto_load_libs=False
+                    )
+                except cle.CLECompatibilityError:
+                    # failed to load without libraries
+                    load_as_blob = True
+
+        if partial_ld is None:
+            if load_as_blob:
+                try:
+                    # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                    partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
+                except cle.CLECompatibilityError:
+                    # Failed to load executable, even as blob!
+                    gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
+                    return
 
         self._progress_callback(50)
         new_load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
