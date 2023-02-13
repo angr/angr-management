@@ -44,7 +44,8 @@ class ToolbarMenuEntry(MenuEntry):
 
     @property
     def is_visibile(self) -> bool:
-        return self.toolbar_cls in self.main_window.toolbar_manager.active
+        qtb = self.main_window.toolbar_manager.active.get(self.toolbar_cls, None)
+        return qtb is not None and qtb.qtoolbar().isVisible()
 
     def on_toggle(self):
         self.main_window.toolbar_manager.set_toolbar_visible_by_class(self.toolbar_cls, not self.is_visibile)

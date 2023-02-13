@@ -38,7 +38,7 @@ from .menus.help_menu import HelpMenu
 from .menus.plugin_menu import PluginMenu
 from .menus.view_menu import ViewMenu
 from .toolbar_manager import ToolbarManager
-from .toolbars import DebugToolbar, FileToolbar
+from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
 from .workspace import Workspace
 
 try:
@@ -73,7 +73,6 @@ class MainWindow(QMainWindow):
 
         # initialization
         self.setMinimumSize(QSize(400, 400))
-        self.setDockNestingEnabled(True)
 
         self.app: Optional["QApplication"] = app
         self.workspace: Workspace = None
@@ -205,7 +204,7 @@ class MainWindow(QMainWindow):
         self._progress_dialog.close()
 
     def _init_toolbars(self):
-        for cls in (FileToolbar, DebugToolbar):
+        for cls in (FileToolbar, DebugToolbar, FeatureMapToolbar):
             self.toolbar_manager.show_toolbar_by_class(cls)
 
     #
@@ -244,11 +243,16 @@ class MainWindow(QMainWindow):
         :return:    None
         """
         QtAds.CDockManager.setConfigFlags(
-            (QtAds.CDockManager.DefaultBaseConfig | QtAds.CDockManager.OpaqueSplitterResize)
+            (
+                QtAds.CDockManager.DefaultBaseConfig
+                | QtAds.CDockManager.OpaqueSplitterResize
+                | QtAds.CDockManager.FocusHighlighting
+            )
             & ~QtAds.CDockManager.DockAreaHasUndockButton
         )
         self.dock_manager = QtAds.CDockManager(self)
         self.dock_manager.setStyleSheet("")  # Clear stylesheet overrides
+        self.setCentralWidget(self.dock_manager)
         wk = Workspace(self, Instance())
         self.workspace = wk
 

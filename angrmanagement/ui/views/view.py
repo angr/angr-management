@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Mapping, Optional, Sequence
+from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
@@ -79,6 +79,33 @@ class BaseView(QFrame):
         if self.index > 1:
             s += f"-{self.index}"
         return s
+
+
+class ViewState:
+    """
+    A basic view state to be published through ViewStatePublisherMixin.
+    """
+
+    def __init__(self, cursors: Optional[List[int]] = None):
+        self.cursors: List[int] = cursors or []
+
+
+class ViewStatePublisherMixin:
+    """
+    Views that wish to update the instance 'active' view state for common visualization use this mixin.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.published_view_state = ViewState()
+
+    def on_focused(self):
+        self.notify_view_state_updated()
+
+    def notify_view_state_updated(self):
+        if self.instance.workspace.view_manager.most_recently_focused_view is self:
+            self.instance.active_view_state.am_obj = self.published_view_state
+            self.instance.active_view_state.am_event()
 
 
 class SynchronizedViewState:

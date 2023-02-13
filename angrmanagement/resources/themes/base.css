@@ -83,6 +83,16 @@ QToolBar {
     margin: 0;
 }
 
+QMainWindow::separator
+{
+    background: palette(shadow);
+    width: 1px;
+    max-width: 1px;
+    height: 1px;
+    max-height: 1px;
+    border: none;
+}
+
 QSplitter[orientation="1"] {
     min-width: 3px;
     max-width: 3px;

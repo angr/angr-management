@@ -103,11 +103,13 @@ class InfoDock(QObject):
         self.selected_blocks.clear()  # selecting one block at a time
         self.selected_blocks.add(block_addr)
         self.selected_blocks.am_event()
+        self._update_published_view_state()
 
     def unselect_block(self, block_addr):
         if block_addr in self.selected_blocks:
             self.selected_blocks.remove(block_addr)
             self.selected_blocks.am_event()
+        self._update_published_view_state()
 
     def select_instruction(self, insn_addr, unique=True, insn_pos=None, use_animation=True):
         self.disasm_view.set_synchronized_cursor_address(insn_addr)
@@ -123,15 +125,19 @@ class InfoDock(QObject):
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos, use_animation=use_animation)
             self.selected_insns.am_event(insn_addr=insn_addr)
 
+        self._update_published_view_state()
+
     def unselect_instruction(self, insn_addr):
         if insn_addr in self.selected_insns:
             self.selected_insns.remove(insn_addr)
             self.selected_insns.am_event()
+        self._update_published_view_state()
 
     def unselect_all_instructions(self):
         if self.selected_insns:
             self.selected_insns.clear()
             self.selected_insns.am_event()
+        self._update_published_view_state()
 
     def select_operand(self, ins_addr: int, operand_index: int, operand: OperandDescriptor, unique: bool = False):
         """
@@ -173,6 +179,8 @@ class InfoDock(QObject):
         self.selected_labels.add(label_addr)
         self.selected_labels.am_event()
 
+        self._update_published_view_state()
+
     def toggle_label_selection(self, addr: int) -> None:
         """
         Toggle the selection state of a label in the disassembly view.
@@ -189,10 +197,12 @@ class InfoDock(QObject):
         if label_addr in self.selected_labels:
             self.selected_labels.remove(label_addr)
             self.selected_labels.am_event()
+        self._update_published_view_state()
 
     def unselect_all_labels(self):
         self.selected_labels.clear()
         self.selected_labels.am_event()
+        self._update_published_view_state()
 
     def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique=False):
         """
@@ -235,6 +245,8 @@ class InfoDock(QObject):
 
         self.selected_operands.clear()
         self.selected_operands.am_event()
+
+        self._update_published_view_state()
 
     def is_edge_hovered(self, src_addr, dst_addr):
         return self.hovered_edge.am_obj == (src_addr, dst_addr)
@@ -288,3 +300,7 @@ class InfoDock(QObject):
         """
         self.selected_qblock_code_obj = obj
         self.qblock_code_obj_selection_changed.emit()
+
+    def _update_published_view_state(self):
+        self.disasm_view.published_view_state.cursors = self.selected_insns.union(self.selected_labels)
+        self.disasm_view.notify_view_state_updated()

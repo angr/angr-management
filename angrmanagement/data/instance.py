@@ -99,6 +99,8 @@ class Instance:
         self.register_container("current_trace", lambda: None, Type[Trace], "Currently selected trace")
         self.register_container("traces", lambda: [], List[Trace], "Global traces list")
 
+        self.register_container("active_view_state", lambda: None, "ViewState", "Currently focused view state")
+
         self.breakpoint_mgr = BreakpointManager()
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
