@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 import PySide6QtAds as QtAds
 from bidict import bidict
 
+from .views.view import ViewStatePublisherMixin
+
 if TYPE_CHECKING:
     from .views.view import BaseView
 
@@ -28,6 +30,8 @@ class ViewManager:
         self.docks = []
         self.view_to_dock = bidict()
         self.views_by_category: Dict[str, List[BaseView]] = defaultdict(list)
+        self.most_recently_focused_view: Optional[BaseView] = None
+        self.main_window.dock_manager.focusedDockWidgetChanged.connect(self._on_dock_widget_focus_changed)
 
     @property
     def main_window(self):
@@ -75,6 +79,15 @@ class ViewManager:
         self.docks.append(dw)
         self.view_to_dock[view] = dw
 
+    def _on_dock_widget_focus_changed(self, _, new):
+        """
+        Handle dock focus events.
+        """
+        view = self.view_to_dock.inverse.get(new, None)
+        self.most_recently_focused_view = view
+        if isinstance(view, ViewStatePublisherMixin):
+            view.on_focused()
+
     def _on_dock_widget_closed(self, dock):
         """
         Handle dock widget close event.
@@ -120,6 +133,7 @@ class ViewManager:
             dock.show()
         dock.raise_()
         view.focusWidget()
+        self.most_recently_focused_view = view
 
     def get_center_views(self) -> Sequence[QtAds.CDockWidget]:
         """

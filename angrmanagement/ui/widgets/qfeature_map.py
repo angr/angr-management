@@ -116,6 +116,7 @@ class FeatureMapItem(QGraphicsItem):
         self._region_to_width: Mapping["MemoryRegion", float] = {}
         self._position_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
 
+        self._cursor_addrs: List[int] = []
         self._cursor_items: List[QGraphicsItem] = []
         self._hover_region: Optional["MemoryRegion"] = None
         self._hover_region_item: Optional[QGraphicsItem] = None
@@ -136,6 +137,11 @@ class FeatureMapItem(QGraphicsItem):
     def reload(self):
         self._build_cfb_feature_maps()
         self.refresh()
+
+    def set_cursor_addrs(self, cursor_addrs):
+        self._cursor_addrs = cursor_addrs
+        self._create_cursor_items()
+        self.update()
 
     def refresh(self):
         self._clear_hover_region()
@@ -429,13 +435,7 @@ class FeatureMapItem(QGraphicsItem):
     def _create_cursor_items(self, **_):
         self._remove_cursor_items()
 
-        cursor_addrs = []
-
-        # FIXME: Update from most recently selected view
-        # self.instance.infodock.selected_insns
-        # self.instance.infodock.selected_labels
-
-        for addr in cursor_addrs:
+        for addr in self._cursor_addrs:
             pos = self._get_position_at_addr(addr)
             if pos is None:
                 continue
@@ -578,6 +578,15 @@ class QFeatureMapView(QGraphicsView):
         self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self._update_feature_map_item_size()
 
+    def minimumSize(self):  # pylint:disable=no-self-use
+        return QSize(10, 10)
+
+    def minimumSizeHint(self):  # pylint:disable=no-self-use
+        return QSize(10, 10)
+
+    def sizeHint(self):  # pylint:disable=no-self-use
+        return QSize(10, 10)
+
     def wheelEvent(self, event):
         """
         Handle wheel events to scale and translate the feature map.
@@ -698,12 +707,15 @@ class QFeatureMap(QWidget):
     def __init__(self, instance, parent=None):
         super().__init__(parent)
         self.instance = instance
-        self.addr = None
         self._init_widgets()
 
     @staticmethod
     def sizeHint():
-        return QSize(25, 25)
+        return QSize(10, 10)
+
+    @staticmethod
+    def minimumSizeHint():
+        return QSize(10, 10)
 
     #
     # Private methods
@@ -711,8 +723,13 @@ class QFeatureMap(QWidget):
 
     def _init_widgets(self):
         self.view = QFeatureMapView(self.instance, self)
+        self.view.setContentsMargins(0, 0, 0, 0)
         layout = QHBoxLayout()
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         self.setLayout(layout)
         self.addr = self.view._feature_map_item.addr
+
+    def set_cursor_addrs(self, cursor_addrs):
+        self.view._feature_map_item.set_cursor_addrs(cursor_addrs)

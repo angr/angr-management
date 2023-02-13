@@ -16,6 +16,11 @@ class Toolbar:
         self._cached: Optional[QToolBar] = None
         self._cached_actions = {}
 
+    def shutdown(self):
+        """
+        Prepare for deletion.
+        """
+
     def qtoolbar(self):
         if self._cached is not None:
             return self._cached

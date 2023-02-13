@@ -38,7 +38,7 @@ from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.utils import is_printable
 
-from .view import SynchronizedView
+from .view import SynchronizedView, ViewStatePublisherMixin
 
 log = logging.getLogger(__name__)
 
@@ -1311,7 +1311,7 @@ class HexGraphicsView(QAbstractScrollArea):
         super().keyPressEvent(event)
 
 
-class HexView(SynchronizedView):
+class HexView(ViewStatePublisherMixin, SynchronizedView):
     """
     View and edit memory/object code in classic hex editor format.
     """
@@ -1769,6 +1769,8 @@ class HexView(SynchronizedView):
         self.update_status_text()
         self._update_cfb_highlight_regions()
         self.set_synchronized_cursor_address(self.inner_widget.hex.cursor)
+        self.published_view_state.cursors = [self.inner_widget.hex.cursor]
+        self.notify_view_state_updated()
 
     def update_status_text(self):
         """

@@ -38,7 +38,7 @@ from angrmanagement.ui.widgets.qblock_code import QVariableObj
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
 from angrmanagement.utils import locate_function
 
-from .view import SynchronizedView
+from .view import SynchronizedView, ViewStatePublisherMixin
 
 if TYPE_CHECKING:
     import PySide6
@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 
-class DisassemblyView(SynchronizedView):
+class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
     """
     Disassembly View
     """
