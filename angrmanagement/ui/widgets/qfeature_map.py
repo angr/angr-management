@@ -50,9 +50,9 @@ def _get_feature_tag_colors() -> List[QColor]:
     Generate list of colors corresponding to each tag bit.
     """
     return [
-        Conf.feature_map_color_regular_function,
-        Conf.feature_map_color_data,
-        Conf.feature_map_color_string,
+        Conf.feature_map_regular_function_color,
+        Conf.feature_map_data_color,
+        Conf.feature_map_string_color,
     ]
 
 
@@ -329,7 +329,7 @@ class FeatureMapItem(QGraphicsItem):
 
     def paint(self, painter, option, _):
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(Qt.green if log.level == logging.DEBUG else Conf.feature_map_color_unknown)
+        painter.setBrush(Qt.green if log.level == logging.DEBUG else Conf.feature_map_unknown_color)
         painter.drawRect(option.exposedRect)
 
         if not len(self._position_to_region):
@@ -429,7 +429,7 @@ class FeatureMapItem(QGraphicsItem):
             )
         log.debug("Painted %d items in total, skipped %d", item_count, skipped_item_count)
 
-        pen = QPen(Conf.feature_map_color_delimiter)
+        pen = QPen(Conf.feature_map_delimiter_color)
         pen.setWidthF(1.0)
         painter.setPen(pen)
         for x in region_delim_xcoords:

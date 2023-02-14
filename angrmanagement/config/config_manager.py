@@ -204,11 +204,11 @@ ENTRIES = [
     # last-used directory
     CE("last_used_directory", str, ""),
     # feature map
-    CE("feature_map_color_regular_function", QColor, QColor(0x00, 0xA0, 0xE8)),
-    CE("feature_map_color_unknown", QColor, QColor(0x0A, 0x0A, 0x0A)),
-    CE("feature_map_color_delimiter", QColor, QColor(0x00, 0x00, 0x00)),
-    CE("feature_map_color_data", QColor, QColor(0xC0, 0xC0, 0xC0)),
-    CE("feature_map_color_string", QColor, QColor(0x00, 0xF0, 0x80)),
+    CE("feature_map_regular_function_color", QColor, QColor(0x00, 0xA0, 0xE8)),
+    CE("feature_map_unknown_color", QColor, QColor(0x0A, 0x0A, 0x0A)),
+    CE("feature_map_delimiter_color", QColor, QColor(0x00, 0x00, 0x00)),
+    CE("feature_map_data_color", QColor, QColor(0xC0, 0xC0, 0xC0)),
+    CE("feature_map_string_color", QColor, QColor(0x00, 0xF0, 0x80)),
     # networking
     CE("http_proxy", str, ""),
     CE("https_proxy", str, ""),
