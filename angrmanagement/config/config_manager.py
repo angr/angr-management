@@ -208,6 +208,7 @@ ENTRIES = [
     CE("feature_map_color_unknown", QColor, QColor(0x0A, 0x0A, 0x0A)),
     CE("feature_map_color_delimiter", QColor, QColor(0x00, 0x00, 0x00)),
     CE("feature_map_color_data", QColor, QColor(0xC0, 0xC0, 0xC0)),
+    CE("feature_map_color_string", QColor, QColor(0x00, 0xF0, 0x80)),
     # networking
     CE("http_proxy", str, ""),
     CE("https_proxy", str, ""),
