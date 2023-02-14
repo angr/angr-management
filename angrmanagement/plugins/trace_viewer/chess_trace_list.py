@@ -69,13 +69,13 @@ class QTraceTableModel(QAbstractTableModel):
         self._traces = v
         self.endResetModel()
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
+    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:
         return len(self.traces)
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
+    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:
         return len(self.Headers)
 
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> typing.Any:
+    def headerData(self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...) -> typing.Any:
         if role != Qt.DisplayRole:
             return None
 
@@ -83,7 +83,7 @@ class QTraceTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> typing.Any:
+    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> typing.Any:
         if not index.isValid():
             return None
         row = index.row()

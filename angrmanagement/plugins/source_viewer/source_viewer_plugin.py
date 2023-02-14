@@ -10,6 +10,7 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
 from qtpy import QtCore, QtGui
+from sortedcontainers import SortedDict
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import BaseView
@@ -18,7 +19,6 @@ from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
     from cle import Loader
-    from sortedcontainers import SortedDict
 
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.symexec_view import SymexecView

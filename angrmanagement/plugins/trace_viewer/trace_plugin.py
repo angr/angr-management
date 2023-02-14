@@ -51,11 +51,11 @@ class TraceViewer(BasePlugin):
     #
 
     @property
-    def trace(self) -> Union[ObjectContainer, Optional[TraceStatistics]]:
+    def trace(self) -> Union["ObjectContainer", Optional[TraceStatistics]]:
         return self.workspace.main_instance.trace
 
     @property
-    def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace], AFLQemuBitmap]:
+    def multi_trace(self) -> Union["ObjectContainer", Optional[MultiTrace], AFLQemuBitmap]:
         return self.workspace.main_instance.multi_trace
 
     #
