@@ -1,5 +1,6 @@
 import logging
 import time
+from threading import Lock
 from typing import TYPE_CHECKING, List, Mapping, Optional
 
 import cle
@@ -21,6 +22,7 @@ from sortedcontainers import SortedDict
 from angrmanagement.config import Conf
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.data.tagged_interval_map import TaggedIntervalMap
+from angrmanagement.logic.threads import gui_thread_schedule_async
 
 if TYPE_CHECKING:
     from angr.analyses.cfg.cfb import MemoryRegion
@@ -115,6 +117,10 @@ class FeatureMapItem(QGraphicsItem):
         self._height: int = 1
         self._pressed: bool = False
 
+        self._last_refresh_timestamp: float = 0
+        self._refresh_pending: bool = False
+        self._min_cfb_time_between_refresh: float = 1 / 30
+
         self._addr_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
         self._region_to_position: Mapping["MemoryRegion", float] = {}
         self._region_to_width: Mapping["MemoryRegion", float] = {}
@@ -130,16 +136,19 @@ class FeatureMapItem(QGraphicsItem):
 
         self._nbits_per_lod: List[int] = [13, 12, 8, 6, 4, 0]
         self._cfb_feature_maps: List[TaggedIntervalMap]
+        self._cfb_feature_maps_lock: Lock = Lock()
         self._clear_cfb_feature_maps()
 
         self._register_events()
         self.reload()
 
     def _register_events(self):
-        self.instance.cfb.am_subscribe(self._on_cfb_update)
+        self.instance.cfb.am_subscribe(self._on_cfb_event)
 
     def reload(self):
-        self._build_cfb_feature_maps()
+        self._clear_hover_region()
+        with self._cfb_feature_maps_lock:
+            self._build_cfb_feature_maps()
         self.refresh()
 
     def set_cursor_addrs(self, cursor_addrs):
@@ -148,11 +157,13 @@ class FeatureMapItem(QGraphicsItem):
         self.update()
 
     def refresh(self):
-        self._clear_hover_region()
         self._layout_regions()
         self._create_hover_item()
         self._create_cursor_items()
         self.update()
+
+        self._last_refresh_timestamp = time.time()
+        self._refresh_pending = False
 
     def _refresh_palette(self):
         self._feature_palette = FeatureMapPalette()
@@ -178,8 +189,24 @@ class FeatureMapItem(QGraphicsItem):
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self._width, self._height)
 
-    def _on_cfb_update(self, **_):
-        self.reload()
+    def _on_cfb_event(self, **kwargs):
+        if "object_added" in kwargs:  # Called by task thread
+            addr, item = kwargs["object_added"]
+            tags = _get_tags_for_item(item)
+            if tags is None:
+                return
+            with self._cfb_feature_maps_lock:
+                for fm in self._cfb_feature_maps:
+                    fm.add(addr, item.size, tags)
+
+            if (
+                not self._refresh_pending
+                and time.time() - self._last_refresh_timestamp > self._min_cfb_time_between_refresh
+            ):
+                self._refresh_pending = True
+                gui_thread_schedule_async(self.refresh)
+        elif not kwargs:
+            self.reload()
 
     def _clear_cfb_feature_maps(self):
         self._cfb_feature_maps = [TaggedIntervalMap(nbits) for nbits in self._nbits_per_lod]
@@ -387,7 +414,11 @@ class FeatureMapItem(QGraphicsItem):
 
             # Iterate over visible items in the region
             item_count_in_region = 0
-            for addr, size, tags in self._cfb_feature_maps[lod].irange(min_obj_addr, max_obj_addr):
+
+            with self._cfb_feature_maps_lock:
+                to_draw = list(self._cfb_feature_maps[lod].irange(min_obj_addr, max_obj_addr))
+
+            for addr, size, tags in to_draw:
                 if not size or not tags:
                     continue
 
