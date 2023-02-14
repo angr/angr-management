@@ -69,8 +69,8 @@ class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
         self.widget.stateChanged.connect(self._on_checkbox_changed)
         return self.widget
 
-    def _on_checkbox_changed(self, state):
-        self.option.value = state == Qt.Checked
+    def _on_checkbox_changed(self, _):
+        self.option.value = self.widget.isChecked()
 
 
 class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
