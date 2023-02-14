@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Mapping, Optional
 
 import cle
 from angr.block import Block
-from angr.knowledge_plugins.cfg import MemoryData
+from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QPen, QPolygonF
 from PySide6.QtWidgets import (
@@ -36,7 +36,10 @@ def _get_tags_for_item(item) -> Optional[int]:
     if isinstance(item, Block):
         b = 0
     elif isinstance(item, MemoryData):
-        b = 1
+        b = {
+            MemoryDataSort.String: 2,
+            MemoryDataSort.UnicodeString: 2,
+        }.get(item.sort, 1)
     else:
         return None
     return 1 << b
@@ -49,6 +52,7 @@ def _get_feature_tag_colors() -> List[QColor]:
     return [
         Conf.feature_map_color_regular_function,
         Conf.feature_map_color_data,
+        Conf.feature_map_color_string,
     ]
 
 
