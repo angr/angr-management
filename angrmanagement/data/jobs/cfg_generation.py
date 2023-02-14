@@ -1,6 +1,7 @@
 import logging
 import time
 
+from angrmanagement.data.analysis_options import CFGForceScanMode
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import Job
@@ -11,7 +12,6 @@ _l = logging.getLogger(name=__name__)
 class CFGGenerationJob(Job):
     DEFAULT_CFG_ARGS = {
         "normalize": True,  # this is what people naturally expect
-        "resolve_indirect_jumps": True,
     }
 
     def __init__(self, on_finish=None, **kwargs):
@@ -26,6 +26,11 @@ class CFGGenerationJob(Job):
                 cfg_args[key] = val
 
         self.cfg_args = cfg_args
+
+        scanning_mode = self.cfg_args.pop("scanning_mode", None)
+        if scanning_mode is not None:
+            self.cfg_args["force_smart_scan"] = scanning_mode == CFGForceScanMode.SmartScan
+            self.cfg_args["force_complete_scan"] = scanning_mode == CFGForceScanMode.CompleteScan
 
         self._cfb = None
         self._last_progress_callback_triggered = None

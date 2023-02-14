@@ -1,5 +1,6 @@
 import multiprocessing
 import platform
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
 
 if TYPE_CHECKING:
@@ -151,6 +152,26 @@ class IntAnalysisOption(PrimitiveAnalysisOption):
         self.maximum_value = maximum
 
 
+class ChoiceAnalysisOption(PrimitiveAnalysisOption):
+    """
+    A multi-value choice.
+    """
+
+    def __init__(self, name: str, description: str, choices: Mapping[Any, str], default: Any, tooltip: str = ""):
+        super().__init__(name, description, default, tooltip)
+        self.choices = choices
+
+
+class CFGForceScanMode(Enum):
+    """
+    CFG scanning mode options.
+    """
+
+    Disabled = 0
+    SmartScan = 1
+    CompleteScan = 2
+
+
 class CFGAnalysisConfiguration(AnalysisConfiguration):
     """
     Configuration for CFGFast analysis.
@@ -169,6 +190,16 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                 BoolAnalysisOption("data_references", "Collect cross-references and guess data types", True),
                 BoolAnalysisOption("cross_references", "Perform deep analysis on cross-references (slow)"),
                 BoolAnalysisOption("skip_unmapped_addrs", "Skip unmapped addresses", True),
+                ChoiceAnalysisOption(
+                    "scanning_mode",
+                    "Scan to maximize identified code blocks",
+                    {
+                        CFGForceScanMode.Disabled: "Disabled",
+                        CFGForceScanMode.SmartScan: "Smart Scan",
+                        CFGForceScanMode.CompleteScan: "Complete Scan",
+                    },
+                    CFGForceScanMode.SmartScan,
+                ),
             ]
         }
 
