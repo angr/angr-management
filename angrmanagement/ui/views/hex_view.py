@@ -1330,7 +1330,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         self._breakpoint_highlights: Sequence[BreakpointHighlightRegion] = []
 
         self._init_widgets()
-        self.instance.cfb.am_subscribe(self._reload_data)
+        self.instance.cfb.am_subscribe(self._on_cfb_event)
         self.instance.patches.am_subscribe(self._update_highlight_regions_from_patches)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._update_highlight_regions_from_breakpoints)
         self._data_cache = {}
@@ -1340,6 +1340,10 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         self._dbg_manager = self.instance.debugger_mgr
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
         self._on_debugger_state_updated()
+
+    def _on_cfb_event(self, **kwargs):
+        if not kwargs:
+            self._reload_data()
 
     def closeEvent(self, event):
         self._dbg_watcher.shutdown()

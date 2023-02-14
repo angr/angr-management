@@ -39,7 +39,9 @@ class CFGGenerationJob(Job):
         self.instance = inst
         exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
-        temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)
+        temp_cfb = inst.project.analyses.CFB(
+            exclude_region_types=exclude_region_types, on_object_added=self._on_cfb_object_added
+        )
         self._cfb = temp_cfb
         cfg = inst.project.analyses.CFG(
             progress_callback=self._progress_callback,
@@ -97,3 +99,6 @@ class CFGGenerationJob(Job):
         # instance will exist because _run must be used first
         self.instance.cfg = cfg
         self.instance.cfb = cfb
+
+    def _on_cfb_object_added(self, addr, obj):
+        self.instance.cfb.am_event(object_added=(addr, obj))
