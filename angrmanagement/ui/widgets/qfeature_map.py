@@ -640,8 +640,7 @@ class QFeatureMapView(QGraphicsView):
         """
         Handle view resize events, updating the feature map size accordingly.
         """
-        if self._scale <= 1.0:
-            self._update_feature_map_item_size()
+        self._update_feature_map_item_size()
         return super().resizeEvent(event)
 
     def adjust_viewport_scale(self, scale: Optional[float] = None, point: Optional[QPoint] = None):
@@ -709,29 +708,31 @@ class QFeatureMapView(QGraphicsView):
             self._orientation = "vertical"
             w, h = vg.height(), vg.width()
 
-        if rotation:
-            self._scale = 1.0
-
-        if self._scale <= 1.0:
-            # Only resize to feature map to viewport width if scale is at base level to not disturb preferred size
-            self._base_width = w
-
-        new_width = int(self._base_width * self._scale)
         changed = False
-        if new_width != self._feature_map_item.width:
-            self._feature_map_item.width = new_width
-            changed = True
-        new_height = h
+        new_width = int(self._base_width * self._scale)
+        point_rel = self.mapToScene(QPoint(0, 0)).x() / self._feature_map_item.width
 
+        if self._scale <= 1.0 or new_width < w:
+            self._base_width = w
+            self._scale = 1.0
+            new_width = w
+
+        if new_width != self._feature_map_item.width:
+            self._feature_map_item.width = max(new_width, 1)
+            changed = True
+
+        new_height = h
         if new_height != self._feature_map_item.height:
-            self._feature_map_item.height = new_height
+            self._feature_map_item.height = max(new_height, 1)
             changed = True
 
         if changed:
             self._feature_map_item.refresh()
             self.setSceneRect(self._scene.itemsBoundingRect())
+
         if rotation:
             self.rotate(rotation)
+            self.translate(self.mapToScene(QPoint(0, 0)).x() - point_rel * self._feature_map_item.width, 0)
 
 
 class QFeatureMap(QWidget):
