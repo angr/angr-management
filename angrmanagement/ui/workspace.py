@@ -13,6 +13,7 @@ from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import ObjectContainer
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.trace import BintraceTrace, Trace
+from angrmanagement.logic.commands import CommandManager
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.plugins import PluginManager
@@ -64,6 +65,7 @@ class Workspace:
         self._main_instance = instance
         instance.workspace = self
 
+        self.command_manager: CommandManager = CommandManager()
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
         self.variable_recovery_job: Optional[VariableRecoveryJob] = None
@@ -98,6 +100,8 @@ class Workspace:
         self.on_debugger_state_updated()
 
         self._analysis_configuration: Optional[AnalysesConfiguration] = None
+
+        DisassemblyView.register_commands(self)
 
     #
     # Properties

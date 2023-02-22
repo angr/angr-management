@@ -83,6 +83,10 @@ class ViewMenu(Menu):
 
         self.entries.extend(
             [
+                MenuEntry(
+                    "Command Palette...", main_window.show_command_palette, shortcut=QKeySequence("Ctrl+Shift+P")
+                ),
+                MenuSeparator(),
                 ToolbarMenu(main_window),
                 MenuSeparator(),
                 MenuEntry("Next Tab", main_window.workspace.view_manager.next_tab, shortcut=QKeySequence("Ctrl+Tab")),

@@ -11,7 +11,7 @@ import angr
 import angr.flirt
 import PySide6QtAds as QtAds
 from angr.angrdb import AngrDB
-from PySide6.QtCore import QEvent, QSize, Qt, QUrl
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QProgressBar, QProgressDialog
 
@@ -24,10 +24,12 @@ from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadT
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
 from .dialogs.about import LoadAboutDialog
+from .dialogs.command_palette import CommandPaletteDialog
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
@@ -55,6 +57,23 @@ if TYPE_CHECKING:
 _l = logging.getLogger(name=__name__)
 
 
+class DockShortcutEventFilter(QObject):
+    """
+    Filter to support shortcuts on floating dock windows that overlap main window registered menu action shortcuts.
+    """
+
+    def __init__(self, main_window):
+        super().__init__()
+        self.main_window = main_window
+
+    def eventFilter(self, qobject, event):
+        if event.type() == QEvent.KeyPress:
+            if QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
+                self.main_window.show_command_palette(qobject)
+                return True
+        return False
+
+
 class MainWindow(QMainWindow):
     """
     The main window of angr management.
@@ -77,6 +96,7 @@ class MainWindow(QMainWindow):
         self.app: Optional["QApplication"] = app
         self.workspace: Workspace = None
         self.dock_manager: QtAds.CDockManager
+        self._dock_shortcut_event_filter = DockShortcutEventFilter(self)
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
         self._progressbar: QProgressBar
@@ -98,6 +118,8 @@ class MainWindow(QMainWindow):
         self._init_plugins()
         self._init_library_docs()
         self._init_url_scheme_handler()
+
+        self._register_commands()
 
         self.workspace.plugins.on_workspace_initialized(self)
 
@@ -298,6 +320,12 @@ class MainWindow(QMainWindow):
         # Run
         QShortcut(QKeySequence(Qt.Key_F9), self, self.workspace.continue_forward)
 
+    def init_shortcuts_on_dock(self, dock_widget):
+        """
+        Installs an event filter on the dock widget to support floating dock global shortcuts (e.g. command palette).
+        """
+        dock_widget.installEventFilter(self._dock_shortcut_event_filter)
+
     #
     # Plugins
     #
@@ -402,6 +430,58 @@ class MainWindow(QMainWindow):
                         "Error in registering angr URL scheme",
                         "Failed to register the angr URL scheme.\n" "The following exception occurred:\n" + str(ex),
                     )
+
+    #
+    # Commands
+    #
+
+    def _register_commands(self):
+        """
+        Register basic window commands.
+        """
+        self.workspace.command_manager.register_commands(
+            [
+                BasicCommand(action.__name__, caption, action)
+                for caption, action in [
+                    ("Analyze: Decompile", self.decompile_current_function),
+                    ("Analyze: Interact", self.interact),
+                    ("Analyze: Run Analysis...", self.run_analysis),
+                    ("File: Exit", self.quit),
+                    ("File: Load a new binary...", self.open_file_button),
+                    ("File: Load a new docker target...", self.open_docker_button),
+                    ("File: Load a new trace...", self.load_trace),
+                    ("File: Load angr database...", self.load_database),
+                    ("File: Preferences...", self.preferences),
+                    ("File: Save angr database as...", self.save_database_as),
+                    ("File: Save angr database...", self.save_database),
+                    ("Help: About", self.open_about_dialog),
+                    ("Help: Documentation", self.open_doc_link),
+                    ("View: Breakpoints", self.workspace.show_breakpoints_view),
+                    ("View: Call Explorer", self.workspace.show_call_explorer_view),
+                    ("View: Console", self.workspace.show_console_view),
+                    ("View: Disassembly (Graph)", self.workspace.show_graph_disassembly_view),
+                    ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
+                    ("View: Functions", self.workspace.show_functions_view),
+                    ("View: Hex", self.workspace.show_hex_view),
+                    ("View: Interaction", self.workspace.show_interaction_view),
+                    ("View: Log", self.workspace.show_log_view),
+                    ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
+                    ("View: New Disassembly (Linear)", self.workspace.create_and_show_linear_disassembly_view),
+                    ("View: New Hex", self.workspace.create_and_show_hex_view),
+                    ("View: Patches", self.workspace.show_patches_view),
+                    ("View: Proximity", self.workspace.view_proximity_for_current_function),
+                    ("View: Pseudocode", self.workspace.show_pseudocode_view),
+                    ("View: Registers", self.workspace.show_registers_view),
+                    ("View: Stack", self.workspace.show_stack_view),
+                    ("View: States", self.workspace.show_states_view),
+                    ("View: Strings", self.workspace.show_strings_view),
+                    ("View: Symbolic Execution", self.workspace.show_symexec_view),
+                    ("View: Trace map", self.workspace.show_trace_map_view),
+                    ("View: Traces", self.workspace.show_traces_view),
+                    ("View: Types", self.workspace.show_types_view),
+                ]
+            ]
+        )
 
     #
     # Event
@@ -673,6 +753,13 @@ class MainWindow(QMainWindow):
 
     def interact(self):
         self.workspace.interact_program(self.workspace.main_instance.img_name)
+
+    def show_command_palette(self, parent=None):
+        dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))
+        dlg.setModal(True)
+        dlg.exec_()
+        if dlg.selected_command:
+            dlg.selected_command.run()
 
     #
     # Other public methods

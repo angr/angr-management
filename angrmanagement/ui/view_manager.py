@@ -74,6 +74,7 @@ class ViewManager:
 
         area = self.DOCKING_POSITIONS.get(view.default_docking_position, QtAds.RightDockWidgetArea)
         self.main_window.dock_manager.addDockWidgetTab(area, dw)
+        self.main_window.init_shortcuts_on_dock(dw)
 
         self.views.append(view)
         self.docks.append(dw)
