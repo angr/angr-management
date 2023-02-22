@@ -55,7 +55,7 @@ class LoadBinary(QDialog):
 
         if pypcode:
             for a in pypcode.Arch.enumerate():
-                self.available_archs.extend(a.languages)
+                self.available_archs.extend(sorted(a.languages, key=lambda lang: lang.id))
 
         # return values
         self.load_options = None
