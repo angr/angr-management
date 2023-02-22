@@ -12,6 +12,7 @@ from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
 from angrmanagement.data.instance import ObjectContainer
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
 from angrmanagement.ui.dialogs.dependson import DependsOn
 from angrmanagement.ui.dialogs.func_doc import FuncDocDialog
@@ -102,6 +103,33 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self._init_menus()
         self._register_events()
 
+    @classmethod
+    def register_commands(cls, workspace):
+        """
+        Register commands that can be run for this view.
+        """
+        workspace.command_manager.register_commands(
+            [
+                ViewCommand("disassembly_view_" + action.__name__, "Disassembly: " + caption, action, cls, workspace)
+                for caption, action in [
+                    ("Comment", cls.popup_comment_dialog),
+                    ("Jump Back", cls.jump_back),
+                    ("Jump Forward", cls.jump_forward),
+                    ("Jump To", cls.popup_jumpto_dialog),
+                    ("Toggle Addresses", cls.toggle_show_address),
+                    ("Toggle Exception Edges", cls.toggle_show_exception_edges),
+                    ("Toggle Graph/Linear view", cls.toggle_disasm_view),
+                    ("Toggle Minimap", cls.toggle_show_minimap),
+                    ("Toggle Smart Highlighting", cls.toggle_smart_highlighting),
+                    ("Toggle Variable Identifiers", cls.toggle_show_variable_identifier),
+                    ("Toggle Variables", cls.toggle_show_variable),
+                    ("View AIL", cls.set_disassembly_level_ail),
+                    ("View Lifter IR", cls.set_disassembly_level_lifter_ir),
+                    ("View Machine Code", cls.set_disassembly_level_machine_code),
+                ]
+            ]
+        )
+
     @property
     def disassembly_level(self):
         return self._disassembly_level
@@ -112,6 +140,15 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self._linear_viewer.set_disassembly_level(level)
         self.disassembly_level_changed.emit(level)
         self.redraw_current_graph()
+
+    def set_disassembly_level_ail(self):
+        self.set_disassembly_level(DisassemblyLevel.AIL)
+
+    def set_disassembly_level_lifter_ir(self):
+        self.set_disassembly_level(DisassemblyLevel.LifterIR)
+
+    def set_disassembly_level_machine_code(self):
+        self.set_disassembly_level(DisassemblyLevel.MachineCode)
 
     def reload(self):
         old_infodock = self.infodock.copy()
@@ -580,63 +617,53 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
             self.instance.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
 
-    def toggle_show_minimap(self, show: bool):
+    def toggle_show_minimap(self, show_minimap: Optional[bool] = None) -> None:
         """
         Toggle minimap display preference
         """
-        self._show_minimap = show
+        if show_minimap is None:
+            show_minimap = not self._show_minimap
+        self._show_minimap = show_minimap
         self.current_graph.refresh()
 
-    def toggle_smart_highlighting(self, enabled):
+    def toggle_smart_highlighting(self, enabled: Optional[bool] = None) -> None:
         """
         Toggle between the smart highlighting mode and the text-based highlighting mode.
-
-        :param bool enabled: Enable smart highlighting.
-        :return:             None
         """
-
+        if enabled is None:
+            enabled = not self.infodock.smart_highlighting
         self.infodock.smart_highlighting = enabled
-
         self._flow_graph.refresh()
         self._linear_viewer.refresh()
 
-    def toggle_show_address(self, show_address):
+    def toggle_show_address(self, show_address: Optional[bool] = None) -> None:
         """
         Toggle whether addresses are shown on disassembly graph.
-
-        :param bool show_address: Whether the address should be shown or not.
-        :return:                  None
         """
-
+        if show_address is None:
+            show_address = not self._show_address
         self._show_address = show_address
-
         self.current_graph.refresh()
 
-    def toggle_show_variable(self, show_variable):
+    def toggle_show_variable(self, show_variable: Optional[bool] = None) -> None:
         """
         Toggle whether variables are shown on disassembly graph.
-
-        :param bool show_variable: Whether the variable should be shown or not.
-        :return:                   None
         """
-
+        if show_variable is None:
+            show_variable = not self._show_variable
         self._show_variable = show_variable
-
         self.current_graph.refresh()
 
-    def toggle_show_variable_identifier(self, show_ident):
+    def toggle_show_variable_identifier(self, show_ident: Optional[bool] = None) -> None:
         """
         Toggle whether variable identifiers are shown on disassembly graph.
-
-        :param bool show_ident: Whether variable identifiers should be shown or not.
-        :return:                None
         """
-
+        if show_ident is None:
+            show_ident = not self._show_variable_ident
         self._show_variable_ident = show_ident
-
         self.current_graph.refresh()
 
-    def toggle_show_exception_edges(self, show_exception_edges):
+    def toggle_show_exception_edges(self, show_exception_edges: Optional[bool] = None) -> None:
         """
         Toggle whether exception edges and the nodes that are only reachable through exception edges should be shown
         or not.
