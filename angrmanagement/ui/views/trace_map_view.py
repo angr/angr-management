@@ -32,5 +32,6 @@ class TraceMapView(BaseView):
         """
         self.inner_widget = QTraceMap(self.instance, parent=self)
         lyt = QVBoxLayout()
+        lyt.setContentsMargins(0, 0, 0, 0)
         lyt.addWidget(self.inner_widget)
         self.setLayout(lyt)

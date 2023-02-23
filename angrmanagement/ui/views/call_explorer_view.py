@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
-from PySide6.QtWidgets import QHeaderView, QLabel, QTreeView, QTreeWidget, QVBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QTreeView, QTreeWidget, QVBoxLayout
 
 from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
@@ -84,9 +84,14 @@ class CallExplorerView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
+        vlayout.setSpacing(0)
+        vlayout.setContentsMargins(0, 0, 0, 0)
         self._top_level_function_level = QLabel()
         self._reset_function_label()
-        vlayout.addWidget(self._top_level_function_level)
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(self._top_level_function_level)
+        hlayout.setContentsMargins(3, 3, 3, 3)
+        vlayout.addLayout(hlayout)
         self._tree = QTreeView(self)
         self._model = CallTreeModel(self._tree)
         self._tree.setModel(self._model)
