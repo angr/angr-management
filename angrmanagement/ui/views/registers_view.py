@@ -126,7 +126,6 @@ class QRegisterTableWidget(QTableView):
         dbg = self._dbg_manager.debugger
         self.model.update_state(None if dbg.am_none else dbg.simstate)
         self.model.layoutChanged.emit()
-        self.update()
 
 
 class RegistersView(BaseView):
