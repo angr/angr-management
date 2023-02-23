@@ -116,6 +116,8 @@ class ViewManager:
         dock = self.view_to_dock.pop(view, None)
         if dock:
             dock.closeDockWidget()
+        if view is self.most_recently_focused_view:
+            self.most_recently_focused_view = None
 
     def raise_view(self, view: "BaseView"):
         """
