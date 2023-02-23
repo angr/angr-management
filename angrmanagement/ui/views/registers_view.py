@@ -154,6 +154,7 @@ class RegistersView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
+        vlayout.setContentsMargins(0, 0, 0, 0)
         self._tbl_widget = QRegisterTableWidget(self)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)
