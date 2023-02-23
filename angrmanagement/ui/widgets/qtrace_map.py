@@ -350,9 +350,11 @@ class QTraceMapView(QGraphicsView):
         Handle wheel events to scale and translate the trace map.
         """
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1 / 1.25, QPoint(event.x(), event.y()))
+            self.adjust_viewport_scale(
+                1.25 if event.angleDelta().y() > 0 else 1 / 1.25, QPoint(event.position().x(), event.position().y())
+            )
         else:
-            self.translate(100 * (-1 if event.delta() < 0 else 1), 0)
+            self.translate(100 * (-1 if event.angleDelta().y() < 0 else 1), 0)
             super().wheelEvent(event)
 
     def resizeEvent(self, event):  # pylint: disable=unused-argument
