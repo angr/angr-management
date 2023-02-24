@@ -51,7 +51,7 @@ class LoadBinary(QDialog):
         self.option_widgets = {}
         self.is_blob = isinstance(partial_ld.main_object, Blob)
         self.arch = partial_ld.main_object.arch
-        self.available_archs = archinfo.all_arches[::]
+        self.available_archs = list(archinfo.all_arches())
 
         if pypcode:
             for a in pypcode.Arch.enumerate():
