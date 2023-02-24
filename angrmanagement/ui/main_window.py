@@ -162,7 +162,7 @@ class MainWindow(QMainWindow):
             self,
             "Open a binary",
             Conf.last_used_directory,
-            "All executables (*);;" "Windows PE files (*.exe);;" "Core Dumps (*.core);;" "angr database (*.adb)",
+            "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
         )
         Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
@@ -428,7 +428,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(
                         None,
                         "Error in registering angr URL scheme",
-                        "Failed to register the angr URL scheme.\n" "The following exception occurred:\n" + str(ex),
+                        "Failed to register the angr URL scheme.\nThe following exception occurred:\n" + str(ex),
                     )
 
     #
@@ -556,7 +556,7 @@ class MainWindow(QMainWindow):
             self,
             "Open a trace file",
             Conf.last_used_directory,
-            "All files (*);;" "Trace files (*.trace);;",
+            "All files (*);;Trace files (*.trace);;",
         )
         Conf.last_used_directory = os.path.dirname(file_path)
         if not file_path:
@@ -588,7 +588,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 "Unsupported Action",
-                "Downloading trace files is not yet supported." "Please specify a path to a file on disk.",
+                "Downloading trace files is not yet supported. Please specify a path to a file on disk.",
             )
         else:
             # File
@@ -612,7 +612,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(
                     self,
                     "File not found",
-                    f"angr management cannot open file {file_path}. " "Please make sure that the file exists.",
+                    f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
 
     def load_file(self, file_path):
@@ -634,7 +634,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(
                     self,
                     "File not found",
-                    f"angr management cannot open file {file_path}. " "Please make sure that the file exists.",
+                    f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
         else:
             # url

@@ -421,7 +421,7 @@ class Workspace:
 
         if load_options is None:
             QMessageBox.warning(
-                None, "Error", "Failed to determine load options for binary from trace. " "Please select binary."
+                None, "Error", "Failed to determine load options for binary from trace. Please select binary."
             )
             load_options = {}
         else:
@@ -431,7 +431,7 @@ class Workspace:
                 QMessageBox.warning(
                     None,
                     "Unable to find target binary!",
-                    f"Unable to find the traced binary at: \n\n{thing}\n\n" "Please select target binary.",
+                    f"Unable to find the traced binary at: \n\n{thing}\n\nPlease select target binary.",
                 )
                 thing = None
 
