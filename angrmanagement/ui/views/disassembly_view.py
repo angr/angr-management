@@ -77,16 +77,14 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self._linear_viewer: Optional[QLinearDisassembly] = None
         self._flow_graph: Optional[QDisassemblyGraph] = None
         self._prefer_graph = True
+        self._current_view: Union[QLinearDisassembly, QDisassemblyGraph, None] = None
+
         self._statusbar = None
         self.jump_history: JumpHistory = JumpHistory()
         self.infodock = InfoDock(self)
         self._variable_recovery_flavor = "fast"
         self.variable_manager: Optional[VariableManager] = None
         self._current_function = ObjectContainer(None, "The currently selected function")
-
-        # For tests only
-        self._t_linear_viewer_visible: bool = False
-        self._t_flow_graph_visible: bool = False
 
         self._insn_menu: Optional[DisasmInsnContextMenu] = None
         self._label_menu: Optional[DisasmLabelContextMenu] = None
@@ -156,10 +154,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.initialize()
 
         # Reload the current graph to make sure it gets the latest information, such as variables.
-        self.current_graph.reload(old_infodock=old_infodock)
+        self._current_view.reload(old_infodock=old_infodock)
 
     def refresh(self):
-        self.current_graph.refresh()
+        self._current_view.refresh()
 
     def save_image_to(self, path):
         if self._flow_graph is not None:
@@ -222,10 +220,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
         :return:    Linear viewer or flow graph.
         """
-        if self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
-            return self._linear_viewer
-        else:
-            return self._flow_graph
+        return self._current_view
 
     @property
     def current_function(self) -> ObjectContainer:
@@ -322,10 +317,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
         :return:    None
         """
-        self.current_graph.redraw()
+        self._current_view.redraw()
 
     def on_screen_changed(self):
-        self.current_graph.refresh()
+        self._current_view.refresh()
 
     #
     # UI
@@ -378,7 +373,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             dlg.exec_()
             if dlg.result is not None:
                 obj.obj.name = dlg.result
-                self.current_graph.refresh()
+                self._current_view.refresh()
 
     def get_context_menu_for_selected_object(self) -> Optional[QMenu]:
         """
@@ -570,6 +565,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             self._prefer_graph = True
 
         self._linear_viewer.hide()
+        self._current_view = self._flow_graph
         self._flow_graph.show()
 
         if self.infodock.selected_insns:
@@ -587,6 +583,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             self._prefer_graph = False
 
         self._flow_graph.hide()
+        self._current_view = self._linear_viewer
         self._linear_viewer.show()
 
         if self.infodock.selected_insns:
@@ -624,7 +621,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if show_minimap is None:
             show_minimap = not self._show_minimap
         self._show_minimap = show_minimap
-        self.current_graph.refresh()
+        self._current_view.refresh()
 
     def toggle_smart_highlighting(self, enabled: Optional[bool] = None) -> None:
         """
@@ -643,7 +640,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if show_address is None:
             show_address = not self._show_address
         self._show_address = show_address
-        self.current_graph.refresh()
+        self._current_view.refresh()
 
     def toggle_show_variable(self, show_variable: Optional[bool] = None) -> None:
         """
@@ -652,7 +649,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if show_variable is None:
             show_variable = not self._show_variable
         self._show_variable = show_variable
-        self.current_graph.refresh()
+        self._current_view.refresh()
 
     def toggle_show_variable_identifier(self, show_ident: Optional[bool] = None) -> None:
         """
@@ -661,7 +658,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if show_ident is None:
             show_ident = not self._show_variable_ident
         self._show_variable_ident = show_ident
-        self.current_graph.refresh()
+        self._current_view.refresh()
 
     def toggle_show_exception_edges(self, show_exception_edges: Optional[bool] = None) -> None:
         """
@@ -816,7 +813,6 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.setLayout(hlayout)
 
         self.display_disasm_graph()
-        # self.display_linear_viewer()
 
         self.instance.workspace.plugins.instrument_disassembly_view(self)
 
@@ -877,7 +873,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         # clear existing selected instructions and operands
         self.infodock.clear_selection()
 
-        if self._flow_graph.isVisible() or self._t_flow_graph_visible:
+        if self._current_view is self._flow_graph:
             if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
                 # set function graph of a new function
                 self._flow_graph.function_graph = FunctionGraph(
@@ -885,7 +881,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
                     exception_edges=self.show_exception_edges,
                 )
 
-        elif self._linear_viewer.isVisible() or self._t_linear_viewer_visible:
+        elif self._current_view is self._linear_viewer:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
         view = self.instance.workspace.view_manager.first_view_in_category("console")
@@ -898,10 +894,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             )
 
     def _jump_to(self, addr, use_animation=False):
-        if self._prefer_graph and self.current_graph is self._linear_viewer:
+        if self._prefer_graph and self._current_view is self._linear_viewer:
             self.display_disasm_graph(prefer=False)
 
-        if self.current_graph is not self._linear_viewer:
+        if self._current_view is not self._linear_viewer:
             function = locate_function(self.instance, addr)
             if function is not None:
                 self._display_function(function)
