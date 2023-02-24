@@ -33,7 +33,7 @@ class TestRenameVariables(unittest.TestCase):
 
         # decompile the function
         disasm_view = self.main.workspace._get_or_create_disassembly_view()
-        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_disasm_graph()
         gui_thread_schedule(disasm_view.display_function, args=(self.func,))
         disasm_view.decompile_current_function()
         self.main.workspace.main_instance.join_all_jobs()

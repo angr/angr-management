@@ -51,7 +51,7 @@ class TestHumanActivities(unittest.TestCase):
 
         # decompile the function
         disasm_view = main.workspace._get_or_create_disassembly_view()
-        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
         main.workspace.main_instance.join_all_jobs()
@@ -107,7 +107,7 @@ class TestHumanActivities(unittest.TestCase):
 
         # decompile the function
         disasm_view = main.workspace._get_or_create_disassembly_view()
-        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
         main.workspace.main_instance.join_all_jobs()
@@ -152,7 +152,7 @@ class TestHumanActivities(unittest.TestCase):
 
         # display function main
         disasm_view = main_window.workspace._get_or_create_disassembly_view()
-        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
 
         # get and click the first bbl of function main
@@ -183,7 +183,7 @@ class TestHumanActivities(unittest.TestCase):
 
         # display function main
         disasm_view = main_window.workspace._get_or_create_disassembly_view()
-        disasm_view._t_flow_graph_visible = True
+        disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
 
         # get and click the first bbl of function main
