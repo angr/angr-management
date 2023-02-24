@@ -494,6 +494,7 @@ class QFunctionTable(QWidget):
 
         status_lyt = QHBoxLayout()
         status_lyt.setContentsMargins(3, 3, 3, 3)
+        status_lyt.setSpacing(3)
         status_lyt.addWidget(self._toolbar.qtoolbar())
         status_lyt.addStretch(0)
         status_lyt.addWidget(self._status_label)

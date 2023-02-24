@@ -1548,6 +1548,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         status_bar = QFrame()
         status_lyt = QHBoxLayout()
         status_lyt.setContentsMargins(3, 3, 3, 3)
+        status_lyt.setSpacing(3)
 
         self._status_lbl = QLabel()
         self._status_lbl.setText("Address: ")
