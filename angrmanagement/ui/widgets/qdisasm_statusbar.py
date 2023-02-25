@@ -89,6 +89,7 @@ class QDisasmStatusBar(QFrame):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(3, 3, 3, 3)
+        layout.setSpacing(3)
 
         layout.addWidget(self._nav_toolbar.qtoolbar())
         layout.addWidget(self._function_label)

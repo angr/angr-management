@@ -452,6 +452,7 @@ class CodeView(BaseView):
         status_layout.addStretch(0)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(3, 3, 3, 3)
+        status_layout.setSpacing(3)
         status_bar.setLayout(status_layout)
 
         inner_layout = QHBoxLayout()
