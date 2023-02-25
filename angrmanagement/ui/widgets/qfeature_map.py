@@ -470,29 +470,43 @@ class FeatureMapItem(QGraphicsItem):
     def _create_cursor_items(self, **_):
         self._remove_cursor_items()
 
+        line_width = 3
+        half_line_width = line_width / 2
+        line_height = self._height // 2
+        head_width = 4
+        half_head_width = head_width / 2
+        head_height = 4
+        half_width = half_line_width + half_head_width
+
+        #   6 0
+        #   | |
+        # 4-5 1-2
+        #  -   -
+        #    3
+        arrow = QPolygonF()
+        arrow.append(QPointF(0 + half_line_width, 0))
+        arrow.append(QPointF(0 + half_line_width, line_height))
+        arrow.append(QPointF(0 + half_line_width + half_head_width, line_height))
+        arrow.append(QPointF(0, line_height + head_height))
+        arrow.append(QPointF(0 - half_line_width - half_head_width, line_height))
+        arrow.append(QPointF(0 - half_line_width, line_height))
+        arrow.append(QPointF(0 - half_line_width, 0))
+        arrow.translate(half_width, 0)
+
+        pen = Qt.NoPen
+        brush = QBrush(Qt.GlobalColor.yellow)
+
         for addr in self._cursor_addrs:
             pos = self._get_position_at_addr(addr)
             if pos is None:
                 continue
-            pos -= 1  # this is the top-left x coordinate of our arrow body (the rectangle)
 
-            pen = QPen(Qt.GlobalColor.yellow)
-            brush = QBrush(Qt.GlobalColor.yellow)
-            item = QGraphicsRectItem(QRectF(pos, 0, 2, 10), parent=self)
+            item = QGraphicsPolygonItem(arrow, parent=self)
+            item.setCacheMode(QGraphicsItem.ItemCoordinateCache)
             item.setPen(pen)
             item.setBrush(brush)
             item.setZValue(self.ZVALUE_CURSOR)
-            self._cursor_items.append(item)
-
-            triangle = QPolygonF()
-            triangle.append(QPointF(pos - 1, 10))
-            triangle.append(QPointF(pos + 3, 10))
-            triangle.append(QPointF(pos + 1, 12))
-            triangle.append(QPointF(pos - 1, 10))
-            item = QGraphicsPolygonItem(triangle, parent=self)
-            item.setPen(pen)
-            item.setBrush(brush)
-            item.setZValue(self.ZVALUE_CURSOR)
+            item.setX(pos - half_width)
             self._cursor_items.append(item)
 
     def _remove_cursor_items(self):
