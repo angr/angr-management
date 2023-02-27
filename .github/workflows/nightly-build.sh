@@ -10,7 +10,7 @@ fi
 
 # Install dependencies
 
-python -m pip install -U pip wheel setuptools pyinstaller==5.8 unicorn==2.0.1.post1
+python -m pip install -U pip wheel setuptools pyinstaller==5.6.2 unicorn==2.0.1.post1
 if [[ "$OSTYPE" == "darwin"* ]]; then
     pip install pillow # icon conversion on macOS
 fi
