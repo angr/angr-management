@@ -79,9 +79,6 @@ class CFGGenerationJob(Job):
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return
         self._last_progress_callback_triggered = t
-
-        text = "%.02f%%" % percentage
-
         super()._progress_callback(percentage, text=text)
 
         if cfg is not None:
