@@ -99,11 +99,7 @@ class VariableRecoveryJob(Job):
             return
         self._last_progress_callback_triggered = t
 
-        progress_text = "%.02f%%" % percentage
-        if text:
-            progress_text += " | " + text
-
-        super()._progress_callback(percentage, text=progress_text)
+        super()._progress_callback(percentage, text=text)
 
     def finish(self, inst, result):
         self.ccc = None  # essentially disabling self.prioritize_function()
