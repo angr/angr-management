@@ -193,7 +193,7 @@ class FeatureMapItem(QGraphicsItem):
         if "object_added" in kwargs:  # Called by task thread
             addr, item = kwargs["object_added"]
             tags = _get_tags_for_item(item)
-            if tags is None:
+            if tags is None or item.size is None:
                 return
             with self._cfb_feature_maps_lock:
                 for fm in self._cfb_feature_maps:
