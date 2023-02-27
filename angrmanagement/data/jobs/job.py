@@ -94,10 +94,9 @@ class Job:
             gui_thread_schedule_async(self._set_progress, args=(text,))
 
     def _set_progress(self, text=None):
+        status = self.name
         if text:
-            status = f"{self.name}: {text} - {self.time_elapsed}"
-        else:
-            status = f"{self.name} - {self.time_elapsed}"
+            status += ": " + text
         GlobalInfo.main_window.progress(status, self.progress_percentage)
 
     def _finish_progress(self):
