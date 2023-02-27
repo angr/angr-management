@@ -14,9 +14,7 @@ class CodeTaggingJob(Job):
             func.tags = tuple(ct.tags)
 
             percentage = i / func_count * 100
-            text = "%.02f%%" % percentage
-
-            super()._progress_callback(percentage, text=text)
+            super()._progress_callback(percentage)
 
     def finish(self, inst, result):
         super().finish(inst, result)
