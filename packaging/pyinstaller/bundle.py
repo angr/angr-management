@@ -113,6 +113,7 @@ def make_common_options(for_chess=False):
         "--hidden-import=xmlrpc.server",
         "--hidden-import=PySide6.support.deprecated",
         "--hidden-import=charset_normalizer.md__mypyc",
+        "--hidden-import=debugpy._vendored",
     ]
     if for_chess:
         hidden_import.append("--hidden-import=slacrs")
