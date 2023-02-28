@@ -385,7 +385,7 @@ class Instance:
                 gui_thread_schedule(self.workspace.main_window._progress_dialog.hide, args=())
 
             job = self._jobs_queue.get()
-            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0))
+            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
 
             if any(job.blocking for job in self.jobs):
                 if self.workspace.main_window.isVisible():
