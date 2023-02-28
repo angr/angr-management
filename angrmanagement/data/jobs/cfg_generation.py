@@ -10,6 +10,10 @@ _l = logging.getLogger(name=__name__)
 
 
 class CFGGenerationJob(Job):
+    """
+    Job for generating the Control Flow Graph.
+    """
+
     DEFAULT_CFG_ARGS = {
         "normalize": True,  # this is what people naturally expect
     }
@@ -34,6 +38,7 @@ class CFGGenerationJob(Job):
 
         self._cfb = None
         self._last_progress_callback_triggered = None
+        self.instance = None
 
     def _run(self, inst):
         self.instance = inst
@@ -64,7 +69,7 @@ class CFGGenerationJob(Job):
             inst.cfb.am_event()
             inst.cfg.am_event()
             super().finish(inst, result)
-        except Exception:
+        except Exception:  # pylint:disable=broad-exception-caught
             _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)
 
     def __repr__(self):
