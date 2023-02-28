@@ -2,6 +2,10 @@ from .job import Job
 
 
 class CodeTaggingJob(Job):
+    """
+    Job for tagging functions.
+    """
+
     def __init__(self, on_finish=None):
         super().__init__(name="Code tagging", on_finish=on_finish)
 
@@ -15,9 +19,6 @@ class CodeTaggingJob(Job):
 
             percentage = i / func_count * 100
             super()._progress_callback(percentage)
-
-    def finish(self, inst, result):
-        super().finish(inst, result)
 
     def __repr__(self):
         return "CodeTaggingJob"
