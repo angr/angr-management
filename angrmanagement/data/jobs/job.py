@@ -56,7 +56,7 @@ class Job:
                 m.check()
                 poststate = dict(m.modules_mtimes)
                 if prestate != poststate:
-                    log.warning("Autoreload found changed modules")
+                    log.warning("Auto-reload found changed modules")
 
     @property
     def time_elapsed(self) -> str:
