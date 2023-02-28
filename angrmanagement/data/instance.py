@@ -398,6 +398,7 @@ class Instance:
             except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
                 sys.last_traceback = e.__traceback__
                 self.current_job = None
+                _l.exception('Exception while running job "%s":', job.name)
                 self.workspace.log('Exception while running job "%s":' % job.name)
                 self.workspace.log(e)
                 self.workspace.log("Type %debug to debug it")
