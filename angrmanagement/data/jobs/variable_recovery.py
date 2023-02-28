@@ -84,7 +84,7 @@ class VariableRecoveryJob(Job):
             max_function_size=4096,
             workers=0 if self.workers is None else self.workers,
             prioritize_func_addrs=func_addrs_to_prioritize,
-            skip_other_funcs=False if self.func_addr is None else True,
+            skip_other_funcs=self.func_addr is not None,
             auto_start=self.auto_start,
             **self.variable_recovery_args,
         )
