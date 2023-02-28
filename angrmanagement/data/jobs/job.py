@@ -12,6 +12,7 @@ m = ...
 
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 
 def _load_autoreload():
@@ -62,8 +63,14 @@ class Job:
         return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
 
     def run(self, inst):
+        log.info('Job "%s" started', self.name)
+        self._progress_callback(0)
         self.start_at = time.time()
-        return self._run(inst)
+        r = self._run(inst)
+        now = time.time()
+        duration = now - self.start_at
+        log.info('Job "%s" completed after %.2f seconds', self.name, duration)
+        return r
 
     def _run(self, inst):
         raise NotImplementedError()
