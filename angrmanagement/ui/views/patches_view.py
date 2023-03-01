@@ -6,6 +6,10 @@ from .view import BaseView
 
 
 class PatchesView(BaseView):
+    """
+    View showing all patches.
+    """
+
     def __init__(self, instance, default_docking_position, *args, **kwargs):
         super().__init__("patches", instance, default_docking_position, *args, **kwargs)
 
