@@ -59,6 +59,14 @@ class QInstruction(QCachedGraphicsItem):
     def contextMenuEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneContextMenuEvent") -> None:
         pass
 
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
+        self.infodock.unselect_all_instructions()
+        self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
+        self.disasm_view._insn_addr_on_context_menu = self.addr
+        self.disasm_view._insn_menu.insn_addr = self.addr
+        self.disasm_view.popup_patch_dialog()
+        event.accept()
+
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if self.instance.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
@@ -92,6 +100,11 @@ class QInstruction(QCachedGraphicsItem):
 
         if self.selected:
             return self._config.disasm_view_node_instruction_selected_background_color
+
+        if not self.instance.patches.am_none:
+            patches = self.instance.patches.get_all_patches(self.insn.addr, self.insn.size)
+            if len(patches):
+                return Qt.darkYellow
 
         return None  # None here means transparent, reusing the block color
 
