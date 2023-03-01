@@ -495,6 +495,7 @@ class MainWindow(QMainWindow):
                     ("File: Preferences...", self.preferences),
                     ("File: Save angr database as...", self.save_database_as),
                     ("File: Save angr database...", self.save_database),
+                    ("File: Save patched binary as...", self.save_patched_binary_as),
                     ("Help: About", self.open_about_dialog),
                     ("Help: Documentation", self.open_doc_link),
                     ("View: Breakpoints", self.workspace.show_breakpoints_view),
