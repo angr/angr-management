@@ -14,6 +14,7 @@ from angrmanagement.data.instance import ObjectContainer
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
+from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
 from angrmanagement.ui.dialogs.dependson import DependsOn
 from angrmanagement.ui.dialogs.func_doc import FuncDocDialog
 from angrmanagement.ui.dialogs.hook import HookDialog
@@ -547,6 +548,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             dialog.show()
         else:
             dialog.exec_()
+
+    def popup_patch_dialog(self):
+        dlg = AssemblePatchDialog(self._insn_addr_on_context_menu, self.instance)
+        dlg.exec_()
 
     #
     # Public methods
