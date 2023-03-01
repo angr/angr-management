@@ -756,6 +756,9 @@ class MainWindow(QMainWindow):
         return self._save_database(file_path)
 
     def save_patched_binary_as(self):
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
+            return
+
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save patched binary as...",
