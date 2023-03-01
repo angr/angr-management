@@ -38,6 +38,7 @@ class FileMenu(Menu):
         self._save_entries = [
             MenuEntry("&Save angr database...", main_window.save_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_S)),
             MenuEntry("S&ave angr database as...", main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
+            MenuEntry("Save patched binary as...", main_window.save_patched_binary_as),
         ]
         self._edit_save()
         self._project.am_subscribe(self._edit_save)

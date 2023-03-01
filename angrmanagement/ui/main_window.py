@@ -755,6 +755,20 @@ class MainWindow(QMainWindow):
 
         return self._save_database(file_path)
 
+    def save_patched_binary_as(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save patched binary as...",
+            self.workspace.main_instance.project.loader.main_object.binary
+            + ".patched",  # FIXME: this will not work if we are loading from an angrdb
+            "Any file (*)",
+        )
+
+        if file_path:
+            b = self.workspace.main_instance.project.kb.patches.apply_patches_to_binary()
+            with open(file_path, "wb") as f:
+                f.write(b)
+
     def load_trace(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Load trace", ".", "bintrace (*.trace)")
         if not file_path:
