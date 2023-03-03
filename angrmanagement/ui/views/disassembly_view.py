@@ -75,8 +75,6 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         # whether we want to show exception edges and all nodes that are only reachable through exception edges
         self._show_exception_edges = True
 
-        self._linear_viewer: Optional[QLinearDisassembly] = None
-        self._flow_graph: Optional[QDisassemblyGraph] = None
         self._prefer_graph = True
         self._current_view: Union[QLinearDisassembly, QDisassemblyGraph, None] = None
 
@@ -322,6 +320,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
     def on_screen_changed(self):
         self._current_view.refresh()
+
+    def _on_cfb_event(self, **kwargs):
+        if not kwargs:
+            self._linear_viewer.reload()
 
     #
     # UI
@@ -837,6 +839,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
         self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
+        self.instance.cfb.am_subscribe(self._on_cfb_event)
 
     def _on_breakpoints_updated(self, **kwargs):  # pylint:disable=unused-argument
         self.refresh()
@@ -852,6 +855,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.qblock_code_obj_selection_changed.disconnect(self.redraw_current_graph)
         self.instance.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
+        self.instance.cfb.am_unsubscribe(self._on_cfb_event)
 
     def closeEvent(self, event):
         self._unregister_events()
