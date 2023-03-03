@@ -492,14 +492,6 @@ class Instance:
             if the_func is not None:
                 self.on_function_selected(the_func)
 
-            # Initialize the linear viewer
-            if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
-                view = self.workspace.view_manager.first_view_in_category("disassembly")
-            else:
-                view = self.workspace.view_manager.current_view_in_category("disassembly")
-            if view is not None:
-                view._linear_viewer.initialize()
-
             # Reload the pseudocode view
             view = self.workspace.view_manager.first_view_in_category("pseudocode")
             if view is not None:

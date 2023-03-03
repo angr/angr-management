@@ -94,6 +94,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
         self._init_widgets()
+        self.initialize()
 
     def reload(self, old_infodock: Optional["InfoDock"] = None):
         curr_offset = self._offset
