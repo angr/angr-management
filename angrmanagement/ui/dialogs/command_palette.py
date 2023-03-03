@@ -1,34 +1,37 @@
 import difflib
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from PySide6.QtCore import QAbstractItemModel, QModelIndex, QSize, Qt
-from PySide6.QtGui import QBrush, QTextDocument
+from PySide6.QtCore import QAbstractItemModel, QMargins, QModelIndex, QRectF, QSize, Qt
+from PySide6.QtGui import QBrush, QColor, QTextDocument
 from PySide6.QtWidgets import QDialog, QLineEdit, QListView, QStyle, QStyledItemDelegate, QVBoxLayout
 from thefuzz import process
 
+from angrmanagement.config import Conf
+
 if TYPE_CHECKING:
+    from angr.knowledge_plugins.functions import Function
+
     from angrmanagement.logic.commands import Command
     from angrmanagement.ui.workspace import Workspace
 
 
-class CommandPaletteModel(QAbstractItemModel):
+class PaletteModel(QAbstractItemModel):
     """
-    Data provider for command palette.
+    Data provider for item palette.
     """
 
     def __init__(self, workspace: "Workspace"):
         super().__init__()
         self.workspace: "Workspace" = workspace
-        self._available_commands: List["Command"] = sorted(
-            [cmd for cmd in self.workspace.command_manager.get_commands() if cmd.is_visible],
-            key=lambda cmd: cmd.caption,
-        )
-        self._command_to_caption: Dict["Command", str] = {c: c.caption for c in self._available_commands}
-        self._filtered_commands: List["Command"] = self._available_commands
+        self._available_items: List[Any] = self.get_items()
+        self._item_to_caption: Dict[Any, str] = {
+            item: self.get_caption_for_item(item) for item in self._available_items
+        }
+        self._filtered_items: List[Any] = self._available_items
         self._filter_text: str = ""
 
     def rowCount(self, _):
-        return len(self._filtered_commands)
+        return len(self._filtered_items)
 
     def columnCount(self, _):  # pylint:disable=no-self-use
         return 1
@@ -43,34 +46,107 @@ class CommandPaletteModel(QAbstractItemModel):
         if not index.isValid() or role != Qt.DisplayRole:
             return None
         row = index.row()
-        return self._filtered_commands[row]
+        return self._filtered_items[row]
 
-    def set_filter_text(self, query: str):
+    def set_filter_text(self, query: str) -> None:
         """
-        Filter the list of available commands by captions matching `query`.
+        Filter the list of available items by captions matching `query`.
         """
         self.beginResetModel()
         self._filter_text = query
         if query == "":
-            self._filtered_commands = self._available_commands
+            self._filtered_items = self._available_items
         else:
-            self._filtered_commands = [
-                command for _, _, command in process.extract(query, self._command_to_caption, limit=50)
-            ]
+            self._filtered_items = [item for _, _, item in process.extract(query, self._item_to_caption, limit=50)]
         self.endResetModel()
 
+    def get_items(self) -> List[Any]:  # pylint:disable=no-self-use
+        return []
 
-class CommandPaletteItemDelegate(QStyledItemDelegate):
-    """
-    Delegate to draw individual command entries in the palette.
+    def get_caption_for_item(self, item: Any) -> str:  # pylint:disable=no-self-use,unused-argument
+        return ""
 
-    Query sub-sequence matches against command names are shown in bold.
+    def get_subcaption_for_item(self, item: Any) -> Optional[str]:  # pylint:disable=no-self-use,unused-argument
+        return None
+
+    def get_annotation_for_item(self, item: Any) -> Optional[str]:  # pylint:disable=no-self-use,unused-argument
+        return None
+
+    # pylint:disable=no-self-use,unused-argument
+    def get_icon_color_and_text_for_item(self, item: Any) -> Tuple[Optional[QColor], str]:
+        return (None, "")
+
+
+class CommandPaletteModel(PaletteModel):
     """
+    Data provider for command palette.
+    """
+
+    def get_items(self) -> List["Command"]:
+        return list(
+            sorted(
+                [cmd for cmd in self.workspace.command_manager.get_commands() if cmd.is_visible],
+                key=lambda cmd: cmd.caption,
+            )
+        )
+
+    def get_caption_for_item(self, item: "Command") -> str:
+        return item.caption
+
+
+class GotoPaletteModel(PaletteModel):
+    """
+    Data provider for goto palette.
+    """
+
+    def get_items(self) -> List["Function"]:
+        items = []
+
+        instance = self.workspace.main_instance
+        if instance and not instance.project.am_none:
+            project = instance.project.am_obj
+            items.extend([func for _, func in project.kb.functions.items()])
+
+        return items
+
+    def get_icon_color_and_text_for_item(self, item: "Function") -> Tuple[Optional[QColor], str]:
+        if item.is_syscall:
+            color = Conf.function_table_syscall_color
+        elif item.is_plt:
+            color = Conf.function_table_plt_color
+        elif item.is_simprocedure:
+            color = Conf.function_table_simprocedure_color
+        elif item.alignment:
+            color = Conf.function_table_alignment_color
+        else:
+            color = Qt.gray
+        return (color, "f")
+
+    def get_caption_for_item(self, item: "Function") -> str:
+        return item.name
+
+    def get_annotation_for_item(self, item: "Function") -> str:
+        return f"{item.addr:x}"
+
+
+class PaletteItemDelegate(QStyledItemDelegate):
+    """
+    Delegate to draw individual palette entries.
+
+    Query sub-sequence matches against item captions are shown in bold.
+    """
+
+    icon_width = 25
+
+    def __init__(self, display_icons: bool = True):
+        super().__init__()
+        self._display_icons = display_icons
 
     @staticmethod
     def _get_text_document(index):
-        model: CommandPaletteModel = index.model()
-        text_in = index.data().caption
+        model: PaletteModel = index.model()
+        item = index.data()
+        text_in = model.get_caption_for_item(item)
 
         if not model._filter_text:
             text_out = text_in
@@ -84,6 +160,10 @@ class CommandPaletteItemDelegate(QStyledItemDelegate):
                 last_idx = idx + size
             text_out += text_in[last_idx:]
 
+        subcaption = model.get_subcaption_for_item(item)
+        if subcaption:
+            text_out += "<br/><sub>" + subcaption + "</sub>"
+
         td = QTextDocument()
         td.setHtml(text_out)
         return td
@@ -94,10 +174,31 @@ class CommandPaletteItemDelegate(QStyledItemDelegate):
                 b = QBrush(option.palette.highlight())
                 painter.fillRect(option.rect, b)
 
+            model: PaletteModel = index.model()
+            item = index.data()
+
             td = self._get_text_document(index)
             td.setDefaultFont(option.font)
+
+            annotation_text = model.get_annotation_for_item(item)
+            if annotation_text:
+                painter.drawText(
+                    option.rect.marginsRemoved(QMargins(3, 3, 3, 3)), Qt.AlignRight | Qt.AlignVCenter, annotation_text
+                )
+
             painter.save()
             painter.translate(option.rect.topLeft())
+
+            if self._display_icons:
+                icon_rect = QRectF(0, 0, self.icon_width, td.size().height())
+                icon_color, icon_text = model.get_icon_color_and_text_for_item(item)
+                if icon_color:
+                    painter.fillRect(icon_rect, QBrush(QColor(icon_color)))
+                if icon_text:
+                    painter.setPen(Qt.white)
+                    painter.drawText(icon_rect, Qt.AlignCenter, icon_text)
+                painter.translate(self.icon_width, 0)
+
             td.drawContents(painter)
             painter.restore()
         else:
@@ -108,22 +209,26 @@ class CommandPaletteItemDelegate(QStyledItemDelegate):
             td = self._get_text_document(index)
             td.setDefaultFont(option.font)
             s = td.size()
-            return QSize(s.width(), s.height())
+            width = s.width()
+            if self._display_icons:
+                width += self.icon_width
+            return QSize(width, s.height())
         return super().sizeHint(option, index)
 
 
-class CommandPaletteDialog(QDialog):
+class PaletteDialog(QDialog):
     """
-    Dialog for selecting commands.
+    Dialog for selecting an item from a palette.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, model, delegate=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Command Palette")
-        self._model = CommandPaletteModel(workspace)
-        self._delegate = CommandPaletteItemDelegate()
+        self.setWindowTitle("Palette")
+        self._model = model
+        self._delegate = delegate or PaletteItemDelegate()
         self._init_widgets()
-        self.selected_command = None
+
+        self.selected_item = None
 
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(500, 400)
@@ -172,5 +277,25 @@ class CommandPaletteDialog(QDialog):
             super().keyPressEvent(event)
 
     def accept(self):
-        self.selected_command = self._get_selected()
+        self.selected_item = self._get_selected()
         super().accept()
+
+
+class CommandPaletteDialog(PaletteDialog):
+    """
+    Dialog for selecting commands.
+    """
+
+    def __init__(self, workspace, parent=None):
+        super().__init__(CommandPaletteModel(workspace), PaletteItemDelegate(display_icons=False), parent)
+        self.setWindowTitle("Command Palette")
+
+
+class GotoPaletteDialog(PaletteDialog):
+    """
+    Dialog for selecting navigation targets.
+    """
+
+    def __init__(self, workspace, parent=None):
+        super().__init__(GotoPaletteModel(workspace), parent=parent)
+        self.setWindowTitle("Goto Anything")
