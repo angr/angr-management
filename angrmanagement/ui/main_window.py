@@ -14,7 +14,7 @@ import PySide6QtAds as QtAds
 import qtawesome as qta
 from angr.angrdb import AngrDB
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut
+from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -40,7 +40,7 @@ from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
 from .dialogs.about import LoadAboutDialog
-from .dialogs.command_palette import CommandPaletteDialog
+from .dialogs.command_palette import CommandPaletteDialog, GotoPaletteDialog
 from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
@@ -74,15 +74,61 @@ class DockShortcutEventFilter(QObject):
     Filter to support shortcuts on floating dock windows that overlap main window registered menu action shortcuts.
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: "MainWindow"):
         super().__init__()
-        self.main_window = main_window
+        self._main_window: "MainWindow" = main_window
 
     def eventFilter(self, qobject, event):
         if event.type() == QEvent.KeyPress:
             if QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
-                self.main_window.show_command_palette(qobject)
+                self._main_window.show_command_palette(qobject)
                 return True
+        return False
+
+
+class ShiftShiftEventFilter(QObject):
+    """
+    Filter to catch Shift+Shift key sequence for goto-anything activation.
+    """
+
+    activation_key = Qt.Key.Key_Shift
+    activation_count: int = 2
+    timeout_secs: float = 1
+
+    def __init__(self, main_window: "MainWindow"):
+        super().__init__()
+        self._main_window: "MainWindow" = main_window
+        self._press_count: int = 0
+        self._last_press_time: float = 0
+        self._did_process_qwindow_event: bool = False
+
+    def eventFilter(self, qobject, event):
+        # Key Event propagation will begin at QWindow and continue down the widget tree. Use KeyEvent on QWindow to
+        # distinguish unique key presses, then intercept KeyEvent at first QWidget the event is propagated to.
+
+        if event.type() == QEvent.KeyPress:
+            if isinstance(qobject, QWindow) and qobject.modality() == Qt.WindowModality.NonModal:
+                self._did_process_qwindow_event = True
+                return False
+            if not isinstance(qobject, QWidget) or not self._did_process_qwindow_event:
+                return False
+            self._did_process_qwindow_event = False
+
+            if event.count() == 1 and event.key() == self.activation_key:
+                now = time.time()
+                if now - self._last_press_time >= self.timeout_secs:
+                    self._press_count = 0
+                self._last_press_time = now
+
+                self._press_count += 1
+                if self._press_count >= self.activation_count:
+                    self._press_count = 0
+                    self._main_window.show_goto_palette(qobject)
+                    return True
+
+            else:
+                self._press_count = 0
+
         return False
 
 
@@ -109,6 +155,10 @@ class MainWindow(QMainWindow):
         self.workspace: Workspace = None
         self.dock_manager: QtAds.CDockManager
         self._dock_shortcut_event_filter = DockShortcutEventFilter(self)
+
+        self._shift_shift_event_filter = ShiftShiftEventFilter(self)
+        if app:
+            self.app.installEventFilter(self._shift_shift_event_filter)
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
 
@@ -817,8 +867,15 @@ class MainWindow(QMainWindow):
         dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))
         dlg.setModal(True)
         dlg.exec_()
-        if dlg.selected_command:
-            dlg.selected_command.run()
+        if dlg.selected_item:
+            dlg.selected_item.run()
+
+    def show_goto_palette(self, parent=None):
+        dlg = GotoPaletteDialog(self.workspace, parent=(parent or self))
+        dlg.setModal(True)
+        dlg.exec_()
+        if dlg.selected_item:
+            self.workspace.jump_to(dlg.selected_item.addr)
 
     #
     # Other public methods
