@@ -861,6 +861,7 @@ class MainWindow(QMainWindow):
         self._progress_label.hide()
         self._progress_bar.hide()
         self._interrupt_job_button.hide()
+        self._progress_dialog.hide()
 
     def bring_to_front(self):
         self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
