@@ -1,17 +1,16 @@
 import binascii
 import os
-from typing import Dict, Optional, Tuple, Any, List
+from typing import Any, Dict, List, Optional, Tuple
 
-from angr.calling_conventions import unify_arch_name
 import archinfo
+from angr.calling_conventions import unify_arch_name
 from cle import Blob
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
-    QTreeWidget,
-    QTreeWidgetItem,
     QDialog,
     QDialogButtonBox,
+    QFileIconProvider,
     QFrame,
     QGridLayout,
     QGroupBox,
@@ -22,8 +21,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QSizePolicy,
     QTabWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
-    QFileIconProvider,
 )
 
 try:
