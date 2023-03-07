@@ -10,12 +10,12 @@ import capstone
 import cle
 import debugpy
 import parso
+import pypcode
 import PySide6
 import pyvex
 import unicorn
 import z3
 import zmq
-import pypcode
 
 import angrmanagement
 
