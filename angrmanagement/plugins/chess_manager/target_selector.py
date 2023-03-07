@@ -4,6 +4,7 @@ import threading
 import typing
 from typing import TYPE_CHECKING, List, Optional
 
+import PySide6
 from PySide6.QtCore import QAbstractTableModel, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -21,8 +22,6 @@ from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 if TYPE_CHECKING:
-    import PySide6
-
     from angrmanagement.ui.workspace import Workspace
 
 try:

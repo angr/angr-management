@@ -1,16 +1,13 @@
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
+import PySide6.QtCore
+from angr.knowledge_plugins.functions import Function
+from angr.project import Project
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QVBoxLayout
 
+from angrmanagement.data import ComponentFunction, ComponentTree, ComponentTreeNode
 from angrmanagement.ui.views import BaseView
-
-if TYPE_CHECKING:
-    import PySide6.QtCore
-    from angr.knowledge_plugins.functions import Function
-    from angr.project import Project
-
-    from angrmanagement.data import ComponentFunction, ComponentTree, ComponentTreeNode
 
 
 class QComponentItem(QTreeWidgetItem):

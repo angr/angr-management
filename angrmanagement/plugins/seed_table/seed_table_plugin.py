@@ -203,7 +203,7 @@ class SeedTableWidget(QTableView):
 
 
 class SeedTableView(BaseView):
-    def __init__(self, workspace: Workspace, *args, **kwargs):
+    def __init__(self, workspace: "Workspace", *args, **kwargs):
         super().__init__("SeedTableView", workspace, *args, **kwargs)
         self.base_caption = "Seed Table"
         self.workspace = workspace
