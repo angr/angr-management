@@ -180,35 +180,30 @@ class ViewManager:
                 return view
         return None
 
-    def get_current_tab_id(self) -> Optional[int]:
+    def _adjust_current_tab_idx(self, offset: int) -> None:
         """
-        Get Current Tab ID, or None if no current tab exists in the central view area.
+        Select tab in same dock area with index equal to index of most recently activated center view plus `offset`.
         """
-        view = self.current_tab
-        for i, dock in enumerate(self.get_center_docks()):
-            if dock.widget() is view:
-                return i
-        return None
+        view = self.get_most_recently_focused_view_by_docking_area("center")
+        if view is None:
+            return
+        area = self.view_to_dock[view].dockAreaWidget()
+        idx = area.currentIndex()
+        if idx < 0:
+            return
+        area.setCurrentIndex((idx + offset) % area.dockWidgetsCount())
 
     def next_tab(self) -> None:
         """
         Shift to the next tab
         """
-        center_dockable_views = self.get_center_docks()
-        current_tab_id = self.get_current_tab_id()
-        if current_tab_id is None:
-            return
-        center_dockable_views[(current_tab_id + 1) % len(center_dockable_views)].raise_()
+        self._adjust_current_tab_idx(1)
 
     def previous_tab(self) -> None:
         """
         Shift to the previous tab
         """
-        center_dockable_views = self.get_center_docks()
-        current_tab_id = self.get_current_tab_id()
-        if current_tab_id is None:
-            return
-        center_dockable_views[(current_tab_id - 1) % len(center_dockable_views)].raise_()  # this mod is superfluous
+        self._adjust_current_tab_idx(-1)
 
     @property
     def current_tab(self) -> Optional["BaseView"]:
