@@ -46,7 +46,7 @@ class PaletteModel(QAbstractItemModel):
         if not index.isValid() or role != Qt.DisplayRole:
             return None
         row = index.row()
-        return self._filtered_items[row]
+        return self._filtered_items[row] if row < len(self._filtered_items) else None
 
     def set_filter_text(self, query: str) -> None:
         """
