@@ -15,6 +15,7 @@ import pyvex
 import unicorn
 import z3
 import zmq
+import pypcode
 
 import angrmanagement
 
@@ -64,6 +65,7 @@ def make_common_options(for_chess=False):
         (os.path.join(am_repo_dir, "flirt_signatures"), "flirt_signatures"),
         (os.path.join(am_repo_dir, "library_docs"), "library_docs"),
         (os.path.join(os.path.dirname(debugpy.__file__), "_vendored"), "debugpy/_vendored"),
+        (os.path.join(os.path.dirname(pypcode.__file__), "processors"), "pypcode/processors"),
     ]
     if sys.platform != "win32":
         included_data.append(
@@ -114,6 +116,7 @@ def make_common_options(for_chess=False):
         "--hidden-import=PySide6.support.deprecated",
         "--hidden-import=charset_normalizer.md__mypyc",
         "--hidden-import=debugpy._vendored",
+        "--hidden-import=pypcode",
     ]
     if for_chess:
         hidden_import.append("--hidden-import=slacrs")
