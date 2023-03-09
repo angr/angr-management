@@ -1582,7 +1582,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         lyt.addWidget(status_bar)
         lyt.addWidget(self.inner_widget)
         lyt.setContentsMargins(0, 0, 0, 0)
-        lyt.setSpacing(1)
+        lyt.setSpacing(0)
         self.setLayout(lyt)
         self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
         self.inner_widget.hex.viewport_changed.connect(self.on_cursor_changed)
