@@ -75,18 +75,12 @@ class Workspace:
         self.default_tabs = [
             DisassemblyView(self._main_instance, "center"),
             HexView(self._main_instance, "center"),
-            ProximityView(self._main_instance, "center"),
             CodeView(self._main_instance, "center"),
             FunctionsView(self._main_instance, "left"),
         ]
         if Conf.has_operation_mango:
             self.default_tabs.append(DependencyView(self._main_instance, "center"))
         self.default_tabs += [
-            StringsView(self._main_instance, "center"),
-            PatchesView(self._main_instance, "center"),
-            SymexecView(self._main_instance, "center"),
-            StatesView(self._main_instance, "center"),
-            InteractionView(self._main_instance, "center"),
             ConsoleView(self._main_instance, "bottom"),
             LogView(self._main_instance, "bottom"),
         ]
