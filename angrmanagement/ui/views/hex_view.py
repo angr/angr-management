@@ -1171,11 +1171,11 @@ class HexGraphicsView(QAbstractScrollArea):
     def set_display_start_addr(self, start: HexAddress):
         self.set_display_offset(start - self.hex.start_addr)
 
-    def _on_vertical_scroll_bar_triggered(self, action):
+    def _on_vertical_scroll_bar_triggered(self, action: int):
         if self._processing_scroll_event:
             return
         self._processing_scroll_event = True
-        action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
+        action = QAbstractSlider.SliderAction(action)
         if action == QAbstractSlider.SliderSingleStepAdd:
             self.set_display_offset(self.hex.display_offset_addr + 0x10)
         elif action == QAbstractSlider.SliderSingleStepSub:
@@ -1200,8 +1200,9 @@ class HexGraphicsView(QAbstractScrollArea):
             self.set_display_offset(display_offset_addr)
         self._processing_scroll_event = False
 
-    def _on_horizontal_scroll_bar_triggered(self, action):
+    def _on_horizontal_scroll_bar_triggered(self, action: int):
         self._processing_scroll_event = True
+        action = QAbstractSlider.SliderAction(action)
         if action == QAbstractSlider.SliderMove:
             vp = self.viewport().geometry()
             vp.moveTo(0, 0)
