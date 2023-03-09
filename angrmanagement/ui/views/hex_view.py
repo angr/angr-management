@@ -1116,6 +1116,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
         self.horizontalScrollBar().actionTriggered.connect(self._on_horizontal_scroll_bar_triggered)
         self._view.setFrameStyle(QFrame.NoFrame)
+        self.setFrameStyle(QFrame.NoFrame)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
