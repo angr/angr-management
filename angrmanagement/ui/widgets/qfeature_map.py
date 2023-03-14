@@ -324,7 +324,7 @@ class FeatureMapItem(QGraphicsItem):
 
     def _get_position_at_addr(self, addr: int) -> Optional[float]:
         mr = self._get_region_at_addr(addr)
-        if mr is None:
+        if mr is None or mr.size == 0:
             return None
         mr_pos = self._region_to_position[mr]
         mr_width = self._region_to_width[mr]
