@@ -25,6 +25,7 @@ from .analysis_options import (
     AnalysesConfiguration,
     CFGAnalysisConfiguration,
     FlirtAnalysisConfiguration,
+    CodeTaggingConfiguration,
     VariableRecoveryConfiguration,
 )
 from .jobs import (
@@ -342,7 +343,12 @@ class Instance:
             self._analysis_configuration = AnalysesConfiguration(
                 [
                     a(self)
-                    for a in [CFGAnalysisConfiguration, FlirtAnalysisConfiguration, VariableRecoveryConfiguration]
+                    for a in [
+                        CFGAnalysisConfiguration,
+                        FlirtAnalysisConfiguration,
+                        CodeTaggingConfiguration,
+                        VariableRecoveryConfiguration,
+                    ]
                 ],
                 self,
             )
@@ -515,11 +521,12 @@ class Instance:
         )
 
     def _on_prototype_found(self):
-        self.add_job(
-            CodeTaggingJob(
-                on_finish=self.on_function_tagged,
+        if self._analysis_configuration["code_tagging"].enabled:
+            self.add_job(
+                CodeTaggingJob(
+                    on_finish=self.on_function_tagged,
+                )
             )
-        )
 
         if self._analysis_configuration["varec"].enabled:
             options = self._analysis_configuration["varec"].to_dict()
