@@ -212,9 +212,22 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
     def __init__(self, instance):
         super().__init__(instance)
         self.name = "flirt"
-        self.display_name = "Signature Matching"
+        self.display_name = "Function Signature Matching"
         self.description = self.project.analyses.Flirt.__doc__.strip()
         self.enabled = True
+
+
+class CodeTaggingConfiguration(AnalysisConfiguration):
+    """
+    Configuration for Code Tagging.
+    """
+
+    def __init__(self, instance):
+        super().__init__(instance)
+        self.name = "code_tagging"
+        self.display_name = "Tag Functions Based on Syntactic Features"
+        self.description = "Add tags to functions based on syntactic features in assembly code and referenced strings."
+        self.enabled = False
 
 
 class VariableRecoveryConfiguration(AnalysisConfiguration):
@@ -228,7 +241,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     def __init__(self, instance):
         super().__init__(instance)
         self.name = "varec"
-        self.display_name = "Complete Variable Recovery"
+        self.display_name = "Recover Variables on All Functions"
         self.description = (
             "Perform a full-project variable recovery and calling-convention recovery analysis. "
             "Recommended for small- to medium-sized binaries. This analysis takes a long time to "
