@@ -3,6 +3,7 @@ import string
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from angr.analyses.code_tagging import CodeTags
+from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QBrush, QColor, QCursor
 from PySide6.QtWidgets import (
@@ -201,8 +202,17 @@ class QFunctionTableModel(QAbstractTableModel):
         return self.instance.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
 
     @staticmethod
-    def _get_binary_name(func):
-        return os.path.basename(func.binary.binary) if func.binary is not None else ""
+    def _get_binary_name(func) -> str:
+        if func.binary is not None:
+            if func.binary.binary is not None:
+                return os.path.basename(func.binary.binary)
+            if isinstance(func.binary, UefiPE):
+                if func.binary.user_interface_name:
+                    return func.binary.user_interface_name
+                if func.binary.guid:
+                    return str(func.binary.guid)
+                return str(func.binary)
+        return ""
 
     def _get_function_backcolor(self, func) -> QColor:
         return self._backcolor_callback(func)
