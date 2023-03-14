@@ -251,7 +251,7 @@ class QFunctionTableModel(QAbstractTableModel):
                 return True
         if keyword in ",".join(func.tags).lower():
             return True
-        if func.binary and keyword in func.binary.binary.lower():
+        if func.binary and keyword in self._get_binary_name(func).lower():
             return True
         if extra_columns > 0:
             for idx in range(extra_columns):
