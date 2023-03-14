@@ -235,6 +235,8 @@ class HexGraphicsObject(QGraphicsObject):
     A graphics item providing a conventional hex-editor interface for a contiguous region of memory.
     """
 
+    MAX_DISPLAY_ROWS = 2000  # so that we do not generate 0xffffff rows of content upon binary loading
+
     cursor_changed = Signal()
     viewport_changed = Signal()
 
@@ -321,7 +323,7 @@ class HexGraphicsObject(QGraphicsObject):
         offset = max(0, min(offset & ~0xF, self.end_addr - self.start_addr - 0x10))
         self.display_offset_addr = offset
         self.display_start_addr = self.start_addr + self.display_offset_addr
-        self.display_num_rows = num_rows or self.num_rows
+        self.display_num_rows = min(num_rows or self.num_rows, self.MAX_DISPLAY_ROWS)
         self.display_end_addr = min(self.end_addr, self.display_start_addr + self.display_num_rows * 16)
         self._update_layout()
         self.viewport_changed.emit()
