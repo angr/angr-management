@@ -15,6 +15,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     pip install pillow # icon conversion on macOS
 fi
 
+# TODO: remove this when upstream packaging is fixed, extra is added to cle
+pip install git+https://github.com/theopolis/uefi-firmware-parser.git
+
 pip install git+https://github.com/eliben/pyelftools.git
 pip install git+https://github.com/angr/archinfo.git
 pip install git+https://github.com/angr/pyvex.git
