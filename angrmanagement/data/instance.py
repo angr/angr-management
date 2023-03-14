@@ -24,8 +24,8 @@ from angrmanagement.ui.dialogs import AnalysisOptionsDialog
 from .analysis_options import (
     AnalysesConfiguration,
     CFGAnalysisConfiguration,
-    FlirtAnalysisConfiguration,
     CodeTaggingConfiguration,
+    FlirtAnalysisConfiguration,
     VariableRecoveryConfiguration,
 )
 from .jobs import (
