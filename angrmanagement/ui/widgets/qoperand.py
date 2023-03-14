@@ -275,7 +275,7 @@ class QOperand(QCachedGraphicsItem):
             # without displaying variable
             self._label = self.operand.render(formatting=formatting)[0]
 
-            if variable_sort:
+            if variable_sort and self.variable_manager is not None:
                 # try find the corresponding variable
                 variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(
                     self.insn.addr, variable_sort
