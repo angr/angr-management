@@ -235,8 +235,6 @@ class HexGraphicsObject(QGraphicsObject):
     A graphics item providing a conventional hex-editor interface for a contiguous region of memory.
     """
 
-    MAX_DISPLAY_ROWS = 2000  # so that we do not generate 0xffffff rows of content upon binary loading
-
     cursor_changed = Signal()
     viewport_changed = Signal()
 
@@ -246,7 +244,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.setFlag(QGraphicsItem.ItemIsFocusable, True)  # Give me focus/key events
         self.setFlag(QGraphicsItem.ItemClipsToShape, True)
         self.display_offset_addr: HexAddress = 0
-        self.display_num_rows: int = 0
+        self.display_num_rows: int = 1
         self.display_start_addr: HexAddress = 0
         self.display_end_addr: HexAddress = 0
         self.start_addr: HexAddress = 0
@@ -316,17 +314,28 @@ class HexGraphicsObject(QGraphicsObject):
             self.cursor_blink_state = self.always_show_cursor
             self.update()
 
-    def set_display_offset_range(self, offset: HexAddress, num_rows: Optional[int] = None):
+    def _set_display_common(self):
         """
-        Set the visible byte range.
+        Handle common update of offset or row count changed.
         """
-        offset = max(0, min(offset & ~0xF, self.end_addr - self.start_addr - 0x10))
-        self.display_offset_addr = offset
-        self.display_start_addr = self.start_addr + self.display_offset_addr
-        self.display_num_rows = min(num_rows or self.num_rows, self.MAX_DISPLAY_ROWS)
         self.display_end_addr = min(self.end_addr, self.display_start_addr + self.display_num_rows * 16)
         self._update_layout()
         self.viewport_changed.emit()
+
+    def set_display_num_rows(self, num_rows: int):
+        """
+        Set number of rows to display.
+        """
+        self.display_num_rows = max(num_rows, 1)
+        self._set_display_common()
+
+    def set_display_offset(self, offset: HexAddress):
+        """
+        Set displayed range offset.
+        """
+        self.display_offset_addr = max(0, min(offset & ~0xF, self.end_addr - self.start_addr - 0x10))
+        self.display_start_addr = self.start_addr + self.display_offset_addr
+        self._set_display_common()
 
     def move_viewport_to(self, addr: HexAddress, preserve_relative_offset: bool = False):
         """
@@ -336,14 +345,12 @@ class HexGraphicsObject(QGraphicsObject):
 
         if preserve_relative_offset and (self.display_start_addr <= self.cursor < self.display_end_addr):
             # Let the target addr be on the same relative row from top of screen
-            self.set_display_offset_range(
-                addr - self.cursor + self.display_start_addr - self.start_addr, self.display_num_rows
-            )
+            self.set_display_offset(addr - self.cursor + self.display_start_addr - self.start_addr)
             return
 
         if addr < self.display_start_addr:
             # Let the target addr be on the first displayed row
-            self.set_display_offset_range(addr - self.start_addr, self.display_num_rows)
+            self.set_display_offset(addr - self.start_addr)
             return
 
         # Let the target addr be on last fully displayed row
@@ -351,7 +358,7 @@ class HexGraphicsObject(QGraphicsObject):
         display_end = self.display_start_addr + max_fully_visible_bytes
         if addr >= display_end:
             offset = addr - max_fully_visible_bytes - self.start_addr + 0x10
-            self.set_display_offset_range(offset, self.display_num_rows)
+            self.set_display_offset(offset)
 
     def _set_data_common(self):
         """
@@ -361,7 +368,7 @@ class HexGraphicsObject(QGraphicsObject):
         self.num_rows = int((self.num_bytes + (self.start_addr & 0xF) + 0xF) / 16)
         self.end_addr = self.start_addr + self.num_bytes
         self.clear_selection()
-        self.set_display_offset_range(offset=0, num_rows=None)  # Show all
+        self.set_display_offset(0)
         self.set_cursor(self.start_addr)
         self._update_layout()
 
@@ -1079,9 +1086,6 @@ class HexGraphicsSubView(QGraphicsView):
         self.parent().wheelEvent(event)
         super().wheelEvent(event)
 
-    def resizeEvent(self, event):
-        self.parent().resizeEvent(event)
-
     def mouseMoveEvent(self, event):
         """
         Handle mouse move events.
@@ -1164,8 +1168,11 @@ class HexGraphicsView(QAbstractScrollArea):
             num_rows_visible += 1
         return num_rows_visible
 
+    def update_display_num_rows(self):
+        self.hex.set_display_num_rows(self._get_num_rows_visible())
+
     def set_display_offset(self, offset: HexAddress):
-        self.hex.set_display_offset_range(offset, self._get_num_rows_visible())
+        self.hex.set_display_offset(offset)
         self._update_vertical_scrollbar()
 
     def get_display_start_addr(self) -> HexAddress:
@@ -1250,7 +1257,7 @@ class HexGraphicsView(QAbstractScrollArea):
     def resizeEvent(self, event: PySide6.QtGui.QResizeEvent) -> None:  # pylint: disable=unused-argument
         self._view.resize(self.viewport().size())
         self.update_scene_rect()
-        self.set_display_offset(self.hex.display_offset_addr)
+        self.update_display_num_rows()
 
     def set_region_callback(self, write, mem, addr, size):
         """
@@ -1266,7 +1273,6 @@ class HexGraphicsView(QAbstractScrollArea):
         """
         self.hex.clear()
         self.update_scene_rect()
-        self.set_display_offset(0)
 
     def on_cursor_changed(self):
         """
@@ -1285,7 +1291,7 @@ class HexGraphicsView(QAbstractScrollArea):
         else:
             self._view.scale(scale, scale)
         self.update_scene_rect()
-        self.set_display_offset(self.hex.display_offset_addr)
+        self.update_display_num_rows()
 
     def changeEvent(self, event: QEvent):
         """
