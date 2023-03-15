@@ -27,11 +27,11 @@ class RecompilationPlugin(BasePlugin):
         self.recolor_map = set()
         self.recompilation_view: Optional[DisassemblyView] = None
 
-        #workspace.instance.register_container('bookmarks', lambda: [], List[int], 'Bookmarked addresses')
+        # workspace.instance.register_container('bookmarks', lambda: [], List[int], 'Bookmarked addresses')
 
-    MENU_BUTTONS = ('Change Compilation Command...', 'Change Compilation Directory...')
+    MENU_BUTTONS = ("Change Compilation Command...", "Change Compilation Directory...")
 
-    def build_context_menu_functions(self, funcs): # pylint: disable=unused-argument
+    def build_context_menu_functions(self, funcs):  # pylint: disable=unused-argument
         yield ("Load recompiled object", self.load_recompiled_obj)
 
     def handle_click_menu(self, idx):
@@ -41,8 +41,8 @@ class RecompilationPlugin(BasePlugin):
             print("Change compiler dir")
 
     def color_graph_diff(self, og_disasm: DisassemblyView, new_disasm: DisassemblyView):
-        og_insn_map = og_disasm.disasm.raw_result_map['instructions']
-        new_insn_map = new_disasm.disasm.raw_result_map['instructions']
+        og_insn_map = og_disasm.disasm.raw_result_map["instructions"]
+        new_insn_map = new_disasm.disasm.raw_result_map["instructions"]
 
         og_sorted_addrs = sorted(list(og_insn_map.keys()))
         new_sorted_addrs = sorted(list(new_insn_map.keys()))
@@ -53,15 +53,15 @@ class RecompilationPlugin(BasePlugin):
 
             og_insn: Instruction = og_insn_map[og_sorted_addrs[idx]]
             new_insn = new_insn_map[new_sorted_addrs[idx]]
-            
+
             og_str = str(og_insn.insn).strip().replace("\t", "").replace(" ", "").split(":")[1]
             new_str = str(new_insn.insn).strip().replace("\t", "").replace(" ", "").split(":")[1]
-            
+
             if og_str != new_str:
                 self.recolor_map.add(new_sorted_addrs[idx])
 
         new_disasm.redraw_current_graph()
-        #self.recolor_map = set()
+        # self.recolor_map = set()
 
     def color_insn(self, addr, selected):
         if addr in self.recolor_map:
@@ -81,7 +81,7 @@ class RecompilationPlugin(BasePlugin):
         recomp_instance.workspace = self.workspace
         recomp_instance.project.am_obj = angr.Project(obj_path, auto_load_libs=False)
         recomp_instance.cfg = recomp_instance.project.analyses.CFG()
-        func = recomp_instance.cfg.functions['sub_11c9d'] #recomp_instance.project.entry]
+        func = recomp_instance.cfg.functions["sub_11c9d"]  # recomp_instance.project.entry]
 
         new_disass = DisassemblyView(recomp_instance, "center")
         new_disass.category = "recompilation"
@@ -104,4 +104,3 @@ class RecompilationPlugin(BasePlugin):
         self.recompilation_view.jump_to(func.addr)
 
         self.color_graph_diff(self.workspace._get_or_create_disassembly_view(), self.recompilation_view)
-
