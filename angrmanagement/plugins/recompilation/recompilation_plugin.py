@@ -1,8 +1,10 @@
 from typing import List, Iterator, Optional
+from pathlib import Path
+import logging
 
-from PySide2.QtGui import QColor
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QFileDialog
 from angr.analyses.disassembly import Instruction
-from angr.sim_manager import SimulationManager
 
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
@@ -15,92 +17,141 @@ from angrmanagement.ui.views import DisassemblyView
 
 import angr
 
-from PySide2.QtWidgets import QFileDialog
+from .recompilation_view import RevisedDisassemblyView
+from .function_diff import FunctionDiff, LinearFunctionDiff, BFSFunctionDiff
+
+l = logging.getLogger(__name__)
 
 
 class RecompilationPlugin(BasePlugin):
-    CHANGE_COMP_CMD_EVT = 0
-    CHANGE_COMP_DIR_EVT = 1
+    LOAD_BINARY_CMD_EVT = 0
+    DIFF_COLOR_MAP = {
+        FunctionDiff.OBJ_ADDED: QColor("green"),
+        FunctionDiff.OBJ_CHANGED: QColor("yellow"),
+        FunctionDiff.OBJ_DELETED: QColor("red"),
+        FunctionDiff.OBJ_UNMODIFIED: None
+    }
+
+    #CHANGE_COMP_CMD_EVT = 0
+    #CHANGE_COMP_DIR_EVT = 1
 
     def __init__(self, workspace):
         super().__init__(workspace)
         self.recolor_map = set()
-        self.recompilation_view: Optional[DisassemblyView] = None
-
+        self.recompilation_instance: Optional[Instance] = None
+        self.current_revised_view: Optional[DisassemblyView] = None
+        self.diff_algo: Optional[FunctionDiff] = None
         # workspace.instance.register_container('bookmarks', lambda: [], List[int], 'Bookmarked addresses')
 
-    MENU_BUTTONS = ("Change Compilation Command...", "Change Compilation Directory...")
+    MENU_BUTTONS = ("Load revised binary for diffing...",)
+    #MENU_BUTTONS = ("Change Compilation Command...", "Change Compilation Directory..."
+
+    #
+    # UI Callback Handlers
+    #
 
     def build_context_menu_functions(self, funcs):  # pylint: disable=unused-argument
-        yield ("Load recompiled object", self.load_recompiled_obj)
+        yield ("Syncronize", self.syncronize_with_original_disassembly_view)
 
     def handle_click_menu(self, idx):
-        if idx == self.CHANGE_COMP_CMD_EVT:
-            print("Change compiler command")
-        elif idx == self.CHANGE_COMP_DIR_EVT:
-            print("Change compiler dir")
+        if idx == self.LOAD_BINARY_CMD_EVT:
+            l.info("Selecting a revised binary for diffing...")
+            filepath, _ = QFileDialog.getOpenFileName(caption="Load Recompiled Object")
+            if not filepath:
+                l.info("Binary selection cancelled.")
+                return
 
-    def color_graph_diff(self, og_disasm: DisassemblyView, new_disasm: DisassemblyView):
-        og_insn_map = og_disasm.disasm.raw_result_map["instructions"]
-        new_insn_map = new_disasm.disasm.raw_result_map["instructions"]
-
-        og_sorted_addrs = sorted(list(og_insn_map.keys()))
-        new_sorted_addrs = sorted(list(new_insn_map.keys()))
-
-        for idx, addr in enumerate(og_sorted_addrs):
-            if idx > len(new_sorted_addrs):
-                break
-
-            og_insn: Instruction = og_insn_map[og_sorted_addrs[idx]]
-            new_insn = new_insn_map[new_sorted_addrs[idx]]
-
-            og_str = str(og_insn.insn).strip().replace("\t", "").replace(" ", "").split(":")[1]
-            new_str = str(new_insn.insn).strip().replace("\t", "").replace(" ", "").split(":")[1]
-
-            if og_str != new_str:
-                self.recolor_map.add(new_sorted_addrs[idx])
-
-        new_disasm.redraw_current_graph()
-        # self.recolor_map = set()
+            self.load_revised_binary_from_file(Path(filepath))
 
     def color_insn(self, addr, selected):
-        if addr in self.recolor_map:
-            return QColor("red")
-
-    def _reset_recompiled_view(self):
-        self.recolor_map = set()
-        if not self.recompilation_view:
+        if self.diff_algo is None:
             return
 
-        self.workspace.remove_view(self.recompilation_view)
-        del self.recompilation_view.instance
-        del self.recompilation_view
+        diff_value = self.diff_algo.addr_diff_value(addr)
+        return self.DIFF_COLOR_MAP[diff_value]
 
-    def _construct_new_recomp_view(self, obj_path):
-        recomp_instance = Instance()
-        recomp_instance.workspace = self.workspace
-        recomp_instance.project.am_obj = angr.Project(obj_path, auto_load_libs=False)
-        recomp_instance.cfg = recomp_instance.project.analyses.CFG()
-        func = recomp_instance.cfg.functions["sub_11c9d"]  # recomp_instance.project.entry]
+    #
+    # View Construction
+    #
 
-        new_disass = DisassemblyView(recomp_instance, "center")
+    def color_graph_diff(self, og_disasm: DisassemblyView, new_disasm: DisassemblyView):
+        try:
+            base_func = og_disasm.function.am_obj
+            rev_func = new_disasm.function.am_obj
+        except Exception:
+            return
+
+        if base_func is None or rev_func is None:
+            return
+
+        self.diff_algo = BFSFunctionDiff(base_func, rev_func)
+        new_disasm.redraw_current_graph()
+
+    def _destroy_recompiled_view(self):
+        self.recolor_map = set()
+        if self.current_revised_view:
+            self.workspace.remove_view(self.current_revised_view)
+            del self.current_revised_view
+
+        if self.recompilation_instance:
+            del self.recompilation_instance
+
+    def _create_instance_from_binary(self, file_path: Path):
+        recompilation_instance = Instance()
+        recompilation_instance.recompilation_plugin = self
+        recompilation_instance.workspace = self.workspace
+        recompilation_instance.project.am_obj = angr.Project(file_path, auto_load_libs=False)
+        recompilation_instance.cfg = recompilation_instance.project.analyses.CFG()
+        #func = recompilation_instance.cfg.functions["get_prefix"]  # recomp_instance.project.entry]
+        l.warning(f"Finished loading recompilation instance for {file_path}")
+
+        return recompilation_instance
+
+    def _create_revised_disassembly_view(self):
+        new_disass = RevisedDisassemblyView(self.recompilation_instance, "center")
         new_disass.category = "recompilation"
         new_disass.base_caption = "Recompilation"
-        self.recompilation_view = new_disass
+        self.current_revised_view = new_disass
+        self.workspace.add_view(self.current_revised_view)
+        return self.current_revised_view
+    
+    def jump_to_in_revised_view(self, func):
+        self.current_revised_view.display_function(func)
+        self.current_revised_view.jump_to(func.addr)
 
-        return func
+    def syncronize_with_original_disassembly_view(self, *args, **kwargs):
+        og_view = self.workspace._get_or_create_disassembly_view()
+        if not og_view:
+            print("No og view")
+            return None
 
-    def load_recompiled_obj(self, *arg, **kwargs):
-        filepath, _ = QFileDialog.getOpenFileName(caption="Load Recompiled Object")
-        if not filepath:
+        try:
+            func_obj = og_view.current_function
+        except NotImplementedError:
+            print("No current_function")
+            return None
+
+        if func_obj is None or func_obj.am_obj is None:
+            print("No am obj")
+            return None
+
+        og_func = func_obj.am_obj
+        og_func_name = og_func.name
+
+        try:
+            revised_func = self.recompilation_instance.cfg.functions[og_func_name]
+        except KeyError:
+            print(f"The function {og_func_name} does not exist in the revised binary")
             return
 
-        self._reset_recompiled_view()
-        func = self._construct_new_recomp_view(filepath)
+        self.recolor_map = set()
+        self.jump_to_in_revised_view(revised_func)
+        # TODO: move me
+        self.color_graph_diff(og_view, self.current_revised_view)
 
-        self.workspace.add_view(self.recompilation_view)
-        self.recompilation_view.display_function(func)
-        self.workspace.view_manager.raise_view(self.recompilation_view)
-        self.recompilation_view.jump_to(func.addr)
-
-        self.color_graph_diff(self.workspace._get_or_create_disassembly_view(), self.recompilation_view)
+    def load_revised_binary_from_file(self, file_path: Path):
+        self._destroy_recompiled_view()
+        self.recompilation_instance = self._create_instance_from_binary(file_path)
+        self._create_revised_disassembly_view()
+        self.syncronize_with_original_disassembly_view()
+        self.workspace.view_manager.raise_view(self.current_revised_view)
