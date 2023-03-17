@@ -29,11 +29,11 @@ class RecompilationPlugin(BasePlugin):
         FunctionDiff.OBJ_ADDED: QColor("green"),
         FunctionDiff.OBJ_CHANGED: QColor("yellow"),
         FunctionDiff.OBJ_DELETED: QColor("red"),
-        FunctionDiff.OBJ_UNMODIFIED: None
+        FunctionDiff.OBJ_UNMODIFIED: None,
     }
 
-    #CHANGE_COMP_CMD_EVT = 0
-    #CHANGE_COMP_DIR_EVT = 1
+    # CHANGE_COMP_CMD_EVT = 0
+    # CHANGE_COMP_DIR_EVT = 1
 
     def __init__(self, workspace):
         super().__init__(workspace)
@@ -44,7 +44,7 @@ class RecompilationPlugin(BasePlugin):
         # workspace.instance.register_container('bookmarks', lambda: [], List[int], 'Bookmarked addresses')
 
     MENU_BUTTONS = ("Load revised binary for diffing...",)
-    #MENU_BUTTONS = ("Change Compilation Command...", "Change Compilation Directory..."
+    # MENU_BUTTONS = ("Change Compilation Command...", "Change Compilation Directory..."
 
     #
     # UI Callback Handlers
@@ -102,7 +102,7 @@ class RecompilationPlugin(BasePlugin):
         recompilation_instance.workspace = self.workspace
         recompilation_instance.project.am_obj = angr.Project(file_path, auto_load_libs=False)
         recompilation_instance.cfg = recompilation_instance.project.analyses.CFG()
-        #func = recompilation_instance.cfg.functions["get_prefix"]  # recomp_instance.project.entry]
+        # func = recompilation_instance.cfg.functions["get_prefix"]  # recomp_instance.project.entry]
         l.warning(f"Finished loading recompilation instance for {file_path}")
 
         return recompilation_instance
@@ -114,7 +114,7 @@ class RecompilationPlugin(BasePlugin):
         self.current_revised_view = new_disass
         self.workspace.add_view(self.current_revised_view)
         return self.current_revised_view
-    
+
     def jump_to_in_revised_view(self, func):
         self.current_revised_view.display_function(func)
         self.current_revised_view.jump_to(func.addr)

@@ -48,7 +48,7 @@ class LinearFunctionDiff(FunctionDiff):
         sorted_blocks = sorted(list(func.blocks), key=lambda b: b.addr)
         instruction_lists = [block.disassembly.insns for block in sorted_blocks]
         return list(itertools.chain.from_iterable(instruction_lists))
-    
+
     @staticmethod
     def diff_insn(base_insn, rev_insn):
         if base_insn.mnemonic != rev_insn.mnemonic or len(base_insn.operands) != len(rev_insn.operands):
@@ -58,7 +58,7 @@ class LinearFunctionDiff(FunctionDiff):
         rev_args = rev_insn.op_str.split(", ")
         if base_args != rev_args:
             return FunctionDiff.OBJ_CHANGED
-        
+
         return FunctionDiff.OBJ_UNMODIFIED
 
     def compute_function_diff(self):
@@ -102,7 +102,7 @@ class BFSFunctionDiff(FunctionDiff):
                     first, second = children[:]
                 else:
                     first, second = children[::-1]
-                    
+
                 block_levels.append([first, second])
 
         block_levels = [[function.get_block(function.startpoint.addr)]] + block_levels
@@ -116,8 +116,8 @@ class BFSFunctionDiff(FunctionDiff):
         for level_idx, base_level in enumerate(base_levels):
             if level_idx >= len(rev_levels):
                 break
-            
-            rev_blocks = rev_levels[level_idx] 
+
+            rev_blocks = rev_levels[level_idx]
             for block_idx, base_block in enumerate(base_level):
                 if block_idx >= len(rev_blocks):
                     break
