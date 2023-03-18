@@ -92,7 +92,7 @@ class PreciseDiffPlugin(BasePlugin):
         try:
             base_func = og_disasm.function.am_obj
             rev_func = new_disasm.function.am_obj
-        except Exception:
+        except (AttributeError, ValueError):
             return
 
         if base_func is None or rev_func is None:
@@ -160,7 +160,7 @@ class PreciseDiffPlugin(BasePlugin):
         try:
             revised_func = self.diff_instance.cfg.functions[og_func_name]
         except KeyError:
-            l.warning("The function %s does not exist in the diffed binary" % og_func)
+            l.warning("The function %s does not exist in the diffed binary", og_func)
             return
 
         self.jump_to_in_revised_view(revised_func)

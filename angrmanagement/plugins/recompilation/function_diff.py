@@ -166,6 +166,7 @@ class LinearFunctionDiff(FunctionDiff):
             return
 
         # if we end up here, then we have more rev_insns to parse
+        # pylint:disable=undefined-loop-variable
         for rev_insn in self.rev_insns[idx:]:
             rev_addr = rev_insn.addr if self.prefer_symbols else rev_insn.address
             self.rev_add_set.add(rev_addr)
