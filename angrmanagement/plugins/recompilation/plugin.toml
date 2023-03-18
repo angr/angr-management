@@ -2,12 +2,12 @@
 plugin_metadata_version = 0
 
 [plugin]
-name = "Recompilation"
-shortname = "recompilation"
+name = "Precise Binary Diff"
+shortname = "precise_diff"
 version = "0.0.0"
 description = ""
 long_description = ""
 platforms = ["windows", "linux", "macos"]
 min_angr_version = "9.0.0.0"
 author = "The angr team"
-entrypoints = ["recompilation_plugin.py"]
+entrypoints = ["precisediff_plugin.py"]

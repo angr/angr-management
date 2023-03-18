@@ -1,1 +1,1 @@
-from .recompilation_plugin import RecompilationPlugin
+from .precisediff_plugin import PreciseDiffPlugin

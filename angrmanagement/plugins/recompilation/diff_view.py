@@ -3,7 +3,7 @@ from typing import Optional
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 
-class RevisedDisassemblyView(DisassemblyView):
+class DiffDisassemblyView(DisassemblyView):
     def __init__(self, instance, *args, **kwargs):
         super().__init__(instance, *args, **kwargs)
 
