@@ -36,9 +36,9 @@ class PreciseDiffPlugin(BasePlugin):
         self.prefer_symbols = True
         self.resolve_strings = True
         self.diff_algo_class = BFSFunctionDiff
-        self.add_color = QColor(0xddffdd)
-        self.del_color = QColor(0xff7f7f)
-        self.chg_color = QColor(0xf4ecc2)
+        self.add_color = QColor(0xDDFFDD)
+        self.del_color = QColor(0xFF7F7F)
+        self.chg_color = QColor(0xF4ECC2)
 
         self.seen_insns = set()
 
@@ -83,7 +83,7 @@ class PreciseDiffPlugin(BasePlugin):
             FunctionDiff.OBJ_ADDED: self.add_color,
             FunctionDiff.OBJ_DELETED: self.del_color,
             FunctionDiff.OBJ_CHANGED: self.chg_color,
-            FunctionDiff.OBJ_UNMODIFIED: None
+            FunctionDiff.OBJ_UNMODIFIED: None,
         }
 
         return diff_map[diff_value]
@@ -99,10 +99,14 @@ class PreciseDiffPlugin(BasePlugin):
             return
 
         self.diff_algo = self.diff_algo_class(
-            base_func, rev_func,
-            disas_base=og_disasm.disasm, disas_rev=new_disasm.disasm,
-            view_base=og_disasm, view_rev=new_disasm,
-            resolve_strings=self.resolve_strings, prefer_symbols=self.prefer_symbols
+            base_func,
+            rev_func,
+            disas_base=og_disasm.disasm,
+            disas_rev=new_disasm.disasm,
+            view_base=og_disasm,
+            view_rev=new_disasm,
+            resolve_strings=self.resolve_strings,
+            prefer_symbols=self.prefer_symbols,
         )
         new_disasm.redraw_current_graph()
 
@@ -131,7 +135,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.current_revised_view = new_disass
         self.workspace.add_view(self.current_revised_view)
         return self.current_revised_view
-    
+
     def jump_to_in_revised_view(self, func):
         self.current_revised_view.display_function(func)
         self.current_revised_view.jump_to(func.addr)

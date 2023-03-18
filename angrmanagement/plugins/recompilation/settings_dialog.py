@@ -1,5 +1,15 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QGroupBox, QRadioButton, QPushButton, QHBoxLayout, QCheckBox, \
-    QGridLayout, QLineEdit, QLabel
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QGroupBox,
+    QRadioButton,
+    QPushButton,
+    QHBoxLayout,
+    QCheckBox,
+    QGridLayout,
+    QLineEdit,
+    QLabel,
+)
 from PySide6.QtGui import QColor
 
 from .function_diff import LinearFunctionDiff, BFSFunctionDiff
@@ -42,7 +52,7 @@ class SettingsDialog(QDialog):
         self._linear_diff_btn.setToolTip(
             """
             Diffs two functions by linearly traversing the assembly of the original
-            and checking for the same index in the new binary. 
+            and checking for the same index in the new binary.
             """
         )
 
@@ -69,9 +79,9 @@ class SettingsDialog(QDialog):
         self._prefer_symbols = QCheckBox("Prioritize Symbols", self)
         self._prefer_symbols.setToolTip(
             """
-            Some instructions that use symbols, such as moves from global vars, may show different addresses 
+            Some instructions that use symbols, such as moves from global vars, may show different addresses
             in the new binary. With this option enabled, two instructions are marked as the same if at least
-            the symbol name lines up. 
+            the symbol name lines up.
             """
         )
         self._prefer_symbols.setChecked(self.diff_plugin.prefer_symbols)
@@ -80,7 +90,7 @@ class SettingsDialog(QDialog):
             """
             Some instructions that use strings, such as moves from memory, may show different addresses
             in the new binary. With this option enabled, two instructions that move an address that point to the
-            same string are marked as the same. 
+            same string are marked as the same.
             """
         )
         self._prefer_strings.setChecked(self.diff_plugin.resolve_strings)
@@ -99,9 +109,7 @@ class SettingsDialog(QDialog):
         gui_layout = QGridLayout()
 
         change_label = QLabel("Diff Change Color", self)
-        change_label.setToolTip(
-            "The color shown when two instructions differ in some sub-change (like ops)"
-        )
+        change_label.setToolTip("The color shown when two instructions differ in some sub-change (like ops)")
         change_label.setStyleSheet(f"background-color: #{self.diff_plugin.chg_color.rgba() & 0xffffff:x}")
         self._change_color = QLineEdit()
         self._change_color.setText(hex(self.diff_plugin.chg_color.rgb()))
@@ -109,9 +117,7 @@ class SettingsDialog(QDialog):
         gui_layout.addWidget(self._change_color, 0, 1)
 
         add_label = QLabel("Diff Add Color", self)
-        add_label.setToolTip(
-            "The color shown when an instruction can't be matched so it's assumed to be new"
-        )
+        add_label.setToolTip("The color shown when an instruction can't be matched so it's assumed to be new")
         add_label.setStyleSheet(f"background-color: #{self.diff_plugin.add_color.rgba() & 0xffffff:x}")
         self._add_color = QLineEdit()
         self._add_color.setText(hex(self.diff_plugin.add_color.rgb()))
