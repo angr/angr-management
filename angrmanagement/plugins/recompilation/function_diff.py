@@ -19,14 +19,14 @@ class FunctionDiff:
     OBJ_UNMODIFIED = "nop"
 
     def __init__(
-        self, 
-        func_base: Function, 
-        func_rev: Function, 
+        self,
+        func_base: Function,
+        func_rev: Function,
         disas_base: Disassembly = None,
-        disas_rev: Disassembly = None, 
+        disas_rev: Disassembly = None,
         prefer_symbols=True,
         resolve_strings=True,
-        **kwargs
+        **kwargs,
     ):
         self.func_base = func_base
         self.func_rev = func_rev
@@ -42,9 +42,7 @@ class FunctionDiff:
 
     @property
     def prefer_symbols(self):
-        return self._prefer_symbols and \
-            self.disas_base is not None and \
-            self.disas_rev is not None
+        return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
 
     def _linear_asm_from_function(self, func: Function, disas: Disassembly = None, as_dict=False) -> List[CapstoneInsn]:
         sorted_blocks = sorted(list(func.blocks), key=lambda b: b.addr)
@@ -53,10 +51,7 @@ class FunctionDiff:
         if not self.prefer_symbols:
             return instructions if not as_dict else {i.address: i for i in instructions}
 
-        symbolized_instructions = [
-            disas.raw_result_map['instructions'][insn.address]
-            for insn in instructions
-        ]
+        symbolized_instructions = [disas.raw_result_map["instructions"][insn.address] for insn in instructions]
 
         return symbolized_instructions if not as_dict else {i.addr: i for i in symbolized_instructions}
 
@@ -65,9 +60,9 @@ class FunctionDiff:
             if base_insn.render() == rev_insn.render():
                 return FunctionDiff.OBJ_UNMODIFIED
 
-            if base_insn.mnemonic.render() == rev_insn.mnemonic.render() and \
-                    len(base_insn.operands) == len(rev_insn.operands):
-
+            if base_insn.mnemonic.render() == rev_insn.mnemonic.render() and len(base_insn.operands) == len(
+                rev_insn.operands
+            ):
                 if not self._resolve_strings:
                     return FunctionDiff.OBJ_CHANGED
 
@@ -82,16 +77,20 @@ class FunctionDiff:
                         except Exception:
                             return FunctionDiff.OBJ_CHANGED
 
-                        base_str = string_at_addr(self.func_base.project.kb.cfgs.get_most_accurate(), base_mem_op_addr, self.func_base.project)
-                        rev_str = string_at_addr(self.func_rev.project.kb.cfgs.get_most_accurate(), rev_mem_op_addr, self.func_rev.project)
+                        base_str = string_at_addr(
+                            self.func_base.project.kb.cfgs.get_most_accurate(), base_mem_op_addr, self.func_base.project
+                        )
+                        rev_str = string_at_addr(
+                            self.func_rev.project.kb.cfgs.get_most_accurate(), rev_mem_op_addr, self.func_rev.project
+                        )
 
                         if base_str == rev_str:
-                            base_insn_str = re.sub("\[.*\]", base_str, base_insn.render()[0])
-                            rev_insn_str = re.sub("\[.*\]", base_str, rev_insn.render()[0])
+                            base_insn_str = re.sub(r"\[.*\]", base_str, base_insn.render()[0])
+                            rev_insn_str = re.sub(r"\[.*\]", base_str, rev_insn.render()[0])
 
                             if base_insn_str == rev_insn_str:
                                 return FunctionDiff.OBJ_UNMODIFIED
-                            
+
                 return FunctionDiff.OBJ_CHANGED
 
             return FunctionDiff.OBJ_ADDED
@@ -120,19 +119,24 @@ class FunctionDiff:
 
 class LinearFunctionDiff(FunctionDiff):
     def __init__(
-            self,
-            func_base: Function,
-            func_rev: Function,
-            disas_base: Disassembly = None,
-            disas_rev: Disassembly = None,
-            prefer_symbols=True,
-            resolve_strings=True,
-            **kwargs
+        self,
+        func_base: Function,
+        func_rev: Function,
+        disas_base: Disassembly = None,
+        disas_rev: Disassembly = None,
+        prefer_symbols=True,
+        resolve_strings=True,
+        **kwargs,
     ):
-        super().__init__(func_base, func_rev,
-                         prefer_symbols=prefer_symbols, resolve_strings=resolve_strings,
-                         disas_base=disas_base, disas_rev=disas_rev, **kwargs
-                         )
+        super().__init__(
+            func_base,
+            func_rev,
+            prefer_symbols=prefer_symbols,
+            resolve_strings=resolve_strings,
+            disas_base=disas_base,
+            disas_rev=disas_rev,
+            **kwargs,
+        )
         self.base_insns = self._linear_asm_from_function(func_base, disas=self.disas_base)
         self.rev_insns = self._linear_asm_from_function(func_rev, disas=self.disas_rev)
         self.compute_function_diff()
@@ -159,14 +163,13 @@ class LinearFunctionDiff(FunctionDiff):
 
 class BFSFunctionDiff(FunctionDiff):
     def __init__(
-            self,
-            func_base: Function,
-            func_rev: Function,
-            view_base: DisassemblyView = None,
-            view_rev: DisassemblyView = None,
-            **kwargs
+        self,
+        func_base: Function,
+        func_rev: Function,
+        view_base: DisassemblyView = None,
+        view_rev: DisassemblyView = None,
+        **kwargs,
     ):
-
         super().__init__(func_base, func_rev, **kwargs)
         self.base_cfg = view_base._flow_graph.function_graph.supergraph
         self.rev_cfg = view_rev._flow_graph.function_graph.supergraph
@@ -202,7 +205,7 @@ class BFSFunctionDiff(FunctionDiff):
                     first, second = children[:]
                 else:
                     first, second = children[::-1]
-                    
+
                 block_levels.append([first, second])
 
         block_levels = [[start_block]] + block_levels
@@ -216,8 +219,8 @@ class BFSFunctionDiff(FunctionDiff):
         for level_idx, base_level in enumerate(base_levels):
             if level_idx >= len(rev_levels):
                 break
-            
-            rev_blocks = rev_levels[level_idx] 
+
+            rev_blocks = rev_levels[level_idx]
             for block_idx, base_block in enumerate(base_level):
                 if block_idx >= len(rev_blocks):
                     break
@@ -234,8 +237,10 @@ class BFSFunctionDiff(FunctionDiff):
                         if rev_insn.address in diff_map:
                             continue
 
-                        if self.diff_insn(self.base_insns[base_insn.address], self.rev_insns[rev_insn.address]) == \
-                                self.OBJ_UNMODIFIED:
+                        if (
+                            self.diff_insn(self.base_insns[base_insn.address], self.rev_insns[rev_insn.address])
+                            == self.OBJ_UNMODIFIED
+                        ):
                             diff_map[rev_insn.address] = self.OBJ_UNMODIFIED
                             unmodified_insns.append(rev_insn.address)
                             break
