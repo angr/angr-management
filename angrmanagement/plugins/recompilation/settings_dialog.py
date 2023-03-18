@@ -1,10 +1,14 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QGroupBox, QRadioButton, QPushButton, QHBoxLayout, QCheckBox, \
     QGridLayout, QLineEdit, QLabel
 from PySide6.QtGui import QColor
+
 from .function_diff import LinearFunctionDiff, BFSFunctionDiff
 
 
 class SettingsDialog(QDialog):
+    """
+    A settings dialog for the Precise Diff plugin
+    """
     def __init__(self, diff_plugin, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Precise Diff Settings")
@@ -164,10 +168,9 @@ class SettingsDialog(QDialog):
             self.diff_plugin.add_color = QColor(int(self._add_color.text(), 16))
             self.diff_plugin.chg_color = QColor(int(self._change_color.text(), 16))
             self.diff_plugin.del_color = QColor(int(self._del_color.text(), 16))
-        except Exception:
+        except ValueError:
             pass
 
-        #self.diff_plugin.syncronize_with_original_disassembly_view()
         self.updates = True
         self.close()
 

@@ -1,24 +1,25 @@
-from typing import List, Iterator, Optional
+from typing import Optional
 from pathlib import Path
 import logging
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
-from angrmanagement.plugins import BasePlugin
-
-from angrmanagement.data.instance import Instance
-from angrmanagement.ui.views import DisassemblyView
-
 import angr
 
+from angrmanagement.plugins import BasePlugin
+from angrmanagement.data.instance import Instance
+from angrmanagement.ui.views import DisassemblyView
 from .diff_view import DiffDisassemblyView
-from .function_diff import FunctionDiff, LinearFunctionDiff, BFSFunctionDiff
+from .function_diff import FunctionDiff, BFSFunctionDiff
 from .settings_dialog import SettingsDialog
 
 l = logging.getLogger(__name__)
 
 
 class PreciseDiffPlugin(BasePlugin):
+    """
+    A plugin for performing precisions diffs on two binaries loaded in angr-management.
+    """
     DIFF_SETTINGS_CMD_EVT = 0
     LOAD_BINARY_CMD_EVT = 1
     RELOAD_BINARY_CMD_EVT = 2
@@ -65,10 +66,10 @@ class PreciseDiffPlugin(BasePlugin):
 
     def color_insn(self, addr, selected, disasm_view):
         if disasm_view != self.current_revised_view:
-            return
+            return None
 
         if self.diff_algo is None:
-            return
+            return None
 
         diff_value = self.diff_algo.addr_diff_value(addr)
         return self._color_map(diff_value)
@@ -135,18 +136,19 @@ class PreciseDiffPlugin(BasePlugin):
         self.current_revised_view.display_function(func)
         self.current_revised_view.jump_to(func.addr)
 
+    # pylint:disable=unused-argument
     def syncronize_with_original_disassembly_view(self, *args, **kwargs):
         og_view = self.workspace._get_or_create_disassembly_view()
         if not og_view:
-            return None
+            return
 
         try:
             func_obj = og_view.current_function
         except NotImplementedError:
-            return None
+            return
 
         if func_obj is None or func_obj.am_obj is None:
-            return None
+            return
 
         og_func = func_obj.am_obj
         og_func_name = og_func.name
@@ -154,11 +156,10 @@ class PreciseDiffPlugin(BasePlugin):
         try:
             revised_func = self.diff_instance.cfg.functions[og_func_name]
         except KeyError:
-            l.warning(f"The function {og_func_name} does not exist in the diffed binary")
+            l.warning("The function %s does not exist in the diffed binary" % og_func)
             return
 
         self.jump_to_in_revised_view(revised_func)
-        # TODO: move me
         self.color_graph_diff(og_view, self.current_revised_view)
 
     def load_revised_binary_from_file(self, file_path: Path):

@@ -4,9 +4,10 @@ from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 
 class DiffDisassemblyView(DisassemblyView):
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__(instance, *args, **kwargs)
-
+    """
+    A Disassembly View for a binary being Diffed. Should never try to synchronize normally since
+    it will almost certainly have different addresses
+    """
     def on_synchronized_cursor_address_changed(self):
         assert not self._processing_synchronized_cursor_update
         self._processing_synchronized_cursor_update = True

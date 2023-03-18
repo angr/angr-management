@@ -2,22 +2,29 @@ import itertools
 from typing import List, Union
 import re
 
-from angr.analyses.disassembly import MemoryOperand
 import networkx as nx
+
+from angr.analyses.disassembly import MemoryOperand
 from angr.knowledge_plugins.functions.function import Function
 from angr.block import CapstoneInsn
 from angr.analyses.disassembly import Disassembly, Instruction
 from angrmanagement.utils import string_at_addr
-
 from angrmanagement.ui.views import DisassemblyView
 
 
 class FunctionDiff:
+    """
+    A class to represent a diff of two functions, which may either be part of a larger disassembly view or not.
+    Diffs are recorded in the rev_{change,add,del} sets, which are instruction addresses.
+
+    """
+
     OBJ_DELETED = "del"
     OBJ_ADDED = "add"
     OBJ_CHANGED = "chg"
     OBJ_UNMODIFIED = "nop"
 
+    # pylint:disable=unused-argument
     def __init__(
         self, 
         func_base: Function, 
@@ -79,7 +86,7 @@ class FunctionDiff:
                         try:
                             base_mem_op_addr = list(base_mem_ops[0].values)[0].val
                             rev_mem_op_addr = list(rev_mem_ops[0].values)[0].val
-                        except Exception:
+                        except (IndexError, KeyError, ValueError):
                             return FunctionDiff.OBJ_CHANGED
 
                         base_str = string_at_addr(self.func_base.project.kb.cfgs.get_most_accurate(), base_mem_op_addr, self.func_base.project)
@@ -119,6 +126,9 @@ class FunctionDiff:
 
 
 class LinearFunctionDiff(FunctionDiff):
+    """
+    A function diff calculated by traversing two disassemblies linearly and checking index by index.
+    """
     def __init__(
             self,
             func_base: Function,
@@ -158,6 +168,10 @@ class LinearFunctionDiff(FunctionDiff):
 
 
 class BFSFunctionDiff(FunctionDiff):
+    """
+    Use two graphs to compute a function diff, performing Linear diff on each block for each position.
+    The traversal of both graphs are done in a BFS manner.
+    """
     def __init__(
             self,
             func_base: Function,
@@ -185,9 +199,6 @@ class BFSFunctionDiff(FunctionDiff):
 
     @staticmethod
     def bfs_list_block_levels(graph: nx.DiGraph):
-        """
-        TODO: need to make this for supergraphs
-        """
         block_levels = []
         start_block = [n for n in graph.nodes if graph.in_degree(n) == 0][0]
         bfs = list(nx.bfs_successors(graph, start_block))
@@ -222,7 +233,7 @@ class BFSFunctionDiff(FunctionDiff):
                 if block_idx >= len(rev_blocks):
                     break
 
-                unmodified_insns = list()
+                unmodified_insns = []
                 rev_insns = self.supergraph_block_to_insns(self.func_rev, rev_blocks[block_idx])
 
                 # find unmodified instructions
