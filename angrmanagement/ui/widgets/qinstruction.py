@@ -94,7 +94,7 @@ class QInstruction(QCachedGraphicsItem):
 
     def _calc_backcolor(self):
         # First we'll check for customizations
-        color = self.instance.workspace.plugins.color_insn(self.insn.addr, self.selected)
+        color = self.instance.workspace.plugins.color_insn(self.insn.addr, self.selected, self.disasm_view)
         if color is not None:
             return color
 

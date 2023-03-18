@@ -82,7 +82,7 @@ class BasePlugin:
     # UI Callbacks
     #
 
-    def color_insn(self, addr, selected) -> Optional["QColor"]:
+    def color_insn(self, addr, selected, disasm_view) -> Optional["QColor"]:
         return None
 
     def color_block(self, addr) -> Optional["QColor"]:

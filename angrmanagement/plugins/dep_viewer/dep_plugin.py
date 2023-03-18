@@ -18,7 +18,7 @@ class DependencyViewer(BasePlugin):
 
         self.sink_color = Qt.yellow
 
-    def color_insn(self, addr, selected) -> Optional[QColor]:
+    def color_insn(self, addr, selected, disasm_view) -> Optional[QColor]:
         if not selected:
             try:
                 block_addr = next(self.covered_blocks.irange(maximum=addr, reverse=True))
