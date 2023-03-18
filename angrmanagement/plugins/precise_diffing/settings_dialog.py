@@ -1,3 +1,4 @@
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -10,7 +11,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QLabel,
 )
-from PySide6.QtGui import QColor
 
 from .function_diff import LinearFunctionDiff, BFSFunctionDiff
 

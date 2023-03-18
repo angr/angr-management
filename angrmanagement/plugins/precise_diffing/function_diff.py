@@ -1,6 +1,6 @@
 import itertools
-from typing import List, Union
 import re
+from typing import List, Union
 
 import networkx as nx
 

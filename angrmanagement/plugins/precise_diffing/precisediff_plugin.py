@@ -1,19 +1,20 @@
+import logging
 from typing import Optional
 from pathlib import Path
-import logging
 
+import angr
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
-import angr
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.data.instance import Instance
 from angrmanagement.ui.views import DisassemblyView
+
 from .diff_view import DiffDisassemblyView
 from .function_diff import FunctionDiff, BFSFunctionDiff
 from .settings_dialog import SettingsDialog
 
-l = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class PreciseDiffPlugin(BasePlugin):
@@ -57,7 +58,7 @@ class PreciseDiffPlugin(BasePlugin):
         elif idx == self.LOAD_BINARY_CMD_EVT:
             filepath, _ = QFileDialog.getOpenFileName(caption="Load Recompiled Object")
             if not filepath:
-                l.warning("Binary selection cancelled.")
+                logger.warning("Binary selection cancelled.")
                 return
 
             self.load_revised_binary_from_file(Path(filepath))
@@ -161,7 +162,7 @@ class PreciseDiffPlugin(BasePlugin):
         try:
             revised_func = self.diff_instance.cfg.functions[og_func_name]
         except KeyError:
-            l.warning("The function %s does not exist in the diffed binary", og_func)
+            logger.warning("The function %s does not exist in the diffed binary", og_func)
             return
 
         self.jump_to_in_revised_view(revised_func)
