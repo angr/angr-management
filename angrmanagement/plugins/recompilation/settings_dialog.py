@@ -19,6 +19,7 @@ class SettingsDialog(QDialog):
     """
     A settings dialog for the Precise Diff plugin
     """
+
     def __init__(self, diff_plugin, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Precise Diff Settings")

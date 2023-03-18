@@ -128,6 +128,7 @@ class LinearFunctionDiff(FunctionDiff):
     """
     A function diff calculated by traversing two disassemblies linearly and checking index by index.
     """
+
     def __init__(
         self,
         func_base: Function,
@@ -177,6 +178,7 @@ class BFSFunctionDiff(FunctionDiff):
     Use two graphs to compute a function diff, performing Linear diff on each block for each position.
     The traversal of both graphs are done in a BFS manner.
     """
+
     def __init__(
         self,
         func_base: Function,
