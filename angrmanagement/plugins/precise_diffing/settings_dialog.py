@@ -1,18 +1,18 @@
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QGroupBox,
-    QRadioButton,
-    QPushButton,
-    QHBoxLayout,
     QCheckBox,
+    QDialog,
     QGridLayout,
-    QLineEdit,
+    QGroupBox,
+    QHBoxLayout,
     QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
 )
 
-from .function_diff import LinearFunctionDiff, BFSFunctionDiff
+from .function_diff import BFSFunctionDiff, LinearFunctionDiff
 
 
 class SettingsDialog(QDialog):

@@ -3,13 +3,12 @@ import re
 from typing import List, Union
 
 import networkx as nx
-
-from angr.analyses.disassembly import MemoryOperand
-from angr.knowledge_plugins.functions.function import Function
+from angr.analyses.disassembly import Disassembly, Instruction, MemoryOperand
 from angr.block import CapstoneInsn
-from angr.analyses.disassembly import Disassembly, Instruction
-from angrmanagement.utils import string_at_addr
+from angr.knowledge_plugins.functions.function import Function
+
 from angrmanagement.ui.views import DisassemblyView
+from angrmanagement.utils import string_at_addr
 
 
 class FunctionDiff:

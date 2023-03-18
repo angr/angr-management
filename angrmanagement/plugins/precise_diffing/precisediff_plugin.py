@@ -1,17 +1,17 @@
 import logging
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 import angr
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
 
-from angrmanagement.plugins import BasePlugin
 from angrmanagement.data.instance import Instance
+from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import DisassemblyView
 
 from .diff_view import DiffDisassemblyView
-from .function_diff import FunctionDiff, BFSFunctionDiff
+from .function_diff import BFSFunctionDiff, FunctionDiff
 from .settings_dialog import SettingsDialog
 
 logger = logging.getLogger(__name__)
