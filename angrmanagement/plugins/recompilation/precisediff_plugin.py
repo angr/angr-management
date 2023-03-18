@@ -20,6 +20,7 @@ class PreciseDiffPlugin(BasePlugin):
     """
     A plugin for performing precisions diffs on two binaries loaded in angr-management.
     """
+
     DIFF_SETTINGS_CMD_EVT = 0
     LOAD_BINARY_CMD_EVT = 1
     RELOAD_BINARY_CMD_EVT = 2
