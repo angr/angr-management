@@ -2,6 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional, Tuple
 
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMessageBox
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views import DisassemblyView
@@ -93,5 +94,14 @@ class QDisassemblyBaseControl:
                 lbl_addr = next(iter(self.infodock.selected_labels))
                 self.disasm_view.popup_xref_dialog(addr=lbl_addr, dst_addr=lbl_addr)
                 return
+
+            # message the user
+            QMessageBox.critical(
+                None,
+                "Invalid selection for XRefs",
+                "You must put select an operand, a label, or a function header before requesting XRefs.",
+            )
+
+            return
 
         self._base_cls.keyPressEvent(self, event)
