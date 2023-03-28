@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
         if self.workspace.main_instance.project.am_none:
             QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
             return
-        new_state_dialog = NewState(self.workspace.main_instance, parent=self, create_simgr=True)
+        new_state_dialog = NewState(self.workspace, self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
     def open_doc_link(self):
@@ -850,7 +850,7 @@ class MainWindow(QMainWindow):
 
     def run_analysis(self):
         if self.workspace:
-            self.workspace.main_instance.run_analysis()
+            self.workspace.run_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:

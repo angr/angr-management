@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 
 
 class StringsView(BaseView):
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("strings", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("strings", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Strings"
 
@@ -61,14 +61,14 @@ class StringsView(BaseView):
         :return:
         """
 
-        if len(self.instance.workspace.view_manager.views_by_category["disassembly"]) == 1:
-            disasm_view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
+        if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
+            disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         else:
-            disasm_view = self.instance.workspace.view_manager.current_view_in_category("disassembly")
+            disasm_view = self.workspace.view_manager.current_view_in_category("disassembly")
         if disasm_view is not None:
             disasm_view.jump_to(s.addr)
             disasm_view.select_label(s.addr)
-            self.instance.workspace.view_manager.raise_view(disasm_view)
+            self.workspace.view_manager.raise_view(disasm_view)
 
     def on_filter_change(self, **kwargs):  # pylint: disable=unused-argument
         pattern = self._filter_string.text()

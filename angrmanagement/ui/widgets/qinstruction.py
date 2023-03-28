@@ -68,7 +68,7 @@ class QInstruction(QCachedGraphicsItem):
         event.accept()
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        if self.instance.workspace.plugins.handle_click_insn(self, event):
+        if self.disasm_view.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
         elif event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (
@@ -94,7 +94,7 @@ class QInstruction(QCachedGraphicsItem):
 
     def _calc_backcolor(self):
         # First we'll check for customizations
-        color = self.instance.workspace.plugins.color_insn(self.insn.addr, self.selected, self.disasm_view)
+        color = self.disasm_view.workspace.plugins.color_insn(self.insn.addr, self.selected, self.disasm_view)
         if color is not None:
             return color
 
@@ -156,7 +156,7 @@ class QInstruction(QCachedGraphicsItem):
             painter.drawRect(0, 0, self.width, self.height)
 
         # any plugin instruction rendering passes
-        self.instance.workspace.plugins.draw_insn(self, painter)
+        self.disasm_view.workspace.plugins.draw_insn(self, painter)
 
     #
     # Private methods

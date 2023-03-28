@@ -36,7 +36,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
         super().__init__()
 
         self._proximity_view = proximity_view
-        self._workspace = self._proximity_view.instance.workspace
+        self._workspace = self._proximity_view.workspace
         self._config = Conf
 
         self.selected = is_selected

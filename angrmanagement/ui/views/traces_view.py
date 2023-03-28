@@ -106,12 +106,12 @@ class QTraceTableWidget(QTableView):
         if len(traces):
             menu = QMenu("", self)
             if len(traces) == 1:
-                if not self.instance.workspace.is_current_trace(traces[0]):
-                    menu.addAction("Use as current trace", lambda: self.instance.workspace.set_current_trace(traces[0]))
+                if not self.workspace(traces[0]):
+                    menu.addAction("Use as current trace", lambda: self.workspace.set_current_trace(traces[0]))
 
             def remove_selected_traces():
                 for t in traces:
-                    self.instance.workspace.remove_trace(t)
+                    self.workspace.remove_trace(t)
 
             menu.addAction("Remove trace" + ("s" if len(traces) > 1 else ""), remove_selected_traces)
             menu.exec_(event.globalPos())
@@ -122,8 +122,8 @@ class TracesView(BaseView):
     Traces table view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("traces", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("traces", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Traces"
         self._tbl_widget: Optional[QTraceTableWidget] = None

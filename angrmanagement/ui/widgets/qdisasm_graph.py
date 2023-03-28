@@ -148,7 +148,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             self.disasm = self.instance.project.analyses.Disassembly(
                 function=self._function_graph.function, include_ir=include_ir
             )
-            view = self.instance.workspace.view_manager.first_view_in_category("console")
+            view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
                 view.push_namespace(
                     {

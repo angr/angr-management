@@ -73,8 +73,8 @@ class InteractionState(enum.Enum):
 
 
 class InteractionView(BaseView):
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__("interaction", instance, *args, **kwargs)
+    def __init__(self, workspace, instance, *args, **kwargs):
+        super().__init__("interaction", workspace, instance, *args, **kwargs)
         self.base_caption = "Interaction"
         self.current_log = (
             []
@@ -229,16 +229,16 @@ class InteractionView(BaseView):
     def _upload_interaction(self):
         if slacrs is None:
             QMessageBox.warning(
-                self.instance.workspace.main_window,
+                self.workspace.main_window,
                 "slacrs module does not exist",
                 "Failed to import slacrs package. Please make sure it is installed.",
             )
             return
-        connector = self.instance.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
         if connector is None:
             # chess connector does not exist
             QMessageBox.warning(
-                self.instance.workspace.main_window,
+                self.workspace.main_window,
                 "CHESSConnector is not found",
                 "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed " "and enabled.",
             )
@@ -246,7 +246,7 @@ class InteractionView(BaseView):
         if not connector.target_image_id:
             # the target image ID does not exist
             QMessageBox.warning(
-                self.instance.workspace.main_window,
+                self.workspace.main_window,
                 "Target image ID is not specified",
                 "The target image ID is unspecified. Please associate the binary with a remote " "challenge target.",
             )
@@ -255,7 +255,7 @@ class InteractionView(BaseView):
         if slacrs_instance is None:
             # slacrs does not exist
             QMessageBox.warning(
-                self.instance.workspace.main_window,
+                self.workspace.main_window,
                 "CHECRS backend does not exist",
                 "Cannot communicate with the CHECRS backend. Please make sure you have proper Internet "
                 "access and have connected to the CHECRS backend.",

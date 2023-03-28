@@ -32,8 +32,8 @@ class CodeView(BaseView):
 
     FUNCTION_SPECIFIC_VIEW = True
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("pseudocode", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("pseudocode", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Pseudocode"
 
@@ -357,11 +357,11 @@ class CodeView(BaseView):
                 if selected_node.callee_func is not None:
                     self.jump_history.record_address(selected_node.tags["ins_addr"])
                     self.jump_history.jump_to(selected_node.callee_func.addr)
-                    self.instance.workspace.decompile_function(selected_node.callee_func, view=self)
+                    self.workspace.decompile_function(selected_node.callee_func, view=self)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
-                    self.instance.workspace.jump_to(selected_node.value)
+                    self.workspace.jump_to(selected_node.value)
 
     def _jump_to(self, addr: int):
         self.addr.am_obj = addr
@@ -388,7 +388,7 @@ class CodeView(BaseView):
         key = event.key()
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
-            self.instance.workspace.jump_to(self.addr.am_obj)
+            self.workspace.jump_to(self.addr.am_obj)
             return True
         elif key == Qt.Key_Escape:
             self.jump_back()
@@ -472,4 +472,4 @@ class CodeView(BaseView):
 
         self._textedit.focusWidget()
 
-        self.instance.workspace.plugins.instrument_code_view(self)
+        self.workspace.plugins.instrument_code_view(self)

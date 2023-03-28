@@ -59,8 +59,8 @@ class CallExplorerView(BaseView):
     Call Explorer view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("call_explorer", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("call_explorer", workspace, instance, default_docking_position, *args, **kwargs)
 
         self._last_updated_func: Optional[Union[int, Function]] = None
         self._inhibit_update: bool = False

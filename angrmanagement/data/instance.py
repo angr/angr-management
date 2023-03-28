@@ -2,7 +2,6 @@ import logging
 import sys
 import time
 from queue import Queue
-from threading import Thread
 from typing import TYPE_CHECKING, Callable, List, Optional, Type, Union
 
 import angr
@@ -10,36 +9,21 @@ from angr.analyses.disassembly import Instruction
 from angr.block import Block
 from angr.knowledge_base import KnowledgeBase
 from angr.knowledge_plugins import Function
-from angr.misc.testing import is_testing
 from cle import SymbolType
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.data.trace import Trace
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
-from angrmanagement.logic.debugger.simgr import SimulationDebugger
 from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
-from angrmanagement.ui.dialogs import AnalysisOptionsDialog
+from angrmanagement.utils.daemon_thread import start_daemon_thread
 
-from .analysis_options import (
-    AnalysesConfiguration,
-    CFGAnalysisConfiguration,
-    CodeTaggingConfiguration,
-    FlirtAnalysisConfiguration,
-    VariableRecoveryConfiguration,
-)
-from .jobs import (
-    CFGGenerationJob,
-    CodeTaggingJob,
-    FlirtSignatureRecognitionJob,
-    PrototypeFindingJob,
-    VariableRecoveryJob,
-)
 from .log import LogRecord, initialize
 from .object_container import ObjectContainer
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
+    from .jobs import VariableRecoveryJob
+
 
 _l = logging.getLogger(__name__)
 
@@ -65,8 +49,7 @@ class Instance:
         )
 
         self._live = False
-        self.workspace: Optional["Workspace"] = None
-        self.variable_recovery_job: Optional[VariableRecoveryJob] = None
+        self.variable_recovery_job: Optional["VariableRecoveryJob"] = None
         self._analysis_configuration = None
 
         self.jobs = []
@@ -106,13 +89,14 @@ class Instance:
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
 
-        self.simgrs.am_subscribe(self._update_simgr_debuggers)
         self.project.am_subscribe(self.initialize)
 
         # Callbacks
         self._insn_backcolor_callback: Optional[Callable[[int, bool], None]] = None  # (addr, is_selected)
         self._label_rename_callback: Optional[Callable[[int, str], None]] = None  # (addr, new_name)
         self._set_comment_callback: Optional[Callable[[int, str], None]] = None  # (addr, comment_text)
+        self.handle_comment_changed_callback: Optional[Callable[[int, str, bool, bool, bool], None]] = None
+        self.job_worker_exception_callback: Optional[Callable[[Exception], None]] = None
 
         # Setup logging
         initialize(self)
@@ -205,10 +189,6 @@ class Instance:
             if self.pseudocode_variable_kb is None:
                 self.initialize_pseudocode_variable_kb()
 
-            gui_thread_schedule_async(self.run_analysis)
-
-        self.workspace.plugins.handle_project_initialization()
-
     def initialize_pseudocode_variable_kb(self):
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
 
@@ -263,10 +243,6 @@ class Instance:
                 last_has_job = time.time()
                 time.sleep(0.05)
 
-    def append_code_to_console(self, hook_code_string):
-        console = self.workspace._get_or_create_console_view()
-        console.set_input_buffer(hook_code_string)
-
     def delete_hook(self, addr):
         self.project.unhook(addr)
 
@@ -275,10 +251,10 @@ class Instance:
         Convenience function to add a breakpoint.
 
         Examples:
-        - `workspace.add_breakpoint(0x1234)` sets an execution breakpoint on address 0x1234
-        - `workspace.add_breakpoint('main')` sets an execution breakpoint on `main` function
-        - `workspace.add_breakpoint('global_value')` sets a write breakpoint on `global_value`
-        - `workspace.add_breakpoint('global_value', 'read', 1)` sets a 1-byte read breakpoint on `global_value`
+        - `instance.add_breakpoint(0x1234)` sets an execution breakpoint on address 0x1234
+        - `instance.add_breakpoint('main')` sets an execution breakpoint on `main` function
+        - `instance.add_breakpoint('global_value')` sets a write breakpoint on `global_value`
+        - `instance.add_breakpoint('global_value', 'read', 1)` sets a 1-byte read breakpoint on `global_value`
         """
         if type(obj) is int:
             addr = obj
@@ -325,77 +301,57 @@ class Instance:
 
         # callback
         if comment_text is None and exists:
-            self.workspace.plugins.handle_comment_changed(addr, "", False, False, False)
+            if self.handle_comment_changed_callback:
+                self.handle_comment_changed_callback(addr, "", False, False, False)
             del kb.comments[addr]
         else:
-            self.workspace.plugins.handle_comment_changed(addr, comment_text, not exists, False, False)
+            if self.handle_comment_changed_callback:
+                self.handle_comment_changed_callback(addr, comment_text, not exists, False, False)
             kb.comments[addr] = comment_text
 
         # TODO: can this be removed?
         if self.set_comment_callback:
             self.set_comment_callback(addr=addr, comment_text=comment_text)
 
-    def run_analysis(self, prompt_for_configuration=True):
-        if self.project.am_none:
-            return
-
-        if self._analysis_configuration is None:
-            self._analysis_configuration = AnalysesConfiguration(
-                [
-                    a(self)
-                    for a in [
-                        CFGAnalysisConfiguration,
-                        FlirtAnalysisConfiguration,
-                        CodeTaggingConfiguration,
-                        VariableRecoveryConfiguration,
-                    ]
-                ],
-                self,
-            )
-
-        if not self.workspace.main_window.shown_at_start:
-            # If we are running headlessly (e.g. tests), just run with default configuration
-            prompt_for_configuration = False
-
-        if prompt_for_configuration:
-            dlg = AnalysisOptionsDialog(self._analysis_configuration, self.workspace, self.workspace.main_window)
-            dlg.setModal(True)
-            should_run = dlg.exec_()
-        else:
-            should_run = True
-
-        if should_run:
-            if self._analysis_configuration["cfg"].enabled:
-                self.generate_cfg(self._analysis_configuration["cfg"].to_dict())
-
     #
     # Private methods
     #
 
-    @staticmethod
-    def _start_daemon_thread(target, name, args=None):
-        t = Thread(target=target, name=name, args=args if args else tuple())
-        t.daemon = True
-        t.start()
-        return t
+    # TODO: Worker thread and UI callbacks should be moved to a separate class
 
     def _start_worker(self):
-        self.worker_thread = self._start_daemon_thread(self._worker, "angr-management Worker Thread")
+        self.worker_thread = start_daemon_thread(self._worker, "angr-management Worker Thread")
+
+    def callback_worker_progress_empty(self):
+        gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
+
+    def callback_worker_blocking_job(self):
+        if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
+            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
+
+    def callback_worker_new_job(self):
+        gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
+
+    def callback_4(self):
+        if GlobalInfo.main_window.isVisible():
+            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
+
+    def callback_job_complete(self, job, result):
+        gui_thread_schedule_async(job.finish, args=(self, result))
 
     def _worker(self):
         while True:
             if self._jobs_queue.empty():
-                gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
-
-            if self.workspace is not None and any(job.blocking for job in self.jobs):
-                gui_thread_schedule(self.workspace.main_window._progress_dialog.hide, args=())
-
-            job = self._jobs_queue.get()
-            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
+                self.callback_worker_progress_empty()
 
             if any(job.blocking for job in self.jobs):
-                if self.workspace.main_window.isVisible():
-                    gui_thread_schedule(self.workspace.main_window._progress_dialog.show, args=())
+                self.callback_worker_blocking_job()
+
+            job = self._jobs_queue.get()
+            self.callback_worker_new_job()
+
+            if any(job.blocking for job in self.jobs):
+                self.callback_4()
 
             try:
                 self.current_job = job
@@ -405,11 +361,10 @@ class Instance:
                 sys.last_traceback = e.__traceback__
                 self.current_job = None
                 _l.exception('Exception while running job "%s":', job.name)
-                self.workspace.log('Exception while running job "%s":' % job.name)
-                self.workspace.log(e)
-                self.workspace.log("Type %debug to debug it")
+                if self.job_worker_exception_callback is not None:
+                    self.job_worker_exception_callback(job, e)
             else:
-                gui_thread_schedule_async(job.finish, args=(self, result))
+                self.callback_job_complete(job, result)
 
     # pylint:disable=no-self-use
     def _set_status(self, status_text):
@@ -425,162 +380,3 @@ class Instance:
             self.debugger_list_mgr.remove_debugger(dbg)
 
         self.breakpoint_mgr.clear()
-
-    def _update_simgr_debuggers(self, **kwargs):  # pylint:disable=unused-argument
-        sim_dbg = None
-        for dbg in self.debugger_list_mgr.debugger_list:
-            if isinstance(dbg, SimulationDebugger):
-                sim_dbg = dbg
-                break
-
-        if len(self.simgrs) > 0:
-            if sim_dbg is None:
-                view = self.workspace._get_or_create_symexec_view()._simgrs
-                dbg = SimulationDebugger(view, self.workspace)
-                self.debugger_list_mgr.add_debugger(dbg)
-                self.debugger_mgr.set_debugger(dbg)
-        elif sim_dbg is not None:
-            self.debugger_list_mgr.remove_debugger(sim_dbg)
-
-    #
-    # Events
-    #
-
-    def generate_cfg(self, cfg_args=None):
-        if cfg_args is None:
-            cfg_args = {}
-
-        cfg_job = CFGGenerationJob(on_finish=self.on_cfg_generated, **cfg_args)
-        self.add_job(cfg_job)
-        self._start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(cfg_job,))
-
-    def _refresh_cfg(self, cfg_job):
-        """
-        Reload once and then refresh in a loop, while the CFG job is running
-        """
-        reloaded = False
-        while True:
-            if not self.cfg.am_none:
-                if reloaded:
-                    gui_thread_schedule_async(
-                        self.workspace.refresh,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                else:
-                    gui_thread_schedule_async(
-                        self.workspace.reload,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                    reloaded = True
-
-            time.sleep(0.3)
-            if cfg_job not in self.jobs:
-                break
-
-    def on_cfg_generated(self):
-        if self._analysis_configuration["flirt"].enabled:
-            self.add_job(
-                FlirtSignatureRecognitionJob(
-                    on_finish=self._on_flirt_signature_recognized,
-                )
-            )
-
-        # display the main function if it exists, otherwise display the function at the entry point
-        if self.cfg is not None:
-            the_func = self.kb.functions.function(name="main")
-            if the_func is None:
-                the_func = self.kb.functions.function(addr=self.project.entry)
-
-            if the_func is not None:
-                self.on_function_selected(the_func)
-
-            # Reload the pseudocode view
-            view = self.workspace.view_manager.first_view_in_category("pseudocode")
-            if view is not None:
-                view.reload()
-
-            # Reload the strings view
-            view = self.workspace.view_manager.first_view_in_category("strings")
-            if view is not None:
-                view.reload()
-
-            # Clear the proximity view
-            view = self.workspace.view_manager.first_view_in_category("proximity")
-            if view is not None:
-                view.clear()
-
-    def _on_flirt_signature_recognized(self):
-        self.add_job(
-            PrototypeFindingJob(
-                on_finish=self._on_prototype_found,
-            )
-        )
-
-    def _on_prototype_found(self):
-        if self._analysis_configuration["code_tagging"].enabled:
-            self.add_job(
-                CodeTaggingJob(
-                    on_finish=self.on_function_tagged,
-                )
-            )
-
-        if self._analysis_configuration["varec"].enabled:
-            options = self._analysis_configuration["varec"].to_dict()
-            if is_testing:
-                # disable multiprocessing on angr CI
-                options["workers"] = 0
-            self.variable_recovery_job = VariableRecoveryJob(
-                **self._analysis_configuration["varec"].to_dict(),
-                on_variable_recovered=self.on_variable_recovered,
-            )
-            # prioritize the current function in display
-            disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None:
-                if not disassembly_view.function.am_none:
-                    self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.add_job(self.variable_recovery_job)
-
-    def on_function_selected(self, func: Function):
-        """
-        Callback function triggered when a new function is selected in the function view.
-
-        :param func:    The function that is selected.
-        :return:        None
-        """
-
-        # Ask all current views to display this function
-        current_view = self.workspace.view_manager.current_tab
-        if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
-            # we don't have a current view or the current view does not have function-specific content. create a
-            # disassembly view to display the selected function.
-            disasm_view = self.workspace._get_or_create_disassembly_view()
-            disasm_view.display_function(func)
-            self.workspace.view_manager.raise_view(disasm_view)
-        else:
-            # ask the current view to display this function
-            current_view.function = func
-
-    def on_function_tagged(self):
-        # reload disassembly view
-        if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
-            view = self.workspace.view_manager.first_view_in_category("disassembly")
-        else:
-            view = self.workspace.view_manager.current_view_in_category("disassembly")
-
-        if view is not None:
-            if view.current_function.am_obj is not None:
-                view.reload()
-
-    def on_variable_recovered(self, func_addr: int):
-        """
-        Called when variable information of the given function is available.
-
-        :param int func_addr:   Address of the function whose variable information is available.
-        """
-        disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
-        if disassembly_view is not None:
-            disassembly_view.on_variable_recovered(func_addr)

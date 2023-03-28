@@ -10,8 +10,8 @@ class PatchesView(BaseView):
     View showing all patches.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("patches", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("patches", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Patches"
         self._patch_table: QPatchTable

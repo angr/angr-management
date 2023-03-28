@@ -32,8 +32,8 @@ class DataDepView(BaseView):
 
     FUNCTION_SPECIFIC_VIEW = False
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("data_dependency", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("data_dependency", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Data Dependency"
 

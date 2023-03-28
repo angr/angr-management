@@ -159,8 +159,8 @@ class StackView(BaseView):
     Stack table view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("stack", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("stack", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Stack"
         self._tbl_widget: Optional[QStackTableWidget] = None

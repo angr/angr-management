@@ -300,7 +300,7 @@ class QGraphBlock(QBlock):
         event.accept()
 
     def mousePressEvent(self, event):
-        if self.instance.workspace.plugins.handle_click_block(self, event):
+        if self.disasm_view.workspace.plugins.handle_click_block(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
             return
@@ -311,7 +311,7 @@ class QGraphBlock(QBlock):
         super().mousePressEvent(event)
 
     def _calc_backcolor(self, should_omit_text):
-        color = self.instance.workspace.plugins.color_block(self.addr)
+        color = self.disasm_view.workspace.plugins.color_block(self.addr)
         if color is not None:
             return color
 
@@ -361,7 +361,7 @@ class QGraphBlock(QBlock):
                 self._objects_are_hidden = should_omit_text
 
         # extra content
-        self.instance.workspace.plugins.draw_block(self, painter)
+        self.disasm_view.workspace.plugins.draw_block(self, painter)
 
     def on_selected(self):
         self.infodock.select_block(self.addr)
