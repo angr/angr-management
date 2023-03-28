@@ -91,6 +91,8 @@ class QLogTableModel(QAbstractTableModel):
             return self._get_column_text(log, col)
         elif role == Qt.DecorationRole and col == QLogTableModel.COL_ICON:
             return self._get_column_icon(log)
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignTop | Qt.AlignLeft
 
         return None
 
@@ -158,6 +160,8 @@ class QLogWidget(QTableView):
 
         self.setColumnWidth(0, 20)
         self.setColumnWidth(1, 150)
+
+        self.doubleClicked.connect(self._on_double_clicked)
 
         self.log_view.instance.log.am_subscribe(self._on_new_logrecord)
 
@@ -245,6 +249,13 @@ class QLogWidget(QTableView):
             self.copy_selected_messages()
         else:
             super().keyPressEvent(event)
+
+    def _on_double_clicked(self, item):
+        # Expand/collapse row
+        if self.rowHeight(item.row()) > 20:
+            self.setRowHeight(item.row(), 20)
+        else:
+            self.setRowHeight(item.row(), self.sizeHintForRow(item.row()))
 
     #
     # Private methods
