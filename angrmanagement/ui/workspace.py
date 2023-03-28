@@ -176,10 +176,10 @@ class Workspace:
 
     def on_function_tagged(self):
         # reload disassembly view
-        if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
-            view = self.workspace.view_manager.first_view_in_category("disassembly")
+        if len(self.view_manager.views_by_category["disassembly"]) == 1:
+            view = self.view_manager.first_view_in_category("disassembly")
         else:
-            view = self.workspace.view_manager.current_view_in_category("disassembly")
+            view = self.view_manager.current_view_in_category("disassembly")
 
         if view is not None:
             if view.current_function.am_obj is not None:
@@ -191,7 +191,7 @@ class Workspace:
 
         :param int func_addr:   Address of the function whose variable information is available.
         """
-        disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
+        disassembly_view = self.view_manager.first_view_in_category("disassembly")
         if disassembly_view is not None:
             disassembly_view.on_variable_recovered(func_addr)
 
