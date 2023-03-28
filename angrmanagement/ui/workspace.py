@@ -290,8 +290,8 @@ class Workspace:
             disassembly_view = self.view_manager.first_view_in_category("disassembly")
             if disassembly_view is not None:
                 if not disassembly_view.function.am_none:
-                    self.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.main_instance.add_job(self.variable_recovery_job)
+                    self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
+            self.main_instance.add_job(self.main_instance.variable_recovery_job)
 
     #
     # Public methods
