@@ -167,7 +167,7 @@ class Workspace:
         if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
             # we don't have a current view or the current view does not have function-specific content. create a
             # disassembly view to display the selected function.
-            disasm_view = self._get_or_create_disassembly_view()
+            disasm_view = self._get_or_create_view("dissasembly", DisassemblyView)
             disasm_view.display_function(func)
             self.view_manager.raise_view(disasm_view)
         else:
@@ -242,7 +242,7 @@ class Workspace:
         if self.main_instance.cfg is not None:
             the_func = self.main_instance.kb.functions.function(name="main")
             if the_func is None:
-                the_func = self.main_instance.kb.functions.function(addr=self.project.entry)
+                the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
 
             if the_func is not None:
                 self.on_function_selected(the_func)
@@ -759,7 +759,7 @@ class Workspace:
         self.main_instance.debugger_mgr.debugger.continue_forward()
 
     def append_code_to_console(self, hook_code_string):
-        console = self._get_or_create_console_view()
+        console = self._get_or_create_view("console", ConsoleView)
         console.set_input_buffer(hook_code_string)
 
     #
@@ -787,8 +787,8 @@ class Workspace:
 
         if len(self.main_instance.simgrs) > 0:
             if sim_dbg is None:
-                view = self._get_or_create_symexec_view()._simgrs
-                dbg = SimulationDebugger(view, self)
+                simgrs = self._get_or_create_view("symexec", SymexecView)._simgrs
+                dbg = SimulationDebugger(simgrs, self)
                 self.main_instance.debugger_list_mgr.add_debugger(dbg)
                 self.main_instance.debugger_mgr.set_debugger(dbg)
         elif sim_dbg is not None:

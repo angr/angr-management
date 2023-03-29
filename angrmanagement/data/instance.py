@@ -322,36 +322,19 @@ class Instance:
     def _start_worker(self):
         self.worker_thread = start_daemon_thread(self._worker, "angr-management Worker Thread")
 
-    def callback_worker_progress_empty(self):
-        gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
-
-    def callback_worker_blocking_job(self):
-        if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
-            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
-
-    def callback_worker_new_job(self):
-        gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
-
-    def callback_4(self):
-        if GlobalInfo.main_window.isVisible():
-            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
-
-    def callback_job_complete(self, job, result):
-        gui_thread_schedule_async(job.finish, args=(self, result))
-
     def _worker(self):
         while True:
             if self._jobs_queue.empty():
-                self.callback_worker_progress_empty()
+                callback_worker_progress_empty()
 
             if any(job.blocking for job in self.jobs):
-                self.callback_worker_blocking_job()
+                callback_worker_blocking_job()
 
             job = self._jobs_queue.get()
-            self.callback_worker_new_job()
+            callback_worker_new_job()
 
             if any(job.blocking for job in self.jobs):
-                self.callback_4()
+                callback_worker_blocking_job_2()
 
             try:
                 self.current_job = job
@@ -364,7 +347,7 @@ class Instance:
                 if self.job_worker_exception_callback is not None:
                     self.job_worker_exception_callback(job, e)
             else:
-                self.callback_job_complete(job, result)
+                callback_job_complete(job, result)
 
     # pylint:disable=no-self-use
     def _set_status(self, status_text):
@@ -380,3 +363,25 @@ class Instance:
             self.debugger_list_mgr.remove_debugger(dbg)
 
         self.breakpoint_mgr.clear()
+
+
+def callback_worker_progress_empty(self):
+    gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
+
+
+def callback_worker_blocking_job(self):
+    if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
+        gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
+
+
+def callback_worker_new_job(self):
+    gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
+
+
+def callback_worker_blocking_job_2(self):
+    if GlobalInfo.main_window.isVisible():
+        gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
+
+
+def callback_job_complete(self, job, result):
+    gui_thread_schedule_async(job.finish, args=(self, result))
