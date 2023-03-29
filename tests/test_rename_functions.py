@@ -13,6 +13,7 @@ from PySide6.QtTest import QTest
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.rename_node import RenameNode
+from angrmanagement.ui.views import CodeView, DisassemblyView
 
 
 class TestRenameFunctions(unittest.TestCase):
@@ -28,8 +29,8 @@ class TestRenameFunctions(unittest.TestCase):
         main = self.main
 
         func = main.workspace.main_instance.project.kb.functions["main"]
-        disasm_view = main.workspace._get_or_create_disassembly_view()
-        pseudocode_view = main.workspace._get_or_create_pseudocode_view()
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
@@ -69,7 +70,7 @@ class TestRenameFunctions(unittest.TestCase):
         self.assertIsNotNone(func)
 
         # decompile the function
-        disasm_view = main.workspace._get_or_create_disassembly_view()
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_disasm_graph()
         gui_thread_schedule(disasm_view.display_function, args=(func,))
         disasm_view.decompile_current_function()
@@ -83,7 +84,7 @@ class TestRenameFunctions(unittest.TestCase):
 
         func = main.workspace.main_instance.project.kb.functions["authenticate"]
         _ = main.workspace._get_or_create_disassembly_view()
-        pseudocode_view = main.workspace._get_or_create_pseudocode_view()
+        pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
@@ -112,7 +113,7 @@ class TestRenameFunctions(unittest.TestCase):
         self.assertIsNotNone(func)
 
         # decompile the function
-        disasm_view = main.workspace._get_or_create_disassembly_view()
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_disasm_graph()
         gui_thread_schedule(disasm_view.display_function, args=(func,))
         disasm_view.decompile_current_function()

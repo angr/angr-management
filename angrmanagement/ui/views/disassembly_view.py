@@ -26,6 +26,7 @@ from angrmanagement.ui.dialogs.set_comment import SetComment
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
+from angrmanagement.ui.views import SymexecView
 from angrmanagement.ui.widgets import (
     DisassemblyLevel,
     QAvoidAddrAnnotation,
@@ -747,10 +748,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
                 self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
-        self.instance.workspace._get_or_create_symexec_view().avoid_addr_in_exec(addr)
+        self.instance.workspace._get_or_create_view("symexec", SymexecView).avoid_addr_in_exec(addr)
 
     def find_addr_in_exec(self, addr):
-        self.instance.workspace._get_or_create_symexec_view().find_addr_in_exec(addr)
+        self.instance.workspace._get_or_create_view("symexec", SymexecView).find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
