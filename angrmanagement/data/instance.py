@@ -347,7 +347,7 @@ class Instance:
                 if self.job_worker_exception_callback is not None:
                     self.job_worker_exception_callback(job, e)
             else:
-                callback_job_complete(job, result)
+                callback_job_complete(self, job, result)
 
     # pylint:disable=no-self-use
     def _set_status(self, status_text):
@@ -365,23 +365,23 @@ class Instance:
         self.breakpoint_mgr.clear()
 
 
-def callback_worker_progress_empty(self):
+def callback_worker_progress_empty():
     gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
 
 
-def callback_worker_blocking_job(self):
+def callback_worker_blocking_job():
     if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
         gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
 
 
-def callback_worker_new_job(self):
+def callback_worker_new_job():
     gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
 
 
-def callback_worker_blocking_job_2(self):
+def callback_worker_blocking_job_2():
     if GlobalInfo.main_window.isVisible():
         gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
 
-def callback_job_complete(self, job, result):
-    gui_thread_schedule_async(job.finish, args=(self, result))
+def callback_job_complete(instance, job, result):
+    gui_thread_schedule_async(job.finish, args=(instance, result))
