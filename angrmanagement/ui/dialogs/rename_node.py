@@ -172,7 +172,7 @@ class RenameNode(QDialog):
         if node_name is not None:
             if self._code_view is not None and self._node is not None:
                 # need workspace for altering callbacks of changes
-                workspace = self._code_view.instance.workspace
+                workspace = self._code_view.workspace
                 code_kb = self._code_view.codegen.kb
 
                 # stack variable

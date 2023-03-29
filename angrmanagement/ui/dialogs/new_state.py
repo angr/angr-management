@@ -61,11 +61,12 @@ class NewState(QDialog):
     Dialog to create a new simulation state.
     """
 
-    def __init__(self, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
+    def __init__(self, workspace, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
         super().__init__(parent)
 
         # initialization
 
+        self.workspace = workspace
         self.instance = instance
         self.state = None  # output
 
@@ -430,7 +431,7 @@ class NewState(QDialog):
                 states_list.am_event(src="new", state=self.state)
 
             if self._create_simgr:
-                self.instance.workspace.create_simulation_manager(self.state, name)
+                self.workspace.create_simulation_manager(self.state, name)
 
             self.close()
 

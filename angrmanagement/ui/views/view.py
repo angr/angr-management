@@ -20,9 +20,10 @@ class BaseView(QFrame):
     # to True.
     FUNCTION_SPECIFIC_VIEW = False
 
-    def __init__(self, category: str, instance, default_docking_position, *args, **kwargs):
+    def __init__(self, category: str, workspace, instance, default_docking_position, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.workspace = workspace
         self.instance: Instance = instance
         self.category = category
         self.default_docking_position = default_docking_position
@@ -46,7 +47,7 @@ class BaseView(QFrame):
         return self.visibleRegion().isEmpty() is False
 
     def focus(self):
-        self.instance.workspace.view_manager.raise_view(self)
+        self.workspace.view_manager.raise_view(self)
 
     def refresh(self):
         pass
@@ -63,7 +64,7 @@ class BaseView(QFrame):
         self.old_height = event.oldSize().height()
 
     def closeEvent(self, event: "PySide6.QtGui.QCloseEvent"):
-        self.instance.workspace.view_manager.remove_view(self)
+        self.workspace.view_manager.remove_view(self)
         event.accept()
 
     def mainWindowInitializedEvent(self):
@@ -103,7 +104,7 @@ class ViewStatePublisherMixin:
         self.notify_view_state_updated()
 
     def notify_view_state_updated(self):
-        if self.instance.workspace.view_manager.most_recently_focused_view is self:
+        if self.workspace.view_manager.most_recently_focused_view is self:
             self.instance.active_view_state.am_obj = self.published_view_state
             self.instance.active_view_state.am_event()
 
@@ -233,7 +234,7 @@ class SynchronizedView(BaseView):
         mnu = QMenu("&Synchronize with", self)
         groups = {
             v.sync_state
-            for v in self.instance.workspace.view_manager.views
+            for v in self.workspace.view_manager.views
             if (v is not self) and isinstance(v, SynchronizedView)
         }
         if len(groups) == 0:

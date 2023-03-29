@@ -19,12 +19,12 @@ class HookDialog(QDialog):
     Provide templetes of hook function.
     """
 
-    def __init__(self, instance, addr=None, parent=None):
+    def __init__(self, workspace, addr=None, parent=None):
         super().__init__(parent)
 
         # initialization
 
-        self.instance = instance
+        self.workspace = workspace
         self.state = None  # output
         self._addr = addr
         self.templates = {}
@@ -148,7 +148,7 @@ def enable_unicorn(state):
 
         def do_ok():
             code = function_box.toPlainText()
-            self.instance.append_code_to_console(code)
+            self.workspace.append_code_to_console(code)
             self.close()
 
         buttons.accepted.connect(do_ok)

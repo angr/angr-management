@@ -36,7 +36,7 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
 
     @property
     def symexec_view(self) -> "SymexecView":
-        return self.parentItem().disasm_view.instance.workspace.view_manager.first_view_in_category("symexec")
+        return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, text, *args, **kwargs):
         super().__init__(text, *args, **kwargs)
@@ -111,7 +111,7 @@ class QActiveCount(QStatsAnnotation):
             symexec_view = self.symexec_view
             if symexec_view:
                 symexec_view.select_states(self.states)
-                symexec_view.instance.workspace.raise_view(symexec_view)
+                symexec_view.workspace.raise_view(symexec_view)
 
         def _move_states():
             disasm_view = self.disasm_view

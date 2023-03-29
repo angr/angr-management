@@ -4,6 +4,7 @@ from .ddg_generation import DDGGenerationJob
 from .decompile_function import DecompileFunctionJob
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtSignatureRecognitionJob
+from .job import Job
 from .prototype_finding import PrototypeFindingJob
 from .simgr_explore import SimgrExploreJob
 from .simgr_step import SimgrStepJob
@@ -17,6 +18,7 @@ __all__ = [
     "DecompileFunctionJob",
     "DependencyAnalysisJob",
     "FlirtSignatureRecognitionJob",
+    "Job",
     "PrototypeFindingJob",
     "SimgrExploreJob",
     "SimgrStepJob",

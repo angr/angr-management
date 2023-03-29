@@ -10,8 +10,8 @@ from .view import BaseView
 
 
 class SymexecView(BaseView):
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__("symexec", instance, *args, **kwargs)
+    def __init__(self, workspace, instance, *args, **kwargs):
+        super().__init__("symexec", workspace, instance, *args, **kwargs)
 
         self.base_caption = "Symbolic Execution"
 
@@ -55,7 +55,7 @@ class SymexecView(BaseView):
         self._state_viewer.state = state
 
         # push namespace into the console
-        view = self.instance.workspace.view_manager.first_view_in_category("console")
+        view = self.workspace.view_manager.first_view_in_category("console")
         if view is not None:
             view.push_namespace(
                 {
@@ -105,18 +105,18 @@ class SymexecView(BaseView):
         # main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
         # main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
 
-        pathtree = QPathTree(self.current_simgr, self.current_state, self, self.instance.workspace, parent=main)
+        pathtree = QPathTree(self.current_simgr, self.current_state, self, self.workspace, parent=main)
         pathtree_dock = QDockWidget("PathTree", pathtree)
         main.setCentralWidget(pathtree_dock)
         # main.addDockWidget(Qt.BottomDockWidgetArea, pathtree_dock)
         pathtree_dock.setWidget(pathtree)
 
-        simgrs = QSimulationManagers(self.instance, self.current_simgr, self.current_state, parent=main)
+        simgrs = QSimulationManagers(self.workspace, self.instance, self.current_simgr, self.current_state, parent=main)
         simgrs_dock = QDockWidget("SimulationManagers", simgrs)
         main.addDockWidget(Qt.RightDockWidgetArea, simgrs_dock)
         simgrs_dock.setWidget(simgrs)
 
-        state_viewer = StateInspector(self.instance.workspace, self.current_state, parent=self)
+        state_viewer = StateInspector(self.workspace, self.current_state, parent=self)
         state_viewer_dock = QDockWidget("Selected State", state_viewer)
         main.addDockWidget(Qt.RightDockWidgetArea, state_viewer_dock)
         state_viewer_dock.setWidget(state_viewer)
@@ -137,9 +137,9 @@ class SymexecView(BaseView):
 
     def _switch_to_disassembly_view(self, addr):
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            disasm_view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
+            disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         else:
-            disasm_view = self.instance.workspace.view_manager.current_view_in_category("disassembly")
+            disasm_view = self.workspace.view_manager.current_view_in_category("disassembly")
         disasm_view.jump_to(addr)
 
-        self.instance.workspace.raise_view(disasm_view)
+        self.workspace.raise_view(disasm_view)

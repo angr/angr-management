@@ -352,7 +352,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self._insn_menu.insn_addr = insn.addr
         # pop up the menu
         mnu = self._insn_menu.qmenu(
-            extra_entries=list(self.instance.workspace.plugins.build_context_menu_insn(insn)), cached=False
+            extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn)), cached=False
         )
         self.append_view_menu_actions(mnu)
         mnu.exec_(pos)
@@ -419,7 +419,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if comment_addr is None:
             return
 
-        dialog = SetComment(self.instance.workspace, comment_addr, parent=self)
+        dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
 
     def popup_newstate_dialog(self, async_=True):
@@ -427,7 +427,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if addr is None:
             return
 
-        dialog = NewState(self.instance, addr=addr, create_simgr=True, parent=self)
+        dialog = NewState(self.workspace, self.instance, addr=addr, create_simgr=True, parent=self)
         if async_:
             dialog.show()
         else:
@@ -439,7 +439,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if addr is None:
             return
 
-        dialog = HookDialog(self.instance, addr=addr, parent=self)
+        dialog = HookDialog(self.workspace, addr=addr, parent=self)
         if async_:
             dialog.show()
         else:
@@ -511,7 +511,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if dependson.location is not None:
             if dependson.arg is not None:
                 # track function argument
-                self.instance.workspace._main_window.run_dependency_analysis(
+                self.workspace._main_window.run_dependency_analysis(
                     func_addr=addr,
                     func_arg_idx=dependson.arg,
                 )
@@ -620,7 +620,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             except StopIteration:
                 curr_ins = None
 
-            self.instance.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
+            self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
 
     def toggle_show_minimap(self, show_minimap: Optional[bool] = None) -> None:
         """
@@ -748,10 +748,10 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
                 self._flow_graph.update_label(addr, is_renaming=is_renaming)
 
     def avoid_addr_in_exec(self, addr):
-        self.instance.workspace._get_or_create_view("symexec", SymexecView).avoid_addr_in_exec(addr)
+        self.workspace._get_or_create_view("symexec", SymexecView).avoid_addr_in_exec(addr)
 
     def find_addr_in_exec(self, addr):
-        self.instance.workspace._get_or_create_view("symexec", SymexecView).find_addr_in_exec(addr)
+        self.workspace._get_or_create_view("symexec", SymexecView).find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self):
         if self._flow_graph.induction_variable_analysis:
@@ -764,13 +764,13 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
     def fetch_qblock_annotations(self, qblock):
         addr_to_annotations = defaultdict(list)
-        for annotations in self.instance.workspace.plugins.build_qblock_annotations(qblock):
+        for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
             addr_to_annotations[annotations.addr].append(annotations)
         for addr in qblock.addr_to_insns.keys():
             if addr in self.instance.project._sim_procedures:
                 hook_annotation = QHookAnnotation(addr)
                 addr_to_annotations[addr].append(hook_annotation)
-            view = self.instance.workspace.view_manager.first_view_in_category("symexec")
+            view = self.workspace.view_manager.first_view_in_category("symexec")
             if view is not None:
                 qsimgrs = view._simgrs
                 if addr in qsimgrs.find_addrs:
@@ -822,7 +822,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
         self.display_disasm_graph()
 
-        self.instance.workspace.plugins.instrument_disassembly_view(self)
+        self.workspace.plugins.instrument_disassembly_view(self)
 
     def _init_menus(self):
         self._insn_menu = DisasmInsnContextMenu(self)
@@ -838,7 +838,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
         self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
-        self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
 
@@ -854,7 +854,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.hovered_edge.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_unsubscribe(self.redraw_current_graph)
         self.infodock.qblock_code_obj_selection_changed.disconnect(self.redraw_current_graph)
-        self.instance.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
+        self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_unsubscribe(self._on_cfb_event)
 
@@ -894,7 +894,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         elif self._current_view is self._linear_viewer:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
-        view = self.instance.workspace.view_manager.first_view_in_category("console")
+        view = self.workspace.view_manager.first_view_in_category("console")
         if view is not None:
             view.push_namespace(
                 {

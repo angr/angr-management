@@ -133,8 +133,8 @@ class RegistersView(BaseView):
     Register table view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("registers", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("registers", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Registers"
         self._tbl_widget: Optional[QRegisterTableWidget] = None

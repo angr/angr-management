@@ -7,8 +7,8 @@ from .view import BaseView
 
 
 class StatesView(BaseView):
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("states", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("states", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "States"
         self._state_table: QStateTable
@@ -28,7 +28,7 @@ class StatesView(BaseView):
         return QSize(400, 800)
 
     def _init_widgets(self):
-        self._state_table = QStateTable(self.instance, self, selection_callback=self._on_state_selected)
+        self._state_table = QStateTable(self.workspace, self.instance, self, selection_callback=self._on_state_selected)
 
         hlayout = QHBoxLayout()
         hlayout.addWidget(self._state_table)

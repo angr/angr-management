@@ -36,6 +36,7 @@ from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
+from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
@@ -251,7 +252,7 @@ class MainWindow(QMainWindow):
         if self.workspace.main_instance.project.am_none:
             QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
             return
-        new_state_dialog = NewState(self.workspace.main_instance, parent=self, create_simgr=True)
+        new_state_dialog = NewState(self.workspace, self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
     def open_doc_link(self):
@@ -837,10 +838,10 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = "accurate"
+        self.workspace._get_or_create_view("disassembly", DisassemblyView).variable_recovery_flavor = "accurate"
 
     def run_induction_variable_analysis(self):
-        self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
+        self.workspace._get_or_create_view("disassembly", DisassemblyView).run_induction_variable_analysis()
 
     def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
         if self.workspace is None or self.workspace.main_instance is None:
@@ -850,7 +851,7 @@ class MainWindow(QMainWindow):
 
     def run_analysis(self):
         if self.workspace:
-            self.workspace.main_instance.run_analysis()
+            self.workspace.run_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:

@@ -10,8 +10,8 @@ class FunctionsView(BaseView):
     View displaying functions in the project.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("functions", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("functions", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Functions"
         self._function_table: QFunctionTable

@@ -152,7 +152,7 @@ class QCCodeEdit(api.CodeEdit):
 
     @property
     def workspace(self):
-        return self._code_view.instance.workspace if self._code_view is not None else None
+        return self._code_view.workspace if self._code_view is not None else None
 
     @property
     def instance(self):

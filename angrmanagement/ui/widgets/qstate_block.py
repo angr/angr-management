@@ -93,10 +93,10 @@ class QStateBlock(QGraphicsItem):
         # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
             if self.state is not None:
-                self._instance.workspace.viz(self.state.addr)
+                self.symexec_view.workspace.viz(self.state.addr)
                 event.accept()
             elif self.history is not None:
-                self._instance.workspace.viz(self.history.state.addr)
+                self.symexec_view_instance.workspace.viz(self.history.state.addr)
                 event.accept()
 
         super().mouseDoubleClickEvent(event)
