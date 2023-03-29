@@ -26,7 +26,7 @@ from angrmanagement.ui.dialogs.set_comment import SetComment
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
-from angrmanagement.ui.views import SymexecView
+from angrmanagement.ui.views.symexec_view import SymexecView
 from angrmanagement.ui.widgets import (
     DisassemblyLevel,
     QAvoidAddrAnnotation,

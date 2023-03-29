@@ -83,7 +83,7 @@ class TestRenameFunctions(unittest.TestCase):
         main = self.main
 
         func = main.workspace.main_instance.project.kb.functions["authenticate"]
-        _ = main.workspace._get_or_create_disassembly_view()
+        _ = main.workspace._get_or_create_view("disassembly", DisassemblyView)
         pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
