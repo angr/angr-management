@@ -36,6 +36,7 @@ from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
+from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
@@ -837,10 +838,10 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = "accurate"
+        self.workspace._get_or_create_view("disassembly", DisassemblyView).variable_recovery_flavor = "accurate"
 
     def run_induction_variable_analysis(self):
-        self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
+        self.workspace._get_or_create_view("disassembly", DisassemblyView).run_induction_variable_analysis()
 
     def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
         if self.workspace is None or self.workspace.main_instance is None:

@@ -301,11 +301,11 @@ class Instance:
 
         # callback
         if comment_text is None and exists:
-            if self.handle_comment_changed_callback:
+            if self.handle_comment_changed_callback is not None:
                 self.handle_comment_changed_callback(addr, "", False, False, False)
             del kb.comments[addr]
         else:
-            if self.handle_comment_changed_callback:
+            if self.handle_comment_changed_callback is not None:
                 self.handle_comment_changed_callback(addr, comment_text, not exists, False, False)
             kb.comments[addr] = comment_text
 
