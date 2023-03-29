@@ -763,6 +763,38 @@ class Workspace:
         console.set_input_buffer(hook_code_string)
 
     #
+    # Instance Callbacks
+    #
+    def _instance_project_initalization(self):
+        if self.main_instance.project.am_none:
+            return
+
+        gui_thread_schedule_async(self.run_analysis)
+
+        self.plugins.handle_project_initialization()
+
+    def _handle_job_exception(self, job: Job, e: Exception):
+        self.log('Exception while running job "%s":' % job.name)
+        self.log(e)
+        self.log("Type %debug to debug it")
+
+    def _update_simgr_debuggers(self, **kwargs):  # pylint:disable=unused-argument
+        sim_dbg = None
+        for dbg in self.main_instance.debugger_list_mgr.debugger_list:
+            if isinstance(dbg, SimulationDebugger):
+                sim_dbg = dbg
+                break
+
+        if len(self.main_instance.simgrs) > 0:
+            if sim_dbg is None:
+                view = self._get_or_create_symexec_view()._simgrs
+                dbg = SimulationDebugger(view, self)
+                self.main_instance.debugger_list_mgr.add_debugger(dbg)
+                self.main_instance.debugger_mgr.set_debugger(dbg)
+        elif sim_dbg is not None:
+            self.main_instance.debugger_list_mgr.remove_debugger(sim_dbg)
+
+    #
     # Private methods
     #
 
