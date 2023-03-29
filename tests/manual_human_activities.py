@@ -16,6 +16,7 @@ from angrmanagement.config.config_entry import ConfigurationEntry
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.main_window import MainWindow
+from angrmanagement.ui.views import CodeView, DisassemblyView
 
 Conf._entries["checrs_backend_str"] = ConfigurationEntry("checrs_backend_str", str, "", default_value="")
 Conf.checrs_backend_str = "sqlite:////tmp/testtest.sqlite"
@@ -50,12 +51,12 @@ class TestHumanActivities(unittest.TestCase):
         self.assertIsNotNone(func)
 
         # decompile the function
-        disasm_view = main.workspace._get_or_create_disassembly_view()
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
         main.workspace.main_instance.join_all_jobs()
-        pseudocode_view = main.workspace._get_or_create_pseudocode_view()
+        pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
@@ -106,12 +107,12 @@ class TestHumanActivities(unittest.TestCase):
         self.assertIsNotNone(func)
 
         # decompile the function
-        disasm_view = main.workspace._get_or_create_disassembly_view()
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
         main.workspace.main_instance.join_all_jobs()
-        pseudocode_view = main.workspace._get_or_create_pseudocode_view()
+        pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find an arbitrary node for a variable
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
@@ -151,7 +152,7 @@ class TestHumanActivities(unittest.TestCase):
         self.assertIsNotNone(func)
 
         # display function main
-        disasm_view = main_window.workspace._get_or_create_disassembly_view()
+        disasm_view = main_window.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
 
@@ -182,7 +183,7 @@ class TestHumanActivities(unittest.TestCase):
         self.assertIsNotNone(func)
 
         # display function main
-        disasm_view = main_window.workspace._get_or_create_disassembly_view()
+        disasm_view = main_window.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
 

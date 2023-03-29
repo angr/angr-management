@@ -1,7 +1,7 @@
 import logging
 import os
 import traceback
-from typing import TYPE_CHECKING, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, List, Optional, Type, TypeVar, Union
 
 from angr import StateHierarchy
 from angr.knowledge_plugins.functions.function import Function
@@ -20,6 +20,7 @@ from angrmanagement.plugins import PluginManager
 
 from .view_manager import ViewManager
 from .views import (
+    BaseView,
     BreakpointsView,
     CallExplorerView,
     CodeView,
@@ -49,10 +50,9 @@ if TYPE_CHECKING:
     from angrmanagement.data.jobs import VariableRecoveryJob
     from angrmanagement.ui.main_window import MainWindow
 
-    from .menus.disasm_insn_context_menu import DisasmInsnContextMenu
-
 
 _l = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 class Workspace:
@@ -242,7 +242,7 @@ class Workspace:
 
     def jump_to(self, addr, view=None, use_animation=False):
         if view is None or view.category != "disassembly":
-            view = self._get_or_create_disassembly_view()
+            view = self._get_or_create_view("disassembly", DisassemblyView)
 
         self.raise_view(view)
         view.setFocus()
@@ -300,7 +300,7 @@ class Workspace:
     def set_comment(self, addr, comment_text):
         self.main_instance.set_comment(addr, comment_text)
 
-        disasm_view = self._get_or_create_disassembly_view()
+        disasm_view = self._get_or_create_view("disassembly", DisassemblyView)
         if disasm_view._flow_graph.disasm is not None:
             # redraw
             disasm_view.current_graph.refresh()
@@ -313,18 +313,19 @@ class Workspace:
         if isinstance(current, CodeView):
             current.decompile()
         else:
-            view = self._get_or_create_disassembly_view()
+            view = self._get_or_create_view("disassembly", DisassemblyView)
             view.decompile_current_function()
 
     def view_data_dependency_graph(self, analysis_params: dict):
-        view = self._get_or_create_data_dependency_graph(analysis_params)
+        view = self._get_or_create_view("data_dependency", DataDepView)
+        view.analysis_params = analysis_params
         self.raise_view(view)
 
     def view_proximity_for_current_function(self, view=None):
         if view is None or view.category != "proximity":
-            view = self._get_or_create_proximity_view()
+            view = self._get_or_create_view("proximity", ProximityView)
 
-        disasm_view = self._get_or_create_disassembly_view()
+        disasm_view = self._get_or_create_view("disassembly", DisassemblyView)
         if disasm_view.current_function is not None:
             view.function = disasm_view.current_function.am_obj
 
@@ -343,7 +344,7 @@ class Workspace:
         """
 
         if view is None or view.category != "pseudocode":
-            view = self._get_or_create_pseudocode_view()
+            view = self._get_or_create_view("pseudocode", CodeView)
 
         view.function.am_obj = func
         view.function.am_event(focus=True, focus_addr=curr_ins)
@@ -357,7 +358,7 @@ class Workspace:
         inst.simgrs.am_event(src="new_path")
 
         if view is None:
-            view = self._get_or_create_symexec_view()
+            view = self._get_or_create_view("symexec", SymexecView)
         view.select_simgr(simgr_container)
 
         self.raise_view(view)
@@ -443,7 +444,7 @@ class Workspace:
 
     def interact_program(self, img_name, view=None):
         if view is None or view.category != "interaction":
-            view = self._get_or_create_interaction_view()
+            view = self._get_or_create_view("interaction", InteractionView)
         view.initialize(img_name)
 
         self.raise_view(view)
@@ -460,14 +461,19 @@ class Workspace:
             console.print_text(msg)
             console.print_text("\n")
 
+    def show_view(self, category: str, type_: Type[BaseView], position: str = "center"):
+        view = self._get_or_create_view(category, type_, position=position)
+        self.raise_view(view)
+        view.setFocus()
+
     def show_linear_disassembly_view(self):
-        view = self._get_or_create_disassembly_view()
+        view = self._get_or_create_view("disassembly", DisassemblyView, position="center")
         view.display_linear_viewer()
         self.raise_view(view)
         view.setFocus()
 
     def show_graph_disassembly_view(self):
-        view = self._get_or_create_disassembly_view()
+        view = self._get_or_create_view("disassembly", DisassemblyView, position="center")
         view.display_disasm_graph()
         self.raise_view(view)
         view.setFocus()
@@ -490,101 +496,61 @@ class Workspace:
         self.raise_view(view)
         view.setFocus()
 
-    def create_and_show_hex_view(self):
-        """
-        Create and show a new hex view.
-        """
-        view = self._create_hex_view()
-        self.raise_view(view)
-        view.setFocus()
-
     def show_pseudocode_view(self):
-        """
-        Create code view if it does not exist, then show code view.
-        """
-        view = self._get_or_create_pseudocode_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("pseudocode", CodeView)
 
     def show_hex_view(self):
-        view = self._get_or_create_hex_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("hex", HexView)
 
     def show_symexec_view(self):
-        view = self._get_or_create_symexec_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("symexec", SymexecView)
 
     def show_states_view(self):
-        view = self._get_or_create_states_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("states", StatesView)
 
     def show_strings_view(self):
-        view = self._get_or_create_strings_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("strings", StringsView)
 
     def show_patches_view(self):
-        view = self._get_or_create_patches_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("patches", PatchesView)
 
     def show_interaction_view(self):
-        view = self._get_or_create_interaction_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("interaction", InteractionView)
 
     def show_types_view(self):
-        view = self._get_or_create_types_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("types", TypesView)
 
     def show_functions_view(self):
-        view = self._get_or_create_functions_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("functions", FunctionsView, position="left")
 
     def show_traces_view(self):
-        view = self._get_or_create_traces_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("traces", TracesView)
 
     def show_trace_map_view(self):
-        view = self._get_or_create_trace_map_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("tracemap", TraceMapView, position="top")
 
     def show_registers_view(self):
-        view = self._get_or_create_registers_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("registers", RegistersView, position="right")
 
     def show_stack_view(self):
-        view = self._get_or_create_stack_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("stack", StackView, position="right")
 
     def show_breakpoints_view(self):
-        view = self._get_or_create_breakpoints_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("breakpoints", BreakpointsView)
 
     def show_call_explorer_view(self):
-        view = self._get_or_create_call_explorer_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("call_explorer", CallExplorerView)
 
     def show_console_view(self):
-        view = self._get_or_create_console_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("console", ConsoleView, position="bottom")
 
     def show_log_view(self):
-        view = self._get_or_create_log_view()
-        self.raise_view(view)
-        view.setFocus()
+        self.show_view("log", LogView, position="bottom")
+
+    def create_and_show_hex_view(self):
+        view = HexView(self._main_instance, "center")
+        self.add_view(view)
+        return view
 
     def toggle_exec_breakpoint(self):
         if self.main_instance is None:
@@ -613,276 +579,11 @@ class Workspace:
     # Private methods
     #
 
-    def _get_or_create_disassembly_view(self) -> DisassemblyView:
-        view = self.view_manager.current_view_in_category("disassembly")
+    def _get_or_create_view(self, category: str, view_type: Type[T], position: str = "center") -> T:
+        view = self.view_manager.current_view_in_category(category)
         if view is None:
-            view = self.view_manager.first_view_in_category("disassembly")
+            view = self.view_manager.first_view_in_category(category)
         if view is None:
-            view = DisassemblyView(self._main_instance, "center")
-            self.add_view(view)
-            view.reload()
-
-        return view
-
-    def _create_hex_view(self) -> HexView:
-        """
-        Create a new hex view.
-        """
-        view = HexView(self._main_instance, "center")
-        self.add_view(view)
-        return view
-
-    def _get_or_create_hex_view(self) -> HexView:
-        view = self.view_manager.first_view_in_category("hex")
-
-        if view is None:
-            view = self._create_hex_view()
-
-        return view
-
-    def _get_or_create_pseudocode_view(self):
-        # Take the first pseudo-code view
-        view = self.view_manager.first_view_in_category("pseudocode")
-
-        if view is None:
-            # Create a new pseudo-code view
-            view = CodeView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_symexec_view(self):
-        # Take the first symexec view
-        view = self.view_manager.first_view_in_category("symexec")
-
-        if view is None:
-            # Create a new symexec view
-            view = SymexecView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_states_view(self):
-        # Take the first states view
-        view = self.view_manager.first_view_in_category("states")
-
-        if view is None:
-            # Create a new states view
-            view = StatesView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_strings_view(self):
-        # Take the first strings view
-        view = self.view_manager.first_view_in_category("strings")
-
-        if view is None:
-            # Create a new states view
-            view = StringsView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_patches_view(self):
-        # Take the first strings view
-        view = self.view_manager.first_view_in_category("patches")
-
-        if view is None:
-            # Create a new states view
-            view = PatchesView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_interaction_view(self):
-        view = self.view_manager.first_view_in_category("interaction")
-        if view is None:
-            # Create a new interaction view
-            view = InteractionView(self._main_instance, "center")
+            view = view_type(self._main_instance, position)
             self.add_view(view)
         return view
-
-    def _get_or_create_types_view(self):
-        view = self.view_manager.first_view_in_category("types")
-        if view is None:
-            # Create a new interaction view
-            view = TypesView(self._main_instance, "center")
-            self.add_view(view)
-        return view
-
-    def _get_or_create_data_dependency_graph(self, analysis_params: dict) -> Optional[DataDepView]:
-        # Take the first data dependency view
-        view = self.view_manager.first_view_in_category("data_dependency")
-
-        if view is None:
-            # Create a new data dependency view
-            view = DataDepView(self._main_instance, "center")
-            self.add_view(view)
-
-        # Update DataDepView to utilize new analysis params
-        view.analysis_params = analysis_params
-
-        return view
-
-    def _get_or_create_proximity_view(self) -> ProximityView:
-        # Take the first proximity view
-        view = self.view_manager.first_view_in_category("proximity")
-
-        if view is None:
-            # Create a new proximity view
-            view = ProximityView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_console_view(self) -> ConsoleView:
-        # Take the first console view
-        view = self.view_manager.first_view_in_category("console")
-
-        if view is None:
-            # Create a new console view
-            view = ConsoleView(self._main_instance, "bottom")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_log_view(self) -> LogView:
-        # Take the first log view
-        view = self.view_manager.first_view_in_category("log")
-
-        if view is None:
-            # Create a new log view
-            view = LogView(self._main_instance, "bottom")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_functions_view(self) -> FunctionsView:
-        # Take the first functions view
-        view = self.view_manager.first_view_in_category("functions")
-
-        if view is None:
-            # Create a new functions view
-            view = FunctionsView(self._main_instance, "left")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_registers_view(self) -> RegistersView:
-        # Take the first registers view
-        view = self.view_manager.first_view_in_category("registers")
-
-        if view is None:
-            view = RegistersView(self._main_instance, "right")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_stack_view(self) -> RegistersView:
-        # Take the first stack view
-        view = self.view_manager.first_view_in_category("stack")
-
-        if view is None:
-            view = StackView(self._main_instance, "right")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_traces_view(self) -> TracesView:
-        # Take the first traces view
-        view = self.view_manager.first_view_in_category("traces")
-
-        if view is None:
-            view = TracesView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_trace_map_view(self) -> TraceMapView:
-        # Take the first tracemap view
-        view = self.view_manager.first_view_in_category("tracemap")
-
-        if view is None:
-            view = TraceMapView(self._main_instance, "top")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_breakpoints_view(self) -> BreakpointsView:
-        # Take the first breakpoints view
-        view = self.view_manager.first_view_in_category("breakpoints")
-
-        if view is None:
-            view = BreakpointsView(self._main_instance, "center")
-            self.add_view(view)
-
-        return view
-
-    def _get_or_create_call_explorer_view(self) -> CallExplorerView:
-        # Take the first function call explorer view
-        view = self.view_manager.first_view_in_category("call_explorer")
-
-        if view is None:
-            view = CallExplorerView(self._main_instance, "right")
-            self.add_view(view)
-
-        return view
-
-    #
-    # UI-related Callback Setters & Manipulation
-    #
-
-    # TODO: should these be removed? Nobody is using them and there is equivalent functionality elsewhere.
-
-    def set_cb_function_backcolor(self, callback: Callable[[Function], None]):
-        fv: FunctionsView = self.view_manager.first_view_in_category("functions")
-        if fv:
-            fv.backcolor_callback = callback
-
-    def set_cb_insn_backcolor(self, callback: Callable[[int, bool], None]):
-        dv: DisassemblyView
-        if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")
-        else:
-            dv = self.view_manager.current_view_in_category("disassembly")
-        if dv:
-            dv.insn_backcolor_callback = callback
-
-    def set_cb_label_rename(self, callback):
-        dv: DisassemblyView
-        if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")
-        else:
-            dv = self.view_manager.current_view_in_category("disassembly")
-        if dv:
-            dv.label_rename_callback = callback
-
-    def add_disasm_insn_ctx_menu_entry(
-        self, text, callback: Callable[["DisasmInsnContextMenu"], None], add_separator_first=True
-    ):
-        dv: DisassemblyView
-        if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")
-        else:
-            dv = self.view_manager.current_view_in_category("disassembly")
-        if dv._insn_menu:
-            dv._insn_menu.add_menu_entry(text, callback, add_separator_first)
-
-    def remove_disasm_insn_ctx_menu_entry(self, text, remove_preceding_separator=True):
-        dv: DisassemblyView
-        if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")
-        else:
-            dv = self.view_manager.current_view_in_category("disassembly")
-        if dv._insn_menu:
-            dv._insn_menu.remove_menu_entry(text, remove_preceding_separator)
-
-    def set_cb_set_comment(self, callback):
-        dv: DisassemblyView
-        if len(self.view_manager.views_by_category["disassembly"]) == 1:
-            dv = self.view_manager.first_view_in_category("disassembly")
-        else:
-            dv = self.view_manager.current_view_in_category("disassembly")
-        if dv:
-            dv.set_comment_callback = callback
