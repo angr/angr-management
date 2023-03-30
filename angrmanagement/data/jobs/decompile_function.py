@@ -1,3 +1,5 @@
+from angrmanagement.logic import GlobalInfo
+
 from .job import Job
 
 
@@ -22,4 +24,4 @@ class DecompileFunctionJob(Job):
         # cache the result
         inst.kb.structured_code[(self.function.addr, "pseudocode")] = decompiler.cache
 
-        inst.workspace.plugins.decompile_callback(self.function)
+        GlobalInfo.main_window.workspace.plugins.decompile_callback(self.function)
