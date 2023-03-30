@@ -12,6 +12,7 @@ from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
 from angr.sim_type import SimType
 from PySide6.QtWidgets import QMessageBox
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import Job
@@ -252,7 +253,7 @@ class DependencyAnalysisJob(Job):
 
     @staticmethod
     def _display_closures(inst, sink_atom: "Atom", sink_addr: int, closures):
-        view = inst.workspace.view_manager.first_view_in_category("dependencies")
+        view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return
 
@@ -263,4 +264,4 @@ class DependencyAnalysisJob(Job):
             view.reload()
         except Exception:
             log.warning("An error occurred when displaying the closures.", exc_info=True)
-        inst.workspace.view_manager.raise_view(view)
+        GlobalInfo.main_window.workspace.view_manager.raise_view(view)
