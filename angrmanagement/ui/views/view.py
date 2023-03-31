@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import PySide6.QtGui
 
     from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
-    from angrmanagement.ui.workspace import Workspace, Instance
+    from angrmanagement.ui.workspace import Instance, Workspace
 
 
 class BaseView(QFrame):
