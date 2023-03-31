@@ -21,13 +21,13 @@ class BaseView(QFrame):
     FUNCTION_SPECIFIC_VIEW = False
 
     def __init__(
-            self,
-            category: str,
-            workspace: "Workspace",
-            instance: "Instance",
-            default_docking_position: str,
-            *args,
-            **kwargs
+        self,
+        category: str,
+        workspace: "Workspace",
+        instance: "Instance",
+        default_docking_position: str,
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
