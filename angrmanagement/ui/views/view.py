@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import PySide6.QtGui
 
     from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
-    from angrmanagement.ui.workspace import Instance
+    from angrmanagement.ui.workspace import Workspace, Instance
 
 
 class BaseView(QFrame):
@@ -20,7 +20,15 @@ class BaseView(QFrame):
     # to True.
     FUNCTION_SPECIFIC_VIEW = False
 
-    def __init__(self, category: str, workspace, instance, default_docking_position, *args, **kwargs):
+    def __init__(
+            self,
+            category: str,
+            workspace: "Workspace",
+            instance: "Instance",
+            default_docking_position: str,
+            *args,
+            **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.workspace = workspace

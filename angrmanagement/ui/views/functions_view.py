@@ -59,7 +59,9 @@ class FunctionsView(BaseView):
     #
 
     def _init_widgets(self):
-        self._function_table = QFunctionTable(self, self.instance, selection_callback=self._on_function_selected)
+        self._function_table = QFunctionTable(
+            self, self.instance, selection_callback=self._on_function_selected
+        )
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._function_table)
@@ -75,4 +77,4 @@ class FunctionsView(BaseView):
         :param function:
         :return:
         """
-        self.instance.on_function_selected(func=func)
+        self.workspace.on_function_selected(func=func)
