@@ -56,10 +56,7 @@ class QGraphArrow(QGraphicsItem):
         return path
 
     def _make_arrow(self, location, direction):
-        if location == "start":
-            coord = self.start
-        else:
-            coord = self.end
+        coord = self.start if location == "start" else self.end
 
         if direction == "down":
             return [
@@ -92,10 +89,7 @@ class QGraphArrow(QGraphicsItem):
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_highlight = self._should_highlight()
 
-        if should_highlight:
-            pen = QPen(QColor(0, 0xFE, 0xFE), 2, self.style)
-        else:
-            pen = QPen(self.color, 2, self.style)
+        pen = QPen(QColor(0, 254, 254), 2, self.style) if should_highlight else QPen(self.color, 2, self.style)
 
         painter.setPen(pen)
 
@@ -106,10 +100,7 @@ class QGraphArrow(QGraphicsItem):
             return
 
         # arrow
-        if should_highlight:
-            brush = QBrush(QColor(0, 0xFE, 0xFE))
-        else:
-            brush = QBrush(self.color)
+        brush = QBrush(QColor(0, 254, 254)) if should_highlight else QBrush(self.color)
         painter.setBrush(brush)
         painter.drawPolygon(self.arrow)
 
@@ -324,10 +315,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
     def paint(self, painter, option, widget):
         should_highlight = self._should_highlight()
 
-        if should_highlight:
-            pen = QPen(QColor(0, 0xFE, 0xFE), 2, self.style)
-        else:
-            pen = QPen(self.color, 2, self.style)
+        pen = QPen(QColor(0, 254, 254), 2, self.style) if should_highlight else QPen(self.color, 2, self.style)
 
         pen.setDashPattern(self._calculate_dash_pattern())
 

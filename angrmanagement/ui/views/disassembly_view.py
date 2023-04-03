@@ -208,10 +208,9 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
     @variable_recovery_flavor.setter
     def variable_recovery_flavor(self, v):
-        if v in ("fast", "accurate"):
-            if v != self._variable_recovery_flavor:
-                self._variable_recovery_flavor = v
-                # TODO: Rerun the variable recovery analysis and update the current view
+        if v in ("fast", "accurate") and v != self._variable_recovery_flavor:
+            self._variable_recovery_flavor = v
+            # TODO: Rerun the variable recovery analysis and update the current view
 
     @property
     def current_graph(self) -> Union[QLinearDisassemblyView, QDisassemblyGraph]:
@@ -491,10 +490,9 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             operand = None
 
         # if a function target is selected, switch to function mode
-        if operand is not None and not func:
-            if operand._branch_target is not None and operand._is_target_func:
-                func = True
-                addr = operand._branch_target
+        if operand is not None and not func and operand._branch_target is not None and operand._is_target_func:
+            func = True
+            addr = operand._branch_target
 
         if func:
             # attempt to pass in a function
@@ -508,13 +506,12 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         dependson = DependsOn(addr, operand, func=the_func, parent=self)
         dependson.exec_()
 
-        if dependson.location is not None:
-            if dependson.arg is not None:
-                # track function argument
-                self.workspace._main_window.run_dependency_analysis(
-                    func_addr=addr,
-                    func_arg_idx=dependson.arg,
-                )
+        if dependson.location is not None and dependson.arg is not None:
+            # track function argument
+            self.workspace._main_window.run_dependency_analysis(
+                func_addr=addr,
+                func_arg_idx=dependson.arg,
+            )
 
     def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_=True):
         if operand is not None:
@@ -766,7 +763,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         addr_to_annotations = defaultdict(list)
         for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
             addr_to_annotations[annotations.addr].append(annotations)
-        for addr in qblock.addr_to_insns.keys():
+        for addr in qblock.addr_to_insns:
             if addr in self.instance.project._sim_procedures:
                 hook_annotation = QHookAnnotation(addr)
                 addr_to_annotations[addr].append(hook_annotation)

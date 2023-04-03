@@ -105,9 +105,8 @@ class QTraceTableWidget(QTableView):
         traces = [self.instance.traces[r] for r in selected_rows]
         if len(traces):
             menu = QMenu("", self)
-            if len(traces) == 1:
-                if not self.workspace(traces[0]):
-                    menu.addAction("Use as current trace", lambda: self.workspace.set_current_trace(traces[0]))
+            if len(traces) == 1 and not self.workspace(traces[0]):
+                menu.addAction("Use as current trace", lambda: self.workspace.set_current_trace(traces[0]))
 
             def remove_selected_traces():
                 for t in traces:

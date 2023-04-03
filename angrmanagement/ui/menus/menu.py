@@ -74,10 +74,7 @@ class Menu:
             # in order to use the cached result, must not have extra entries
             return self._qmenu
 
-        if self.parent is not None:
-            menu = QMenu(self.caption, self.parent)
-        else:
-            menu = QMenu(self.caption)
+        menu = QMenu(self.caption, self.parent) if self.parent is not None else QMenu(self.caption)
 
         for entry in self.entries + extra_entries:
             self.translate_element(menu, entry)

@@ -179,7 +179,7 @@ def main():
     )
     parser.add_argument("-D", "--daemon", action="store_true", help="start a daemon to handle angr:// URLs.")
     parser.add_argument(
-        "-u", "--url", type=str, nargs="?", help="(internal) handle angr:// URLs. " "the daemon must be running."
+        "-u", "--url", type=str, nargs="?", help="(internal) handle angr:// URLs. the daemon must be running."
     )
     parser.add_argument("-p", "--profiling", action="store_true", help="display profiling log messages.")
     parser.add_argument("-R", "--autoreload", action="store_true", help="Reload all python modules on each job start.")

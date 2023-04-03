@@ -86,26 +86,24 @@ class LoadBinaryJob(Job):
             _l.warning("Failed to load the binary with libraries.")
             load_with_libraries = False
 
-        if partial_ld is None:
-            if not load_with_libraries:
-                try:
-                    # Try loading as blob; dummy architecture (x86) required, user will select proper arch
-                    partial_ld = cle.Loader(
-                        self.fname, perform_relocations=False, load_debug_info=False, auto_load_libs=False
-                    )
-                except cle.CLECompatibilityError:
-                    # failed to load without libraries
-                    load_as_blob = True
+        if partial_ld is None and not load_with_libraries:
+            try:
+                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                partial_ld = cle.Loader(
+                    self.fname, perform_relocations=False, load_debug_info=False, auto_load_libs=False
+                )
+            except cle.CLECompatibilityError:
+                # failed to load without libraries
+                load_as_blob = True
 
-        if partial_ld is None:
-            if load_as_blob:
-                try:
-                    # Try loading as blob; dummy architecture (x86) required, user will select proper arch
-                    partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
-                except cle.CLECompatibilityError:
-                    # Failed to load executable, even as blob!
-                    gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
-                    return
+        if partial_ld is None and load_as_blob:
+            try:
+                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
+            except cle.CLECompatibilityError:
+                # Failed to load executable, even as blob!
+                gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
+                return
 
         self._progress_callback(50)
         new_load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
@@ -163,13 +161,13 @@ class LoadAngrDBJob(Job):
             _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
             gui_thread_schedule(
                 QMessageBox.critical,
-                (None, "Error", "Failed to load the angr database because of compatibility issues.\n" f"Details: {ex}"),
+                (None, "Error", f"Failed to load the angr database because of compatibility issues.\nDetails: {ex}"),
             )
             return
         except angr.errors.AngrDBError as ex:
             _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
             gui_thread_schedule(
-                QMessageBox.critical, (None, "Error", "Failed to load the angr database.\n" f"Details: {ex}")
+                QMessageBox.critical, (None, "Error", f"Failed to load the angr database.\nDetails: {ex}")
             )
             _l.critical("Failed to load the angr database.", exc_info=True)
             return

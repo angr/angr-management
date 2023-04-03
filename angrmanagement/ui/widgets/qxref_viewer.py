@@ -93,7 +93,7 @@ class QXRefModel(QAbstractTableModel):
     #
 
     def _get_column_data(self, xref, idx):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class QXRefVariableModel(QXRefModel):

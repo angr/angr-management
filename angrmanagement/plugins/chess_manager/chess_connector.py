@@ -128,7 +128,7 @@ class ChessConnector(BasePlugin):
             desc = self.target_description if self.target_description else f"(no description) {self.target_id}"
             self._target_description_label.setText(desc)
             self._target_description_label.setToolTip(
-                f"Target ID: {self.target_id}\n" f"Target image ID: {self.target_image_id}"
+                f"Target ID: {self.target_id}\nTarget image ID: {self.target_image_id}"
             )
 
             DaemonClient.register_binary(self.workspace.main_instance.project.loader.main_object.binary, self.target_id)

@@ -111,7 +111,9 @@ class SocketModel(QAbstractItemModel):
         super().__init__(parent)
         self.rootItem = SocketItem()
 
-    def columnCount(self, parent=QModelIndex()):
+    def columnCount(self, parent=None):
+        if parent is None:
+            parent = QModelIndex()
         if parent.isValid():
             return parent.internalPointer().columnCount()
         else:
@@ -163,14 +165,14 @@ class SocketModel(QAbstractItemModel):
 
         return None
 
-    def index(self, row, column, parent=QModelIndex()):
+    def index(self, row, column, parent=None):
+        if parent is None:
+            parent = QModelIndex()
+
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():
-            parentItem = self.rootItem
-        else:
-            parentItem = parent.internalPointer()
+        parentItem = self.rootItem if not parent.isValid() else parent.internalPointer()
 
         childItem = parentItem.child(row)
         if childItem:
@@ -178,14 +180,14 @@ class SocketModel(QAbstractItemModel):
         else:
             return QModelIndex()
 
-    def rowCount(self, parent=QModelIndex()):
+    def rowCount(self, parent=None):
+        if parent is None:
+            parent = QModelIndex()
+
         if parent.column() > 0:
             return 0
 
-        if not parent.isValid():
-            parentItem = self.rootItem
-        else:
-            parentItem = parent.internalPointer()
+        parentItem = self.rootItem if not parent.isValid() else parent.internalPointer()
 
         return parentItem.childCount()
 
@@ -201,22 +203,18 @@ class SocketModel(QAbstractItemModel):
 
         return self.createIndex(parentItem.row(), 0, parentItem)
 
-    def add_item(self, ident, parent=QModelIndex(), node_type=None):
+    def add_item(self, ident, parent=None, node_type=None):
+        if parent is None:
+            parent = QModelIndex()
         self.beginInsertRows(parent, self.rowCount(parent), self.rowCount(parent))
-        if not parent.isValid():
-            parentItem = self.rootItem
-        else:
-            parentItem = parent.internalPointer()
+        parentItem = self.rootItem if not parent.isValid() else parent.internalPointer()
         item = SocketItem(ident, parent=parentItem, node_type=node_type)
         parentItem.appendChild(item)
         self.endInsertRows()
 
     def del_item(self, item):
         parent = item.parent()
-        if not parent.isValid():
-            parentItem = self.rootItem
-        else:
-            parentItem = parent.internalPointer()
+        parentItem = self.rootItem if not parent.isValid() else parent.internalPointer()
         self.beginRemoveRows(parent, item.row(), item.row())
         del parentItem.children[item.row()]
         self.endRemoveRows()

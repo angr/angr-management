@@ -325,16 +325,10 @@ class PluginManager:
             pass
 
     def handle_click_insn(self, qinsn, event):
-        for res in self._dispatch(BasePlugin.handle_click_insn, False, qinsn, event):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_click_insn, False, qinsn, event))
 
     def handle_click_block(self, qblock, event):
-        for res in self._dispatch(BasePlugin.handle_click_block, False, qblock, event):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_click_block, False, qblock, event))
 
     def handle_raise_view(self, view):
         for _ in self._dispatch(BasePlugin.handle_raise_view, False, view):
@@ -426,28 +420,16 @@ class PluginManager:
         return False
 
     def handle_other_var_renamed(self, var, old_name, new_name):
-        for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name))
 
     def handle_other_var_retyped(self, var, old_type, new_type):
-        for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type))
 
     def handle_function_renamed(self, func, old_name, new_name):
-        for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name))
 
     def handle_function_retyped(self, func, old_type, new_type):
-        for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type))
 
     def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
         for res in self._dispatch(BasePlugin.handle_comment_changed, False, address, old_cmt, new_cmt, created, decomp):
@@ -456,10 +438,7 @@ class PluginManager:
         return False
 
     def handle_struct_changed(self, old_struct, new_struct):
-        for res in self._dispatch(BasePlugin.handle_struct_changed, False, old_struct, new_struct):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_struct_changed, False, old_struct, new_struct))
 
     def decompile_callback(self, func):
         for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
@@ -479,7 +458,7 @@ class PluginManager:
 
     def angrdb_store_entries(self):
         entries = {}
-        for (shortname, plugin), res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
+        for (shortname, _plugin), res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
             for result in res:
                 if isinstance(result, tuple) and len(result) == 2:
                     key, value = result
@@ -501,7 +480,7 @@ class PluginManager:
             if plugin is None:
                 continue
             # dispatch
-            custom = getattr(plugin, "angrdb_load_entry")
+            custom = plugin.angrdb_load_entry
             if custom is not BasePlugin.angrdb_load_entry:
                 try:
                     custom(key, value)

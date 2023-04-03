@@ -188,7 +188,7 @@ class DependsOn(QDialog):
                 )
                 return
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         self.close()
 

@@ -61,10 +61,7 @@ class VariableRecoveryJob(Job):
         self.instance = inst
         self.started = True
 
-        if self.on_variable_recovered is not None:
-            cc_callback = self._cc_callback
-        else:
-            cc_callback = None
+        cc_callback = self._cc_callback if self.on_variable_recovered is not None else None
 
         # update addrs to prioritize with their callees
         func_addrs_to_prioritize = set()

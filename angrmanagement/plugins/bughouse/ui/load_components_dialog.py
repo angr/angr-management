@@ -58,10 +58,7 @@ class LoadComponentsDialog(QDialog):
     def load_json(self):
         path = self.url_box.text()
         try:
-            if isurl(path):
-                tree = self._load_json_from_url(path)
-            else:
-                tree = self._load_json_from_file(path)
+            tree = self._load_json_from_url(path) if isurl(path) else self._load_json_from_file(path)
             self.tree = tree
             return True
         except (ValueError, TypeError, OSError) as ex:
@@ -136,7 +133,7 @@ class LoadComponentsDialog(QDialog):
             try:
                 data = json.load(f)
             except ValueError as ex:
-                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.")
+                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.") from ex
 
         return self._load_json(data)
 
@@ -146,7 +143,7 @@ class LoadComponentsDialog(QDialog):
         try:
             data = json.loads(content.decode("utf-8"))
         except ValueError as ex:
-            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.")
+            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.") from ex
         return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):

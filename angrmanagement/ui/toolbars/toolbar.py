@@ -74,8 +74,8 @@ class Toolbar:
         # REQUIRES object identity
         try:
             act = self._cached_actions[element]
-        except KeyError:
-            raise ValueError("Element %s not found" % element)
+        except KeyError as ex:
+            raise ValueError("Element %s not found" % element) from ex
 
         self.actions.remove(element)
         if self._cached is not None:

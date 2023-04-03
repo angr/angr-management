@@ -36,8 +36,8 @@ def download_url(url, parent=None, to_file=True, file_path=None, use_proxies=Tru
 
     try:
         header = requests.head(url, allow_redirects=True, proxies=proxies)
-    except requests.exceptions.InvalidURL:
-        raise InvalidURLError()
+    except requests.exceptions.InvalidURL as ex:
+        raise InvalidURLError from ex
 
     if header.status_code != 200:
         raise UnexpectedStatusCodeError(header.status_code)

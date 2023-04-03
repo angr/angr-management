@@ -156,7 +156,7 @@ class EdgeRouter:
         """
 
         self._edge_valid = []
-        for col in range(self._max_col + 2):
+        for _col in range(self._max_col + 2):
             self._edge_valid.append([True] * (self._max_row + 1))
         for col, row in self._node_locations.values():
             # edges should not overlap with existing nodes
@@ -166,10 +166,10 @@ class EdgeRouter:
         self.vertical_edges = []
         self.horizontal_edges = []
 
-        for col in range(self._max_col + 2):
+        for _col in range(self._max_col + 2):
             v_edges = []
             h_edges = []
-            for row in range(self._max_row + 3):
+            for _row in range(self._max_row + 3):
                 v_edges.append({})
                 h_edges.append({})
             self.vertical_edges.append(v_edges)
@@ -198,10 +198,7 @@ class EdgeRouter:
         return index
 
     def _edge_available(self, col, start_row, end_row):
-        for i in range(start_row, end_row):
-            if not self._edge_valid[col][i]:
-                return False
-        return True
+        return all(self._edge_valid[col][i] for i in range(start_row, end_row))
 
     def _first_unused_index(self, indices):
         # find the first unused index
@@ -456,7 +453,7 @@ class GraphLayouter:
             self._rows[node] = row
             row_to_nodes[row].append(node)
 
-        for row in row_to_nodes.keys():
+        for row in row_to_nodes:
             if self._node_compare_key is not None:
                 row_to_nodes[row] = sorted(row_to_nodes[row], key=self._node_compare_key)
             elif self._node_sorter is not None:
@@ -481,7 +478,7 @@ class GraphLayouter:
 
             next_min_col, next_max_col = 1, 2
 
-            for i, node in enumerate(row_nodes):
+            for _i, node in enumerate(row_nodes):
                 successors = acyclic_graph.successors(node)
 
                 min_col, max_col = None, None
@@ -509,19 +506,16 @@ class GraphLayouter:
                 global_max_col = max(global_max_col, col)
 
                 # update min_col and max_col for the next iteration
-                if min_col == max_col:
-                    next_min_col = max_col + 2
-                else:
-                    next_min_col = max_col + 1
+                next_min_col = max_col + 2 if min_col == max_col else max_col + 1
                 next_max_col = next_min_col + 1
 
         # Second iteration: Adjust column IDs top-down
-        for row_idx in self._row_to_nodes.keys():
+        for row_idx in self._row_to_nodes:
             row_nodes = self._row_to_nodes[row_idx]
 
             next_min_col, next_max_col = None, None
 
-            for i, node in enumerate(row_nodes):
+            for _i, node in enumerate(row_nodes):
                 predecessors = list(acyclic_graph.predecessors(node))
                 if len(predecessors) < 2:
                     # Not enough predecessors.
@@ -667,7 +661,7 @@ class GraphLayouter:
         """
 
         row_max_ids = {}
-        for col, row in self._grid_max_horizontal_id.keys():
+        for col, row in self._grid_max_horizontal_id:
             if row not in row_max_ids:
                 row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
             elif self._grid_max_horizontal_id[(col, row)] > row_max_ids[row]:
@@ -774,7 +768,7 @@ class GraphLayouter:
 
                 else:
                     # the impossible branch
-                    assert False
+                    raise AssertionError
 
                 edge.add_coordinate(x, y)
 

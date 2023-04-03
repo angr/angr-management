@@ -167,7 +167,7 @@ class QSimulationManagerViewer(QTreeWidget):
             try:
                 lambda_func = eval(lambda_str)  # pylint: disable=eval-used
                 if not isfunction(lambda_func):
-                    raise ValueError()
+                    raise ValueError
             except Exception as e:  # pylint: disable=broad-except
                 QMessageBox.critical(self, "Exception!", str(e))
                 continue
@@ -246,7 +246,7 @@ class QSimulationManagerViewer(QTreeWidget):
             return
 
         self.stash_tree_items = {}
-        for stash_name, stash in self.simgr.stashes.items():  # pylint: disable=unused-variable
+        for stash_name, _stash in self.simgr.stashes.items():  # pylint: disable=unused-variable
             # if not stash and stash_name not in ('active', 'deadended', 'avoided'):
             #     continue
             item = StashTreeItem(stash_name, simgr_viewer=self)

@@ -121,9 +121,8 @@ class TraceViewer(BasePlugin):
 
     def color_block(self, addr):
         if not self.multi_trace.am_none:
-            if isinstance(self.multi_trace.am_obj, MultiTrace):
-                if not self.multi_trace.is_active_tab:
-                    return None
+            if isinstance(self.multi_trace.am_obj, MultiTrace) and not self.multi_trace.is_active_tab:
+                return None
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
@@ -142,10 +141,9 @@ class TraceViewer(BasePlugin):
 
     def draw_insn(self, qinsn, painter):
         # legend
-        if not self.multi_trace.am_none:
-            if isinstance(self.multi_trace.am_obj, MultiTrace):
-                if not self.multi_trace.is_active_tab:
-                    return  # skip
+        if not self.multi_trace.am_none and isinstance(self.multi_trace.am_obj, MultiTrace):
+            if not self.multi_trace.is_active_tab:
+                return  # skip
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
@@ -394,14 +392,14 @@ class TraceViewer(BasePlugin):
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Incorrect trace format",
-                "Failed to open the JSON trace." " We expect the JSON trace to contain the field 'bb_addrs'.",
+                "Failed to open the JSON trace. We expect the JSON trace to contain the field 'bb_addrs'.",
             )
             return None, None
         elif not isinstance(trace["bb_addrs"], list):
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Incorrect trace format",
-                "Failed to open the JSON trace." "We expect the JSON trace bb_addrs field to be a list of integers.",
+                "Failed to open the JSON trace. We expect the JSON trace bb_addrs field to be a list of integers.",
             )
             return None, None
 
@@ -467,5 +465,5 @@ class TraceViewer(BasePlugin):
             QMessageBox.warning(
                 self.workspace.main_window,
                 "Failed to load some traces",
-                "angr management failed to load some traces.\n" "Details:\n" + "\n".join(msg),
+                "angr management failed to load some traces.\nDetails:\n" + "\n".join(msg),
             )

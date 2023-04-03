@@ -1,7 +1,7 @@
 import codecs
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QAbstractTableModel, QEvent, QModelIndex, QObject, Qt, Signal
+from PySide6.QtCore import QAbstractTableModel, QEvent, QObject, Qt, Signal
 from PySide6.QtGui import QContextMenuEvent, QCursor
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -54,12 +54,12 @@ class SeedTableModel(QAbstractTableModel):
 
         self.set_page(1)
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self):
         if not self.displayed_seeds:
             return 0
         return len(self.displayed_seeds)
 
-    def columnCount(self, index=QModelIndex()):
+    def columnCount(self):
         return len(self.headers)
 
     def querySignalHandle(self, status):
@@ -312,7 +312,7 @@ class SeedTableView(BaseView):
         else:
             if inp:
                 data = self.table_data.seed_db.filter_seeds_by_value(inp)
-                data = list(filter(lambda s: all([x in s.tags for x in flags]), data))
+                data = list(filter(lambda s: all(x in s.tags for x in flags), data))
             else:
                 data = self.table_data.seed_db.filter_seeds_by_tag(tags=flags)
         self.table_data.add_seed(data)
@@ -327,12 +327,11 @@ class SeedTableFilterBox(QLineEdit):
         self.installEventFilter(self)
 
     def eventFilter(self, obj, event):  # pylint:disable=unused-argument
-        if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                if self.text():
-                    # clear the text
-                    self.setText("")
-                return True
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+            if self.text():
+                # clear the text
+                self.setText("")
+            return True
 
         return False
 

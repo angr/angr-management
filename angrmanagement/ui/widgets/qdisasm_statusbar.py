@@ -131,10 +131,7 @@ class QDisasmStatusBar(QFrame):
         self._disasm_level_combo.setCurrentIndex(index)
 
     def _update_function_label(self):
-        if self._function:
-            s = f"{self._function.name} ({self._function.addr:x})"
-        else:
-            s = ""
+        s = f"{self._function.name} ({self._function.addr:x})" if self._function else ""
         self._function_label.setText(s)
 
     def _on_saveimage_btn_clicked(self):

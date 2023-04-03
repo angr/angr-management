@@ -204,7 +204,7 @@ class LoadBinary(QDialog):
                 item = ArchTreeWidgetItem(f"{arch.id} (P-code Engine)", arch)
                 recommended_arch_node.addChild(item)
             else:
-                assert False, "Unexpected arch type"
+                raise AssertionError("Unexpected arch type")
             if arch is ideal_arch:
                 ideal_arch_item = item
 
@@ -216,7 +216,7 @@ class LoadBinary(QDialog):
                 item = ArchTreeWidgetItem(f"{arch.id} (P-code Engine)", arch)
                 other_arch_node.addChild(item)
             else:
-                assert False, "Unexpected arch type"
+                raise AssertionError("Unexpected arch type")
 
         arch_tree.addTopLevelItem(recommended_arch_node)
         arch_tree.addTopLevelItem(other_arch_node)

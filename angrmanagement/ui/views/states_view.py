@@ -43,5 +43,3 @@ class StatesView(BaseView):
         :param function:
         :return:
         """
-
-        pass

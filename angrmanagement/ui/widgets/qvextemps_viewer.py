@@ -46,10 +46,7 @@ class QVEXTempsViewer(QFrame):
         layout = QVBoxLayout()
 
         self._tmps.clear()
-        if state is None:
-            tmps = {}
-        else:
-            tmps = state.scratch.temps
+        tmps = {} if state is None else state.scratch.temps
 
         # tmps
         for tmp_id, tmp_value in tmps.items():

@@ -39,7 +39,7 @@ class Page(QWidget):
     """
 
     def save_config(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     NAME = NotImplemented
 
@@ -130,7 +130,7 @@ class ThemeAndColors(Page):
 
         self._schemes_combo = QComboBox(self)
         current_theme_idx = 0
-        for idx, name in enumerate(["Current"] + list(sorted(COLOR_SCHEMES))):
+        for idx, name in enumerate(["Current"] + sorted(COLOR_SCHEMES)):
             if name == Conf.theme_name:
                 current_theme_idx = idx
             self._schemes_combo.addItem(name)
@@ -204,7 +204,7 @@ class Style(Page):
         ts = datetime.now()
         # pylint: disable=use-sequence-for-iteration
         self._fmt_map = bidict({ts.strftime(i): i for i in {fmt, "%X", "%c"}})  # set also dedups
-        for i in self._fmt_map.keys():
+        for i in self._fmt_map:
             self.log_format_entry.addItem(i)
         # pylint: disable=unsubscriptable-object
         self.log_format_entry.setCurrentText(self._fmt_map.inverse[fmt])

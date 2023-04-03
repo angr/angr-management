@@ -274,10 +274,7 @@ class QSimulationManagers(QFrame):
 
     def _on_simgr_selection(self):
         i = self._simgrs_list.currentIndex()
-        if i != -1:
-            simgr = self.simgrs[i]
-        else:
-            simgr = None
+        simgr = self.simgrs[i] if i != -1 else None
 
         if simgr != self.simgr.am_obj:
             self.simgr.am_obj = simgr

@@ -66,12 +66,12 @@ class Instance:
         # local machine
         self.binary_path = None
         self.register_container("project", lambda: None, Optional[angr.Project], "The current angr project")
-        self.register_container("simgrs", lambda: [], List[angr.SimulationManager], "Global simulation managers list")
-        self.register_container("states", lambda: [], List[angr.SimState], "Global states list")
+        self.register_container("simgrs", list, List[angr.SimulationManager], "Global simulation managers list")
+        self.register_container("states", list, List[angr.SimState], "Global states list")
         self.register_container("patches", lambda: None, None, "Global patches update notifier")  # dummy
         self.register_container("cfg", lambda: None, Optional[angr.knowledge_plugins.cfg.CFGModel], "The current CFG")
         self.register_container("cfb", lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
-        self.register_container("interactions", lambda: [], List[SavedInteraction], "Saved program interactions")
+        self.register_container("interactions", list, List[SavedInteraction], "Saved program interactions")
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
         self.register_container(
             "interaction_protocols",
@@ -79,9 +79,9 @@ class Instance:
             List[Type[ProtocolInteractor]],
             "Available interaction protocols",
         )
-        self.register_container("log", lambda: [], List[LogRecord], "Saved log messages", logging_permitted=False)
+        self.register_container("log", list, List[LogRecord], "Saved log messages", logging_permitted=False)
         self.register_container("current_trace", lambda: None, Type[Trace], "Currently selected trace")
-        self.register_container("traces", lambda: [], List[Trace], "Global traces list")
+        self.register_container("traces", list, List[Trace], "Global traces list")
 
         self.register_container("active_view_state", lambda: None, "ViewState", "Currently focused view state")
 
@@ -185,9 +185,8 @@ class Instance:
         if self.project.am_none:
             return
 
-        if not initialized:
-            if self.pseudocode_variable_kb is None:
-                self.initialize_pseudocode_variable_kb()
+        if not initialized and self.pseudocode_variable_kb is None:
+            self.initialize_pseudocode_variable_kb()
 
     def initialize_pseudocode_variable_kb(self):
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
@@ -267,10 +266,7 @@ class Instance:
             if not size:
                 size = sym.size
             if not type_:
-                if sym.type == SymbolType.TYPE_FUNCTION:
-                    type_ = "execute"
-                else:
-                    type_ = "write"
+                type_ = "execute" if sym.type == SymbolType.TYPE_FUNCTION else "write"
         elif type(obj) is Function:
             addr = obj.addr
             if not type_:

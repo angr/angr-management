@@ -374,15 +374,14 @@ class QFunctionTableFilterBox(QLineEdit):
         self.installEventFilter(self)
 
     def eventFilter(self, obj, event):  # pylint:disable=unused-argument
-        if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                if self.text():
-                    # clear the text
-                    self.setText("")
-                else:
-                    # close the filterbox and set the function table on focus
-                    self._table.hide_filter_box()
-                return True
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+            if self.text():
+                # clear the text
+                self.setText("")
+            else:
+                # close the filterbox and set the function table on focus
+                self._table.hide_filter_box()
+            return True
 
         return False
 

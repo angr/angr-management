@@ -106,10 +106,7 @@ def to_supergraph(transition_graph):
             edge = (node, dst)
 
             if edge in edges_to_shrink:
-                if dst in supernodes_map:
-                    dst_supernode = supernodes_map[dst]
-                else:
-                    dst_supernode = None
+                dst_supernode = supernodes_map[dst] if dst in supernodes_map else None
 
                 src_supernode.insert_cfgnode(dst)
 

@@ -296,7 +296,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
             self.HORIZONTAL_PADDING * 2
             + self._func_name_item.boundingRect().width()
             + self._left_parenthesis_item.boundingRect().width()
-            + sum(map(lambda x: x.boundingRect().width(), self._args_list))
+            + sum(x.boundingRect().width() for x in self._args_list)
             + self._right_parenthesis_item.boundingRect().width()
         ]
 

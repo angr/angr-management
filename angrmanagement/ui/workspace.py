@@ -181,9 +181,8 @@ class Workspace:
         else:
             view = self.view_manager.current_view_in_category("disassembly")
 
-        if view is not None:
-            if view.current_function.am_obj is not None:
-                view.reload()
+        if view is not None and view.current_function.am_obj is not None:
+            view.reload()
 
     def on_variable_recovered(self, func_addr: int):
         """
@@ -288,9 +287,8 @@ class Workspace:
             )
             # prioritize the current function in display
             disassembly_view = self.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None:
-                if not disassembly_view.function.am_none:
-                    self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
+            if disassembly_view is not None and not disassembly_view.function.am_none:
+                self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
             self.main_instance.add_job(self.main_instance.variable_recovery_job)
 
     #
@@ -302,10 +300,7 @@ class Workspace:
         Add a new disassembly view.
         """
         disassembly_view = self.view_manager.first_view_in_category("disassembly")
-        if disassembly_view is not None:
-            current_addr = disassembly_view.jump_history.current
-        else:
-            current_addr = None
+        current_addr = disassembly_view.jump_history.current if disassembly_view is not None else None
 
         view = DisassemblyView(self, self._main_instance, "center")
         self.add_view(view)
@@ -422,10 +417,7 @@ class Workspace:
             if not size:
                 size = sym.size
             if not type_:
-                if sym.type == SymbolType.TYPE_FUNCTION:
-                    type_ = "execute"
-                else:
-                    type_ = "write"
+                type_ = "execute" if sym.type == SymbolType.TYPE_FUNCTION else "write"
         elif type(obj) is Function:
             addr = obj.addr
             if not type_:
@@ -487,9 +479,8 @@ class Workspace:
         else:
             should_run = True
 
-        if should_run:
-            if self.main_instance._analysis_configuration["cfg"].enabled:
-                self.generate_cfg(self.main_instance._analysis_configuration["cfg"].to_dict())
+        if should_run and self.main_instance._analysis_configuration["cfg"].enabled:
+            self.generate_cfg(self.main_instance._analysis_configuration["cfg"].to_dict())
 
     def decompile_current_function(self):
         current = self.view_manager.current_tab

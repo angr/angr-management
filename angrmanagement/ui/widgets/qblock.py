@@ -258,7 +258,7 @@ class QBlock(QCachedGraphicsItem):
         self.layout_widgets()
 
     def layout_widgets(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class QGraphBlock(QBlock):

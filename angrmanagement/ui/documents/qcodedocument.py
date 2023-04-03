@@ -85,10 +85,7 @@ class QCodeDocument(QTextDocument):
         # from the left and right iteratively.
         if n is None:
             # special case where cursor is off the screen, reposition to before the end
-            if pos >= len(self._codegen.text) - 2:
-                length = len(self._codegen.text) - 4
-            else:
-                length = pos - 1
+            length = len(self._codegen.text) - 4 if pos >= len(self._codegen.text) - 2 else pos - 1
 
             r = pos + 1
             inc_l = not self._pos_is_newline_or_oob(length)

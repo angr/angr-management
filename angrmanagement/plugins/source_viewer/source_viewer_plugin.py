@@ -207,7 +207,7 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
             editor: SourceCodeViewer = self.open_document(fn)
             editor.viewer = self.viewer
             editor.setHighlighter()
-            valid_line = {line for (filename, line) in self.line_to_addr.keys() if filename == fn}
+            valid_line = {line for (filename, line) in self.line_to_addr if filename == fn}
             editor.set_valid_line(valid_line)
             self.tabs[fn] = editor
 

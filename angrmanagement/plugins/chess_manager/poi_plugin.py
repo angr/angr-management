@@ -206,10 +206,7 @@ class POIViewer(BasePlugin):
             self.multi_poi.am_obj = MultiPOI(self.workspace)
         for poi_object in pois:
             _l.debug("poi: %s", poi_object.poi)
-            if poi_object.poi != "":
-                poi_json = json.loads(poi_object.poi)
-            else:
-                poi_json = deepcopy(EMPTY_POI)
+            poi_json = json.loads(poi_object.poi) if poi_object.poi != "" else deepcopy(EMPTY_POI)
             _l.debug("poi json: %s", poi_json)
             # self._pois[poi_object.id] =poi_json
             self.multi_poi.am_obj.add_poi(poi_object.id, poi_json)

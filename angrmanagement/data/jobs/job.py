@@ -73,7 +73,7 @@ class Job:
         return r
 
     def _run(self, inst):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def finish(self, inst, result):  # pylint: disable=unused-argument
         inst.jobs = inst.jobs[1:]

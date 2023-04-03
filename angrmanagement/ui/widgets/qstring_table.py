@@ -241,10 +241,7 @@ class QStringTable(QTableView):
         selected_index = model_index.row()
         if self._model is None:
             return
-        if 0 <= selected_index < len(self._model.values):
-            selected_item = self._model.values[selected_index]
-        else:
-            selected_item = None
+        selected_item = self._model.values[selected_index] if 0 <= selected_index < len(self._model.values) else None
 
         if self._selected is not None:
             self._selected(selected_item)

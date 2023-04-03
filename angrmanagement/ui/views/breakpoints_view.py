@@ -73,7 +73,7 @@ class QBreakpointTableModel(QAbstractTableModel):
         elif column == self.COL_COMMENT:
             return bp.comment
         else:
-            assert False
+            raise AssertionError
 
 
 class QBreakpointTableWidget(QTableView):

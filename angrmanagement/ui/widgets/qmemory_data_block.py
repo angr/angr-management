@@ -131,10 +131,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         while i < len(self._bytes):
             byte_offset = addr % self.bytes_per_line
-            if byte_offset == 0:
-                end_pos = i + self.bytes_per_line
-            else:
-                end_pos = self.bytes_per_line - byte_offset
+            end_pos = i + self.bytes_per_line if byte_offset == 0 else self.bytes_per_line - byte_offset
 
             all_bytes = self._bytes[i:end_pos]
             # print("... print %#x, %d bytes, byte_offset %d" % (addr, len(all_bytes), byte_offset))
@@ -163,10 +160,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         bytes_list = []
         for idx, byt in enumerate(all_bytes):
             if type(byt) is int:
-                if is_printable(byt):
-                    color = printable_byte_color
-                else:
-                    color = unprintable_byte_color
+                color = printable_byte_color if is_printable(byt) else unprintable_byte_color
                 o = QGraphicsSimpleTextItem("%02x" % byt, self)
                 o.setFont(Conf.disasm_font)
                 o.setBrush(color)

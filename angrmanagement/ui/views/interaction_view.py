@@ -240,7 +240,7 @@ class InteractionView(BaseView):
             QMessageBox.warning(
                 self.workspace.main_window,
                 "CHESSConnector is not found",
-                "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed " "and enabled.",
+                "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed and enabled.",
             )
             return
         if not connector.target_image_id:
@@ -248,7 +248,7 @@ class InteractionView(BaseView):
             QMessageBox.warning(
                 self.workspace.main_window,
                 "Target image ID is not specified",
-                "The target image ID is unspecified. Please associate the binary with a remote " "challenge target.",
+                "The target image ID is unspecified. Please associate the binary with a remote challenge target.",
             )
             return
         slacrs_instance = connector.slacrs_instance()
@@ -339,30 +339,29 @@ class InteractionView(BaseView):
         Thread(target=self._socket_thread, args=(img_name,), daemon=True).start()
 
     def _socket_thread(self, img_name):
-        with archr.targets.DockerImageTarget(img_name).build().start() as target:
-            with target.flight_context() as flight:
-                sock = flight.default_channel
-                sock._raise_timeout = True
-                self.chosen_protocol = self.selected_protocol
-                self.running_protocol = self.chosen_protocol(self, sock)
-                _l.debug("Connected to running target")
-                self._signal_start.emit()
-                while self.running_protocol is not None:
-                    try:
-                        data = sock.recv(timeout=1)
-                    except nclib.NetcatTimeout:
-                        continue
-                    except nclib.NetcatError:
-                        break
-                    if not data:
-                        break
-                    self._signal_data.emit(data)
+        with archr.targets.DockerImageTarget(img_name).build().start() as target, target.flight_context() as flight:
+            sock = flight.default_channel
+            sock._raise_timeout = True
+            self.chosen_protocol = self.selected_protocol
+            self.running_protocol = self.chosen_protocol(self, sock)
+            _l.debug("Connected to running target")
+            self._signal_start.emit()
+            while self.running_protocol is not None:
+                try:
+                    data = sock.recv(timeout=1)
+                except nclib.NetcatTimeout:
+                    continue
+                except nclib.NetcatError:
+                    break
+                if not data:
+                    break
+                self._signal_data.emit(data)
 
-                if self.running_protocol is not None:
-                    _l.debug("Connection dropped by server")
-                    self._signal_eof.emit()
-                else:
-                    _l.debug("Connection closed by client")
+            if self.running_protocol is not None:
+                _l.debug("Connection dropped by server")
+                self._signal_eof.emit()
+            else:
+                _l.debug("Connection closed by client")
 
     def _init_widgets(self):
         self.setLayout(QtWidgets.QHBoxLayout(self))
@@ -468,10 +467,9 @@ class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
         self._callback = callback
 
     def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Return:
-            if event.modifiers() != QtCore.Qt.ShiftModifier:
-                self._callback()
-                return
+        if event.key() == QtCore.Qt.Key_Return and event.modifiers() != QtCore.Qt.ShiftModifier:
+            self._callback()
+            return
         super().keyPressEvent(event)
 
 
@@ -493,10 +491,7 @@ class PlainTextProtocol(ProtocolInteractor):
     def render_input_form(self):
         # will be called whenever we need to show the input form
         # should translate any data we need between the old and new forms
-        if self.view.widget_input is not None:
-            cur_input = self.view.widget_input.toPlainText()
-        else:
-            cur_input = ""
+        cur_input = self.view.widget_input.toPlainText() if self.view.widget_input is not None else ""
         txt = SmartPlainTextEdit(None, self._send_callback)
         txt.setPlainText(cur_input)
         return txt

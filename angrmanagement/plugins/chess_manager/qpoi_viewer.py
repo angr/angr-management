@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from copy import deepcopy
 from uuid import uuid4
@@ -238,10 +239,8 @@ class QPOIViewer(QWidget):
         second_cell = self.multiPOIList.item(row, 1)
         crash_addr = None
         if second_cell is not None:
-            try:
+            with contextlib.suppress(ValueError):
                 crash_addr = int(second_cell.text(), 16)
-            except ValueError:
-                pass
         if crash_addr is not None:
             # show the crashing address
             view = self.workspace.view_manager.first_view_in_category("disassembly")
@@ -287,7 +286,7 @@ class QPOIViewer(QWidget):
             self.poi_trace.am_obj = None
             self.poi_trace.am_event()
             return
-        if self.TRACE_FUNC_MINHEIGHT < self.poi_trace.count * 15:
+        if self.poi_trace.count * 15 > self.TRACE_FUNC_MINHEIGHT:
             self.trace_func_unit_height = 15
             show_func_tag = True
         else:
@@ -373,10 +372,7 @@ class QPOIViewer(QWidget):
             category = poi["category"]
             output = poi["output"]
             crash_addr = output["bbl"]
-            if crash_addr is not None:
-                crash = hex(crash_addr)
-            else:
-                crash = None
+            crash = hex(crash_addr) if crash_addr is not None else None
             diagnose = output.get("diagnose")
             _l.debug("poi_ids: %s", poi_ids)
             _l.debug("current poi id: %s", poi_id)

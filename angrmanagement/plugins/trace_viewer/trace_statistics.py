@@ -61,7 +61,7 @@ class TraceStatistics:
         if "map" in trace:
             map_dict: Dict[str, int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
-            self.mapping = list(sorted(self.mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
+            self.mapping = sorted(self.mapping, key=lambda o: o.base_addr)  # sort it based on base addresses
         self.trace_func: List[TraceFunc] = []
         self.func_addr_in_trace: Set[int] = set()
         self._func_color = {}
@@ -109,7 +109,7 @@ class TraceStatistics:
 
         if base_addr is None:
             log.warning(
-                "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the " "trace.",
+                "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the trace.",
                 object_name,
             )
         self._cached_object_project_base_addrs[object_name] = base_addr
