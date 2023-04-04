@@ -169,96 +169,95 @@ class RenameNode(QDialog):
 
     def _on_ok_clicked(self):
         node_name = self._name_box.name
-        if node_name is not None:
-            if self._code_view is not None and self._node is not None:
-                # need workspace for altering callbacks of changes
-                workspace = self._code_view.workspace
-                code_kb = self._code_view.codegen.kb
+        if node_name is not None and self._code_view is not None and self._node is not None:
+            # need workspace for altering callbacks of changes
+            workspace = self._code_view.workspace
+            code_kb = self._code_view.codegen.kb
 
-                # stack variable
-                if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
-                    # sanity check that we are a stack var
-                    if hasattr(self._node.variable, "offset") and self._node.variable.offset is not None:
-                        workspace.plugins.handle_stack_var_renamed(
-                            self._func,
-                            self._node.variable.offset,
-                            self._node.variable.name,
-                            node_name,
-                        )
-
-                    self._node.unified_variable.name = node_name
-                    self._node.unified_variable.renamed = True
-
-                # global variable
-                elif isinstance(self._node, CVariable) and not self._node.variable.region:
-                    workspace.plugins.handle_global_var_renamed(
-                        self._node.variable.addr, self._node.variable.name, node_name
+            # stack variable
+            if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
+                # sanity check that we are a stack var
+                if hasattr(self._node.variable, "offset") and self._node.variable.offset is not None:
+                    workspace.plugins.handle_stack_var_renamed(
+                        self._func,
+                        self._node.variable.offset,
+                        self._node.variable.name,
+                        node_name,
                     )
 
-                    self._code_view.instance.kb.labels[self._node.variable.addr] = node_name
-                    self._node.variable.name = node_name
-                    self._node.variable.renamed = True
+                self._node.unified_variable.name = node_name
+                self._node.unified_variable.renamed = True
 
-                # function arg
-                elif isinstance(self._node, CVariable):
-                    workspace.plugins.handle_func_arg_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr], 0, self._node.variable.name, node_name
-                    )
+            # global variable
+            elif isinstance(self._node, CVariable) and not self._node.variable.region:
+                workspace.plugins.handle_global_var_renamed(
+                    self._node.variable.addr, self._node.variable.name, node_name
+                )
 
-                    self._node.variable.name = node_name
-                    self._node.variable.renamed = True
+                self._code_view.instance.kb.labels[self._node.variable.addr] = node_name
+                self._node.variable.name = node_name
+                self._node.variable.renamed = True
 
-                # function name
-                elif isinstance(self._node, CFunction):
+            # function arg
+            elif isinstance(self._node, CVariable):
+                workspace.plugins.handle_func_arg_renamed(
+                    code_kb.functions[self._node.codegen.cfunc.addr], 0, self._node.variable.name, node_name
+                )
+
+                self._node.variable.name = node_name
+                self._node.variable.renamed = True
+
+            # function name
+            elif isinstance(self._node, CFunction):
+                workspace.plugins.handle_function_renamed(
+                    code_kb.functions[self._node.codegen.cfunc.addr], self._node.name, node_name
+                )
+
+                code_kb.functions.get_by_addr(self._node.addr).name = node_name
+                self._node.name = node_name
+                self._node.demangled_name = node_name
+
+            # function renaming (as a call)
+            elif isinstance(self._node, CFunctionCall):
+                if self._node.callee_func is not None:
                     workspace.plugins.handle_function_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr], self._node.name, node_name
+                        code_kb.functions[self._node.codegen.cfunc.addr], self._node.callee_func.name, node_name
                     )
 
-                    code_kb.functions.get_by_addr(self._node.addr).name = node_name
-                    self._node.name = node_name
-                    self._node.demangled_name = node_name
+                    self._node.callee_func.name = node_name
 
-                # function renaming (as a call)
-                elif isinstance(self._node, CFunctionCall):
-                    if self._node.callee_func is not None:
-                        workspace.plugins.handle_function_renamed(
-                            code_kb.functions[self._node.codegen.cfunc.addr], self._node.callee_func.name, node_name
-                        )
+            # struct renaming
+            elif isinstance(self._node, CStructField):
+                # TODO add a better callback
+                # TODO prevent name duplication. reuse logic from CTypeEditor?
+                # TODO if this is a temporary struct, make it permanent and add it to kb.types
+                fields = [
+                    (node_name if n == self._node.field else n, t) for n, t in self._node.struct_type.fields.items()
+                ]
+                self._node.struct_type.fields = OrderedDict(fields)
 
-                        self._node.callee_func.name = node_name
+                workspace.plugins.handle_struct_changed(self._node.field, node_name)
 
-                # struct renaming
-                elif isinstance(self._node, CStructField):
-                    # TODO add a better callback
-                    # TODO prevent name duplication. reuse logic from CTypeEditor?
-                    # TODO if this is a temporary struct, make it permanent and add it to kb.types
-                    fields = [
-                        (node_name if n == self._node.field else n, t) for n, t in self._node.struct_type.fields.items()
-                    ]
-                    self._node.struct_type.fields = OrderedDict(fields)
+                self._node.field = node_name
 
-                    workspace.plugins.handle_struct_changed(self._node.field, node_name)
-
-                    self._node.field = node_name
-
-                elif isinstance(self._node, SimType):
-                    ty = self._node
-                    ref = None
-                    while True:
-                        if isinstance(ty, TypeRef):
-                            ref = ty
-                            ty = ty.type
-                        elif isinstance(ty, SimTypePointer):
-                            ref = None
-                            ty = ty.pts_to
-                        else:
-                            break
-                    if isinstance(ty, NamedTypeMixin):
-                        ty.name = node_name
-                        if ref is not None:  # update the typeref as well
-                            ref._name = node_name
+            elif isinstance(self._node, SimType):
+                ty = self._node
+                ref = None
+                while True:
+                    if isinstance(ty, TypeRef):
+                        ref = ty
+                        ty = ty.type
+                    elif isinstance(ty, SimTypePointer):
+                        ref = None
+                        ty = ty.pts_to
                     else:
-                        ty.label = node_name
+                        break
+                if isinstance(ty, NamedTypeMixin):
+                    ty.name = node_name
+                    if ref is not None:  # update the typeref as well
+                        ref._name = node_name
+                else:
+                    ty.label = node_name
 
-                self._code_view.codegen.am_event()
-                self.close()
+            self._code_view.codegen.am_event()
+            self.close()

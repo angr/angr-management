@@ -41,7 +41,7 @@ class MultiTrace:
 
     def get_hit_miss_color(self, addr):
         # hexstr_addr = hex(addr)
-        if addr in self.addr_color_map.keys():
+        if addr in self.addr_color_map:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         else:
@@ -49,7 +49,7 @@ class MultiTrace:
 
     def get_percent_color(self, func):
         addr = func.addr
-        if addr in self.addr_color_map.keys():
+        if addr in self.addr_color_map:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         return None

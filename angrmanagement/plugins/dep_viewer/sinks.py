@@ -65,7 +65,7 @@ class SinkManager:
             return self._func_to_sinks[func_name]
         # compare lib name
         sinks = self._func_to_sinks[func_name]
-        return list(sink for sink in sinks if sink[1].lib == lib)
+        return [sink for sink in sinks if sink[1].lib == lib]
 
 
 FAS = FunctionArgumentSink

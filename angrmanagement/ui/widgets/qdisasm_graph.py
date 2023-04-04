@@ -112,10 +112,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     def reload(self, old_infodock: Optional["InfoDock"] = None):
         # if there is an instruction in selection, we will want to select that instruction again after reloading this
         # view.
-        if old_infodock is not None:
-            selected_insns = old_infodock.selected_insns.am_obj
-        else:
-            selected_insns = set()
+        selected_insns = old_infodock.selected_insns.am_obj if old_infodock is not None else set()
 
         self._reset_scene()
         self._arrows.clear()
@@ -181,7 +178,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             scene.addItem(block)
             self.blocks.append(block)
 
-            for insn_addr in block.addr_to_insns.keys():
+            for insn_addr in block.addr_to_insns:
                 self._insaddr_to_block[insn_addr] = block
 
         self.request_relayout()

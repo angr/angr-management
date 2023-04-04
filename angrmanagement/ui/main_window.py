@@ -80,10 +80,9 @@ class DockShortcutEventFilter(QObject):
         self._main_window: "MainWindow" = main_window
 
     def eventFilter(self, qobject, event):
-        if event.type() == QEvent.KeyPress:
-            if QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
-                self._main_window.show_command_palette(qobject)
-                return True
+        if event.type() == QEvent.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
+            self._main_window.show_command_palette(qobject)
+            return True
         return False
 
 

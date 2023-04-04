@@ -272,10 +272,9 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         :return:
         """
 
-        if event.button() == Qt.LeftButton:
-            if self._is_dragging:
-                self.viewport().setCursor(Qt.ArrowCursor)
-                event.accept()
+        if event.button() == Qt.LeftButton and self._is_dragging:
+            self.viewport().setCursor(Qt.ArrowCursor)
+            event.accept()
 
         if not event.isAccepted():
             # create a new event and dispatch it to the scene

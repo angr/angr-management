@@ -83,11 +83,9 @@ class CommandPaletteModel(PaletteModel):
     """
 
     def get_items(self) -> List["Command"]:
-        return list(
-            sorted(
-                [cmd for cmd in self.workspace.command_manager.get_commands() if cmd.is_visible],
-                key=lambda cmd: cmd.caption,
-            )
+        return sorted(
+            [cmd for cmd in self.workspace.command_manager.get_commands() if cmd.is_visible],
+            key=lambda cmd: cmd.caption,
         )
 
     def get_caption_for_item(self, item: "Command") -> str:

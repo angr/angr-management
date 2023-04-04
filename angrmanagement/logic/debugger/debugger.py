@@ -48,7 +48,7 @@ class Debugger:
         """
         Step backward by one machine instruction.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_step_forward(self) -> bool:
@@ -61,7 +61,7 @@ class Debugger:
         """
         Step forward by one machine instruction.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_continue_backward(self) -> bool:
@@ -74,7 +74,7 @@ class Debugger:
         """
         Continue execution in reverse.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_continue_forward(self) -> bool:
@@ -87,7 +87,7 @@ class Debugger:
         """
         Continue execution.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_halt(self) -> bool:
@@ -100,7 +100,7 @@ class Debugger:
         """
         Interrupt the target.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def is_halted(self) -> bool:
@@ -120,7 +120,7 @@ class Debugger:
         """
         Stop the target.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def is_exited(self) -> bool:

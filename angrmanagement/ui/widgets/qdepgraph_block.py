@@ -60,10 +60,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
     def _init_widgets(self):
         # definition
         self._definition_str = ""
-        if self.definition is not None:
-            atom = self.definition.atom
-        else:
-            atom = self.atom
+        atom = self.definition.atom if self.definition is not None else self.atom
         addr_str = "unknown address" if self.addr is None else "%#x" % self.addr
         if isinstance(atom, Register):
             # convert it to a register name

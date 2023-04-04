@@ -169,10 +169,7 @@ class QStateTable(QTableWidget):
         if m:
             # ends with copy
             ctr_str = m.group(2)
-            if ctr_str:
-                ctr = int(ctr_str) + 1
-            else:
-                ctr = 1
+            ctr = int(ctr_str) + 1 if ctr_str else 1
 
             current_name = m.group(1)
             name = current_name + " copy %d" % ctr

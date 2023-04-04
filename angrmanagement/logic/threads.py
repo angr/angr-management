@@ -1,3 +1,4 @@
+import contextlib
 import threading
 from typing import Any, Callable, Dict, Tuple, TypeVar
 
@@ -257,8 +258,5 @@ def gui_thread_schedule_async(
     if GlobalInfo.is_test:
         GlobalInfo.add_event_during_test(event)
     else:
-        try:
+        with contextlib.suppress(RuntimeError):  # the application is exiting and the main window has been destroyed.
             QCoreApplication.postEvent(GlobalInfo.main_window, event)
-        except RuntimeError:
-            # the application is exiting and the main window has been destroyed. just let it go
-            pass

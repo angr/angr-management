@@ -12,7 +12,7 @@ class Trace:
 
     @property
     def source(self) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def trace_backend_enabled(cls) -> bool:

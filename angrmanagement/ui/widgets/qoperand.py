@@ -295,10 +295,7 @@ class QOperand(QCachedGraphicsItem):
                         if "custom_values_str" not in formatting:
                             formatting["custom_values_str"] = {}
                         if variable_sort == "memory":
-                            if offset == 0:
-                                custom_value_str = variable_str
-                            else:
-                                custom_value_str = "%s[%d]" % (variable_str, offset)
+                            custom_value_str = variable_str if offset == 0 else "%s[%d]" % (variable_str, offset)
                         else:
                             custom_value_str = ""
 
@@ -471,9 +468,8 @@ class QOperand(QCachedGraphicsItem):
             # this is the destination operand
             # which variable is written here?
             for var, offset in variable_and_offsets:
-                if arch.registers[reg_name][0] == var.reg:
-                    if self._variable_has_access(var, self.insn.addr, "write"):
-                        return var, offset
+                if arch.registers[reg_name][0] == var.reg and self._variable_has_access(var, self.insn.addr, "write"):
+                    return var, offset
 
             log.debug(
                 "Cannot find any destination variable for operand %d at instruction %#x.",
@@ -495,11 +491,7 @@ class QOperand(QCachedGraphicsItem):
             return False
 
         accesses = self.variable_manager[self.func_addr]._variable_accesses[variable]
-        for access in accesses:
-            if access.location.ins_addr == ins_addr and access.access_type == access_type:
-                return True
-
-        return False
+        return any(access.location.ins_addr == ins_addr and access.access_type == access_type for access in accesses)
 
     def _equals_for_highlighting_purposes(self, other):
         """

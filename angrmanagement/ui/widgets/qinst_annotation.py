@@ -77,10 +77,7 @@ class QStatsAnnotation(QInstructionAnnotation):
             self.disasm_view.redraw_current_graph()
 
     def paint(self, painter, *args, **kwargs):
-        if self.hovered:
-            margin = QMarginsF(7, 5, 7, 5)
-        else:
-            margin = QMarginsF(3, 0, 3, 0)
+        margin = QMarginsF(7, 5, 7, 5) if self.hovered else QMarginsF(3, 0, 3, 0)
         box = self.boundingRect().marginsAdded(margin)
         path = QPainterPath()
         path.addRoundedRect(box, 5, 5)

@@ -192,10 +192,7 @@ class DataDepView(BaseView):
     ) -> Optional[QDataDepGraphBlock]:
         if isinstance(node, (MemDepNode, RegDepNode)):
             cs_instr = self._instructions.get(node.ins_addr, None)
-            if cs_instr:
-                instr = cs_instr.insn
-            else:
-                instr = None
+            instr = cs_instr.insn if cs_instr else None
         else:
             instr = None
         return converted.setdefault(node, QDataDepGraphBlock(False, self, node, instr))

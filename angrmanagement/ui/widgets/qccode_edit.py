@@ -311,20 +311,19 @@ class QCCodeEdit(api.CodeEdit):
         dialog.exec_()
 
         new_node_type = dialog.new_type
-        if new_node_type is not None:
-            if self._code_view is not None and node is not None:
-                # need workspace for altering callbacks of changes
-                variable_kb = self._code_view.codegen._variable_kb
-                # specify the type
-                new_node_type = new_node_type.with_arch(self.instance.project.arch)
-                variable_kb.variables[self._code_view.function.addr].set_variable_type(
-                    node.variable,
-                    new_node_type,
-                    all_unified=True,
-                    mark_manual=True,
-                )
+        if new_node_type is not None and self._code_view is not None and node is not None:
+            # need workspace for altering callbacks of changes
+            variable_kb = self._code_view.codegen._variable_kb
+            # specify the type
+            new_node_type = new_node_type.with_arch(self.instance.project.arch)
+            variable_kb.variables[self._code_view.function.addr].set_variable_type(
+                node.variable,
+                new_node_type,
+                all_unified=True,
+                mark_manual=True,
+            )
 
-                self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
+            self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
     def comment(self, expr=False, node=None):
         addr = self.get_closest_insaddr(node, expr=expr)
@@ -418,10 +417,7 @@ class QCCodeEdit(api.CodeEdit):
             return
 
         op = ailexpr.op
-        if op in {"CmpEQ", "CmpNE"}:
-            negated_op = op
-        else:
-            negated_op = BinaryOp.COMPARISON_NEGATION.get(op, None)
+        negated_op = op if op in {"CmpEQ", "CmpNE"} else BinaryOp.COMPARISON_NEGATION.get(op, None)
         if negated_op is None:
             return
 

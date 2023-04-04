@@ -187,9 +187,9 @@ class ChessUrlHandler(BasePlugin):
             return "code"
         elif sys.platform == "darwin":
             # try the default path
-            raise NotImplementedError()
+            raise NotImplementedError
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         for loc in default_locations:
             vscode_path = os.path.join(loc, code_exe)
@@ -229,8 +229,8 @@ class ChessUrlHandler(BasePlugin):
                 return
 
         elif editor == "am":
-            raise NotImplementedError()
+            raise NotImplementedError
 
         else:
             # fallback to the default editor
-            raise NotImplementedError()
+            raise NotImplementedError

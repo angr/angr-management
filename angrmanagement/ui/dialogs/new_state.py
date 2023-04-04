@@ -50,10 +50,7 @@ StateMetadata.register_default("gui_data")
 
 
 def is_option(o):
-    for ch in o:
-        if ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_":
-            return False
-    return True
+    return all(ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" for ch in o)
 
 
 class NewState(QDialog):

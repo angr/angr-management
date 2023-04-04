@@ -51,7 +51,7 @@ class FunctionDiff:
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
 
     def _linear_asm_from_function(self, func: Function, disas: Disassembly = None, as_dict=False) -> List[CapstoneInsn]:
-        sorted_blocks = sorted(list(func.blocks), key=lambda b: b.addr)
+        sorted_blocks = sorted(func.blocks, key=lambda b: b.addr)
         instruction_lists = [block.disassembly.insns for block in sorted_blocks]
         instructions = list(itertools.chain.from_iterable(instruction_lists))
         if not self.prefer_symbols:
@@ -260,7 +260,7 @@ class BFSFunctionDiff(FunctionDiff):
 
                 # find changed instructions
                 first_unmodified_address = unmodified_insns[0] if unmodified_insns else None
-                for insn_idx, base_insn in enumerate(self.supergraph_block_to_insns(self.func_base, base_block)):
+                for insn_idx, _base_insn in enumerate(self.supergraph_block_to_insns(self.func_base, base_block)):
                     if insn_idx >= len(rev_insns):
                         break
 

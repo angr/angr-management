@@ -137,9 +137,8 @@ class RetypeNode(QDialog):
 
         type_box = TypeBox(self._on_type_changed, predefined_types=self._get_predefined_types(), parent=self)
         if self._node is not None:
-            if isinstance(self._node, CVariable) and self._node.unified_variable:
-                if self._node_type is not None:
-                    type_box.set_type(self._node_type, cvariable=self._node)
+            if isinstance(self._node, CVariable) and self._node.unified_variable and self._node_type is not None:
+                type_box.set_type(self._node_type, cvariable=self._node)
 
             type_box.selectAll()
         self._type_box = type_box

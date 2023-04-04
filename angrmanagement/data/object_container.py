@@ -75,12 +75,12 @@ class ObjectContainer(EventSentinel):
         self.am_event(**kwargs)
 
     def __getattr__(self, item):
-        if item.startswith("am_") or item.startswith("_am_"):
+        if item.startswith(("am_", "_am_")):
             return object.__getattribute__(self, item)
         return getattr(self._am_obj, item)
 
     def __setattr__(self, key, value):
-        if key.startswith("am_") or key.startswith("_am_"):
+        if key.startswith(("am_", "_am_")):
             return object.__setattr__(self, key, value)
         return setattr(self._am_obj, key, value)
 

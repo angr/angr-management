@@ -76,18 +76,12 @@ class VaRec(BasePlugin):
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Error in variable name prediction",
-                "Cannot predict variable names. The pseudocode view does not have associated " "variables KB.",
+                "Cannot predict variable names. The pseudocode view does not have associated variables KB.",
                 QMessageBox.Ok,
             )
             return
 
-        if Conf.http_proxy or Conf.https_proxy:
-            proxies = {
-                "http": Conf.http_proxy,
-                "https": Conf.https_proxy,
-            }
-        else:
-            proxies = None
+        proxies = {"http": Conf.http_proxy, "https": Conf.https_proxy} if Conf.http_proxy or Conf.https_proxy else None
 
         for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
             if not v.renamed:

@@ -43,7 +43,7 @@ class AnalysisOptionWidgetMapper:
         self.widget: Optional[QWidget] = None
 
     def create_widget(self) -> QWidget:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def get_mapper_for_option(cls, option: AnalysisOption) -> "AnalysisOptionWidgetMapper":

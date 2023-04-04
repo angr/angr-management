@@ -208,7 +208,7 @@ class CodeView(BaseView):
                     self._function.am_event(focus_addr=self.addr.am_obj, focus=focus)
                 else:
                     log.error(
-                        "There is a block which is in the current function " "but find_closest_node_pos failed on it"
+                        "There is a block which is in the current function but find_closest_node_pos failed on it"
                     )
 
     def _on_new_node(self, **kwargs):  # pylint: disable=unused-argument
@@ -302,10 +302,7 @@ class CodeView(BaseView):
     def _on_new_function(self, focus=False, focus_addr=None, flavor=None, **kwargs):  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
-            if self.codegen.am_none:
-                flavor = "pseudocode"
-            else:
-                flavor = self.codegen.flavor
+            flavor = "pseudocode" if self.codegen.am_none else self.codegen.flavor
 
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
@@ -393,15 +390,14 @@ class CodeView(BaseView):
         elif key == Qt.Key_Escape:
             self.jump_back()
             return True
-        elif key == Qt.Key_Space:
-            if not self.codegen.am_none:
-                flavor = self.codegen.flavor
-                flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
-                idx = flavors.index(flavor)
-                newidx = (idx + 1) % len(flavors)
-                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, flavors[newidx])].codegen
-                self.codegen.am_event()
-                return True
+        elif key == Qt.Key_Space and not self.codegen.am_none:
+            flavor = self.codegen.flavor
+            flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
+            idx = flavors.index(flavor)
+            newidx = (idx + 1) % len(flavors)
+            self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, flavors[newidx])].codegen
+            self.codegen.am_event()
+            return True
 
         return super().keyPressEvent(event)
 

@@ -13,7 +13,7 @@ class SamplePlugin(BasePlugin):
     def __init__(self, workspace):
         super().__init__(workspace)
 
-        workspace.main_instance.register_container("bookmarks", lambda: [], List[int], "Bookmarked addresses")
+        workspace.main_instance.register_container("bookmarks", list, List[int], "Bookmarked addresses")
 
     MENU_BUTTONS = ("Add Bookmark",)
 

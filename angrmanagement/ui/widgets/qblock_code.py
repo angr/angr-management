@@ -171,10 +171,7 @@ class QVariableObj(QBlockCodeObj):
         return fmt
 
     def create_subobjs(self, obj):
-        if self.options.show_variable_identifiers:
-            ident = "<%s>" % (obj.ident if obj.ident else "")
-        else:
-            ident = ""
+        ident = "<%s>" % (obj.ident if obj.ident else "") if self.options.show_variable_identifiers else ""
         self.add_text(obj.name + ident)
 
 
@@ -391,10 +388,7 @@ class QAilRegisterObj(QAilTextObj):
         if obj.variable is not None and self.options.show_variables:
             self.add_variable(obj.variable)
         else:
-            if hasattr(obj, "reg_name"):
-                s = f"{obj.reg_name}"
-            else:
-                s = "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
+            s = f"{obj.reg_name}" if hasattr(obj, "reg_name") else "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
             self.add_text(s)
 
     def should_highlight(self) -> bool:

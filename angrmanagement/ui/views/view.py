@@ -45,11 +45,11 @@ class BaseView(QFrame):
 
     @property
     def function(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @function.setter
     def function(self, v):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def is_shown(self):
         return self.visibleRegion().isEmpty() is False

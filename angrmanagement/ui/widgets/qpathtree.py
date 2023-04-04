@@ -85,10 +85,9 @@ class QPathTree(QFrame):
                     # assume _path_mapping always has the path
                     parent_path = hierarchy._path_mapping[parent_history]
                     work.add(parent_path)
-                    if len(hierarchy.history_successors(parent_history)) > 1:
-                        if parent_path.path_id not in seen:
-                            yield parent_path
-                            seen.add(parent_path.path_id)
+                    if len(hierarchy.history_successors(parent_history)) > 1 and parent_path.path_id not in seen:
+                        yield parent_path
+                        seen.add(parent_path.path_id)
 
     @staticmethod
     def _all_edges_gen(state_histories, hierarchy):

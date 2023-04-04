@@ -13,7 +13,7 @@ class UrlActionBase:
         self.target_id = target_id
 
     def act(self, daemon_conn=None):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @staticmethod
     def from_params(params):

@@ -199,7 +199,7 @@ class QTraceViewer(QWidget):
             self.trace.am_obj = None
             self.trace.am_event()
             return
-        if self.TRACE_FUNC_MINHEIGHT < self.trace.count * 15:
+        if self.trace.count * 15 > self.TRACE_FUNC_MINHEIGHT:
             self.trace_func_unit_height = 15
             show_func_tag = True
         else:

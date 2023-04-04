@@ -68,7 +68,7 @@ class DependencyAnalysisJob(Job):
                 atom = Register(inst.project.arch.registers[arg.reg_name][0], arg.size)
                 return sink, atom
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
 
         return None, None
 
@@ -133,7 +133,7 @@ class DependencyAnalysisJob(Job):
                 # determine if there is any values are marked as coming from Externalog. these values are not resolved
                 # within the current call-depth range
                 has_external = False
-                for def_, graph in closures.items():
+                for _def, graph in closures.items():
                     for node in graph.nodes():
                         if isinstance(node.codeloc, ExternalCodeLocation):
                             # yes!
@@ -204,11 +204,11 @@ class DependencyAnalysisJob(Job):
             caller_depth = curr_depth + 1
             if caller_depth >= max_depth:
                 # reached the depth limit. add them to potential analysis starts
-                starts |= set(map(lambda caller_addr: trace.step_back(caller_addr, None, caller_func_addr), callers))
+                starts |= {trace.step_back(caller_addr, None, caller_func_addr) for caller_addr in callers}
             else:
                 # add them to the queue
-                for item in map(
-                    lambda caller_addr: (trace.step_back(caller_addr, None, caller_func_addr), caller_depth), callers
+                for item in (
+                    (trace.step_back(caller_addr, None, caller_func_addr), caller_depth) for caller_addr in callers
                 ):
                     queue.append(item)
             encountered |= callers

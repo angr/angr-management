@@ -266,7 +266,7 @@ class BintraceDebugger(Debugger):
                 stack_reg = 7
                 expected_sp = called_func_entry_event.Regs(stack_reg) + 8
             else:
-                assert False, "FIXME: Stack pointer check for non-x86_64"
+                raise AssertionError("FIXME: Stack pointer check for non-x86_64")
 
             _l.debug("Seeking to return site for call...")
             while True:

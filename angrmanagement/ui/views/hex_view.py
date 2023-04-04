@@ -982,10 +982,7 @@ class HexGraphicsObject(QGraphicsObject):
                         color = Conf.disasm_view_unprintable_byte_color
                     byte_text = "%02x" % val
                 else:
-                    if type(val) is str and len(val) == 1:
-                        byte_text = val * 2
-                    else:
-                        byte_text = "??"
+                    byte_text = val * 2 if type(val) is str and len(val) == 1 else "??"
                     color = Conf.disasm_view_unknown_byte_color
 
                 pt.setX(self.byte_column_offsets[col])
@@ -1009,10 +1006,7 @@ class HexGraphicsObject(QGraphicsObject):
                         ch = "."
                 else:
                     color = Conf.disasm_view_unknown_character_color
-                    if type(val) is str and len(val) == 1:
-                        ch = val
-                    else:
-                        ch = "?"
+                    ch = val if type(val) is str and len(val) == 1 else "?"
 
                 pt.setX(self.ascii_column_offsets[col])
                 painter.setPen(color)
@@ -1025,10 +1019,7 @@ class HexGraphicsObject(QGraphicsObject):
             def set_pen_brush_for_active_cursor(active):
                 painter.setPen(Qt.NoPen)
                 if active:
-                    if self.cursor_blink_state:
-                        col = Conf.palette_text
-                    else:
-                        col = Qt.NoBrush
+                    col = Conf.palette_text if self.cursor_blink_state else Qt.NoBrush
                 else:
                     col = Conf.palette_disabled_text
                 painter.setBrush(col)
@@ -1398,7 +1389,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
                 0x10000000000000000,  # FIXME: Get actual ranges and add them
             )
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         self.inner_widget.set_display_start_addr(start)
         self.inner_widget.hex.set_cursor(cursor)
@@ -1511,7 +1502,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
                 p.new_bytes = p.new_bytes[0 : (addr - p.addr)]
                 pm.add_patch_obj(p)
             else:
-                assert False
+                raise AssertionError
 
         # Check to see if we should extend an adjacent patch
         if addr > 0:
