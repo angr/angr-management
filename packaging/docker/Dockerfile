@@ -1,5 +1,5 @@
 from angr/angr
-maintainer yans@yancomm.net
+LABEL maintainer="yans@yancomm.net"
 
 user angr
 run cd /home/angr/angr-dev && /home/angr/.virtualenvs/angr/bin/pip install -e angr-management/
