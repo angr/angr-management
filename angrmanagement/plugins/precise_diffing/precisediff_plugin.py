@@ -131,7 +131,7 @@ class PreciseDiffPlugin(BasePlugin):
         return recompilation_instance
 
     def _create_revised_disassembly_view(self):
-        new_disass = DiffDisassemblyView(self.diff_instance, "center")
+        new_disass = DiffDisassemblyView(self.workspace, self.diff_instance, "center")
         new_disass.category = "diff"
         new_disass.base_caption = "Precise Diff"
         self.current_revised_view = new_disass
@@ -144,7 +144,7 @@ class PreciseDiffPlugin(BasePlugin):
 
     # pylint:disable=unused-argument
     def syncronize_with_original_disassembly_view(self, *args, **kwargs):
-        og_view = self.workspace._get_or_create_disassembly_view()
+        og_view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
         if not og_view:
             return
 
@@ -175,5 +175,5 @@ class PreciseDiffPlugin(BasePlugin):
         self.syncronize_with_original_disassembly_view()
         self.workspace.view_manager.raise_view(self.current_revised_view)
 
-        original_disass_view = self.diff_instance.workspace._get_or_create_disassembly_view()
+        original_disass_view = self.diff_instance.workspace._get_or_create_view("disassembly", DisassemblyView)
         self.current_revised_view.sync_with_state_object(original_disass_view.sync_state)
