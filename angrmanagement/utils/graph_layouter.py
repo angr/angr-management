@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import List
 
 import networkx
-from angr.analyses.cfg.cfg_utils import CFGUtils
+from angr.utils.graph import GraphUtils
 
 from .edge import Edge, EdgeSort
 
@@ -327,7 +327,7 @@ class GraphLayouter:
         self._initialize()
 
         # order the nodes
-        ordered_nodes = CFGUtils.quasi_topological_sort_nodes(self.graph)
+        ordered_nodes = GraphUtils.quasi_topological_sort_nodes(self.graph)
 
         # conver the graph to an acylic graph
         acyclic_graph = self._to_acyclic_graph(self.graph, ordered_nodes=ordered_nodes)
@@ -366,7 +366,7 @@ class GraphLayouter:
 
         if ordered_nodes is None:
             # take the quasi-topological order of the graph
-            ordered_nodes = CFGUtils.quasi_topological_sort_nodes(graph)
+            ordered_nodes = GraphUtils.quasi_topological_sort_nodes(graph)
 
         acyclic_graph = networkx.DiGraph()
 
@@ -393,7 +393,7 @@ class GraphLayouter:
 
         if ordered_nodes is None:
             # take the quasi-topological order of the graph
-            ordered_nodes = CFGUtils.quasi_topological_sort_nodes(acyclic_graph)
+            ordered_nodes = GraphUtils.quasi_topological_sort_nodes(acyclic_graph)
 
         self._assign_rows(graph, acyclic_graph, ordered_nodes)
         self._assign_columns(acyclic_graph)
