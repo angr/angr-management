@@ -1,5 +1,3 @@
-import os.path
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
 
@@ -20,7 +18,7 @@ class RecentMenuEntry(MenuEntry):
 
     def __init__(self, path):
         self.path = path
-        super().__init__(os.path.basename(path), self.action_target)
+        super().__init__(path, self.action_target)
 
     def action_target(self):
         GlobalInfo.main_window.load_file(self.path)
