@@ -1,11 +1,13 @@
-from typing import Optional, Tuple, TYPE_CHECKING
-from PySide6.QtCore import Qt
 from enum import Enum
+from typing import TYPE_CHECKING, Optional, Tuple
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMessageBox
 
 if TYPE_CHECKING:
+    from angrmanagement.ui.views import DisassemblyView
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qoperand import QOperand
-    from angrmanagement.ui.views import DisassemblyView
 
 
 class DisassemblyLevel(Enum):
@@ -37,13 +39,13 @@ class QDisassemblyBaseControl:
 
         :return:    None
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def reload(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     #
     # Public methods
@@ -71,7 +73,6 @@ class QDisassemblyBaseControl:
     #
 
     def keyPressEvent(self, event):
-
         key = event.key()
 
         if key == Qt.Key_N:
@@ -93,5 +94,14 @@ class QDisassemblyBaseControl:
                 lbl_addr = next(iter(self.infodock.selected_labels))
                 self.disasm_view.popup_xref_dialog(addr=lbl_addr, dst_addr=lbl_addr)
                 return
+
+            # message the user
+            QMessageBox.critical(
+                None,
+                "Invalid selection for XRefs",
+                "You must put select an operand, a label, or a function header before requesting XRefs.",
+            )
+
+            return
 
         self._base_cls.keyPressEvent(self, event)

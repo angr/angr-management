@@ -1,20 +1,19 @@
 import logging
 
+from PySide6.QtCore import QEvent, QMarginsF, QPoint, QRectF, QSize, Qt, Signal
+from PySide6.QtGui import QImage, QMouseEvent, QPainter, QVector2D
 from PySide6.QtWidgets import (
+    QApplication,
     QGraphicsScene,
+    QGraphicsSceneMouseEvent,
     QGraphicsView,
     QStyleOptionGraphicsItem,
-    QApplication,
-    QGraphicsSceneMouseEvent,
 )
-from PySide6.QtGui import QPainter, QMouseEvent, QImage, QVector2D
-from PySide6.QtCore import Qt, QSize, QEvent, QMarginsF, Signal, QRectF, QPoint
 
 _l = logging.getLogger(__name__)
 
 
 class QBaseGraphicsView(QGraphicsView):
-
     visible_scene_rect_changed = Signal(QRectF)
 
     #
@@ -64,7 +63,6 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         self._is_extra_render_pass = is_extra_pass
 
     def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
-
         margins = QMarginsF(left_margin, top_margin, right_margin, bottom_margin)
 
         oldRect = self.scene().sceneRect()
@@ -202,7 +200,6 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def mousePressEvent(self, event):
         # _l.debug('Received press')
         if event.button() == Qt.LeftButton:
-
             self._is_mouse_pressed = True
             self._is_dragging = False
 
@@ -275,10 +272,9 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         :return:
         """
 
-        if event.button() == Qt.LeftButton:
-            if self._is_dragging:
-                self.viewport().setCursor(Qt.ArrowCursor)
-                event.accept()
+        if event.button() == Qt.LeftButton and self._is_dragging:
+            self.viewport().setCursor(Qt.ArrowCursor)
+            event.accept()
 
         if not event.isAccepted():
             # create a new event and dispatch it to the scene

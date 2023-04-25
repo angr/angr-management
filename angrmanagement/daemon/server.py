@@ -1,16 +1,15 @@
 # pylint:disable=import-outside-toplevel,unused-argument
-import time
-import sys
 import subprocess
+import sys
 import threading
+import time
 from typing import Callable
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
-from ..logic.singleton import SingleInstance, SingleInstanceException
-from ..utils.env import app_path
-
+from angrmanagement.logic.singleton import SingleInstance, SingleInstanceException
+from angrmanagement.utils.env import app_path
 
 DEFAULT_PORT = 64000
 
@@ -113,16 +112,15 @@ def monitor_thread(server):
 
 
 def start_daemon(port=DEFAULT_PORT):
-
     try:
-        from ..logic import GlobalInfo
+        from angrmanagement.logic import GlobalInfo
 
         GlobalInfo.daemon_inst = SingleInstance()
     except SingleInstanceException:
         return
 
     # load plugins in headless mode
-    from ..plugins import PluginManager
+    from angrmanagement.plugins import PluginManager
 
     GlobalInfo.headless_plugin_manager = PluginManager(None)
     GlobalInfo.headless_plugin_manager.discover_and_initialize_plugins()
@@ -155,7 +153,7 @@ def run_daemon_process():
         flags["creationflags"] = DETACHED_PROCESS
 
     apppath = app_path(pythonw=True, as_list=True)
-    proc = subprocess.Popen(apppath + ["-D"], stdin=None, stdout=None, stderr=None, close_fds=True, **flags)
+    subprocess.Popen(apppath + ["-D"], stdin=None, stdout=None, stderr=None, close_fds=True, **flags)
 
 
 def daemon_conn(port=DEFAULT_PORT, service=None):

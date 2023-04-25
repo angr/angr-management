@@ -1,7 +1,7 @@
-from typing import Dict, Type, Optional
 import base64
 import binascii
 import urllib.parse
+from typing import Dict, Optional, Type
 
 
 class UrlActionBase:
@@ -13,7 +13,7 @@ class UrlActionBase:
         self.target_id = target_id
 
     def act(self, daemon_conn=None):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @staticmethod
     def from_params(params):
@@ -89,7 +89,6 @@ class UrlActionJumpTo(UrlActionBase):
 
     @classmethod
     def _from_params(cls, params):
-
         addr = cls.str2addr(cls._one_param(params, "addr"))
 
         return cls(
@@ -116,7 +115,6 @@ class UrlActionCommentAt(UrlActionBase):
 
     @classmethod
     def _from_params(cls, params):
-
         addr = cls.str2addr(cls._one_param(params, "addr"))
         try:
             comment = base64.b64decode(cls._one_param(params, "comment")).decode("utf-8")

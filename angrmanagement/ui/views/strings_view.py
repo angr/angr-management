@@ -1,23 +1,27 @@
 import re
-from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLineEdit, QVBoxLayout, QLabel
-from PySide6.QtCore import QSize
+from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins import Function
-from angr.knowledge_plugins.cfg.memory_data import MemoryData
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout
+
+from angrmanagement.ui.widgets.qfunction_combobox import QFunctionComboBox
+from angrmanagement.ui.widgets.qstring_table import QStringTable
 
 from .view import BaseView
-from ..widgets.qstring_table import QStringTable
-from ..widgets.qfunction_combobox import QFunctionComboBox
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 
 class StringsView(BaseView):
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("strings", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("strings", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Strings"
 
-        self._string_table = None  # type: QStringTable
-        self._function_list = None  # type: QFunctionComboBox
+        self._string_table: QStringTable
+        self._function_list: QFunctionComboBox
 
         self._selected_function = None
 
@@ -40,7 +44,6 @@ class StringsView(BaseView):
     #
 
     def _on_function_selected(self, function):
-
         if isinstance(function, str) and function == "all":
             # all functions
             self._selected_function = None
@@ -50,7 +53,7 @@ class StringsView(BaseView):
 
         self.reload()
 
-    def _on_string_selected(self, s: MemoryData):
+    def _on_string_selected(self, s: "MemoryData"):
         """
         A string reference is selected.
 
@@ -58,14 +61,14 @@ class StringsView(BaseView):
         :return:
         """
 
-        if len(self.instance.workspace.view_manager.views_by_category["disassembly"]) == 1:
-            disasm_view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
+        if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
+            disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         else:
-            disasm_view = self.instance.workspace.view_manager.current_view_in_category("disassembly")
+            disasm_view = self.workspace.view_manager.current_view_in_category("disassembly")
         if disasm_view is not None:
             disasm_view.jump_to(s.addr)
             disasm_view.select_label(s.addr)
-            self.instance.workspace.view_manager.raise_view(disasm_view)
+            self.workspace.view_manager.raise_view(disasm_view)
 
     def on_filter_change(self, **kwargs):  # pylint: disable=unused-argument
         pattern = self._filter_string.text()
@@ -73,7 +76,7 @@ class StringsView(BaseView):
         if regex:
             try:
                 pattern = re.compile(pattern)
-            except re.error as _e:
+            except re.error:
                 return
         self._string_table.filter_string = pattern
 
@@ -82,7 +85,6 @@ class StringsView(BaseView):
     #
 
     def _init_widgets(self):
-
         self._function_list = QFunctionComboBox(
             show_all_functions=True, selection_callback=self._on_function_selected, parent=self
         )
@@ -99,7 +101,7 @@ class StringsView(BaseView):
         function_layout.addWidget(self._filter_string, 10)
         function_layout.addWidget(self._regex_checkbox)
         function_layout.setContentsMargins(3, 3, 3, 3)
-        function_layout.setSpacing(4)
+        function_layout.setSpacing(3)
 
         self._string_table = QStringTable(self.instance, self, selection_callback=self._on_string_selected)
 

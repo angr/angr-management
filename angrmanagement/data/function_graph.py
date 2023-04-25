@@ -1,4 +1,4 @@
-from ..utils.graph import to_supergraph
+from angrmanagement.utils.graph import to_supergraph
 
 
 def edge_qualifies(data):

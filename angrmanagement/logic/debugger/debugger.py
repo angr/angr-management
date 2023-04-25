@@ -1,10 +1,10 @@
-import logging
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
-from ...data.object_container import EventSentinel, ObjectContainer
+from angrmanagement.data.object_container import EventSentinel, ObjectContainer
 
-
-_l = logging.getLogger(name=__name__)
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class Debugger:
@@ -14,8 +14,8 @@ class Debugger:
 
     def __init__(self, workspace: "Workspace"):
         super().__init__()
-        self.workspace: "Workspace" = workspace
-        self.instance: "Instance" = workspace.main_instance
+        self.workspace: Workspace = workspace
+        self.instance: Instance = workspace.main_instance
         self.state_changed: EventSentinel = EventSentinel()
 
     @property
@@ -48,7 +48,7 @@ class Debugger:
         """
         Step backward by one machine instruction.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_step_forward(self) -> bool:
@@ -61,7 +61,7 @@ class Debugger:
         """
         Step forward by one machine instruction.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_continue_backward(self) -> bool:
@@ -74,7 +74,7 @@ class Debugger:
         """
         Continue execution in reverse.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_continue_forward(self) -> bool:
@@ -87,7 +87,7 @@ class Debugger:
         """
         Continue execution.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def can_halt(self) -> bool:
@@ -100,7 +100,7 @@ class Debugger:
         """
         Interrupt the target.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def is_halted(self) -> bool:
@@ -120,7 +120,7 @@ class Debugger:
         """
         Stop the target.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def is_exited(self) -> bool:

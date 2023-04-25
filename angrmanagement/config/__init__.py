@@ -1,5 +1,4 @@
 import os
-import atexit
 
 from xdg import BaseDirectory
 

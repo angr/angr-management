@@ -1,14 +1,14 @@
-from typing import Optional
 from collections import OrderedDict
-
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QDialogButtonBox
+from typing import Optional
 
 import pycparser.plyparser
 from angr import sim_type
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
+
+from angrmanagement.config import Conf
 
 from .set_comment import QCommentTextBox
-from ...config import Conf
 
 
 class CTypeEditor(QDialog):
@@ -33,7 +33,7 @@ class CTypeEditor(QDialog):
         self._predefined_types = predefined_types
 
         self.text = lambda: ""
-        self._ok_button = None  # type: Optional[QPushButton]
+        self._ok_button: Optional[QPushButton]
         self._init_widgets(base_text, multiline)
 
         self.setWindowTitle("Type editor")

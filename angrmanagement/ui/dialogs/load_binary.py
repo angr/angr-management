@@ -1,38 +1,53 @@
-from typing import Tuple, Dict, Optional
-import os
 import binascii
-import logging
+import os
+from typing import Any, Dict, List, Optional, Tuple
+
 import archinfo
+from angr.calling_conventions import unify_arch_name
 from cle import Blob
-
-from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QTabWidget,
-    QCheckBox,
-    QFrame,
-    QGroupBox,
-    QListWidgetItem,
-    QListWidget,
-    QMessageBox,
-    QLineEdit,
-    QGridLayout,
-    QComboBox,
-    QSizePolicy,
-    QDialogButtonBox,
-)
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFileIconProvider,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
+    QSizePolicy,
+    QTabWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+)
 
-
-l = logging.getLogger("dialogs.load_binary")
+try:
+    import pypcode
+except ImportError:
+    pypcode = None
 
 
 class LoadBinaryError(Exception):
     """
     An error loading the binary.
     """
+
+
+class ArchTreeWidgetItem(QTreeWidgetItem):
+    """
+    A custom tree-view widget item for the architecture selection TreeView.
+    """
+
+    def __init__(self, name, arch):
+        super().__init__()
+        self.name = name
+        self.arch = arch
+        self.setText(0, name)
 
 
 class LoadBinary(QDialog):
@@ -50,6 +65,11 @@ class LoadBinary(QDialog):
         self.option_widgets = {}
         self.is_blob = isinstance(partial_ld.main_object, Blob)
         self.arch = partial_ld.main_object.arch
+        self.available_archs = archinfo.all_arches[::]
+
+        if pypcode:
+            for a in pypcode.Arch.enumerate():
+                self.available_archs.extend(sorted(a.languages, key=lambda lang: lang.id))
 
         # return values
         self.load_options = None
@@ -91,14 +111,13 @@ class LoadBinary(QDialog):
 
         # dependencies
 
-        dep_list = self.option_widgets["dep_list"]  # type: QListWidget
+        dep_list: QListWidget = self.option_widgets["dep_list"]
         for dep in deps:
             dep_item = QListWidgetItem(dep)
             dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
             dep_list.addItem(dep_item)
 
     def _init_widgets(self):
-
         layout = QGridLayout()
         self.main_layout.addLayout(layout)
 
@@ -156,19 +175,63 @@ class LoadBinary(QDialog):
         self._init_load_options_tab(tab)
 
     def _init_load_options_tab(self, tab):
-        arch_layout = QHBoxLayout()
+        arch_layout = QVBoxLayout()
         arch_caption = QLabel(self)
         arch_caption.setText("Architecture:")
         arch_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         arch_layout.addWidget(arch_caption)
-        arch_combo = QComboBox(self)
-        for arch in archinfo.all_arches:
-            addendum = " (P-code Engine)" if hasattr(arch, "pcode_arch") else ""
-            arch_combo.addItem(f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]}){addendum}", str(arch))
-        index = arch_combo.findData(str(self.arch))
-        arch_combo.setCurrentIndex(index)
-        arch_layout.addWidget(arch_combo)
-        self.option_widgets["arch"] = arch_combo
+
+        # initialize the architecture tree widget
+        arch_tree = QTreeWidget(self)
+        arch_tree.setHeaderHidden(True)
+        recommended_arch_node = QTreeWidgetItem()
+        recommended_arch_node.setText(0, "Suggested architectures")
+        recommended_arch_node.setIcon(0, QFileIconProvider().icon(QFileIconProvider.IconType.Folder))
+        other_arch_node = QTreeWidgetItem()
+        other_arch_node.setText(0, "Other architectures")
+        other_arch_node.setIcon(0, QFileIconProvider().icon(QFileIconProvider.IconType.Folder))
+
+        ideal_arch, recommended_arches, other_arches = self._split_arches(self.available_archs)
+        if ideal_arch is not None:
+            recommended_arches = [ideal_arch] + recommended_arches
+        ideal_arch_item = None
+
+        for arch in recommended_arches:
+            if isinstance(arch, archinfo.Arch):
+                item = ArchTreeWidgetItem(f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]})", arch)
+                recommended_arch_node.addChild(item)
+            elif pypcode and isinstance(arch, pypcode.ArchLanguage):
+                item = ArchTreeWidgetItem(f"{arch.id} (P-code Engine)", arch)
+                recommended_arch_node.addChild(item)
+            else:
+                raise AssertionError("Unexpected arch type")
+            if arch is ideal_arch:
+                ideal_arch_item = item
+
+        for arch in other_arches:
+            if isinstance(arch, archinfo.Arch):
+                item = ArchTreeWidgetItem(f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]})", arch)
+                other_arch_node.addChild(item)
+            elif pypcode and isinstance(arch, pypcode.ArchLanguage):
+                item = ArchTreeWidgetItem(f"{arch.id} (P-code Engine)", arch)
+                other_arch_node.addChild(item)
+            else:
+                raise AssertionError("Unexpected arch type")
+
+        arch_tree.addTopLevelItem(recommended_arch_node)
+        arch_tree.addTopLevelItem(other_arch_node)
+
+        if recommended_arches:
+            # expand recommended architectures
+            recommended_arch_node.setExpanded(True)
+            if ideal_arch_item is not None:
+                arch_tree.setCurrentItem(ideal_arch_item)
+        else:
+            # expand other architectures
+            other_arch_node.setExpanded(True)
+
+        arch_layout.addWidget(arch_tree)
+        self.option_widgets["arch"] = arch_tree
 
         if self.is_blob:
             blob_layout = QGridLayout()
@@ -220,25 +283,57 @@ class LoadBinary(QDialog):
         layout.addLayout(arch_layout)
         layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
-        layout.addWidget(dep_group)
-        layout.addStretch(0)
+        layout.addWidget(dep_group, stretch=1)
 
         frame = QFrame(self)
         frame.setLayout(layout)
         tab.addTab(frame, "Loading Options")
+
+    def _split_arches(self, all_arches) -> Tuple[Any, List, List]:
+        """
+        Split a list of architectures into three categories: The (probably) ideal architecture, recommended
+        architectures, and other architectures.
+        """
+        the_arch = None
+        recommended_arches = []
+        other_arches = []
+
+        self_arch_str = str(self.arch)
+
+        for arch in all_arches:
+            if isinstance(arch, archinfo.Arch):
+                if str(arch) == self_arch_str:
+                    the_arch = arch
+                elif arch.name == self.arch.name:
+                    recommended_arches.append(arch)
+                else:
+                    other_arches.append(arch)
+            elif pypcode and isinstance(arch, pypcode.ArchLanguage):
+                if self.arch is not None:
+                    if self.arch.name == arch.id:
+                        the_arch = arch
+                    elif self.arch.name.lower() in arch.id.lower():
+                        recommended_arches.append(arch)
+                    elif self.arch.name == unify_arch_name(arch.id):
+                        recommended_arches.append(arch)
+                    else:
+                        other_arches.append(arch)
+            else:
+                raise TypeError(f"Unknown architecture type {type(arch)}")
+
+        return the_arch, recommended_arches, other_arches
 
     #
     # Event handlers
     #
 
     def _on_ok_clicked(self):
-
         force_load_libs = []
         skip_libs = set()
 
-        dep_list = self.option_widgets["dep_list"]  # type: QListWidget
+        dep_list: QListWidget = self.option_widgets["dep_list"]
         for i in range(dep_list.count()):
-            item = dep_list.item(i)  # type: QListWidgetItem
+            item: QListWidgetItem = dep_list.item(i)
             if item.checkState() == Qt.Checked:
                 force_load_libs.append(item.text())
             else:
@@ -247,7 +342,19 @@ class LoadBinary(QDialog):
         self.load_options = {}
         self.load_options["auto_load_libs"] = self.option_widgets["auto_load_libs"].isChecked()
         self.load_options["load_debug_info"] = self.option_widgets["load_debug_info"].isChecked()
-        self.load_options["arch"] = archinfo.all_arches[self.option_widgets["arch"].currentIndex()]
+
+        arch_tree: QTreeWidget = self.option_widgets["arch"]
+        item = arch_tree.currentItem()
+        if not isinstance(item, ArchTreeWidgetItem):
+            QMessageBox.critical(
+                None, "Incorrect architecture selection", "Please select an architecture before continue."
+            )
+            return
+
+        arch = item.arch
+        if pypcode and isinstance(arch, pypcode.ArchLanguage):
+            arch = archinfo.ArchPcode(arch.id)
+        self.load_options["arch"] = arch
 
         if self.is_blob:
             self.load_options["main_opts"] = {

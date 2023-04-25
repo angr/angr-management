@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import QTabWidget
 
+from .qconstraint_viewer import QConstraintViewer
+from .qfiledesc_viewer import QFileDescriptorViewer
 from .qmemory_viewer import QMemoryViewer
 from .qregister_viewer import QRegisterViewer
 from .qvextemps_viewer import QVEXTempsViewer
-from .qconstraint_viewer import QConstraintViewer
-from .qfiledesc_viewer import QFileDescriptorViewer
 
 
 class StateInspector(QTabWidget):
@@ -17,11 +17,11 @@ class StateInspector(QTabWidget):
         self.workspace = workspace
         self._state = state
 
-        self._register_viewer = None  # type: QRegisterViewer
-        self._memory_viewer = None  # type: QMemoryViewer
-        self._vextemps_viewer = None  # type: QVEXTempsViewer
-        self._constraint_viewer = None  # type: QConstraintViewer
-        self._filedesc_viewer = None  # type: QFileDescriptorViewer
+        self._register_viewer: QRegisterViewer
+        self._memory_viewer: QMemoryViewer
+        self._vextemps_viewer: QVEXTempsViewer
+        self._constraint_viewer: QConstraintViewer
+        self._filedesc_viewer: QFileDescriptorViewer
 
         self._init_widgets()
 

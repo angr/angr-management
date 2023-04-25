@@ -1,18 +1,17 @@
 import os
-import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QFileDialog, QComboBox
-from angr.knowledge_plugins import Function
+from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton
 
-from ..menus.disasm_options_menu import DisasmOptionsMenu
-from ..toolbars import NavToolbar
+from angrmanagement.ui.menus.disasm_options_menu import DisasmOptionsMenu
+from angrmanagement.ui.toolbars import NavToolbar
+
 from .qdisasm_base_control import DisassemblyLevel
 from .qdisasm_graph import QDisassemblyGraph
 from .qlinear_viewer import QLinearDisassembly
 
-
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import Function
 
 
 class QDisasmStatusBar(QFrame):
@@ -90,6 +89,7 @@ class QDisasmStatusBar(QFrame):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(3, 3, 3, 3)
+        layout.setSpacing(3)
 
         layout.addWidget(self._nav_toolbar.qtoolbar())
         layout.addWidget(self._function_label)
@@ -131,14 +131,10 @@ class QDisasmStatusBar(QFrame):
         self._disasm_level_combo.setCurrentIndex(index)
 
     def _update_function_label(self):
-        if self._function:
-            s = f"{self._function.name} ({self._function.addr:x})"
-        else:
-            s = ""
+        s = f"{self._function.name} ({self._function.addr:x})" if self._function else ""
         self._function_label.setText(s)
 
     def _on_saveimage_btn_clicked(self):
-
         filename, folder = QFileDialog.getSaveFileName(self, "Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
         if not filename or not folder:
             return

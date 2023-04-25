@@ -1,8 +1,10 @@
-from typing import Mapping, Any, Sequence, Union, Optional
-import platform
 import multiprocessing
+import platform
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
 
-import angr
+if TYPE_CHECKING:
+    import angr
 
 
 def extract_first_paragraph_from_docstring(desc: str) -> str:
@@ -22,7 +24,7 @@ def extract_first_paragraph_from_docstring(desc: str) -> str:
             last_line = len(desc)
         desc = desc[first_line:last_line]
         num_whitespace_chars = len(desc[0]) - len(desc[0].lstrip())
-        desc = " ".join(l[num_whitespace_chars:] for l in desc)
+        desc = " ".join(line[num_whitespace_chars:] for line in desc)
     else:
         desc = ""
 
@@ -150,6 +152,26 @@ class IntAnalysisOption(PrimitiveAnalysisOption):
         self.maximum_value = maximum
 
 
+class ChoiceAnalysisOption(PrimitiveAnalysisOption):
+    """
+    A multi-value choice.
+    """
+
+    def __init__(self, name: str, description: str, choices: Mapping[Any, str], default: Any, tooltip: str = ""):
+        super().__init__(name, description, default, tooltip)
+        self.choices = choices
+
+
+class CFGForceScanMode(Enum):
+    """
+    CFG scanning mode options.
+    """
+
+    Disabled = 0
+    SmartScan = 1
+    CompleteScan = 2
+
+
 class CFGAnalysisConfiguration(AnalysisConfiguration):
     """
     Configuration for CFGFast analysis.
@@ -168,6 +190,16 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                 BoolAnalysisOption("data_references", "Collect cross-references and guess data types", True),
                 BoolAnalysisOption("cross_references", "Perform deep analysis on cross-references (slow)"),
                 BoolAnalysisOption("skip_unmapped_addrs", "Skip unmapped addresses", True),
+                ChoiceAnalysisOption(
+                    "scanning_mode",
+                    "Scan to maximize identified code blocks",
+                    {
+                        CFGForceScanMode.Disabled: "Disabled",
+                        CFGForceScanMode.SmartScan: "Smart Scan",
+                        CFGForceScanMode.CompleteScan: "Complete Scan",
+                    },
+                    CFGForceScanMode.SmartScan,
+                ),
             ]
         }
 
@@ -180,9 +212,22 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
     def __init__(self, instance):
         super().__init__(instance)
         self.name = "flirt"
-        self.display_name = "Signature Matching"
+        self.display_name = "Function Signature Matching"
         self.description = self.project.analyses.Flirt.__doc__.strip()
         self.enabled = True
+
+
+class CodeTaggingConfiguration(AnalysisConfiguration):
+    """
+    Configuration for Code Tagging.
+    """
+
+    def __init__(self, instance):
+        super().__init__(instance)
+        self.name = "code_tagging"
+        self.display_name = "Tag Functions Based on Syntactic Features"
+        self.description = "Add tags to functions based on syntactic features in assembly code and referenced strings."
+        self.enabled = False
 
 
 class VariableRecoveryConfiguration(AnalysisConfiguration):
@@ -196,7 +241,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     def __init__(self, instance):
         super().__init__(instance)
         self.name = "varec"
-        self.display_name = "Complete Variable Recovery"
+        self.display_name = "Recover Variables on All Functions"
         self.description = (
             "Perform a full-project variable recovery and calling-convention recovery analysis. "
             "Recommended for small- to medium-sized binaries. This analysis takes a long time to "
@@ -219,7 +264,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
                 ),
                 BoolAnalysisOption(
                     "skip_signature_matched_functions",
-                    "Skip variable recovery for signature-matched " "functions",
+                    "Skip variable recovery for signature-matched functions",
                     True,
                 ),
             ]

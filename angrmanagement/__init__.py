@@ -1,4 +1,4 @@
-__version__ = "9.2.35.dev0"
+__version__ = "9.2.49.dev0"
 
 
 try:
@@ -6,7 +6,7 @@ try:
     import os
 
     os.environ["QT_API"] = "pyside6"
-    import qtpy
+    import qtpy  # noqa
 except ImportError:
     # qtpy is not installed
     pass

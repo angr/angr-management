@@ -1,11 +1,11 @@
 import os
 
-from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QHBoxLayout
-from PySide6.QtGui import QIcon, QPixmap, QFont
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QIcon, QPixmap
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QVBoxLayout
 
 import angrmanagement
-from ...config import IMG_LOCATION
+from angrmanagement.config import IMG_LOCATION
 
 
 class LoadAboutDialog(QDialog):

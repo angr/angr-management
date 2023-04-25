@@ -1,16 +1,15 @@
-import math
 import logging
+import math
 
 from PySide6.QtGui import QColor
 
 _l = logging.getLogger(__name__)
-# _l.setLevel('DEBUG')
 
 
 try:
     from slacrs import Slacrs
     from slacrs.model import Input
-except ImportError as ex:
+except ImportError:
     Slacrs = None
     HumanFatigue = None
 
@@ -88,7 +87,7 @@ class MultiPOI:
 
     def get_hit_miss_color(self, addr):
         # hexstr_addr = hex(addr)
-        if addr in self.addr_color_map.keys():
+        if addr in self.addr_color_map:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         else:
@@ -96,7 +95,7 @@ class MultiPOI:
 
     def get_percent_color(self, func):
         addr = func.addr
-        if addr in self.addr_color_map.keys():
+        if addr in self.addr_color_map:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         return None

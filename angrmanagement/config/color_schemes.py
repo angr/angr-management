@@ -1,6 +1,5 @@
 from PySide6.QtGui import QColor
 
-
 COLOR_SCHEMES = {
     "Light": {
         "disasm_view_operand_color": QColor(0x00, 0x00, 0x80),
@@ -66,10 +65,11 @@ COLOR_SCHEMES = {
         "palette_shadow": QColor(0x76, 0x76, 0x76, 0xFF),
         "palette_link": QColor(0x00, 0x00, 0xFF, 0xFF),
         "palette_linkvisited": QColor(0xFF, 0x00, 0xFF, 0xFF),
-        "feature_map_color_regular_function": QColor(0x00, 0xA0, 0xE8),
-        "feature_map_color_unknown": QColor(0x0A, 0x0A, 0x0A),
-        "feature_map_color_delimiter": QColor(0x00, 0x00, 0x00),
-        "feature_map_color_data": QColor(0xC0, 0xC0, 0xC0),
+        "feature_map_regular_function_color": QColor(0x00, 0xA0, 0xE8),
+        "feature_map_unknown_color": QColor(0x0A, 0x0A, 0x0A),
+        "feature_map_delimiter_color": QColor(0x00, 0x00, 0x00),
+        "feature_map_data_color": QColor(0xC0, 0xC0, 0xC0),
+        "feature_map_string_color": QColor(0x00, 0xF0, 0x80),
         "pseudocode_comment_color": QColor(0x00, 0x80, 0x00, 0xFF),
         "pseudocode_function_color": QColor(0x00, 0x00, 0xFF, 0xFF),
         "pseudocode_quotation_color": QColor(0x00, 0x80, 0x00, 0xFF),
@@ -151,10 +151,11 @@ COLOR_SCHEMES = {
         "palette_shadow": QColor(0x16, 0x16, 0x16),
         "palette_link": QColor(0x2D, 0xC5, 0x2D).lighter(),
         "palette_linkvisited": QColor(0x2D, 0xC5, 0x2D).darker(),
-        "feature_map_color_regular_function": QColor(0x00, 0xA0, 0xE8),
-        "feature_map_color_unknown": QColor(0x0A, 0x0A, 0x0A),
-        "feature_map_color_delimiter": QColor(0x00, 0x00, 0x00),
-        "feature_map_color_data": QColor(0xC0, 0xC0, 0xC0),
+        "feature_map_regular_function_color": QColor(0x00, 0xA0, 0xE8),
+        "feature_map_unknown_color": QColor(0x0A, 0x0A, 0x0A),
+        "feature_map_delimiter_color": QColor(0x00, 0x00, 0x00),
+        "feature_map_data_color": QColor(0xC0, 0xC0, 0xC0),
+        "feature_map_string_color": QColor(0x00, 0xF0, 0x80),
         "pseudocode_comment_color": QColor(0x00, 0x80, 0x00, 0xFF),
         "pseudocode_function_color": QColor(0x60, 0x80, 0xFF, 0xFF),
         "pseudocode_quotation_color": QColor(0x00, 0x80, 0x00, 0xFF),

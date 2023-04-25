@@ -1,8 +1,9 @@
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
-from PySide6.QtCore import Qt, QRectF
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .qgraph_object import QCachedGraphicsItem
 
 

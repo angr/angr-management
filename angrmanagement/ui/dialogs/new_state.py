@@ -1,27 +1,28 @@
 import os
-import typing
+from typing import List, Optional, Tuple
 
+import angr
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
-    QVBoxLayout,
-    QLabel,
-    QPushButton,
     QDialogButtonBox,
     QGridLayout,
-    QComboBox,
+    QLabel,
     QLineEdit,
+    QPushButton,
     QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
-import angr
+
+from angrmanagement.ui.dialogs.env_config import EnvConfig
+from angrmanagement.ui.dialogs.fs_mount import FilesystemMount
+from angrmanagement.ui.widgets import QStateComboBox
+from angrmanagement.utils.namegen import NameGenerator
 
 from .socket_config import SocketConfig
-from ..widgets import QStateComboBox
-from ...utils.namegen import NameGenerator
-from ...ui.dialogs.fs_mount import FilesystemMount
-from ...ui.dialogs.env_config import EnvConfig
 
 
 class StateMetadata(angr.SimStatePlugin):
@@ -33,7 +34,7 @@ class StateMetadata(angr.SimStatePlugin):
         super().__init__()
         self.name = None  # the state's name
         self.base_name = None  # the name of the base state this was created from
-        self.is_original = False  # is this the original instanciation of this name?
+        self.is_original = False  # is this the original instantiation of this name?
         self.is_base = False  # is this state created with nothing else as a base?
 
     def copy(self, memo=None):  # pylint: disable=unused-argument
@@ -49,10 +50,7 @@ StateMetadata.register_default("gui_data")
 
 
 def is_option(o):
-    for ch in o:
-        if ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_":
-            return False
-    return True
+    return all(ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" for ch in o)
 
 
 class NewState(QDialog):
@@ -60,11 +58,12 @@ class NewState(QDialog):
     Dialog to create a new simulation state.
     """
 
-    def __init__(self, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
+    def __init__(self, workspace, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
         super().__init__(parent)
 
         # initialization
 
+        self.workspace = workspace
         self.instance = instance
         self.state = None  # output
 
@@ -75,15 +74,15 @@ class NewState(QDialog):
         # Shall we push the new state to instance.stats and call states.am_event(src="new", state=self.state)
         self._push_to_instance = push_to_instance
 
-        self._name_edit = None  # type: QLineEdit
-        self._base_state_combo = None  # type: QStateComboBox
-        self._mode_combo = None  # type: QComboBox
-        self._editor = None  # type: QTextEdit
+        self._name_edit: Optional[QLineEdit] = None
+        self._base_state_combo: Optional[QStateComboBox] = None
+        self._mode_combo: Optional[QComboBox] = None
+        self._editor: Optional[QTextEdit] = None
         self._ok_button = None
 
-        self._args = None  # type: typing.List[str]
-        self._env_config = []  # type: typing.List[(str,str)]
-        self._fs_config = None  # type: typing.List[(str,str)]
+        self._args: Optional[List[str]] = None
+        self._env_config: List[Tuple[str, str]] = []
+        self._fs_config: Optional[List[Tuple[str, str]]] = None
         self._sockets_config = None
 
         self.setWindowTitle("New State")
@@ -429,7 +428,7 @@ class NewState(QDialog):
                 states_list.am_event(src="new", state=self.state)
 
             if self._create_simgr:
-                self.instance.workspace.create_simulation_manager(self.state, name)
+                self.workspace.create_simulation_manager(self.state, name)
 
             self.close()
 

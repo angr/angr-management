@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QPlainTextEdit, QApplication
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QLabel, QPlainTextEdit, QVBoxLayout
 
 
 class QCommentTextBox(QPlainTextEdit):
@@ -40,7 +40,7 @@ class SetComment(QDialog):
         self._workspace = workspace
         self._comment_addr = comment_addr
 
-        self._comment_textbox = None  # type: QCommentTextBox
+        self._comment_textbox: QCommentTextBox
 
         self.setWindowTitle("Set Comment")
         self.main_layout = QVBoxLayout()
@@ -52,7 +52,6 @@ class SetComment(QDialog):
     #
 
     def _init_widgets(self):
-
         # name label
         comment_lbl = QLabel(self)
         comment_lbl.setText("Comment text")

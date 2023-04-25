@@ -1,13 +1,12 @@
 import re
 
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QAbstractItemView, QMenu
-from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt
-
 import angr
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QAbstractItemView, QMenu, QTableWidget, QTableWidgetItem
 
-from ...utils.namegen import NameGenerator
-from ..dialogs.new_state import NewState
+from angrmanagement.ui.dialogs.new_state import NewState
+from angrmanagement.utils.namegen import NameGenerator
 
 
 class QStateTableItem(QTableWidgetItem):
@@ -61,7 +60,7 @@ class QStateTable(QTableWidget):
     The table which is the subject of the States View
     """
 
-    def __init__(self, instance, parent, selection_callback=None):
+    def __init__(self, workspace, instance, parent, selection_callback=None):
         super().__init__(parent)
 
         self._selected = selection_callback
@@ -73,6 +72,7 @@ class QStateTable(QTableWidget):
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.items = []
+        self.workspace = workspace
         self.instance = instance
         self.states = instance.states
 
@@ -133,7 +133,7 @@ class QStateTable(QTableWidget):
         menu.exec_(event.globalPos())
 
     def _action_new_state(self):
-        dialog = NewState(self.instance, parent=self)
+        dialog = NewState(self.workspace, self.instance, parent=self)
         dialog.exec_()
 
     def _action_duplicate(self):
@@ -150,7 +150,7 @@ class QStateTable(QTableWidget):
     def _action_new_simulation_manager(self):
         state = self.states[self.currentRow()]
         simgr_name = NameGenerator.random_name()
-        self.instance.workspace.create_simulation_manager(state, simgr_name)
+        self.workspace.create_simulation_manager(state, simgr_name)
 
     def _watch_states(self, **kwargs):  # pylint: disable=unused-argument
         self.reload()
@@ -169,10 +169,7 @@ class QStateTable(QTableWidget):
         if m:
             # ends with copy
             ctr_str = m.group(2)
-            if ctr_str:
-                ctr = int(ctr_str) + 1
-            else:
-                ctr = 1
+            ctr = int(ctr_str) + 1 if ctr_str else 1
 
             current_name = m.group(1)
             name = current_name + " copy %d" % ctr

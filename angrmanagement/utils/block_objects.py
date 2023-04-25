@@ -1,5 +1,4 @@
 class FunctionHeader:
-
     __slots__ = (
         "name",
         "prototype",
@@ -13,7 +12,6 @@ class FunctionHeader:
 
 
 class Variables:
-
     __slots__ = ["variables"]
 
     def __init__(self, variables):
@@ -21,7 +19,6 @@ class Variables:
 
 
 class PhiVariable(Variables):
-
     __slots__ = ["variable"]
 
     def __init__(self, variable, variables):
@@ -30,7 +27,6 @@ class PhiVariable(Variables):
 
 
 class Label:
-
     __slots__ = ["addr", "text"]
 
     def __init__(self, addr, text):

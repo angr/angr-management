@@ -1,27 +1,29 @@
 # pylint:disable=unused-private-member
 import functools
-from typing import Optional, Type, Union, Dict, TYPE_CHECKING
 import logging
 import os
+from typing import TYPE_CHECKING, Dict, Optional, Type, Union
 
-from PySide6.QtGui import QColor
+from angrmanagement.config import Conf, save_config
+from angrmanagement.config.config_manager import ENTRIES
+from angrmanagement.daemon.client import DaemonClient
+from angrmanagement.daemon.url_handler import UrlActionBinaryAware, register_url_action
+from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
+from angrmanagement.ui.toolbars.toolbar_action import ToolbarAction
 
-from ..config.config_manager import ENTRIES
-from ..ui.menus.menu import MenuEntry, MenuSeparator
-from ..ui.toolbars.toolbar import ToolbarAction
-from ..daemon.url_handler import register_url_action, UrlActionBinaryAware
-from ..daemon.client import DaemonClient
-from ..ui.widgets.qblock import QBlock
-from ..config import Conf, save_config
 from .base_plugin import BasePlugin
-from .plugin_description import PluginDescription
-from . import load_plugin_descriptions_from_dir, load_plugins_from_file
+from .load import load_plugin_descriptions_from_dir, load_plugins_from_file
 
 if TYPE_CHECKING:
-    from ..ui.workspace import Workspace
+    from PySide6.QtGui import QColor
+
+    from angrmanagement.ui.widgets.qblock import QBlock
+    from angrmanagement.ui.workspace import Workspace
+
+    from .plugin_description import PluginDescription
 
 
-l = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class PluginManager:
@@ -60,7 +62,7 @@ class PluginManager:
             dir_and_descs = load_plugin_descriptions_from_dir(search_dir)
             for _, desc in dir_and_descs:
                 if desc.shortname in self.loaded_plugins:
-                    l.warning(
+                    log.warning(
                         "Plugin shortname conflict: %s and %s have the same shortname %s.",
                         self.loaded_plugins[desc.shortname].plugin_file_path,
                         desc.plugin_file_path,
@@ -87,7 +89,7 @@ class PluginManager:
                             basedir = os.path.join(os.path.dirname(desc.plugin_file_path))
                             for plugin_cls in load_plugins_from_file(os.path.join(basedir, desc.entrypoints[0])):
                                 if isinstance(plugin_cls, Exception):
-                                    l.warning("Exception occurred during plugin loading: %s", plugin_cls)
+                                    log.warning("Exception occurred during plugin loading: %s", plugin_cls)
                                 else:
                                     plugin_cls: Type[BasePlugin]
                                     for action in plugin_cls.URL_ACTIONS:
@@ -108,7 +110,7 @@ class PluginManager:
         basedir = os.path.join(os.path.dirname(desc.plugin_file_path))
         for plugin_cls in load_plugins_from_file(os.path.join(basedir, desc.entrypoints[0])):
             if isinstance(plugin_cls, Exception):
-                l.warning("Exception occurred during plugin loading: %s", plugin_cls, exc_info=True)
+                log.warning("Exception occurred during plugin loading: %s", plugin_cls, exc_info=True)
             else:
                 self.activate_plugin(desc.shortname, plugin_cls)
 
@@ -141,9 +143,9 @@ class PluginManager:
                 register_url_action(action, UrlActionBinaryAware)
 
         except Exception:  # pylint: disable=broad-except
-            l.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(), exc_info=True)
+            log.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(), exc_info=True)
         else:
-            l.info("Activated plugin %s", plugin_cls.get_display_name())
+            log.info("Activated plugin %s", plugin_cls.get_display_name())
 
     def save_enabled_plugins_to_config(self):
         # pylint: disable=assigning-non-slot
@@ -203,7 +205,7 @@ class PluginManager:
         if not instances:
             return None
         if len(instances) > 1:
-            l.error("Somehow there is more than one instance of %s active?", shortname)
+            log.error("Somehow there is more than one instance of %s active?", shortname)
         return instances[0]
 
     def get_plugin_instance(self, plugin_cls: Type[BasePlugin]) -> Optional[BasePlugin]:
@@ -211,7 +213,7 @@ class PluginManager:
         if len(instances) == 0:
             return None
         if len(instances) > 1:
-            l.error("Somehow there is more than one instance of %s active?", plugin_cls.get_display_name())
+            log.error("Somehow there is more than one instance of %s active?", plugin_cls.get_display_name())
         return instances[0]
 
     def deactivate_plugin_by_name(self, shortname: str):
@@ -239,7 +241,7 @@ class PluginManager:
             plugin.teardown()
 
         except Exception:  # pylint: disable=broad-except
-            l.warning(
+            log.warning(
                 "Plugin %s errored during removal. The UI may be unstable.", plugin.get_display_name(), exc_info=True
             )
 
@@ -288,19 +290,19 @@ class PluginManager:
             self.workspace.log("Deactivating %s for error during sensitive operation" % plugin.get_display_name())
             self.deactivate_plugin(plugin)
 
-    def color_insn(self, addr, selected) -> Optional[QColor]:
-        for res in self._dispatch(BasePlugin.color_insn, True, addr, selected):
+    def color_insn(self, addr, selected, disasm_view) -> Optional["QColor"]:
+        for res in self._dispatch(BasePlugin.color_insn, True, addr, selected, disasm_view):
             if res is not None:
                 return res
         return None
 
-    def color_block(self, addr) -> Optional[QColor]:
+    def color_block(self, addr) -> Optional["QColor"]:
         for res in self._dispatch(BasePlugin.color_block, True, addr):
             if res is not None:
                 return res
         return None
 
-    def color_func(self, func) -> Optional[QColor]:
+    def color_func(self, func) -> Optional["QColor"]:
         for res in self._dispatch(BasePlugin.color_func, True, func):
             if res is not None:
                 return res
@@ -323,22 +325,16 @@ class PluginManager:
             pass
 
     def handle_click_insn(self, qinsn, event):
-        for res in self._dispatch(BasePlugin.handle_click_insn, False, qinsn, event):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_click_insn, False, qinsn, event))
 
     def handle_click_block(self, qblock, event):
-        for res in self._dispatch(BasePlugin.handle_click_block, False, qblock, event):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_click_block, False, qblock, event))
 
     def handle_raise_view(self, view):
         for _ in self._dispatch(BasePlugin.handle_raise_view, False, view):
             pass
 
-    def build_qblock_annotations(self, qblock: QBlock):
+    def build_qblock_annotations(self, qblock: "QBlock"):
         for res in self._dispatch(BasePlugin.build_qblock_annotations, False, qblock):
             yield from res
 
@@ -424,28 +420,16 @@ class PluginManager:
         return False
 
     def handle_other_var_renamed(self, var, old_name, new_name):
-        for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name))
 
     def handle_other_var_retyped(self, var, old_type, new_type):
-        for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type))
 
     def handle_function_renamed(self, func, old_name, new_name):
-        for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name))
 
     def handle_function_retyped(self, func, old_type, new_type):
-        for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type))
 
     def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
         for res in self._dispatch(BasePlugin.handle_comment_changed, False, address, old_cmt, new_cmt, created, decomp):
@@ -454,10 +438,7 @@ class PluginManager:
         return False
 
     def handle_struct_changed(self, old_struct, new_struct):
-        for res in self._dispatch(BasePlugin.handle_struct_changed, False, old_struct, new_struct):
-            if res:
-                return True
-        return False
+        return any(res for res in self._dispatch(BasePlugin.handle_struct_changed, False, old_struct, new_struct))
 
     def decompile_callback(self, func):
         for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
@@ -477,7 +458,7 @@ class PluginManager:
 
     def angrdb_store_entries(self):
         entries = {}
-        for (shortname, plugin), res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
+        for (shortname, _plugin), res in self._dispatch_with_plugin(BasePlugin.angrdb_store_entries, False):
             for result in res:
                 if isinstance(result, tuple) and len(result) == 2:
                     key, value = result
@@ -499,7 +480,7 @@ class PluginManager:
             if plugin is None:
                 continue
             # dispatch
-            custom = getattr(plugin, "angrdb_load_entry")
+            custom = plugin.angrdb_load_entry
             if custom is not BasePlugin.angrdb_load_entry:
                 try:
                     custom(key, value)

@@ -1,18 +1,19 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import networkx
-
-from PySide6.QtWidgets import QHBoxLayout
-from PySide6.QtCore import QSize
-
-from angr.knowledge_plugins.key_definitions.definition import Definition
-from angr.knowledge_plugins.key_definitions.atoms import Atom
-from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
 from angr import SIM_PROCEDURES
+from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 
-from ..widgets.qdep_graph import QDependencyGraph
-from ..widgets.qdepgraph_block import QDepGraphBlock
+from angrmanagement.ui.widgets.qdep_graph import QDependencyGraph
+from angrmanagement.ui.widgets.qdepgraph_block import QDepGraphBlock
+
 from .view import BaseView
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.key_definitions.atoms import Atom
+    from angr.knowledge_plugins.key_definitions.definition import Definition
 
 
 class DependencyView(BaseView):
@@ -20,8 +21,8 @@ class DependencyView(BaseView):
     Creates view for dependency analysis.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("dependencies", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("dependencies", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Dependencies"
 
@@ -73,7 +74,6 @@ class DependencyView(BaseView):
         return QSize(400, 800)
 
     def _init_widgets(self):
-
         self._graph_widget = QDependencyGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
@@ -83,9 +83,11 @@ class DependencyView(BaseView):
         self.setLayout(hlayout)
 
     def _register_events(self):
-        self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
-    def _convert_node(self, node: Definition, converted: Dict[Definition, QDepGraphBlock]) -> Optional[QDepGraphBlock]:
+    def _convert_node(
+        self, node: "Definition", converted: Dict["Definition", QDepGraphBlock]
+    ) -> Optional[QDepGraphBlock]:
         if node in converted:
             return converted[node]
 
@@ -107,7 +109,6 @@ class DependencyView(BaseView):
 
     # def _is_edge_in_graph(self):
     def _create_ui_graph(self) -> networkx.DiGraph:
-
         g = networkx.DiGraph()
         source_node = QDepGraphBlock(False, self, atom=self.sink_atom, addr=self.sink_ins_addr)
         g.add_node(source_node)

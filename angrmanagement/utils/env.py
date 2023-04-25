@@ -1,7 +1,6 @@
-from typing import Union, List
-
-import sys
 import os
+import sys
+from typing import List, Union
 
 
 def is_pyinstaller() -> bool:

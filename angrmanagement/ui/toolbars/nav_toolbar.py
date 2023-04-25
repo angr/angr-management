@@ -1,13 +1,16 @@
 import os
-from typing import Callable, Any
+from typing import TYPE_CHECKING, Any, Callable
 
-from PySide6.QtCore import Signal, QSize
-from PySide6.QtGui import QMouseEvent, QIcon, QAction
-from PySide6.QtWidgets import QMenu, QToolButton, QToolBar, QStyle
+from PySide6.QtCore import QSize, Signal
+from PySide6.QtGui import QAction, QIcon, QMouseEvent
+from PySide6.QtWidgets import QMenu, QStyle, QToolBar, QToolButton
+
+from angrmanagement.config import IMG_LOCATION
 
 from .toolbar import Toolbar
-from ...logic.disassembly import JumpHistory
-from ...config import IMG_LOCATION
+
+if TYPE_CHECKING:
+    from angrmanagement.logic.disassembly import JumpHistory
 
 
 class NavToolButton(QToolButton):
@@ -18,7 +21,7 @@ class NavToolButton(QToolButton):
     triggered = Signal()
     triggeredFromMenu = Signal(int)
 
-    def __init__(self, jump_history: JumpHistory, direction_forward: bool = False, parent=None):
+    def __init__(self, jump_history: "JumpHistory", direction_forward: bool = False, parent=None):
         super().__init__(parent)
         self._dir_fwd = direction_forward
         self._jump_history = jump_history
@@ -74,7 +77,7 @@ class NavToolbar(Toolbar):
 
     def __init__(
         self,
-        jump_history: JumpHistory,
+        jump_history: "JumpHistory",
         back_triggered: Callable[[], Any],
         forward_triggered: Callable[[], Any],
         point_triggered: Callable[[int], Any],

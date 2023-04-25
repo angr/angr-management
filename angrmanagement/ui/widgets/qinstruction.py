@@ -1,21 +1,20 @@
-from typing import List, Optional
-import logging
-
-import PySide6
-from PySide6.QtGui import QPainter, QCursor, QBrush
-from PySide6.QtCore import Qt, QRectF
-from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
+from typing import TYPE_CHECKING, List, Optional
 
 from angr.analyses.disassembly import Value
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QCursor, QPainter
+from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
+
+from angrmanagement.utils import get_comment_for_display, get_string_for_display, should_display_string_label
+
 from .qgraph_object import QCachedGraphicsItem
 from .qoperand import QOperand
-from ...utils import should_display_string_label, get_string_for_display, get_comment_for_display
 
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    import PySide6
 
 
 class QInstruction(QCachedGraphicsItem):
-
     GRAPH_ADDR_SPACING = 20
     GRAPH_MNEMONIC_SPACING = 10
     GRAPH_OPERAND_SPACING = 2
@@ -57,11 +56,19 @@ class QInstruction(QCachedGraphicsItem):
 
         self._init_widgets()
 
-    def contextMenuEvent(self, event: PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
+    def contextMenuEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneContextMenuEvent") -> None:
         pass
 
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
+        self.infodock.unselect_all_instructions()
+        self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
+        self.disasm_view._insn_addr_on_context_menu = self.addr
+        self.disasm_view._insn_menu.insn_addr = self.addr
+        self.disasm_view.popup_patch_dialog()
+        event.accept()
+
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        if self.instance.workspace.plugins.handle_click_insn(self, event):
+        if self.disasm_view.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
         elif event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (
@@ -87,12 +94,17 @@ class QInstruction(QCachedGraphicsItem):
 
     def _calc_backcolor(self):
         # First we'll check for customizations
-        color = self.instance.workspace.plugins.color_insn(self.insn.addr, self.selected)
+        color = self.disasm_view.workspace.plugins.color_insn(self.insn.addr, self.selected, self.disasm_view)
         if color is not None:
             return color
 
         if self.selected:
             return self._config.disasm_view_node_instruction_selected_background_color
+
+        if not self.instance.patches.am_none:
+            patches = self.instance.patches.get_all_patches(self.insn.addr, self.insn.size)
+            if len(patches):
+                return Qt.darkYellow
 
         return None  # None here means transparent, reusing the block color
 
@@ -134,7 +146,6 @@ class QInstruction(QCachedGraphicsItem):
             self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
-
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # background color
@@ -145,14 +156,13 @@ class QInstruction(QCachedGraphicsItem):
             painter.drawRect(0, 0, self.width, self.height)
 
         # any plugin instruction rendering passes
-        self.instance.workspace.plugins.draw_insn(self, painter)
+        self.disasm_view.workspace.plugins.draw_insn(self, painter)
 
     #
     # Private methods
     #
 
     def _init_widgets(self):
-
         self.load_comment()
         self._operands.clear()
 
@@ -217,7 +227,6 @@ class QInstruction(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _init_comments_or_string(self):
-
         # remove existing comments or strings
         if self._comment_items:
             for comm in self._comment_items:
@@ -245,7 +254,6 @@ class QInstruction(QCachedGraphicsItem):
             self._string_item.setBrush(Qt.gray)  # TODO: Expose it as a setting in Config
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         # address

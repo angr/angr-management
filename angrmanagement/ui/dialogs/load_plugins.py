@@ -1,25 +1,25 @@
 import logging
-from typing import List, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING, List
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
-    QPushButton,
+    QDialogButtonBox,
+    QFileDialog,
     QFrame,
     QGroupBox,
-    QListWidgetItem,
     QListWidget,
-    QFileDialog,
+    QListWidgetItem,
     QMessageBox,
-    QDialogButtonBox,
+    QPushButton,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
 from angrmanagement.plugins import load_plugin_description
 
 if TYPE_CHECKING:
-    from angrmanagement.plugins import PluginManager, PluginDescription
+    from angrmanagement.plugins import PluginDescription, PluginManager
 
 
 _l = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class LoadPlugins(QDialog):
         super().__init__(parent)
 
         self._pm: "PluginManager" = plugin_mgr
-        self._installed_plugin_list = None  # type: QListWidget
+        self._installed_plugin_list: QListWidget
 
         self.setWindowTitle("Installed Plugins")
         self.main_layout = QVBoxLayout()
@@ -107,7 +107,7 @@ class LoadPlugins(QDialog):
     #
 
     def _on_ok_clicked(self):
-        list_items = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)  # type: List[QPluginListWidgetItem]
+        list_items: List[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)
         for i in list_items:
             checked = i.checkState() == Qt.Checked
 

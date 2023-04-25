@@ -1,17 +1,16 @@
 import logging
 
-from PySide6.QtWidgets import QGraphicsItem
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QGraphicsItem
 
-from ...config import Conf
-from ...utils import locate_function
+from angrmanagement.config import Conf
+from angrmanagement.utils import locate_function
 
 _l = logging.getLogger(__name__)
 
 
 class QStateBlock(QGraphicsItem):
-
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
@@ -49,7 +48,6 @@ class QStateBlock(QGraphicsItem):
             return None
 
     def _init_widgets(self):
-
         addr = None
         if self.state.regs._ip.symbolic:
             self._label_str = str(self.state.regs._ip)
@@ -95,10 +93,10 @@ class QStateBlock(QGraphicsItem):
         # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
             if self.state is not None:
-                self._instance.workspace.viz(self.state.addr)
+                self.symexec_view.workspace.viz(self.state.addr)
                 event.accept()
             elif self.history is not None:
-                self._instance.workspace.viz(self.history.state.addr)
+                self.symexec_view_instance.workspace.viz(self.history.state.addr)
                 event.accept()
 
         super().mouseDoubleClickEvent(event)

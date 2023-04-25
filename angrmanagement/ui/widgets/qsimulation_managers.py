@@ -1,47 +1,49 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
     QFrame,
+    QHBoxLayout,
     QInputDialog,
     QLabel,
-    QComboBox,
-    QHBoxLayout,
-    QVBoxLayout,
     QPushButton,
-    QCheckBox,
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt
 
-from ...data.jobs import SimgrStepJob, SimgrExploreJob
-from ..widgets.qsimulation_manager_viewer import QSimulationManagerViewer
-from ...logic.threads import gui_thread_schedule
+from angrmanagement.data.jobs import SimgrExploreJob, SimgrStepJob
+from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 
 if TYPE_CHECKING:
     from angr import SimState
-    from typing import List
+
+    from angrmanagement.data.instance import Instance
 
 
 class QSimulationManagers(QFrame):
-    def __init__(self, instance: "Instance", simgr, state, parent=None):
+    def __init__(self, workspace, instance: "Instance", simgr, state, parent=None):
         """
         :param instance:                The data source for this project
         :param object parent:           The parent widget.
         """
         super().__init__(parent)
 
+        self.workspace = workspace
         self.instance = instance
         self.simgrs = instance.simgrs
         self.simgr = simgr
         self.state = state
 
-        self._simgrs_list = None  # type: QComboBox
-        self._avoids_list = None  # type: QTreeWidget
-        self._finds_list = None  # type: QTreeWidget
-        self._simgr_viewer = None  # type: QSimulationManagerViewer
-        self._oneactive_checkbox = None  # type: QCheckBox
+        self._simgrs_list: QComboBox
+        self._avoids_list: QTreeWidget
+        self._finds_list: QTreeWidget
+        self._simgr_viewer: QSimulationManagerViewer
+        self._oneactive_checkbox: QCheckBox
 
         self._init_widgets()
         self.refresh()
@@ -89,7 +91,7 @@ class QSimulationManagers(QFrame):
     @staticmethod
     def add_address_to_list(qtreelist: QTreeWidget, addr):
         for i in range(qtreelist.topLevelItemCount()):
-            item = qtreelist.topLevelItem(i)  # type: QTreeWidgetItem
+            item: QTreeWidgetItem = qtreelist.topLevelItem(i)
             if int(item.text(0), 16) == addr:
                 return None  # deduplicate
 
@@ -242,7 +244,7 @@ class QSimulationManagers(QFrame):
         if not self.simgr.am_none:
             self.instance.add_job(
                 SimgrStepJob.create(
-                    self.simgr.am_obj, until_branch=False, step_callback=self.instance.workspace.plugins.step_callback
+                    self.simgr.am_obj, until_branch=False, step_callback=self.workspace.plugins.step_callback
                 )
             )
 
@@ -250,7 +252,7 @@ class QSimulationManagers(QFrame):
         if not self.simgr.am_none:
             self.instance.add_job(
                 SimgrStepJob.create(
-                    self.simgr.am_obj, until_branch=True, step_callback=self.instance.workspace.plugins.step_callback
+                    self.simgr.am_obj, until_branch=True, step_callback=self.workspace.plugins.step_callback
                 )
             )
 
@@ -258,7 +260,7 @@ class QSimulationManagers(QFrame):
         if not self.simgr.am_none:
 
             def _step_callback(simgr):
-                self.instance.workspace.plugins.step_callback(simgr)
+                self.workspace.plugins.step_callback(simgr)
                 if self._oneactive_checkbox.isChecked():
                     self._filter_actives(simgr, events=False)
                 gui_thread_schedule(lambda: self.simgr.am_event(src="post_step"))
@@ -272,10 +274,7 @@ class QSimulationManagers(QFrame):
 
     def _on_simgr_selection(self):
         i = self._simgrs_list.currentIndex()
-        if i != -1:
-            simgr = self.simgrs[i]
-        else:
-            simgr = None
+        simgr = self.simgrs[i] if i != -1 else None
 
         if simgr != self.simgr.am_obj:
             self.simgr.am_obj = simgr
@@ -308,7 +307,7 @@ class QSimulationManagers(QFrame):
     def _on_explore_addr_changed(self, item: QTreeWidgetItem):  # pylint: disable=unused-argument
         """Refresh the disassembly view when an address in the 'avoids' or 'finds' tab is toggled. Ensures that
         annotations next to instructions are updated."""
-        view_manager = self.instance.workspace.view_manager
+        view_manager = self.workspace.view_manager
         if len(view_manager.views_by_category["disassembly"]) == 1:
             view = view_manager.first_view_in_category("disassembly")
         else:
@@ -356,7 +355,7 @@ class QSimulationManagers(QFrame):
             try:
                 addr = int(line, 16)
                 self.add_address_to_list(qlist, addr)
-            except ValueError as e:  # pylint: disable=unused-variable
+            except ValueError:  # pylint: disable=unused-variable
                 pass
 
     @staticmethod

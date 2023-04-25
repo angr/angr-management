@@ -1,10 +1,10 @@
-import logging
 import functools
+import logging
 
 import rpyc
 
-from ..logic.threads import gui_thread_schedule_async
-from ..logic import GlobalInfo
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule_async
 
 _l = logging.getLogger(name=__name__)
 
@@ -29,7 +29,6 @@ class ClientService(rpyc.Service):
         return GlobalInfo.main_window.workspace
 
     def exposed_jumpto(self, addr, symbol):
-
         if self.workspace is not None:
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
             if addr is not None:
@@ -39,11 +38,9 @@ class ClientService(rpyc.Service):
                 gui_thread_schedule_async(self.workspace.jump_to, args=(symbol,))
 
     def exposed_commentat(self, addr, comment):
-
-        if self.workspace is not None:
-            if addr is not None:
-                gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
-                gui_thread_schedule_async(self.workspace.set_comment(addr, comment))
+        if self.workspace is not None and addr is not None:
+            gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
+            gui_thread_schedule_async(self.workspace.set_comment(addr, comment))
 
     def exposed_custom_binary_aware_action(self, action, kwargs):  # pylint: disable=no-self-use
         kwargs_copy = dict(kwargs.items())  # copy it to local

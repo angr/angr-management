@@ -8,7 +8,6 @@ class EdgeSort:
 
 class Edge:
     def __init__(self, src, dst, sort=EdgeSort.DIRECT_JUMP):
-
         self.src = src
         self.dst = dst
 

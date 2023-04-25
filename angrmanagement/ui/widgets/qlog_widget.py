@@ -1,17 +1,20 @@
 # pylint:disable=unused-argument
-import os
 import logging
-from typing import List, Any, Optional
+import os
+from typing import TYPE_CHECKING, Any, List, Optional
 
-import PySide6
-from PySide6.QtWidgets import QTableView, QAbstractItemView
 from PySide6.QtCore import QAbstractTableModel, Qt
-from PySide6.QtGui import QIcon, QCursor, QGuiApplication, QClipboard, QKeySequence
+from PySide6.QtGui import QClipboard, QCursor, QGuiApplication, QIcon, QKeySequence
+from PySide6.QtWidgets import QAbstractItemView, QTableView
 
 from angrmanagement.config import IMG_LOCATION
 from angrmanagement.logic.threads import gui_thread_schedule_async
-from angrmanagement.data.log import LogRecord
 from angrmanagement.ui.menus.log_menu import LogMenu
+
+if TYPE_CHECKING:
+    import PySide6
+
+    from angrmanagement.data.log import LogRecord
 
 
 class QLogIcons:
@@ -59,23 +62,23 @@ class QLogTableModel(QAbstractTableModel):
         self._log: List[LogRecord] = []
 
     @property
-    def log(self) -> List[LogRecord]:
+    def log(self) -> List["LogRecord"]:
         return self._log
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
+    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:
         return len(self._log)
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
+    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:
         return len(self.Headers)
 
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:
+    def headerData(self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...) -> Any:
         if role != Qt.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
         return None
 
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
+    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -88,11 +91,13 @@ class QLogTableModel(QAbstractTableModel):
             return self._get_column_text(log, col)
         elif role == Qt.DecorationRole and col == QLogTableModel.COL_ICON:
             return self._get_column_icon(log)
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignTop | Qt.AlignLeft
 
         return None
 
     @staticmethod
-    def _get_column_text(log: LogRecord, col: int) -> Any:
+    def _get_column_text(log: "LogRecord", col: int) -> Any:
         mapping = {
             QLogTableModel.COL_TIMESTAMP: lambda x: str(x.timestamp),
             QLogTableModel.COL_SOURCE: lambda x: str(x.source),
@@ -104,7 +109,7 @@ class QLogTableModel(QAbstractTableModel):
         return func(log)
 
     @staticmethod
-    def _get_column_icon(log: LogRecord) -> Optional[QIcon]:
+    def _get_column_icon(log: "LogRecord") -> Optional[QIcon]:
         mapping = {
             1: QLogIcons.benchmark(),
             logging.WARNING: QLogIcons.warning(),
@@ -155,6 +160,8 @@ class QLogWidget(QTableView):
 
         self.setColumnWidth(0, 20)
         self.setColumnWidth(1, 150)
+
+        self.doubleClicked.connect(self._on_double_clicked)
 
         self.log_view.instance.log.am_subscribe(self._on_new_logrecord)
 
@@ -207,13 +214,13 @@ class QLogWidget(QTableView):
         self.log_view.instance.log.am_unsubscribe(self._on_new_logrecord)
         super().closeEvent(event)
 
-    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent):
+    def contextMenuEvent(self, arg__1: "PySide6.QtGui.QContextMenuEvent"):
         self._context_menu.popup(QCursor.pos())
 
-    def _on_new_logrecord(self, log_record: LogRecord = None):
+    def _on_new_logrecord(self, log_record: "LogRecord" = None):
         gui_thread_schedule_async(self._on_new_logrecord_core, (log_record,))
 
-    def _on_new_logrecord_core(self, log_record: LogRecord = None):
+    def _on_new_logrecord_core(self, log_record: "LogRecord" = None):
         self._before_row_insert()
 
         if log_record is None:
@@ -237,11 +244,18 @@ class QLogWidget(QTableView):
         if self._auto_scroll:
             self.scrollToBottom()
 
-    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: "PySide6.QtGui.QKeyEvent"):
         if event.matches(QKeySequence.Copy):
             self.copy_selected_messages()
         else:
             super().keyPressEvent(event)
+
+    def _on_double_clicked(self, item):
+        # Expand/collapse row
+        if self.rowHeight(item.row()) > 20:
+            self.setRowHeight(item.row(), 20)
+        else:
+            self.setRowHeight(item.row(), self.sizeHintForRow(item.row()))
 
     #
     # Private methods

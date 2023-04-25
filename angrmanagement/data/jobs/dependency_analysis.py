@@ -1,39 +1,38 @@
-from functools import partial
-from typing import TYPE_CHECKING, Optional, Generator, List, Tuple, Set
 import logging
-
-from PySide6.QtWidgets import QMessageBox
+from typing import TYPE_CHECKING, Generator, List, Optional, Set, Tuple
 
 from angr import KnowledgeBase
-from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
-from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.analyses.reaching_definitions.call_trace import CallTrace
-from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
-from angr.knowledge_plugins.key_definitions.atoms import Register, MemoryLocation, SpOffset
+from angr.analyses.reaching_definitions.dep_graph import DepGraph
+from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
+from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg
 from angr.knowledge_plugins import Function
-from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg, SimStackArg
+from angr.knowledge_plugins.key_definitions.atoms import Register
+from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
 from angr.sim_type import SimType
+from PySide6.QtWidgets import QMessageBox
+
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import Job
-from ...logic.threads import gui_thread_schedule_async
 
 try:
     import argument_resolver
-    from argument_resolver.handlers import handler_factory, StdioHandlers, StdlibHandlers, StringHandlers
-    from argument_resolver.transitive_closure import transitive_closures_from_defs
     from argument_resolver.call_trace_visitor import CallTraceSubject
+    from argument_resolver.handlers import StdioHandlers, StdlibHandlers, StringHandlers, handler_factory
+    from argument_resolver.transitive_closure import transitive_closures_from_defs
 except ImportError:
     argument_resolver = None
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins.key_definitions.definition import Definition
-    from angr.knowledge_plugins.key_definitions.atoms import Atom
     from angr.analyses.reaching_definitions import ReachingDefinitionsAnalysis
-    from ...plugins.dep_viewer import DependencyViewer
-    from ..instance import Instance
+    from angr.knowledge_plugins.key_definitions.atoms import Atom
+
+    from angrmanagement.data.instance import Instance
 
 
-l = logging.getLogger(name=__name__)
+log = logging.getLogger(name=__name__)
 
 
 class DependencyAnalysisJob(Job):
@@ -69,7 +68,7 @@ class DependencyAnalysisJob(Job):
                 atom = Register(inst.project.arch.registers[arg.reg_name][0], arg.size)
                 return sink, atom
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
 
         return None, None
 
@@ -126,15 +125,15 @@ class DependencyAnalysisJob(Job):
                             all_defs |= defs_
 
                 try:
-                    cc = transitive_closures_from_defs(all_defs, dep)
+                    cc = transitive_closures_from_defs(all_defs, dep.dep_graph)
                 except Exception:  # pylint:disable=broad-except
-                    l.warning("Exception occurred when computing transitive clousure. Skip.")
+                    log.warning("Exception occurred when computing transitive clousure. Skip.")
                     continue
 
-                # determine if there is any values are marked as coming from External. these values are not resolved
+                # determine if there is any values are marked as coming from Externalog. these values are not resolved
                 # within the current call-depth range
                 has_external = False
-                for def_, graph in closures.items():
+                for _def, graph in closures.items():
                     for node in graph.nodes():
                         if isinstance(node.codeloc, ExternalCodeLocation):
                             # yes!
@@ -145,7 +144,7 @@ class DependencyAnalysisJob(Job):
                 if not has_external:
                     # fully resolved - we should exclude this function for future exploration
                     current_function_address = dep.subject.content.current_function_address()
-                    l.info(
+                    log.info(
                         "Exclude function %#x from future slices since the data dependencies are fully resolved.",
                         current_function_address,
                     )
@@ -189,8 +188,8 @@ class DependencyAnalysisJob(Job):
         else:
             raise TypeError("Unsupported type of subject %s." % type(subject))
 
-        # peek into the callgraph and discover all functions reaching the sink within N layers of calls, which is determined
-        # by the depth parameter
+        # peek into the callgraph and discover all functions reaching the sink within N layers of calls, which is
+        # determined by the depth parameter
         queue: List[Tuple[CallTrace, int]] = [(CallTrace(sink.addr), 0)]
         starts: Set[CallTrace] = set()
         encountered: Set[int] = set(excluded_funtions)
@@ -205,19 +204,19 @@ class DependencyAnalysisJob(Job):
             caller_depth = curr_depth + 1
             if caller_depth >= max_depth:
                 # reached the depth limit. add them to potential analysis starts
-                starts |= set(map(lambda caller_addr: trace.step_back(caller_addr, None, caller_func_addr), callers))
+                starts |= {trace.step_back(caller_addr, None, caller_func_addr) for caller_addr in callers}
             else:
                 # add them to the queue
-                for item in map(
-                    lambda caller_addr: (trace.step_back(caller_addr, None, caller_func_addr), caller_depth), callers
+                for item in (
+                    (trace.step_back(caller_addr, None, caller_func_addr), caller_depth) for caller_addr in callers
                 ):
                     queue.append(item)
             encountered |= callers
 
-        l.info("Discovered %d function starts at call-depth %d for sink %r.", len(starts), max_depth, sink)
+        log.info("Discovered %d function starts at call-depth %d for sink %r.", len(starts), max_depth, sink)
 
         for idx, start in enumerate(starts):
-            handler = Handler(project, False, sink_function=sink, sink_atoms=sink_atoms, cfg=kb.cfgs[0])
+            handler = Handler(project, sink_function=sink, sink_atoms=sink_atoms, cfg=kb.cfgs[0])
             try:
                 rda = project.analyses.ReachingDefinitions(
                     subject=CallTraceSubject(start, kb.functions[start.current_function_address()]),
@@ -228,7 +227,7 @@ class DependencyAnalysisJob(Job):
                     dep_graph=DepGraph(),
                 )
             except Exception:  # pylint:disable=broad-except
-                l.warning("Failed to compute dependencies for function %s.", start, exc_info=True)
+                log.warning("Failed to compute dependencies for function %s.", start, exc_info=True)
                 continue
             yield idx, len(starts), rda
 
@@ -254,7 +253,7 @@ class DependencyAnalysisJob(Job):
 
     @staticmethod
     def _display_closures(inst, sink_atom: "Atom", sink_addr: int, closures):
-        view = inst.workspace.view_manager.first_view_in_category("dependencies")
+        view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return
 
@@ -264,5 +263,5 @@ class DependencyAnalysisJob(Job):
         try:
             view.reload()
         except Exception:
-            l.warning("An error occurred when displaying the closures.", exc_info=True)
-        inst.workspace.view_manager.raise_view(view)
+            log.warning("An error occurred when displaying the closures.", exc_info=True)
+        GlobalInfo.main_window.workspace.view_manager.raise_view(view)

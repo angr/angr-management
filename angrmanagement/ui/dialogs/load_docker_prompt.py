@@ -3,7 +3,6 @@ import subprocess
 
 from PySide6.QtWidgets import QInputDialog, QMessageBox
 
-
 _l = logging.getLogger(__name__)
 
 

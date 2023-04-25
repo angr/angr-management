@@ -1,25 +1,27 @@
 import json
 import os
-from typing import Optional, Union, List, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
+import requests
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
-import requests
+from angrmanagement.config import Conf
+from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule_async
+from angrmanagement.plugins.base_plugin import BasePlugin
+from angrmanagement.utils.io import download_url, isurl
 
-from ...config import Conf
-from ...data.object_container import ObjectContainer
-from ...logic import GlobalInfo
-from ...logic.threads import gui_thread_schedule_async
-from ...utils.io import isurl, download_url
-from ...errors import InvalidURLError, UnexpectedStatusCodeError
-from ..base_plugin import BasePlugin
-from .trace_statistics import TraceStatistics
-from .multi_trace import MultiTrace
 from .afl_qemu_bitmap import AFLQemuBitmap
 from .chess_trace_list import QChessTraceListDialog
+from .multi_trace import MultiTrace
 from .qtrace_viewer import QTraceViewer
+from .trace_statistics import TraceStatistics
+
+if TYPE_CHECKING:
+    from angrmanagement.data.object_container import ObjectContainer
 
 
 class TraceViewer(BasePlugin):
@@ -49,11 +51,11 @@ class TraceViewer(BasePlugin):
     #
 
     @property
-    def trace(self) -> Union[ObjectContainer, Optional[TraceStatistics]]:
+    def trace(self) -> Union["ObjectContainer", Optional[TraceStatistics]]:
         return self.workspace.main_instance.trace
 
     @property
-    def multi_trace(self) -> Union[ObjectContainer, Optional[MultiTrace], AFLQemuBitmap]:
+    def multi_trace(self) -> Union["ObjectContainer", Optional[MultiTrace], AFLQemuBitmap]:
         return self.workspace.main_instance.multi_trace
 
     #
@@ -119,9 +121,8 @@ class TraceViewer(BasePlugin):
 
     def color_block(self, addr):
         if not self.multi_trace.am_none:
-            if isinstance(self.multi_trace.am_obj, MultiTrace):
-                if not self.multi_trace.is_active_tab:
-                    return None
+            if isinstance(self.multi_trace.am_obj, MultiTrace) and not self.multi_trace.is_active_tab:
+                return None
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
@@ -140,14 +141,13 @@ class TraceViewer(BasePlugin):
 
     def draw_insn(self, qinsn, painter):
         # legend
-        if not self.multi_trace.am_none:
-            if isinstance(self.multi_trace.am_obj, MultiTrace):
-                if not self.multi_trace.is_active_tab:
-                    return  # skip
+        if not self.multi_trace.am_none and isinstance(self.multi_trace.am_obj, MultiTrace):
+            if not self.multi_trace.is_active_tab:
+                return  # skip
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
-            for (i, w) in strata:
+            for i, w in strata:
                 color = self.trace.get_mark_color(qinsn.insn.addr, i)
                 painter.setPen(color)
                 painter.setBrush(color)
@@ -223,7 +223,6 @@ class TraceViewer(BasePlugin):
     OPEN_TRACES_FROM_CHECRS = 5
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -287,7 +286,6 @@ class TraceViewer(BasePlugin):
         self.multi_trace.am_event()
 
     def _open_bitmap_multi_trace(self, trace_path, base_addr):
-
         if trace_path is None:
             trace_path = self._open_trace_dialog(tfilter="")
             if trace_path is None:
@@ -394,14 +392,14 @@ class TraceViewer(BasePlugin):
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Incorrect trace format",
-                "Failed to open the JSON trace." " We expect the JSON trace to contain the field 'bb_addrs'.",
+                "Failed to open the JSON trace. We expect the JSON trace to contain the field 'bb_addrs'.",
             )
             return None, None
         elif not isinstance(trace["bb_addrs"], list):
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Incorrect trace format",
-                "Failed to open the JSON trace." "We expect the JSON trace bb_addrs field to be a list of integers.",
+                "Failed to open the JSON trace. We expect the JSON trace bb_addrs field to be a list of integers.",
             )
             return None, None
 
@@ -417,7 +415,6 @@ class TraceViewer(BasePlugin):
         self.trace.am_event()
 
     def open_traces_from_checrs(self):
-
         if not Conf.checrs_rest_endpoint_url:
             QMessageBox.critical(
                 self.workspace.main_window,
@@ -468,5 +465,5 @@ class TraceViewer(BasePlugin):
             QMessageBox.warning(
                 self.workspace.main_window,
                 "Failed to load some traces",
-                "angr management failed to load some traces.\n" "Details:\n" + "\n".join(msg),
+                "angr management failed to load some traces.\nDetails:\n" + "\n".join(msg),
             )

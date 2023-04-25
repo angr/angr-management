@@ -1,20 +1,19 @@
 # pylint:disable=global-statement,missing-class-docstring,no-self-use,unspecified-encoding
-import os
-import sys
-import subprocess
 import logging
+import os
+import subprocess
+import sys
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import tomlkit
 import tomlkit.exceptions
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 from xdg import BaseDirectory
-from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QMessageBox, QFileDialog
 
-from angrmanagement.plugins import BasePlugin
-from angrmanagement.daemon.url_handler import UrlActionBase, register_url_action
 from angrmanagement.daemon.server import register_server_exposed_method
+from angrmanagement.daemon.url_handler import UrlActionBase, register_url_action
+from angrmanagement.plugins import BasePlugin
 
 _l = logging.getLogger(name=__name__)
 
@@ -188,9 +187,9 @@ class ChessUrlHandler(BasePlugin):
             return "code"
         elif sys.platform == "darwin":
             # try the default path
-            raise NotImplementedError()
+            raise NotImplementedError
         else:
-            raise NotImplementedError()
+            raise NotImplementedError
 
         for loc in default_locations:
             vscode_path = os.path.join(loc, code_exe)
@@ -230,8 +229,8 @@ class ChessUrlHandler(BasePlugin):
                 return
 
         elif editor == "am":
-            raise NotImplementedError()
+            raise NotImplementedError
 
         else:
             # fallback to the default editor
-            raise NotImplementedError()
+            raise NotImplementedError

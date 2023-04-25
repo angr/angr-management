@@ -1,12 +1,13 @@
 from collections import defaultdict
-from typing import List
-
-from PySide6.QtGui import QCursor, QContextMenuEvent
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QInputDialog, QAbstractItemView
-from PySide6.QtCore import Qt
-
-from angr import SimState
 from inspect import isfunction
+from typing import TYPE_CHECKING, List
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QContextMenuEvent, QCursor
+from PySide6.QtWidgets import QAbstractItemView, QInputDialog, QMenu, QMessageBox, QTreeWidget, QTreeWidgetItem
+
+if TYPE_CHECKING:
+    from angr import SimState
 
 
 class SimgrViewerAbstractTreeItem(QTreeWidgetItem):
@@ -115,7 +116,7 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
 
 
 class QSimulationManagerViewer(QTreeWidget):
-    state_clipboard: List[SimState]
+    state_clipboard: List["SimState"]
 
     def __init__(self, simgr, parent=None):
         super().__init__(parent)
@@ -166,7 +167,7 @@ class QSimulationManagerViewer(QTreeWidget):
             try:
                 lambda_func = eval(lambda_str)  # pylint: disable=eval-used
                 if not isfunction(lambda_func):
-                    raise ValueError()
+                    raise ValueError
             except Exception as e:  # pylint: disable=broad-except
                 QMessageBox.critical(self, "Exception!", str(e))
                 continue
@@ -183,7 +184,6 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.exec_(QCursor.pos())
 
     def _create_new_stash(self, *args, **kwargs):  # pylint: disable=unused-argument
-
         stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
 
         if not accepted or stash_name.strip() == "":
@@ -246,7 +246,7 @@ class QSimulationManagerViewer(QTreeWidget):
             return
 
         self.stash_tree_items = {}
-        for stash_name, stash in self.simgr.stashes.items():  # pylint: disable=unused-variable
+        for stash_name, _stash in self.simgr.stashes.items():  # pylint: disable=unused-variable
             # if not stash and stash_name not in ('active', 'deadended', 'avoided'):
             #     continue
             item = StashTreeItem(stash_name, simgr_viewer=self)

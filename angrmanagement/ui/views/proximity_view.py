@@ -1,25 +1,23 @@
-from typing import Dict, Optional, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional, Set
 
 import networkx
-
-from PySide6.QtWidgets import QHBoxLayout
+from angr.analyses.proximity_graph import (
+    BaseProxiNode,
+    CallProxiNode,
+    FunctionProxiNode,
+    StringProxiNode,
+    VariableProxiNode,
+)
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 
 from angrmanagement.ui.views.view import BaseView
 from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph
 from angrmanagement.ui.widgets.qproximitygraph_block import (
-    QProximityGraphCallBlock,
-    QProximityGraphStringBlock,
-    QProximityGraphFunctionBlock,
     QProximityGraphBlock,
-)
-
-from angr.analyses.proximity_graph import (
-    BaseProxiNode,
-    FunctionProxiNode,
-    StringProxiNode,
-    CallProxiNode,
-    VariableProxiNode,
+    QProximityGraphCallBlock,
+    QProximityGraphFunctionBlock,
+    QProximityGraphStringBlock,
 )
 
 if TYPE_CHECKING:
@@ -31,8 +29,8 @@ class ProximityView(BaseView):
     Proximity View
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("proximity", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("proximity", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Proximity"
 
@@ -136,7 +134,6 @@ class ProximityView(BaseView):
         return QSize(400, 800)
 
     def _init_widgets(self):
-
         self._graph_widget = QProximityGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
@@ -146,10 +143,10 @@ class ProximityView(BaseView):
         self.setLayout(hlayout)
 
     def _register_events(self):
-        self.instance.workspace.current_screen.am_subscribe(self.on_screen_changed)
+        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _unregister_events(self):
-        self.instance.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
+        self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
 
     def closeEvent(self, event):
         self._unregister_events()
@@ -177,7 +174,6 @@ class ProximityView(BaseView):
         return new_node
 
     def _create_ui_graph(self) -> networkx.DiGraph:
-
         g = networkx.DiGraph()
 
         converted = {}

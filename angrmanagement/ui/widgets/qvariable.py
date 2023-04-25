@@ -1,11 +1,10 @@
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
-from PySide6.QtCore import Qt, QRectF
 
 from .qgraph_object import QCachedGraphicsItem
 
 
 class QVariable(QCachedGraphicsItem):
-
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
@@ -47,7 +46,6 @@ class QVariable(QCachedGraphicsItem):
     #
 
     def _init_widgets(self):
-
         # variable name
         self._variable_name = "" if not self.variable.name else self.variable.name
         self._variable_name_item = QGraphicsSimpleTextItem(self._variable_name, self)
@@ -70,7 +68,6 @@ class QVariable(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         # variable name

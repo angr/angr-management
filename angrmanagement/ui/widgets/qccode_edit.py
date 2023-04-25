@@ -1,40 +1,37 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QTextCharFormat, QKeySequence, QAction
-from PySide6.QtWidgets import QMenu, QInputDialog, QLineEdit, QApplication
-
-from pyqodeng.core import api
-from pyqodeng.core import modes
-from pyqodeng.core import panels
-
-from ailment.statement import Store, Assignment
-from ailment.expression import Load, Op, UnaryOp, BinaryOp
-from angr.sim_type import SimType
-from angr.sim_variable import SimVariable, SimTemporaryVariable
+from ailment.expression import BinaryOp, Load, Op, UnaryOp
+from ailment.statement import Assignment, Store
+from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 from angr.analyses.decompiler.structured_codegen.c import (
     CBinaryOp,
-    CVariable,
-    CFunctionCall,
-    CFunction,
-    CStructField,
-    CIndexedVariable,
-    CVariableField,
-    CUnaryOp,
     CConstant,
     CExpression,
+    CFunction,
+    CFunctionCall,
+    CIndexedVariable,
+    CStructField,
+    CUnaryOp,
+    CVariable,
+    CVariableField,
 )
-from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
+from angr.sim_type import SimType
+from angr.sim_variable import SimTemporaryVariable, SimVariable
+from pyqodeng.core import api, modes, panels
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QAction, QKeySequence, QTextCharFormat
+from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
 
-from ..documents.qcodedocument import QCodeDocument
-from ..dialogs.rename_node import RenameNode
-from ..dialogs.retype_node import RetypeNode
-from ..widgets.qccode_highlighter import QCCodeHighlighter
-from ..menus.menu import Menu
+from angrmanagement.ui.dialogs.rename_node import RenameNode
+from angrmanagement.ui.dialogs.retype_node import RetypeNode
+from angrmanagement.ui.documents.qcodedocument import QCodeDocument
+from angrmanagement.ui.menus.menu import Menu
+from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QTextDocument
-    from ..views.code_view import CodeView
+
+    from angrmanagement.ui.views.code_view import CodeView
 
 
 class ColorSchemeIDA(api.ColorScheme):
@@ -155,7 +152,7 @@ class QCCodeEdit(api.CodeEdit):
 
     @property
     def workspace(self):
-        return self._code_view.instance.workspace if self._code_view is not None else None
+        return self._code_view.workspace if self._code_view is not None else None
 
     @property
     def instance(self):
@@ -314,20 +311,19 @@ class QCCodeEdit(api.CodeEdit):
         dialog.exec_()
 
         new_node_type = dialog.new_type
-        if new_node_type is not None:
-            if self._code_view is not None and node is not None:
-                # need workspace for altering callbacks of changes
-                variable_kb = self._code_view.codegen._variable_kb
-                # specify the type
-                new_node_type = new_node_type.with_arch(self.instance.project.arch)
-                variable_kb.variables[self._code_view.function.addr].set_variable_type(
-                    node.variable,
-                    new_node_type,
-                    all_unified=True,
-                    mark_manual=True,
-                )
+        if new_node_type is not None and self._code_view is not None and node is not None:
+            # need workspace for altering callbacks of changes
+            variable_kb = self._code_view.codegen._variable_kb
+            # specify the type
+            new_node_type = new_node_type.with_arch(self.instance.project.arch)
+            variable_kb.variables[self._code_view.function.addr].set_variable_type(
+                node.variable,
+                new_node_type,
+                all_unified=True,
+                mark_manual=True,
+            )
 
-                self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
+            self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
     def comment(self, expr=False, node=None):
         addr = self.get_closest_insaddr(node, expr=expr)
@@ -421,10 +417,7 @@ class QCCodeEdit(api.CodeEdit):
             return
 
         op = ailexpr.op
-        if op in {"CmpEQ", "CmpNE"}:
-            negated_op = op
-        else:
-            negated_op = BinaryOp.COMPARISON_NEGATION.get(op, None)
+        negated_op = op if op in {"CmpEQ", "CmpNE"} else BinaryOp.COMPARISON_NEGATION.get(op, None)
         if negated_op is None:
             return
 
@@ -536,7 +529,6 @@ class QCCodeEdit(api.CodeEdit):
         return sep
 
     def _initialize_context_menus(self):
-
         base_actions = [
             self._separator(),
             self.action_copy,

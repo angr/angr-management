@@ -1,11 +1,11 @@
 # Copied and adapted from tendo
 
 import logging
-from multiprocessing import Process
 import os
 import sys
 import tempfile
 import unittest
+from multiprocessing import Process
 
 from angr.utils.mp import Initializer
 
@@ -50,7 +50,7 @@ class SingleInstance:
             )
             self.lockfile = os.path.normpath(tempfile.gettempdir() + "/" + basename)
 
-        logger.debug("SingleInstance lockfile: " + self.lockfile)
+        logger.debug("SingleInstance lockfile: %s", self.lockfile)
         if sys.platform == "win32":
             try:
                 # file already exists, we try to remove (in case previous
@@ -58,11 +58,11 @@ class SingleInstance:
                 if os.path.exists(self.lockfile):
                     os.unlink(self.lockfile)
                 self.fd = os.open(self.lockfile, os.O_CREAT | os.O_EXCL | os.O_RDWR)
-            except OSError:
+            except OSError as ex:
                 type, e, tb = sys.exc_info()
                 if e.errno == 13:
                     logger.debug("Another instance is already running, quitting.")
-                    raise SingleInstanceException()
+                    raise SingleInstanceException from ex
                 print(e.errno)
                 raise
         else:  # non Windows
@@ -70,9 +70,9 @@ class SingleInstance:
             self.fp.flush()
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError:
+            except OSError as ex:
                 logger.debug("Another instance is already running, quitting.")
-                raise SingleInstanceException()
+                raise SingleInstanceException from ex
         self.initialized = True
 
     def __del__(self):

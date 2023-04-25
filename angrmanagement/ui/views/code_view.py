@@ -1,26 +1,27 @@
-from typing import Set, Union, Optional
 import logging
+from typing import TYPE_CHECKING, Any, Optional, Set, Union
 
-from PySide6.QtWidgets import QHBoxLayout, QTextEdit, QMainWindow, QDockWidget, QVBoxLayout, QWidget, QFrame, QComboBox
-from PySide6.QtGui import QTextCursor
-from PySide6.QtCore import Qt
-
-from angr.analyses.decompiler.structured_codegen.c import CFunctionCall, CConstant, CStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
-from angr.knowledge_plugins.functions.function import Function
+from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QComboBox, QDockWidget, QFrame, QHBoxLayout, QMainWindow, QTextEdit, QVBoxLayout, QWidget
 
-from ..widgets.qccode_edit import QCCodeEdit
-from ..widgets.qdecomp_options import QDecompilationOptions
-from ..documents import QCodeDocument
+from angrmanagement.config import Conf
+from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
+from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.logic.disassembly import JumpHistory
+from angrmanagement.ui.documents import QCodeDocument
+from angrmanagement.ui.toolbars import NavToolbar
+from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
+from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
+
 from .view import BaseView
-from ...config import Conf
-from ...data.object_container import ObjectContainer
-from ...logic.disassembly import JumpHistory
-from ...data.jobs import DecompileFunctionJob, VariableRecoveryJob
-from ..toolbars import NavToolbar
 
+if TYPE_CHECKING:
+    from angr.knowledge_plugins.functions.function import Function
 
-l = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class CodeView(BaseView):
@@ -31,8 +32,8 @@ class CodeView(BaseView):
 
     FUNCTION_SPECIFIC_VIEW = True
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("pseudocode", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("pseudocode", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Pseudocode"
 
@@ -206,7 +207,9 @@ class CodeView(BaseView):
                     self._function.am_obj = func
                     self._function.am_event(focus_addr=self.addr.am_obj, focus=focus)
                 else:
-                    l.error("There is a block which is in the current function but find_closest_node_pos failed on it")
+                    log.error(
+                        "There is a block which is in the current function but find_closest_node_pos failed on it"
+                    )
 
     def _on_new_node(self, **kwargs):  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
@@ -230,7 +233,7 @@ class CodeView(BaseView):
             return
 
         old_lineno: Optional[int] = None
-        old_node: Optional = None
+        old_node: Optional[Any] = None
         old_font = None
         if self._last_function is self._function.am_obj and self._doc is not None:
             # we are re-rendering the current function (e.g., triggered by a node renaming). the cursor should stay at
@@ -299,10 +302,7 @@ class CodeView(BaseView):
     def _on_new_function(self, focus=False, focus_addr=None, flavor=None, **kwargs):  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
-            if self.codegen.am_none:
-                flavor = "pseudocode"
-            else:
-                flavor = self.codegen.flavor
+            flavor = "pseudocode" if self.codegen.am_none else self.codegen.flavor
 
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
@@ -354,11 +354,11 @@ class CodeView(BaseView):
                 if selected_node.callee_func is not None:
                     self.jump_history.record_address(selected_node.tags["ins_addr"])
                     self.jump_history.jump_to(selected_node.callee_func.addr)
-                    self.instance.workspace.decompile_function(selected_node.callee_func, view=self)
+                    self.workspace.decompile_function(selected_node.callee_func, view=self)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
-                    self.instance.workspace.jump_to(selected_node.value)
+                    self.workspace.jump_to(selected_node.value)
 
     def _jump_to(self, addr: int):
         self.addr.am_obj = addr
@@ -385,20 +385,19 @@ class CodeView(BaseView):
         key = event.key()
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
-            self.instance.workspace.jump_to(self.addr.am_obj)
+            self.workspace.jump_to(self.addr.am_obj)
             return True
         elif key == Qt.Key_Escape:
             self.jump_back()
             return True
-        elif key == Qt.Key_Space:
-            if not self.codegen.am_none:
-                flavor = self.codegen.flavor
-                flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
-                idx = flavors.index(flavor)
-                newidx = (idx + 1) % len(flavors)
-                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, flavors[newidx])].codegen
-                self.codegen.am_event()
-                return True
+        elif key == Qt.Key_Space and not self.codegen.am_none:
+            flavor = self.codegen.flavor
+            flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
+            idx = flavors.index(flavor)
+            newidx = (idx + 1) % len(flavors)
+            self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, flavors[newidx])].codegen
+            self.codegen.am_event()
+            return True
 
         return super().keyPressEvent(event)
 
@@ -419,7 +418,6 @@ class CodeView(BaseView):
     #
 
     def _init_widgets(self):
-
         window = QMainWindow()
         window.setWindowFlags(Qt.Widget)
 
@@ -450,6 +448,7 @@ class CodeView(BaseView):
         status_layout.addStretch(0)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(3, 3, 3, 3)
+        status_layout.setSpacing(3)
         status_bar.setLayout(status_layout)
 
         inner_layout = QHBoxLayout()
@@ -469,4 +468,4 @@ class CodeView(BaseView):
 
         self._textedit.focusWidget()
 
-        self.instance.workspace.plugins.instrument_code_view(self)
+        self.workspace.plugins.instrument_code_view(self)

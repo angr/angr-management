@@ -2411,7 +2411,6 @@ ANIMALS = [
 class NameGenerator:
     @staticmethod
     def random_name():
-
         global ADJECTIVES, ANIMALS
 
         return f"{random.choice(ADJECTIVES)} {random.choice(ANIMALS)}"

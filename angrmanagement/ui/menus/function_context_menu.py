@@ -1,5 +1,6 @@
+from angrmanagement.logic import GlobalInfo
+
 from .menu import Menu
-from ...logic import GlobalInfo
 
 
 class FunctionContextMenu(Menu):

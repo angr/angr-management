@@ -1,24 +1,24 @@
 import asyncio
 import logging
-import threading
 import os
+import threading
 from time import sleep
+from typing import Optional
+
 from getmac import get_mac_address as gma
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-from angrmanagement.config import Conf
+
 import angrmanagement.ui.views as Views
-from ..base_plugin import BasePlugin
-
-
-l = logging.getLogger(__name__)
-l.setLevel("INFO")
-
+from angrmanagement.config import Conf
+from angrmanagement.plugins.base_plugin import BasePlugin
 
 try:
     from slacrs import Slacrs
     from slacrs.model import HumanActivity, HumanActivityEnum
-except ImportError as ex:
-    Slacrs = None  # type: Optional[type]
+except ImportError:
+    Slacrs: Optional[type] = None
+
+log = logging.getLogger(__name__)
 
 
 class LogHumanActivitiesPlugin(BasePlugin):
@@ -48,7 +48,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         fh.setLevel("INFO")
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh.setFormatter(formatter)
-        l.addHandler(fh)
+        log.addHandler(fh)
 
     def on_workspace_initialized(self, workspace):
         self.slacrs_thread = threading.Thread(target=self._commit_logs)
@@ -69,7 +69,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(variable_rename)
-        l.debug("Add variable rename sesssion to slacrs")
+        log.debug("Add variable rename sesssion to slacrs")
 
     def handle_function_renamed(self, func, old_name, new_name):
         """
@@ -85,7 +85,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(function_rename)
-        l.debug(
+        log.debug(
             "Add function rename sesssion to slacrs, project name %s, old_name %s, new_name %s",
             self.project_name,
             old_name,
@@ -101,7 +101,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(block_click)
-        l.debug("Block %x is clicked", qblock.addr)
+        log.debug("Block %x is clicked", qblock.addr)
         return False
 
     def handle_click_insn(self, qinsn, event):
@@ -113,7 +113,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(insn_click)
-        l.debug("Instruction %x is clicked", qinsn.addr)
+        log.debug("Instruction %x is clicked", qinsn.addr)
         return False
 
     def handle_raise_view(self, view):
@@ -135,7 +135,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             addr=addr,
         )
         self._log_list.append(raise_view)
-        l.debug("View %s is raised with function %s", view_name, func_name)
+        log.debug("View %s is raised with function %s", view_name, func_name)
 
     def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
         """
@@ -153,7 +153,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
             created_by=self.user,
         )
         self._log_list.append(comment_change)
-        l.debug("Comment is added at %x", address)
+        log.debug("Comment is added at %x", address)
         return False
 
     def handle_project_initialization(self):
@@ -166,8 +166,8 @@ class LogHumanActivitiesPlugin(BasePlugin):
             filename = self.workspace.main_instance.project.filename
             self.project_name = filename
             self.project_md5 = self.workspace.main_instance.project.loader.main_object.md5.hex()
-            l.debug("Set project md5 to %s", self.project_md5)
-        l.debug("Set project name to %s", self.project_name)
+            log.debug("Set project md5 to %s", self.project_md5)
+        log.debug("Set project name to %s", self.project_name)
 
     @staticmethod
     def _get_function_from_view(view):
@@ -178,7 +178,7 @@ class LogHumanActivitiesPlugin(BasePlugin):
         return None
 
     def _commit_logs(self):
-        l.debug("database: %s", Conf.checrs_backend_str)
+        log.debug("database: %s", Conf.checrs_backend_str)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while self.active:
             try:
@@ -194,8 +194,8 @@ class LogHumanActivitiesPlugin(BasePlugin):
                 self.session = slacrs_instance.session()
                 with self.session.no_autoflush:
                     while len(self._log_list) > 0:
-                        log = self._log_list.pop()
-                        self.session.add(log)
+                        log_ = self._log_list.pop()
+                        self.session.add(log_)
                     self.session.commit()
                 self.session.close()
             except Exception:  # pylint:disable=broad-except

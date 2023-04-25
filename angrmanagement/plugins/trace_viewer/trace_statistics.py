@@ -2,20 +2,17 @@
 import logging
 import os
 import random
-from collections import defaultdict
 from bisect import bisect_left
-from typing import Dict, Any, List, Set, Optional
-
-from PySide6.QtGui import QColor
+from collections import defaultdict
+from typing import Any, Dict, List, Optional, Set
 
 from angr.errors import SimEngineError
+from PySide6.QtGui import QColor
 
-l = logging.getLogger(name=__name__)
-l.setLevel("DEBUG")
+log = logging.getLogger(name=__name__)
 
 
 class TraceFunc:
-
     __slots__ = (
         "bbl_addr",
         "func_name",
@@ -29,7 +26,6 @@ class TraceFunc:
 
 
 class ObjectAndBase:
-
     __slots__ = (
         "obj_name",
         "base_addr",
@@ -48,7 +44,6 @@ class ObjectAndBase:
 
 
 class TraceStatistics:
-
     BBL_FILL_COLOR = QColor(0, 0xF0, 0xF0, 0xF)
     BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")
@@ -66,7 +61,7 @@ class TraceStatistics:
         if "map" in trace:
             map_dict: Dict[str, int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
-            self.mapping = list(sorted(self.mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
+            self.mapping = sorted(self.mapping, key=lambda o: o.base_addr)  # sort it based on base addresses
         self.trace_func: List[TraceFunc] = []
         self.func_addr_in_trace: Set[int] = set()
         self._func_color = {}
@@ -113,8 +108,8 @@ class TraceStatistics:
                 break
 
         if base_addr is None:
-            l.warning(
-                "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the " "trace.",
+            log.warning(
+                "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the trace.",
                 object_name,
             )
         self._cached_object_project_base_addrs[object_name] = base_addr
@@ -136,7 +131,7 @@ class TraceStatistics:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
         except (IndexError, KeyError) as e:
-            l.error(e)
+            log.error(e)
             return self.BBL_EMPTY_COLOR
         return mark_color
 
@@ -226,7 +221,7 @@ class TraceStatistics:
             else:
                 # Node is not found in the CFG. It's possible that the library is not loaded
                 func_name = hex(bbl_addr)  # default to using bbl_addr as name if none is not found
-                # l.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
+                # log.warning("Node at %x is None, using bbl_addr as function name", bbl_addr)
             self.trace_func.append(TraceFunc(bbl_addr, func_name, func))
 
             if p % 5000 == 0:

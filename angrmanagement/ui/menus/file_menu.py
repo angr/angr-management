@@ -1,10 +1,9 @@
-import os.path
-
-from PySide6.QtGui import QKeySequence
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
+
+from angrmanagement.logic import GlobalInfo
 
 from .menu import Menu, MenuEntry, MenuSeparator
-from ...logic import GlobalInfo
 
 try:
     import archr
@@ -19,7 +18,7 @@ class RecentMenuEntry(MenuEntry):
 
     def __init__(self, path):
         self.path = path
-        super().__init__(os.path.basename(path), self.action_target)
+        super().__init__(path, self.action_target)
 
     def action_target(self):
         GlobalInfo.main_window.load_file(self.path)
@@ -37,6 +36,7 @@ class FileMenu(Menu):
         self._save_entries = [
             MenuEntry("&Save angr database...", main_window.save_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_S)),
             MenuEntry("S&ave angr database as...", main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
+            MenuEntry("Save patched binary as...", main_window.save_patched_binary_as),
         ]
         self._edit_save()
         self._project.am_subscribe(self._edit_save)

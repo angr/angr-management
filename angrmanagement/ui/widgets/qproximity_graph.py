@@ -1,24 +1,24 @@
-from collections import defaultdict
-from typing import TYPE_CHECKING, List, Dict, Any
 import logging
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Dict, List
 
-from PySide6.QtCore import Qt, QPointF
+from PySide6.QtCore import QPointF, Qt
 
-from ...utils.edge import Edge
-from ...utils.graph_layouter import GraphLayouter
+from angrmanagement.utils.graph_layouter import GraphLayouter
+
 from .qgraph import QZoomableDraggableGraphicsView
 from .qgraph_arrow import QProximityGraphArrow
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.proximity_view import ProximityView
     from angrmanagement.ui.widgets.qproximitygraph_block import QProximityGraphBlock
+    from angrmanagement.utils.edge import Edge
 
 
 _l = logging.getLogger(name=__name__)
 
 
 class QProximityGraph(QZoomableDraggableGraphicsView):
-
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 

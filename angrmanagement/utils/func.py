@@ -1,7 +1,9 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from angr.sim_type import SimType, SimTypePointer
-from angr.knowledge_plugins import Function
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import Function
 
 
 def type2str(ty: Optional[SimType]) -> str:
@@ -21,11 +23,11 @@ def type2str(ty: Optional[SimType]) -> str:
     return repr(ty)
 
 
-def function_prototype_str(func: Function) -> str:
+def function_prototype_str(func: "Function") -> str:
     if func.prototype is None:
         return func.name
 
-    # type of the return value
+    # Type of the return value
     s = ""
     rt = type2str(func.prototype.returnty)
     s += rt + " "
@@ -35,7 +37,6 @@ def function_prototype_str(func: Function) -> str:
     s += "("
 
     # arguments
-    prototype_args = []
     for i, arg_type in enumerate(func.prototype.args):
         type_str = type2str(arg_type)
 

@@ -1,22 +1,20 @@
-import logging
 from collections import defaultdict
-from typing import Optional, Any, List, Dict, TYPE_CHECKING, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
-from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from angrmanagement.utils.graph_layouter import GraphLayouter
 
 from .qgraph import QZoomableDraggableGraphicsView
-from .qgraph_arrow import QDataDepGraphArrow, QDataDepGraphAncestorLine
-from ...utils.edge import Edge
-from ...utils.graph_layouter import GraphLayouter
+from .qgraph_arrow import QDataDepGraphAncestorLine, QDataDepGraphArrow
 
 if TYPE_CHECKING:
     from networkx import DiGraph
 
-    from angrmanagement.ui.workspace import Workspace
     from angrmanagement.ui.views.data_dep_view import DataDepView
     from angrmanagement.ui.widgets.qdatadepgraph_block import QDataDepGraphBlock
-
-_l = logging.getLogger(__name__)
+    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.utils.edge import Edge
 
 
 class QDataDepPreviewGraph(QZoomableDraggableGraphicsView):

@@ -1,17 +1,15 @@
-from typing import Optional, Tuple, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
-from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialogButtonBox, QLineEdit
-
-import pycparser
-
-from angr.sim_variable import SimVariable
-from angr.analyses.decompiler.structured_codegen.c import CVariable, CConstruct
 import angr
-
+import pycparser
+from angr.analyses.decompiler.structured_codegen.c import CConstruct, CVariable
+from angr.sim_variable import SimVariable
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 if TYPE_CHECKING:
     from angr.sim_type import SimType
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
 
@@ -132,17 +130,15 @@ class RetypeNode(QDialog):
         return r
 
     def _init_widgets(self):
-
-        # type label
+        # Type label
 
         type_label = QLabel(self)
         type_label.setText("New type")
 
         type_box = TypeBox(self._on_type_changed, predefined_types=self._get_predefined_types(), parent=self)
         if self._node is not None:
-            if isinstance(self._node, CVariable) and self._node.unified_variable:
-                if self._node_type is not None:
-                    type_box.set_type(self._node_type, cvariable=self._node)
+            if isinstance(self._node, CVariable) and self._node.unified_variable and self._node_type is not None:
+                type_box.set_type(self._node_type, cvariable=self._node)
 
             type_box.selectAll()
         self._type_box = type_box

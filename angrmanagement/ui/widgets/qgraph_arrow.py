@@ -1,16 +1,17 @@
 import math
 from typing import TYPE_CHECKING, List
 
-from PySide6.QtWidgets import QGraphicsItem, QApplication, QToolTip
-from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QPainterPathStroker, QKeyEvent
 from PySide6.QtCore import QPointF, Qt
+from PySide6.QtGui import QBrush, QColor, QKeyEvent, QPainterPath, QPainterPathStroker, QPen
+from PySide6.QtWidgets import QApplication, QGraphicsItem
 
-from ...utils.edge import EdgeSort
-from ...config import Conf
+from angrmanagement.config import Conf
+from angrmanagement.utils.edge import EdgeSort
 
 if TYPE_CHECKING:
-    from ..views.dep_view import DependencyView
-    from ..views.data_dep_view import DataDepView
+    from angrmanagement.ui.views.data_dep_view import DataDepView
+    from angrmanagement.ui.views.dep_view import DependencyView
+    from angrmanagement.ui.views.proximity_view import ProximityView
 
 EDGE_COLORS = {
     EdgeSort.BACK_EDGE: "disasm_view_back_edge_color",
@@ -55,10 +56,7 @@ class QGraphArrow(QGraphicsItem):
         return path
 
     def _make_arrow(self, location, direction):
-        if location == "start":
-            coord = self.start
-        else:
-            coord = self.end
+        coord = self.start if location == "start" else self.end
 
         if direction == "down":
             return [
@@ -91,10 +89,7 @@ class QGraphArrow(QGraphicsItem):
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_highlight = self._should_highlight()
 
-        if should_highlight:
-            pen = QPen(QColor(0, 0xFE, 0xFE), 2, self.style)
-        else:
-            pen = QPen(self.color, 2, self.style)
+        pen = QPen(QColor(0, 254, 254), 2, self.style) if should_highlight else QPen(self.color, 2, self.style)
 
         painter.setPen(pen)
 
@@ -105,10 +100,7 @@ class QGraphArrow(QGraphicsItem):
             return
 
         # arrow
-        if should_highlight:
-            brush = QBrush(QColor(0, 0xFE, 0xFE))
-        else:
-            brush = QBrush(self.color)
+        brush = QBrush(QColor(0, 254, 254)) if should_highlight else QBrush(self.color)
         painter.setBrush(brush)
         painter.drawPolygon(self.arrow)
 
@@ -196,7 +188,8 @@ class QGraphArrowBezier(QGraphArrow):
     def _make_path(self):
         if len(self.coords) < 3:
             return super()._make_path()
-            # raise ValueError("At least 3 coordinates are required.")  # programming error - don't use this class for a simple segment!
+            # programming error - don't use this class for a simple segment!
+            # raise ValueError("At least 3 coordinates are required.")
 
         path = QPainterPath(self.coords[0])
 
@@ -226,7 +219,7 @@ class QDepGraphArrow(QGraphArrowBezier):
 
 
 class QProximityGraphArrow(QGraphArrow):
-    def __init__(self, proximity_view: "QProximityView", *args, **kwargs):
+    def __init__(self, proximity_view: "ProximityView", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._proximity_view = proximity_view
 
@@ -322,10 +315,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
     def paint(self, painter, option, widget):
         should_highlight = self._should_highlight()
 
-        if should_highlight:
-            pen = QPen(QColor(0, 0xFE, 0xFE), 2, self.style)
-        else:
-            pen = QPen(self.color, 2, self.style)
+        pen = QPen(QColor(0, 254, 254), 2, self.style) if should_highlight else QPen(self.color, 2, self.style)
 
         pen.setDashPattern(self._calculate_dash_pattern())
 

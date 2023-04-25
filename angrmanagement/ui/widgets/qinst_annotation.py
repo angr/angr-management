@@ -1,21 +1,23 @@
-from typing import List, TYPE_CHECKING, Dict
-from PySide6.QtGui import QColor, QPainterPath, QBrush, QCursor
+from typing import TYPE_CHECKING, Dict, List
+
 from PySide6.QtCore import QMarginsF
+from PySide6.QtGui import QBrush, QColor, QCursor, QPainterPath
 from PySide6.QtWidgets import (
     QGraphicsItem,
-    QGraphicsSimpleTextItem,
     QGraphicsSceneMouseEvent,
-    QMenu,
+    QGraphicsSimpleTextItem,
     QInputDialog,
     QLineEdit,
+    QMenu,
 )
 
-from .qsimulation_managers import QSimulationManagers
-from ...config import Conf
+from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
-    from ..views.symexec_view import SymexecView
-    from ..views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.symexec_view import SymexecView
+
+    from .qsimulation_managers import QSimulationManagers
 
 
 class QInstructionAnnotation(QGraphicsSimpleTextItem):
@@ -34,7 +36,7 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
 
     @property
     def symexec_view(self) -> "SymexecView":
-        return self.parentItem().disasm_view.instance.workspace.view_manager.first_view_in_category("symexec")
+        return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, text, *args, **kwargs):
         super().__init__(text, *args, **kwargs)
@@ -75,10 +77,7 @@ class QStatsAnnotation(QInstructionAnnotation):
             self.disasm_view.redraw_current_graph()
 
     def paint(self, painter, *args, **kwargs):
-        if self.hovered:
-            margin = QMarginsF(7, 5, 7, 5)
-        else:
-            margin = QMarginsF(3, 0, 3, 0)
+        margin = QMarginsF(7, 5, 7, 5) if self.hovered else QMarginsF(3, 0, 3, 0)
         box = self.boundingRect().marginsAdded(margin)
         path = QPainterPath()
         path.addRoundedRect(box, 5, 5)
@@ -109,7 +108,7 @@ class QActiveCount(QStatsAnnotation):
             symexec_view = self.symexec_view
             if symexec_view:
                 symexec_view.select_states(self.states)
-                symexec_view.instance.workspace.raise_view(symexec_view)
+                symexec_view.workspace.raise_view(symexec_view)
 
         def _move_states():
             disasm_view = self.disasm_view
@@ -176,7 +175,7 @@ class QExploreAnnotation(QInstructionAnnotation):
     foreground_color = QColor(230, 230, 230)
     text = None
 
-    def __init__(self, addr, qsimgrs: QSimulationManagers, *args, **kwargs):
+    def __init__(self, addr, qsimgrs: "QSimulationManagers", *args, **kwargs):
         super().__init__(addr, self.text, *args, **kwargs)
         self.qsimgrs = qsimgrs
 
@@ -249,12 +248,11 @@ class QBlockAnnotations(QGraphicsItem):
     """
 
     PADDING = 10
-    disasm_view = None  # type: DisassemblyView
 
     def __init__(self, addr_to_annotations: Dict[int, List[QInstructionAnnotation]], *, parent, disasm_view):
         super().__init__(parent=parent)
         self.addr_to_annotations = addr_to_annotations
-        self.disasm_view = disasm_view
+        self.disasm_view: DisassemblyView = disasm_view
         max_width = 0
         for _addr, annotations in self.addr_to_annotations.items():
             width = sum(a.boundingRect().width() + self.PADDING for a in annotations)

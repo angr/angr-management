@@ -1,9 +1,9 @@
-from logging.handlers import QueueListener, QueueHandler
-from multiprocessing import Queue
-from datetime import datetime
-from typing import Optional
-import logging
 import atexit
+import logging
+from datetime import datetime
+from logging.handlers import QueueHandler, QueueListener
+from multiprocessing import Queue
+from typing import Optional
 
 from angr.utils.mp import Initializer
 

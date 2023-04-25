@@ -1,17 +1,18 @@
 # pylint:disable=global-statement
-from typing import Optional
+import ctypes
+import datetime
 import logging
 import time
-import datetime
-import ctypes
+from typing import Optional
 
-from ...logic import GlobalInfo
-from ...logic.threads import gui_thread_schedule_async
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule_async
 
 m = ...
 
 
-l = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 
 def _load_autoreload():
@@ -55,18 +56,24 @@ class Job:
                 m.check()
                 poststate = dict(m.modules_mtimes)
                 if prestate != poststate:
-                    l.warning("Autoreload found changed modules")
+                    log.warning("Auto-reload found changed modules")
 
     @property
     def time_elapsed(self) -> str:
         return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
 
     def run(self, inst):
+        log.info('Job "%s" started', self.name)
+        self._progress_callback(0)
         self.start_at = time.time()
-        return self._run(inst)
+        r = self._run(inst)
+        now = time.time()
+        duration = now - self.start_at
+        log.info('Job "%s" completed after %.2f seconds', self.name, duration)
+        return r
 
     def _run(self, inst):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def finish(self, inst, result):  # pylint: disable=unused-argument
         inst.jobs = inst.jobs[1:]
@@ -83,7 +90,7 @@ class Job:
             res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(KeyboardInterrupt))
             if res != 1:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
-                l.error("Failed to interrupt thread")
+                log.error("Failed to interrupt thread")
 
     def _progress_callback(self, percentage, text=None):
         delta = percentage - self.progress_percentage
@@ -94,10 +101,9 @@ class Job:
             gui_thread_schedule_async(self._set_progress, args=(text,))
 
     def _set_progress(self, text=None):
+        status = self.name
         if text:
-            status = f"{self.name}: {text} - {self.time_elapsed}"
-        else:
-            status = f"{self.name} - {self.time_elapsed}"
+            status += ": " + text
         GlobalInfo.main_window.progress(status, self.progress_percentage)
 
     def _finish_progress(self):

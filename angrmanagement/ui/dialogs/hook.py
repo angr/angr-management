@@ -1,17 +1,17 @@
+from pyqodeng.core.api import CodeEdit
+from pyqodeng.core.modes import AutoIndentMode, CaretLineHighlighterMode, PygmentsSyntaxHighlighter
+from PySide6.QtGui import QTextOption
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
-    QLabel,
-    QGridLayout,
-    QRadioButton,
-    QGroupBox,
-    QScrollArea,
-    QWidget,
     QDialogButtonBox,
+    QGridLayout,
+    QGroupBox,
+    QLabel,
+    QRadioButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtGui import QTextOption
-from pyqodeng.core.api import CodeEdit
-from pyqodeng.core.modes import CaretLineHighlighterMode, PygmentsSyntaxHighlighter, AutoIndentMode
 
 
 class HookDialog(QDialog):
@@ -19,12 +19,12 @@ class HookDialog(QDialog):
     Provide templetes of hook function.
     """
 
-    def __init__(self, instance, addr=None, parent=None):
+    def __init__(self, workspace, addr=None, parent=None):
         super().__init__(parent)
 
         # initialization
 
-        self.instance = instance
+        self.workspace = workspace
         self.state = None  # output
         self._addr = addr
         self.templates = {}
@@ -148,7 +148,7 @@ def enable_unicorn(state):
 
         def do_ok():
             code = function_box.toPlainText()
-            self.instance.append_code_to_console(code)
+            self.workspace.append_code_to_console(code)
             self.close()
 
         buttons.accepted.connect(do_ok)

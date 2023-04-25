@@ -1,7 +1,7 @@
 from typing import List
 
 import tomlkit
-from tomlkit.items import String, Integer, AoT, Table
+from tomlkit.items import AoT, Integer, String, Table
 
 
 class PluginDescription:
@@ -72,10 +72,9 @@ class PluginDescription:
 
         # load metadata
         outer_desc = PluginDescription()
-        if "meta" in data:
-            if "plugin_metadata_version" in data["meta"]:
-                if isinstance(data["meta"]["plugin_metadata_version"], Integer):
-                    outer_desc.plugin_metadata_version = data["meta"]["plugin_metadata_version"].unwrap()
+        if "meta" in data and "plugin_metadata_version" in data["meta"]:
+            if isinstance(data["meta"]["plugin_metadata_version"], Integer):
+                outer_desc.plugin_metadata_version = data["meta"]["plugin_metadata_version"].unwrap()
 
         if outer_desc.plugin_metadata_version is None:
             raise TypeError("Cannot find plugin_metadata_version")

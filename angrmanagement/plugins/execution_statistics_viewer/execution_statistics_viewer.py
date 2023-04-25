@@ -1,9 +1,10 @@
 from collections import defaultdict
 from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QLabel
 
-from angrmanagement.plugins.base_plugin import BasePlugin
 from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.plugins.base_plugin import BasePlugin
 from angrmanagement.ui.widgets.qinst_annotation import QActiveCount, QPassthroughCount
 
 if TYPE_CHECKING:

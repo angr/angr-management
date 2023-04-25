@@ -1,11 +1,12 @@
-from typing import Optional, TYPE_CHECKING
 import time
+from typing import TYPE_CHECKING, Optional
 
-from ...logic.threads import gui_thread_schedule_async
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
 from .job import Job
 
 if TYPE_CHECKING:
-    from ..instance import Instance
+    from angrmanagement.data.instance import Instance
 
 
 class VariableRecoveryJob(Job):
@@ -60,10 +61,7 @@ class VariableRecoveryJob(Job):
         self.instance = inst
         self.started = True
 
-        if self.on_variable_recovered is not None:
-            cc_callback = self._cc_callback
-        else:
-            cc_callback = None
+        cc_callback = self._cc_callback if self.on_variable_recovered is not None else None
 
         # update addrs to prioritize with their callees
         func_addrs_to_prioritize = set()
@@ -83,7 +81,7 @@ class VariableRecoveryJob(Job):
             max_function_size=4096,
             workers=0 if self.workers is None else self.workers,
             prioritize_func_addrs=func_addrs_to_prioritize,
-            skip_other_funcs=False if self.func_addr is None else True,
+            skip_other_funcs=self.func_addr is not None,
             auto_start=self.auto_start,
             **self.variable_recovery_args,
         )
@@ -93,17 +91,12 @@ class VariableRecoveryJob(Job):
         gui_thread_schedule_async(self.on_variable_recovered, args=(func_addr,))
 
     def _progress_callback(self, percentage, text=None):
-
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return
         self._last_progress_callback_triggered = t
 
-        progress_text = "%.02f%%" % percentage
-        if text:
-            progress_text += " | " + text
-
-        super()._progress_callback(percentage, text=progress_text)
+        super()._progress_callback(percentage, text=text)
 
     def finish(self, inst, result):
         self.ccc = None  # essentially disabling self.prioritize_function()

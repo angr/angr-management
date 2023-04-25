@@ -1,14 +1,14 @@
 import asyncio
 import threading
-
 from time import sleep
-from typing import Dict, List
+from typing import List, Optional
+
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 try:
     from slacrs import Slacrs
     from slacrs.model import Input, InputTag
-except ImportError as ex:
+except ImportError:
     Slacrs = None
 
 
@@ -108,14 +108,15 @@ class SeedTable:
             session.close()
         return seeds
 
-    def filter_seeds_by_tag(self, tags: List[str] = []) -> List[Seed]:
+    def filter_seeds_by_tag(self, tags: Optional[List[str]] = None) -> List[Seed]:
         self.query_signal.querySignal.emit(True)
         session = self.slacrs_instance.session()
         seeds: List[Seed] = []
         if session:
             result = session.query(Input).join(Input.tags)
-            for tag in tags:
-                result = result.filter(Input.tags.any(InputTag.value == tag))
+            if tags:
+                for tag in tags:
+                    result = result.filter(Input.tags.any(InputTag.value == tag))
             result = result.order_by(Input.created_at).all()
             seeds = [Seed(inp, idx) for idx, inp in enumerate(result)]
         return seeds

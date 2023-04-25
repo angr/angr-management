@@ -1,10 +1,9 @@
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import QRectF, Qt
 
 from .qgraph_object import QCachedGraphicsItem
 
 
 class QPhiVariable(QCachedGraphicsItem):
-
     IDENT_LEFT_PADDING = 5
 
     def __init__(self, instance, disasm_view, phi_variable, config, parent=None):
@@ -45,7 +44,6 @@ class QPhiVariable(QCachedGraphicsItem):
     #
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument
-
         if self.disasm_view.show_variable_identifier is False:
             # Phi variables are not displayed if variable identifies are hidden
             return
@@ -113,7 +111,6 @@ class QPhiVariable(QCachedGraphicsItem):
         self._update_size()
 
     def _update_size(self):
-
         if self.disasm_view.show_variable_identifier is False:
             # Phi variables are not displayed if variable identifies are hidden
             self._width = 0

@@ -2,12 +2,11 @@ import bisect
 import functools
 import logging
 import os
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 from angr.errors import SimEngineError
 
-
-l = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class ObjectAndBase:
@@ -56,7 +55,7 @@ def _find_object_base_in_project(object_name, project):
             base_addr = obj.mapped_base
             break
     if base_addr is None:
-        l.warning(
+        log.warning(
             "Cannot find object %s in angr project. Maybe it has not been loaded. Exclude it from the trace.",
             object_name,
         )
@@ -134,13 +133,10 @@ def trace_to_bb_addrs(trace, project, trace_base):
             ObjectAndBase(name, base_addr, _find_object_base_in_project(name, project.am_obj))
             for name, base_addr in map_dict.items()
         ]
-        mapping = list(sorted(mapping, key=lambda o: o.base_addr))  # sort it based on base addresses
+        mapping = sorted(mapping, key=lambda o: o.base_addr)  # sort it based on base addresses
 
-    if project.am_none:
-        project_baddr = None
-    else:
-        # only used if self.mapping is not available
-        project_baddr = project.loader.main_object.mapped_base
+    # only used if self.mapping is not available
+    project_baddr = None if project.am_none else project.loader.main_object.mapped_base
     runtime_baddr = trace_base  # this will not be used if self.mapping is available
 
     # convert over all the trace adders using info from the trace

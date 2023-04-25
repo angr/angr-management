@@ -1,18 +1,21 @@
-import time
 import logging
+import time
 
-from ...logic import GlobalInfo
-from ...logic.threads import gui_thread_schedule_async
+from angrmanagement.data.analysis_options import CFGForceScanMode
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
 from .job import Job
 
 _l = logging.getLogger(name=__name__)
 
 
 class CFGGenerationJob(Job):
+    """
+    Job for generating the Control Flow Graph.
+    """
 
     DEFAULT_CFG_ARGS = {
         "normalize": True,  # this is what people naturally expect
-        "resolve_indirect_jumps": True,
     }
 
     def __init__(self, on_finish=None, **kwargs):
@@ -28,14 +31,22 @@ class CFGGenerationJob(Job):
 
         self.cfg_args = cfg_args
 
+        scanning_mode = self.cfg_args.pop("scanning_mode", None)
+        if scanning_mode is not None:
+            self.cfg_args["force_smart_scan"] = scanning_mode == CFGForceScanMode.SmartScan
+            self.cfg_args["force_complete_scan"] = scanning_mode == CFGForceScanMode.CompleteScan
+
         self._cfb = None
         self._last_progress_callback_triggered = None
+        self.instance = None
 
     def _run(self, inst):
         self.instance = inst
         exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
-        temp_cfb = inst.project.analyses.CFB(exclude_region_types=exclude_region_types)
+        temp_cfb = inst.project.analyses.CFB(
+            exclude_region_types=exclude_region_types, on_object_added=self._on_cfb_object_added
+        )
         self._cfb = temp_cfb
         cfg = inst.project.analyses.CFG(
             progress_callback=self._progress_callback,
@@ -58,7 +69,7 @@ class CFGGenerationJob(Job):
             inst.cfb.am_event()
             inst.cfg.am_event()
             super().finish(inst, result)
-        except Exception:
+        except Exception:  # pylint:disable=broad-exception-caught
             _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)
 
     def __repr__(self):
@@ -69,14 +80,10 @@ class CFGGenerationJob(Job):
     #
 
     def _progress_callback(self, percentage, text=None, cfg=None):
-
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return
         self._last_progress_callback_triggered = t
-
-        text = "%.02f%%" % percentage
-
         super()._progress_callback(percentage, text=text)
 
         if cfg is not None:
@@ -94,3 +101,6 @@ class CFGGenerationJob(Job):
         # instance will exist because _run must be used first
         self.instance.cfg = cfg
         self.instance.cfb = cfb
+
+    def _on_cfb_object_added(self, addr, obj):
+        self.instance.cfb.am_event(object_added=(addr, obj))

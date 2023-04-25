@@ -1,30 +1,32 @@
-import time
+import codecs
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QEvent, Signal, QObject
-from PySide6.QtGui import QCursor
+from PySide6.QtCore import QAbstractTableModel, QEvent, QObject, Qt, Signal
+from PySide6.QtGui import QContextMenuEvent, QCursor
 from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QMainWindow,
-    QTableView,
     QAbstractItemView,
-    QHeaderView,
-    QWidget,
-    QHBoxLayout,
-    QComboBox,
-    QLabel,
-    QPushButton,
-    QLineEdit,
     QCheckBox,
-    QMenu,
+    QComboBox,
     QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
 )
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import BaseView
-from angrmanagement.ui.workspace import Workspace
-import codecs
 
 from .seed_table import SeedTable
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class querySignaler(QObject):
@@ -52,12 +54,12 @@ class SeedTableModel(QAbstractTableModel):
 
         self.set_page(1)
 
-    def rowCount(self, index=QModelIndex()):
+    def rowCount(self):
         if not self.displayed_seeds:
             return 0
         return len(self.displayed_seeds)
 
-    def columnCount(self, index=QModelIndex()):
+    def columnCount(self):
         return len(self.headers)
 
     def querySignalHandle(self, status):
@@ -180,7 +182,7 @@ class SeedTableWidget(QTableView):
         self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
-    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         rows = self.selectionModel().selectedIndexes()
         contextMenu = QMenu(self)
         saveSeed = contextMenu.addAction("&Save Seed")
@@ -196,12 +198,12 @@ class SeedTableWidget(QTableView):
         try:
             with open(filename, "wb") as outfile:
                 outfile.write(data)
-        except:
+        except Exception:
             self.workspace.log("Error saving seed.")
 
 
 class SeedTableView(BaseView):
-    def __init__(self, workspace: Workspace, *args, **kwargs):
+    def __init__(self, workspace: "Workspace", *args, **kwargs):
         super().__init__("SeedTableView", workspace, *args, **kwargs)
         self.base_caption = "Seed Table"
         self.workspace = workspace
@@ -310,7 +312,7 @@ class SeedTableView(BaseView):
         else:
             if inp:
                 data = self.table_data.seed_db.filter_seeds_by_value(inp)
-                data = list(filter(lambda s: all([x in s.tags for x in flags]), data))
+                data = list(filter(lambda s: all(x in s.tags for x in flags), data))
             else:
                 data = self.table_data.seed_db.filter_seeds_by_tag(tags=flags)
         self.table_data.add_seed(data)
@@ -325,12 +327,11 @@ class SeedTableFilterBox(QLineEdit):
         self.installEventFilter(self)
 
     def eventFilter(self, obj, event):  # pylint:disable=unused-argument
-        if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                if self.text():
-                    # clear the text
-                    self.setText("")
-                return True
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+            if self.text():
+                # clear the text
+                self.setText("")
+            return True
 
         return False
 

@@ -1,6 +1,9 @@
-from PySide6.QtWidgets import QComboBox, QHBoxLayout
+from typing import TYPE_CHECKING, Optional
 
-from angr.knowledge_plugins import FunctionManager
+from PySide6.QtWidgets import QComboBox
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import FunctionManager
 
 
 class QFunctionComboBox(QComboBox):
@@ -10,7 +13,7 @@ class QFunctionComboBox(QComboBox):
         self._show_all_functions = show_all_functions
         self._selection_callback = selection_callback
 
-        self._function_manager = None  # type: FunctionManager
+        self._function_manager: Optional[FunctionManager] = None
 
         self.currentIndexChanged.connect(self._on_current_index_changed)
 
@@ -33,7 +36,6 @@ class QFunctionComboBox(QComboBox):
     #
 
     def reload(self):
-
         if self._function_manager is None:
             return
 
@@ -50,7 +52,6 @@ class QFunctionComboBox(QComboBox):
     #
 
     def _on_current_index_changed(self):
-
         idx = self.currentIndex()
         if idx == -1:
             return

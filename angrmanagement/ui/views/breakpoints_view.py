@@ -1,16 +1,17 @@
-import logging
-from typing import Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
-import PySide6
-from PySide6.QtCore import QAbstractTableModel, Qt, QSize
-from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QMenu
+from PySide6.QtCore import QAbstractTableModel, QSize, Qt
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
 
-from ...data.breakpoint import Breakpoint, BreakpointType, BreakpointManager
-from ..dialogs import BreakpointDialog
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
+from angrmanagement.ui.dialogs import BreakpointDialog
+
 from .view import BaseView
 
+if TYPE_CHECKING:
+    import PySide6
 
-_l = logging.getLogger(name=__name__)
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QBreakpointTableModel(QAbstractTableModel):
@@ -33,14 +34,14 @@ class QBreakpointTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
         return len(self.breakpoint_mgr.breakpoints)
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
+        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -48,7 +49,7 @@ class QBreakpointTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
+    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -72,7 +73,7 @@ class QBreakpointTableModel(QAbstractTableModel):
         elif column == self.COL_COMMENT:
             return bp.comment
         else:
-            assert False
+            raise AssertionError
 
 
 class QBreakpointTableWidget(QTableView):
@@ -147,8 +148,8 @@ class BreakpointsView(BaseView):
     Breakpoints table view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("breakpoints", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("breakpoints", workspace, instance, default_docking_position, *args, **kwargs)
         self.base_caption = "Breakpoints"
         self._tbl_widget: Optional[QBreakpointTableWidget] = None
         self._init_widgets()
@@ -163,6 +164,6 @@ class BreakpointsView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
-        self._tbl_widget = QBreakpointTableWidget(self.instance.breakpoint_mgr, self.instance.workspace)
+        self._tbl_widget = QBreakpointTableWidget(self.instance.breakpoint_mgr, self.workspace)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)

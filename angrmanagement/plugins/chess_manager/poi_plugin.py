@@ -1,22 +1,21 @@
 import json
 import logging
-from copy import deepcopy
 import os
+from copy import deepcopy
 from typing import Optional, Union
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
-from ...data.object_container import ObjectContainer
-from ..base_plugin import BasePlugin
-from .trace_statistics import TraceStatistics
-from .qpoi_viewer import POIView, EMPTY_POI
-from .multi_poi import MultiPOI
-from .diagnose_handler import DiagnoseHandler
+from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.plugins.base_plugin import BasePlugin
 
+from .diagnose_handler import DiagnoseHandler
+from .multi_poi import MultiPOI
+from .qpoi_viewer import EMPTY_POI, POIView
+from .trace_statistics import TraceStatistics
 
 _l = logging.getLogger(__name__)
-# _l.setLevel('DEBUG')
 
 
 class POIViewer(BasePlugin):
@@ -112,7 +111,7 @@ class POIViewer(BasePlugin):
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
-            for (i, w) in strata:
+            for i, w in strata:
                 color = self.poi_trace.get_mark_color(qinsn.insn.addr, i)
                 painter.setPen(color)
                 painter.setBrush(color)
@@ -207,10 +206,7 @@ class POIViewer(BasePlugin):
             self.multi_poi.am_obj = MultiPOI(self.workspace)
         for poi_object in pois:
             _l.debug("poi: %s", poi_object.poi)
-            if poi_object.poi != "":
-                poi_json = json.loads(poi_object.poi)
-            else:
-                poi_json = deepcopy(EMPTY_POI)
+            poi_json = json.loads(poi_object.poi) if poi_object.poi != "" else deepcopy(EMPTY_POI)
             _l.debug("poi json: %s", poi_json)
             # self._pois[poi_object.id] =poi_json
             self.multi_poi.am_obj.add_poi(poi_object.id, poi_json)

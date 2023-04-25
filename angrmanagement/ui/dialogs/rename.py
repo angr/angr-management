@@ -1,9 +1,6 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QDialogButtonBox
-
-if TYPE_CHECKING:
-    from angrmanagement.ui.views.code_view import CodeView
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 
 class NameLineEdit(QLineEdit):
@@ -25,7 +22,7 @@ class NameLineEdit(QLineEdit):
 
     @staticmethod
     def _is_valid_node_name(name):
-        return name and not " " in name.strip()
+        return name and " " not in name.strip()
 
 
 class RenameDialog(QDialog):

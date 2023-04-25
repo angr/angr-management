@@ -1,29 +1,28 @@
 from collections import defaultdict
-from typing import TYPE_CHECKING
-from sortedcontainers import SortedDict
-
-from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
-from PySide6.QtCore import QEvent, Qt
+from typing import TYPE_CHECKING, Dict, Optional
 
 from pyqodeng.core.api import CodeEdit
-from pyqodeng.core.panels import LineNumberPanel, MarkerPanel, Marker
-from pyqodeng.core.widgets import SplittableCodeEditTabWidget
 from pyqodeng.core.api.panel import Panel
 from pyqodeng.core.api.utils import drift_color
-
+from pyqodeng.core.panels import LineNumberPanel, Marker, MarkerPanel
+from pyqodeng.core.widgets import SplittableCodeEditTabWidget
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
 from qtpy import QtCore, QtGui
-from cle import Loader
+from sortedcontainers import SortedDict
 
-from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
-from angrmanagement.ui.views import BaseView
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.workspace import Workspace
+from angrmanagement.ui.views import BaseView
+from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
+    from cle import Loader
+
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.symexec_view import SymexecView
+    from angrmanagement.ui.workspace import Workspace
 
 
 class VaildLineNumberPanel(LineNumberPanel):
@@ -71,8 +70,8 @@ class SourceCodeViewer(CodeEdit):
     Used by SourceCodeViewerTabWidget.
     """
 
-    viewer = None  # type: SourceViewer
-    current_line = -1  # type: int
+    viewer: Optional["SourceViewer"] = None
+    current_line: int = -1
 
     def __init__(self, parent):
         super().__init__(parent=parent, create_default_actions=False)
@@ -186,10 +185,10 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
 
     editors = {mimetype: SourceCodeViewer for mimetype in SourceCodeViewer.mimetypes}
     fallback_editor = SourceCodeViewer
-    addr_to_line = None  # type: SortedDict
-    line_to_addr = None  # type: dict
-    viewer = None  # type: SourceViewer
-    tabs = {}  # type: dict(str,SourceCodeViewer)
+    addr_to_line: Optional[SortedDict] = None
+    line_to_addr: Optional[dict] = None
+    viewer: Optional["SourceViewer"] = None
+    tabs: Dict[str, SourceCodeViewer] = {}
 
     def __init__(self, parent=None, addr_to_line: SortedDict = None, viewer=None):
         super().__init__(parent=parent)
@@ -205,10 +204,10 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
             self.file_list.add(filename)
             self.line_to_addr[(filename, line)].append(addr)
         for fn in self.file_list:
-            editor = self.open_document(fn)  # type: SourceCodeViewer
+            editor: SourceCodeViewer = self.open_document(fn)
             editor.viewer = self.viewer
             editor.setHighlighter()
-            valid_line = {line for (filename, line) in self.line_to_addr.keys() if filename == fn}
+            valid_line = {line for (filename, line) in self.line_to_addr if filename == fn}
             editor.set_valid_line(valid_line)
             self.tabs[fn] = editor
 
@@ -218,11 +217,11 @@ class SourceViewer(BaseView):
     Main class of the Source Viewer Plugin
     """
 
-    addr_to_line = None  # type: SortedDict
+    addr_to_line: Optional[SortedDict] = None
 
-    main = None  # type: SourceCodeViewerTabWidget
+    main: Optional[SourceCodeViewerTabWidget] = None
 
-    def __init__(self, workspace: Workspace, *args, **kwargs):
+    def __init__(self, workspace: "Workspace", *args, **kwargs):
         super().__init__("SourceViewer", workspace, *args, **kwargs)
         self.base_caption = "Source Viewer"
         self.workspace = workspace
@@ -248,7 +247,7 @@ class SourceViewer(BaseView):
     def load_from_proejct(self, **kwargs):  # pylint: disable=unused-argument
         if self.instance.project.am_none:
             return
-        loader = self.instance.project.loader  # type: Loader
+        loader: Loader = self.instance.project.loader
         if hasattr(loader.main_object, "addr_to_line") and loader.main_object.addr_to_line is not None:
             self.main.load(loader.main_object.addr_to_line)
 

@@ -1,22 +1,24 @@
 import logging
-from typing import Optional, Dict, List, TYPE_CHECKING, Set
+from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
-# noinspection PyPackageRequirements
-from PySide6 import QtCore, QtWidgets, QtGui
+from angr.analyses.data_dep import MemDepNode, RegDepNode, TmpDepNode
 
 # noinspection PyPackageRequirements
 from networkx import DiGraph
 
-from angr.analyses.data_dep import MemDepNode, RegDepNode, TmpDepNode
+# noinspection PyPackageRequirements
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from angrmanagement.ui.dialogs.data_dep_graph_search import QDataDepGraphSearch
+from angrmanagement.ui.widgets.qdatadep_graph import QDataDepGraph
+from angrmanagement.ui.widgets.qdatadepgraph_block import QDataDepGraphBlock
+
 from .view import BaseView
-from ..dialogs.data_dep_graph_search import QDataDepGraphSearch
-from ..widgets.qdatadep_graph import QDataDepGraph
-from ..widgets.qdatadepgraph_block import QDataDepGraphBlock
 
 if TYPE_CHECKING:
-    from angr.analyses.data_dep import BaseDepNode
-    from angr.analyses import DataDependencyGraphAnalysis
     from angr import SimState
+    from angr.analyses import DataDependencyGraphAnalysis
+    from angr.analyses.data_dep import BaseDepNode
     from capstone import CsInsn
 _l = logging.getLogger(__name__)
 
@@ -30,8 +32,8 @@ class DataDepView(BaseView):
 
     FUNCTION_SPECIFIC_VIEW = False
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("data_dependency", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("data_dependency", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Data Dependency"
 
@@ -190,10 +192,7 @@ class DataDepView(BaseView):
     ) -> Optional[QDataDepGraphBlock]:
         if isinstance(node, (MemDepNode, RegDepNode)):
             cs_instr = self._instructions.get(node.ins_addr, None)
-            if cs_instr:
-                instr = cs_instr.insn
-            else:
-                instr = None
+            instr = cs_instr.insn if cs_instr else None
         else:
             instr = None
         return converted.setdefault(node, QDataDepGraphBlock(False, self, node, instr))

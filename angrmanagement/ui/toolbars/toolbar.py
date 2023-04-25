@@ -1,27 +1,10 @@
+from typing import Optional
+
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar
-from PySide6.QtCore import QSize
 
-
-class ToolbarAction:
-    def __init__(self, icon, name, tooltip, triggered, checkable=False, shortcut=None):
-        self.icon = icon
-        self.name = name
-        self.tooltip = tooltip
-        self.triggered = triggered
-        self.checkable = checkable
-        self.shortcut = shortcut
-
-    def __hash__(self):
-        return hash((ToolbarAction, self.name))
-
-    def __eq__(self, other):
-        return isinstance(other, ToolbarAction) and self.name == other.name
-
-
-class ToolbarSplitter(ToolbarAction):
-    def __init__(self):
-        super().__init__(None, None, None, None)
+from .toolbar_action import ToolbarAction, ToolbarSplitter
 
 
 class Toolbar:
@@ -30,8 +13,13 @@ class Toolbar:
         self.name = name
 
         self.actions = []
-        self._cached = None  # type: QToolBar
+        self._cached: Optional[QToolBar] = None
         self._cached_actions = {}
+
+    def shutdown(self):
+        """
+        Prepare for deletion.
+        """
 
     def qtoolbar(self):
         if self._cached is not None:
@@ -86,8 +74,8 @@ class Toolbar:
         # REQUIRES object identity
         try:
             act = self._cached_actions[element]
-        except KeyError:
-            raise ValueError("Element %s not found" % element)
+        except KeyError as ex:
+            raise ValueError("Element %s not found" % element) from ex
 
         self.actions.remove(element)
         if self._cached is not None:

@@ -1,15 +1,17 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtGui import QPainter, QCursor
-from PySide6.QtCore import Qt, QRectF
+from angr.calling_conventions import SimRegArg
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QCursor, QPainter
 from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
-from angr.sim_type import SimTypeFunction
-from angr.calling_conventions import SimRegArg
+from angrmanagement.config import Conf
+from angrmanagement.utils.func import type2str
 
-from ...utils.func import type2str
-from ...config import Conf
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angr.sim_type import SimTypeFunction
 
 
 class QFunctionHeader(QCachedGraphicsItem):
@@ -19,7 +21,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         self.workspace = workspace
         self.addr = addr
         self.name = name
-        self.prototype = prototype  # type: SimTypeFunction
+        self.prototype: SimTypeFunction = prototype
         self.args = args
         self.infodock = infodock
 
@@ -68,7 +70,6 @@ class QFunctionHeader(QCachedGraphicsItem):
     #
 
     def _init_widgets(self):
-
         if self.args is not None:
             self._arg_str_list = []
             for arg in self.args:
@@ -96,7 +97,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
             proto_str = ""
 
-            # type of the return value
+            # Type of the return value
             rt = type2str(self.prototype.returnty)
             proto_str += rt
 
@@ -141,7 +142,6 @@ class QFunctionHeader(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self):
-
         x, y = 0, 0
 
         if self._function_name_item is not None:

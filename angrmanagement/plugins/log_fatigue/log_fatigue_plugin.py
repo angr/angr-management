@@ -5,19 +5,18 @@ import time
 from time import sleep
 from typing import Optional
 
-
 from PySide6.QtCore import QEvent, QObject
 from PySide6.QtWidgets import QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout
+
+from angrmanagement.plugins.base_plugin import BasePlugin
 
 try:
     from slacrs import Slacrs
     from slacrs.model import HumanFatigue
-except ImportError as ex:
-    Slacrs = None  # type: Optional[type]
-    HumanFatigue = None  # type: Optional[type]
+except ImportError:
+    Slacrs: Optional[type] = None
+    HumanFatigue: Optional[type] = None
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-
-from ..base_plugin import BasePlugin
 
 #
 # Plugin to capture the User Mouse Movements.

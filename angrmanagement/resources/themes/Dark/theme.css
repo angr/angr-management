@@ -9,7 +9,10 @@ ads--CDockWidgetTab {
 
 QMenuBar {
     background-color: palette(dark);
+}
 
+ToolBarHandle {
+    background-color: palette(dark);
 }
 
 QMainWindow > QToolBar {

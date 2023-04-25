@@ -1,10 +1,9 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-import sqlalchemy
 import requests
-
+import sqlalchemy
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QMessageBox
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
 
 try:
     import slacrs
@@ -13,6 +12,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+
     from .chess_connector import ChessConnector
 
 
@@ -51,7 +51,6 @@ class QBackendSelectorDialog(QDialog):
         self._init_widgets()
 
     def _init_widgets(self):
-
         # input
         input_label = QLabel("CHECRS backend URL:")
         self._input = QLineEdit("sqlite://" if not self.backend_str else self.backend_str)
@@ -169,7 +168,6 @@ class QBackendSelectorDialog(QDialog):
         self._test_rest_button.setEnabled(True)
 
     def _on_ok_button_clicked(self):
-
         # Test the connection
         self._ok_button.setEnabled(False)
         connection_str = self._input.text().strip(" ")

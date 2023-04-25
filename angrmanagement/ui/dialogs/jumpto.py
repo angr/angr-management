@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QVBoxLayout
 
-from ..widgets import QAddressInput
+from angrmanagement.ui.widgets import QAddressInput
 
 
 class JumpTo(QDialog):
@@ -33,7 +33,6 @@ class JumpTo(QDialog):
     #
 
     def _init_widgets(self):
-
         # address label
 
         address_label = QLabel(self)
@@ -66,7 +65,6 @@ class JumpTo(QDialog):
     #
 
     def _on_address_changed(self, new_text):  # pylint: disable=unused-argument
-
         if self._address_box.target is None:
             # the address is invalid
 

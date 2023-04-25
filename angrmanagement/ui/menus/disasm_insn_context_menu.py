@@ -1,12 +1,12 @@
 from functools import partial
-from typing import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
-    from ...ui.views.disassembly_view import DisassemblyView
+    from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 
 class DisasmInsnContextMenu(Menu):
@@ -45,6 +45,7 @@ class DisasmInsnContextMenu(Menu):
                 MenuEntry("Add &hook...", self._add_hook),
                 MenuEntry("View function &documentation...", self._view_docs),
                 MenuEntry("Toggle &breakpoint", self._toggle_breakpoint),
+                MenuEntry("&Patch...", self._popup_patch_dialog),
             ]
         )
 
@@ -90,6 +91,9 @@ class DisasmInsnContextMenu(Menu):
         if r is not None:
             _, ins_addr, operand = r
             self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand, async_=True)
+
+    def _popup_patch_dialog(self):
+        self._disasm_view.popup_patch_dialog()
 
     #
     # Public Methods

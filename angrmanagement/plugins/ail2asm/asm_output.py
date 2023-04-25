@@ -1,5 +1,5 @@
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QDialogButtonBox
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QPlainTextEdit, QVBoxLayout
 
 
 class AsmOutput(QDialog):
@@ -31,7 +31,6 @@ class AsmOutput(QDialog):
     #
 
     def _init_widgets(self):
-
         # Assembly label
 
         asm_label = QLabel(self)

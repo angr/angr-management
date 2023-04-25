@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QVBoxLayout, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout
 
 
 class QConstraintViewer(QFrame):

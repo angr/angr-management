@@ -1,26 +1,26 @@
-from typing import Optional, Dict, List, Tuple, TYPE_CHECKING
-import os
-import json
 import binascii
+import json
+import os
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from PySide6.QtWidgets import (
     QDialog,
-    QLineEdit,
-    QLabel,
-    QHBoxLayout,
-    QVBoxLayout,
-    QPushButton,
-    QProgressBar,
-    QMessageBox,
-    QSizePolicy,
     QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
 )
 
-from ....utils.io import isurl, download_url
-from ..data.component_tree import ComponentTree, ComponentTreeNode, ComponentFunction
+from angrmanagement.data.component_tree import ComponentFunction, ComponentTree, ComponentTreeNode
+from angrmanagement.utils.io import download_url, isurl
 
 if TYPE_CHECKING:
-    from ....ui.workspace import Workspace
+    from angrmanagement.ui.workspace import Workspace
 
 
 class LoadComponentsDialog(QDialog):
@@ -47,7 +47,6 @@ class LoadComponentsDialog(QDialog):
     #
 
     def exec_(self) -> int:
-
         if self.url is not None:
             self.show()
             self._on_ok_clicked()
@@ -59,10 +58,7 @@ class LoadComponentsDialog(QDialog):
     def load_json(self):
         path = self.url_box.text()
         try:
-            if isurl(path):
-                tree = self._load_json_from_url(path)
-            else:
-                tree = self._load_json_from_file(path)
+            tree = self._load_json_from_url(path) if isurl(path) else self._load_json_from_file(path)
             self.tree = tree
             return True
         except (ValueError, TypeError, OSError) as ex:
@@ -83,7 +79,6 @@ class LoadComponentsDialog(QDialog):
     #
 
     def _init_widgets(self):
-
         # URL
         url_caption = QLabel(self)
         url_caption.setText("Path or URL:")
@@ -138,7 +133,7 @@ class LoadComponentsDialog(QDialog):
             try:
                 data = json.load(f)
             except ValueError as ex:
-                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.")
+                raise TypeError(f"File {path} does not contain valid JSON data.\nException: {ex}.") from ex
 
         return self._load_json(data)
 
@@ -148,11 +143,10 @@ class LoadComponentsDialog(QDialog):
         try:
             data = json.loads(content.decode("utf-8"))
         except ValueError as ex:
-            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.")
+            raise TypeError(f"URL {url} does not contain valid JSON data.\nException: {ex}.") from ex
         return self._load_json(data)
 
     def _load_json(self, data: List[Dict]):
-
         # ok let's do this
         tree = ComponentTree()
         queue: List[Tuple[Dict, Optional[ComponentTreeNode]]] = [(child, None) for child in data]

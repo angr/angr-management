@@ -1,14 +1,13 @@
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import PySide6.QtCore
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QHBoxLayout, QVBoxLayout
-
-from angr.project import Project
 from angr.knowledge_plugins.functions import Function
-from angrmanagement.ui.views import BaseView
+from angr.project import Project
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QVBoxLayout
 
-from ..data import ComponentTreeNode, ComponentTree, ComponentFunction
+from angrmanagement.data import ComponentFunction, ComponentTree, ComponentTreeNode
+from angrmanagement.ui.views import BaseView
 
 
 class QComponentItem(QTreeWidgetItem):
@@ -113,7 +112,6 @@ class ComponentsView(BaseView):
     #
 
     def on_item_doubleclicked(self, item: QTreeWidgetItem, column: int):
-
         if isinstance(item, QFunctionItem):
             if item.function is not None:
                 # display the function, either in the disassembly view or in the pseudo code view

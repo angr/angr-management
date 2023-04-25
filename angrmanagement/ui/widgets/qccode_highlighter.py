@@ -1,10 +1,13 @@
 import re
+from typing import TYPE_CHECKING
 
 from pyqodeng.core.api import SyntaxHighlighter
-from PySide6.QtGui import QTextCharFormat, QFont, QBrush
+from PySide6.QtGui import QBrush, QFont, QTextCharFormat
 
-from ..documents import QCodeDocument
-from ...config import Conf
+from angrmanagement.config import Conf
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.documents import QCodeDocument
 
 FORMATS = {}
 
@@ -101,7 +104,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
     def __init__(self, parent, color_scheme=None):
         super().__init__(parent, color_scheme=color_scheme)
 
-        self.doc = parent  # type: QCodeDocument
+        self.doc: QCodeDocument = parent
         self.comment_status = False
 
     def highlight_block(self, text, block):

@@ -1,13 +1,10 @@
-import logging
-
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QLineEdit, QWidget
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPainter, QPen
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QScrollArea, QVBoxLayout, QWidget
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .qast_viewer import QASTViewer
-
-l = logging.getLogger("ui.widgets.qregister_viewer")
 
 
 class AddressPiece:
@@ -22,9 +19,9 @@ class NewLinePiece:
 
 
 class QMemoryView(QWidget):
-    def __init__(self, state, instance, parent=None):
+    def __init__(self, state, workspace, parent=None):
         super().__init__(parent)
-        self.instance = instance
+        self.workspace = workspace
 
         self.state = state
         self.cols = None
@@ -46,7 +43,6 @@ class QMemoryView(QWidget):
             self._reload_objects()
 
     def paintEvent(self, event):
-
         if self.address is None:
             return
 
@@ -63,7 +59,6 @@ class QMemoryView(QWidget):
         y = MARGIN_TOP
 
         for obj in self._objects:
-
             obj_type = type(obj)
 
             if obj_type is NewLinePiece:
@@ -97,7 +92,6 @@ class QMemoryView(QWidget):
 
         addr_base = self.address
         for row in range(self.rows):
-
             addr = addr_base + row * self.cols
 
             # address
@@ -107,9 +101,7 @@ class QMemoryView(QWidget):
             # QASTViewer objects
             for col in range(self.cols):
                 data = self.state.memory.load(addr + col, 1, inspect=False, disable_actions=True)
-                ast_viewer = QASTViewer(
-                    data, workspace=self.instance.workspace, custom_painting=True, display_size=False
-                )
+                ast_viewer = QASTViewer(data, workspace=self.workspace, custom_painting=True, display_size=False)
                 objects.append(ast_viewer)
 
             # end of the line
@@ -124,9 +116,9 @@ class QMemoryViewer(QFrame):
         super().__init__(parent)
         self.workspace = workspace
 
-        self._scrollarea = None  # type: QScrollArea
-        self._txt_addr = None  # type: QLineEdit
-        self._view = None  # type: QMemoryView
+        self._scrollarea: QScrollArea
+        self._txt_addr: QLineEdit
+        self._view: QMemoryView
 
         self._addr = None  # the address to display
         self.state = state
@@ -141,7 +133,6 @@ class QMemoryViewer(QFrame):
 
     @addr.setter
     def addr(self, v):
-
         if self._addr != v:
             self._addr = v
 

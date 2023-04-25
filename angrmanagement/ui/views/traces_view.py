@@ -1,14 +1,14 @@
-import logging
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-import PySide6
-from PySide6.QtCore import QAbstractTableModel, Qt, QSize
-from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QMenu
+from PySide6.QtCore import QAbstractTableModel, QSize, Qt
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
 
 from .view import BaseView
 
+if TYPE_CHECKING:
+    import PySide6
 
-_l = logging.getLogger(name=__name__)
+    from angrmanagement.data.trace import Trace
 
 
 class QTraceTableModel(QAbstractTableModel):
@@ -33,14 +33,14 @@ class QTraceTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
         return len(self.instance.traces)
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
+        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -48,7 +48,7 @@ class QTraceTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
+    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -105,13 +105,12 @@ class QTraceTableWidget(QTableView):
         traces = [self.instance.traces[r] for r in selected_rows]
         if len(traces):
             menu = QMenu("", self)
-            if len(traces) == 1:
-                if not self.instance.workspace.is_current_trace(traces[0]):
-                    menu.addAction("Use as current trace", lambda: self.instance.workspace.set_current_trace(traces[0]))
+            if len(traces) == 1 and not self.workspace(traces[0]):
+                menu.addAction("Use as current trace", lambda: self.workspace.set_current_trace(traces[0]))
 
             def remove_selected_traces():
                 for t in traces:
-                    self.instance.workspace.remove_trace(t)
+                    self.workspace.remove_trace(t)
 
             menu.addAction("Remove trace" + ("s" if len(traces) > 1 else ""), remove_selected_traces)
             menu.exec_(event.globalPos())
@@ -122,8 +121,8 @@ class TracesView(BaseView):
     Traces table view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("traces", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("traces", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Traces"
         self._tbl_widget: Optional[QTraceTableWidget] = None
@@ -139,6 +138,7 @@ class TracesView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
+        vlayout.setContentsMargins(0, 0, 0, 0)
         self._tbl_widget = QTraceTableWidget(self.instance, self)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)

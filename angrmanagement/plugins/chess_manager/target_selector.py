@@ -1,34 +1,33 @@
 # pylint:disable=unused-argument
-import typing
-from typing import List, Optional, TYPE_CHECKING
-import threading
-
 import asyncio
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+import threading
+import typing
+from typing import TYPE_CHECKING, List, Optional
 
 import PySide6
+from PySide6.QtCore import QAbstractTableModel, Qt
 from PySide6.QtWidgets import (
-    QDialog,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QMessageBox,
-    QTableView,
     QAbstractItemView,
+    QDialog,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt, QAbstractTableModel
-
-try:
-    import slacrs
-except ImportError:
-    slacrs = None
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+
+try:
+    import slacrs
+except ImportError:
+    slacrs = None
 
 
 class ChessTarget:
@@ -174,7 +173,6 @@ class QTargetSelectorDialog(QDialog):
         th.start()
 
     def _init_widgets(self):
-
         # table
         self._table = QTargetSelectorTableView()
 
@@ -202,7 +200,7 @@ class QTargetSelectorDialog(QDialog):
         self.setLayout(layout)
 
     def _load_targets(self):
-        from slacrs.model import Target, Challenge  # pylint:disable=import-outside-toplevel,import-error
+        from slacrs.model import Challenge, Target  # pylint:disable=import-outside-toplevel,import-error
 
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
 
@@ -236,7 +234,6 @@ class QTargetSelectorDialog(QDialog):
     #
 
     def _on_ok_button_clicked(self):
-
         selection_model = self._table.selectionModel()
         if not selection_model.hasSelection():
             QMessageBox.warning(

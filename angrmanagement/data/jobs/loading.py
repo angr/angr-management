@@ -1,24 +1,26 @@
-from typing import List, Optional, Dict, TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING, Dict, List, Optional
 
+import angr
+import archinfo
+import cle
+from angr.angrdb import AngrDB
 from PySide6.QtWidgets import QMessageBox
 
-import cle
-import angr
-from angr.angrdb import AngrDB
-import archinfo
+from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.dialogs import LoadBinary
+
+from .job import Job
 
 try:
     import archr
 except ImportError:
     archr = None
 
-from .job import Job
-from ...logic.threads import gui_thread_schedule
-from ...ui.dialogs import LoadBinary
 
 if TYPE_CHECKING:
     from angr.knowledge_base import KnowledgeBase
+
 
 _l = logging.getLogger(__name__)
 
@@ -65,18 +67,36 @@ class LoadBinaryJob(Job):
     def _run(self, inst):
         self._progress_callback(5)
 
+        load_as_blob = False
+        load_with_libraries = True
+
         partial_ld = None
         try:
             # Try automatic loading
             partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
-        except archinfo.arch.ArchNotFound as e:
-            partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False, arch="x86")
-            gui_thread_schedule(LoadBinary.binary_arch_detect_failed, (self.fname, str(e)))
+        except archinfo.arch.ArchNotFound:
+            _l.warning("Could not identify binary architecture.")
+            partial_ld = None
+            load_as_blob = True
         except cle.CLECompatibilityError:
             # Continue loading as blob
-            pass
+            load_as_blob = True
+        except cle.CLEError:
+            # try loading as a single binary without libraries
+            _l.warning("Failed to load the binary with libraries.")
+            load_with_libraries = False
 
-        if partial_ld is None:
+        if partial_ld is None and not load_with_libraries:
+            try:
+                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                partial_ld = cle.Loader(
+                    self.fname, perform_relocations=False, load_debug_info=False, auto_load_libs=False
+                )
+            except cle.CLECompatibilityError:
+                # failed to load without libraries
+                load_as_blob = True
+
+        if partial_ld is None and load_as_blob:
             try:
                 # Try loading as blob; dummy architecture (x86) required, user will select proper arch
                 partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
@@ -141,13 +161,13 @@ class LoadAngrDBJob(Job):
             _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
             gui_thread_schedule(
                 QMessageBox.critical,
-                (None, "Error", "Failed to load the angr database because of compatibility issues.\n" f"Details: {ex}"),
+                (None, "Error", f"Failed to load the angr database because of compatibility issues.\nDetails: {ex}"),
             )
             return
         except angr.errors.AngrDBError as ex:
             _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
             gui_thread_schedule(
-                QMessageBox.critical, (None, "Error", "Failed to load the angr database.\n" f"Details: {ex}")
+                QMessageBox.critical, (None, "Error", f"Failed to load the angr database.\nDetails: {ex}")
             )
             _l.critical("Failed to load the angr database.", exc_info=True)
             return

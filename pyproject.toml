@@ -5,3 +5,35 @@ build-backend = "setuptools.build_meta"
 [tool.black]
 line-length = 120
 target-version = ['py38']
+
+[tool.ruff]
+line-length = 120
+target-version = 'py38'
+select =  [
+    "B",
+    "C4",
+    "E",
+    "EXE",
+    "F",
+    "G",
+    "I",
+    "INT",
+    "ISC",
+    "PIE",
+    "PLE",
+    "RSE",
+    "SIM",
+    "T10",
+    "TID",
+    "TCH",
+    "UP",
+    "W",
+    "YTT",
+]
+
+ignore = [
+    # Ignore SIM checks that don't yet support autofixing
+    "SIM102",
+    "SIM114",
+    "SIM115",
+]

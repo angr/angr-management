@@ -1,15 +1,14 @@
 import logging
 
-from PySide6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from .qast_viewer import QASTViewer
 
-l = logging.getLogger("ui.widgets.qregister_viewer")
+log = logging.getLogger(__name__)
 
 
 class QRegisterViewer(QFrame):
-
     ARCH_REGISTERS = {
         "X86": {"common": ["eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "eip"]},
         "AMD64": {
@@ -86,6 +85,43 @@ class QRegisterViewer(QFrame):
                 "pc",
             ]
         },
+        "AARCH64": {
+            "common": [
+                "x0",
+                "x1",
+                "x2",
+                "x3",
+                "x4",
+                "x5",
+                "x6",
+                "x7",
+                "x8",
+                "x9",
+                "x10",
+                "x11",
+                "x12",
+                "x13",
+                "x14",
+                "x15",
+                "x16",
+                "x17",
+                "x18",
+                "x19",
+                "x20",
+                "x21",
+                "x22",
+                "x23",
+                "x24",
+                "x25",
+                "x26",
+                "x27",
+                "x28",
+                "x29",
+                "x30",
+                "sp",
+                "pc",
+            ]
+        },
     }
 
     ARCH_REGISTERS["ARMEL"] = ARCH_REGISTERS["ARM"]
@@ -128,7 +164,7 @@ class QRegisterViewer(QFrame):
             return
 
         if self._state.arch.name not in self.ARCH_REGISTERS:
-            l.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", self._state.arch.name)
+            log.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", self._state.arch.name)
             return
 
         layout = QVBoxLayout()

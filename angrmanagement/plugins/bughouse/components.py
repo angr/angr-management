@@ -1,9 +1,9 @@
 from typing import Optional
 
-from angrmanagement.logic.threads import is_gui_thread, gui_thread_schedule_async
+from angrmanagement.logic.threads import gui_thread_schedule_async, is_gui_thread
 from angrmanagement.plugins.base_plugin import BasePlugin
 
-from .ui import LoadComponentsDialog, ComponentsView
+from .ui import ComponentsView, LoadComponentsDialog
 
 
 class ComponentsPlugin(BasePlugin):
@@ -38,7 +38,6 @@ class ComponentsPlugin(BasePlugin):
     RESET_COMPONENTS = 1
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 

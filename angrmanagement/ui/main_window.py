@@ -1,21 +1,61 @@
 # pylint:disable=no-self-use
-import os
+import datetime
 import logging
+import os
 import pickle
 import sys
 import time
 from functools import partial
-from typing import Optional, TYPE_CHECKING
-
-from PySide6.QtWidgets import QMainWindow, QFileDialog, QProgressBar, QProgressDialog
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtGui import QIcon, QDesktopServices, QKeySequence, QShortcut
-from PySide6.QtCore import Qt, QSize, QEvent, QUrl
-import PySide6QtAds as QtAds
+from typing import TYPE_CHECKING, Optional
 
 import angr
 import angr.flirt
+import PySide6QtAds as QtAds
+import qtawesome as qta
 from angr.angrdb import AngrDB
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut, QWindow
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QProgressDialog,
+    QWidget,
+)
+
+from angrmanagement.config import IMG_LOCATION, Conf, save_config
+from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
+from angrmanagement.daemon.client import ClientService
+from angrmanagement.data.instance import Instance
+from angrmanagement.data.jobs import DependencyAnalysisJob
+from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadTargetJob
+from angrmanagement.data.library_docs import LibraryDocs
+from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.commands import BasicCommand
+from angrmanagement.ui.views import DisassemblyView
+from angrmanagement.utils.env import app_root, is_pyinstaller
+from angrmanagement.utils.io import download_url, isurl
+from angrmanagement.utils.track_system_theme import TrackSystemTheme
+
+from .dialogs.about import LoadAboutDialog
+from .dialogs.command_palette import CommandPaletteDialog, GotoPaletteDialog
+from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
+from .dialogs.load_plugins import LoadPlugins
+from .dialogs.new_state import NewState
+from .dialogs.preferences import Preferences
+from .menus.analyze_menu import AnalyzeMenu
+from .menus.file_menu import FileMenu
+from .menus.help_menu import HelpMenu
+from .menus.plugin_menu import PluginMenu
+from .menus.view_menu import ViewMenu
+from .toolbar_manager import ToolbarManager
+from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
+from .widgets import QIconLabel
+from .workspace import Workspace
 
 try:
     import archr
@@ -24,37 +64,73 @@ except ImportError:
     archr = None
     keystone = None
 
-from ..daemon import daemon_exists, run_daemon_process, daemon_conn
-from ..daemon.client import ClientService
-from ..logic import GlobalInfo
-from ..data.instance import Instance
-from ..data.library_docs import LibraryDocs
-from ..data.jobs.loading import LoadTargetJob, LoadBinaryJob, LoadAngrDBJob
-from ..data.jobs import DependencyAnalysisJob
-from ..config import IMG_LOCATION, Conf, save_config
-from ..utils.io import isurl, download_url
-from ..utils.env import is_pyinstaller, app_root
-from ..utils.track_system_theme import TrackSystemTheme
-from ..errors import InvalidURLError, UnexpectedStatusCodeError
-from .menus.file_menu import FileMenu
-from .menus.analyze_menu import AnalyzeMenu
-from .menus.help_menu import HelpMenu
-from .menus.view_menu import ViewMenu
-from .menus.plugin_menu import PluginMenu
-from .workspace import Workspace
-from .dialogs.load_plugins import LoadPlugins
-from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
-from .dialogs.new_state import NewState
-from .dialogs.about import LoadAboutDialog
-from .dialogs.preferences import Preferences
-from .toolbars import FileToolbar, DebugToolbar
-from .toolbar_manager import ToolbarManager
-
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
 
 
 _l = logging.getLogger(name=__name__)
+
+
+class DockShortcutEventFilter(QObject):
+    """
+    Filter to support shortcuts on floating dock windows that overlap main window registered menu action shortcuts.
+    """
+
+    def __init__(self, main_window: "MainWindow"):
+        super().__init__()
+        self._main_window: "MainWindow" = main_window
+
+    def eventFilter(self, qobject, event):
+        if event.type() == QEvent.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
+            self._main_window.show_command_palette(qobject)
+            return True
+        return False
+
+
+class ShiftShiftEventFilter(QObject):
+    """
+    Filter to catch Shift+Shift key sequence for goto-anything activation.
+    """
+
+    activation_key = Qt.Key.Key_Shift
+    activation_count: int = 2
+    timeout_secs: float = 1
+
+    def __init__(self, main_window: "MainWindow"):
+        super().__init__()
+        self._main_window: "MainWindow" = main_window
+        self._press_count: int = 0
+        self._last_press_time: float = 0
+        self._did_process_qwindow_event: bool = False
+
+    def eventFilter(self, qobject, event):
+        # Key Event propagation will begin at QWindow and continue down the widget tree. Use KeyEvent on QWindow to
+        # distinguish unique key presses, then intercept KeyEvent at first QWidget the event is propagated to.
+
+        if event.type() == QEvent.KeyPress:
+            if isinstance(qobject, QWindow) and qobject.modality() == Qt.WindowModality.NonModal:
+                self._did_process_qwindow_event = True
+                return False
+            if not isinstance(qobject, QWidget) or not self._did_process_qwindow_event:
+                return False
+            self._did_process_qwindow_event = False
+
+            if event.count() == 1 and event.key() == self.activation_key:
+                now = time.time()
+                if now - self._last_press_time >= self.timeout_secs:
+                    self._press_count = 0
+                self._last_press_time = now
+
+                self._press_count += 1
+                if self._press_count >= self.activation_count:
+                    self._press_count = 0
+                    self._main_window.show_goto_palette(qobject)
+                    return True
+
+            else:
+                self._press_count = 0
+
+        return False
 
 
 class MainWindow(QMainWindow):
@@ -75,15 +151,25 @@ class MainWindow(QMainWindow):
 
         # initialization
         self.setMinimumSize(QSize(400, 400))
-        self.setDockNestingEnabled(True)
 
         self.app: Optional["QApplication"] = app
         self.workspace: Workspace = None
         self.dock_manager: QtAds.CDockManager
+        self._dock_shortcut_event_filter = DockShortcutEventFilter(self)
+
+        self._shift_shift_event_filter = ShiftShiftEventFilter(self)
+        if app:
+            self.app.installEventFilter(self._shift_shift_event_filter)
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
-        self._progressbar = None  # type: QProgressBar
-        self._progress_dialog = None  # type: QProgressDialog
+
+        self._progress_stopwatch_start_time: float = 0.0
+        self._progress_message: str = ""
+        self._progress_percentage: float = 0
+        self._progress_update_timer: QTimer = QTimer()
+        self._progress_update_timer.setSingleShot(False)
+        self._progress_update_timer.setInterval(1000)
+        self._progress_update_timer.timeout.connect(self._on_progress_update_timer_timeout)
 
         self.defaultWindowFlags = None
 
@@ -101,6 +187,8 @@ class MainWindow(QMainWindow):
         self._init_plugins()
         self._init_library_docs()
         self._init_url_scheme_handler()
+
+        self._register_commands()
 
         self.workspace.plugins.on_workspace_initialized(self)
 
@@ -120,8 +208,6 @@ class MainWindow(QMainWindow):
             self.showMaximized()
             self.windowHandle().screenChanged.connect(self.on_screen_changed)
             self.show()
-
-        self.status = "Ready."
 
     def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(1200, 800)
@@ -149,7 +235,7 @@ class MainWindow(QMainWindow):
             self,
             "Open a binary",
             Conf.last_used_directory,
-            "All executables (*);;" "Windows PE files (*.exe);;" "Core Dumps (*.core);;" "angr database (*.adb)",
+            "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
         )
         Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
@@ -172,7 +258,7 @@ class MainWindow(QMainWindow):
         if self.workspace.main_instance.project.am_none:
             QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
             return
-        new_state_dialog = NewState(self.workspace.main_instance, parent=self, create_simgr=True)
+        new_state_dialog = NewState(self.workspace, self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
     def open_doc_link(self):
@@ -187,13 +273,38 @@ class MainWindow(QMainWindow):
     #
 
     def _init_statusbar(self):
-        self._progressbar = QProgressBar()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addStretch()
 
-        self._progressbar.setMinimum(0)
-        self._progressbar.setMaximum(100)
-        self._progressbar.hide()
+        self._status_label = QLabel()
+        self._status_label.hide()
+        layout.addWidget(self._status_label)
 
-        self.statusBar().addPermanentWidget(self._progressbar)
+        self._stopwatch_label = QIconLabel(qta.icon("fa5s.stopwatch", color=Conf.palette_buttontext))
+        self._stopwatch_label.hide()
+        layout.addWidget(self._stopwatch_label)
+
+        self._interrupt_job_button = QIconLabel(qta.icon("fa5s.times-circle", color=Conf.palette_buttontext))
+        self._interrupt_job_button.clicked.connect(self.interrupt_current_job)
+        self._interrupt_job_button.hide()
+        layout.addWidget(self._interrupt_job_button)
+
+        self._progress_label = QLabel()
+        self._progress_label.hide()
+        layout.addWidget(self._progress_label)
+
+        self._progress_bar = QProgressBar()
+        self._progress_bar.setMinimum(0)
+        self._progress_bar.setMaximum(100)
+        self._progress_bar.setMinimumWidth(100)
+        self._progress_bar.setMaximumWidth(100)
+        self._progress_bar.hide()
+        layout.addWidget(self._progress_bar)
+
+        container_widget = QWidget()
+        container_widget.setLayout(layout)
+        self.statusBar().addPermanentWidget(container_widget)
 
         self._progress_dialog = QProgressDialog("Waiting...", "Cancel", 0, 100, self)
         self._progress_dialog.setAutoClose(False)
@@ -213,7 +324,7 @@ class MainWindow(QMainWindow):
         self._progress_dialog.close()
 
     def _init_toolbars(self):
-        for cls in (FileToolbar, DebugToolbar):
+        for cls in (FileToolbar, DebugToolbar, FeatureMapToolbar):
             self.toolbar_manager.show_toolbar_by_class(cls)
 
     #
@@ -252,11 +363,16 @@ class MainWindow(QMainWindow):
         :return:    None
         """
         QtAds.CDockManager.setConfigFlags(
-            (QtAds.CDockManager.DefaultBaseConfig | QtAds.CDockManager.OpaqueSplitterResize)
+            (
+                QtAds.CDockManager.DefaultBaseConfig
+                | QtAds.CDockManager.OpaqueSplitterResize
+                | QtAds.CDockManager.FocusHighlighting
+            )
             & ~QtAds.CDockManager.DockAreaHasUndockButton
         )
         self.dock_manager = QtAds.CDockManager(self)
         self.dock_manager.setStyleSheet("")  # Clear stylesheet overrides
+        self.setCentralWidget(self.dock_manager)
         wk = Workspace(self, Instance())
         self.workspace = wk
 
@@ -302,6 +418,12 @@ class MainWindow(QMainWindow):
         # Run
         QShortcut(QKeySequence(Qt.Key_F9), self, self.workspace.continue_forward)
 
+    def init_shortcuts_on_dock(self, dock_widget):
+        """
+        Installs an event filter on the dock widget to support floating dock global shortcuts (e.g. command palette).
+        """
+        dock_widget.installEventFilter(self._dock_shortcut_event_filter)
+
     #
     # Plugins
     #
@@ -343,7 +465,6 @@ class MainWindow(QMainWindow):
     #
 
     def _run_daemon(self, use_daemon=None):
-
         if use_daemon is None:
             # Load it from the configuration file
             use_daemon = Conf.use_daemon
@@ -379,7 +500,7 @@ class MainWindow(QMainWindow):
 
     def _init_url_scheme_handler(self):
         # URL scheme
-        from ..logic.url_scheme import AngrUrlScheme  # pylint:disable=import-outside-toplevel
+        from angrmanagement.logic.url_scheme import AngrUrlScheme  # pylint:disable=import-outside-toplevel
 
         scheme = AngrUrlScheme()
         registered, _ = scheme.is_url_scheme_registered()
@@ -405,15 +526,67 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(
                         None,
                         "Error in registering angr URL scheme",
-                        "Failed to register the angr URL scheme.\n" "The following exception occurred:\n" + str(ex),
+                        "Failed to register the angr URL scheme.\nThe following exception occurred:\n" + str(ex),
                     )
+
+    #
+    # Commands
+    #
+
+    def _register_commands(self):
+        """
+        Register basic window commands.
+        """
+        self.workspace.command_manager.register_commands(
+            [
+                BasicCommand(action.__name__, caption, action)
+                for caption, action in [
+                    ("Analyze: Decompile", self.decompile_current_function),
+                    ("Analyze: Interact", self.interact),
+                    ("Analyze: Run Analysis...", self.run_analysis),
+                    ("File: Exit", self.quit),
+                    ("File: Load a new binary...", self.open_file_button),
+                    ("File: Load a new docker target...", self.open_docker_button),
+                    ("File: Load a new trace...", self.load_trace),
+                    ("File: Load angr database...", self.load_database),
+                    ("File: Preferences...", self.preferences),
+                    ("File: Save angr database as...", self.save_database_as),
+                    ("File: Save angr database...", self.save_database),
+                    ("File: Save patched binary as...", self.save_patched_binary_as),
+                    ("Help: About", self.open_about_dialog),
+                    ("Help: Documentation", self.open_doc_link),
+                    ("View: Breakpoints", self.workspace.show_breakpoints_view),
+                    ("View: Call Explorer", self.workspace.show_call_explorer_view),
+                    ("View: Console", self.workspace.show_console_view),
+                    ("View: Disassembly (Graph)", self.workspace.show_graph_disassembly_view),
+                    ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
+                    ("View: Functions", self.workspace.show_functions_view),
+                    ("View: Hex", self.workspace.show_hex_view),
+                    ("View: Interaction", self.workspace.show_interaction_view),
+                    ("View: Log", self.workspace.show_log_view),
+                    ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
+                    ("View: New Disassembly (Linear)", self.workspace.create_and_show_linear_disassembly_view),
+                    ("View: New Hex", self.workspace.create_and_show_hex_view),
+                    ("View: Patches", self.workspace.show_patches_view),
+                    ("View: Proximity", self.workspace.view_proximity_for_current_function),
+                    ("View: Pseudocode", self.workspace.show_pseudocode_view),
+                    ("View: Registers", self.workspace.show_registers_view),
+                    ("View: Stack", self.workspace.show_stack_view),
+                    ("View: States", self.workspace.show_states_view),
+                    ("View: Strings", self.workspace.show_strings_view),
+                    ("View: Symbolic Execution", self.workspace.show_symexec_view),
+                    ("View: Trace map", self.workspace.show_trace_map_view),
+                    ("View: Traces", self.workspace.show_traces_view),
+                    ("View: Types", self.workspace.show_types_view),
+                ]
+            ]
+        )
 
     #
     # Event
     #
 
     def closeEvent(self, event):
-
         # Ask if the user wants to save things
         if (
             self.workspace.main_instance is not None
@@ -444,7 +617,6 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def event(self, event):
-
         if event.type() == QEvent.User:
             # our event callback
 
@@ -483,7 +655,7 @@ class MainWindow(QMainWindow):
             self,
             "Open a trace file",
             Conf.last_used_directory,
-            "All files (*);;" "Trace files (*.trace);;",
+            "All files (*);;Trace files (*.trace);;",
         )
         Conf.last_used_directory = os.path.dirname(file_path)
         if not file_path:
@@ -515,7 +687,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 "Unsupported Action",
-                "Downloading trace files is not yet supported." "Please specify a path to a file on disk.",
+                "Downloading trace files is not yet supported. Please specify a path to a file on disk.",
             )
         else:
             # File
@@ -539,11 +711,10 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(
                     self,
                     "File not found",
-                    f"angr management cannot open file {file_path}. " "Please make sure that the file exists.",
+                    f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
 
     def load_file(self, file_path):
-
         if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
@@ -562,7 +733,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(
                     self,
                     "File not found",
-                    f"angr management cannot open file {file_path}. " "Please make sure that the file exists.",
+                    f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
         else:
             # url
@@ -619,7 +790,6 @@ class MainWindow(QMainWindow):
             return self._save_database(self.workspace.main_instance.database_path)
 
     def save_database_as(self):
-
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 
@@ -643,6 +813,23 @@ class MainWindow(QMainWindow):
 
         return self._save_database(file_path)
 
+    def save_patched_binary_as(self):
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save patched binary as...",
+            self.workspace.main_instance.project.loader.main_object.binary
+            + ".patched",  # FIXME: this will not work if we are loading from an angrdb
+            "Any file (*)",
+        )
+
+        if file_path:
+            b = self.workspace.main_instance.project.kb.patches.apply_patches_to_binary()
+            with open(file_path, "wb") as f:
+                f.write(b)
+
     def load_trace(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Load trace", ".", "bintrace (*.trace)")
         if not file_path:
@@ -657,10 +844,10 @@ class MainWindow(QMainWindow):
         self.close()
 
     def run_variable_recovery(self):
-        self.workspace._get_or_create_disassembly_view().variable_recovery_flavor = "accurate"
+        self.workspace._get_or_create_view("disassembly", DisassemblyView).variable_recovery_flavor = "accurate"
 
     def run_induction_variable_analysis(self):
-        self.workspace._get_or_create_disassembly_view().run_induction_variable_analysis()
+        self.workspace._get_or_create_view("disassembly", DisassemblyView).run_induction_variable_analysis()
 
     def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
         if self.workspace is None or self.workspace.main_instance is None:
@@ -670,7 +857,7 @@ class MainWindow(QMainWindow):
 
     def run_analysis(self):
         if self.workspace:
-            self.workspace.main_instance.run_analysis()
+            self.workspace.run_analysis()
 
     def decompile_current_function(self):
         if self.workspace is not None:
@@ -683,20 +870,61 @@ class MainWindow(QMainWindow):
     def interact(self):
         self.workspace.interact_program(self.workspace.main_instance.img_name)
 
+    def show_command_palette(self, parent=None):
+        dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))
+        dlg.setModal(True)
+        dlg.exec_()
+        if dlg.selected_item:
+            dlg.selected_item.run()
+
+    def show_goto_palette(self, parent=None):
+        dlg = GotoPaletteDialog(self.workspace, parent=(parent or self))
+        dlg.setModal(True)
+        dlg.exec_()
+        if dlg.selected_item:
+            self.workspace.jump_to(dlg.selected_item.addr)
+
     #
     # Other public methods
     #
 
-    def progress(self, status, progress):
-        self.statusBar().showMessage(f"Working... {status}")
-        self._progress_dialog.setLabelText(status)
-        self._progressbar.show()
-        self._progressbar.setValue(progress)
-        self._progress_dialog.setValue(progress)
+    def progress(self, status: str, progress: float, reset_stopwatch: bool = False):
+        self._progress_message = status
+        self._progress_percentage = progress
+
+        if reset_stopwatch:
+            self._progress_stopwatch_start_time = time.time()
+        if not self._progress_update_timer.isActive():
+            self._progress_update_timer.start()
+
+        self._refresh_progress_progress_message()
+
+    def _refresh_progress_progress_message(self):
+        self._status_label.setText(self._progress_message)
+        self._status_label.show()
+        self._progress_label.setText(f"{self._progress_percentage:.1f}%")
+        self._progress_label.show()
+        self._progress_bar.setValue(round(self._progress_percentage))
+        self._progress_bar.show()
+        elapsed_seconds = int(time.time() - self._progress_stopwatch_start_time)
+        if elapsed_seconds > 5:
+            self._stopwatch_label.setText(str(datetime.timedelta(seconds=elapsed_seconds)))
+            self._stopwatch_label.show()
+        self._interrupt_job_button.show()
+        self._progress_dialog.setLabelText(self._progress_message)
+        self._progress_dialog.setValue(round(self._progress_percentage))
+
+    def _on_progress_update_timer_timeout(self):
+        self._refresh_progress_progress_message()
 
     def progress_done(self):
-        self._progressbar.hide()
-        self.statusBar().showMessage("Ready.")
+        self._progress_update_timer.stop()
+        self._stopwatch_label.hide()
+        self._status_label.setText("")
+        self._status_label.hide()
+        self._progress_label.hide()
+        self._progress_bar.hide()
+        self._interrupt_job_button.hide()
         self._progress_dialog.hide()
 
     def bring_to_front(self):

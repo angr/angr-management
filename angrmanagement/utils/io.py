@@ -1,13 +1,12 @@
-import re
 import os
+import re
 import urllib.parse
 
 import requests
-
 from PySide6.QtWidgets import QFileDialog
 
-from ..config import Conf
-from ..errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.config import Conf
+from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 
 
 def isurl(uri):
@@ -22,7 +21,6 @@ def isurl(uri):
 
 
 def download_url(url, parent=None, to_file=True, file_path=None, use_proxies=True):
-
     if not isurl(url):
         raise TypeError("The given URL %s is not a valid URL.", url)
 
@@ -38,8 +36,8 @@ def download_url(url, parent=None, to_file=True, file_path=None, use_proxies=Tru
 
     try:
         header = requests.head(url, allow_redirects=True, proxies=proxies)
-    except requests.exceptions.InvalidURL:
-        raise InvalidURLError()
+    except requests.exceptions.InvalidURL as ex:
+        raise InvalidURLError from ex
 
     if header.status_code != 200:
         raise UnexpectedStatusCodeError(header.status_code)

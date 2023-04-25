@@ -1,4 +1,4 @@
-from .menu import Menu, MenuEntry, MenuSeparator
+from .menu import Menu, MenuEntry
 
 
 class DisasmOptionsMenu(Menu):

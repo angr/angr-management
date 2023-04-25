@@ -1,29 +1,36 @@
 import os
-from typing import Optional, Sequence
-import logging
+from typing import TYPE_CHECKING, Optional, Sequence
 
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
     QDialog,
-    QVBoxLayout,
+    QDialogButtonBox,
     QFrame,
     QGroupBox,
     QHBoxLayout,
-    QListWidgetItem,
-    QListWidget,
-    QDialogButtonBox,
     QLabel,
-    QCheckBox,
-    QSplitter,
-    QWidget,
+    QListWidget,
+    QListWidgetItem,
     QSpinBox,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QSize
 
-from ...config import IMG_LOCATION
-from ...data.analysis_options import AnalysisOption, AnalysesConfiguration, BoolAnalysisOption, IntAnalysisOption
+from angrmanagement.config import IMG_LOCATION
+from angrmanagement.data.analysis_options import (
+    AnalysesConfiguration,
+    AnalysisOption,
+    BoolAnalysisOption,
+    ChoiceAnalysisOption,
+    IntAnalysisOption,
+)
 
-l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class AnalysisOptionWidgetMapper:
@@ -36,7 +43,7 @@ class AnalysisOptionWidgetMapper:
         self.widget: Optional[QWidget] = None
 
     def create_widget(self) -> QWidget:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def get_mapper_for_option(cls, option: AnalysisOption) -> "AnalysisOptionWidgetMapper":
@@ -44,6 +51,8 @@ class AnalysisOptionWidgetMapper:
             return BoolAnalysisOptionWidgetMapper(option)
         elif isinstance(option, IntAnalysisOption):
             return IntAnalysisOptionWidgetMapper(option)
+        elif isinstance(option, ChoiceAnalysisOption):
+            return ChoiceAnalysisOptionWidgetMapper(option)
         else:
             raise ValueError("Mapper not implemented")
 
@@ -64,8 +73,8 @@ class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
         self.widget.stateChanged.connect(self._on_checkbox_changed)
         return self.widget
 
-    def _on_checkbox_changed(self, state):
-        self.option.value = state == Qt.Checked
+    def _on_checkbox_changed(self, _):
+        self.option.value = self.widget.isChecked()
 
 
 class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
@@ -101,6 +110,42 @@ class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     def _on_dial_changed(self, value: int):
         self.option.value = value
+
+
+class ChoiceAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
+    """
+    Analysis option widget creation and event handling for choice options.
+    """
+
+    option: ChoiceAnalysisOption
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.combobox = None
+
+    def create_widget(self, parent=None) -> QWidget:
+        self.combobox = QComboBox()
+        for data, txt in self.option.choices.items():
+            self.combobox.addItem(txt, data)
+        self.combobox.setCurrentIndex(self.combobox.findData(self.option.value))
+        self.combobox.currentIndexChanged.connect(self._on_combo_changed)
+
+        lbl = QLabel()
+        lbl.setText(self.option.display_name)
+        if self.option.tooltip:
+            lbl.setToolTip(self.option.tooltip)
+
+        layout = QHBoxLayout()
+        layout.addWidget(lbl)
+        layout.addStretch()
+        layout.addWidget(self.combobox)
+
+        self.widget = QWidget(parent)
+        self.widget.setLayout(layout)
+        return self.widget
+
+    def _on_combo_changed(self, index):
+        self.option.value = self.combobox.itemData(index)
 
 
 class AnalysisOptionsDialog(QDialog):

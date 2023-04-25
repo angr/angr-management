@@ -1,25 +1,25 @@
-import logging
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtGui import QPen, QPainterPath
-from PySide6.QtCore import QRectF, QMarginsF
-
-from angr.analyses.disassembly import Instruction, IROp
 from angr.analyses.decompiler.clinic import Clinic
+from angr.analyses.disassembly import Instruction, IROp
 from angr.sim_variable import SimRegisterVariable
+from PySide6.QtCore import QMarginsF, QRectF
+from PySide6.QtGui import QPainterPath, QPen
 
-from ...utils import get_block_objects, get_out_branches_for_insn, get_label_text
-from ...utils.block_objects import FunctionHeader, Variables, PhiVariable, Label
-from ...config import Conf
-from .qinstruction import QInstruction
-from .qfunction_header import QFunctionHeader
+from angrmanagement.config import Conf
+from angrmanagement.utils import get_block_objects, get_label_text, get_out_branches_for_insn
+from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
+
+from .qblock_code import QAilObj, QBlockCode, QBlockCodeOptions, QIROpObj
 from .qblock_label import QBlockLabel
-from .qblock_code import QBlockCode, QBlockCodeOptions, QAilObj, QIROpObj
+from .qfunction_header import QFunctionHeader
+from .qgraph_object import QCachedGraphicsItem
+from .qinstruction import QInstruction
 from .qphivariable import QPhiVariable
 from .qvariable import QVariable
-from .qgraph_object import QCachedGraphicsItem
 
-
-_l = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QGraphicsPathItem
 
 
 class QBlock(QCachedGraphicsItem):
@@ -33,7 +33,18 @@ class QBlock(QCachedGraphicsItem):
     SHADOW_OFFSET_Y = 0
 
     def __init__(
-        self, instance, func_addr, disasm_view, disasm, infodock, addr, cfg_nodes, out_branches, scene, parent=None
+        self,
+        instance,
+        func_addr,
+        disasm_view,
+        disasm,
+        infodock,
+        addr,
+        cfg_nodes,
+        out_branches,
+        scene,
+        parent=None,
+        idx=None,
     ):
         super().__init__(parent=parent)
 
@@ -48,12 +59,13 @@ class QBlock(QCachedGraphicsItem):
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
         self.scene = scene
+        self.idx = idx
 
         self._config = Conf
 
         self.objects = []  # instructions and labels
-        self._block_item = None  # type: QPainterPath
-        self._block_item_obj = None  # type: QGraphicsPathItem
+        self._block_item: Optional[QPainterPath] = None
+        self._block_item_obj: Optional[QGraphicsPathItem] = None
         self.addr_to_insns = {}
         self.addr_to_labels = {}
         self.qblock_annotations = {}
@@ -246,7 +258,7 @@ class QBlock(QCachedGraphicsItem):
         self.layout_widgets()
 
     def layout_widgets(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class QGraphBlock(QBlock):
@@ -288,7 +300,7 @@ class QGraphBlock(QBlock):
         event.accept()
 
     def mousePressEvent(self, event):
-        if self.instance.workspace.plugins.handle_click_block(self, event):
+        if self.disasm_view.workspace.plugins.handle_click_block(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
             return
@@ -299,7 +311,7 @@ class QGraphBlock(QBlock):
         super().mousePressEvent(event)
 
     def _calc_backcolor(self, should_omit_text):
-        color = self.instance.workspace.plugins.color_block(self.addr)
+        color = self.disasm_view.workspace.plugins.color_block(self.addr)
         if color is not None:
             return color
 
@@ -349,7 +361,7 @@ class QGraphBlock(QBlock):
                 self._objects_are_hidden = should_omit_text
 
         # extra content
-        self.instance.workspace.plugins.draw_block(self, painter)
+        self.disasm_view.workspace.plugins.draw_block(self, painter)
 
     def on_selected(self):
         self.infodock.select_block(self.addr)

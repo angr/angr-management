@@ -2,8 +2,7 @@ from collections import defaultdict
 from typing import List
 
 import networkx
-
-from angr.analyses.cfg.cfg_utils import CFGUtils
+from angr.utils.graph import GraphUtils
 
 from .edge import Edge, EdgeSort
 
@@ -66,7 +65,6 @@ class EdgeRouter:
         """
 
         MOVE_LEFT = 0
-        NO_MOVE = 1
         MOVE_RIGHT = 2
 
         # build the edge
@@ -158,7 +156,7 @@ class EdgeRouter:
         """
 
         self._edge_valid = []
-        for col in range(self._max_col + 2):
+        for _col in range(self._max_col + 2):
             self._edge_valid.append([True] * (self._max_row + 1))
         for col, row in self._node_locations.values():
             # edges should not overlap with existing nodes
@@ -168,17 +166,16 @@ class EdgeRouter:
         self.vertical_edges = []
         self.horizontal_edges = []
 
-        for col in range(self._max_col + 2):
+        for _col in range(self._max_col + 2):
             v_edges = []
             h_edges = []
-            for row in range(self._max_row + 3):
+            for _row in range(self._max_row + 3):
                 v_edges.append({})
                 h_edges.append({})
             self.vertical_edges.append(v_edges)
             self.horizontal_edges.append(h_edges)
 
     def _assign_edge_to(self, edge, sort, col, row, blocks, index=None):
-
         if sort == "vertical":
             d = self.vertical_edges
         elif sort == "horizontal":
@@ -201,14 +198,9 @@ class EdgeRouter:
         return index
 
     def _edge_available(self, col, start_row, end_row):
-
-        for i in range(start_row, end_row):
-            if not self._edge_valid[col][i]:
-                return False
-        return True
+        return all(self._edge_valid[col][i] for i in range(start_row, end_row))
 
     def _first_unused_index(self, indices):
-
         # find the first unused index
         last_i = None
         for i in sorted(indices):
@@ -221,7 +213,6 @@ class EdgeRouter:
         return 0 if last_i is None else last_i + 1
 
     def _find_vertical_available_edge_index(self, col, start_row, end_row):
-
         # collect all used indices
         indices = set()
 
@@ -232,7 +223,6 @@ class EdgeRouter:
         return self._first_unused_index(indices)
 
     def _find_horizontal_available_edge_index(self, start_col, end_col, row):
-
         # collect all used indices
         indices = set()
 
@@ -254,7 +244,6 @@ class EdgeRouter:
         self._in_edges[edge.dst].append(edge)
 
     def _set_in_edge_indices(self):
-
         # assign in-edge indices
         for _, edges in self._in_edges.items():
             max_idx = None
@@ -271,7 +260,6 @@ class EdgeRouter:
                 edge.max_end_index = max_idx
 
     def _set_out_edge_indices(self):
-
         for _, edges in self._out_edges.items():
             max_idx = None
             if len(edges) == 2:
@@ -330,17 +318,16 @@ class GraphLayouter:
         self._col_widths = []
         self._grid_coordinates = {}
 
-        self.edges = []  # type: List[Edge]
+        self.edges: List[Edge] = []
         self.node_coordinates = {}
 
         self._layout()
 
     def _layout(self):
-
         self._initialize()
 
         # order the nodes
-        ordered_nodes = CFGUtils.quasi_topological_sort_nodes(self.graph)
+        ordered_nodes = GraphUtils.quasi_topological_sort_nodes(self.graph)
 
         # conver the graph to an acylic graph
         acyclic_graph = self._to_acyclic_graph(self.graph, ordered_nodes=ordered_nodes)
@@ -379,7 +366,7 @@ class GraphLayouter:
 
         if ordered_nodes is None:
             # take the quasi-topological order of the graph
-            ordered_nodes = CFGUtils.quasi_topological_sort_nodes(graph)
+            ordered_nodes = GraphUtils.quasi_topological_sort_nodes(graph)
 
         acyclic_graph = networkx.DiGraph()
 
@@ -406,18 +393,17 @@ class GraphLayouter:
 
         if ordered_nodes is None:
             # take the quasi-topological order of the graph
-            ordered_nodes = CFGUtils.quasi_topological_sort_nodes(acyclic_graph)
+            ordered_nodes = GraphUtils.quasi_topological_sort_nodes(acyclic_graph)
 
         self._assign_rows(graph, acyclic_graph, ordered_nodes)
         self._assign_columns(acyclic_graph)
 
     def _assign_rows(self, graph, acyclic_graph, ordered_nodes):
-
         row_to_nodes = defaultdict(list)
 
         global_max_row = 0
 
-        min_rows, max_rows = {}, {}
+        max_rows = {}
 
         """
         # assign min row ID top-down
@@ -467,7 +453,7 @@ class GraphLayouter:
             self._rows[node] = row
             row_to_nodes[row].append(node)
 
-        for row in row_to_nodes.keys():
+        for row in row_to_nodes:
             if self._node_compare_key is not None:
                 row_to_nodes[row] = sorted(row_to_nodes[row], key=self._node_compare_key)
             elif self._node_sorter is not None:
@@ -479,7 +465,6 @@ class GraphLayouter:
         self._row_to_nodes = row_to_nodes
 
     def _assign_columns(self, acyclic_graph):
-
         global_max_col = 0
 
         # First iteration: assign column ID bottom-up
@@ -493,7 +478,7 @@ class GraphLayouter:
 
             next_min_col, next_max_col = 1, 2
 
-            for i, node in enumerate(row_nodes):
+            for _i, node in enumerate(row_nodes):
                 successors = acyclic_graph.successors(node)
 
                 min_col, max_col = None, None
@@ -521,19 +506,16 @@ class GraphLayouter:
                 global_max_col = max(global_max_col, col)
 
                 # update min_col and max_col for the next iteration
-                if min_col == max_col:
-                    next_min_col = max_col + 2
-                else:
-                    next_min_col = max_col + 1
+                next_min_col = max_col + 2 if min_col == max_col else max_col + 1
                 next_max_col = next_min_col + 1
 
         # Second iteration: Adjust column IDs top-down
-        for row_idx in self._row_to_nodes.keys():
+        for row_idx in self._row_to_nodes:
             row_nodes = self._row_to_nodes[row_idx]
 
             next_min_col, next_max_col = None, None
 
-            for i, node in enumerate(row_nodes):
+            for _i, node in enumerate(row_nodes):
                 predecessors = list(acyclic_graph.predecessors(node))
                 if len(predecessors) < 2:
                     # Not enough predecessors.
@@ -679,7 +661,7 @@ class GraphLayouter:
         """
 
         row_max_ids = {}
-        for col, row in self._grid_max_horizontal_id.keys():
+        for col, row in self._grid_max_horizontal_id:
             if row not in row_max_ids:
                 row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
             elif self._grid_max_horizontal_id[(col, row)] > row_max_ids[row]:
@@ -722,7 +704,6 @@ class GraphLayouter:
 
         # edges
         for edge in self.edges:
-
             src_node_x, src_node_y = self.node_coordinates[edge.src]
             src_node_width, src_node_height = self._node_sizes[edge.src]
 
@@ -787,7 +768,7 @@ class GraphLayouter:
 
                 else:
                     # the impossible branch
-                    assert False
+                    raise AssertionError
 
                 edge.add_coordinate(x, y)
 
@@ -806,11 +787,9 @@ class GraphLayouter:
             edge.add_coordinate(*end_point)
 
     def _indexed_x(self, base_x, idx):
-
         return base_x + idx * self.x_margin
 
     def _indexed_y(self, base_y, idx):
-
         return base_y + idx * self.y_margin
 
     def _nointersecting_y(self, row, starting_col, ending_col, default=None):

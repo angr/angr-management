@@ -1,6 +1,7 @@
 import logging
-from PySide6.QtWidgets import QHBoxLayout
+
 from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout
 from traitlets.config.configurable import MultipleInstanceError
 
 from .view import BaseView
@@ -13,13 +14,13 @@ class ConsoleView(BaseView):
     Console view providing IPython interactive session.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("console", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("console", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Console"
         self._ipython_widget = None
 
-        if self.instance.workspace.main_window.initialized:
+        if self.workspace.main_window.initialized:
             self.mainWindowInitializedEvent()
 
     @property
@@ -31,17 +32,18 @@ class ConsoleView(BaseView):
         self.reload()
 
     def reload(self):
-
         if self._ipython_widget is None:
             return
 
-        import angr, claripy, cle  # pylint: disable=import-outside-toplevel,multiple-imports
+        import angr  # pylint: disable=import-outside-toplevel,multiple-imports
+        import claripy
+        import cle
 
         namespace = {
             "angr": angr,
             "claripy": claripy,
             "cle": cle,
-            "workspace": self.instance.workspace,
+            "workspace": self.workspace,
             "instance": self.instance,
             "project": self.instance.project,
         }
@@ -69,8 +71,9 @@ class ConsoleView(BaseView):
         return QSize(0, 50)
 
     def _init_widgets(self):
-
-        import angr, claripy, cle  # pylint: disable=import-outside-toplevel,multiple-imports
+        import angr  # pylint: disable=import-outside-toplevel,multiple-imports
+        import claripy
+        import cle
 
         namespace = {
             "angr": angr,
@@ -78,7 +81,7 @@ class ConsoleView(BaseView):
             "cle": cle,
         }
 
-        from ..widgets.qipython_widget import QIPythonWidget  # pylint:disable=import-outside-toplevel
+        from angrmanagement.ui.widgets.qipython_widget import QIPythonWidget  # pylint:disable=import-outside-toplevel
 
         try:
             ipython_widget = QIPythonWidget(namespace=namespace)
@@ -100,6 +103,6 @@ class ConsoleView(BaseView):
 
     def command_executed(self, msg):
         if msg["msg_type"] == "execute_reply" and msg["content"]["status"] == "ok":
-            view = self.instance.workspace.view_manager.first_view_in_category("disassembly")
+            view = self.workspace.view_manager.first_view_in_category("disassembly")
             if view is not None:
                 view.refresh()

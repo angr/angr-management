@@ -1,13 +1,11 @@
-from typing import List, TYPE_CHECKING
-
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
-from PySide6.QtCore import Qt, QAbstractTableModel
+from typing import TYPE_CHECKING, List
 
 from angr.knowledge_plugins.variables.variable_access import VariableAccess
 from angr.knowledge_plugins.xrefs.xref import XRef, XRefType
+from PySide6.QtCore import QAbstractTableModel, Qt
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
-
-from ...config import Conf
+from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -19,7 +17,6 @@ class XRefMode:
 
 
 class QXRefModel(QAbstractTableModel):
-
     HEADER = []
 
     def __init__(self, addr, instance, view):
@@ -96,11 +93,10 @@ class QXRefModel(QAbstractTableModel):
     #
 
     def _get_column_data(self, xref, idx):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class QXRefVariableModel(QXRefModel):
-
     HEADER = [("Direction", 70), ("Type", 50), ("Variable", 80), ("VarId", 80), ("PC", 160), ("Text", 300)]
 
     DIRECTION_COL = 0
@@ -190,7 +186,6 @@ class QXRefVariableModel(QXRefModel):
 
 
 class QXRefAddressModel(QXRefModel):
-
     HEADER = [("Direction", 70), ("Type", 50), ("PC", 160), ("Text", 300)]
 
     DIRECTION_COL = 0
@@ -335,7 +330,6 @@ class QXRefViewer(QTableView):
             self.items = sorted(self.items, key=lambda item: item.ins_addr)
 
     def _xrefs_from_control_flow_transitions(self):
-
         if self._instance is not None:
             cfg = self._instance.cfg
             node = cfg.get_any_node(self._dst_addr)

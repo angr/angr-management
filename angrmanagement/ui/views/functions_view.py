@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import QVBoxLayout
 
+from angrmanagement.ui.widgets.qfunction_table import QFunctionTable
+
 from .view import BaseView
-from ..widgets.qfunction_table import QFunctionTable
 
 
 class FunctionsView(BaseView):
@@ -9,11 +10,11 @@ class FunctionsView(BaseView):
     View displaying functions in the project.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("functions", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("functions", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Functions"
-        self._function_table = None  # type: QFunctionTable
+        self._function_table: QFunctionTable
 
         self.instance.cfg.am_subscribe(self.reload)
 
@@ -74,4 +75,4 @@ class FunctionsView(BaseView):
         :param function:
         :return:
         """
-        self.instance.on_function_selected(func=func)
+        self.workspace.on_function_selected(func=func)

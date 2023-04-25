@@ -1,19 +1,18 @@
-from typing import Set, Tuple
-import re
-import json
 import itertools
+import json
 import random
+import re
 import string
 from collections import defaultdict
+from typing import Set, Tuple
 
 import requests
-from sortedcontainers import SortedDict
-
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QMessageBox
+from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
-from ..base_plugin import BasePlugin
+from angrmanagement.plugins.base_plugin import BasePlugin
 
 
 class VaRec(BasePlugin):
@@ -35,7 +34,6 @@ class VaRec(BasePlugin):
     INFER_VARIABLE_NAMES = 0
 
     def handle_click_menu(self, idx):
-
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -78,18 +76,12 @@ class VaRec(BasePlugin):
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Error in variable name prediction",
-                "Cannot predict variable names. The pseudocode view does not have associated " "variables KB.",
+                "Cannot predict variable names. The pseudocode view does not have associated variables KB.",
                 QMessageBox.Ok,
             )
             return
 
-        if Conf.http_proxy or Conf.https_proxy:
-            proxies = {
-                "http": Conf.http_proxy,
-                "https": Conf.https_proxy,
-            }
-        else:
-            proxies = None
+        proxies = {"http": Conf.http_proxy, "https": Conf.https_proxy} if Conf.http_proxy or Conf.https_proxy else None
 
         for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
             if not v.renamed:

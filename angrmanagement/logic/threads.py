@@ -1,8 +1,12 @@
+import contextlib
 import threading
+from typing import Any, Callable, Dict, Tuple, TypeVar
 
-from PySide6.QtCore import QEvent, QCoreApplication
+from PySide6.QtCore import QCoreApplication, QEvent
 
 from . import GlobalInfo
+
+T = TypeVar("T")
 
 
 class ExecuteCodeEvent(QEvent):
@@ -184,11 +188,21 @@ class GUIObjProxy:
         return ins
 
 
-def is_gui_thread():
+def is_gui_thread() -> bool:
+    """
+    :returns: Whether the current thread is the GUI thread.
+    """
     return threading.get_ident() == GlobalInfo.gui_thread or GlobalInfo.gui_thread is None
 
 
-def gui_thread_schedule(callable, args=None, timeout=None):
+def gui_thread_schedule(callable: Callable[..., T], args: Tuple[Any] = None, timeout: int = None) -> T:
+    """
+    Schedules the given callable to be executed on the GUI thread. If the current thread is the GUI thread, the callable
+    is executed immediately.
+
+    :raises: Any exception raised by the callable.
+    :returns: The result of the callable, or None if the callable timed out.
+    """
     if is_gui_thread():
         if args is None:
             return callable()
@@ -217,7 +231,15 @@ def gui_thread_schedule(callable, args=None, timeout=None):
     return event.result
 
 
-def gui_thread_schedule_async(callable, args=None, kwargs=None):
+def gui_thread_schedule_async(
+    callable: Callable[..., T], args: Tuple[Any] = None, kwargs: Dict[str, Any] = None
+) -> None:
+    """
+    Schedules the given callable to be executed on the GUI thread. If the current thread is the GUI thread, the callable
+    is executed immediately. Otherwise, the callable is executed as an event on the GUI thread.
+
+    :returns: None
+    """
     if is_gui_thread():
         if kwargs is None:
             if args is None:
@@ -236,8 +258,5 @@ def gui_thread_schedule_async(callable, args=None, kwargs=None):
     if GlobalInfo.is_test:
         GlobalInfo.add_event_during_test(event)
     else:
-        try:
+        with contextlib.suppress(RuntimeError):  # the application is exiting and the main window has been destroyed.
             QCoreApplication.postEvent(GlobalInfo.main_window, event)
-        except RuntimeError:
-            # the application is exiting and the main window has been destroyed. just let it go
-            pass

@@ -1,17 +1,18 @@
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from PySide6 import QtWidgets, QtCore, QtGui
-
-
 from angr.analyses.data_dep import ConstantDepNode, TmpDepNode
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from angrmanagement.config import Conf
+
 from .qgraph_object import QCachedGraphicsItem
-from ...config import Conf
 
 if TYPE_CHECKING:
     from angr.analyses.data_dep import BaseDepNode
-    from angrmanagement.ui.views.data_dep_view import DataDepView
     from capstone import CsInsn
+
+    from angrmanagement.ui.views.data_dep_view import DataDepView
 
 _l = logging.getLogger(__name__)
 
@@ -113,10 +114,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
             color = color.darker(150)
         painter.setBrush(color)
 
-        if self._selected:
-            border_color = QtGui.QColor(0, 0xFE, 0xFE)
-        else:
-            border_color = QtGui.QColor(0xF0, 0xF0, 0xF0)
+        border_color = QtGui.QColor(0, 254, 254) if self._selected else QtGui.QColor(240, 240, 240)
         painter.setPen(QtGui.QPen(border_color, 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
@@ -149,9 +147,8 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     #
 
     def mouseDoubleClickEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        if event.button() == QtCore.Qt.LeftButton:
-            if self._node.ins_addr:
-                self._workspace.viz(self._node.ins_addr)
+        if event.button() == QtCore.Qt.LeftButton and self._node.ins_addr:
+            self._workspace.viz(self._node.ins_addr)
 
     def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent):
         self._selected = True

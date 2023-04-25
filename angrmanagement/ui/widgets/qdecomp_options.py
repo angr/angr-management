@@ -1,14 +1,13 @@
-from typing import Optional, TYPE_CHECKING
-
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QTreeWidget, QTreeWidgetItem, QPushButton, QComboBox
+from typing import TYPE_CHECKING, Optional
 
 from angr.analyses.decompiler.decompilation_options import options as dec_options
-from angr.analyses.decompiler.optimization_passes import get_optimization_passes, get_default_optimization_passes
+from angr.analyses.decompiler.optimization_passes import get_default_optimization_passes, get_optimization_passes
 from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, STMT_OPTS
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
-    from ..views.code_view import CodeView
+    from angrmanagement.ui.views.code_view import CodeView
 
 
 class OptionType:
@@ -85,16 +84,16 @@ class QDecompilationOptions(QWidget):
 
         self.dirty = True
 
-        self._code_view = code_view  # type: CodeView
+        self._code_view: CodeView = code_view
         self._instance = instance
         self._options = None
         self._opti_passes = None
         self._peephole_opts = None
 
         # widgets
-        self._search_box = None  # type:QLineEdit
-        self._treewidget = None  # type:QTreeWidget
-        self._apply_btn = None  # type:QPushButton
+        self._search_box: QLineEdit
+        self._treewidget: QTreeWidget
+        self._apply_btn: QPushButton
 
         self._qoptions = []
         self._qoptipasses = []
@@ -161,14 +160,14 @@ class QDecompilationOptions(QWidget):
         if self._instance is None or self._instance.project.am_none:
             return []
         return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
-            x for x, de, in self._code_view.instance.workspace.plugins.optimization_passes() if de
+            x for x, de, in self._code_view.workspace.plugins.optimization_passes() if de
         ]
 
     def get_all_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
         return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
-            x for x, _, in self._code_view.instance.workspace.plugins.optimization_passes()
+            x for x, _, in self._code_view.workspace.plugins.optimization_passes()
         ]
 
     def get_default_peephole_opts(self):  # pylint: disable=no-self-use
@@ -178,7 +177,6 @@ class QDecompilationOptions(QWidget):
         return STMT_OPTS + EXPR_OPTS
 
     def _init_widgets(self):
-
         # search box
         self._search_box = QLineEdit()
         self._search_box.textChanged.connect(self._on_search_box_text_changed)

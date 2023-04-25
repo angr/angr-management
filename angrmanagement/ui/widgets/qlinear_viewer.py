@@ -1,26 +1,27 @@
-from typing import Optional, TYPE_CHECKING, Union
 import logging
-from sortedcontainers import SortedDict
+from typing import TYPE_CHECKING, Optional, Union
 
-from PySide6.QtWidgets import QGraphicsScene, QAbstractSlider, QHBoxLayout, QAbstractScrollArea
-from PySide6.QtGui import QPainter
-from PySide6.QtCore import Qt, QRectF, QRect, QEvent
-
+from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
-from angr.knowledge_plugins import Function
-from angr.analyses.cfg.cfb import Unknown
-from angr.analyses.decompiler import Clinic
-from angr.analyses import Disassembly
+from PySide6.QtCore import QEvent, QRect, QRectF, Qt
+from PySide6.QtGui import QPainter
+from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
+from sortedcontainers import SortedDict
 
-from ...config import Conf
+from angrmanagement.config import Conf
+
 from .qblock import QLinearBlock
+from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
+from .qgraph import QSaveableGraphicsView
 from .qmemory_data_block import QMemoryDataBlock
 from .qunknown_block import QUnknownBlock
-from .qgraph import QSaveableGraphicsView
-from .qdisasm_base_control import QDisassemblyBaseControl, DisassemblyLevel
 
 if TYPE_CHECKING:
+    from angr.analyses import Disassembly
+    from angr.analyses.decompiler import Clinic
+    from angr.knowledge_plugins import Function
+
     from angrmanagement.logic.disassembly import InfoDock
 
 
@@ -31,7 +32,7 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
     def __init__(self, area, parent=None):
         super().__init__(parent=parent)
 
-        self.area = area  # type: QLinearDisassembly
+        self.area: QLinearDisassembly = area
         self._scene = QGraphicsScene(0, 0, self.width(), self.height())
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.setScene(self._scene)
@@ -73,7 +74,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # self.setResizeAnchor(QGraphicsView.NoAnchor)
         # self.setAlignment(Qt.AlignLeft)
 
-        self._viewer = None  # type: QLinearDisassemblyView
+        self._viewer: QLinearDisassemblyView
 
         self._line_height = Conf.disasm_font_height
 
@@ -93,6 +94,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
         self._init_widgets()
+        self.initialize()
 
     def reload(self, old_infodock: Optional["InfoDock"] = None):
         curr_offset = self._offset
@@ -176,7 +178,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self.reload()
 
     def _on_vertical_scroll_bar_triggered(self, action):
-
         action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
 
         if action == QAbstractSlider.SliderSingleStepAdd:
@@ -216,7 +217,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.redraw()
 
     def initialize(self):
-
         if self.cfb.am_none:
             return
 
@@ -230,7 +230,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         # enumerate memory regions
         byte_offset = 0
-        for mr in self.cfb.regions:  # type: MemoryRegion
+        mr: MemoryRegion
+        for mr in self.cfb.regions:
             if mr.type in {"tls", "kernel"}:
                 # Skip TLS objects and kernel objects
                 continue
@@ -296,7 +297,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.setLayout(layout)
 
     def _update_size(self):
-
         # ask all objects to update their sizes
         for obj in self.objects:
             obj.clear_cache()
@@ -327,7 +327,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             return
 
         # Convert the offset to memory region
-        base_offset, mr = self._region_from_offset(offset)  # type: int, MemoryRegion
+        base_offset: int
+        mr: MemoryRegion
+        base_offset, mr = self._region_from_offset(offset)
         if mr is None:
             return
 
@@ -388,7 +390,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 continue
 
             if isinstance(qobject, QLinearBlock):
-                for insn_addr in qobject.addr_to_insns.keys():
+                for insn_addr in qobject.addr_to_insns:
                     self._insaddr_to_block[insn_addr] = qobject
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -498,7 +500,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _calculate_max_offset(self):
         try:
             max_off = next(self._offset_to_region.irange(reverse=True))
-            mr = self._offset_to_region[max_off]  # type: MemoryRegion
+            mr: MemoryRegion = self._offset_to_region[max_off]
             return max_off + mr.size
         except StopIteration:
             return 0
@@ -513,7 +515,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _addr_from_offset(self, mr, base_offset, offset):
         return mr.addr + (offset - base_offset)
 
-    def _get_disasm(self, func: Function) -> Optional[Union[Clinic, Disassembly]]:
+    def _get_disasm(self, func: "Function") -> Optional[Union["Clinic", "Disassembly"]]:
         """
         Get disassembly analysis object for a given function
         """

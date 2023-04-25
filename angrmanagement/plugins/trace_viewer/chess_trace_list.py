@@ -1,34 +1,34 @@
 # pylint:disable=unused-argument
-import typing
-from typing import List, Optional, Tuple, TYPE_CHECKING
-import threading
-
 import asyncio
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+import threading
+import typing
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-import PySide6
+from PySide6.QtCore import QAbstractTableModel, Qt
 from PySide6.QtWidgets import (
-    QDialog,
-    QPushButton,
-    QHBoxLayout,
-    QVBoxLayout,
-    QMessageBox,
-    QTableView,
     QAbstractItemView,
+    QDialog,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt, QAbstractTableModel
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
+if TYPE_CHECKING:
+    import PySide6
+
+    from angrmanagement.ui.workspace import Workspace
 
 try:
     import slacrs
 except ImportError:
     slacrs = None
-
-from angrmanagement.logic.threads import gui_thread_schedule_async
-
-if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
 
 
 class TraceDescriptor:
@@ -69,13 +69,13 @@ class QTraceTableModel(QAbstractTableModel):
         self._traces = v
         self.endResetModel()
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
+    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:
         return len(self.traces)
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
+    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:
         return len(self.Headers)
 
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> typing.Any:
+    def headerData(self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...) -> typing.Any:
         if role != Qt.DisplayRole:
             return None
 
@@ -83,7 +83,7 @@ class QTraceTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> typing.Any:
+    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> typing.Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -183,7 +183,6 @@ class QChessTraceListDialog(QDialog):
         th.start()
 
     def _init_widgets(self):
-
         # table
         self._table = QTraceTableView()
 
@@ -254,7 +253,6 @@ class QChessTraceListDialog(QDialog):
     #
 
     def _on_ok_button_clicked(self):
-
         selection_model = self._table.selectionModel()
         if not selection_model.hasSelection():
             QMessageBox.warning(

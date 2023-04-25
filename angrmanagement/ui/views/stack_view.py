@@ -1,22 +1,19 @@
 import functools
-import logging
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-import PySide6
-from PySide6.QtGui import QFont, QCursor, QAction
-from PySide6.QtCore import QAbstractTableModel, Qt, QSize
-from PySide6.QtWidgets import QTableView, QAbstractItemView, QHeaderView, QVBoxLayout, QMenu
+from PySide6.QtCore import QAbstractTableModel, QSize, Qt
+from PySide6.QtGui import QAction, QCursor, QFont
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
 
+from angrmanagement.config import Conf
+from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.logic.debugger import DebuggerWatcher
 
-import angr
-from ...data.breakpoint import BreakpointType, Breakpoint
-
-from ...logic.debugger import DebuggerWatcher
-from ...config import Conf
 from .view import BaseView
 
-
-_l = logging.getLogger(name=__name__)
+if TYPE_CHECKING:
+    import angr
+    import PySide6
 
 
 class QStackTableModel(QAbstractTableModel):
@@ -33,14 +30,14 @@ class QStackTableModel(QAbstractTableModel):
         self._log_widget = log_widget
         self.state: angr.SimState = None
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
         return 0 if self.state is None else 15
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
+        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -48,7 +45,7 @@ class QStackTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
+    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -115,9 +112,8 @@ class QStackTableWidget(QTableView):
         dbg = self._dbg_manager.debugger
         self.model.state = None if dbg.am_none else dbg.simstate
         self.model.layoutChanged.emit()
-        self.update()
 
-    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent):  # pylint:disable=unused-argument
+    def contextMenuEvent(self, arg__1: "PySide6.QtGui.QContextMenuEvent"):  # pylint:disable=unused-argument
         if not self.selectedIndexes():
             return
 
@@ -163,8 +159,8 @@ class StackView(BaseView):
     Stack table view.
     """
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("stack", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("stack", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Stack"
         self._tbl_widget: Optional[QStackTableWidget] = None
@@ -184,6 +180,7 @@ class StackView(BaseView):
 
     def _init_widgets(self):
         vlayout = QVBoxLayout()
+        vlayout.setContentsMargins(0, 0, 0, 0)
         self._tbl_widget = QStackTableWidget(self)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)

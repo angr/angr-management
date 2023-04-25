@@ -1,31 +1,32 @@
 import os
 import string
-from typing import List, Set, Tuple, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from angr.analyses.code_tagging import CodeTags
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QTableView,
-    QAbstractItemView,
-    QHeaderView,
-    QVBoxLayout,
-    QLineEdit,
-    QLabel,
-    QHBoxLayout,
-)
+from cle.backends.uefi_firmware import UefiPE
+from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QBrush, QColor, QCursor
-from PySide6.QtCore import Qt, QAbstractTableModel, SIGNAL, QEvent
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QTableView,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ..menus.function_context_menu import FunctionContextMenu
-from ...data.instance import ObjectContainer
-from ...config import Conf
-from ..toolbars import FunctionTableToolbar
+from angrmanagement.config import Conf
+from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
+from angrmanagement.ui.toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
     import PySide6
-    from ..views.functions_view import FunctionsView
     from angr.knowledge_plugins.functions import Function, FunctionManager
+
+    from angrmanagement.ui.views.functions_view import FunctionsView
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -41,11 +42,12 @@ class QFunctionTableModel(QAbstractTableModel):
     SIZE_COL = 4
     BLOCKS_COL = 5
 
-    def __init__(self, instance, func_list):
+    def __init__(self, workspace, instance, func_list):
         super().__init__()
 
         self._func_list = None
         self._raw_func_list = func_list
+        self.workspace = workspace
         self.instance = instance
         self._config = Conf
         self._data_cache = {}
@@ -75,7 +77,7 @@ class QFunctionTableModel(QAbstractTableModel):
             # remove the filtering
             self._func_list = None
         else:
-            extra_columns = self.instance.workspace.plugins.count_func_columns()
+            extra_columns = self.workspace.plugins.count_func_columns()
             self._func_list = [
                 func
                 for func in self._raw_func_list
@@ -91,7 +93,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return len(self.func_list)
 
     def columnCount(self, *args, **kwargs):  # pylint:disable=unused-argument
-        return len(self.Headers) + self.instance.workspace.plugins.count_func_columns()
+        return len(self.Headers) + self.workspace.plugins.count_func_columns()
 
     def headerData(self, section, orientation, role):  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
@@ -101,7 +103,7 @@ class QFunctionTableModel(QAbstractTableModel):
             return self.Headers[section]
         else:
             try:
-                return self.instance.workspace.plugins.get_func_column(section - len(self.Headers))
+                return self.workspace.plugins.get_func_column(section - len(self.Headers))
             except IndexError:
                 # Not enough columns
                 return None
@@ -149,7 +151,7 @@ class QFunctionTableModel(QAbstractTableModel):
             return QBrush(color)
 
         elif role == Qt.BackgroundColorRole:
-            color = self.instance.workspace.plugins.color_func(func)
+            color = self.workspace.plugins.color_func(func)
             if color is None:
                 # default colors
                 if func.from_signature:
@@ -186,7 +188,7 @@ class QFunctionTableModel(QAbstractTableModel):
         elif idx == self.BLOCKS_COL:
             return len(func.block_addrs_set)
         else:
-            return self.instance.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
+            return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
 
     def _get_column_text(self, func, idx):
         if idx < len(self.Headers):
@@ -198,11 +200,20 @@ class QFunctionTableModel(QAbstractTableModel):
             else:
                 return str(data)
 
-        return self.instance.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
+        return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
 
     @staticmethod
-    def _get_binary_name(func):
-        return os.path.basename(func.binary.binary) if func.binary is not None else ""
+    def _get_binary_name(func) -> str:
+        if func.binary is not None:
+            if func.binary.binary is not None:
+                return os.path.basename(func.binary.binary)
+            if isinstance(func.binary, UefiPE):
+                if func.binary.user_interface_name:
+                    return func.binary.user_interface_name
+                if func.binary.guid:
+                    return str(func.binary.guid)
+                return str(func.binary)
+        return ""
 
     def _get_function_backcolor(self, func) -> QColor:
         return self._backcolor_callback(func)
@@ -241,11 +252,11 @@ class QFunctionTableModel(QAbstractTableModel):
                 return True
         if keyword in ",".join(func.tags).lower():
             return True
-        if func.binary and keyword in func.binary.binary.lower():
+        if func.binary and keyword in self._get_binary_name(func).lower():
             return True
         if extra_columns > 0:
             for idx in range(extra_columns):
-                txt = self.instance.workspace.plugins.extract_func_column(func, idx)[1]
+                txt = self.workspace.plugins.extract_func_column(func, idx)[1]
                 if txt and keyword in txt.lower():
                     return True
         return False
@@ -256,12 +267,13 @@ class QFunctionTableView(QTableView):
     The table view for QFunctionTable.
     """
 
-    def __init__(self, parent, instance, selection_callback=None):
+    def __init__(self, parent, workspace, instance, selection_callback=None):
         super().__init__(parent)
+        self.workspace = workspace
         self.instance = instance
         self._context_menu = FunctionContextMenu(self)
 
-        self._function_table = parent  # type: QFunctionTable
+        self._function_table: QFunctionTable = parent
         self._selected_func = ObjectContainer(None, "Currently selected function")
         self._selected_func.am_subscribe(selection_callback)
 
@@ -272,7 +284,7 @@ class QFunctionTableView(QTableView):
 
         self.show_alignment_functions = False
         self._functions = None
-        self._model = QFunctionTableModel(self.instance, [])
+        self._model = QFunctionTableModel(self.workspace, self.instance, [])
 
         self.setModel(self._model)
 
@@ -334,7 +346,6 @@ class QFunctionTableView(QTableView):
         self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def keyPressEvent(self, key_event):
-
         text = key_event.text()
         if not text or text not in string.printable or text in string.whitespace:
             # modifier keys
@@ -363,15 +374,14 @@ class QFunctionTableFilterBox(QLineEdit):
         self.installEventFilter(self)
 
     def eventFilter(self, obj, event):  # pylint:disable=unused-argument
-        if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                if self.text():
-                    # clear the text
-                    self.setText("")
-                else:
-                    # close the filterbox and set the function table on focus
-                    self._table.hide_filter_box()
-                return True
+        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+            if self.text():
+                # clear the text
+                self.setText("")
+            else:
+                # close the filterbox and set the function table on focus
+                self._table.hide_filter_box()
+            return True
 
         return False
 
@@ -386,10 +396,10 @@ class QFunctionTable(QWidget):
         self.instance = instance
 
         self._view: "FunctionsView" = parent
-        self._table_view = None  # type: QFunctionTableView
-        self._filter_box = None  # type: QFunctionTableFilterBox
-        self._toolbar = None  # type: FunctionTableToolbar
-        self._status_label = None  # type: QLabel
+        self._table_view: QFunctionTableView
+        self._filter_box: QFunctionTableFilterBox
+        self._toolbar: FunctionTableToolbar
+        self._status_label: QLabel
 
         self._last_known_func_addrs: Set[int] = set()
 
@@ -479,9 +489,8 @@ class QFunctionTable(QWidget):
     #
 
     def _init_widgets(self, selection_callback=None):
-
         # function table view
-        self._table_view = QFunctionTableView(self, self.instance, selection_callback)
+        self._table_view = QFunctionTableView(self, self._view.workspace, self.instance, selection_callback)
 
         # filter text box
         self._filter_box = QFunctionTableFilterBox(self)
@@ -496,6 +505,7 @@ class QFunctionTable(QWidget):
 
         status_lyt = QHBoxLayout()
         status_lyt.setContentsMargins(3, 3, 3, 3)
+        status_lyt.setSpacing(3)
         status_lyt.addWidget(self._toolbar.qtoolbar())
         status_lyt.addStretch(0)
         status_lyt.addWidget(self._status_label)

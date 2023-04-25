@@ -1,6 +1,7 @@
-from typing import Dict, Any, Optional, List, Tuple, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
-import networkx
+if TYPE_CHECKING:
+    import networkx
 
 from .edge import Edge
 
@@ -18,7 +19,7 @@ class TreeGraphEdgeRouter:
         vertical: bool,
         layer_widths: List[float],  # used if vertical is False
         layer_heights: List[float],  # used if vertical is True
-        graph: networkx.DiGraph,
+        graph: "networkx.DiGraph",
         node_coordinates: Dict[Any, Tuple[float, float]],
         node_sizes: Dict[Any, Tuple[float, float]],
         horizontal_spacing: int,
@@ -115,7 +116,7 @@ class TreeGraphLayouter:
 
     def __init__(
         self,
-        graph: networkx.DiGraph,
+        graph: "networkx.DiGraph",
         node_sizes: Dict[Any, Tuple[float, float]],
         initial_nodes: Optional[List[Any]] = None,
         vertical: bool = False,
@@ -144,7 +145,6 @@ class TreeGraphLayouter:
         self._layout()
 
     def _layout(self):
-
         layers: List[List[Any]] = []
 
         if not self._initial_nodes:

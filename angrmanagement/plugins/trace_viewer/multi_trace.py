@@ -7,13 +7,12 @@ from .trace_statistics import TraceStatistics
 try:
     from slacrs import Slacrs
     from slacrs.model import Input
-except ImportError as ex:
+except ImportError:
     Slacrs = None
     HumanFatigue = None
 
 
 class MultiTrace:
-
     HIT_COLOR = QColor(0x00, 0x99, 0x00, 0x60)
     MISS_COLOR = QColor(0xEE, 0xEE, 0xEE)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
@@ -42,7 +41,7 @@ class MultiTrace:
 
     def get_hit_miss_color(self, addr):
         # hexstr_addr = hex(addr)
-        if addr in self.addr_color_map.keys():
+        if addr in self.addr_color_map:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         else:
@@ -50,7 +49,7 @@ class MultiTrace:
 
     def get_percent_color(self, func):
         addr = func.addr
-        if addr in self.addr_color_map.keys():
+        if addr in self.addr_color_map:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         return None

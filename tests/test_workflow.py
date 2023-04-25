@@ -1,12 +1,11 @@
 # pylint:disable=missing-class-docstring,wrong-import-order,no-self-use
-import unittest
 import os
 import sys
 import threading
+import unittest
 
 import angr
-
-from common import test_location, start_main_window_and_event_loop
+from common import start_main_window_and_event_loop, test_location
 
 
 class TestWorkflow(unittest.TestCase):

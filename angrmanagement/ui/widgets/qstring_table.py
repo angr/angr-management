@@ -1,17 +1,19 @@
-from typing import Any
 import re
-from PySide6.QtWidgets import QHeaderView, QTableView, QAbstractItemView
-from PySide6.QtCore import QSortFilterProxyModel, Qt, QAbstractTableModel
+from typing import TYPE_CHECKING, Any
 
-from angr.analyses.cfg.cfg_fast import MemoryData
+from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
-from ...utils import filter_string_for_display
-from ...config import Conf
-from ..dialogs.xref import XRefDialog
+from angrmanagement.config import Conf
+from angrmanagement.ui.dialogs.xref import XRefDialog
+from angrmanagement.utils import filter_string_for_display
+
+if TYPE_CHECKING:
+    from angr.analyses.cfg.cfg_fast import MemoryData
+    from PySide6.QtGui import QKeyEvent
 
 
 class QStringModel(QAbstractTableModel):
-
     HEADER = ["Address", "Length", "String"]
 
     ADDRESS_COL = 0
@@ -128,14 +130,14 @@ class QStringModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    def _get_column_text(self, v: MemoryData, col: int):
+    def _get_column_text(self, v: "MemoryData", col: int):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
             if col == self.ADDRESS_COL and type(data) is int:
                 return f"{data:x}"
             return data
 
-    def _get_column_data(self, v: MemoryData, col: int) -> Any:
+    def _get_column_data(self, v: "MemoryData", col: int) -> Any:
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
             self.LENGTH_COL: lambda x: x.size,
@@ -239,16 +241,12 @@ class QStringTable(QTableView):
         selected_index = model_index.row()
         if self._model is None:
             return
-        if 0 <= selected_index < len(self._model.values):
-            selected_item = self._model.values[selected_index]
-        else:
-            selected_item = None
+        selected_item = self._model.values[selected_index] if 0 <= selected_index < len(self._model.values) else None
 
         if self._selected is not None:
             self._selected(selected_item)
 
-    def keyPressEvent(self, event: "PySide6.QtGui.QKeyEvent") -> None:
-
+    def keyPressEvent(self, event: "QKeyEvent") -> None:
         if event.key() == Qt.Key_X:
             # xrefs
             if self._model is None:
@@ -266,6 +264,7 @@ class QStringTable(QTableView):
                         xrefs_manager=self.xrefs,
                         instance=self._instance,
                         parent=self,
+                        disassembly_view=self.parent.workspace.view_manager.first_view_in_category("disassembly"),
                     )
                     dialog.exec_()
             return

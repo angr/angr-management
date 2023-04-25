@@ -1,17 +1,18 @@
-import os
+import contextlib
 import logging
+import os
 import re
-from typing import Type, Any, List, Optional, Callable
+from typing import Any, Callable, List, Optional, Type
 
 import tomlkit
 import tomlkit.exceptions
 import tomlkit.items
-from PySide6.QtGui import QFont, QFontMetricsF, QColor
+from PySide6.QtGui import QColor, QFont, QFontMetricsF
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from ..utils.env import app_root
-from .config_entry import ConfigurationEntry as CE
+from angrmanagement.utils.env import app_root
 
+from .config_entry import ConfigurationEntry as CE
 
 _l = logging.getLogger(__name__)
 color_re = re.compile("[0-9a-fA-F]+")
@@ -29,15 +30,15 @@ class UninterpretedCE(CE):
 def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     if ty is str:
         if not isinstance(v, tomlkit.items.String):
-            raise TypeError()
+            raise TypeError
         return str(v)
     elif ty is int:
         if not isinstance(v, tomlkit.items.Integer):
-            raise TypeError()
+            raise TypeError
         return v.unwrap()
     elif ty is list:
         if not isinstance(v, tomlkit.items.Array):
-            raise TypeError()
+            raise TypeError
         return [tomltype2pytype(v_, None) for v_ in v.value]
     return str(v) if isinstance(v, tomlkit.items.String) else v.unwrap()
 
@@ -114,7 +115,7 @@ ENTRIES = [
     CE("symexec_font", QFont, QFont("DejaVu Sans Mono", 10)),
     CE("code_font", QFont, QFont("Source Code Pro", 10)),
     CE("theme_name", str, "Light"),
-    CE('theme_track_system', bool, True),
+    CE("theme_track_system", bool, True),
     CE("disasm_view_minimap_viewport_color", QColor, QColor(0xFF, 0x00, 0x00)),
     CE("disasm_view_operand_color", QColor, QColor(0x00, 0x00, 0x80)),
     CE("disasm_view_operand_constant_color", QColor, QColor(0x00, 0x00, 0x80)),
@@ -197,7 +198,7 @@ ENTRIES = [
     CE("proximity_call_node_text_color", QColor, QColor(0x00, 0x00, 0xFF)),
     CE("proximity_call_node_text_color_plt", QColor, QColor(0x8B, 0x00, 0x8B)),
     CE("proximity_call_node_text_color_simproc", QColor, QColor(0x8B, 0x00, 0x8B)),
-    CE("log_timestamp_format", str, "%H:%M:%S"),
+    CE("log_timestamp_format", str, "%X"),
     # FLIRT signatures
     CE("flirt_signatures_root", str, "./flirt_signatures/"),
     # Library documentation
@@ -205,10 +206,11 @@ ENTRIES = [
     # last-used directory
     CE("last_used_directory", str, ""),
     # feature map
-    CE("feature_map_color_regular_function", QColor, QColor(0x00, 0xA0, 0xE8)),
-    CE("feature_map_color_unknown", QColor, QColor(0x0A, 0x0A, 0x0A)),
-    CE("feature_map_color_delimiter", QColor, QColor(0x00, 0x00, 0x00)),
-    CE("feature_map_color_data", QColor, QColor(0xC0, 0xC0, 0xC0)),
+    CE("feature_map_regular_function_color", QColor, QColor(0x00, 0xA0, 0xE8)),
+    CE("feature_map_unknown_color", QColor, QColor(0x0A, 0x0A, 0x0A)),
+    CE("feature_map_delimiter_color", QColor, QColor(0x00, 0x00, 0x00)),
+    CE("feature_map_data_color", QColor, QColor(0xC0, 0xC0, 0xC0)),
+    CE("feature_map_string_color", QColor, QColor(0x00, 0xF0, 0x80)),
     # networking
     CE("http_proxy", str, ""),
     CE("https_proxy", str, ""),
@@ -422,15 +424,12 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
     recent_files: List[str]
 
     def recent_file(self, file_path: str):
-        try:
+        with contextlib.suppress(ValueError):
             self.recent_files.remove(file_path)
-        except ValueError:
-            pass
         self.recent_files = self.recent_files[:9]
         self.recent_files.append(file_path)
 
     def __getattr__(self, item):
-
         if item in self.__slots__ or item in type(self).__dict__:
             return super().__getattribute__(item)
 
@@ -440,7 +439,6 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         raise AttributeError(item)
 
     def __setattr__(self, key, value):
-
         if key in self.__slots__ or key in type(self).__dict__:
             super().__setattr__(key, value)
             return
@@ -507,7 +505,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
                 v = tomltype2pytype(v, ty)
             except TypeError:
                 _l.warning(
-                    "Value '%s' for configuration option '%s' has type '%s', " "expected type '%s'. Ignoring...",
+                    "Value '%s' for configuration option '%s' has type '%s', expected type '%s'. Ignoring...",
                     v,
                     k,
                     type(v),
@@ -605,7 +603,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
     @property
     def has_operation_mango(self) -> bool:
         try:
-            import argument_resolver  # pylint:disable=import-outside-toplevel,unused-import
+            import argument_resolver  # noqa
 
             return True
         except ImportError:

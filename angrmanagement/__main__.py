@@ -1,13 +1,13 @@
 # pylint:disable=import-outside-toplevel,unused-import,no-member
 import asyncio
-import multiprocessing
-import sys
-import os
 import ctypes
+import multiprocessing
+import os
+import signal
+import sys
 import threading
 import time
 import warnings
-import signal
 from typing import Optional
 
 from . import __version__
@@ -45,9 +45,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
+    from PySide6.QtCore import QMargins, QRectF, Qt
+    from PySide6.QtGui import QCursor, QFontDatabase, QGuiApplication, QIcon, QPixmap
     from PySide6.QtWidgets import QApplication, QSplashScreen
-    from PySide6.QtGui import QFontDatabase, QPixmap, QIcon, QCursor, QGuiApplication
-    from PySide6.QtCore import Qt, QRectF, QMargins
 
     from .config import FONT_LOCATION, IMG_LOCATION, Conf
 
@@ -93,7 +93,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
             info["CFBundleName"] = name
         except Exception as e:  # pylint: disable=broad-except
             # This happens before logging is setup so use stderr
-            print(f"{type(e).__name__}: {e}", file=sys.stderr)
+            print(f"Failed to set App name! {type(e).__name__}: {e}", file=sys.stderr)
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(name)
@@ -120,11 +120,12 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         app.processEvents()
 
     splash.setProgress(0.1, "Importing modules")
-    from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
-    from .logic import GlobalInfo
-    from .ui.main_window import MainWindow
-    from .ui.awesome_tooltip_event_filter import QAwesomeTooltipEventFilter
     import angr
+
+    from .logic import GlobalInfo
+    from .ui.awesome_tooltip_event_filter import QAwesomeTooltipEventFilter
+    from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
+    from .ui.main_window import MainWindow
 
     angr.loggers.profiling_enabled = bool(profiling)
 
@@ -178,7 +179,7 @@ def main():
     )
     parser.add_argument("-D", "--daemon", action="store_true", help="start a daemon to handle angr:// URLs.")
     parser.add_argument(
-        "-u", "--url", type=str, nargs="?", help="(internal) handle angr:// URLs. " "the daemon must be running."
+        "-u", "--url", type=str, nargs="?", help="(internal) handle angr:// URLs. the daemon must be running."
     )
     parser.add_argument("-p", "--profiling", action="store_true", help="display profiling log messages.")
     parser.add_argument("-R", "--autoreload", action="store_true", help="Reload all python modules on each job start.")
@@ -197,7 +198,7 @@ def main():
         start_daemon()
         return
     elif args.url:
-        from .daemon import daemon_exists, handle_url, run_daemon_process, daemon_conn
+        from .daemon import daemon_conn, daemon_exists, handle_url, run_daemon_process
 
         if not daemon_exists():
             run_daemon_process()
@@ -214,7 +215,7 @@ def main():
     if args.script:
         import runpy
 
-        script_globals = runpy.run_path(args.script)  # pylint:disable=unused-variable
+        runpy.run_path(args.script)  # pylint:disable=unused-variable
     if args.interactive:
         if args.script:
             print("Your script's globals() dict is available in the `script_globals` variable.")
