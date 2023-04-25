@@ -226,7 +226,8 @@ class Style(Page):
         fmt: str = Conf.log_timestamp_format
         ts = datetime.now()
         # pylint: disable=use-sequence-for-iteration
-        self._fmt_map = bidict({ts.strftime(i): i for i in {fmt, "%X", "%c"}})  # set also dedups
+        self._fmt_map = bidict({ts.strftime(i): i for i in ("%X", "%c")})
+        self._fmt_map.forceput(ts.strftime(fmt), fmt)  # Ensure fmt is in the dict
         for i in self._fmt_map:
             self.log_format_entry.addItem(i)
         # pylint: disable=unsubscriptable-object
