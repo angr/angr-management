@@ -37,6 +37,7 @@ class TrackSystemTheme:
     """
     A singleton global theme class
     """
+
     _object: Optional["TrackSystemTheme"] = None
     _system: str = "System"
 
@@ -80,7 +81,7 @@ class TrackSystemTheme:
                 self._thread.started.connect(self._listener.listen)
                 self._thread.start()
             else:
-                self._listener.listener.stop(.05)  # .05 to give a moment to clean up
+                self._listener.listener.stop(0.05)  # .05 to give a moment to clean up
                 self._thread.terminate()
                 self._listener = None
                 self._thread = None  # Remove reference counted reference
