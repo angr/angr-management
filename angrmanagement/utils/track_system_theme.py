@@ -1,15 +1,14 @@
-from typing import Optional, Callable
-from threading import Lock
 import logging
+from threading import Lock
+from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, QThread
 import darkdetect
+from PySide6.QtCore import QObject, QThread
 
+from angrmanagement.config import Conf
 from angrmanagement.config.color_schemes import COLOR_SCHEMES
 from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.ui.css import refresh_theme
-from angrmanagement.config import Conf
-
 
 _l = logging.getLogger(__name__)
 
