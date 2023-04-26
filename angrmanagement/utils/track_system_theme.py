@@ -41,6 +41,35 @@ class TrackSystemTheme:
     _system: str = "System"
 
     #
+    # Private methods
+    #
+
+    def __init__(self, parent: Optional[QObject], *, _caller=None):
+        """
+        This method is not public
+        """
+        if _caller != self.create:  # pylint: disable=comparison-with-callable
+            raise RuntimeError("Use .create(parent) or .get(); this is a singleton")
+        # Init
+        self._lock = Lock()
+        self._parent = parent
+        self._underlying: str = darkdetect.theme()
+        self._enabled: bool = False
+        self._listener: Optional[_QListener] = None
+        self._thread: Optional[QThread] = None
+
+    def _set_theme(self, theme: str, *, force: bool = False):
+        """
+        Set the underlying theme according to the system theme if needed
+        """
+        if force or theme != self._underlying:
+            self._underlying = theme
+            Conf.theme_name = self._underlying
+            for prop, value in COLOR_SCHEMES[theme].items():
+                setattr(Conf, prop, value)
+            gui_thread_schedule_async(refresh_theme)
+
+    #
     # Public methods
     #
 
@@ -98,33 +127,4 @@ class TrackSystemTheme:
         if self.enabled():
             self._set_theme(darkdetect.theme(), force=True)
         else:
-            gui_thread_schedule_async(refresh_theme)
-
-    #
-    # Private methods
-    #
-
-    def __init__(self, parent: Optional[QObject], *, _caller=None):
-        """
-        This method is not public
-        """
-        if _caller != self.create:  # pylint: disable=comparison-with-callable
-            raise RuntimeError("Use .create(parent) or .get(); this is a singleton")
-        # Init
-        self._lock = Lock()
-        self._parent = parent
-        self._underlying: str = darkdetect.theme()
-        self._enabled: bool = False
-        self._listener: Optional[_QListener] = None
-        self._thread: Optional[QThread] = None
-
-    def _set_theme(self, theme: str, *, force: bool = False):
-        """
-        Set the underlying theme according to the system theme if needed
-        """
-        if force or theme != self._underlying:
-            self._underlying = theme
-            Conf.theme_name = self._underlying
-            for prop, value in COLOR_SCHEMES[theme].items():
-                setattr(Conf, prop, value)
             gui_thread_schedule_async(refresh_theme)
