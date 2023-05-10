@@ -142,6 +142,7 @@ class StringAnalysisOption(PrimitiveAnalysisOption):
     :ivar optional: If this option is optional or mandatory.
     :ivar enabled:  Is this option enabled by the user or not.
     """
+
     def __init__(self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False):
         self.optional = optional
         self.enabled = not self.optional
