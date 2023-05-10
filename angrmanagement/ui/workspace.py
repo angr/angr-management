@@ -485,19 +485,19 @@ class Workspace:
             # update options for region specification
             if "min_region" in cfg_options and "max_region" in cfg_options:
                 try:
-                    min_region = int(cfg_options['min_region'], 0)
+                    min_region = int(cfg_options["min_region"], 0)
                 except ValueError:
                     min_region = None
 
                 try:
-                    max_region = int(cfg_options['max_region'], 0)
+                    max_region = int(cfg_options["max_region"], 0)
                 except ValueError:
                     max_region = None
 
-                del cfg_options['min_region']
-                del cfg_options['max_region']
+                del cfg_options["min_region"]
+                del cfg_options["max_region"]
                 if min_region is not None and max_region is not None:
-                    cfg_options['regions'] = [(min_region, max_region)]
+                    cfg_options["regions"] = [(min_region, max_region)]
 
             self.generate_cfg(cfg_options)
 

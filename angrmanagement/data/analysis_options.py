@@ -206,7 +206,7 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                     CFGForceScanMode.SmartScan,
                 ),
                 StringAnalysisOption("min_region", "Start address for analysis"),
-                StringAnalysisOption("max_region", "Stop address for analysis")
+                StringAnalysisOption("max_region", "Stop address for analysis"),
             ]
         }
 

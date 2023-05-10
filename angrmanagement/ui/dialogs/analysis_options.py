@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QVBoxLayout,
     QWidget,
-    QLineEdit
+    QLineEdit,
 )
 
 from angrmanagement.config import IMG_LOCATION
@@ -28,7 +28,7 @@ from angrmanagement.data.analysis_options import (
     BoolAnalysisOption,
     ChoiceAnalysisOption,
     IntAnalysisOption,
-    StringAnalysisOption
+    StringAnalysisOption,
 )
 
 if TYPE_CHECKING:
