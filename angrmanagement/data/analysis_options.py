@@ -206,6 +206,7 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                 BoolAnalysisOption("data_references", "Collect cross-references and guess data types", True),
                 BoolAnalysisOption("cross_references", "Perform deep analysis on cross-references (slow)"),
                 BoolAnalysisOption("skip_unmapped_addrs", "Skip unmapped addresses", True),
+                BoolAnalysisOption("exclude_sparse_regions", "Exclude Sparse Regions", True),
                 ChoiceAnalysisOption(
                     "scanning_mode",
                     "Scan to maximize identified code blocks",
