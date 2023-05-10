@@ -90,9 +90,12 @@ class LoadBinaryJob(Job):
             try:
                 # Try loading as blob; dummy architecture (x86) required, user will select proper arch
                 partial_ld = cle.Loader(
-                    self.fname, perform_relocations=False, load_debug_info=False, auto_load_libs=False
+                    self.fname,
+                    perform_relocations=False,
+                    load_debug_info=False,
+                    auto_load_libs=False,
                 )
-            except cle.CLECompatibilityError:
+            except (cle.CLECompatibilityError, cle.CLEError):
                 # failed to load without libraries
                 load_as_blob = True
 
@@ -106,7 +109,7 @@ class LoadBinaryJob(Job):
                 return
 
         self._progress_callback(50)
-        new_load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
+        new_load_options = gui_thread_schedule(LoadBinary.run, (partial_ld, partial_ld.main_object.__class__))
         if new_load_options is None:
             return
 

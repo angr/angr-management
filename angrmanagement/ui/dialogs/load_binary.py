@@ -3,17 +3,19 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import archinfo
+import cle
 from angr.calling_conventions import unify_arch_name
-from cle import Blob
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileIconProvider,
     QFrame,
     QGridLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -55,7 +57,7 @@ class LoadBinary(QDialog):
     Dialog displaying loading options for a binary.
     """
 
-    def __init__(self, partial_ld, parent=None):
+    def __init__(self, partial_ld, suggested_backend: Optional[cle.Backend] = None, parent=None):
         super().__init__(parent)
 
         # initialization
@@ -63,9 +65,16 @@ class LoadBinary(QDialog):
         self.md5 = None
         self.sha256 = None
         self.option_widgets = {}
-        self.is_blob = isinstance(partial_ld.main_object, Blob)
+        self.suggested_backend = suggested_backend
+        self.available_backends: Dict[str, cle.Backend] = cle.ALL_BACKENDS
         self.arch = partial_ld.main_object.arch
         self.available_archs = archinfo.all_arches[::]
+        # _try_loading will try its best to fill in the following two properties from partial_ld
+        self._base_addr: Optional[int] = None
+        self._entry_addr: Optional[int] = None
+
+        self._base_addr_checkbox = None
+        self._entry_addr_checkbox = None
 
         if pypcode:
             for a in pypcode.Arch.enumerate():
@@ -87,6 +96,8 @@ class LoadBinary(QDialog):
         self._init_widgets()
 
         self._try_loading(partial_ld)
+
+        self._set_base_addr()
 
         self.setLayout(self.main_layout)
 
@@ -116,6 +127,43 @@ class LoadBinary(QDialog):
             dep_item = QListWidgetItem(dep)
             dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
             dep_list.addItem(dep_item)
+
+        if partial_ld.main_object is not None:
+            if isinstance(partial_ld.main_object, cle.MetaELF):
+                self._base_addr = partial_ld.main_object.mapped_base
+                self._entry_addr = partial_ld.main_object.entry
+            elif isinstance(partial_ld.main_object, cle.PE):
+                self._base_addr = partial_ld.main_object.mapped_base
+                self._entry_addr = partial_ld.main_object.entry
+            elif isinstance(partial_ld.main_object, cle.MachO):
+                self._base_addr = partial_ld.main_object.mapped_base
+                self._entry_addr = partial_ld.main_object.entry
+            elif isinstance(partial_ld.main_object, cle.CGC):
+                self._base_addr = partial_ld.main_object.mapped_base
+                self._entry_addr = partial_ld.main_object.entry
+            else:
+                if hasattr(partial_ld.main_object, "mapped_base"):
+                    self._base_addr = partial_ld.main_object.mapped_base
+                if hasattr(partial_ld.main_object, "entry"):
+                    self._entry_addr = partial_ld.main_object.entry
+
+            # don't know what to do with other backends...
+
+    def _set_base_addr(self):
+        # special handling for blobs
+        if isinstance(self.suggested_backend, cle.Blob):
+            self._toggle_base_addr_textbox(True)
+            self._toggle_entry_addr_textbox(True)
+            self.option_widgets["entry_addr"].setText("0x0")
+            self.option_widgets["base_addr"].setText("0x0")
+        else:
+            self._toggle_base_addr_textbox(False)
+            self._toggle_entry_addr_textbox(False)
+
+            if self._entry_addr is not None:
+                self.option_widgets["entry_addr"].setText(hex(self._entry_addr))
+            if self._base_addr is not None:
+                self.option_widgets["base_addr"].setText(hex(self._base_addr))
 
     def _init_widgets(self):
         layout = QGridLayout()
@@ -175,6 +223,31 @@ class LoadBinary(QDialog):
         self._init_load_options_tab(tab)
 
     def _init_load_options_tab(self, tab):
+        #
+        # Backend selection
+        #
+        backend_layout = QHBoxLayout()
+        backend_caption = QLabel()
+        backend_caption.setText("Backend:")
+        backend_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        backend_layout.addWidget(backend_caption)
+
+        backend_dropdown = QComboBox()
+        suggested_backend_name = None
+        for backend_name, backend in self.available_backends.items():
+            backend_dropdown.addItem(backend_name)
+            if backend is self.suggested_backend:
+                suggested_backend_name = backend_name
+        if suggested_backend_name is not None:
+            backend_dropdown.setCurrentText(suggested_backend_name)
+        backend_layout.addWidget(backend_dropdown)
+
+        self.option_widgets["backend"] = backend_dropdown
+
+        #
+        # Architecture selection
+        #
+
         arch_layout = QVBoxLayout()
         arch_caption = QLabel(self)
         arch_caption.setText("Architecture:")
@@ -233,26 +306,29 @@ class LoadBinary(QDialog):
         arch_layout.addWidget(arch_tree)
         self.option_widgets["arch"] = arch_tree
 
-        if self.is_blob:
-            blob_layout = QGridLayout()
+        blob_layout = QGridLayout()
 
-            # load address
-            base_addr_caption = QLabel(self)
-            base_addr_caption.setText("Base Address:")
-            blob_layout.addWidget(base_addr_caption, 1, 0)
-            base_addr = QLineEdit(self)
-            base_addr.setText("0")
-            blob_layout.addWidget(base_addr, 1, 1)
-            self.option_widgets["base_addr"] = base_addr
+        # load address
+        base_addr_checkbox = QCheckBox()
+        base_addr_checkbox.setChecked(False)
+        base_addr_checkbox.setText("Base address:")
+        blob_layout.addWidget(base_addr_checkbox, 1, 0)
+        base_addr = QLineEdit(self)
+        blob_layout.addWidget(base_addr, 1, 1)
+        base_addr_checkbox.clicked.connect(self._on_base_addr_checkbox_clicked)
+        self._base_addr_checkbox = base_addr_checkbox
+        self.option_widgets["base_addr"] = base_addr
 
-            # entry address
-            entry_addr_caption = QLabel(self)
-            entry_addr_caption.setText("Entry Address:")
-            blob_layout.addWidget(entry_addr_caption, 2, 0)
-            entry_addr = QLineEdit(self)
-            entry_addr.setText("0")
-            blob_layout.addWidget(entry_addr, 2, 1)
-            self.option_widgets["entry_addr"] = entry_addr
+        # entry address
+        entry_addr_checkbox = QCheckBox()
+        entry_addr_checkbox.setChecked(False)
+        entry_addr_checkbox.setText("Entry address:")
+        blob_layout.addWidget(entry_addr_checkbox, 2, 0)
+        entry_addr = QLineEdit(self)
+        blob_layout.addWidget(entry_addr, 2, 1)
+        entry_addr_checkbox.clicked.connect(self._on_entry_addr_checkbox_clicked)
+        self._entry_addr_checkbox = entry_addr_checkbox
+        self.option_widgets["entry_addr"] = entry_addr
 
         # load debug symbols
         load_debug_info = QCheckBox()
@@ -278,8 +354,8 @@ class LoadBinary(QDialog):
         dep_group.setLayout(sublayout)
 
         layout = QVBoxLayout()
-        if self.is_blob:
-            layout.addLayout(blob_layout)
+        layout.addLayout(backend_layout)
+        layout.addLayout(blob_layout)
         layout.addLayout(arch_layout)
         layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
@@ -323,9 +399,21 @@ class LoadBinary(QDialog):
 
         return the_arch, recommended_arches, other_arches
 
+    def _toggle_base_addr_textbox(self, enabled: bool):
+        self.option_widgets["base_addr"].setEnabled(enabled)
+
+    def _toggle_entry_addr_textbox(self, enabled: bool):
+        self.option_widgets["entry_addr"].setEnabled(enabled)
+
     #
     # Event handlers
     #
+
+    def _on_base_addr_checkbox_clicked(self):
+        self._toggle_base_addr_textbox(self._base_addr_checkbox.isChecked())
+
+    def _on_entry_addr_checkbox_clicked(self):
+        self._toggle_entry_addr_textbox(self._entry_addr_checkbox.isChecked())
 
     def _on_ok_clicked(self):
         force_load_libs = []
@@ -343,6 +431,12 @@ class LoadBinary(QDialog):
         self.load_options["auto_load_libs"] = self.option_widgets["auto_load_libs"].isChecked()
         self.load_options["load_debug_info"] = self.option_widgets["load_debug_info"].isChecked()
 
+        backend_dropdown: QComboBox = self.option_widgets["backend"]
+        backend: str = backend_dropdown.currentText()
+        if not backend or backend not in self.available_backends:
+            QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
+            return
+
         arch_tree: QTreeWidget = self.option_widgets["arch"]
         item = arch_tree.currentItem()
         if not isinstance(item, ArchTreeWidgetItem):
@@ -356,12 +450,25 @@ class LoadBinary(QDialog):
             arch = archinfo.ArchPcode(arch.id)
         self.load_options["arch"] = arch
 
-        if self.is_blob:
-            self.load_options["main_opts"] = {
-                "backend": "blob",
-                "base_addr": int(self.option_widgets["base_addr"].text(), 16),
-                "entry_point": int(self.option_widgets["entry_addr"].text(), 16),
-            }
+        self.load_options["main_opts"] = {
+            "backend": backend,
+        }
+
+        if self._entry_addr_checkbox.isChecked():
+            try:
+                base_addr = int(self.option_widgets["base_addr"].text(), 16)
+            except ValueError:
+                QMessageBox.critical(None, "Incorrect base address", "Please input a valid base address.")
+                return
+            self.load_options["main_opts"]["base_addr"] = base_addr
+
+        if self._base_addr_checkbox.isChecked():
+            try:
+                entry_addr = int(self.option_widgets["entry_addr"].text(), 16)
+            except ValueError:
+                QMessageBox.critical(None, "Incorrect entry point address", "Please input a valid entry point address.")
+                return
+            self.load_options["main_opts"]["entry_point"] = entry_addr
 
         if force_load_libs:
             self.load_options["force_load_libs"] = force_load_libs
@@ -374,9 +481,9 @@ class LoadBinary(QDialog):
         self.close()
 
     @staticmethod
-    def run(partial_ld) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
+    def run(partial_ld, suggested_backend=None) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
         try:
-            dialog = LoadBinary(partial_ld)
+            dialog = LoadBinary(partial_ld, suggested_backend=suggested_backend)
             dialog.setModal(True)
             dialog.exec_()
             return dialog.load_options
