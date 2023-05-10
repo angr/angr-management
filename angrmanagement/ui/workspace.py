@@ -505,9 +505,11 @@ class Workspace:
                         cfg_options["elf_eh_frame"] = False
                         cfg_options["symbols"] = False
                         cfg_options["start_at_entry"] = False
-                        del cfg_options["explicit_analysis_starts"]
 
                     cfg_options["function_starts"] = function_starts
+                if "explicit_analysis_starts" in cfg_options:
+                    # discard "explicit_analysis_starts" even if function_starts is not set
+                    del cfg_options["explicit_analysis_starts"]
 
             # update options for region specification
             if "regions" in cfg_options:
