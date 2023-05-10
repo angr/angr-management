@@ -1,6 +1,6 @@
 import contextlib
 import threading
-from typing import Any, Callable, Dict, Tuple, TypeVar
+from typing import Any, Callable, Dict, Tuple, TypeVar, Optional
 
 from PySide6.QtCore import QCoreApplication, QEvent
 
@@ -195,7 +195,9 @@ def is_gui_thread() -> bool:
     return threading.get_ident() == GlobalInfo.gui_thread or GlobalInfo.gui_thread is None
 
 
-def gui_thread_schedule(callable: Callable[..., T], args: Tuple[Any] = None, timeout: int = None) -> T:
+def gui_thread_schedule(
+    callable: Callable[..., T], args: Tuple[Any] = None, timeout: int = None, kwargs: Optional[Dict[str, Any]] = None
+) -> T:
     """
     Schedules the given callable to be executed on the GUI thread. If the current thread is the GUI thread, the callable
     is executed immediately.
@@ -203,13 +205,16 @@ def gui_thread_schedule(callable: Callable[..., T], args: Tuple[Any] = None, tim
     :raises: Any exception raised by the callable.
     :returns: The result of the callable, or None if the callable timed out.
     """
+    if kwargs is None:
+        kwargs = {}
+
     if is_gui_thread():
         if args is None:
-            return callable()
+            return callable(**kwargs)
         else:
-            return callable(*args)
+            return callable(*args, **kwargs)
 
-    event = ExecuteCodeEvent(callable, args)
+    event = ExecuteCodeEvent(callable, args=args, kwargs=kwargs)
 
     if GlobalInfo.is_test:
         GlobalInfo.add_event_during_test(event)
