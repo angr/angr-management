@@ -170,3 +170,21 @@ jobs:
             best to make sure everything works, but please be advised that
             features may break or change without notice.
           GH_TOKEN: ${{ github.token }}
+
+  report:
+    name: Report status
+    needs: deploy
+    runs-on: ubuntu-22.04
+    if: ${{ github.event_name == 'schedule' && failure() }}
+    steps:
+      - name: Send result email
+        env:
+          MAILGUN_API_TOKEN: ${{ secrets.MAILGUN_API_TOKEN }}
+        run: |
+          BUILD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s --user "api:$MAILGUN_API_TOKEN" \
+            https://api.mailgun.net/v3/mail.rev.fish/messages \
+            -F from="angr management bundle <angr-nightly-ci@mail.rev.fish>" \
+            -F to=angr-dev@asu.edu \
+            -F subject="angr management nightly bundle failed" \
+            -F text="Link to failed build: $BUILD_URL"
