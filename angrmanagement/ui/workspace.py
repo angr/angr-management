@@ -490,7 +490,7 @@ class Workspace:
                         continue
 
                     try:
-                        func_addr = int(func_start_str, 16) 
+                        func_addr = int(func_start_str, 16)
                     except ValueError:
                         if prompt_for_configuration:
                             QMessageBox.critical(
@@ -501,13 +501,13 @@ class Workspace:
                     function_starts.append(func_addr)
 
                 if function_starts:
-                    if 'explicit_analysis_starts' in cfg_options:
-                        cfg_options['elf_eh_frame'] = False
-                        cfg_options['symbols'] = False
-                        cfg_options['start_at_entry'] = False
-                        del cfg_options['explicit_analysis_starts']
+                    if "explicit_analysis_starts" in cfg_options:
+                        cfg_options["elf_eh_frame"] = False
+                        cfg_options["symbols"] = False
+                        cfg_options["start_at_entry"] = False
+                        del cfg_options["explicit_analysis_starts"]
 
-                    cfg_options['function_starts'] = function_starts
+                    cfg_options["function_starts"] = function_starts
 
             # update options for region specification
             if "regions" in cfg_options:
