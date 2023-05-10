@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QSpinBox,
@@ -27,6 +28,7 @@ from angrmanagement.data.analysis_options import (
     BoolAnalysisOption,
     ChoiceAnalysisOption,
     IntAnalysisOption,
+    StringAnalysisOption,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +55,8 @@ class AnalysisOptionWidgetMapper:
             return IntAnalysisOptionWidgetMapper(option)
         elif isinstance(option, ChoiceAnalysisOption):
             return ChoiceAnalysisOptionWidgetMapper(option)
+        elif isinstance(option, StringAnalysisOption):
+            return StringAnalysisOptionWidgetMapper(option)
         else:
             raise ValueError("Mapper not implemented")
 
@@ -75,6 +79,54 @@ class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     def _on_checkbox_changed(self, _):
         self.option.value = self.widget.isChecked()
+
+
+class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
+    """
+    Analysis option widget for string answers
+    """
+
+    option: StringAnalysisOption
+
+    def __init__(self, option: AnalysisOption):
+        super().__init__(option)
+
+        self.checkbox = None
+        self.textbox = None
+
+    def create_widget(self, parent=None) -> QWidget:
+        self.textbox = QLineEdit(self.option.value)
+        self.textbox.textChanged.connect(self._on_text_changed)
+
+        layout = QHBoxLayout()
+
+        if self.option.optional:
+            checkbox = QCheckBox()
+            checkbox.setText(self.option.display_name)
+            if self.option.tooltip:
+                checkbox.setToolTip(self.option.tooltip)
+            checkbox.clicked.connect(self._on_toggled)
+            self.checkbox = checkbox
+            layout.addWidget(checkbox)
+            self._on_toggled()  # enable or disable the textbox
+        else:
+            lbl = QLabel()
+            lbl.setText(self.option.display_name)
+            if self.option.tooltip:
+                lbl.setToolTip(self.option.tooltip)
+            layout.addWidget(lbl)
+
+        layout.addWidget(self.textbox)
+        self.widget = QWidget(parent)
+        self.widget.setLayout(layout)
+        return self.widget
+
+    def _on_toggled(self):
+        self.textbox.setEnabled(self.checkbox.isChecked())
+        self.option.enabled = self.checkbox.isChecked()
+
+    def _on_text_changed(self, value: str):
+        self.option.value = value
 
 
 class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):

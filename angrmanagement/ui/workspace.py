@@ -480,7 +480,44 @@ class Workspace:
             should_run = True
 
         if should_run and self.main_instance._analysis_configuration["cfg"].enabled:
-            self.generate_cfg(self.main_instance._analysis_configuration["cfg"].to_dict())
+            cfg_options = self.main_instance._analysis_configuration["cfg"].to_dict()
+
+            # update options for region specification
+            if "regions" in cfg_options:
+                regions = []
+                for region_str in cfg_options["regions"].split(","):
+                    region_str = region_str.strip(" ")
+                    if not region_str:
+                        continue
+                    if "-" not in region_str or region_str.count("-") != 1:
+                        # invalid region
+                        if prompt_for_configuration:
+                            QMessageBox.critical(
+                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
+                            )
+                        return
+                    min_addr, max_addr = region_str.split("-")
+                    try:
+                        min_addr = int(min_addr, 16)
+                    except ValueError:
+                        if prompt_for_configuration:
+                            QMessageBox.critical(
+                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
+                            )
+                        return
+                    try:
+                        max_addr = int(max_addr, 16)
+                    except ValueError:
+                        if prompt_for_configuration:
+                            QMessageBox.critical(
+                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
+                            )
+                        return
+                    regions.append((min_addr, max_addr))
+                if regions:
+                    cfg_options["regions"] = regions
+
+            self.generate_cfg(cfg_options)
 
     def decompile_current_function(self):
         current = self.view_manager.current_tab
