@@ -88,9 +88,13 @@ class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     option: StringAnalysisOption
 
-    def create_widget(self, parent=None) -> QWidget:
-        self.checkbox = None
+    def __init__(self, option: AnalysisOption):
+        super().__init__(option)
 
+        self.checkbox = None
+        self.textbox = None
+
+    def create_widget(self, parent=None) -> QWidget:
         self.textbox = QLineEdit(self.option.value)
         self.textbox.textChanged.connect(self._on_text_changed)
 
