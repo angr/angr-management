@@ -4,17 +4,18 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import archinfo
 import cle
-
 from angr.calling_conventions import unify_arch_name
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileIconProvider,
     QFrame,
     QGridLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -24,9 +25,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
-    QHBoxLayout,
     QVBoxLayout,
-    QComboBox,
 )
 
 try:
@@ -73,6 +72,9 @@ class LoadBinary(QDialog):
         # _try_loading will try its best to fill in the following two properties from partial_ld
         self._base_addr: Optional[int] = None
         self._entry_addr: Optional[int] = None
+
+        self._base_addr_checkbox = None
+        self._entry_addr_checkbox = None
 
         if pypcode:
             for a in pypcode.Arch.enumerate():

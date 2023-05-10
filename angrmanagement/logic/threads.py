@@ -1,6 +1,6 @@
 import contextlib
 import threading
-from typing import Any, Callable, Dict, Tuple, TypeVar, Optional
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
 
 from PySide6.QtCore import QCoreApplication, QEvent
 
