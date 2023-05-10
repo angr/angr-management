@@ -207,6 +207,8 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                 BoolAnalysisOption("cross_references", "Perform deep analysis on cross-references (slow)"),
                 BoolAnalysisOption("skip_unmapped_addrs", "Skip unmapped addresses", True),
                 BoolAnalysisOption("exclude_sparse_regions", "Exclude Sparse Regions", True),
+                BoolAnalysisOption("explicit_analysis_starts",
+                                   "Exclude non-explicit functions for analysis (incomplete)", False),
                 ChoiceAnalysisOption(
                     "scanning_mode",
                     "Scan to maximize identified code blocks",
@@ -222,6 +224,13 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                     "Regions for analysis",
                     tooltip="Specify ranges of regions for which to recover CFG. Example: 0x400000-0x401000. You may "
                     "specify multiple address ranges for analysis.",
+                    optional=True,
+                ),
+                StringAnalysisOption(
+                    "function_starts",
+                    "Start at function addresses",
+                    tooltip="Specify function addresses to start recursive descent of CFG generation to speed up "
+                            "analysis. Example: 0x400000,0x401000",
                     optional=True,
                 ),
             ]
