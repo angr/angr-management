@@ -12,13 +12,13 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QSpinBox,
     QSplitter,
     QVBoxLayout,
     QWidget,
-    QLineEdit,
 )
 
 from angrmanagement.config import IMG_LOCATION
