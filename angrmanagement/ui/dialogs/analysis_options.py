@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QVBoxLayout,
     QWidget,
+    QLineEdit
 )
 
 from angrmanagement.config import IMG_LOCATION
@@ -27,6 +28,7 @@ from angrmanagement.data.analysis_options import (
     BoolAnalysisOption,
     ChoiceAnalysisOption,
     IntAnalysisOption,
+    StringAnalysisOption
 )
 
 if TYPE_CHECKING:
@@ -53,6 +55,8 @@ class AnalysisOptionWidgetMapper:
             return IntAnalysisOptionWidgetMapper(option)
         elif isinstance(option, ChoiceAnalysisOption):
             return ChoiceAnalysisOptionWidgetMapper(option)
+        elif isinstance(option, StringAnalysisOption):
+            return StringAnalysisOptionWidgetMapper(option)
         else:
             raise ValueError("Mapper not implemented")
 
@@ -75,6 +79,33 @@ class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     def _on_checkbox_changed(self, _):
         self.option.value = self.widget.isChecked()
+
+
+class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
+    """
+    Analysis option widget for string answers
+    """
+
+    options: StringAnalysisOption
+
+    def create_widget(self, parent=None) -> QWidget:
+        textbox = QLineEdit(self.option.value)
+        textbox.textChanged.connect(self._on_text_changed)
+
+        lbl = QLabel()
+        lbl.setText(self.option.display_name)
+        if self.option.tooltip:
+            lbl.setToolTip(self.option.tooltip)
+
+        layout = QHBoxLayout()
+        layout.addWidget(lbl)
+        layout.addWidget(textbox)
+        self.widget = QWidget(parent)
+        self.widget.setLayout(layout)
+        return self.widget
+
+    def _on_text_changed(self, value: str):
+        self.option.value = value
 
 
 class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):

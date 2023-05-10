@@ -133,6 +133,11 @@ class BoolAnalysisOption(PrimitiveAnalysisOption):
         super().__init__(name, description, default, tooltip)
 
 
+class StringAnalysisOption(PrimitiveAnalysisOption):
+    def __init__(self, name: str, description: str, default: str = "", tooltip: str = ""):
+        super().__init__(name, description, default, tooltip)
+
+
 class IntAnalysisOption(PrimitiveAnalysisOption):
     """
     Integer option for an analysis.
@@ -200,6 +205,8 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                     },
                     CFGForceScanMode.SmartScan,
                 ),
+                StringAnalysisOption("min_region", "Start address for analysis"),
+                StringAnalysisOption("max_region", "Stop address for analysis")
             ]
         }
 

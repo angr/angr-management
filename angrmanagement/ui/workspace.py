@@ -480,7 +480,26 @@ class Workspace:
             should_run = True
 
         if should_run and self.main_instance._analysis_configuration["cfg"].enabled:
-            self.generate_cfg(self.main_instance._analysis_configuration["cfg"].to_dict())
+            cfg_options = self.main_instance._analysis_configuration["cfg"].to_dict()
+
+            # update options for region specification
+            if "min_region" in cfg_options and "max_region" in cfg_options:
+                try:
+                    min_region = int(cfg_options['min_region'], 0)
+                except ValueError:
+                    min_region = None
+
+                try:
+                    max_region = int(cfg_options['max_region'], 0)
+                except ValueError:
+                    max_region = None
+
+                del cfg_options['min_region']
+                del cfg_options['max_region']
+                if min_region is not None and max_region is not None:
+                    cfg_options['regions'] = [(min_region, max_region)]
+
+            self.generate_cfg(cfg_options)
 
     def decompile_current_function(self):
         current = self.view_manager.current_tab
