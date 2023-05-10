@@ -88,6 +88,8 @@ class AnalysisConfiguration:
         Update dictionary `out` with configuration for this option.
         """
         for o in self.options.values():
+            if getattr(o, "enabled", None) is False:
+                continue
             o.update_dict(out)
 
 
@@ -134,7 +136,9 @@ class BoolAnalysisOption(PrimitiveAnalysisOption):
 
 
 class StringAnalysisOption(PrimitiveAnalysisOption):
-    def __init__(self, name: str, description: str, default: str = "", tooltip: str = ""):
+    def __init__(self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False):
+        self.optional = optional
+        self.enabled = not self.optional
         super().__init__(name, description, default, tooltip)
 
 
@@ -205,8 +209,13 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                     },
                     CFGForceScanMode.SmartScan,
                 ),
-                StringAnalysisOption("min_region", "Start address for analysis"),
-                StringAnalysisOption("max_region", "Stop address for analysis"),
+                StringAnalysisOption(
+                    "regions",
+                    "Regions for analysis",
+                    tooltip="Specify ranges of regions for which to recover CFG. Example: 0x400000-0x401000. You may "
+                    "specify multiple address ranges for analysis.",
+                    optional=True,
+                ),
             ]
         }
 

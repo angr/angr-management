@@ -483,21 +483,39 @@ class Workspace:
             cfg_options = self.main_instance._analysis_configuration["cfg"].to_dict()
 
             # update options for region specification
-            if "min_region" in cfg_options and "max_region" in cfg_options:
-                try:
-                    min_region = int(cfg_options["min_region"], 0)
-                except ValueError:
-                    min_region = None
-
-                try:
-                    max_region = int(cfg_options["max_region"], 0)
-                except ValueError:
-                    max_region = None
-
-                del cfg_options["min_region"]
-                del cfg_options["max_region"]
-                if min_region is not None and max_region is not None:
-                    cfg_options["regions"] = [(min_region, max_region)]
+            if "regions" in cfg_options:
+                regions = []
+                for region_str in cfg_options["regions"].split(","):
+                    region_str = region_str.strip(" ")
+                    if not region_str:
+                        continue
+                    if "-" not in region_str or region_str.count("-") != 1:
+                        # invalid region
+                        if prompt_for_configuration:
+                            QMessageBox.critical(
+                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
+                            )
+                        return
+                    min_addr, max_addr = region_str.split("-")
+                    try:
+                        min_addr = int(min_addr, 16)
+                    except ValueError:
+                        if prompt_for_configuration:
+                            QMessageBox.critical(
+                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
+                            )
+                        return
+                    try:
+                        max_addr = int(max_addr, 16)
+                    except ValueError:
+                        if prompt_for_configuration:
+                            QMessageBox.critical(
+                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
+                            )
+                        return
+                    regions.append((min_addr, max_addr))
+                if regions:
+                    cfg_options["regions"] = regions
 
             self.generate_cfg(cfg_options)
 

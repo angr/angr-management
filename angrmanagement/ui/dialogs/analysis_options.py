@@ -86,23 +86,40 @@ class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
     Analysis option widget for string answers
     """
 
-    options: StringAnalysisOption
+    option: StringAnalysisOption
 
     def create_widget(self, parent=None) -> QWidget:
-        textbox = QLineEdit(self.option.value)
-        textbox.textChanged.connect(self._on_text_changed)
+        self.checkbox = None
 
-        lbl = QLabel()
-        lbl.setText(self.option.display_name)
-        if self.option.tooltip:
-            lbl.setToolTip(self.option.tooltip)
+        self.textbox = QLineEdit(self.option.value)
+        self.textbox.textChanged.connect(self._on_text_changed)
 
         layout = QHBoxLayout()
-        layout.addWidget(lbl)
-        layout.addWidget(textbox)
+
+        if self.option.optional:
+            checkbox = QCheckBox()
+            checkbox.setText(self.option.display_name)
+            if self.option.tooltip:
+                checkbox.setToolTip(self.option.tooltip)
+            checkbox.clicked.connect(self._on_toggled)
+            self.checkbox = checkbox
+            layout.addWidget(checkbox)
+            self._on_toggled()  # enable or disable the textbox
+        else:
+            lbl = QLabel()
+            lbl.setText(self.option.display_name)
+            if self.option.tooltip:
+                lbl.setToolTip(self.option.tooltip)
+            layout.addWidget(lbl)
+
+        layout.addWidget(self.textbox)
         self.widget = QWidget(parent)
         self.widget.setLayout(layout)
         return self.widget
+
+    def _on_toggled(self):
+        self.textbox.setEnabled(self.checkbox.isChecked())
+        self.option.enabled = self.checkbox.isChecked()
 
     def _on_text_changed(self, value: str):
         self.option.value = value
