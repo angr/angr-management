@@ -507,9 +507,10 @@ class Workspace:
                         cfg_options["start_at_entry"] = False
 
                     cfg_options["function_starts"] = function_starts
-                if "explicit_analysis_starts" in cfg_options:
-                    # discard "explicit_analysis_starts" even if function_starts is not set
-                    del cfg_options["explicit_analysis_starts"]
+
+            # discard "explicit_analysis_starts" even if function_starts is not set
+            if "explicit_analysis_starts" in cfg_options:
+                del cfg_options["explicit_analysis_starts"]
 
             # update options for region specification
             if "regions" in cfg_options:
