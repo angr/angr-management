@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton
-
 from angrmanagement.plugins.value_search.qsearch_table import QSearchTable
 from angrmanagement.ui.views.view import BaseView
+
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
