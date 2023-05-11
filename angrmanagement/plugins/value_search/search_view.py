@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 
 
 class SearchView(BaseView):
+    """
+    Container view for the QSearchTable Object.
+    Has handlers for switching between search types and executing the search.
+    """
     def __init__(self, plugin, workspace, instance, default_docking_position, *args, **kwargs):
         super().__init__("search", workspace, instance, default_docking_position, *args, **kwargs)
 
