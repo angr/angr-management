@@ -75,4 +75,4 @@ class FunctionsView(BaseView):
         :param function:
         :return:
         """
-        self.workspace.on_function_selected(func=func)
+        self.workspace.on_function_selected(func=func, instance=self.instance)

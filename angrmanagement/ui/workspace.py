@@ -154,7 +154,7 @@ class Workspace:
                 if view:
                     view.jump_to(addr, True)
 
-    def on_function_selected(self, func: Function):
+    def on_function_selected(self, func: Function, instance=None):
         """
         Callback function triggered when a new function is selected in the function view.
 
@@ -162,17 +162,20 @@ class Workspace:
         :return:        None
         """
 
+        if instance is None:
+            instance = self.main_instance
+
         # Ask all current views to display this function
         current_view = self.view_manager.current_tab
-        if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
-            # we don't have a current view or the current view does not have function-specific content. create a
-            # disassembly view to display the selected function.
-            disasm_view = self._get_or_create_view("dissasembly", DisassemblyView)
-            disasm_view.display_function(func)
-            self.view_manager.raise_view(disasm_view)
-        else:
+        if current_view is not None and current_view.FUNCTION_SPECIFIC_VIEW and current_view.instance == instance:
             # ask the current view to display this function
             current_view.function = func
+        else:
+            # we don't have a current view or the current view does not have function-specific content. create a
+            # disassembly view to display the selected function.
+            disasm_view = self._get_or_create_view("dissasembly", DisassemblyView, instance=instance)
+            disasm_view.display_function(func)
+            self.view_manager.raise_view(disasm_view)
 
     def on_function_tagged(self):
         # reload disassembly view
@@ -856,11 +859,35 @@ class Workspace:
     # Private methods
     #
 
-    def _get_or_create_view(self, category: str, view_type: Type[T], position: str = "center") -> T:
-        view = self.view_manager.current_view_in_category(category)
-        if view is None:
-            view = self.view_manager.first_view_in_category(category)
-        if view is None:
-            view = view_type(self, self._main_instance, position)
-            self.add_view(view)
+    def _get_or_create_view(self, category: str, view_type: Type[T], position: str = "center", instance=None) -> T:
+        if instance is None:
+            instance = self._main_instance
+
+        current_views = self.view_manager.current_views_in_category(category)
+        for view in current_views:
+            if view is None:
+                continue
+
+            if view.instance != instance:
+                continue
+
+            best_view = view
+            break
+        else:
+            best_view = None
+
+        if best_view is None:
+            all_views = self.view_manager.views_by_category.get(category, [])
+            for view in all_views:
+                if view is None:
+                    continue
+
+                if view.instance != instance:
+                    continue
+
+                break
+            else:
+                view = view_type(self, instance, position)
+
+        self.add_view(view)
         return view

@@ -180,6 +180,15 @@ class ViewManager:
                 return view
         return None
 
+    def current_views_in_category(self, category: str) -> Optional[List["BaseView"]]:
+        """
+        Return the current activations in a specific category.
+        """
+        return [
+            view for view in self.views_by_activation
+            if view.category == category
+        ]
+
     def _adjust_current_tab_idx(self, offset: int) -> None:
         """
         Select tab in same dock area with index equal to index of most recently activated center view plus `offset`.

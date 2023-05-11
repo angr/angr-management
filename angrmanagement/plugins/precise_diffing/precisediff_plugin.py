@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QFileDialog
 from angrmanagement.data.instance import Instance
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import DisassemblyView
+from angrmanagement.ui.views.functions_view import FunctionsView
 
 from .diff_view import DiffDisassemblyView
 from .function_diff import BFSFunctionDiff, FunctionDiff
@@ -132,10 +133,15 @@ class PreciseDiffPlugin(BasePlugin):
 
     def _create_revised_disassembly_view(self):
         new_disass = DiffDisassemblyView(self.workspace, self.diff_instance, "center")
-        new_disass.category = "diff"
+        #new_disass.category = "diff"
         new_disass.base_caption = "Precise Diff"
+
+        self.diff_func_tab = FunctionsView(self.workspace, self.diff_instance, "left")
+        #self.diff_func_tab.category = "diff_functions"
+        self.diff_func_tab.base_caption = "Diff Functions"
         self.current_revised_view = new_disass
         self.workspace.add_view(self.current_revised_view)
+        self.workspace.add_view(self.diff_func_tab)
         return self.current_revised_view
 
     def jump_to_in_revised_view(self, func):
@@ -172,8 +178,8 @@ class PreciseDiffPlugin(BasePlugin):
         self._destroy_recompiled_view()
         self.diff_instance = self._create_instance_from_binary(file_path)
         self._create_revised_disassembly_view()
-        self.syncronize_with_original_disassembly_view()
+        #self.syncronize_with_original_disassembly_view()
         self.workspace.view_manager.raise_view(self.current_revised_view)
 
-        original_disass_view = self.diff_instance.workspace._get_or_create_view("disassembly", DisassemblyView)
-        self.current_revised_view.sync_with_state_object(original_disass_view.sync_state)
+        original_disass_view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
+        #self.current_revised_view.sync_with_state_object(original_disass_view.sync_state)

@@ -14,7 +14,8 @@ class DiffDisassemblyView(DisassemblyView):
         self._processing_synchronized_cursor_update = True
         try:
             if self.sync_state.cursor_address is not None:
-                self.instance.recompilation_plugin.syncronize_with_original_disassembly_view()
+                #self.instance.recompilation_plugin.syncronize_with_original_disassembly_view()
+                pass
         finally:
             self._processing_synchronized_cursor_update = False
 
