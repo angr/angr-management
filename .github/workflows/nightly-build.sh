@@ -34,24 +34,12 @@ fi
 pip install -e .
 
 # Bundle!
-if [[ "$OSTYPE" != "darwin"* ]]; then
-    python packaging/pyinstaller/bundle.py --onefile
-fi
-python packaging/pyinstaller/bundle.py --onedir
+python packaging/pyinstaller/bundle.py
 
 mkdir upload
 
-# Prepare onefiles
-ONEFILE_DIR=packaging/pyinstaller/onefile
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    source /etc/os-release
-    cp $ONEFILE_DIR/angr-management upload/angr-management-onefile-$ID-$VERSION_ID
-elif [[ "$OSTYPE" == "msys" ]]; then
-    cp $ONEFILE_DIR/angr-management.exe upload/angr-management-onefile-win64.exe
-fi
-
 # Prepare onedirs
-ONEDIR_DIR=packaging/pyinstaller/onedir
+ONEDIR_DIR=packaging/pyinstaller/dist
 if [[ "$OSTYPE" == "darwin"* ]]; then
     mkdir /tmp/angr-management-dmg
     cp -r $ONEDIR_DIR/*.app /tmp/angr-management-dmg
