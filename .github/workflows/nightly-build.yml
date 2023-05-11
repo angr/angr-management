@@ -75,8 +75,7 @@ jobs:
           set -x
           . /etc/os-release
 
-          find .
-          tar -xzf angr-management-onedir-ubuntu-$VERSION_ID.tar.gz
+          tar -xzf angr-management-ubuntu-$VERSION_ID.tar.gz
           export binary="./angr-management/angr-management"
           export QT_DEBUG_PLUGINS=1
           chmod +x $binary
