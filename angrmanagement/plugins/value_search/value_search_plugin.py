@@ -82,8 +82,6 @@ class ValueSearch(BasePlugin):
             f_val = float(value)
             value = self._float_to_bytes(f_val)
         else:
-            value = value.encode().decode('unicode_escape').encode("latin-1")
+            value = value.encode().decode("unicode_escape").encode("latin-1")
 
         return self.search_by_bytes(value), value
-
-
