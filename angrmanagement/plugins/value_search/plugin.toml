@@ -1,0 +1,13 @@
+[meta]
+plugin_metadata_version = 0
+
+[plugin]
+name = "Value Search Plugin"
+shortname = "value_search"
+version = "0.0.0"
+description = ""
+long_description = ""
+platforms = ["windows", "linux", "macos"]
+min_angr_version = "9.0.0.0"
+author = "The angr team"
+entrypoints = ["value_search_plugin.py"]
