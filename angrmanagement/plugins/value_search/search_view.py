@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton
 
 from angrmanagement.ui.widgets.qstring_table import QStringTable
 from angrmanagement.plugins.value_search.qsearch_table import QSearchTable
 
 from angrmanagement.ui.views.view import BaseView
+from angrmanagement.ui.views.hex_view import HexHighlightRegion
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
@@ -56,7 +57,11 @@ class SearchView(BaseView):
         else:
             hex_view = self.workspace.view_manager.current_view_in_category("hex")
         if hex_view is not None:
-            hex_view.jump_to(s[0])
+            hex_view.jump_to((s[0] - 0x10) if s[0] > 0x10 else s[0])
+            hex_view.set_cursor(s[0])
+            hex_view.inner_widget.hex.begin_selection()
+            hex_view.inner_widget.hex.move_viewport_to(s[0]-0x10, False)
+            hex_view.inner_widget.hex.set_cursor(s[0]+len(s[2])-1, update_viewport=False)
             self.workspace.view_manager.raise_view(hex_view)
 
     #
@@ -68,6 +73,7 @@ class SearchView(BaseView):
         self._type_list.addItems(["bytes", "int", "float"])
         self._search_button = QPushButton("Search", parent=self)
         self._filter_string = QLineEdit(self)
+        self._filter_string.returnPressed.connect(self._on_search_click)
         self._search_button.clicked.connect(self._on_search_click)
 
         search_layout = QHBoxLayout()
