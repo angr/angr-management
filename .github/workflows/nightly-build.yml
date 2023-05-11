@@ -75,6 +75,7 @@ jobs:
           set -x
           . /etc/os-release
 
+          find .
           tar -xzf angr-management-onedir-ubuntu-$VERSION_ID.tar.gz
           export binary="./angr-management/angr-management"
           export QT_DEBUG_PLUGINS=1
@@ -99,6 +100,7 @@ jobs:
         with:
           name: angr-management-onedir-${{ matrix.os }}
       - run: |
+          tree
           7z x angr-management-onedir-win64.exe
           .\angr-management\angr-management.exe
           sleep 30
