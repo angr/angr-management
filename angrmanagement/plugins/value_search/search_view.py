@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
-from angrmanagement.plugins.value_search.qsearch_table import QSearchTable
 from angrmanagement.ui.views.view import BaseView
+
+from .qsearch_table import QSearchTable
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
