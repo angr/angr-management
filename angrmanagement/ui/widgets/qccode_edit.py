@@ -377,6 +377,11 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node.collapsed = False
             self._code_view.codegen.am_event()
 
+    def float_constant(self):
+        if hasattr(self._selected_node, "fmt_float"):
+            self._selected_node.fmt_float ^= True
+            self._code_view.codegen.am_event()
+
     def hex_constant(self):
         if hasattr(self._selected_node, "fmt_hex"):
             self._selected_node.fmt_hex ^= True
@@ -550,6 +555,9 @@ class QCCodeEdit(api.CodeEdit):
         self.action_hex = QAction("Toggle hex", self)
         self.action_hex.triggered.connect(self.hex_constant)
         self.action_hex.setShortcut(QKeySequence("H"))
+        #self.action_float = QAction("Toggle float", self)
+        #self.action_float.triggered.connect(self.float_constant)
+        #self.action_float.setShortcut(QKeySequence("F"))
         self.action_neg = QAction("Toggle negative", self)
         self.action_neg.triggered.connect(self.neg_constant)
         self.action_neg.setShortcut(QKeySequence("_"))
@@ -582,6 +590,7 @@ class QCCodeEdit(api.CodeEdit):
         self.constant_actions = [
             self.action_hex,
             self.action_neg,
+            #self.action_float,
         ]
 
         self.call_actions = [
