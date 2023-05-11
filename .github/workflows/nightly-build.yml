@@ -73,9 +73,9 @@ jobs:
           name: angr-management-onedir-${{ matrix.os }}
       - run: |
           set -x
-          tar -xzf angr-management-onedir-ubuntu-*.tar.gz
-
           . /etc/os-release
+
+          tar -xzf angr-management-onedir-ubuntu-$VERSION_ID.tar.gz
           export binary="./angr-management/angr-management"
           export QT_DEBUG_PLUGINS=1
           chmod +x $binary
@@ -97,9 +97,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: angr-management-onefile-${{ matrix.os }}
+          name: angr-management-onedir-${{ matrix.os }}
       - run: |
-          7z x angr-management-onefile-win64.exe
+          7z x angr-management-onedir-win64.exe
           .\angr-management\angr-management.exe
           sleep 30
           [array]$am_windows = Get-Process |
