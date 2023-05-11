@@ -2,6 +2,7 @@ import logging
 import struct
 
 from angrmanagement.plugins import BasePlugin
+
 from .search_view import SearchView
 
 logger = logging.getLogger(__name__)

@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Any
 
-from angrmanagement.config import Conf
-from angrmanagement.ui.dialogs.xref import XRefDialog
-
 from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
+
+from angrmanagement.config import Conf
+from angrmanagement.ui.dialogs.xref import XRefDialog
 
 if TYPE_CHECKING:
     from angr.analyses.cfg.cfg_fast import MemoryData
