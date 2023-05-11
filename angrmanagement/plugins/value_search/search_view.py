@@ -1,25 +1,29 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton
-
-from angrmanagement.ui.widgets.qstring_table import QStringTable
-from angrmanagement.plugins.value_search.qsearch_table import QSearchTable
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from angrmanagement.ui.views.view import BaseView
+
+from .qsearch_table import QSearchTable
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 
 class SearchView(BaseView):
+    """
+    Container view for the QSearchTable Object.
+    Has handlers for switching between search types and executing the search.
+    """
+
     def __init__(self, plugin, workspace, instance, default_docking_position, *args, **kwargs):
         super().__init__("search", workspace, instance, default_docking_position, *args, **kwargs)
 
         self.base_caption = "Search"
         self.plugin = plugin
 
-        self._string_table: QStringTable
+        self._search_table: QSearchTable
         self._type_list: QComboBox
 
         self._selected_type = "bytes"

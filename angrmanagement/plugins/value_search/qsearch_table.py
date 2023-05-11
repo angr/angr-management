@@ -1,4 +1,3 @@
-import re
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt

@@ -2,6 +2,7 @@ import logging
 import struct
 
 from angrmanagement.plugins import BasePlugin
+
 from .search_view import SearchView
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ class ValueSearch(BasePlugin):
 
         try:
             enc_value = struct.pack(f"{self._endness_encoding}f", f_value)
-        except:
+        except struct.error:
             enc_value = None
 
         return enc_value
@@ -65,7 +66,7 @@ class ValueSearch(BasePlugin):
 
         try:
             enc_value = struct.pack(f"{self._endness_encoding}I", i_value)
-        except:
+        except struct.error:
             enc_value = None
 
         return enc_value
