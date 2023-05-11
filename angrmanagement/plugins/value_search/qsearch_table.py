@@ -6,7 +6,6 @@ from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from angrmanagement.config import Conf
 from angrmanagement.ui.dialogs.xref import XRefDialog
-from angrmanagement.utils import filter_string_for_display
 
 if TYPE_CHECKING:
     from angr.analyses.cfg.cfg_fast import MemoryData
@@ -31,7 +30,6 @@ class QSearchModel(QAbstractTableModel):
 
     @values.setter
     def values(self, values):
-        print("IN MODEL", values)
         self._values = values
 
     def __len__(self):
@@ -87,7 +85,6 @@ class QSearchModel(QAbstractTableModel):
             return data
 
     def _get_column_data(self, v: "MemoryData", col: int) -> Any:
-        print(v, col)
         mapping = {
             self.ADDRESS_COL: lambda x: x[0],
             self.VALUE_COL: lambda x: x[1],
@@ -124,7 +121,7 @@ class QSearchTable(QTableView):
 
         # let the last column (string) fill table width
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
         self.doubleClicked.connect(self._on_string_selected)
 
@@ -139,9 +136,11 @@ class QSearchTable(QTableView):
     @filter_string.setter
     def filter_string(self, v):
         self._filter = v
-        values = [(addr, v) for addr in self._parent.plugin.on_search_trigger(self._filter, self._parent._selected_type)]
-        print("VALUES", values)
-        self._proxy.values = values
+        found_values, beastr = self._parent.plugin.on_search_trigger(self._filter, self._parent._selected_type)
+        values = [(addr, v, beastr) for addr in found_values]
+        self._model.layoutAboutToBeChanged.emit()
+        self._model.values = values
+        self._model.layoutChanged.emit()
 
     #
     # Public methods

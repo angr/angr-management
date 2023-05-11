@@ -16,7 +16,7 @@ class ValueSearch(BasePlugin):
 
     def _find_endness_encoding(self):
         endness = self.workspace.main_instance.project.arch.memory_endness
-        self._endness_encoding = "<" if endness.endswith("BE") else ">"
+        self._endness_encoding = ">" if endness.endswith("BE") else "<"
 
     #
     # UI Callback Handlers
@@ -84,6 +84,6 @@ class ValueSearch(BasePlugin):
         else:
             value = value.encode().decode('unicode_escape').encode()
 
-        return self.search_by_bytes(value)
+        return self.search_by_bytes(value), value
 
 

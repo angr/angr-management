@@ -1,12 +1,10 @@
-import re
 from typing import TYPE_CHECKING
 
-from angr.knowledge_plugins import Function
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QTableWidget, QTableWidgetItem, QPushButton
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton
 
 from angrmanagement.ui.widgets.qstring_table import QStringTable
-from angrmanagement.ui.widgets.qsearch_table import QSearchTable
+from angrmanagement.plugins.value_search.qsearch_table import QSearchTable
 
 from angrmanagement.ui.views.view import BaseView
 
@@ -53,14 +51,13 @@ class SearchView(BaseView):
         :return:
         """
 
-        if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
-            disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
+        if len(self.workspace.view_manager.views_by_category["hex"]) == 1:
+            hex_view = self.workspace.view_manager.first_view_in_category("hex")
         else:
-            disasm_view = self.workspace.view_manager.current_view_in_category("disassembly")
-        if disasm_view is not None:
-            disasm_view.jump_to(s.addr)
-            disasm_view.select_label(s.addr)
-            self.workspace.view_manager.raise_view(disasm_view)
+            hex_view = self.workspace.view_manager.current_view_in_category("hex")
+        if hex_view is not None:
+            hex_view.jump_to(s[0])
+            self.workspace.view_manager.raise_view(hex_view)
 
     #
     # Private methods
