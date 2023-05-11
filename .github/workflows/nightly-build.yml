@@ -49,11 +49,6 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
       - uses: actions/upload-artifact@v3
         with:
-          name: angr-management-onefile-${{ matrix.os }}
-          path: upload/*onefile*
-        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'windows')
-      - uses: actions/upload-artifact@v3
-        with:
           name: angr-management-onedir-${{ matrix.os }}
           path: |
             upload/*.tar.gz
@@ -75,11 +70,13 @@ jobs:
         name: Install X11 app testing utilities
       - uses: actions/download-artifact@v3
         with:
-          name: angr-management-onefile-${{ matrix.os }}
+          name: angr-management-onedir-${{ matrix.os }}
       - run: |
           set -x
+          tar -xzf angr-management-onedir-ubuntu-*.tar.gz
+
           . /etc/os-release
-          export binary="./angr-management-onefile-$ID-$VERSION_ID"
+          export binary="./angr-management/angr-management"
           export QT_DEBUG_PLUGINS=1
           chmod +x $binary
           xvfb-run bash -x -c '
@@ -102,7 +99,8 @@ jobs:
         with:
           name: angr-management-onefile-${{ matrix.os }}
       - run: |
-          .\angr-management-onefile-win64.exe
+          7z x angr-management-onefile-win64.exe
+          .\angr-management\angr-management.exe
           sleep 30
           [array]$am_windows = Get-Process |
             Where-Object {$_.MainWindowTitle -ne ""} |
