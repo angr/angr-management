@@ -40,6 +40,7 @@ mkdir upload
 
 # Prepare onedirs
 ONEDIR_DIR=packaging/pyinstaller/dist
+find packaging/pyinstaller
 if [[ "$OSTYPE" == "darwin"* ]]; then
     mkdir /tmp/angr-management-dmg
     cp -r $ONEDIR_DIR/*.app /tmp/angr-management-dmg
