@@ -11,10 +11,12 @@ class ValueSearch(BasePlugin):
     def __init__(self, workspace):
         super().__init__(workspace)
 
+        self._endness_encoding = None
+        self._create_search_view()
+
+    def _find_endness_encoding(self):
         endness = self.workspace.main_instance.project.arch.memory_endness
         self._endness_encoding = "<" if endness.endswith("BE") else ">"
-
-        self._create_search_view()
 
     #
     # UI Callback Handlers
@@ -47,6 +49,9 @@ class ValueSearch(BasePlugin):
         return list(self.workspace.main_instance.project.loader.memory.find(value))
 
     def _float_to_bytes(self, f_value: float):
+        if self._endness_encoding is None:
+            self._find_endness_encoding()
+
         try:
             enc_value = struct.pack(f"{self._endness_encoding}f", f_value)
         except:
@@ -55,6 +60,9 @@ class ValueSearch(BasePlugin):
         return enc_value
 
     def _int_to_bytes(self, i_value: int):
+        if self._endness_encoding is None:
+            self._find_endness_encoding()
+
         try:
             enc_value = struct.pack(f"{self._endness_encoding}I", i_value)
         except:
