@@ -29,6 +29,7 @@ UNICORN_BASE = pathlib.Path(unicorn.__file__).parent
 Z3_BASE = pathlib.Path(z3.__file__).parent
 
 block_cipher = None
+icon = str(AM_BASE / "angrmanagement" / "resources" / "images" / "angr.ico")
 
 included_data = [
     (str(AM_BASE / "angrmanagement" / "resources"), "angrmanagement/resources"),
@@ -117,16 +118,20 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=[str(AM_BASE / "angrmanagement" / "resources" / "images" / "angr.ico")],
+    icon=[icon],
 )
 
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name="angr-management",
-)
+
+if sys.platform == "darwin":
+    app = BUNDLE(exe, name="angr-management.app", icon=icon, bundle_identifier=None)
+else:
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name="angr-management",
+    )
