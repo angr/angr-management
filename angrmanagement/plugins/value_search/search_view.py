@@ -3,9 +3,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QComboBox, QPushButton
 
-from angrmanagement.ui.widgets.qstring_table import QStringTable
 from angrmanagement.plugins.value_search.qsearch_table import QSearchTable
-
 from angrmanagement.ui.views.view import BaseView
 
 if TYPE_CHECKING:
@@ -19,7 +17,7 @@ class SearchView(BaseView):
         self.base_caption = "Search"
         self.plugin = plugin
 
-        self._string_table: QStringTable
+        self._search_table: QSearchTable
         self._type_list: QComboBox
 
         self._selected_type = "bytes"
