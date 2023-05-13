@@ -76,7 +76,7 @@ if sys.platform != "darwin":
 
 
 a = Analysis(
-    [str(AM_BASE / "angrmanagement" / "__main__.py")],
+    [str(AM_BASE / "start.py")],
     pathex=[],
     binaries=[],
     datas=included_data,
