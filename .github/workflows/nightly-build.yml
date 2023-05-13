@@ -99,6 +99,7 @@ jobs:
         with:
           name: angr-management-onedir-${{ matrix.os }}
       - run: |
+          pwd
           tree
           7z x angr-management-win64.exe
           .\angr-management\angr-management.exe
