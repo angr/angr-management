@@ -100,7 +100,7 @@ jobs:
           name: angr-management-onedir-${{ matrix.os }}
       - run: |
           tree
-          7z x angr-management-onedir-win64.exe
+          7z x angr-management-win64.exe
           .\angr-management\angr-management.exe
           sleep 30
           [array]$am_windows = Get-Process |
