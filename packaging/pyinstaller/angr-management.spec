@@ -121,17 +121,16 @@ exe = EXE(
     icon=[icon],
 )
 
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name="angr-management",
+)
 
 if sys.platform == "darwin":
     app = BUNDLE(exe, name="angr-management.app", icon=icon, bundle_identifier=None)
-else:
-    coll = COLLECT(
-        exe,
-        a.binaries,
-        a.zipfiles,
-        a.datas,
-        strip=False,
-        upx=True,
-        upx_exclude=[],
-        name="angr-management",
-    )
