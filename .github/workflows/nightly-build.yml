@@ -49,7 +49,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
       - uses: actions/upload-artifact@v3
         with:
-          name: angr-management-onedir-${{ matrix.os }}
+          name: angr-management-${{ matrix.os }}
           path: |
             upload/*.tar.gz
             upload/*.zip
@@ -70,7 +70,7 @@ jobs:
         name: Install X11 app testing utilities
       - uses: actions/download-artifact@v3
         with:
-          name: angr-management-onedir-${{ matrix.os }}
+          name: angr-management-${{ matrix.os }}
       - run: |
           set -x
           . /etc/os-release
@@ -97,7 +97,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: angr-management-onedir-${{ matrix.os }}
+          name: angr-management-${{ matrix.os }}
       - run: |
           pwd
           tree
@@ -125,7 +125,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: angr-management-onedir-${{ matrix.os }}
+          name: angr-management-${{ matrix.os }}
       - run: |
           set -x
           hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
