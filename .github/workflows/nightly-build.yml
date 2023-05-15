@@ -98,11 +98,8 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: angr-management-${{ matrix.os }}
-      - run: pwd
-      - run: dir
-      - run: tree
       - run: |
-          7z x angr-management-win64.exe
+          7z x angr-management-win64.zip
           .\angr-management\angr-management.exe
           sleep 30
           [array]$am_windows = Get-Process |
