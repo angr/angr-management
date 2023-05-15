@@ -133,4 +133,4 @@ coll = COLLECT(
 )
 
 if sys.platform == "darwin":
-    app = BUNDLE(exe, name="angr-management.app", icon=icon, bundle_identifier=None)
+    app = BUNDLE(coll, name="angr-management.app", icon=icon, bundle_identifier=None)
