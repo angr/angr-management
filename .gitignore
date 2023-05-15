@@ -18,8 +18,6 @@ start.spec
 # enaml cache
 __enamlcache__/
 
-*.spec
-
 
 .vscode
 .idea
@@ -29,7 +27,6 @@ __enamlcache__/
 packaging/pyinstaller/build
 packaging/pyinstaller/onefile
 packaging/pyinstaller/onedir
-packaging/pyinstaller/angr-management.spec
 packaging/appimage/AppDir
 packaging/appimage/appimage-builder-cache
 packaging/appimage/AppDir
