@@ -98,9 +98,8 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: angr-management-${{ matrix.os }}
+      - run: pwd; tree
       - run: |
-          pwd
-          tree
           7z x angr-management-win64.exe
           .\angr-management\angr-management.exe
           sleep 30
