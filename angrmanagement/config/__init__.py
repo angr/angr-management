@@ -1,13 +1,25 @@
 import os
+from typing import Optional
 
-from xdg import BaseDirectory
+from PySide6.QtCore import QStandardPaths
 
 from .config_manager import ConfigurationManager
 
 # Global configuration manager instance
-fc = BaseDirectory.save_config_path("angr-management")
-if fc is not None:
-    config_path = os.path.join(fc, "config")
+config_dir: str = QStandardPaths.locate(
+    QStandardPaths.StandardLocation.AppConfigLocation, "angr-managemnt", QStandardPaths.LocateOption.LocateDirectory
+)
+if config_dir == "":
+    system_config_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppConfigLocation)
+    if system_config_dir == "":
+        print("Could not find configuration directory - settings will not be saved")
+        config_dir = ""
+    config_dir = os.path.join(system_config_dir, "angr-management")
+    os.mkdir(config_dir)
+
+config_path: Optional[str]
+if config_dir != "":
+    config_path = os.path.join(config_dir, "config")
     try:
         Conf = ConfigurationManager.parse_file(config_path)
     except FileNotFoundError:
@@ -19,7 +31,7 @@ else:
 
 
 def save_config():
-    if fc is None:
+    if config_path is None:
         return
     Conf.save_file(config_path)
 
