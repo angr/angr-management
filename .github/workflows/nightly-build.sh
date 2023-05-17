@@ -22,6 +22,9 @@ pip install git+https://github.com/angr/cle.git
 pip install git+https://github.com/angr/claripy.git
 pip install git+https://github.com/angr/ailment.git
 pip install --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    pip install git+https://github.com/angr/archr.git#egg=archr
+fi
 
 # Install angr-mangement
 pip install -e .[pyinstaller]
