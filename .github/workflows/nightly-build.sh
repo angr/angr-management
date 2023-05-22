@@ -19,7 +19,7 @@ pip install git+https://github.com/eliben/pyelftools.git
 pip install git+https://github.com/angr/archinfo.git
 pip install git+https://github.com/angr/pyvex.git
 pip install git+https://github.com/angr/cle.git
-pip install git+https://github.com/angr/claripy.git
+pip install git+https://github.com/angr/claripy.git@dep/z3-4.12.2.0
 pip install git+https://github.com/angr/ailment.git
 pip install --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
