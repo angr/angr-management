@@ -10,10 +10,7 @@ fi
 
 # Install dependencies
 
-python -m pip install -U pip wheel setuptools pyinstaller==5.6.2 unicorn==2.0.1.post1
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    pip install pillow # icon conversion on macOS
-fi
+python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
 
 # TODO: remove this when upstream packaging is fixed, extra is added to cle
 pip install git+https://github.com/theopolis/uefi-firmware-parser.git
@@ -26,15 +23,16 @@ pip install git+https://github.com/angr/claripy.git
 pip install git+https://github.com/angr/ailment.git
 pip install --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install keystone-engine
     pip install git+https://github.com/angr/archr.git#egg=archr
 fi
 
 # Install angr-mangement
-pip install -e .
+pip install -e .[pyinstaller]
 
 # Bundle!
-python packaging/pyinstaller/bundle.py
+pyinstaller packaging/pyinstaller/angr-management.spec \
+    --workpath packaging/pyinstaller/build \
+    --distpath packaging/pyinstaller/dist
 
 mkdir upload
 
