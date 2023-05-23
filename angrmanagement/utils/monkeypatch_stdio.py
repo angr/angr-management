@@ -3,7 +3,7 @@ import sys
 
 class NullWriter:
     softspace = 0
-    encoding = 'UTF-8'
+    encoding = "UTF-8"
 
     def write(*args):
         pass
@@ -13,6 +13,7 @@ class NullWriter:
 
     def isatty(self):
         return False
+
 
 def monkeypatch_stdio():
     if sys.stdout is None:
