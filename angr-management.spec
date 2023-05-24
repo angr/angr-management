@@ -2,7 +2,6 @@ import pathlib
 import sys
 
 import angr
-import angrmanagement
 import capstone
 import cle
 import debugpy
@@ -15,7 +14,7 @@ import z3
 sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
 # Repo root
-AM_BASE = pathlib.Path(angrmanagement.__file__).parent.parent
+AM_BASE = pathlib.Path(SPECPATH)
 
 # Python module roots
 ANGR_BASE = pathlib.Path(angr.__file__).parent
