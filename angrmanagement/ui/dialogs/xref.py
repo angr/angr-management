@@ -3,6 +3,7 @@ import logging
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QDialog, QVBoxLayout
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.widgets.qxref_viewer import QXRefViewer
 
 _l = logging.getLogger(__name__)
@@ -75,10 +76,10 @@ class XRefDialog(QDialog):
         self.setLayout(layout)
 
     def jump_to(self, addr):
+        self.close()
         disasm_view = self._disassembly_view
-        if disasm_view is not None:
+        if disasm_view is None:
+            disasm_view = GlobalInfo.main_window.workspace.jump_to(addr)
+        else:
             disasm_view.jump_to(addr, src_ins_addr=self._addr)
             disasm_view.focus()
-        else:
-            _l.debug("No disassembly view available.")
-        self.close()
