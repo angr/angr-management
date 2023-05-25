@@ -264,7 +264,6 @@ class QStringTable(QTableView):
                         xrefs_manager=self.xrefs,
                         instance=self._instance,
                         parent=self,
-                        disassembly_view=self.parent.workspace.view_manager.first_view_in_category("disassembly"),
                     )
                     dialog.exec_()
             return
