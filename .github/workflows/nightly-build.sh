@@ -30,24 +30,21 @@ fi
 pip install -e .[pyinstaller]
 
 # Bundle!
-pyinstaller packaging/pyinstaller/angr-management.spec \
-    --workpath packaging/pyinstaller/build \
-    --distpath packaging/pyinstaller/dist
+pyinstaller angr-management.spec
 
 mkdir upload
 
 # Prepare onedirs
-ONEDIR_DIR=packaging/pyinstaller/dist
 if [[ "$OSTYPE" == "darwin"* ]]; then
     mkdir /tmp/angr-management-dmg
-    cp -r $ONEDIR_DIR/*.app /tmp/angr-management-dmg
+    cp -r dist/*.app /tmp/angr-management-dmg
     hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder /tmp/angr-management-dmg
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
-    tar -C $ONEDIR_DIR -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management
+    tar -C dist -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management
 elif [[ "$OSTYPE" == "msys" ]]; then
     OUTDIR=$(pwd)/upload
-    pushd $ONEDIR_DIR
+    pushd dist
     7z a $OUTDIR/angr-management-win64.zip \*
     popd
 fi
