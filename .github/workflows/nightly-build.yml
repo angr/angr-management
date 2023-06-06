@@ -3,7 +3,7 @@ name: Bundle
 on:
   push:
     branches:
-    - "**"
+      - master
   pull_request:
   schedule:
   - cron: "0 0 * * *"
