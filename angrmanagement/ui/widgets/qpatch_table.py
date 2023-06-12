@@ -139,5 +139,5 @@ class QPatchTable(QTableWidget):
             mnu.addAction(act)
         mnu.exec_(QCursor.pos())
 
-    def closeEvent(self, event: "QCloseEvent") -> None:
+    def closeEvent(self, event: "QCloseEvent") -> None:  # pylint:disable=unused-argument
         self.instance.patches.am_unsubscribe(self._watch_patches)
