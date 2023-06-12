@@ -6,8 +6,8 @@ from PySide6.QtGui import QAction, QContextMenuEvent, QCursor
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QMessageBox, QTableWidget, QTableWidgetItem
 
 if TYPE_CHECKING:
-    from PySide6.QtGui import QCloseEvent
     from angr.knowledge_plugins.patches import Patch
+    from PySide6.QtGui import QCloseEvent
 
 
 class QPatchTableItem:
