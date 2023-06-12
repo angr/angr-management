@@ -67,6 +67,13 @@ class QUnknownBlock(QCachedGraphicsItem):
                     self._byte_lines.append(o)
                     line = ""
 
+                    if len(self._byte_lines) > 100:
+                        o = QGraphicsSimpleTextItem("Remaining lines are omitted", self)
+                        o.setFont(Conf.disasm_font)
+                        o.setBrush(Conf.disasm_view_unprintable_byte_color)
+                        self._byte_lines.append(o)
+                        break
+
             if line:
                 o = QGraphicsSimpleTextItem(line, self)
                 o.setFont(Conf.disasm_font)
