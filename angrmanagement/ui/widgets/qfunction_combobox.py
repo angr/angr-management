@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from PySide6.QtWidgets import QComboBox
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import FunctionManager
+    from angr.knowledge_plugins import FunctionManager, Function
 
 
 class QFunctionComboBox(QComboBox):
@@ -45,7 +45,7 @@ class QFunctionComboBox(QComboBox):
             self.addItem("All functions", "all")
 
         for function in self._function_manager.values():
-            self.addItem(repr(function), function)
+            self.addItem(self._repr_function(function), function)
 
     #
     # Event handlers
@@ -59,3 +59,14 @@ class QFunctionComboBox(QComboBox):
         function = self.itemData(idx)
 
         self._selection_callback(function)
+
+    #
+    # Private functions
+    #
+
+    @staticmethod
+    def _repr_function(func: "Function") -> str:
+        demangled_name = func.demangled_name
+        if len(demangled_name) > 30:
+            demangled_name = demangled_name[:30] + "..."
+        return f"{demangled_name} ({func.addr:#x})"
