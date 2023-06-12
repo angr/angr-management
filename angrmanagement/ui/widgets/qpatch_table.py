@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QMessageBox
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.patches import Patch
+    from PySide6.QtGui import QCloseEvent
 
 
 class QPatchTableItem:
@@ -90,10 +91,6 @@ class QPatchTable(QTableWidget):
 
         self._reloading = False
 
-    def _on_state_selected(self, *args):  # pylint: disable=unused-argument
-        if self._selected is not None:
-            self._selected(self.current_state_record())
-
     def _watch_patches(self, **kwargs):  # pylint: disable=unused-argument
         if not self.instance.patches.am_none:
             self.reload()
@@ -141,3 +138,6 @@ class QPatchTable(QTableWidget):
             act.triggered.connect(self.revert_selected_patches)
             mnu.addAction(act)
         mnu.exec_(QCursor.pos())
+
+    def closeEvent(self, event: "QCloseEvent") -> None:  # pylint:disable=unused-argument
+        self.instance.patches.am_unsubscribe(self._watch_patches)
