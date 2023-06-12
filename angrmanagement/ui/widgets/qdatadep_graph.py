@@ -84,7 +84,7 @@ class QDataDepPreview(QtWidgets.QFrame):
             self._caption.setText(self._DST_JUMP_TEXT)
 
     def _init_widgets(self):
-        parent_background_color = self.parent().palette().color(QtGui.QPalette.Background)
+        parent_background_color = self.parent().palette().color(QtGui.QPalette.Window)
         self.setStyleSheet(f"background-color: {parent_background_color.name()};")
         self.setFrameStyle(QtWidgets.QFrame.Raised | QtWidgets.QFrame.Panel)
         self._layout_manager.addWidget(self.preview_graph, 0, QtCore.Qt.AlignCenter)
