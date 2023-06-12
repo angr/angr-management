@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 from PySide6.QtWidgets import QComboBox
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins import FunctionManager, Function
+    from angr.knowledge_plugins import Function, FunctionManager
 
 
 class QFunctionComboBox(QComboBox):
