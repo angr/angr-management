@@ -185,6 +185,8 @@ class Instance:
         if self.project.am_none:
             return
 
+        self.patches.am_obj = self.kb.patches
+
         if not initialized and self.pseudocode_variable_kb is None:
             self.initialize_pseudocode_variable_kb()
 

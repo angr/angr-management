@@ -172,11 +172,8 @@ class AssemblePatchDialog(QDialog):
 
     def _on_ok_clicked(self):
         if self._new_bytes != self._original_bytes:
-            # FIXME: Patches object should be initialized with project
             pm = self.instance.project.kb.patches
             pm.add_patch_obj(Patch(self._patch_addr, self._new_bytes))
-            if self.instance.patches.am_none:
-                self.instance.patches.am_obj = pm
             self.instance.patches.am_event()
 
         self.accept()

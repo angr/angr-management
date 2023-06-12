@@ -18,6 +18,9 @@ class PatchesView(BaseView):
 
         self._init_widgets()
 
+        # Reload upon creation
+        self.reload()
+
     def reload(self):
         self._patch_table.reload()
 
