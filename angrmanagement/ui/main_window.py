@@ -492,6 +492,9 @@ class MainWindow(QMainWindow):
     #
 
     def _init_url_scheme_handler(self):
+        if "CI" in os.environ:
+            return
+
         # URL scheme
         from angrmanagement.logic.url_scheme import AngrUrlScheme  # pylint:disable=import-outside-toplevel
 
