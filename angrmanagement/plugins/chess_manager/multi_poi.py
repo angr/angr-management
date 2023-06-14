@@ -1,8 +1,10 @@
+import logging
 import math
 
 from PySide6.QtGui import QColor
 
-from .trace_statistics import TraceStatistics
+_l = logging.getLogger(__name__)
+
 
 try:
     from slacrs import Slacrs
@@ -12,7 +14,11 @@ except ImportError:
     HumanFatigue = None
 
 
-class MultiTrace:
+class MultiPOI:
+    """
+    Multiple POIs
+    """
+
     HIT_COLOR = QColor(0x00, 0x99, 0x00, 0x60)
     MISS_COLOR = QColor(0xEE, 0xEE, 0xEE)
     FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
@@ -26,18 +32,58 @@ class MultiTrace:
     def __init__(self, workspace):
         self.workspace = workspace
         self._traces_summary = []
-        self._traces = {}
+        self._pois = {}
         self.function_info = {}
         self.is_active_tab = False
         self.addr_color_map = {}
+        self.slacrs_url = "sqlite://"
         # self.base_addr = base_addr
 
-    def add_trace(self, trace, base_addr):
-        traceStats = TraceStatistics(self.workspace, trace, base_addr)
-        self._traces[trace["id"]] = traceStats
-        self._traces_summary.extend(traceStats.mapped_trace)
-        # self._make_addr_map()
-        return traceStats
+    # def add_trace(self, trace, base_addr):
+    #     traceStats = TraceStatistics(self.workspace, trace, base_addr)
+    #     self._pois[trace["id"]] = traceStats
+    #     self._traces_summary.extend(traceStats.mapped_trace)
+    #     # self._make_addr_map()
+    #     return traceStats
+
+    def add_poi(self, poi_id, poi):
+        _l.debug("adding poi: %s", poi)
+        self._pois[poi_id] = poi
+
+    def remove_poi(self, poi_id):
+        self._pois.pop(poi_id, None)
+
+    def update_poi(self, poi_id, column, content):
+        poi = self.get_poi_by_id(poi_id)
+        if column == 1:
+            if content.isdecimal():
+                poi["output"]["bbl"] = int(content, 10)
+            else:
+                try:
+                    poi["output"]["bbl"] = int(content, 16)
+                except ValueError:
+                    poi["output"]["bbl"] = ""
+        if column == 2:
+            poi["category"] = content
+        if column == 3:
+            poi["output"]["diagnose"] = content
+        self._pois[poi_id] = poi
+        return poi
+
+    def get_poi_by_id(self, poi_id):
+        return self._pois[poi_id]
+
+    def get_content_by_id_column(self, poi_id, column):
+        if column == 0:
+            return poi_id
+        poi = self.get_poi_by_id(poi_id)
+        if column == 1:
+            return poi["output"].get("bbl", "")
+        if column == 2:
+            return poi.get("category", "")
+        if column == 3:
+            return poi["output"].get("diagnose", "")
+        return ""
 
     def get_hit_miss_color(self, addr):
         # hexstr_addr = hex(addr)
@@ -45,7 +91,7 @@ class MultiTrace:
             # return MultiTrace.BUCKET_COLORS[self.addr_color_map[addr]]
             return self.addr_color_map[addr]
         else:
-            return MultiTrace.MISS_COLOR
+            return MultiPOI.MISS_COLOR
 
     def get_percent_color(self, func):
         addr = func.addr
@@ -65,27 +111,34 @@ class MultiTrace:
         return self.function_info[func.addr]["coverage"]
 
     def get_any_trace(self, addr):
-        for trace in self._traces.values():
+        for trace in self._pois.values():
             if addr in trace["trace"]:
                 return trace["trace"]
 
         return None
 
-    def get_all_trace_ids(self):
-        return self._traces.keys()
+    def get_all_poi_ids(self):
+        _l.debug("get_all_poi_ids: current pois: %s", self._pois)
+        return self._pois.keys()
 
     def get_input_id_for_trace_id(self, trace_id):
-        if trace_id not in self._traces.keys():
+        if trace_id not in self._pois.keys():
             self.workspace.log("ERROR - trace id %s not present in multitrace" % trace_id)
             return None
-        trace = self._traces[trace_id]
+        trace = self._pois[trace_id]
         return trace.input_id
 
     def get_trace_with_id(self, trace_id):
-        if trace_id not in self._traces.keys():
+        if trace_id not in self._pois.keys():
             self.workspace.log("ERROR - trace id %s not present in multitrace" % trace_id)
             return None
-        return self._traces[trace_id]
+        return self._pois[trace_id]
+
+    def get_last_slacrs_url(self):
+        return self.slacrs_url
+
+    def set_last_slacrs_url(self, url):
+        self.slacrs_url = url
 
     def get_input_seed_for_id(self, trace_id):
         input_seed_string = "<>"
@@ -107,7 +160,7 @@ class MultiTrace:
         if session:
             result = session.query(Input).filter_by(id=trace_id).first()
             if result:
-                input_seed_string = result.value
+                input_seed_string = result.values("value")
             session.close()
         if input_seed_string == "<>":
             self.workspace.log("Unable to retrieve seed input for trace: %s" % trace_id)
@@ -116,14 +169,11 @@ class MultiTrace:
     def clear_heatmap(self):
         self._make_addr_map([])
 
-    def reload_heatmap(self, targets):
+    def reload_heatmap(self, poi_id):
+        _l.debug("reloading heatmap")
         addrs_of_interest = []
-        for trace_id in targets:
-            if trace_id not in self._traces.keys():
-                self.workspace.log("%s not found in traces" % trace_id)
-                continue
-            addr_list = self._traces[trace_id].mapped_trace
-            addrs_of_interest.extend(addr_list)
+        addr_list = self._pois[poi_id]["output"]["bbl_history"]
+        addrs_of_interest.extend(addr_list)
         self._make_addr_map(addrs_of_interest)
 
     def _make_addr_map(self, addrs_of_interest):
@@ -163,11 +213,11 @@ class MultiTrace:
                 hit_count += 1
 
         if hit_count == 0:
-            self.function_info[func.addr] = {"color": MultiTrace.FUNCTION_NOT_VISITED_COLOR, "coverage": 0}
+            self.function_info[func.addr] = {"color": MultiPOI.FUNCTION_NOT_VISITED_COLOR, "coverage": 0}
         elif hit_count == len(blocks):
-            self.function_info[func.addr] = {"color": MultiTrace.HIT_COLOR, "coverage": 100}
+            self.function_info[func.addr] = {"color": MultiPOI.HIT_COLOR, "coverage": 100}
         else:
             hit_percent = (hit_count / len(blocks)) * 100
-            bucket_size = 100 / len(MultiTrace.BUCKET_COLORS)
+            bucket_size = 100 / len(MultiPOI.BUCKET_COLORS)
             bucket_pos = math.floor(hit_percent / bucket_size)
-            self.function_info[func.addr] = {"color": MultiTrace.BUCKET_COLORS[bucket_pos], "coverage": hit_percent}
+            self.function_info[func.addr] = {"color": MultiPOI.BUCKET_COLORS[bucket_pos], "coverage": hit_percent}

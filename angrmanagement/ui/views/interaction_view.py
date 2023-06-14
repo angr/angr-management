@@ -5,7 +5,7 @@ from threading import Thread
 from typing import Optional
 
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtWidgets import QInputDialog, QLineEdit
+from PySide6.QtWidgets import QInputDialog, QLineEdit, QMessageBox
 
 from .view import BaseView
 
@@ -21,6 +21,11 @@ try:
     import archr
 except ImportError:
     archr = None
+try:
+    import slacrs
+    import slacrs.model
+except ImportError:
+    slacrs = None
 
 
 _l = logging.getLogger(name=__name__)
@@ -221,6 +226,62 @@ class InteractionView(BaseView):
         )
         self.instance.interactions.am_event()
 
+    def _upload_interaction(self):
+        if slacrs is None:
+            QMessageBox.warning(
+                self.workspace.main_window,
+                "slacrs module does not exist",
+                "Failed to import slacrs package. Please make sure it is installed.",
+            )
+            return
+        connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if connector is None:
+            # chess connector does not exist
+            QMessageBox.warning(
+                self.workspace.main_window,
+                "CHESSConnector is not found",
+                "Cannot communicate with the CHESSConnector plugin. Please make sure it is installed and enabled.",
+            )
+            return
+        if not connector.target_image_id:
+            # the target image ID does not exist
+            QMessageBox.warning(
+                self.workspace.main_window,
+                "Target image ID is not specified",
+                "The target image ID is unspecified. Please associate the binary with a remote challenge target.",
+            )
+            return
+        slacrs_instance = connector.slacrs_instance()
+        if slacrs_instance is None:
+            # slacrs does not exist
+            QMessageBox.warning(
+                self.workspace.main_window,
+                "CHECRS backend does not exist",
+                "Cannot communicate with the CHECRS backend. Please make sure you have proper Internet "
+                "access and have connected to the CHECRS backend.",
+            )
+            return
+        session = slacrs_instance.session()
+
+        # get the interaction
+        interaction: SavedInteraction = self.instance.interactions[self.widget_combobox_load.currentIndex()]
+
+        # upload it to the session
+        data = b""
+        for model in interaction.log:
+            if model["dir"] == "in":
+                data += model["data"] + b"\n"
+
+        if data:
+            input_ = slacrs.model.Input(
+                value=data, target_image_id=connector.target_image_id, created_by="interaction view"
+            )
+            session.add(input_)
+            session.commit()
+
+        session.close()
+        print(interaction.name, interaction.protocol, interaction.log, flush=True)  # DEBUG
+
     def _load_interaction(self):
         if self.widget_combobox_load.currentIndex() == -1:
             return
@@ -381,6 +442,11 @@ class InteractionView(BaseView):
         save_button.setText("Save")
         box_save.layout().addWidget(save_button)
         save_button.clicked.connect(self._save_interaction)
+
+        upload_button = QtWidgets.QPushButton(box_upload)
+        upload_button.setText("Upload")
+        box_upload.layout().addWidget(upload_button)
+        upload_button.clicked.connect(self._upload_interaction)
 
         scrollArea = QtWidgets.QScrollArea(self)
         scrollArea.setWidgetResizable(True)

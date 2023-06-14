@@ -498,6 +498,9 @@ class MainWindow(QMainWindow):
         scheme = AngrUrlScheme()
         registered, _ = scheme.is_url_scheme_registered()
         supported = scheme.is_url_scheme_supported()
+        checrs_plugin = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
+        if checrs_plugin is None:
+            return
 
         if not registered and supported:
             btn = QMessageBox.question(
