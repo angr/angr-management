@@ -716,14 +716,16 @@ class QCCodeEdit(api.CodeEdit):
             start_idx = [
                 i
                 for i, stmt in enumerate(vex_block_copy.statements)
-                if isinstance(stmt, pyvex.stmt.IMark) and stmt.addr == self._selected_node.tags["ins_addr"]
+                if isinstance(stmt, pyvex.stmt.IMark)
+                and (stmt.addr + stmt.delta) == self._selected_node.tags["ins_addr"]
             ][0]
             try:
                 end_idx = next(
                     iter(
                         i
                         for i, stmt in enumerate(vex_block_copy.statements)
-                        if isinstance(stmt, pyvex.stmt.IMark) and stmt.addr > self._selected_node.tags["ins_addr"]
+                        if isinstance(stmt, pyvex.stmt.IMark)
+                        and (stmt.addr + stmt.delta) > self._selected_node.tags["ins_addr"]
                     )
                 )
             except StopIteration:

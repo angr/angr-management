@@ -21,10 +21,10 @@ AIL_BINOP_REPR2NAME = dict((v, k) for k, v in AIL_BINOP_NAME2REPR.items())
 
 # VEX binary operations
 AIL_BINOP_TO_VEX_BINOP = {
-    'CmpLE': 'Iop_CmpLE{b}U',
-    'CmpLT': 'Iop_CmpLT{b}U',
-    'CmpEQ': 'Iop_CmpEQ{b}',
-    'CmpNE': 'Iop_CmpNE{b}',
+    "CmpLE": "Iop_CmpLE{b}U",
+    "CmpLT": "Iop_CmpLT{b}U",
+    "CmpEQ": "Iop_CmpEQ{b}",
+    "CmpNE": "Iop_CmpNE{b}",
 }
 
 
@@ -48,7 +48,7 @@ class CCodeEditAtom(QDialog):
 
         self._extract_vex_statement()
 
-        self.setWindowTitle('Code atom editor')
+        self.setWindowTitle("Code atom editor")
 
         self.main_layout = QVBoxLayout()
         self._init_widgets()
@@ -62,8 +62,8 @@ class CCodeEditAtom(QDialog):
 
     def _extract_vex_statement(self):
         if isinstance(self.node, (CBinaryOp, CConstant)):
-            vex_block_addr = self.node.tags.get('vex_block_addr', None)
-            self._vex_stmt_idx = self.node.tags.get('vex_stmt_idx', None)
+            vex_block_addr = self.node.tags.get("vex_block_addr", None)
+            self._vex_stmt_idx = self.node.tags.get("vex_stmt_idx", None)
 
             if vex_block_addr is not None and self._vex_stmt_idx is not None and self._vex_stmt_idx >= 0:
                 # note that we do not support modifying offsets for DEFAULT_EXIT
@@ -120,13 +120,13 @@ class CCodeEditAtom(QDialog):
 
         # buttons
         ok_button = QPushButton(self)
-        ok_button.setText('OK')
+        ok_button.setText("OK")
         ok_button.setEnabled(False)
         ok_button.clicked.connect(self._on_ok_clicked)
         self._ok_button = ok_button
 
         cancel_button = QPushButton(self)
-        cancel_button.setText('Cancel')
+        cancel_button.setText("Cancel")
         cancel_button.clicked.connect(self._on_cancel_clicked)
 
         buttons_layout = QHBoxLayout()
@@ -135,9 +135,9 @@ class CCodeEditAtom(QDialog):
 
         self.main_layout.addLayout(buttons_layout)
 
-    def _attempt_patching(self) -> Tuple[bool,List]:
+    def _attempt_patching(self) -> Tuple[bool, List]:
         if self._block is None or self._vex_stmt_idx is None or self._vex_stmt is None:
-            return False, [ ]
+            return False, []
 
         # build the new VEX block
         if isinstance(self.node, CBinaryOp):
@@ -146,17 +146,17 @@ class CCodeEditAtom(QDialog):
 
             binop_name = AIL_BINOP_REPR2NAME.get(text, None)
             if binop_name is None:
-                return False, [ ]
+                return False, []
             vex_binop_name = ailop2vexop(binop_name, self.instance.project.arch.bits)
             if vex_binop_name is None:
-                return False, [ ]
+                return False, []
 
             vex_op_int = pyvex.enums_to_ints[vex_binop_name]  # shall not fail unless vex_binop_name is incorrect
 
             changed_vex_block = self._block.vex.copy()
             the_stmt = changed_vex_block.statements[self._vex_stmt_idx]
             if not isinstance(the_stmt, pyvex.stmt.WrTmp) or not isinstance(the_stmt.data, pyvex.expr.Binop):
-                return False, [ ]
+                return False, []
 
             the_stmt.data._op = None
             the_stmt.data.op_int = vex_op_int
@@ -168,7 +168,7 @@ class CCodeEditAtom(QDialog):
                 new_value = int(text)
             except (ValueError, TypeError):
                 # Cannot convert the string to an integer
-                return False, [ ]
+                return False, []
 
             changed_vex_block = self._block.vex.copy()
             the_stmt = changed_vex_block.statements[self._vex_stmt_idx]
@@ -190,14 +190,14 @@ class CCodeEditAtom(QDialog):
                 the_stmt.data = pyvex.expr.Const(const)
 
         else:
-            return False, [ ]
+            return False, []
 
         v = self.instance.project.analyses.Viscosity(self._block, changed_vex_block)
 
         if v.result:
             return True, v.result
 
-        return False, [ ]
+        return False, []
 
     #
     # Event handlers
