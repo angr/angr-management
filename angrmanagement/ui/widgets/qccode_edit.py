@@ -435,9 +435,10 @@ class QCCodeEdit(api.CodeEdit):
             addr,
             op,
         )
-        cache.binop_operators[op_desc] = negated_op
 
-        if negated_op != op:
+        existing_op_desc_removed = False
+        if negated_op in {"CmpEQ", "CmpNE"} or negated_op != op:
+            # remove existing descriptor if we are swapping the same binop expression twice
             existing_op_desc = OpDescriptor(
                 ailexpr.vex_block_addr if hasattr(ailexpr, "vex_block_addr") else None,
                 ailexpr.vex_stmt_idx if hasattr(ailexpr, "vex_stmt_idx") else None,
@@ -446,6 +447,10 @@ class QCCodeEdit(api.CodeEdit):
             )
             if existing_op_desc in cache.binop_operators:
                 del cache.binop_operators[existing_op_desc]
+                existing_op_desc_removed = True
+
+        if not existing_op_desc_removed:
+            cache.binop_operators[op_desc] = negated_op
         self._code_view.decompile(clear_prototype=False, regen_clinic=False)
 
     def expr2armasm(self):
