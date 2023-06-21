@@ -2,10 +2,8 @@ Plugin Metadata Specification
 =============================
 
 Each plugin directory must have a plugin.toml file. A plugin metadata file has
-two types of sections: `meta` and `plugin`. Each plugin.toml must contain one
-meta section, but may contain
-Below are tables of keys for each
-section.
+three sections: `meta`, `package` and `plugins`. Each plugin.toml must contain
+one meta section, but may contain Below are tables of keys for each sections.
 
 ## Meta section
 | Key     | Type    | Required | Notes               |
@@ -32,7 +30,7 @@ strings. See https://docs.python.org/3/library/sys.html#sys.platform to learn
 more about the `sys.platform` value in Python.
 
 
-## Plugin section
+## Plugins section
 | Key                | Type                   | Required | Default               | Notes                                      |
 | ------------------ | ---------------------- | -------- | --------------------- | ------------------------------------------ |
 | name               | string                 | yes      |                       |                                            |

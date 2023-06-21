@@ -1,19 +1,18 @@
-from dataclasses import dataclass, field
 import pathlib
-from typing import List, Optional, Dict
+from dataclasses import field
+from typing import Dict, List, Optional
 
 import marshmallow.validate
-import marshmallow_dataclass
 import tomlkit
-from marshmallow_dataclass import dataclass as dataclass_with_schema
+from marshmallow_dataclass import dataclass
 
 
-@dataclass_with_schema
+@dataclass
 class MetadataDescription:
     version: int = field(metadata={"validate": marshmallow.validate.OneOf([0])})
 
 
-@dataclass_with_schema
+@dataclass
 class PackageDescription:
     """
     Describes a plugin package.
@@ -28,7 +27,7 @@ class PackageDescription:
     long_description: str = field(default="")
 
 
-@dataclass_with_schema
+@dataclass
 class PluginDescription:
     """
     Describes an angr management plugin. Can be generated from plugin.toml.
@@ -52,19 +51,16 @@ class PluginConfigFileDescription:
     plugins: Dict[str, PluginDescription] = field(default_factory=dict)
 
 
-PluginConfigSchema = marshmallow_dataclass.class_schema(PluginConfigFileDescription)()
-
-
 def from_toml_string(toml_string: str) -> PluginConfigFileDescription:
     """
     Load a plugin config file from a TOML string.
     """
-    return PluginConfigSchema.load(tomlkit.parse(toml_string))
+    return PluginConfigFileDescription.Schema().load(tomlkit.parse(toml_string))
 
 
 def from_toml_file(toml_file: pathlib.Path) -> PluginConfigFileDescription:
     """
     Load a plugin config file from a TOML file.
     """
-    with open(toml_file, "r") as f:
+    with open(toml_file) as f:
         return from_toml_string(f.read())

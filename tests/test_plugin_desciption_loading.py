@@ -1,14 +1,13 @@
 import unittest
 
 import tomlkit
+from marshmallow import ValidationError
 
 from angrmanagement.plugins.plugin_description import (
+    MetadataDescription,
     PackageDescription,
     PluginDescription,
     from_toml_string,
-    MetadataDescription,
-    MetadataDescription,
-    MetadataDescription,
 )
 
 
@@ -19,7 +18,7 @@ class TestPluginDescriptionLoading(unittest.TestCase):
 
     def test_metadata_section_invalid_version(self):
         test_data = "version = 1_000_000"
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             MetadataDescription.Schema().load(tomlkit.parse(test_data))
 
     def test_minimal_package(self):
@@ -36,6 +35,17 @@ entrypoint = "example.py::ExamplePlugin"
 """
         PluginDescription.Schema().load(tomlkit.parse(test_data))
 
+    def test_no_plugins(self):
+        test_data = """
+[metadata]
+version = 0
+
+[package]
+name = "example"
+version = "1.0"
+"""
+        from_toml_string(test_data)
+
     def test_minimal(self):
         test_data = """
 [metadata]
@@ -47,8 +57,7 @@ version = "1.0"
 
 [plugin.example]
 name = "Example"
-version = "1.0"
-entrypoints = ["example.py::ExamplePlugin"]
+entrypoint = "example.py::ExamplePlugin"
 """
         from_toml_string(test_data)
 
@@ -61,24 +70,24 @@ version = 0
 name = "example"
 version = "1.0"
 platforms = ["any"]
-site_pacakges = "site-packages"
+site_packages = "site-packages"
 authors = ["Example"]
 description = "An example plugin package"
-long-description = "An example plugin package for testing angr management"
+long_description = "An example plugin package for testing angr management"
 
-[plugin.example1]
+[plugins.example1]
 name = "Example 1"
-entrypoints = ["example.py::ExamplePlugin1"]
+entrypoint = "example.py::ExamplePlugin1"
 platforms = ["linux"]
 description = "An example plugin for testing angr management on linuz"
-requires-workspace = false
+requires_workspace = false
 
-[plugin.example2]
+[plugins.example2]
 name = "Example 2"
-entrypoints = ["example.py::ExamplePlugin2"]
+entrypoint = "example.py::ExamplePlugin2"
 platforms = ["win32", "cygwin"]
 description = "An example plugin for testing angr management on windows"
-requires-workspace = true
+requires_workspace = true
 """
         from_toml_string(test_data)
 
