@@ -39,6 +39,7 @@ from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
+from angrmanagement.utils.track_system_theme import TrackSystemTheme
 
 from .dialogs.about import LoadAboutDialog
 from .dialogs.command_palette import CommandPaletteDialog, GotoPaletteDialog
@@ -195,6 +196,12 @@ class MainWindow(QMainWindow):
         self._init_flirt_signatures()
 
         self._run_daemon(use_daemon=use_daemon)
+
+        # Allow system theme-ing
+        self._track_system_theme = TrackSystemTheme.create(self)
+        if Conf.theme_track_system:
+            self._track_system_theme.set_enabled(True)
+            self._track_system_theme.refresh_theme()
 
         # I'm ready to show off!
         if show:

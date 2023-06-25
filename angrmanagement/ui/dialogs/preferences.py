@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from bidict import bidict
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -31,6 +31,7 @@ from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qcolor_option import QColorOption
 from angrmanagement.ui.widgets.qfont_option import QFontOption
+from angrmanagement.utils.track_system_theme import TrackSystemTheme
 
 
 class Page(QWidget):
@@ -39,6 +40,9 @@ class Page(QWidget):
     """
 
     def save_config(self):
+        raise NotImplementedError
+
+    def revert_unsaved(self):
         raise NotImplementedError
 
     NAME = NotImplemented
@@ -104,6 +108,9 @@ class Integration(Page):
             # the current OS is not supported
             pass
 
+    def revert_unsaved(self):
+        pass
+
 
 class ThemeAndColors(Page):
     """
@@ -116,6 +123,7 @@ class ThemeAndColors(Page):
         super().__init__(parent=parent)
 
         self._to_save = {}
+        self._auto = TrackSystemTheme.get()
         self._schemes_combo: QComboBox = None
 
         self._init_widgets()
@@ -130,7 +138,7 @@ class ThemeAndColors(Page):
 
         self._schemes_combo = QComboBox(self)
         current_theme_idx = 0
-        for idx, name in enumerate(["Current"] + sorted(COLOR_SCHEMES)):
+        for idx, name in enumerate(sorted(COLOR_SCHEMES)):
             if name == Conf.theme_name:
                 current_theme_idx = idx
             self._schemes_combo.addItem(name)
@@ -161,7 +169,17 @@ class ThemeAndColors(Page):
 
         page_layout.addLayout(scroll_layout)
 
+        self._track_system = QCheckBox("Override: Track System Theme", self)
+        self._track_system.setCheckState(Qt.CheckState.Checked if self._auto.enabled() else Qt.CheckState.Unchecked)
+        self._track_system.stateChanged.connect(self._toggle_system_tracking)
+        page_layout.addWidget(self._track_system)
+
         self.setLayout(page_layout)
+
+    def _toggle_system_tracking(self, state: int):
+        self._auto.set_enabled(state == Qt.CheckState.Checked.value)
+        Conf.theme_track_system = self._auto.enabled()
+        (self._auto.refresh_theme if Conf.theme_track_system else self._on_load_scheme_clicked)()
 
     def _load_color_scheme(self, name):
         for prop, value in COLOR_SCHEMES[name].items():
@@ -172,11 +190,16 @@ class ThemeAndColors(Page):
         self._load_color_scheme(self._schemes_combo.currentText())
         self.save_config()
 
+    def revert_unsaved(self):
+        pass
+
     def save_config(self):
-        # pylint: disable=assigning-non-slot
+        if Conf.theme_track_system:
+            return
         Conf.theme_name = self._schemes_combo.currentText()
         for ce, row in self._to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
+        refresh_theme()
 
 
 class Style(Page):
@@ -203,7 +226,8 @@ class Style(Page):
         fmt: str = Conf.log_timestamp_format
         ts = datetime.now()
         # pylint: disable=use-sequence-for-iteration
-        self._fmt_map = bidict({ts.strftime(i): i for i in {fmt, "%X", "%c"}})  # set also dedups
+        self._fmt_map = bidict({ts.strftime(i): i for i in ("%X", "%c")})
+        self._fmt_map.forceput(ts.strftime(fmt), fmt)  # Ensure fmt is in the dict
         for i in self._fmt_map:
             self.log_format_entry.addItem(i)
         # pylint: disable=unsubscriptable-object
@@ -234,6 +258,9 @@ class Style(Page):
             Conf.log_timestamp_format = self._fmt_map.get(fmt, fmt)
         for i in self._font_options:
             i.update()
+
+    def revert_unsaved(self):
+        pass
 
 
 class Preferences(QDialog):
@@ -293,6 +320,11 @@ class Preferences(QDialog):
         main_layout.addWidget(buttons)
 
         self.setLayout(main_layout)
+
+    def close(self, *args, **kwargs):
+        for page in self._pages:
+            page.revert_unsaved()
+        super().close(*args, **kwargs)
 
     def _on_ok_clicked(self):
         for page in self._pages:
