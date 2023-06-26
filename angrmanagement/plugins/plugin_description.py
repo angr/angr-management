@@ -1,14 +1,17 @@
 import pathlib
 from dataclasses import field
-from typing import Dict, List, Optional
+from typing import ClassVar, Dict, List, Optional, Type
 
 import marshmallow.validate
 import tomlkit
+from marshmallow import Schema
 from marshmallow_dataclass import dataclass
 
 
 @dataclass
 class MetadataDescription:
+    Schema: ClassVar[Type[Schema]] = Schema  # placate mypy
+
     version: int = field(metadata={"validate": marshmallow.validate.OneOf([0])})
 
 
@@ -17,6 +20,8 @@ class PackageDescription:
     """
     Describes a plugin package.
     """
+
+    Schema: ClassVar[Type[Schema]] = Schema  # placate mypy
 
     name: str = field()
     version: str = field()
@@ -33,6 +38,8 @@ class PluginDescription:
     Describes an angr management plugin. Can be generated from plugin.toml.
     """
 
+    Schema: ClassVar[Type[Schema]] = Schema  # placate mypy
+
     name: str = field()
     entrypoint: str = field()
     platforms: Optional[List[str]] = field(default=None)
@@ -45,6 +52,8 @@ class PluginConfigFileDescription:
     """
     Describes a plugin config file.
     """
+
+    Schema: ClassVar[Type[Schema]] = Schema  # placate mypy
 
     metadata: MetadataDescription = field()
     package: PackageDescription = field()
