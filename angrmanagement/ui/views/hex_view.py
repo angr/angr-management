@@ -706,7 +706,7 @@ class HexGraphicsObject(QGraphicsObject):
             return
         elif QApplication.keyboardModifiers() & Qt.ControlModifier:
             if event.key() == Qt.Key_Space:
-                self.set_cursor(self.cursor, ascii_column=(not self.ascii_column_active))
+                self.set_cursor(self.cursor, ascii_column=not self.ascii_column_active)
                 event.accept()
                 return
         else:
@@ -1871,7 +1871,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         self._sync_view_highlights = regions
         self._set_highlighted_regions()
 
-    def _update_highlight_regions_from_patches(self, **kwargs):
+    def _update_highlight_regions_from_patches(self, **_):
         """
         Updates cached list of highlight regions from patches.
         """
