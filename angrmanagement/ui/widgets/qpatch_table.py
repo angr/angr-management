@@ -57,6 +57,7 @@ class QPatchTable(QTableWidget):
         self.instance.patches.am_subscribe(self._watch_patches)
         self._reloading: bool = False
         self.cellChanged.connect(self._on_cell_changed)
+        self.reload()
 
     def _on_cell_changed(self, row: int, column: int):
         """
