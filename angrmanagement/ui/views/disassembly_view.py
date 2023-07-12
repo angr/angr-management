@@ -154,6 +154,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.initialize()
 
         # Reload the current graph to make sure it gets the latest information, such as variables.
+        self._reload_current_function_if_changed()
         self._current_view.reload(old_infodock=old_infodock)
 
     def refresh(self):
@@ -321,8 +322,24 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
     def on_screen_changed(self):
         self._current_view.refresh()
 
+    def _reload_current_function_if_changed(self):
+        if self._flow_graph.function_graph is not None:
+            func_addr = self._flow_graph.function_graph.function.addr
+
+            try:
+                func = self.instance.kb.functions.get_by_addr(func_addr)
+            except KeyError:
+                func = None
+
+            if self._flow_graph.function_graph.function is not func:
+                self._display_function(func)
+
+            if func is None:
+                self._jump_to(func_addr)
+
     def _on_cfb_event(self, **kwargs):
         if not kwargs:
+            self._reload_current_function_if_changed()
             self._linear_viewer.reload()
 
     #
