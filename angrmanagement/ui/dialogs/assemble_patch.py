@@ -46,7 +46,7 @@ class AssemblePatchDialog(QDialog):
         block = self.instance.project.factory.block(self._patch_addr)
         insn = block.disassembly.insns[0]
 
-        self._original_bytes: bytes = self.instance.project.loader.memory.load(insn.address, insn.size)
+        self._original_bytes: bytes = block.bytes[:insn.size]
         self._new_bytes: Optional[bytes] = self._original_bytes
         self._initial_text = insn.mnemonic
         if insn.op_str:
