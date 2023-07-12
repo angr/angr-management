@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
         self._init_library_docs()
-        self._init_url_scheme_handler()
+        # self._init_url_scheme_handler()
 
         self._register_commands()
 
