@@ -227,6 +227,7 @@ ENTRIES = [
     CE("enabled_tabs", str, ""),
     # Recent
     CE("recent_files", list, []),
+    CE("prompted_for_url_scheme_registration", bool, False),
 ]
 
 
