@@ -1484,7 +1484,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
             patch_max_addr = p.addr + len(p) - 1
             if (p.addr <= addr) and (patch_max_addr >= max_addr):
                 # Existing patch contains new patch entirely. Update it.
-                p.new_bytes[(addr - p.addr) : (max_addr - p.addr + 1)] = new_bytes
+                p.new_bytes = p.new_bytes[:addr - p.addr] + new_bytes + p.new_bytes[max_addr - p.addr + 1:]
                 return
             elif (p.addr >= addr) and (patch_max_addr <= max_addr):
                 # Patch will be entirely overwritten, remove it.
