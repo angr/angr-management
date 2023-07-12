@@ -46,7 +46,7 @@ class AssemblePatchDialog(QDialog):
         block = self.instance.project.factory.block(self._patch_addr)
         insn = block.disassembly.insns[0]
 
-        self._original_bytes: bytes = block.bytes[:insn.size]
+        self._original_bytes: bytes = block.bytes[: insn.size]
         self._new_bytes: Optional[bytes] = self._original_bytes
         self._initial_text = insn.mnemonic
         if insn.op_str:
@@ -173,7 +173,15 @@ class AssemblePatchDialog(QDialog):
     def _on_ok_clicked(self):
         if self._new_bytes != self._original_bytes:
             pm = self.instance.project.kb.patches
-            pm.add_patch_obj(Patch(self._patch_addr, self._new_bytes))
-            self.instance.patches.am_event()
+
+            # XXX: Currently patch manager stores patches by address, so remove any existing patch at this addr
+            existing_patch = pm.get_patch(self._patch_addr)
+            if existing_patch:
+                self.instance.patches.remove_patch(existing_patch.addr)
+                self.instance.patches.am_event(removed={existing_patch})
+
+            patch = Patch(self._patch_addr, self._new_bytes)
+            pm.add_patch_obj(patch)
+            self.instance.patches.am_event(added={patch})
 
         self.accept()
