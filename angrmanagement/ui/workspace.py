@@ -5,7 +5,9 @@ import traceback
 from typing import TYPE_CHECKING, Callable, List, Optional, Type, TypeVar, Union
 
 from angr import StateHierarchy
+from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
+from angr.knowledge_plugins.patches import Patch
 from angr.misc.testing import is_testing
 from cle import SymbolType
 from PySide6.QtWidgets import QMessageBox
@@ -37,6 +39,7 @@ from angrmanagement.logic.debugger.simgr import SimulationDebugger
 from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.plugins import PluginManager
 from angrmanagement.ui.dialogs import AnalysisOptionsDialog
+from angrmanagement.utils import locate_function
 from angrmanagement.utils.daemon_thread import start_daemon_thread
 
 from .view_manager import ViewManager
@@ -88,6 +91,7 @@ class Workspace:
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
         self.variable_recovery_job: Optional[VariableRecoveryJob] = None
+        self._first_cfg_generation_callback_completed: bool = False
 
         # Configure callbacks on main_instance
         instance.project.am_subscribe(self._instance_project_initalization)
@@ -119,6 +123,8 @@ class Workspace:
         self.on_debugger_state_updated()
 
         DisassemblyView.register_commands(self)
+
+        instance.patches.am_subscribe(self._on_patch_event)
 
     #
     # Properties
@@ -237,14 +243,14 @@ class Workspace:
                 )
             )
 
-        # display the main function if it exists, otherwise display the function at the entry point
         if self.main_instance.cfg is not None:
-            the_func = self.main_instance.kb.functions.function(name="main")
-            if the_func is None:
-                the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
-
-            if the_func is not None:
-                self.on_function_selected(the_func)
+            if not self._first_cfg_generation_callback_completed:
+                self._first_cfg_generation_callback_completed = True
+                the_func = self.main_instance.kb.functions.function(name="main")
+                if the_func is None:
+                    the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
+                if the_func is not None:
+                    self.on_function_selected(the_func)
 
             # Reload the pseudocode view
             view = self.view_manager.first_view_in_category("pseudocode")
@@ -290,6 +296,29 @@ class Workspace:
             if disassembly_view is not None and not disassembly_view.function.am_none:
                 self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
             self.main_instance.add_job(self.main_instance.variable_recovery_job)
+
+    def _on_patch_event(self, **kwargs):
+        if self.main_instance.cfg.am_none:
+            return
+
+        update_cfg = False
+        for k in ("added", "removed"):
+            for patch in kwargs.get(k, set()):
+                self.main_instance.cfg.clear_region_for_reflow(
+                    patch.addr, len(patch.new_bytes), self.main_instance.project.kb
+                )
+                update_cfg = True
+
+        if update_cfg:
+            self.generate_cfg(
+                cfg_args={
+                    "force_smart_scan": False,
+                    "force_complete_scan": False,
+                    "model": self.main_instance.kb.cfgs.get_most_accurate(),
+                    # FIXME: We don't want to force scan the entire binary, just the patched region. Add an
+                    #        option for it.
+                }
+            )
 
     #
     # Public methods
@@ -819,6 +848,93 @@ class Workspace:
     def append_code_to_console(self, hook_code_string):
         console = self._get_or_create_view("console", ConsoleView)
         console.set_input_buffer(hook_code_string)
+
+    def patch(self, addr: int, asm: str, pad: bool = True) -> None:
+        ks = self.main_instance.project.arch.keystone
+        block = self.main_instance.project.factory.block(addr)
+        insn = block.disassembly.insns[0]
+        original_bytes: bytes = self.main_instance.project.loader.memory.load(insn.address, insn.size)
+        ks = self.main_instance.project.arch.keystone
+        new_bytes = (ks.asm(asm, addr, as_bytes=True)[0] or b"") if len(asm) else b""
+
+        # Pad to original instruction length
+        byte_length_delta = len(original_bytes) - len(new_bytes)
+        if byte_length_delta > 0:
+            if pad:
+                nop_instruction_bytes = self.main_instance.project.arch.nop_instruction
+                new_bytes += (byte_length_delta // len(nop_instruction_bytes)) * nop_instruction_bytes
+                byte_length_delta = len(original_bytes) - len(new_bytes)
+                if byte_length_delta:
+                    _l.warning("Unable to completely pad remainder")
+        elif byte_length_delta < 0:
+            _l.warning("Patch exceeds original instruction length")
+
+        pm = self.main_instance.project.kb.patches
+        patch = Patch(addr, new_bytes)
+        pm.add_patch_obj(patch)
+        self.main_instance.patches.am_event(added={patch})
+
+    def define_code(self, addr: int):
+        cfg = self.main_instance.cfg
+        if cfg.am_none:
+            _l.error("Run initial CFG analysis before defining code")
+            return
+
+        func = locate_function(self.main_instance, addr)
+        if func is not None:
+            _l.warning("Address %#x is already defined as code", addr)
+            return
+
+        # Attempt flow into preceding function
+        func = cfg.find_function_for_reflow_into_addr(addr)
+        if func:
+            cfg.clear_region_for_reflow(func.addr)
+
+        # Truncate existing memory data
+        if addr in cfg.memory_data:
+            del cfg.memory_data[addr]
+        for md in cfg.memory_data.values():
+            if md.size and md.addr < addr < (md.addr + md.size):
+                md.size = addr - md.addr
+
+        self.generate_cfg(
+            cfg_args={
+                "symbols": False,
+                "function_prologues": False,
+                "start_at_entry": False,
+                "force_smart_scan": False,
+                "force_complete_scan": False,
+                "function_starts": [func.addr if func else addr],
+                "model": self.main_instance.kb.cfgs.get_most_accurate(),
+            }
+        )
+
+    def undefine_code(self, addr: int):
+        cfg = self.main_instance.cfg
+        if cfg.am_none:
+            _l.error("Run initial CFG analysis before undefining code")
+            return
+
+        func = locate_function(self.main_instance, addr)
+        if func is None:
+            _l.warning("Could not determine function for addr %#x", addr)
+            return
+
+        md = MemoryData(addr, 1, MemoryDataSort.Integer)  # FIXME: Type, expand size
+        cfg.memory_data[md.addr] = md.copy()
+        cfg.clear_region_for_reflow(func.addr)
+
+        self.generate_cfg(
+            cfg_args={
+                "symbols": False,
+                "function_prologues": False,
+                "start_at_entry": False,
+                "force_smart_scan": False,
+                "force_complete_scan": False,
+                "function_starts": [func.addr],
+                "model": self.main_instance.kb.cfgs.get_most_accurate(),
+            }
+        )
 
     #
     # Instance Callbacks
