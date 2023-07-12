@@ -59,6 +59,12 @@ repos:
     hooks:
     -   id: rm-unneeded-f-str
 
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.277
+    hooks:
+    - id: ruff
+      args: [--fix, --exit-non-zero-on-fix]
+
 # Last modifier: Coding Standard
 -   repo: https://github.com/psf/black
     rev: 23.3.0
@@ -87,7 +93,3 @@ repos:
     -   id: check-builtin-literals
     -   id: check-docstring-first
 
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.277
-    hooks:
-    - id: ruff
