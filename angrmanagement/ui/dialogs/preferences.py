@@ -204,7 +204,7 @@ class Style(Page):
         ts = datetime.now()
         self._fmt_map = bidict({ts.strftime(i): i for i in [fmt, "%X", "%c"]})
         # fmt must be in _fmt_map.inverse for this to work
-        if not fmt in self._fmt_map.inverse:
+        if fmt not in self._fmt_map.inverse:
             fmt = self._fmt_map[ts.strftime(fmt)]
         for i in self._fmt_map:
             self.log_format_entry.addItem(i)
