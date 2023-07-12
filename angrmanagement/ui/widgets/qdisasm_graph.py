@@ -116,11 +116,12 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self._reset_scene()
         self._arrows.clear()
+        self._minimap.reload_target_scene()
+        self.blocks.clear()
+        self._insaddr_to_block.clear()
         if self._function_graph is None:
             return
 
-        self.blocks.clear()
-        self._insaddr_to_block.clear()
         scene = self.scene()
 
         if self._disassembly_level is DisassemblyLevel.AIL:

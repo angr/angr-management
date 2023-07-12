@@ -154,6 +154,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock.initialize()
 
         # Reload the current graph to make sure it gets the latest information, such as variables.
+        self._reload_current_function_if_changed()
         self._current_view.reload(old_infodock=old_infodock)
 
     def refresh(self):
@@ -307,6 +308,12 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             # jump back
             self.jump_back()
             return
+        elif key == Qt.Key_C:
+            self.define_code()
+            return
+        elif key == Qt.Key_U:
+            self.undefine_code()
+            return
 
         super().keyPressEvent(event)
 
@@ -321,8 +328,24 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
     def on_screen_changed(self):
         self._current_view.refresh()
 
+    def _reload_current_function_if_changed(self):
+        if self._flow_graph.function_graph is not None:
+            func_addr = self._flow_graph.function_graph.function.addr
+
+            try:
+                func = self.instance.kb.functions.get_by_addr(func_addr)
+            except KeyError:
+                func = None
+
+            if self._flow_graph.function_graph.function is not func:
+                self._display_function(func)
+
+            if func is None:
+                self._jump_to(func_addr)
+
     def _on_cfb_event(self, **kwargs):
         if not kwargs:
+            self._reload_current_function_if_changed()
             self._linear_viewer.reload()
 
     #
@@ -377,6 +400,20 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             if dlg.result is not None:
                 obj.obj.name = dlg.result
                 self._current_view.refresh()
+
+    def define_code(self):
+        """
+        Redefine selected data as code
+        """
+        if self.infodock.selected_labels:
+            self.workspace.define_code(next(iter(self.infodock.selected_labels)))
+
+    def undefine_code(self):
+        """
+        Undefine selected instruction as code, mark it as data
+        """
+        if self.infodock.selected_insns:
+            self.workspace.undefine_code(next(iter(self.infodock.selected_insns)))
 
     def get_context_menu_for_selected_object(self) -> Optional[QMenu]:
         """
@@ -864,7 +901,8 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
     #
 
     def _display_function(self, the_func):
-        self.set_synchronized_cursor_address(the_func.addr)
+        if the_func is not None:
+            self.set_synchronized_cursor_address(the_func.addr)
 
         self._current_function.am_obj = the_func
         self._current_function.am_event()
@@ -880,17 +918,20 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         # clear existing selected instructions and operands
         self.infodock.clear_selection()
 
-        if self._current_view is self._flow_graph:
-            if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
-                # set function graph of a new function
-                self._flow_graph.function_graph = FunctionGraph(
+        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
+            self._flow_graph.function_graph = (
+                None
+                if the_func is None
+                else FunctionGraph(
                     function=the_func,
                     exception_edges=self.show_exception_edges,
                 )
+            )
 
-        elif self._current_view is self._linear_viewer:
+        if self._current_view is self._linear_viewer and the_func is not None:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
+        # FIXME: Don't populate console func like this
         view = self.workspace.view_manager.first_view_in_category("console")
         if view is not None:
             view.push_namespace(

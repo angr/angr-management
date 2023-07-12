@@ -706,7 +706,7 @@ class HexGraphicsObject(QGraphicsObject):
             return
         elif QApplication.keyboardModifiers() & Qt.ControlModifier:
             if event.key() == Qt.Key_Space:
-                self.set_cursor(self.cursor, ascii_column=(not self.ascii_column_active))
+                self.set_cursor(self.cursor, ascii_column=not self.ascii_column_active)
                 event.accept()
                 return
         else:
@@ -1484,7 +1484,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
             patch_max_addr = p.addr + len(p) - 1
             if (p.addr <= addr) and (patch_max_addr >= max_addr):
                 # Existing patch contains new patch entirely. Update it.
-                p.new_bytes[(addr - p.addr) : (max_addr - p.addr + 1)] = new_bytes
+                p.new_bytes = p.new_bytes[: addr - p.addr] + new_bytes + p.new_bytes[max_addr - p.addr + 1 :]
                 return
             elif (p.addr >= addr) and (patch_max_addr <= max_addr):
                 # Patch will be entirely overwritten, remove it.
@@ -1871,7 +1871,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         self._sync_view_highlights = regions
         self._set_highlighted_regions()
 
-    def _update_highlight_regions_from_patches(self):
+    def _update_highlight_regions_from_patches(self, **_):
         """
         Updates cached list of highlight regions from patches.
         """

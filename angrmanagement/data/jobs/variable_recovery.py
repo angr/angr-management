@@ -67,8 +67,9 @@ class VariableRecoveryJob(Job):
         func_addrs_to_prioritize = set()
         if self.func_addrs_to_prioritize:
             for func_addr in self.func_addrs_to_prioritize:
-                callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
-                func_addrs_to_prioritize |= {func_addr} | callees
+                if func_addr in self.instance.kb.functions:
+                    callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
+                    func_addrs_to_prioritize |= {func_addr} | callees
 
         self.ccc = inst.project.analyses.CompleteCallingConventions(
             recover_variables=True,
