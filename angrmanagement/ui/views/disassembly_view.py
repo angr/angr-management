@@ -308,6 +308,12 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             # jump back
             self.jump_back()
             return
+        elif key == Qt.Key_C:
+            self.define_code()
+            return
+        elif key == Qt.Key_U:
+            self.undefine_code()
+            return
 
         super().keyPressEvent(event)
 
@@ -394,6 +400,20 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
             if dlg.result is not None:
                 obj.obj.name = dlg.result
                 self._current_view.refresh()
+
+    def define_code(self):
+        """
+        Redefine selected data as code
+        """
+        if self.infodock.selected_labels:
+            self.workspace.define_code(next(iter(self.infodock.selected_labels)))
+
+    def undefine_code(self):
+        """
+        Undefine selected instruction as code, mark it as data
+        """
+        if self.infodock.selected_insns:
+            self.workspace.undefine_code(next(iter(self.infodock.selected_insns)))
 
     def get_context_menu_for_selected_object(self) -> Optional[QMenu]:
         """
