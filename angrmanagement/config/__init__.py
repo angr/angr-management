@@ -15,7 +15,7 @@ if config_dir == "":
         print("Could not find configuration directory - settings will not be saved")
         config_dir = ""
     config_dir = os.path.join(system_config_dir, "angr-management")
-    os.mkdir(config_dir)
+    os.makedirs(config_dir, exist_ok=True)
 
 config_path: Optional[str]
 if config_dir != "":
