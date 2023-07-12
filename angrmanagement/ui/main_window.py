@@ -502,7 +502,7 @@ class MainWindow(QMainWindow):
         registered, _ = scheme.is_url_scheme_registered()
         supported = scheme.is_url_scheme_supported()
 
-        if not registered and supported:
+        if not registered and supported and not Conf.prompted_for_url_scheme_registration:
             btn = QMessageBox.question(
                 None,
                 "Setting up angr URL scheme",
@@ -521,6 +521,10 @@ class MainWindow(QMainWindow):
                         "Error in registering angr URL scheme",
                         "Failed to register the angr URL scheme.\nThe following exception occurred:\n" + str(ex),
                     )
+                    return
+
+            Conf.prompted_for_url_scheme_registration = True
+            save_config()
 
     #
     # Commands
