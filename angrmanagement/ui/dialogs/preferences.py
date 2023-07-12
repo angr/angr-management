@@ -202,8 +202,10 @@ class Style(Page):
         self.log_format_entry = QComboBox(self)
         fmt: str = Conf.log_timestamp_format
         ts = datetime.now()
-        # pylint: disable=use-sequence-for-iteration
-        self._fmt_map = bidict({ts.strftime(i): i for i in {fmt, "%X", "%c"}})  # set also dedups
+        self._fmt_map = bidict({ts.strftime(i): i for i in [fmt, "%X", "%c"]})
+        # fmt must be in _fmt_map.inverse for this to work
+        if fmt not in self._fmt_map.inverse:
+            fmt = self._fmt_map[ts.strftime(fmt)]
         for i in self._fmt_map:
             self.log_format_entry.addItem(i)
         # pylint: disable=unsubscriptable-object
