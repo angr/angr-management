@@ -48,7 +48,10 @@ class QDecompilationOption(QTreeWidgetItem):
         # should make a dropdown option
         if hasattr(self.option, "value_type") and self.option.value_type != bool and self.option.candidate_values:
             self._combo_box = QComboBox()
-            self._combo_box.addItems(self.option.candidate_values)
+            self._combo_box.addItems(
+                [self.option.default_value] +
+                [c for c in self.option.candidate_values if c != self.option.default_value]
+            )
             self._combo_box.setToolTip(f"{option.NAME}: {option.DESCRIPTION}")
             # XXX: causes an itemChanged event for the tree
             self._combo_box.currentTextChanged.connect(lambda x: self.setText(0, self._combo_box.currentText()))
