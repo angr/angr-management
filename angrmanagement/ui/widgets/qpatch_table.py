@@ -123,10 +123,10 @@ class QPatchTable(QTableWidget):
             return
 
         selected_patches = self.get_selected_patches()
-        if len(selected_patches) > 0:
+        if selected_patches:
             for patch in selected_patches:
                 self.instance.patches.remove_patch(patch.addr)
-            self.instance.patches.am_event()
+            self.instance.patches.am_event(removed=selected_patches)
 
     def contextMenuEvent(self, event: QContextMenuEvent):  # pylint: disable=unused-argument
         """
