@@ -10,15 +10,15 @@ from PySide6.QtWidgets import QComboBox, QDockWidget, QFrame, QHBoxLayout, QMain
 from angrmanagement.config import Conf
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
 from angrmanagement.data.object_container import ObjectContainer
-from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.logic.disassembly import JumpHistory
+from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.documents import QCodeDocument
 from angrmanagement.ui.toolbars import NavToolbar
 from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
-from .view import BaseView
 from .disassembly_view import DisassemblyView
+from .view import BaseView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions.function import Function
