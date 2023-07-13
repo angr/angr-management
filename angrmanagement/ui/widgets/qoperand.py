@@ -369,7 +369,7 @@ class QOperand(QCachedGraphicsItem):
         if self._branch_targets_text:
             self._branch_targets_item = QGraphicsSimpleTextItem(self._branch_targets_text, self)
             self._branch_targets_item.setFont(self._config.disasm_font)
-            self._branch_targets_item.setBrush(Qt.darkYellow)  # TODO: Expose as a configuration entry in Config
+            self._branch_targets_item.setBrush(self._config.disasm_view_branch_target_text_color)
 
         # variable identifier
         if self._variable_ident_item is not None:
@@ -378,7 +378,7 @@ class QOperand(QCachedGraphicsItem):
         if self.variable is not None and self.disasm_view.show_variable_identifier:
             self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
             self._variable_ident_item.setFont(self._config.disasm_font)
-            self._variable_ident_item.setBrush(Qt.darkGreen)  # TODO: Expose as a configuration entry in Config
+            self._variable_ident_item.setBrush(self._config.disasm_view_variable_ident_color)
 
         self._layout_items_and_update_size()
 

@@ -245,13 +245,13 @@ class QInstruction(QCachedGraphicsItem):
             for line in lines:
                 comment = QGraphicsSimpleTextItem(self.COMMENT_PREFIX + line, self)
                 comment.setFont(self._config.disasm_font)
-                comment.setBrush(Qt.darkGreen)  # TODO: Expose it as a setting in Config
+                comment.setBrush(self._config.disasm_view_comment_color)
                 self._comment_items.append(comment)
         elif self._string is not None:
             self._comment_items = None
             self._string_item = QGraphicsSimpleTextItem(self._string, self)
             self._string_item.setFont(self._config.disasm_font)
-            self._string_item.setBrush(Qt.gray)  # TODO: Expose it as a setting in Config
+            self._string_item.setBrush(self._config.disasm_view_string_color)
 
     def _layout_items_and_update_size(self):
         x, y = 0, 0

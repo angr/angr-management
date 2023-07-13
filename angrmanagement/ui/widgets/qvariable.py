@@ -1,4 +1,4 @@
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from .qgraph_object import QCachedGraphicsItem
@@ -50,20 +50,20 @@ class QVariable(QCachedGraphicsItem):
         self._variable_name = "" if not self.variable.name else self.variable.name
         self._variable_name_item = QGraphicsSimpleTextItem(self._variable_name, self)
         self._variable_name_item.setFont(self._config.disasm_font)
-        self._variable_name_item.setBrush(Qt.darkGreen)  # TODO: Expose it as a configuration entry in Config
+        self._variable_name_item.setBrush(self._config.disasm_view_variable_label_color)
 
         # variable ident
         self._variable_ident = "<%s>" % ("" if not self.variable.ident else self.variable.ident)
         self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
         self._variable_ident_item.setFont(self._config.disasm_font)
-        self._variable_ident_item.setBrush(Qt.blue)  # TODO: Expose it as a configuration entry in Config
+        self._variable_ident_item.setBrush(self._config.disasm_view_variable_ident_color)
         self._variable_ident_item.setVisible(self.disasm_view.show_variable_identifier)
 
         # variable offset
         self._variable_offset = "%#x" % self.variable.offset
         self._variable_offset_item = QGraphicsSimpleTextItem(self._variable_offset, self)
         self._variable_offset_item.setFont(self._config.disasm_font)
-        self._variable_offset_item.setBrush(Qt.darkYellow)  # TODO: Expose it as a configuration entry in Config
+        self._variable_offset_item.setBrush(self._config.disasm_view_variable_offset_color)
 
         self._layout_items_and_update_size()
 
