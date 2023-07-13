@@ -1,9 +1,9 @@
 from datetime import datetime
 
 from bidict import bidict
-from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QAbstractScrollArea,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -255,11 +255,10 @@ class Preferences(QDialog):
     def _init_widgets(self):
         # contents
         contents = QListWidget()
-        contents.setViewMode(QListView.IconMode)
-        contents.setIconSize(QSize(96, 84))
+        contents.setViewMode(QListView.ListMode)
         contents.setMovement(QListView.Static)
-        contents.setMaximumWidth(128)
-        contents.setSpacing(12)
+        # set the width to match the width of the content
+        contents.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
 
         def item_changed(item: QListWidgetItem):
             pageno: Page = item.data(1)
