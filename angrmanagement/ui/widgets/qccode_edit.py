@@ -302,7 +302,7 @@ class QCCodeEdit(api.CodeEdit):
         dialog = RenameNode(code_view=self._code_view, node=n, func=self._code_view.function)
         dialog.exec_()
 
-    def xref_node(self, *args, node=None):
+    def xref_node(self, *args, node=None):  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
         if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
             return
