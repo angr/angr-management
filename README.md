@@ -56,9 +56,9 @@ angr-management can then be run with `angr-management` or `python start.py`.
 
 Configuration files locations vary by platform.
 
-- Windows: `"~\AppData\Local\angr-management\config"`
-- macOS: `"~/Library/Preferences/angr-management/config"`
-- Linux: `"~/.config/angr-management/config"`
+- Windows: `~\AppData\Local\angr-management\config.toml`
+- macOS: `~/Library/Preferences/angr-management/config.toml`
+- Linux: `~/.config/angr-management/config.toml`
 
 ## Plugins
 

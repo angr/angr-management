@@ -7,7 +7,7 @@ from .config_manager import ConfigurationManager
 
 # Global configuration manager instance
 config_dir: str = QStandardPaths.locate(
-    QStandardPaths.StandardLocation.AppConfigLocation, "angr-managemnt", QStandardPaths.LocateOption.LocateDirectory
+    QStandardPaths.StandardLocation.AppConfigLocation, "angr-management", QStandardPaths.LocateOption.LocateDirectory
 )
 if config_dir == "":
     system_config_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppConfigLocation)
@@ -19,7 +19,7 @@ if config_dir == "":
 
 config_path: Optional[str]
 if config_dir != "":
-    config_path = os.path.join(config_dir, "config")
+    config_path = os.path.join(config_dir, "config.toml")
     try:
         Conf = ConfigurationManager.parse_file(config_path)
     except FileNotFoundError:
