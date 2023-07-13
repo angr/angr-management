@@ -11,11 +11,13 @@ from angrmanagement.config import Conf
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic.disassembly import JumpHistory
+from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.documents import QCodeDocument
 from angrmanagement.ui.toolbars import NavToolbar
 from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
+from .disassembly_view import DisassemblyView
 from .view import BaseView
 
 if TYPE_CHECKING:
@@ -371,6 +373,11 @@ class CodeView(BaseView):
         else:
             self._jump_to(addr)
 
+    def popup_jumpto_dialog(self):
+        view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
+        JumpTo(view, parent=self).exec_()
+        view.decompile_current_function()
+
     def jump_forward(self):
         addr = self.jump_history.forwardstep()
         if addr is not None:
@@ -386,6 +393,10 @@ class CodeView(BaseView):
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
             self.workspace.jump_to(self.addr.am_obj)
+            return True
+        elif key == Qt.Key_G:
+            # jump to window
+            self.popup_jumpto_dialog()
             return True
         elif key == Qt.Key_Escape:
             self.jump_back()
