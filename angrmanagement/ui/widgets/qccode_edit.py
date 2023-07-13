@@ -304,10 +304,7 @@ class QCCodeEdit(api.CodeEdit):
 
     def xref_node(self, *args, node=None):
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField, SimType)):
-            return
-        if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
-            # unsupported right now..
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
             return
 
         disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
