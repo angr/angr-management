@@ -397,7 +397,7 @@ class CodeView(BaseView):
         elif key == Qt.Key_G:
             # jump to window
             self.popup_jumpto_dialog()
-            return
+            return True
         elif key == Qt.Key_Escape:
             self.jump_back()
             return True
