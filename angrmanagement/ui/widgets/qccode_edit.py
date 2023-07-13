@@ -312,10 +312,7 @@ class QCCodeEdit(api.CodeEdit):
 
         disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
         if isinstance(n, (CFunction, CFunctionCall)):
-            if isinstance(n, CFunction):
-                addr = n.addr
-            else:
-                addr = n.callee_func.addr
+            addr = n.addr if isinstance(n, CFunction) else n.callee_func.addr
             dialog = XRefDialog(
                 addr=addr,
                 xrefs_manager=self.instance.project.kb.xrefs,
@@ -618,23 +615,17 @@ class QCCodeEdit(api.CodeEdit):
             self.action_retype_node,
             self.action_toggle_struct,
             self.action_asmgen,
-            self.action_xref
+            self.action_xref,
         ]
 
-        self.function_name_actions = [
-            self.action_rename_node,
-            self.action_xref
-        ]
+        self.function_name_actions = [self.action_rename_node, self.action_xref]
 
         self.constant_actions = [
             self.action_hex,
             self.action_neg,
         ]
 
-        self.call_actions = [
-            self.action_rename_node,
-            self.action_xref
-        ]
+        self.call_actions = [self.action_rename_node, self.action_xref]
 
         self.constant_actions += base_actions + expr_actions
         self.operator_actions += base_actions + expr_actions
