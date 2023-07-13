@@ -362,7 +362,7 @@ class CodeView(BaseView):
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.workspace.jump_to(selected_node.value)
 
-    def jump_to(self, addr: int, src_ins_addr=None): # pylint:disable=unused-argument
+    def jump_to(self, addr: int, src_ins_addr=None):  # pylint:disable=unused-argument
         self.addr.am_obj = addr
         self.addr.am_event()
 
