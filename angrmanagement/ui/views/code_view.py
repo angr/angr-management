@@ -362,7 +362,7 @@ class CodeView(BaseView):
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.workspace.jump_to(selected_node.value)
 
-    def _jump_to(self, addr: int):
+    def jump_to(self, addr: int, src_ins_addr=None):
         self.addr.am_obj = addr
         self.addr.am_event()
 
@@ -371,7 +371,7 @@ class CodeView(BaseView):
         if addr is None:
             self.close()
         else:
-            self._jump_to(addr)
+            self.jump_to(addr)
 
     def popup_jumpto_dialog(self):
         view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
@@ -381,12 +381,12 @@ class CodeView(BaseView):
     def jump_forward(self):
         addr = self.jump_history.forwardstep()
         if addr is not None:
-            self._jump_to(addr)
+            self.jump_to(addr)
 
     def jump_to_history_position(self, pos: int):
         addr = self.jump_history.step_position(pos)
         if addr is not None:
-            self._jump_to(addr)
+            self.jump_to(addr)
 
     def keyPressEvent(self, event):
         key = event.key()

@@ -24,8 +24,10 @@ from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
 
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.dialogs.retype_node import RetypeNode
+from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
+from angrmanagement.ui.views.disassembly_view import DisassemblyView
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
@@ -75,6 +77,7 @@ class QCCodeEdit(api.CodeEdit):
         self.default_actions = []
         self.function_name_actions = []
         self.action_rename_node = None
+        self.action_xref = None
         self._selected_node = None
 
         self._initialize_context_menus()
@@ -298,6 +301,40 @@ class QCCodeEdit(api.CodeEdit):
             return
         dialog = RenameNode(code_view=self._code_view, node=n, func=self._code_view.function)
         dialog.exec_()
+
+    def xref_node(self, *args, node=None):
+        n = node if node is not None else self._selected_node
+        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField, SimType)):
+            return
+        if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
+            # unsupported right now..
+            return
+
+        disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
+        if isinstance(n, (CFunction, CFunctionCall)):
+            if isinstance(n, CFunction):
+                addr = n.addr
+            else:
+                addr = n.callee_func.addr
+            dialog = XRefDialog(
+                addr=addr,
+                xrefs_manager=self.instance.project.kb.xrefs,
+                dst_addr=addr,
+                instance=self.instance,
+                disassembly_view=self._code_view,
+                parent=self._code_view,
+            )
+        else:
+            addr = self.get_closest_insaddr(n)
+            dialog = XRefDialog(
+                addr=addr,
+                variable_manager=disasm_view.variable_manager,
+                variable=n.variable,
+                instance=self.instance,
+                disassembly_view=self._code_view,
+                parent=self._code_view,
+            )
+        dialog.show()
 
     def retype_node(self, *args, node=None, node_type=None):  # pylint: disable=unused-argument
         if node is None:
@@ -543,6 +580,9 @@ class QCCodeEdit(api.CodeEdit):
         self.action_rename_node = QAction("Rename...", self)
         self.action_rename_node.triggered.connect(self.rename_node)
         self.action_rename_node.setShortcut(QKeySequence("N"))
+        self.action_xref = QAction("XREFS...", self)
+        self.action_xref.triggered.connect(self.xref_node)
+        self.action_xref.setShortcut(QKeySequence("X"))
         self.action_retype_node = QAction("Retype variable", self)
         self.action_retype_node.triggered.connect(self.retype_node)
         self.action_retype_node.setShortcut(QKeySequence("Y"))
@@ -578,10 +618,12 @@ class QCCodeEdit(api.CodeEdit):
             self.action_retype_node,
             self.action_toggle_struct,
             self.action_asmgen,
+            self.action_xref
         ]
 
         self.function_name_actions = [
             self.action_rename_node,
+            self.action_xref
         ]
 
         self.constant_actions = [
@@ -591,6 +633,7 @@ class QCCodeEdit(api.CodeEdit):
 
         self.call_actions = [
             self.action_rename_node,
+            self.action_xref
         ]
 
         self.constant_actions += base_actions + expr_actions
