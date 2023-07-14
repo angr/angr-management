@@ -291,7 +291,7 @@ class QCCodeEdit(api.CodeEdit):
     #
     # Actions
     #
-
+    # pylint: disable=unused-argument
     def rename_node(self, *args, node=None):  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
         if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField, SimType)):
@@ -574,7 +574,7 @@ class QCCodeEdit(api.CodeEdit):
         self.action_rename_node = QAction("Rename...", self)
         self.action_rename_node.triggered.connect(self.rename_node)
         self.action_rename_node.setShortcut(QKeySequence("N"))
-        self.action_xref = QAction("XREFS...", self)
+        self.action_xref = QAction("Xrefs...", self)
         self.action_xref.triggered.connect(self.xref_node)
         self.action_xref.setShortcut(QKeySequence("X"))
         self.action_retype_node = QAction("Retype variable", self)
