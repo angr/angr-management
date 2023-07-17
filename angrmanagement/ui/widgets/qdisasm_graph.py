@@ -5,6 +5,7 @@ from angr.analyses.decompiler.utils import to_ail_supergraph
 from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
+from angrmanagement.config import Conf
 from angrmanagement.utils import get_out_branches
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
@@ -76,6 +77,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setFrameStyle(QFrame.NoFrame)
+        self.setBackgroundBrush(Conf.disasm_view_background_color)
 
         self._minimap = QMiniMapView(self, parent=self)
         self._minimap.setMaximumSize(200, 400)
@@ -246,6 +248,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         Redraw on color scheme update.
         """
         if event.type() == QEvent.PaletteChange:
+            self.setBackgroundBrush(Conf.disasm_view_background_color)
             self.reload()
 
     def on_background_click(self):

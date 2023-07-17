@@ -2,9 +2,12 @@ from PySide6.QtGui import QColor
 
 COLOR_SCHEMES = {
     "Light": {
+        "disasm_view_minimap_background_color": QColor(0xFF, 0xFF, 0xFF, 0xFF),
+        "disasm_view_minimap_outline_color": QColor(0xB8, 0xB8, 0xB8, 0xFF),
         "disasm_view_operand_color": QColor(0x00, 0x00, 0x80),
         "disasm_view_operand_constant_color": QColor(0x10, 0x78, 0x96),
         "disasm_view_variable_label_color": QColor(0x00, 0x80, 0x00),
+        "disasm_view_background_color": QColor(0xFF, 0xFF, 0xFF, 0xFF),
         "disasm_view_operand_highlight_color": QColor(0xFC, 0xEF, 0x00),
         "disasm_view_operand_select_color": QColor(0xFF, 0xFF, 0x00),
         "disasm_view_function_color": QColor(0x00, 0x00, 0xFF),
@@ -93,8 +96,11 @@ COLOR_SCHEMES = {
         "proximity_call_node_text_color_simproc": QColor(0x8B, 0x00, 0x8B),
     },
     "Dark": {
+        "disasm_view_minimap_background_color": QColor(0x28, 0x28, 0x28),
+        "disasm_view_minimap_outline_color": QColor(0x40, 0x40, 0x40),
         "disasm_view_operand_color": QColor(0xF0, 0xF0, 0x5A),
         "disasm_view_operand_constant_color": QColor(0x34, 0xF0, 0x8C),
+        "disasm_view_background_color": QColor(0x28, 0x28, 0x28),
         "disasm_view_variable_label_color": QColor(0x34, 0xD4, 0xF0),
         "disasm_view_operand_highlight_color": QColor(0x05, 0x2F, 0x50),
         "disasm_view_operand_select_color": QColor(0x09, 0x50, 0x8D),

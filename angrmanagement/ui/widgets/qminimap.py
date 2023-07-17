@@ -46,7 +46,7 @@ class QMiniMapViewportBox(QGraphicsItem):
         Draw the minimap outline and viewport box.
         """
         # Minimap outline
-        painter.setPen(QPen(Conf.palette_mid, self.PEN_WIDTH))
+        painter.setPen(QPen(Conf.disasm_view_minimap_outline_color, self.PEN_WIDTH))
         path = QPainterPath()
         path.addRect(self._scene_rect)
         painter.drawPath(path)
@@ -98,7 +98,7 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
             dpr * self._minimap_scene_rect.width(), dpr * self._minimap_scene_rect.height(), QImage.Format_ARGB32
         )
         self._scene_img.setDevicePixelRatio(dpr)
-        self._scene_img.fill(Conf.palette_base)
+        self._scene_img.fill(Conf.disasm_view_minimap_background_color)
         self._view.set_extra_render_pass(True)
         painter = QPainter(self._scene_img)
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
