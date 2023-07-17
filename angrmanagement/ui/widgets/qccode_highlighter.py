@@ -52,6 +52,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\b[A-Za-z0-9_:]+\s*(?=\()", "function"),
         (r"\bNULL\b", "function"),
         # keywords
+        (r"\bauto\b", "keyword"),
         (r"\bbool\b", "keyword"),
         (r"\bbreak\b", "keyword"),
         (r"\bcase\b", "keyword"),
@@ -67,6 +68,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\belse\b", "keyword"),
         (r"\benum\b", "keyword"),
         (r"\bexplicit\b", "keyword"),
+        (r"\bextern\b", "keyword"),
         (r"\bfloat\b", "keyword"),
         (r"\bfor\b", "keyword"),
         (r"\bfriend\b", "keyword"),
@@ -81,11 +83,14 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bprivate\b", "keyword"),
         (r"\bprotected\b", "keyword"),
         (r"\bpublic\b", "keyword"),
+        (r"\bregister\b", "keyword"),
+        (r"\breturn\b", "keyword"),
         (r"\bshort\b", "keyword"),
         (r"\bsigned\b", "keyword"),
         (r"\bsizeof\b", "keyword"),
         (r"\bstatic\b", "keyword"),
         (r"\bstruct\b", "keyword"),
+        (r"\bswitch\b", "keyword"),
         (r"\btemplate\b", "keyword"),
         (r"\bthis\b", "keyword"),
         (r"\btrue\b", "keyword"),
@@ -97,8 +102,6 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bvoid\b", "keyword"),
         (r"\bvolatile\b", "keyword"),
         (r"\bwhile\b", "keyword"),
-        (r"\bswitch\b", "keyword"),
-        (r"\breturn\b", "keyword"),
     ]
 
     def __init__(self, parent, color_scheme=None):
