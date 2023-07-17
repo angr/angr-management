@@ -99,9 +99,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
                 else:
                     self._function_str = f"{the_func.name}{offset:+x}"
             # instruction
-            self._instruction_str = "{}:  {}".format(
-                self._function_str, self._instance.get_instruction_text_at(self.addr)
-            )
+            self._instruction_str = f"{self._function_str}:  {self._instance.get_instruction_text_at(self.addr)}"
             # text
             self._text = get_string_for_display(
                 self._instance.cfg,
