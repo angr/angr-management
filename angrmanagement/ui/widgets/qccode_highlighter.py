@@ -2,6 +2,7 @@ import re
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.structured_codegen.c import (
+    CArrayTypeLength,
     CClosingObject,
     CConstant,
     CExpression,
@@ -9,6 +10,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CFunctionCall,
     CLabel,
     CStatement,
+    CStructFieldNameDef,
     CVariable,
 )
 from angr.sim_type import SimType
@@ -141,6 +143,18 @@ class QCCodeHighlighter(SyntaxHighlighter):
             return FORMATS["label"]
         elif isinstance(obj, CVariable):
             return FORMATS["variable"]
+        elif isinstance(obj, CArrayTypeLength):
+            # This is the part that goes after a fixed-size array (the
+            # "[20]" in "char foo[20];"), and it's highly unlikely
+            # that anyone will want to change the color here. But if
+            # you do, follow the format of the rest.
+            return None
+        elif isinstance(obj, CStructFieldNameDef):
+            # This is the part that is a field name in a struct def,
+            # and it's highly unlikely that anyone will want to change
+            # the color here. But if you do, follow the format of the
+            # rest.
+            return None
         elif isinstance(obj, (CClosingObject, CStatement, CConstant, CExpression)):
             return None
         else:
