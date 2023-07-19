@@ -1,6 +1,19 @@
 import re
 from typing import TYPE_CHECKING
 
+from angr.analyses.decompiler.structured_codegen.c import (
+    CArrayTypeLength,
+    CClosingObject,
+    CConstant,
+    CExpression,
+    CFunction,
+    CFunctionCall,
+    CLabel,
+    CStatement,
+    CStructFieldNameDef,
+    CVariable,
+)
+from angr.sim_type import SimType
 from pyqodeng.core.api import SyntaxHighlighter
 from PySide6.QtGui import QBrush, QFont, QTextCharFormat
 
@@ -32,6 +45,48 @@ def reset_formats():
     f.setFontWeight(QFont.Bold)
     FORMATS["comment"] = f
 
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_variable_color))
+    FORMATS["variable"] = f
+
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_types_color))
+    FORMATS["type"] = f
+
+    f = QTextCharFormat()
+    f.setForeground(QBrush(Conf.pseudocode_label_color))
+    FORMATS["label"] = f
+
+
+def _format_node(obj):
+    """
+    Return the format for the given node.
+    """
+    if isinstance(obj, SimType):
+        return FORMATS["type"]
+    elif isinstance(obj, (CFunctionCall, CFunction)):
+        return FORMATS["function"]
+    elif isinstance(obj, CLabel):
+        return FORMATS["label"]
+    elif isinstance(obj, CVariable):
+        return FORMATS["variable"]
+    elif isinstance(obj, CArrayTypeLength):
+        # This is the part that goes after a fixed-size array (the
+        # "[20]" in "char foo[20];"), and it's highly unlikely
+        # that anyone will want to change the color here. But if
+        # you do, follow the format of the rest.
+        return None
+    elif isinstance(obj, CStructFieldNameDef):
+        # This is the part that is a field name in a struct def,
+        # and it's highly unlikely that anyone will want to change
+        # the color here. But if you do, follow the format of the
+        # rest.
+        return None
+    elif isinstance(obj, (CClosingObject, CStatement, CConstant, CExpression)):
+        return None
+    else:
+        return None
+
 
 reset_formats()
 
@@ -49,34 +104,31 @@ class QCCodeHighlighter(SyntaxHighlighter):
         # (r"//[^\n]*", 'comment'),
         # (r"/\*[^\n]*\*/", 'comment'),
         # function
-        (r"\b[A-Za-z0-9_:]+\s*(?=\()", "function"),
         (r"\bNULL\b", "function"),
         # keywords
         (r"\bauto\b", "keyword"),
-        (r"\bbool\b", "keyword"),
         (r"\bbreak\b", "keyword"),
         (r"\bcase\b", "keyword"),
         (r"\bcatch\b", "keyword"),
-        (r"\bchar\b", "keyword"),
         (r"\bclass\b", "keyword"),
         (r"\bconst\b", "keyword"),
         (r"\bcontinue\b", "keyword"),
         (r"\bdefault\b", "keyword"),
         (r"\bdelete\b", "keyword"),
         (r"\bdo\b", "keyword"),
-        (r"\bdouble\b", "keyword"),
         (r"\belse\b", "keyword"),
         (r"\benum\b", "keyword"),
         (r"\bexplicit\b", "keyword"),
         (r"\bextern\b", "keyword"),
-        (r"\bfloat\b", "keyword"),
+        (
+            r"\bfalse\b",
+            "keyword",
+        ),  # TODO: false isn't really a keyword, and other highlighters style it different from keywords
         (r"\bfor\b", "keyword"),
         (r"\bfriend\b", "keyword"),
         (r"\bgoto\b", "keyword"),
         (r"\bif\b", "keyword"),
         (r"\binline\b", "keyword"),
-        (r"\bint\b", "keyword"),
-        (r"\blong\b", "keyword"),
         (r"\bnamespace\b", "keyword"),
         (r"\bnew\b", "keyword"),
         (r"\boperator\b", "keyword"),
@@ -85,21 +137,20 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bpublic\b", "keyword"),
         (r"\bregister\b", "keyword"),
         (r"\breturn\b", "keyword"),
-        (r"\bshort\b", "keyword"),
-        (r"\bsigned\b", "keyword"),
         (r"\bsizeof\b", "keyword"),
         (r"\bstatic\b", "keyword"),
         (r"\bstruct\b", "keyword"),
         (r"\bswitch\b", "keyword"),
         (r"\btemplate\b", "keyword"),
         (r"\bthis\b", "keyword"),
-        (r"\btrue\b", "keyword"),
+        (
+            r"\btrue\b",
+            "keyword",
+        ),  # TODO: true isn't really a keyword, and other highlighters style it different from keywords
         (r"\btypedef\b", "keyword"),
         (r"\btypename\b", "keyword"),
         (r"\bunion\b", "keyword"),
-        (r"\bunsigned\b", "keyword"),
         (r"\bvirtual\b", "keyword"),
-        (r"\bvoid\b", "keyword"),
         (r"\bvolatile\b", "keyword"),
         (r"\bwhile\b", "keyword"),
     ]
@@ -161,6 +212,28 @@ class QCCodeHighlighter(SyntaxHighlighter):
             mark_out = len(text)
             self.setFormat(mark_in, mark_out - mark_in, FORMATS["comment"])
             text = text[:mark_in] + " " * (mark_out - mark_in) + text[mark_out:]
+
+        # Go through AST and see about marking styles
+        start_pos = block.position()
+        current_idx = 0
+        while current_idx < len(text):
+            # if we know it's whitespace (b/c that can happen above due to comments), just skip it
+            if text[current_idx] == " ":
+                current_idx += 1
+                continue
+
+            current_pos = start_pos + current_idx
+            element = self.doc.posmap.get_element(current_pos)
+            if not element:
+                current_idx += 1
+                continue
+
+            fmt = _format_node(element.obj)
+
+            # Because of skipping spaces, we might end up inside an element, so don't use current_idx in the following
+            if fmt:
+                self.setFormat(element.start - start_pos, element.length, fmt)
+            current_idx = (element.start - start_pos) + element.length
 
         for pattern, format_id in self.HIGHLIGHTING_RULES:
             for mo in list(re.finditer(pattern, text)):
