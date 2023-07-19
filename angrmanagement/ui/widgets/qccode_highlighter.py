@@ -58,6 +58,36 @@ def reset_formats():
     FORMATS["label"] = f
 
 
+def _format_node(obj):
+    """
+    Return the format for the given node.
+    """
+    if isinstance(obj, SimType):
+        return FORMATS["type"]
+    elif isinstance(obj, (CFunctionCall, CFunction)):
+        return FORMATS["function"]
+    elif isinstance(obj, CLabel):
+        return FORMATS["label"]
+    elif isinstance(obj, CVariable):
+        return FORMATS["variable"]
+    elif isinstance(obj, CArrayTypeLength):
+        # This is the part that goes after a fixed-size array (the
+        # "[20]" in "char foo[20];"), and it's highly unlikely
+        # that anyone will want to change the color here. But if
+        # you do, follow the format of the rest.
+        return None
+    elif isinstance(obj, CStructFieldNameDef):
+        # This is the part that is a field name in a struct def,
+        # and it's highly unlikely that anyone will want to change
+        # the color here. But if you do, follow the format of the
+        # rest.
+        return None
+    elif isinstance(obj, (CClosingObject, CStatement, CConstant, CExpression)):
+        return None
+    else:
+        return None
+
+
 reset_formats()
 
 
@@ -131,35 +161,6 @@ class QCCodeHighlighter(SyntaxHighlighter):
         self.doc: QCodeDocument = parent
         self.comment_status = False
 
-    def _format_node(self, obj):
-        """
-        Return the format for the given node.
-        """
-        if isinstance(obj, SimType):
-            return FORMATS["type"]
-        elif isinstance(obj, (CFunctionCall, CFunction)):
-            return FORMATS["function"]
-        elif isinstance(obj, CLabel):
-            return FORMATS["label"]
-        elif isinstance(obj, CVariable):
-            return FORMATS["variable"]
-        elif isinstance(obj, CArrayTypeLength):
-            # This is the part that goes after a fixed-size array (the
-            # "[20]" in "char foo[20];"), and it's highly unlikely
-            # that anyone will want to change the color here. But if
-            # you do, follow the format of the rest.
-            return None
-        elif isinstance(obj, CStructFieldNameDef):
-            # This is the part that is a field name in a struct def,
-            # and it's highly unlikely that anyone will want to change
-            # the color here. But if you do, follow the format of the
-            # rest.
-            return None
-        elif isinstance(obj, (CClosingObject, CStatement, CConstant, CExpression)):
-            return None
-        else:
-            return None
-
     def highlight_block(self, text, block):
         # this code makes the assumption that this function is only ever called on lines in sequence in order
         # it might also fuck up if it ever calls it starting in the middle...
@@ -227,7 +228,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
                 current_idx += 1
                 continue
 
-            fmt = self._format_node(element.obj)
+            fmt = _format_node(element.obj)
 
             # Because of skipping spaces, we might end up inside an element, so don't use current_idx in the following
             if fmt:
