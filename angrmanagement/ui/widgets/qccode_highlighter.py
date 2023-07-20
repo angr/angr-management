@@ -15,7 +15,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
 )
 from angr.sim_type import SimType
 from pyqodeng.core.api import SyntaxHighlighter
-from PySide6.QtGui import QBrush, QFont, QTextCharFormat
+from PySide6.QtGui import QBrush, QColor, QFont, QTextCharFormat
 
 from angrmanagement.config import Conf
 
@@ -25,37 +25,43 @@ if TYPE_CHECKING:
 FORMATS = {}
 
 
+def create_char_format(color: QColor, weight: QFont.Weight, style: QFont.Style) -> QTextCharFormat:
+    f = QTextCharFormat()
+    f.setForeground(QBrush(color))
+    f.setFontWeight(weight)
+    if style == QFont.Style.StyleItalic:
+        f.setFontItalic(True)
+    return f
+
+
 def reset_formats():
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_keyword_color))
-    f.setFontWeight(QFont.Bold)
-    FORMATS["keyword"] = f
+    FORMATS["keyword"] = create_char_format(
+        Conf.pseudocode_keyword_color, Conf.pseudocode_keyword_weight, Conf.pseudocode_keyword_style
+    )
 
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_quotation_color))
-    FORMATS["quotation"] = f
+    FORMATS["quotation"] = create_char_format(
+        Conf.pseudocode_quotation_color, Conf.pseudocode_quotation_weight, Conf.pseudocode_quotation_style
+    )
 
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_function_color))
-    f.setFontWeight(QFont.Bold)
-    FORMATS["function"] = f
+    FORMATS["function"] = create_char_format(
+        Conf.pseudocode_function_color, Conf.pseudocode_function_weight, Conf.pseudocode_function_style
+    )
 
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_comment_color))
-    f.setFontWeight(QFont.Bold)
-    FORMATS["comment"] = f
+    FORMATS["comment"] = create_char_format(
+        Conf.pseudocode_comment_color, Conf.pseudocode_comment_weight, Conf.pseudocode_comment_style
+    )
 
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_variable_color))
-    FORMATS["variable"] = f
+    FORMATS["variable"] = create_char_format(
+        Conf.pseudocode_variable_color, Conf.pseudocode_variable_weight, Conf.pseudocode_variable_style
+    )
 
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_types_color))
-    FORMATS["type"] = f
+    FORMATS["type"] = create_char_format(
+        Conf.pseudocode_types_color, Conf.pseudocode_types_weight, Conf.pseudocode_types_style
+    )
 
-    f = QTextCharFormat()
-    f.setForeground(QBrush(Conf.pseudocode_label_color))
-    FORMATS["label"] = f
+    FORMATS["label"] = create_char_format(
+        Conf.pseudocode_label_color, Conf.pseudocode_label_weight, Conf.pseudocode_label_style
+    )
 
 
 def _format_node(obj):
