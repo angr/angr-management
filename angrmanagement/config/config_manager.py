@@ -1,8 +1,9 @@
 import contextlib
+import enum
 import logging
 import os
 import re
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Tuple, Type
 
 import tomlkit
 import tomlkit.exceptions
@@ -82,6 +83,37 @@ def font_serializer(config_option, value: QFont) -> str:
     return f"{value.pointSize()}px {value.family()}"
 
 
+def enum_parser_serializer_generator(
+    the_enum: enum.Enum, default
+) -> Tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
+    def parser(config_option: str, value: str) -> enum.Enum:
+        try:
+            return the_enum[value]
+        except KeyError:
+            _l.error(
+                "Failed to parse value %r as %s for option %s. Default to %s.",
+                value,
+                type(the_enum),
+                config_option,
+                default,
+            )
+        return default
+
+    def serializer(config_option: str, value: enum.Enum) -> str:
+        if not isinstance(value, the_enum):
+            _l.error(
+                "Failed to serialize value %r as %s for option %s. Default to %s.",
+                value,
+                type(the_enum),
+                config_option,
+                default,
+            )
+            return default
+        return value.name
+
+    return parser, serializer
+
+
 def bool_parser(config_option, value) -> bool:
     if not value:
         return False
@@ -104,6 +136,8 @@ data_serializers = {
     QColor: (color_parser, color_serializer),
     QFont: (font_parser, font_serializer),
     bool: (bool_parser, bool_serializer),
+    QFont.Weight: enum_parser_serializer_generator(QFont.Weight, QFont.Weight.Normal),
+    QFont.Style: enum_parser_serializer_generator(QFont.Style, QFont.Style.StyleNormal),
 }
 
 
@@ -190,12 +224,26 @@ ENTRIES = [
     CE("palette_link", QColor, QColor(0x00, 0x00, 0xFF, 0xFF)),
     CE("palette_linkvisited", QColor, QColor(0xFF, 0x00, 0xFF, 0xFF)),
     CE("pseudocode_comment_color", QColor, QColor(0x00, 0x80, 0x00, 0xFF)),
+    CE("pseudocode_comment_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_comment_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_function_color", QColor, QColor(0x00, 0x00, 0xFF, 0xFF)),
+    CE("pseudocode_function_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_function_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_quotation_color", QColor, QColor(0x00, 0x80, 0x00, 0xFF)),
+    CE("pseudocode_quotation_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_quotation_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_keyword_color", QColor, QColor(0x00, 0x00, 0x80, 0xFF)),
+    CE("pseudocode_keyword_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_keyword_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_types_color", QColor, QColor(0x00, 0x00, 0x80, 0xFF)),
+    CE("pseudocode_types_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_types_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_variable_color", QColor, QColor(0x00, 0x00, 0x00, 0xFF)),
+    CE("pseudocode_variable_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_variable_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_label_color", QColor, QColor(0x00, 0x00, 0xFF)),
+    CE("pseudocode_label_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_label_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_highlight_color", QColor, QColor(0xFF, 0xFF, 0x00, 0xFF)),
     CE("proximity_node_background_color", QColor, QColor(0xFA, 0xFA, 0xFA)),
     CE("proximity_node_selected_background_color", QColor, QColor(0xCC, 0xCC, 0xCC)),

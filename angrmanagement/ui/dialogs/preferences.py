@@ -1,3 +1,4 @@
+import enum
 from datetime import datetime
 
 from bidict import bidict
@@ -115,7 +116,8 @@ class ThemeAndColors(Page):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self._to_save = {}
+        self._colors_to_save = {}
+        self._conf_to_save = {}
         self._schemes_combo: QComboBox = None
 
         self._init_widgets()
@@ -144,11 +146,12 @@ class ThemeAndColors(Page):
 
         edit_colors_layout = QVBoxLayout()
         for ce in ENTRIES:
-            if ce.type_ is not QColor:
-                continue
-            row = QColorOption(getattr(Conf, ce.name), ce.name)
-            edit_colors_layout.addWidget(row)
-            self._to_save[ce.name] = (ce, row)
+            if ce.type_ is QColor:
+                row = QColorOption(getattr(Conf, ce.name), ce.name)
+                edit_colors_layout.addWidget(row)
+                self._colors_to_save[ce.name] = (ce, row)
+            elif issubclass(ce.type_, enum.Enum):
+                self._conf_to_save[ce.name] = ce.value
 
         frame = QFrame()
         frame.setLayout(edit_colors_layout)
@@ -165,8 +168,11 @@ class ThemeAndColors(Page):
 
     def _load_color_scheme(self, name):
         for prop, value in COLOR_SCHEMES[name].items():
-            row = self._to_save[prop][1]
-            row.set_color(value)
+            if prop in self._colors_to_save:
+                row = self._colors_to_save[prop][1]
+                row.set_color(value)
+            if prop in self._conf_to_save:
+                self._conf_to_save[prop] = value
 
     def _on_load_scheme_clicked(self):
         self._load_color_scheme(self._schemes_combo.currentText())
@@ -175,8 +181,10 @@ class ThemeAndColors(Page):
     def save_config(self):
         # pylint: disable=assigning-non-slot
         Conf.theme_name = self._schemes_combo.currentText()
-        for ce, row in self._to_save.values():
+        for ce, row in self._colors_to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
+        for name, value in self._conf_to_save.items():
+            setattr(Conf, name, value)
 
 
 class Style(Page):

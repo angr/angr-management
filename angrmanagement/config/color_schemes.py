@@ -1,4 +1,4 @@
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QFont
 
 COLOR_SCHEMES = {
     "Light": {
@@ -268,10 +268,12 @@ COLOR_SCHEMES = {
         "palette_link": QColor(0x8B, 0xE9, 0xFD),
         "palette_linkvisited": QColor(0xBD, 0x93, 0xF9),
         "pseudocode_comment_color": QColor(0x62, 0x72, 0xA4),
+        "pseudocode_comment_weight": QFont.Weight.Normal,
         "pseudocode_function_color": QColor(0x50, 0xFA, 0x7B),
         "pseudocode_quotation_color": QColor(0xF1, 0xFA, 0x8C),
         "pseudocode_keyword_color": QColor(0xFF, 0x79, 0xC6),
         "pseudocode_types_color": QColor(0x8B, 0xE9, 0xFD),
+        "pseudocode_types_style": QFont.Style.StyleItalic,
         "pseudocode_variable_color": QColor(0xF8, 0xF8, 0xF2),
         "pseudocode_label_color": QColor(0x00, 0xAA, 0xFF),
         "pseudocode_highlight_color": QColor(0x44, 0x47, 0x5A),
