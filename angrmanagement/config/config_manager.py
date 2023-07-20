@@ -3,7 +3,7 @@ import enum
 import logging
 import os
 import re
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Tuple, Type
 
 import tomlkit
 import tomlkit.exceptions
@@ -85,7 +85,7 @@ def font_serializer(config_option, value: QFont) -> str:
 
 def enum_parser_serializer_generator(
     the_enum: enum.Enum, default
-) -> tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
+) -> Tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
     def parser(config_option: str, value: str) -> enum.Enum:
         try:
             return the_enum[value]
