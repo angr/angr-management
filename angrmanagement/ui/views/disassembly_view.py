@@ -981,7 +981,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if self._insn_addr_on_context_menu is not None:
             return "insn", self._insn_addr_on_context_menu
         if len(self.infodock.selected_operands) == 1:
-            selected_operand: "OperandDescriptor" = next(iter(self.infodock.selected_operands.values()))
+            selected_operand: OperandDescriptor = next(iter(self.infodock.selected_operands.values()))
             if selected_operand.num_value is not None:
                 return "operand", selected_operand.num_value
         if len(self.infodock.selected_insns) == 1:

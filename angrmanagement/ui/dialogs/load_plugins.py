@@ -32,7 +32,7 @@ class QPluginListWidgetItem(QListWidgetItem):
 
     def __init__(self, plugin_desc, **kwargs):
         super().__init__(**kwargs)
-        self.plugin_desc: "PluginDescription" = plugin_desc
+        self.plugin_desc: PluginDescription = plugin_desc
         self.setText(plugin_desc.name)
 
 
@@ -47,7 +47,7 @@ class LoadPlugins(QDialog):
     def __init__(self, plugin_mgr, parent=None):
         super().__init__(parent)
 
-        self._pm: "PluginManager" = plugin_mgr
+        self._pm: PluginManager = plugin_mgr
         self._installed_plugin_list: QListWidget
 
         self.setWindowTitle("Installed Plugins")

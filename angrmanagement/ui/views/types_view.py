@@ -53,7 +53,7 @@ class TypesView(BaseView):
     def current_typestore(self) -> "TypesStore":
         if self._function.am_none:
             return self.instance.kb.types
-        var_manager: "VariableManagerInternal" = self.instance.pseudocode_variable_kb.variables[self._function.addr]
+        var_manager: VariableManagerInternal = self.instance.pseudocode_variable_kb.variables[self._function.addr]
         return var_manager.types
 
     #

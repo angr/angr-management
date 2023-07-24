@@ -10,7 +10,7 @@ class CommandManager:
     """
 
     def __init__(self):
-        self._commands: Dict[str, "Command"] = {}
+        self._commands: Dict[str, Command] = {}
 
     def register_command(self, command: "Command"):
         assert command.name not in self._commands, "Command by this name already registered"

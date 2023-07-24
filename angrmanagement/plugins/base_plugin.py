@@ -31,7 +31,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-        self.workspace: Optional["Workspace"] = workspace
+        self.workspace: Optional[Workspace] = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:

@@ -29,7 +29,7 @@ class VariableRecoveryJob(Job):
         self.on_variable_recovered = on_variable_recovered
         self.workers = workers
         self.ccc = None
-        self.instance: Optional["Instance"] = None
+        self.instance: Optional[Instance] = None
         self.started = False
         self.auto_start = auto_start
         self.func_addr = func_addr

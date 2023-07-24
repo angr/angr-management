@@ -34,7 +34,7 @@ class ProximityView(BaseView):
 
         self.base_caption = "Proximity"
 
-        self._function: Optional["Function"] = None
+        self._function: Optional[Function] = None
         self._expand_function_addrs: Set[int] = set()
 
         # UI widgets

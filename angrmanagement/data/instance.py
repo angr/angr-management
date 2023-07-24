@@ -49,7 +49,7 @@ class Instance:
         )
 
         self._live = False
-        self.variable_recovery_job: Optional["VariableRecoveryJob"] = None
+        self.variable_recovery_job: Optional[VariableRecoveryJob] = None
         self._analysis_configuration = None
 
         self.jobs = []

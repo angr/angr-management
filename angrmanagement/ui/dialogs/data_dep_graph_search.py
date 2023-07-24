@@ -20,7 +20,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._curr_value_text = ""
         self._curr_addr_text = ""
         self._curr_name_text = ""
-        self._rel_nodes: List["QDataDepGraphBlock"] = []
+        self._rel_nodes: List[QDataDepGraphBlock] = []
         self._curr_search_idx = -1
 
         self._name_line_edit = QtWidgets.QLineEdit(self)
@@ -99,7 +99,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
             curr_search_node.selected = False
 
         self._curr_search_idx = (self._curr_search_idx + 1) % len(self._rel_nodes)
-        search_node: "QDataDepGraphBlock" = self._rel_nodes[self._curr_search_idx]
+        search_node: QDataDepGraphBlock = self._rel_nodes[self._curr_search_idx]
         search_node.selected = True
 
         self._data_dep_graph.zoom(reset=True)

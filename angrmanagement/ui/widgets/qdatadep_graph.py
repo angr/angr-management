@@ -25,7 +25,7 @@ class QDataDepPreviewGraph(QZoomableDraggableGraphicsView):
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
-        self._display_node: Optional["QDataDepGraphBlock"] = None
+        self._display_node: Optional[QDataDepGraphBlock] = None
 
     @property
     def node(self) -> Optional["QDataDepGraphBlock"]:
@@ -107,8 +107,8 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
         self._node_preview.preview_graph._reset_scene()
         self._node_preview.hide()
 
-        self._graph: Optional["DiGraph"] = None  # Graph to render
-        self._reference_data_dep_graph: Optional["DiGraph"] = None  # Graph from analysis, used to check edge data
+        self._graph: Optional[DiGraph] = None  # Graph to render
+        self._reference_data_dep_graph: Optional[DiGraph] = None  # Graph from analysis, used to check edge data
         self.nodes = set()
         self._edges: List[Edge] = []
         self._arrows_by_src: Dict[Any, List[QDataDepGraphArrow]] = defaultdict(list)

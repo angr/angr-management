@@ -59,7 +59,7 @@ class QCCodeEdit(api.CodeEdit):
     def __init__(self, code_view):
         super().__init__(create_default_actions=True)
 
-        self._code_view: "CodeView" = code_view
+        self._code_view: CodeView = code_view
 
         self.panels.append(panels.LineNumberPanel())
         self.panels.append(panels.FoldingPanel())
@@ -92,7 +92,7 @@ class QCCodeEdit(api.CodeEdit):
         self.remove_action(self.action_swap_line_down)
 
     def node_under_cursor(self):
-        doc: "QTextDocument" = self.document()
+        doc: QTextDocument = self.document()
         if not isinstance(doc, QCodeDocument):
             # this is not the qcodedocument that the decompiler generates. this means the pseudocode view is empty
             return None
@@ -203,7 +203,7 @@ class QCCodeEdit(api.CodeEdit):
         """
 
         # get the Qt document
-        doc: "QCodeDocument" = self.document()
+        doc: QCodeDocument = self.document()
 
         # get the current position of the cursor
         cursor = self.textCursor()
@@ -507,7 +507,7 @@ class QCCodeEdit(api.CodeEdit):
         if not isinstance(node, (CVariable, CIndexedVariable, CVariableField, CStructField)):
             return
 
-        doc: "QCodeDocument" = self.document()
+        doc: QCodeDocument = self.document()
         cursor = self.textCursor()
         pos = cursor.position()
         current_node = doc.get_stmt_node_at_position(pos)

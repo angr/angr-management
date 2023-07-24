@@ -38,7 +38,7 @@ class AnalysesConfiguration:
 
     def __init__(self, analyses: Sequence["AnalysisConfiguration"], instance):
         self.instance = instance
-        self.analyses: Sequence["AnalysisConfiguration"] = analyses
+        self.analyses: Sequence[AnalysisConfiguration] = analyses
 
     def __len__(self):
         return len(self.analyses)

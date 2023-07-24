@@ -63,8 +63,8 @@ class ViewCommand(Command):
         self._name = name
         self._caption = caption
         self._action: Callable = action
-        self._view_class: Type["BaseView"] = view_class
-        self._workspace: "Workspace" = workspace
+        self._view_class: Type[BaseView] = view_class
+        self._workspace: Workspace = workspace
 
     @property
     def is_visible(self) -> bool:
