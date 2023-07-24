@@ -38,7 +38,7 @@ class TestRenameVariables(unittest.TestCase):
         gui_thread_schedule(disasm_view.display_function, args=(self.func,))
         disasm_view.decompile_current_function()
         self.main.workspace.main_instance.join_all_jobs()
-        self.code_view: "CodeView" = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+        self.code_view: CodeView = self.main.workspace.view_manager.first_view_in_category("pseudocode")
 
     def tearDown(self) -> None:
         self.main = None

@@ -207,7 +207,7 @@ class AnalysisOptionsDialog(QDialog):
 
     def __init__(self, analyses: AnalysesConfiguration, workspace: "Workspace", parent=None):
         super().__init__(parent)
-        self._workspace: "Workspace" = workspace
+        self._workspace: Workspace = workspace
         self._analyses: AnalysesConfiguration = analyses
         self._mappers: Sequence[AnalysisOptionWidgetMapper] = []
         self.setWindowTitle("Run Analysis")

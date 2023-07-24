@@ -38,7 +38,7 @@ class DataDepView(BaseView):
         self.base_caption = "Data Dependency"
 
         # Get all instructions in the program
-        self._instructions: Dict[int, "CsInsn"] = {}
+        self._instructions: Dict[int, CsInsn] = {}
         inst = self.instance
         for _, func in inst.kb.functions.items():
             for block in func.blocks:
@@ -46,7 +46,7 @@ class DataDepView(BaseView):
                 for ins in disass.insns:
                     self._instructions[ins.address] = ins
 
-        self._end_state: Optional["SimState"] = None
+        self._end_state: Optional[SimState] = None
         self._start_addr: Optional[int] = None
         self._end_addr: Optional[int] = None
         self._block_addrs: Optional[List[int]] = None
@@ -55,9 +55,9 @@ class DataDepView(BaseView):
         self._graph_widget: Optional[QDataDepGraph] = None
 
         # Data
-        self._data_dep: Optional["DataDependencyGraphAnalysis"] = None
-        self._ddg: Optional["DiGraph"] = None  # Derived from analysis, can be full, simplified, or subgraph
-        self._graph: Optional["DiGraph"] = None
+        self._data_dep: Optional[DataDependencyGraphAnalysis] = None
+        self._ddg: Optional[DiGraph] = None  # Derived from analysis, can be full, simplified, or subgraph
+        self._graph: Optional[DiGraph] = None
         self._traced_ancestors: Set[QDataDepGraphBlock] = set()
         self._traced_descendants: Set[QDataDepGraphBlock] = set()
 
@@ -125,7 +125,7 @@ class DataDepView(BaseView):
     def run_analysis(self):
         inst = self.instance
 
-        data_dep: "DataDependencyGraphAnalysis" = inst.project.analyses.DataDep(
+        data_dep: DataDependencyGraphAnalysis = inst.project.analyses.DataDep(
             self._end_state,
             self._start_addr,
             self._end_addr,

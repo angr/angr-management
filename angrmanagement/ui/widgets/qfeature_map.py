@@ -122,13 +122,13 @@ class FeatureMapItem(QGraphicsItem):
         self._min_cfb_time_between_refresh: float = 1 / 30
 
         self._addr_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
-        self._region_to_position: Mapping["MemoryRegion", float] = {}
-        self._region_to_width: Mapping["MemoryRegion", float] = {}
+        self._region_to_position: Mapping[MemoryRegion, float] = {}
+        self._region_to_width: Mapping[MemoryRegion, float] = {}
         self._position_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
 
         self._cursor_addrs: List[int] = []
         self._cursor_items: List[QGraphicsItem] = []
-        self._hover_region: Optional["MemoryRegion"] = None
+        self._hover_region: Optional[MemoryRegion] = None
         self._hover_region_item: Optional[QGraphicsItem] = None
 
         self._feature_palette: FeatureMapPalette

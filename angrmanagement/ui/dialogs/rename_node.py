@@ -63,7 +63,7 @@ class RenameNode(QDialog):
 
         self._code_view = code_view
         self._node = node
-        self._func: Optional["Function"] = func
+        self._func: Optional[Function] = func
 
         self._name_box: NodeNameBox = None
         self._status_label = None

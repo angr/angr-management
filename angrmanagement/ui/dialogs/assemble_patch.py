@@ -40,7 +40,7 @@ class AssemblePatchDialog(QDialog):
     def __init__(self, address: int, instance: "Instance", parent=None):
         super().__init__(parent)
 
-        self.instance: "Instance" = instance
+        self.instance: Instance = instance
         self._patch_addr: int = address
 
         block = self.instance.project.factory.block(self._patch_addr)

@@ -83,7 +83,7 @@ class Workspace:
     """
 
     def __init__(self, main_window, instance):
-        self.main_window: "MainWindow" = main_window
+        self.main_window: MainWindow = main_window
         self._main_instance = instance
         instance.workspace = self
 

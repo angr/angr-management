@@ -22,7 +22,7 @@ class PaletteModel(QAbstractItemModel):
 
     def __init__(self, workspace: "Workspace"):
         super().__init__()
-        self.workspace: "Workspace" = workspace
+        self.workspace: Workspace = workspace
         self._available_items: List[Any] = self.get_items()
         self._item_to_caption: Dict[Any, str] = {
             item: self.get_caption_for_item(item) for item in self._available_items

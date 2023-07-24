@@ -27,7 +27,7 @@ class CallTreeModel(QStandardItemModel):
     Headers = ["Function"]
 
     def hasChildren(self, index):
-        item: Optional["CallTreeItem"] = self.itemFromIndex(index)
+        item: Optional[CallTreeItem] = self.itemFromIndex(index)
         if isinstance(item, CallTreeItem):
             return item.expandable
         return super().hasChildren(index)

@@ -91,7 +91,7 @@ class BreakpointHighlightRegion(HexHighlightRegion):
     def __init__(self, bp: Breakpoint, view: "HexView"):
         super().__init__(Qt.cyan, bp.addr, bp.size)
         self.bp: Breakpoint = bp
-        self.view: "HexView" = view
+        self.view: HexView = view
 
     def gen_context_menu_actions(self) -> Optional[QMenu]:
         """
@@ -134,7 +134,7 @@ class PatchHighlightRegion(HexHighlightRegion):
     def __init__(self, patch: Patch, view: "HexView"):
         super().__init__(Qt.yellow, patch.addr, len(patch))
         self.patch: Patch = patch
-        self.view: "HexView" = view
+        self.view: HexView = view
 
     def get_tooltip(self) -> Optional[str]:
         """

@@ -395,7 +395,7 @@ class QFunctionTable(QWidget):
         super().__init__(parent)
         self.instance = instance
 
-        self._view: "FunctionsView" = parent
+        self._view: FunctionsView = parent
         self._table_view: QFunctionTableView
         self._filter_box: QFunctionTableFilterBox
         self._toolbar: FunctionTableToolbar

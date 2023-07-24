@@ -35,7 +35,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self._selected = is_selected
         self._data_dep_view = data_dep_view
         self._workspace = self._data_dep_view.workspace
-        self._node: "BaseDepNode" = node
+        self._node: BaseDepNode = node
         self._instr = instr
 
         self._header_text: Optional[str] = None

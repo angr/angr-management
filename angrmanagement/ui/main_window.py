@@ -77,7 +77,7 @@ class DockShortcutEventFilter(QObject):
 
     def __init__(self, main_window: "MainWindow"):
         super().__init__()
-        self._main_window: "MainWindow" = main_window
+        self._main_window: MainWindow = main_window
 
     def eventFilter(self, qobject, event):
         if event.type() == QEvent.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
@@ -97,7 +97,7 @@ class ShiftShiftEventFilter(QObject):
 
     def __init__(self, main_window: "MainWindow"):
         super().__init__()
-        self._main_window: "MainWindow" = main_window
+        self._main_window: MainWindow = main_window
         self._press_count: int = 0
         self._last_press_time: float = 0
         self._did_process_qwindow_event: bool = False
@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
         # initialization
         self.setMinimumSize(QSize(400, 400))
 
-        self.app: Optional["QApplication"] = app
+        self.app: Optional[QApplication] = app
         self.workspace: Workspace = None
         self.dock_manager: QtAds.CDockManager
         self._dock_shortcut_event_filter = DockShortcutEventFilter(self)

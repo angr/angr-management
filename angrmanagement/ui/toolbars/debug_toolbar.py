@@ -62,8 +62,8 @@ class DebugToolbar(Toolbar):
 
     def __init__(self, main_window: "MainWindow"):
         super().__init__(main_window, "DebugToolbar")
-        self.workspace: "Workspace" = main_window.workspace
-        self.instance: "Instance" = self.workspace.main_instance
+        self.workspace: Workspace = main_window.workspace
+        self.instance: Instance = self.workspace.main_instance
 
         self._cont_backward_act = ToolbarAction(
             qta.icon("fa5s.fast-backward", color=Conf.palette_buttontext),
