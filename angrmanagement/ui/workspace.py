@@ -939,7 +939,7 @@ class Workspace:
     #
     # Instance Callbacks
     #
-    def _instance_project_initalization(self):
+    def _instance_project_initalization(self, **kwargs):  # pylint:disable=unused-argument
         if self.main_instance.project.am_none:
             return
 
