@@ -34,9 +34,9 @@ class LibraryDocs:
     def get_docstring_for_func_name(self, func_name):
         for library in self.func_docs:
             for func_dict in library:
-                if "name" not in func_dict.keys():
+                if "name" not in func_dict:
                     continue
-                if "description" not in func_dict.keys():
+                if "description" not in func_dict:
                     continue
                 names = func_dict["name"]
                 name_list = names.split(",")

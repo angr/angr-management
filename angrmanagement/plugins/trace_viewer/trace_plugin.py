@@ -372,7 +372,7 @@ class TraceViewer(BasePlugin):
                 "Failed to open the JSON trace. We expect the JSON trace to be a dict.",
             )
             return None, None
-        elif "bb_addrs" not in trace.keys():
+        elif "bb_addrs" not in trace:
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Incorrect trace format",
