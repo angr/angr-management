@@ -95,11 +95,17 @@ class QDisassemblyBaseControl:
                 self.disasm_view.popup_xref_dialog(addr=lbl_addr, dst_addr=lbl_addr)
                 return
 
+            # try to get a selected variable
+            if len(self.infodock.selected_variables) == 1:
+                variable = next(iter(self.infodock.selected_variables))
+                self.disasm_view.popup_xref_dialog(addr=0, variable=variable)
+                return
+
             # message the user
             QMessageBox.critical(
                 None,
                 "Invalid selection for XRefs",
-                "You must put select an operand, a label, or a function header before requesting XRefs.",
+                "You must select an operand, a label, a variable, or a function header before requesting XRefs.",
             )
 
             return

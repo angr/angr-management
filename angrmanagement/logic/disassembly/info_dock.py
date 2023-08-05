@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QObject, Signal
 
 from angrmanagement.data.object_container import ObjectContainer
+
+if TYPE_CHECKING:
+    from angr.sim_variable import SimVariable
 
 
 class OperandHighlightMode:
@@ -46,6 +51,7 @@ class InfoDock(QObject):
         self.hovered_block = ObjectContainer(None, "The currently hovered block")
         self.hovered_edge = ObjectContainer(None, "The currently hovered edge")
         self.selected_labels = ObjectContainer(set(), "The currently selected labels")
+        self.selected_variables = ObjectContainer(set(), "The currently selected variables")
         self.selected_qblock_code_obj = None
 
     @property
@@ -236,6 +242,37 @@ class InfoDock(QObject):
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
             return True
 
+    def select_variable(self, unified_variable: "SimVariable", unique: bool = True):
+        self.unselect_all_labels()
+        self.unselect_all_instructions()
+        self.unselect_all_operands()
+
+        if unique:
+            self.selected_variables.clear()
+        if unified_variable not in self.selected_variables:
+            self.selected_variables.add(unified_variable)
+            self.selected_variables.am_event()
+
+    def unselect_variable(self, unified_variable: "SimVariable"):
+        if unified_variable in self.selected_variables:
+            self.selected_variables.remove(unified_variable)
+            self.selected_variables.am_event()
+
+    def toggle_variable_selection(self, unified_variable: "SimVariable", unique: bool = True):
+        if len(self.selected_variables) > 1:
+            # multiple variables are selected
+            if unique:
+                # clear existing selections and select this one
+                self.select_variable(unified_variable, unique=True)
+                return True
+
+        if unified_variable in self.selected_variables:
+            self.unselect_variable(unified_variable)
+            return False
+        else:
+            self.select_variable(unified_variable, unique=unique)
+            return True
+
     def clear_selection(self):
         self.selected_blocks.clear()
         self.selected_blocks.am_event()
@@ -245,6 +282,9 @@ class InfoDock(QObject):
 
         self.selected_operands.clear()
         self.selected_operands.am_event()
+
+        self.selected_variables.clear()
+        self.selected_variables.am_event()
 
         self._update_published_view_state()
 
@@ -279,6 +319,9 @@ class InfoDock(QObject):
 
     def is_label_selected(self, label_addr):
         return label_addr in self.selected_labels
+
+    def is_variable_selected(self, unique_variable_ident: str) -> bool:
+        return unique_variable_ident in self.selected_variables
 
     def should_highlight_operand(self, selected, operand):
         if selected is None:
