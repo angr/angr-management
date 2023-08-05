@@ -80,7 +80,7 @@ def get_block_objects(disasm, nodes, func_addr):
 
         # stack variables
         # filter out all stack variables
-        variables = variable_manager.get_variables(sort="stack", collapse_same_ident=False)
+        variables = variable_manager.get_unified_variables(sort="stack")
         variables = sorted(variables, key=lambda v: v.offset)
         lst.append(Variables(variables))
 
