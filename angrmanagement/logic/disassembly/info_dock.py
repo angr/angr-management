@@ -4,7 +4,6 @@ from PySide6.QtCore import QObject, Signal
 
 from angrmanagement.data.object_container import ObjectContainer
 
-
 if TYPE_CHECKING:
     from angr.sim_variable import SimVariable
 
