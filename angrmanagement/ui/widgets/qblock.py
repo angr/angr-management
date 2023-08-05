@@ -226,7 +226,7 @@ class QBlock(QCachedGraphicsItem):
                     self.objects.append(phivariable)
             elif isinstance(obj, Variables):
                 for var in obj.variables:
-                    variable = QVariable(self.instance, self.disasm_view, var, self._config, parent=self)
+                    variable = QVariable(self.instance, self.disasm_view, var, self._config, self.infodock, parent=self)
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
                 self.objects.append(
