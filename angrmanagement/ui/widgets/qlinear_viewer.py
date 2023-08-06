@@ -326,6 +326,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         if offset == self._offset and start_line == self._start_line_in_object:
             return
 
+        # make sure self._offset is not None after return
+        self._offset = offset
+
         # Convert the offset to memory region
         base_offset: int
         mr: MemoryRegion
