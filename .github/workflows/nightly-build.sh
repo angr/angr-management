@@ -12,13 +12,10 @@ fi
 
 python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
 
-# TODO: remove this when upstream packaging is fixed, extra is added to cle
-pip install git+https://github.com/theopolis/uefi-firmware-parser.git
-
 pip install git+https://github.com/eliben/pyelftools.git
 pip install git+https://github.com/angr/archinfo.git
 pip install git+https://github.com/angr/pyvex.git
-pip install git+https://github.com/angr/cle.git
+pip install git+https://github.com/angr/cle.git#egg=cle[ar,minidump,uefi,xbe]
 pip install git+https://github.com/angr/claripy.git
 pip install git+https://github.com/angr/ailment.git
 pip install --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]
