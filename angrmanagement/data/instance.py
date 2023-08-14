@@ -257,9 +257,9 @@ class Instance:
         - `instance.add_breakpoint('global_value')` sets a write breakpoint on `global_value`
         - `instance.add_breakpoint('global_value', 'read', 1)` sets a 1-byte read breakpoint on `global_value`
         """
-        if type(obj) is int:
+        if isinstance(obj, int):
             addr = obj
-        elif type(obj) is str:
+        elif isinstance(obj, str):
             sym = self.project.loader.find_symbol(obj)
             if sym is None:
                 _l.error("Couldn't resolve '%s'", obj)

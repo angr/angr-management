@@ -975,14 +975,14 @@ class HexGraphicsObject(QGraphicsObject):
                 val = self.read_func(addr)
                 pt.setX(self.byte_column_offsets[col])
 
-                if type(val) is int:
+                if isinstance(val, int):
                     if is_printable(val):
                         color = Conf.disasm_view_printable_byte_color
                     else:
                         color = Conf.disasm_view_unprintable_byte_color
                     byte_text = "%02x" % val
                 else:
-                    byte_text = val * 2 if type(val) is str and len(val) == 1 else "??"
+                    byte_text = val * 2 if isinstance(val, str) and len(val) == 1 else "??"
                     color = Conf.disasm_view_unknown_byte_color
 
                 pt.setX(self.byte_column_offsets[col])
@@ -997,7 +997,7 @@ class HexGraphicsObject(QGraphicsObject):
                 val = self.read_func(addr)
                 pt.setX(self.ascii_column_offsets[col])
 
-                if type(val) is int:
+                if isinstance(val, int):
                     if is_printable(val):
                         color = Conf.disasm_view_printable_character_color
                         ch = chr(val)
@@ -1006,7 +1006,7 @@ class HexGraphicsObject(QGraphicsObject):
                         ch = "."
                 else:
                     color = Conf.disasm_view_unknown_character_color
-                    ch = val if type(val) is str and len(val) == 1 else "?"
+                    ch = val if isinstance(val, str) and len(val) == 1 else "?"
 
                 pt.setX(self.ascii_column_offsets[col])
                 painter.setPen(color)
@@ -1661,7 +1661,7 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
         self._clipboard = bytearray(num_bytes_selected)
         for addr in range(minaddr, maxaddr + 1):
             d = self.project_memory_read_func(addr)  # FIXME: Support multibyte read
-            if type(d) is int:
+            if isinstance(d, int):
                 self._clipboard[addr - minaddr] = d
 
     def _paste_copied_bytes_at_cursor(self):

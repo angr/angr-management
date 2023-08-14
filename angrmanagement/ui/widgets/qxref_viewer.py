@@ -84,7 +84,7 @@ class QXRefModel(QAbstractTableModel):
     def _get_column_text(self, xref, idx):
         if idx < len(self.HEADER):
             data = self._get_column_data(xref, idx)
-            if type(data) is int:
+            if isinstance(data, int):
                 return hex(data)
             return data
 

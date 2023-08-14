@@ -408,13 +408,13 @@ class Workspace:
         - For strings, look up the symbol of that name and jump there
         """
 
-        if type(obj) is int:
+        if isinstance(obj, int):
             self.jump_to(obj)
-        elif type(obj) is str:
+        elif isinstance(obj, str):
             sym = self.main_instance.project.loader.find_symbol(obj)
             if sym is not None:
                 self.jump_to(sym.rebased_addr)
-        elif type(obj) is Function:
+        elif isinstance(obj, Function):
             self.jump_to(obj.addr)
 
     def jump_to(self, addr, view=None, use_animation=False):
@@ -435,9 +435,9 @@ class Workspace:
         - `workspace.add_breakpoint('global_value')` sets a write breakpoint on `global_value`
         - `workspace.add_breakpoint('global_value', 'read', 1)` sets a 1-byte read breakpoint on `global_value`
         """
-        if type(obj) is int:
+        if isinstance(obj, int):
             addr = obj
-        elif type(obj) is str:
+        elif isinstance(obj, str):
             sym = self.main_instance.project.loader.find_symbol(obj)
             if sym is None:
                 _l.error("Couldn't resolve '%s'", obj)
@@ -447,7 +447,7 @@ class Workspace:
                 size = sym.size
             if not type_:
                 type_ = "execute" if sym.type == SymbolType.TYPE_FUNCTION else "write"
-        elif type(obj) is Function:
+        elif isinstance(obj, Function):
             addr = obj.addr
             if not type_:
                 type_ = "execute"

@@ -133,7 +133,7 @@ class QStringModel(QAbstractTableModel):
     def _get_column_text(self, v: "MemoryData", col: int):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
-            if col == self.ADDRESS_COL and type(data) is int:
+            if col == self.ADDRESS_COL and isinstance(data, int):
                 return f"{data:x}"
             return data
 
