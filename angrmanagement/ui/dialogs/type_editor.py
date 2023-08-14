@@ -127,11 +127,11 @@ def edit_field(ty, field, predefined_types=None):
         raise TypeError("Struct or union's fields are of type %s - that's bad" % type(fields))
     fields_list = list(fields.items())
 
-    if type(field) is int:
+    if isinstance(field, int):
         if not 0 <= field < len(fields):
             raise IndexError(field)
         fieldno = field
-    elif type(field) is str:
+    elif isinstance(field, str):
         try:
             fieldno = [i for i, (name, _) in fields_list if name == field][0]
         except IndexError:

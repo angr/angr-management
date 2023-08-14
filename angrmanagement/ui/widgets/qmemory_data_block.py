@@ -159,7 +159,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         # draw each byte
         bytes_list = []
         for idx, byt in enumerate(all_bytes):
-            if type(byt) is int:
+            if isinstance(byt, int):
                 color = printable_byte_color if is_printable(byt) else unprintable_byte_color
                 o = QGraphicsSimpleTextItem("%02x" % byt, self)
                 o.setFont(Conf.disasm_font)
@@ -181,7 +181,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         # printable characters
         character_list = []
         for byt in all_bytes:
-            if type(byt) is int:
+            if isinstance(byt, int):
                 if is_printable(byt):
                     color = printable_char_color
                     ch = chr(byt)

@@ -105,7 +105,7 @@ class QBlockCodeObj(QObject):
         self.recreate_subobjs()
         span_min = cursor.position()
         for obj in self.subobjs:
-            if type(obj) is str:
+            if isinstance(obj, str):
                 cursor.insertText(obj, self._fmt_current)
             else:
                 obj.render_to_doc(cursor)
@@ -125,7 +125,7 @@ class QBlockCodeObj(QObject):
         if not self.hit_test(pos):
             return None
         for obj in self.subobjs:
-            if type(obj) is not str:
+            if not isinstance(obj, str):
                 hit = obj.get_hit_obj(pos)
                 if hit is not None:
                     return hit
@@ -492,7 +492,7 @@ class QIROpTextObj(QIROpObj):
     """
 
     def create_subobjs(self, obj: Any):
-        if type(obj) is int:
+        if isinstance(obj, int):
             self.add_text("%#x" % obj)
         else:
             self.add_text(str(obj))
