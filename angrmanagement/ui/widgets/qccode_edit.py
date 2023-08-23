@@ -413,6 +413,11 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node.fmt_hex ^= True
             self._code_view.codegen.am_event()
 
+    def char_constant(self):
+        if hasattr(self._selected_node, "fmt_char"):
+            self._selected_node.fmt_char ^= True
+            self._code_view.codegen.am_event()
+
     def neg_constant(self):
         if hasattr(self._selected_node, "fmt_neg"):
             self._selected_node.fmt_neg ^= True
@@ -592,6 +597,9 @@ class QCCodeEdit(api.CodeEdit):
         self.action_neg = QAction("Toggle negative", self)
         self.action_neg.triggered.connect(self.neg_constant)
         self.action_neg.setShortcut(QKeySequence("_"))
+        self.action_char = QAction("Toggle char", self)
+        self.action_char.triggered.connect(self.char_constant)
+        self.action_char.setShortcut(QKeySequence("R"))
         self.action_to_ite_expr = QAction("Create a ternary expression")
         self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
         self.action_swap_binop_operands = QAction("Swap operands")
@@ -620,6 +628,7 @@ class QCCodeEdit(api.CodeEdit):
         self.constant_actions = [
             self.action_hex,
             self.action_neg,
+            self.action_char,
         ]
 
         self.call_actions = [self.action_rename_node, self.action_xref]
