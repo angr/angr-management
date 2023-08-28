@@ -968,7 +968,7 @@ class HexGraphicsObject(QGraphicsObject):
             painter.drawText(pt, addr_text)
 
             # Paint byte values
-            for col in range(0, 16):
+            for col in range(16):
                 addr = self.row_col_to_addr(row, col)
                 if addr < self.display_start_addr or addr >= self.display_end_addr:
                     continue
@@ -990,7 +990,7 @@ class HexGraphicsObject(QGraphicsObject):
                 painter.drawText(pt, byte_text)
 
             # Paint ASCII representation
-            for col in range(0, 16):
+            for col in range(16):
                 addr = self.row_col_to_addr(row, col)
                 if addr < self.display_start_addr or addr >= self.display_end_addr:
                     continue
