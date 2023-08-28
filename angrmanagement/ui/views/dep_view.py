@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 import networkx
 from angr import SIM_PROCEDURES
-from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
+from angr.code_location import ExternalCodeLocation
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
