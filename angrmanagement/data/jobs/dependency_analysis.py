@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Generator, List, Optional, Set, Tuple
 from angr import KnowledgeBase
 from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
-from angr.analyses.reaching_definitions.external_codeloc import ExternalCodeLocation
 from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg
+from angr.code_location import ExternalCodeLocation
 from angr.knowledge_plugins import Function
 from angr.knowledge_plugins.key_definitions.atoms import Register
 from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
