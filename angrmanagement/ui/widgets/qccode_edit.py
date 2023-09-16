@@ -345,6 +345,12 @@ class QCCodeEdit(api.CodeEdit):
 
         new_node_type = dialog.new_type
         if new_node_type is not None and self._code_view is not None and node is not None:
+
+            if isinstance(node, CFunction):
+                self._code_view.function.prototype = new_node_type
+                self._code_view.codegen.am_event(event="retype_function", node=node)
+                return
+
             # need workspace for altering callbacks of changes
             variable_kb = self._code_view.codegen._variable_kb
             # specify the type
@@ -639,7 +645,7 @@ class QCCodeEdit(api.CodeEdit):
             self.action_xref,
         ]
 
-        self.function_name_actions = [self.action_rename_node, self.action_xref]
+        self.function_name_actions = [self.action_rename_node, self.action_xref, self.action_retype_node]
 
         self.constant_actions = [
             self.action_hex,

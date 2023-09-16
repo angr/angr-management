@@ -4,10 +4,13 @@ from typing import TYPE_CHECKING, Any
 
 import angr
 import pycparser
-from angr.analyses.decompiler.structured_codegen.c import CConstruct, CVariable
+from angr.analyses.decompiler.structured_codegen.c import CConstruct, CVariable, CFunction
 from angr.sim_variable import SimVariable
-from PySide6.QtGui import Qt
+from PySide6.QtGui import Qt, QFont
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
+
+from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
     from angr.sim_type import SimType
@@ -28,6 +31,7 @@ class TypeBox(QLineEdit):
         self._predefined_types = predefined_types
 
         self.textChanged.connect(textchanged_callback)
+        self.setFont(QFont(Conf.disasm_font))
 
     def set_type(self, type_: SimType, cvariable: CVariable = None) -> None:
         self._cvariable = cvariable
@@ -116,6 +120,9 @@ class RetypeNode(QDialog):
 
         self.setLayout(self.main_layout)
 
+    def sizeHint(self):  # pylint:disable=no-self-use
+        return QSize(600, 50)
+
     #
     # Private methods
     #
@@ -141,6 +148,8 @@ class RetypeNode(QDialog):
         if self._node is not None:
             if isinstance(self._node, CVariable) and self._node.unified_variable and self._node_type is not None:
                 type_box.set_type(self._node_type, cvariable=self._node)
+            elif isinstance(self._node, CFunction):
+                type_box.setText(self._node.functy.c_repr(name=self._node.demangled_name, full=True, name_parens=False))
 
             type_box.selectAll()
         self._type_box = type_box
