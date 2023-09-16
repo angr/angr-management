@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING, Any
 
 import angr
 import pycparser
-from angr.analyses.decompiler.structured_codegen.c import CConstruct, CVariable, CFunction
+from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CVariable
 from angr.sim_variable import SimVariable
-from PySide6.QtGui import Qt, QFont
 from PySide6.QtCore import QSize
+from PySide6.QtGui import QFont, Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from angrmanagement.config import Conf
