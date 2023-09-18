@@ -38,7 +38,7 @@ from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.logic.debugger.simgr import SimulationDebugger
 from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.plugins import PluginManager
-from angrmanagement.ui.dialogs import AnalysisOptionsDialog
+from angrmanagement.ui.dialogs import AnalysisOptionsDialog, FunctionDialog
 from angrmanagement.utils import locate_function
 from angrmanagement.utils.daemon_thread import start_daemon_thread
 
@@ -935,6 +935,11 @@ class Workspace:
                 "model": self.main_instance.kb.cfgs.get_most_accurate(),
             }
         )
+
+    def show_function_info(self, function: Union[str, int, "Function"]):
+        if isinstance(function, (str, int)):
+            function = self.main_instance.project.kb.functions[function]
+        FunctionDialog(function).exec_()
 
     #
     # Instance Callbacks
