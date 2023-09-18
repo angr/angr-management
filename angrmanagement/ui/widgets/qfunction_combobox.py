@@ -47,6 +47,11 @@ class QFunctionComboBox(QComboBox):
         for function in self._function_manager.values():
             self.addItem(self._repr_function(function), function)
 
+    def select_function(self, function):
+        idx = self.findData(function)
+        if idx >= 0:
+            self.setCurrentIndex(idx)
+
     #
     # Event handlers
     #
