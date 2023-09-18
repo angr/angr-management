@@ -28,6 +28,9 @@ class StringsView(BaseView):
         self._init_widgets()
         self.reload()
 
+    def sizeHint(self):
+        return QSize(400, 800)
+
     def reload(self):
         if self.instance.kb is None:
             return
@@ -36,8 +39,8 @@ class StringsView(BaseView):
         self._string_table.xrefs = self.instance.project.kb.xrefs
         self._string_table.function = self._selected_function
 
-    def sizeHint(self):
-        return QSize(400, 800)
+    def select_function(self, function):
+        self._function_list.select_function(function)
 
     #
     # Event handlers
