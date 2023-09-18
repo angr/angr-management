@@ -271,7 +271,7 @@ class QFunctionTableView(QTableView):
         super().__init__(parent)
         self.workspace = workspace
         self.instance = instance
-        self._context_menu = FunctionContextMenu(self)
+        self._context_menu = FunctionContextMenu(workspace, self)
 
         self._function_table: QFunctionTable = parent
         self._selected_func = ObjectContainer(None, "Currently selected function")
