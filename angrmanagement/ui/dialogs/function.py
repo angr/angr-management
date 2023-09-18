@@ -51,7 +51,10 @@ class FunctionDialog(QDialog):
             ("Address:", f"{self.function.addr:x}"),
             ("Binary:", f"{self.function.binary}"),
             ("Offset:", f"{self.function.offset:x}"),
-            ("Calling Convention:", f"{self.function.calling_convention}"),
+            (
+                "Calling Convention:",
+                "<Unknown>" if self.function.calling_convention is None else f"{self.function.calling_convention}",
+            ),
         ]:
             main_layout.addWidget(QLabel(label), r, 0)
             le = QLineEdit(text, self)
