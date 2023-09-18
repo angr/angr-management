@@ -49,7 +49,7 @@ class FunctionDialog(QDialog):
                 else self.function.prototype.c_repr(self.function.name, full=True),
             ),
             ("Address:", f"{self.function.addr:x}"),
-            ("Binary", f"{self.function.binary}"),
+            ("Binary:", f"{self.function.binary}"),
             ("Offset:", f"{self.function.offset:x}"),
             ("Calling Convention:", f"{self.function.calling_convention}"),
         ]:
