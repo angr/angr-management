@@ -2,7 +2,8 @@ import logging
 from typing import TYPE_CHECKING, Any, Optional, Set, Union
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
-from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator
+from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator, CVariable
+from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QComboBox, QDockWidget, QFrame, QHBoxLayout, QMainWindow, QTextEdit, QVBoxLayout, QWidget
@@ -361,6 +362,10 @@ class CodeView(BaseView):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
                     self.workspace.jump_to(selected_node.value)
+            elif isinstance(selected_node, CVariable):
+                var = selected_node.variable
+                if var and isinstance(var, SimMemoryVariable):
+                    self.workspace.jump_to(var.addr)
 
     def jump_to(self, addr: int, src_ins_addr=None):  # pylint:disable=unused-argument
         self.addr.am_obj = addr
