@@ -1,17 +1,19 @@
 import os
 import string
+from functools import partial
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from angr.analyses.code_tagging import CodeTags
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
-from PySide6.QtGui import QBrush, QColor, QCursor
+from PySide6.QtGui import QAction, QBrush, QColor, QCursor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMenu,
     QTableView,
     QVBoxLayout,
     QWidget,
@@ -262,6 +264,32 @@ class QFunctionTableModel(QAbstractTableModel):
         return False
 
 
+class QFunctionTableHeaderView(QHeaderView):
+    """
+    The header for QFunctionTableView.
+    """
+
+    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:  # pylint:disable=unused-argument
+        menu = QMenu("Column Menu", self)
+        for idx in range(self.model().columnCount()):
+            column_text = self.model().headerData(idx, Qt.Orientation.Horizontal, Qt.DisplayRole)
+            action = QAction(column_text, self)
+            action.setCheckable(True)
+            hidden = self.isSectionHidden(idx)
+            action.setChecked(not hidden)
+            action.setEnabled(hidden or self.visibleSectionCount() > 1)
+            action.toggled.connect(partial(self.setSectionVisible, idx))
+            menu.addAction(action)
+        menu.exec_(QCursor.pos())
+
+    def visibleSectionCount(self):
+        return self.model().columnCount() - self.hiddenSectionCount()
+
+    def setSectionVisible(self, idx, visible):
+        if visible or self.visibleSectionCount() > 1:
+            self.setSectionHidden(idx, not visible)
+
+
 class QFunctionTableView(QTableView):
     """
     The table view for QFunctionTable.
@@ -277,6 +305,9 @@ class QFunctionTableView(QTableView):
         self._selected_func = ObjectContainer(None, "Currently selected function")
         self._selected_func.am_subscribe(selection_callback)
 
+        header = QFunctionTableHeaderView(Qt.Orientation.Horizontal, self)
+        header.setSectionsClickable(True)
+        self.setHorizontalHeader(header)
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
