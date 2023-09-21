@@ -20,7 +20,7 @@ class FunctionsView(BaseView):
 
         self._init_widgets()
 
-        self.width_hint = 300
+        self.width_hint = 500
         self.height_hint = 0
         self.updateGeometry()
 
