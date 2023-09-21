@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 import PySide6QtAds as QtAds
 from bidict import bidict
+from PySide6.QtWidgets import QSizePolicy
 
 from .views.view import ViewStatePublisherMixin
 
@@ -81,12 +82,18 @@ class ViewManager:
         dw.setWidget(view)
 
         area = self.DOCKING_POSITIONS.get(view.default_docking_position, QtAds.RightDockWidgetArea)
-        self.main_window.dock_manager.addDockWidgetTab(area, dw)
+        area_widget = self.main_window.dock_manager.addDockWidgetTab(area, dw)
         self.main_window.init_shortcuts_on_dock(dw)
 
         self.views.append(view)
         self.docks.append(dw)
         self.view_to_dock[view] = dw
+
+        if view.default_docking_position == "center":
+            policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            policy.setHorizontalStretch(1)
+            policy.setVerticalStretch(1)
+            area_widget.setSizePolicy(policy)
 
     @property
     def most_recently_focused_view(self) -> Optional["BaseView"]:
