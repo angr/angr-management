@@ -225,11 +225,10 @@ class Style(Page):
         # Font options
         self._font_options = [
             QFontOption("Application Font", "ui_default_font", self),
-            # TODO: other app fonts, things which set them respect updates to them in Conf
-            # QFontOption("Tab View Font", "tabular_view_font", self),
-            # QFontOption("Disassembly Font", "disasm_font", self),
-            # QFontOption("SymExc Font", "symexec_font", self),
-            # QFontOption("Code Font", "code_font", self),
+            QFontOption("Tab View Font", "tabular_view_font", self),
+            QFontOption("Disassembly Font", "disasm_font", self),
+            QFontOption("SymExc Font", "symexec_font", self),
+            QFontOption("Code Font", "code_font", self),
         ]
         font_layout = QVBoxLayout()
         for i in self._font_options:
