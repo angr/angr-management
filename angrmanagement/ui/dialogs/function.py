@@ -55,6 +55,7 @@ class FunctionDialog(QDialog):
                 "Calling Convention:",
                 "<Unknown>" if self.function.calling_convention is None else f"{self.function.calling_convention}",
             ),
+            ("Tags:", ", ".join(self.function.tags))
         ]:
             main_layout.addWidget(QLabel(label), r, 0)
             le = QLineEdit(text, self)
