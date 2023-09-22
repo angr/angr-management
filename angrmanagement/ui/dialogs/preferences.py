@@ -1,5 +1,6 @@
 import enum
 from datetime import datetime
+from itertools import chain
 
 from bidict import bidict
 from PySide6.QtGui import QColor
@@ -10,6 +11,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -32,6 +34,7 @@ from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qcolor_option import QColorOption
 from angrmanagement.ui.widgets.qfont_option import QFontOption
+from angrmanagement.utils.layout import add_to_grid
 
 
 class Page(QWidget):
@@ -223,17 +226,19 @@ class Style(Page):
         page_layout.addLayout(log_format_layout)
 
         # Font options
-        self._font_options = [
-            QFontOption("Application Font", "ui_default_font", self),
-            QFontOption("Tab View Font", "tabular_view_font", self),
-            QFontOption("Disassembly Font", "disasm_font", self),
-            QFontOption("SymExc Font", "symexec_font", self),
-            QFontOption("Code Font", "code_font", self),
+        fonts_group_box = QGroupBox("Fonts")
+        fonts_layout = QGridLayout()
+        fonts_group_box.setLayout(fonts_layout)
+        page_layout.addWidget(fonts_group_box)
+        entries = [
+            ("Application Font", "ui_default_font"),
+            ("Tabular View Font", "tabular_view_font"),
+            ("Disassembly Font", "disasm_font"),
+            ("SymExc Font", "symexec_font"),
+            ("Code Font", "code_font"),
         ]
-        font_layout = QVBoxLayout()
-        for i in self._font_options:
-            font_layout.addWidget(i)
-        page_layout.addLayout(font_layout)
+        self._fonts_widgets = [(QLabel(f"{name}:"), QFontOption(key, self)) for name, key in entries]
+        add_to_grid(fonts_layout, 2, chain(*self._fonts_widgets))
 
         page_layout.addStretch()
 
@@ -241,8 +246,8 @@ class Style(Page):
         fmt = self.log_format_entry.currentText()
         if fmt:
             Conf.log_timestamp_format = self._fmt_map.get(fmt, fmt)
-        for i in self._font_options:
-            i.update()
+        for _, font_picker in self._fonts_widgets:
+            font_picker.update()
 
 
 class Preferences(QDialog):
