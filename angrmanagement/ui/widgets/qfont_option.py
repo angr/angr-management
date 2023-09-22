@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QFontDialog, QHBoxLayout, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import QFontDialog, QPushButton
 
 from angrmanagement.config import Conf
 
@@ -8,45 +8,34 @@ if TYPE_CHECKING:
     from PySide6.QtGui import QFont
 
 
-class QFontOption(QWidget):
+class QFontOption(QPushButton):
     """
     A widget used to allow users to change a font stored in Conf
     """
 
-    def __init__(self, name: str, key: str, parent=None):
+    def __init__(self, config_key: str, parent=None):
         """
-        :param name: The name of the font
-        :param key: The key of the font in Conf
-        :parent: The optional parent of this QWidget
+        :param key: Key of the font in Conf
+        :parent:    Optional parent of this QWidget
         """
         super().__init__(parent)
-        self.name: str = name
-        self._key = key
-        self.font: QFont = getattr(Conf, key)
-        layout = QHBoxLayout(self)
-        # Label
-        self.label = QLabel(parent=self)
-        layout.addWidget(self.label)
-        # Button
-        self.button = QPushButton("Change", parent=self)
-        self.button.released.connect(self._prompt)
-        layout.addWidget(self.button)
-        # Finish
-        self.setLayout(layout)
+        self._config_key = config_key
+        self.font: QFont = getattr(Conf, config_key)
+        self.released.connect(self._prompt)
         self._format()
 
     def update(self):
         """
         Update Conf with the selected font
         """
-        setattr(Conf, self._key, self.font)
+        setattr(Conf, self._config_key, self.font)
 
     def _format(self):
         """
         Format the widget's UI elements
         """
-        self.label.setText(f"{self.name}: {self.font.family()}")
-        self.label.setFont(self.font)  # We do not ._sync.keep_synced this; it should update always
+        self.setText(f"{self.font.family()}, {self.font.pointSize()} pt")
+        self.setFont(self.font)  # We do not ._sync.keep_synced this; it should update always
 
     def _prompt(self):
         """
