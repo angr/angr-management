@@ -1319,8 +1319,8 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
 
     _widgets_initialized: bool = False
 
-    def __init__(self, instance, default_docking_position, *args, **kwargs):
-        super().__init__("hex", instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
+        super().__init__("hex", workspace, instance, default_docking_position, *args, **kwargs)
         self.base_caption: str = "Hex"
         self.smart_highlighting_enabled: bool = True
         self._clipboard = None
