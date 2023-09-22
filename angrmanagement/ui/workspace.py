@@ -818,7 +818,7 @@ class Workspace:
         self.show_view("log", LogView, position="bottom")
 
     def create_and_show_hex_view(self):
-        view = HexView(self._main_instance, "center")
+        view = HexView(self, self._main_instance, "center")
         self.add_view(view)
         return view
 
