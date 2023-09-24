@@ -3,6 +3,7 @@ import string
 from functools import partial
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
+import qtawesome as qta
 from angr.analyses.code_tagging import CodeTags
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
@@ -413,11 +414,9 @@ class QFunctionTableFilterBox(QLineEdit):
     def eventFilter(self, obj, event):  # pylint:disable=unused-argument
         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
             if self.text():
-                # clear the text
                 self.setText("")
             else:
-                # close the filterbox and set the function table on focus
-                self._table.hide_filter_box()
+                self._table.clear_filter_box()
             return True
 
         return False
@@ -489,10 +488,8 @@ class QFunctionTable(QWidget):
         self._filter_box.show()
         self._filter_box.setFocus()
 
-    def hide_filter_box(self):
-        # clear the text inside filter box
+    def clear_filter_box(self):
         self._filter_box.setText("")
-        self._filter_box.hide()
         self._table_view.setFocus()
 
     def toggle_show_alignment_functions(self):
@@ -527,7 +524,11 @@ class QFunctionTable(QWidget):
 
         # filter text box
         self._filter_box = QFunctionTableFilterBox(self)
-        self._filter_box.hide()
+        self._filter_box.setClearButtonEnabled(True)
+        self._filter_box.addAction(
+            qta.icon("fa5s.search", color=Conf.palette_placeholdertext), QLineEdit.LeadingPosition
+        )
+        self._filter_box.setPlaceholderText("Filter by name...")
         self._filter_box.textChanged.connect(self._on_filter_box_text_changed)
         self._filter_box.returnPressed.connect(self._on_filter_box_return_pressed)
 
@@ -540,13 +541,12 @@ class QFunctionTable(QWidget):
         status_lyt.setContentsMargins(3, 3, 3, 3)
         status_lyt.setSpacing(3)
         status_lyt.addWidget(self._toolbar.qtoolbar())
-        status_lyt.addStretch(0)
+        status_lyt.addWidget(self._filter_box)
         status_lyt.addWidget(self._status_label)
 
         # layout
         layout = QVBoxLayout()
         layout.addLayout(status_lyt)
-        layout.addWidget(self._filter_box)
         layout.addWidget(self._table_view)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -571,5 +571,4 @@ class QFunctionTable(QWidget):
 
     def _on_filter_box_return_pressed(self):
         self._table_view.jump_to_result()
-        # Hide the filter box
-        self.hide_filter_box()
+        self.clear_filter_box()
