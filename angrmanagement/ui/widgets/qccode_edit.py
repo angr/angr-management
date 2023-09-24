@@ -18,8 +18,9 @@ from angr.analyses.decompiler.structured_codegen.c import (
 from angr.sim_type import SimType
 from angr.sim_variable import SimTemporaryVariable, SimVariable
 from pyqodeng.core import api, modes, panels
+from pyqodeng.core.api.syntax_highlighter import COLOR_SCHEME_KEYS
 from PySide6.QtCore import QEvent, Qt
-from PySide6.QtGui import QAction, QKeySequence, QTextCharFormat
+from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
 
 from angrmanagement.ui.dialogs.rename_node import RenameNode
@@ -28,7 +29,7 @@ from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
-from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
+from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QTextDocument
@@ -43,11 +44,10 @@ class ColorSchemeIDA(api.ColorScheme):
 
     def __init__(self):
         super().__init__("default")
-
-        # override existing formats
-        function_format = QTextCharFormat()
-        function_format.setForeground(self._get_brush("0000ff"))
-        self.formats["function"] = function_format
+        for k, v in FORMATS.items():
+            if k in COLOR_SCHEME_KEYS:
+                self.formats[COLOR_SCHEME_KEYS[k]] = v
+                self.formats[k] = v
 
 
 class QCCodeEdit(api.CodeEdit):
