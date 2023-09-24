@@ -436,6 +436,7 @@ class QFunctionTable(QWidget):
         self._status_label: QLabel
 
         self._last_known_func_addrs: Set[int] = set()
+        self._function_count = None
 
         self._init_widgets(selection_callback)
 
@@ -452,7 +453,7 @@ class QFunctionTable(QWidget):
     @function_manager.setter
     def function_manager(self, v):
         if v is not None:
-            self._view.set_function_count(len(v))
+            self._function_count = len(v)
         if self._table_view is not None:
             self._table_view.function_manager = v
         else:
@@ -469,14 +470,14 @@ class QFunctionTable(QWidget):
         if self.function_manager is None:
             return
 
-        if self._view.function_count != len(self.function_manager):
+        if self._function_count != len(self.function_manager):
             # the number of functions has increased - we need to update the table
             added_funcs, removed_funcs = self._updated_functions(self.function_manager)
         else:
             added_funcs, removed_funcs = None, None
 
         self._table_view.refresh(added_funcs=added_funcs, removed_funcs=removed_funcs)
-        self._view.set_function_count(len(self._last_known_func_addrs))
+        self._function_count = len(self._last_known_func_addrs)
         self.update_displayed_function_count()
 
     def show_filter_box(self, prefix=""):

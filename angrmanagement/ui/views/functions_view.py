@@ -35,9 +35,6 @@ class FunctionsView(BaseView):
     def refresh(self):
         self._function_table.refresh()
 
-    def set_function_count(self, count):
-        self.function_count = count
-
     def reload(self):
         if not self.instance.cfg.am_none:
             self._function_table.function_manager = self.instance.kb.functions
