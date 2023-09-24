@@ -25,7 +25,6 @@ class FunctionsView(BaseView):
         self.updateGeometry()
 
         self.function_count = None
-        self._displayed_function_count = None
 
         self.reload()
 
@@ -38,9 +37,6 @@ class FunctionsView(BaseView):
 
     def set_function_count(self, count):
         self.function_count = count
-
-    def set_displayed_function_count(self, count):
-        self._displayed_function_count = count
 
     def reload(self):
         if not self.instance.cfg.am_none:
