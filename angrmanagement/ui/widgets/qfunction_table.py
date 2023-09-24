@@ -505,16 +505,12 @@ class QFunctionTable(QWidget):
             self._status_label.setText("")
             return
         if cnt == len(self.function_manager):
-            self._view.set_displayed_function_count(None)  # no filtering
             self._status_label.setText("%d functions" % cnt)
         else:
-            self._view.set_displayed_function_count(cnt)
             self._status_label.setText("%d/%d functions" % (cnt, len(self.function_manager)))
 
     def filter_functions(self, text):
         self._table_view.filter(text)
-        if not text:
-            self._view.set_displayed_function_count(None)
         self.update_displayed_function_count()
 
     #
