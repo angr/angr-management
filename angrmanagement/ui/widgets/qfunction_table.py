@@ -326,7 +326,7 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().setStretchLastSection(True)
         self.verticalHeader().setDefaultSectionSize(24)
 
-        column_widths = [300, 80, 80, 80, 50, 50]
+        column_widths = [200, 80, 80, 80, 50, 50]
         for idx, width in enumerate(column_widths):
             self.setColumnWidth(idx, width)
 
