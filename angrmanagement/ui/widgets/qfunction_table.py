@@ -515,8 +515,7 @@ class QFunctionTable(QWidget):
         self._table_view.filter(text)
         if not text:
             self._view.set_displayed_function_count(None)
-        else:
-            self.update_displayed_function_count()
+        self.update_displayed_function_count()
 
     #
     # Private methods
