@@ -314,6 +314,7 @@ class QFunctionTableView(QTableView):
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self.show_alignment_functions = False
+        self.filter_text = ""
         self._functions = None
         self._model = QFunctionTableModel(self.workspace, self.instance, [])
 
@@ -361,6 +362,7 @@ class QFunctionTableView(QTableView):
         self._selected_func.am_subscribe(callback)
 
     def filter(self, keyword):
+        self.filter_text = keyword
         self._model.filter(keyword)
 
     def jump_to_result(self, index=0):
@@ -373,6 +375,7 @@ class QFunctionTableView(QTableView):
             self._model.func_list = [v for v in self._functions.values() if not v.alignment]
         else:
             self._model.func_list = list(self._functions.values())
+        self._model.filter(self.filter_text)
 
     def _on_function_selected(self, model_index):
         row = model_index.row()
