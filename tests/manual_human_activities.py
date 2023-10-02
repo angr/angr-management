@@ -19,7 +19,6 @@ class TestHumanActivities(unittest.TestCase):
         setUp()
 
     def tearDown(self):
-        pass
         os.remove("/tmp/testtest.sqlite")
 
     def _open_a_project(self):
