@@ -105,7 +105,6 @@ def f(initializer: Initializer, name):
     except SingleInstanceException:
         sys.exit(-1)
     logger.setLevel(tmp)
-    pass
 
 
 class testSingleton(unittest.TestCase):
