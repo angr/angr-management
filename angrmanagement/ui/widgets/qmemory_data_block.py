@@ -80,8 +80,10 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         self._addr_text = "%08x" % self.addr
         self._bytes = []
         if self.memory_data.content:
-            for byt in self.memory_data.content:
-                self._bytes.append(byt)
+            cnt = self.memory_data.content
+            if self.memory_data.size is not None:
+                cnt = cnt[: self.memory_data.size]
+            self._bytes += list(cnt)
 
         if self.memory_data.size is not None and len(self._bytes) < self.memory_data.size:
             # load more from mapped memory
