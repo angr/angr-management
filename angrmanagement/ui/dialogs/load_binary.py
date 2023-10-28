@@ -454,7 +454,7 @@ class LoadBinary(QDialog):
             "backend": backend,
         }
 
-        if self._entry_addr_checkbox.isChecked():
+        if self._base_addr_checkbox.isChecked():
             try:
                 base_addr = int(self.option_widgets["base_addr"].text(), 16)
             except ValueError:
@@ -462,7 +462,7 @@ class LoadBinary(QDialog):
                 return
             self.load_options["main_opts"]["base_addr"] = base_addr
 
-        if self._base_addr_checkbox.isChecked():
+        if self._entry_addr_checkbox.isChecked():
             try:
                 entry_addr = int(self.option_widgets["entry_addr"].text(), 16)
             except ValueError:
