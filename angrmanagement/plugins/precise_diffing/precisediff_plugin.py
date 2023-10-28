@@ -2,11 +2,12 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-import angr
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.data.instance import Instance
+from angrmanagement.data.jobs.cfg_generation import CFGGenerationJob
+from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import DisassemblyView
 
@@ -121,14 +122,19 @@ class PreciseDiffPlugin(BasePlugin):
             del self.diff_instance
 
     def _create_instance_from_binary(self, file_path: Path):
-        recompilation_instance = Instance()
-        recompilation_instance.recompilation_plugin = self
-        recompilation_instance.workspace = self.workspace
-        recompilation_instance.project.am_obj = angr.Project(file_path, auto_load_libs=False)
-        self.loaded_binary = file_path
-        recompilation_instance.cfg = recompilation_instance.project.analyses.CFG()
+        self.diff_instance.recompilation_plugin = self
+        self.diff_instance.workspace = self.workspace
 
-        return recompilation_instance
+        job = LoadBinaryJob(file_path, on_finish=self._create_instance_from_binary_done)
+        self.loaded_binary = file_path
+        self.diff_instance.add_job(job)
+
+    def _create_instance_from_binary_done(self):
+        job = CFGGenerationJob(on_finish=self._generate_binary_cfg_done)
+        self.diff_instance.add_job(job)
+
+    def _generate_binary_cfg_done(self):
+        self.revised_binary_loaded()
 
     def _create_revised_disassembly_view(self):
         new_disass = DiffDisassemblyView(self.workspace, self.diff_instance, "center")
@@ -170,7 +176,10 @@ class PreciseDiffPlugin(BasePlugin):
 
     def load_revised_binary_from_file(self, file_path: Path):
         self._destroy_recompiled_view()
-        self.diff_instance = self._create_instance_from_binary(file_path)
+        self.diff_instance = Instance()
+        self._create_instance_from_binary(file_path)
+
+    def revised_binary_loaded(self):
         self._create_revised_disassembly_view()
         self.syncronize_with_original_disassembly_view()
         self.workspace.view_manager.raise_view(self.current_revised_view)
