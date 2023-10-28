@@ -2,15 +2,14 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-import angr
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.data.instance import Instance
+from angrmanagement.data.jobs.cfg_generation import CFGGenerationJob
+from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views import DisassemblyView
-from angrmanagement.data.jobs.loading import LoadBinaryJob
-from angrmanagement.data.jobs.cfg_generation import CFGGenerationJob
 
 from .diff_view import DiffDisassemblyView
 from .function_diff import BFSFunctionDiff, FunctionDiff
