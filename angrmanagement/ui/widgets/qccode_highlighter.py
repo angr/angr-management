@@ -47,6 +47,10 @@ def reset_formats():
         Conf.pseudocode_function_color, Conf.pseudocode_function_weight, Conf.pseudocode_function_style
     )
 
+    FORMATS["library_function"] = create_char_format(
+        Conf.pseudocode_library_function_color, Conf.pseudocode_function_weight, Conf.pseudocode_function_style
+    )
+
     FORMATS["comment"] = create_char_format(
         Conf.pseudocode_comment_color, Conf.pseudocode_comment_weight, Conf.pseudocode_comment_style
     )
@@ -70,7 +74,12 @@ def _format_node(obj):
     """
     if isinstance(obj, SimType):
         return FORMATS["type"]
-    elif isinstance(obj, (CFunctionCall, CFunction)):
+    elif isinstance(obj, CFunctionCall):
+        if obj.callee_func is not None:
+            if obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall:
+                return FORMATS["library_function"]
+        return FORMATS["function"]
+    elif isinstance(obj, CFunction):
         return FORMATS["function"]
     elif isinstance(obj, CLabel):
         return FORMATS["label"]
