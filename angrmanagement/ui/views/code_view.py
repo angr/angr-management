@@ -326,6 +326,10 @@ class CodeView(BaseView):
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self._function.am_obj
 
+        console_view = self.workspace.view_manager.first_view_in_category("console")
+        if console_view is not None:
+            console_view.set_current_function(self._function.am_obj)
+
     def _on_cursor_position_changed(self):
         if self._doc is None:
             return

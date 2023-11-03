@@ -106,3 +106,12 @@ class ConsoleView(BaseView):
             view = self.workspace.view_manager.first_view_in_category("disassembly")
             if view is not None:
                 view.refresh()
+
+    def set_current_function(self, func):
+        self.push_namespace(
+            {
+                "func": func,
+                "function": func,
+                "function_": func,  # deprecated
+            }
+        )
