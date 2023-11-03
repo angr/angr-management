@@ -933,15 +933,9 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if self._current_view is self._linear_viewer and the_func is not None:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 
-        # FIXME: Don't populate console func like this
-        view = self.workspace.view_manager.first_view_in_category("console")
-        if view is not None:
-            view.push_namespace(
-                {
-                    "func": the_func,
-                    "function_": the_func,
-                }
-            )
+        console_view = self.workspace.view_manager.first_view_in_category("console")
+        if console_view is not None:
+            console_view.set_current_function(the_func)
 
     def _jump_to(self, addr, use_animation=False):
         if self._prefer_graph and self._current_view is self._linear_viewer:
