@@ -1,3 +1,6 @@
+from pygments.lexers.c_cpp import CLexer
+from pyqodeng.core.api import CodeEdit
+from pyqodeng.core.modes import PygmentsSyntaxHighlighter
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -13,6 +16,7 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.dialogs.xref import XRefDialog
+from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.utils.layout import add_to_grid
 
 
@@ -42,12 +46,6 @@ class FunctionDialog(QDialog):
 
         for label, text in [
             ("Name:", self.function.name),
-            (
-                "C Prototype:",
-                "<Unknown>"
-                if self.function.prototype is None
-                else self.function.prototype.c_repr(self.function.name, full=True),
-            ),
             ("Address:", f"{self.function.addr:x}"),
             ("Binary:", f"{self.function.binary}"),
             ("Offset:", f"{self.function.offset:x}"),
@@ -63,6 +61,17 @@ class FunctionDialog(QDialog):
             le.setReadOnly(True)  # FIXME: Support editing
             main_layout.addWidget(le, r, 1)
             r += 1
+
+        main_layout.addWidget(QLabel("C Prototype:"), r, 0)
+        ce = CodeEdit(self)
+        if self.function.prototype is not None:
+            decl = self.function.prototype.c_repr(full=True).replace("()", self.function.name, 1) + ";"
+            ce.document().setPlainText(decl)
+        ce.modes.append(PygmentsSyntaxHighlighter(ce.document(), CLexer(), ColorSchemeIDA()))
+        ce.setFixedHeight(ce.fontMetrics().height() * 2)
+        ce.setReadOnly(True)  # FIXME: Support editing
+        main_layout.addWidget(ce, r, 1)
+        r += 1
 
         attrs_group_box = QGroupBox("Attributes")
         attrs_layout = QGridLayout()

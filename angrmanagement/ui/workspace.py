@@ -38,7 +38,8 @@ from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.logic.debugger.simgr import SimulationDebugger
 from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.plugins import PluginManager
-from angrmanagement.ui.dialogs import AnalysisOptionsDialog, FunctionDialog
+from angrmanagement.ui.dialogs import AnalysisOptionsDialog
+from angrmanagement.ui.dialogs.function import FunctionDialog
 from angrmanagement.utils import locate_function
 from angrmanagement.utils.daemon_thread import start_daemon_thread
 
