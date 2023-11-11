@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton
 
 from angrmanagement.ui.menus.disasm_options_menu import DisasmOptionsMenu
-from angrmanagement.ui.toolbars import NavToolbar
+from angrmanagement.ui.toolbars.nav_toolbar import NavToolbar
 
 from .qdisasm_base_control import DisassemblyLevel
 from .qdisasm_graph import QDisassemblyGraph
