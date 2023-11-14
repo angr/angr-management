@@ -11,3 +11,4 @@ platforms = ["windows", "linux", "macos"]
 min_angr_version = "9.0.0.0"
 author = "The BinSync Team"
 entrypoints = ["__init__.py"]
+
