@@ -51,13 +51,13 @@ included_data = [
     (str(Z3_BASE / "lib"), "z3/lib"),
 ]
 
-if sys.platform != "win32":
+
+if sys.platform == "linux":
     import PySide6
 
     PYSIDE6_BASE = pathlib.Path(PySide6.__file__).parent
     included_data.append((str(PYSIDE6_BASE / "Qt" / "lib"), "PySide6/Qt/lib"))
 
-if sys.platform == "linux":
     import archr
     import keystone
 
