@@ -87,6 +87,7 @@ a = Analysis(
         "pyzmq",
         "xmlrpc.server",
         "charset_normalizer.md__mypyc",
+        "PySide6.support.deprecated",
     ],
     hookspath=[],
     hooksconfig={},
