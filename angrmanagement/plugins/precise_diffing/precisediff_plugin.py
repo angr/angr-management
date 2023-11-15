@@ -166,7 +166,7 @@ class PreciseDiffPlugin(BasePlugin):
         og_func_name = og_func.name
 
         try:
-            revised_func = self.diff_instance.cfg.functions[og_func_name]
+            revised_func = self.diff_instance.kb.functions[og_func_name]
         except KeyError:
             logger.warning("The function %s does not exist in the diffed binary", og_func)
             return

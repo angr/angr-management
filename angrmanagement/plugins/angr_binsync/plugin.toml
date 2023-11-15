@@ -1,0 +1,14 @@
+[meta]
+plugin_metadata_version = 0
+
+[plugin]
+name = "BinSync"
+shortname = "binsync"
+version = "0.0.0"
+description = ""
+long_description = ""
+platforms = ["windows", "linux", "macos"]
+min_angr_version = "9.0.0.0"
+author = "The BinSync Team"
+entrypoints = ["__init__.py"]
+
