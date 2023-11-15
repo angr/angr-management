@@ -8,6 +8,9 @@ dist
 build
 MANIFEST
 start.spec
+venv
+.venv
+upload
 
 # vim temp files
 *.swp
@@ -31,3 +34,5 @@ packaging/appimage/AppDir
 packaging/appimage/appimage-builder-cache
 packaging/appimage/AppDir
 *.AppImage
+
+.DS_Store
