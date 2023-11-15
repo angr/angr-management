@@ -126,8 +126,8 @@ jobs:
           name: angr-management-${{ matrix.os }}
       - run: |
           set -x
-          hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
-          open /tmp/am-mount/*/*.app
+          unzip angr-management-macOS.zip
+          open angr-management.app
           sleep 30
           windows=$(osascript -e '
             tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
