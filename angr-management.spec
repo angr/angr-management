@@ -88,6 +88,7 @@ a = Analysis(
         "xmlrpc.server",
         "charset_normalizer.md__mypyc",
         "PySide6.support.deprecated",
+        "PySide6.QtWebEngineWidgets",
     ],
     hookspath=[],
     hooksconfig={},
