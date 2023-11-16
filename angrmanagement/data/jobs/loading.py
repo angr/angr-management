@@ -73,7 +73,9 @@ class LoadBinaryJob(Job):
         partial_ld = None
         try:
             # Try automatic loading
-            partial_ld = cle.Loader(self.fname, perform_relocations=False, load_debug_info=False)
+            partial_ld = cle.Loader(
+                self.fname, perform_relocations=False, load_debug_info=False, main_opts={"ignore_missing_arch": True}
+            )
         except archinfo.arch.ArchNotFound:
             _l.warning("Could not identify binary architecture.")
             partial_ld = None
