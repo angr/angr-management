@@ -423,6 +423,11 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node.fmt_neg ^= True
             self._code_view.codegen.am_event()
 
+    def float_constant(self):
+        if hasattr(self._selected_node, "fmt_float"):
+            self._selected_node.fmt_float ^= True
+            self._code_view.codegen.am_event()
+
     def convert_to_ite_expr(self):
         node = self._selected_node
         if not isinstance(node, CExpression):
@@ -600,6 +605,8 @@ class QCCodeEdit(api.CodeEdit):
         self.action_char = QAction("Toggle char", self)
         self.action_char.triggered.connect(self.char_constant)
         self.action_char.setShortcut(QKeySequence("R"))
+        self.action_float = QAction("Toggle float", self)
+        self.action_float.triggered.connect(self.float_constant)
         self.action_to_ite_expr = QAction("Create a ternary expression")
         self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
         self.action_swap_binop_operands = QAction("Swap operands")
@@ -629,6 +636,7 @@ class QCCodeEdit(api.CodeEdit):
             self.action_hex,
             self.action_neg,
             self.action_char,
+            self.action_float,
         ]
 
         self.call_actions = [self.action_rename_node, self.action_xref]
