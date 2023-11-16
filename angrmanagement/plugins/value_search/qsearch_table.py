@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Union
 
 from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
@@ -10,8 +11,25 @@ if TYPE_CHECKING:
     from angr.analyses.cfg.cfg_fast import MemoryData
     from PySide6.QtGui import QKeyEvent
 
+    from .search_view import SearchView
+
+
+@dataclass
+class SearchItem:
+    """
+    Describes each item in QSearchModel.
+    """
+
+    addr: int
+    search_value: Union[int, float, bytes]
+    search_value_as_bytes: bytes
+
 
 class QSearchModel(QAbstractTableModel):
+    """
+    The model for the table.
+    """
+
     HEADER = ["Address", "Value"]
 
     ADDRESS_COL = 0
@@ -82,11 +100,12 @@ class QSearchModel(QAbstractTableModel):
             if col == self.ADDRESS_COL and isinstance(data, int):
                 return f"{data:x}"
             return data
+        return ""
 
-    def _get_column_data(self, v: "MemoryData", col: int) -> Any:
+    def _get_column_data(self, v: SearchItem, col: int) -> Any:
         mapping = {
-            self.ADDRESS_COL: lambda x: x[0],
-            self.VALUE_COL: lambda x: x[1],
+            self.ADDRESS_COL: lambda x: x.addr,
+            self.VALUE_COL: lambda x: x.search_value,
         }
 
         if col in mapping:
@@ -95,9 +114,13 @@ class QSearchModel(QAbstractTableModel):
 
 
 class QSearchTable(QTableView):
+    """
+    The value search table widget.
+    """
+
     def __init__(self, instance, parent, selection_callback=None):
         super().__init__(parent)
-        self._parent = parent
+        self._parent: "SearchView" = parent
 
         self._instance = instance
         self._selected = selection_callback
@@ -135,8 +158,10 @@ class QSearchTable(QTableView):
     @filter_string.setter
     def filter_string(self, v):
         self._filter = v
-        found_values, beastr = self._parent.plugin.on_search_trigger(self._filter, self._parent._selected_type)
-        values = [(addr, v, beastr) for addr in found_values]
+        found_values, beastr = self._parent.plugin.on_search_trigger(
+            self._filter, self._parent._selected_type, self._parent.alignment
+        )
+        values = [SearchItem(addr, v, beastr) for addr in found_values]
         self._model.layoutAboutToBeChanged.emit()
         self._model.values = values
         self._model.layoutChanged.emit()
@@ -175,16 +200,16 @@ class QSearchTable(QTableView):
                 model_index = self._proxy.mapToSource(selected_rows[0])
                 selected_index = model_index.row()
                 if 0 <= selected_index < len(self._model.values):
-                    selected_item: MemoryData = self._model.values[selected_index]
+                    selected_item: SearchItem = self._model.values[selected_index]
                     dialog = XRefDialog(
                         addr=selected_item.addr,
                         dst_addr=selected_item.addr,
-                        xrefs_manager=self.xrefs,
+                        xrefs_manager=self._instance.project.kb.xrefs,
                         instance=self._instance,
                         parent=self,
-                        disassembly_view=self.parent.workspace.view_manager.first_view_in_category("disassembly"),
+                        disassembly_view=self._parent.workspace.view_manager.first_view_in_category("disassembly"),
                     )
                     dialog.exec_()
             return
 
-        return super().keyPressEvent(event)
+        super().keyPressEvent(event)
