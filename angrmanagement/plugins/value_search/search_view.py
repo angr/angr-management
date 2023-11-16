@@ -6,8 +6,8 @@ from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushBu
 
 from angrmanagement.ui.views.view import BaseView
 
-from .qsearch_table import QSearchTable
 from .constants import CONSTANTS_BY_NAME
+from .qsearch_table import QSearchTable
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
