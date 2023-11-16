@@ -216,6 +216,10 @@ class Instance:
             return None
 
         if isinstance(obj, Block):
+            if obj._using_pcode_engine:
+                # TODO: Support getting disassembly from pypcode
+                return "..."
+
             for insn in obj.capstone.insns:
                 if insn.address == addr:
                     insn_piece = Instruction(insn, None, project=self.project)
