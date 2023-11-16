@@ -27,7 +27,7 @@ class XRefDialog(QDialog):
     ):
         super().__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint | Qt.WindowCloseButtonHint)
 
         self._variable_manager = variable_manager
         self._variable = variable
