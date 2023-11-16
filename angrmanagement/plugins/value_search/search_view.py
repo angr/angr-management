@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from angrmanagement.ui.views.view import BaseView
@@ -25,6 +26,7 @@ class SearchView(BaseView):
 
         self._search_table: QSearchTable
         self._type_list: QComboBox
+        self._alignment_input: QLineEdit
 
         self._selected_type = "bytes"
 
@@ -36,6 +38,13 @@ class SearchView(BaseView):
 
     def sizeHint(self):
         return QSize(400, 800)
+
+    @property
+    def alignment(self) -> int:
+        try:
+            return int(self._alignment_input.text())
+        except (TypeError, ValueError):
+            return 1
 
     #
     # Event handlers
@@ -73,10 +82,15 @@ class SearchView(BaseView):
         self._search_button = QPushButton("Search", parent=self)
         self._filter_string = QLineEdit(self)
         self._search_button.clicked.connect(self._on_search_click)
+        self._alignment_input = QLineEdit(self)
+        self._alignment_input.setValidator(QIntValidator(1, 64, self))
+        self._alignment_input.setText("1")
 
         search_layout = QHBoxLayout()
         search_layout.addWidget(QLabel("Type:", self))
         search_layout.addWidget(self._type_list, 10)
+        search_layout.addWidget(QLabel("Alignment (bytes):", self))
+        search_layout.addWidget(self._alignment_input, 10)
         search_layout.addWidget(QLabel("Query:", self))
         search_layout.addWidget(self._filter_string, 10)
         search_layout.addWidget(self._search_button)

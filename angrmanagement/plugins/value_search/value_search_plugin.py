@@ -43,11 +43,14 @@ class ValueSearch(BasePlugin):
     # helpers
     #
 
-    def search_by_bytes(self, value: bytes):
+    def search_by_bytes(self, value: bytes, alignment: int):
         if value is None:
             return []
 
-        return list(self.workspace.main_instance.project.loader.memory.find(value))
+        addrs = self.workspace.main_instance.project.loader.memory.find(value)
+        if alignment <= 1:
+            return list(addrs)
+        return [addr for addr in addrs if addr % alignment == 0]
 
     def _float_to_bytes(self, f_value: float):
         if self._endness_encoding is None:
@@ -75,7 +78,7 @@ class ValueSearch(BasePlugin):
     # callbacks
     #
 
-    def on_search_trigger(self, value: str, type_: str):
+    def on_search_trigger(self, value: str, type_: str, alignment: int):
         if type_ == "int":
             i_val = int(value, 0)
             value = self._int_to_bytes(i_val)
@@ -85,4 +88,4 @@ class ValueSearch(BasePlugin):
         else:
             value = value.encode().decode("unicode_escape").encode("latin-1")
 
-        return self.search_by_bytes(value), value
+        return self.search_by_bytes(value, alignment), value
