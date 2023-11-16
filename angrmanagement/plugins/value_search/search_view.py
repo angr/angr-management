@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushBu
 from angrmanagement.ui.views.view import BaseView
 
 from .qsearch_table import QSearchTable
+from .constants import CONSTANTS_BY_NAME
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
@@ -77,6 +78,9 @@ class SearchView(BaseView):
     #
 
     def _init_widgets(self):
+        self._constants_list = QComboBox(parent=self)
+        self._constants_list.addItems(list(CONSTANTS_BY_NAME.keys()))
+        self._constants_list.currentTextChanged.connect(self._on_constants_changed)
         self._type_list = QComboBox(parent=self)
         self._type_list.addItems(["bytes", "int", "float"])
         self._search_button = QPushButton("Search", parent=self)
@@ -87,6 +91,8 @@ class SearchView(BaseView):
         self._alignment_input.setText("1")
 
         search_layout = QHBoxLayout()
+        search_layout.addWidget(QLabel("Constants:", self))
+        search_layout.addWidget(self._constants_list, 15)
         search_layout.addWidget(QLabel("Type:", self))
         search_layout.addWidget(self._type_list, 10)
         search_layout.addWidget(QLabel("Alignment (bytes):", self))
@@ -106,3 +112,8 @@ class SearchView(BaseView):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
+
+    def _on_constants_changed(self, value):
+        constant_val = CONSTANTS_BY_NAME.get(value, None)
+        if constant_val is not None:
+            self._filter_string.setText(str(constant_val))
