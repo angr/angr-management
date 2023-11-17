@@ -300,121 +300,120 @@ COLOR_SCHEMES = {
         "feature_map_string_color": QColor(0xF1, 0xFA, 0x8C),
     },
     "Catppuccin Mocha": {
-    # Disassembly View Colors
-    "disasm_view_minimap_background_color": QColor(30, 30, 46),  # base
-    "disasm_view_minimap_outline_color": QColor(88, 91, 112),  # surface2
-    "disasm_view_operand_color": QColor(137, 220, 235),  # sky
-    "disasm_view_operand_constant_color": QColor(249, 226, 175),  # yellow
-    "disasm_view_variable_label_color": QColor(166, 227, 161),  # green
-    "disasm_view_background_color": QColor(30, 30, 46),  # base
-    "disasm_view_function_color": QColor(166, 227, 161),  # green
-    "disasm_view_string_color": QColor(249, 226, 175),  # yellow
-    "disasm_view_comment_color": QColor(205, 214, 244),  # text
-    "disasm_view_variable_ident_color": QColor(180, 190, 254),  # lavender
-    "disasm_view_variable_offset_color": QColor(243, 139, 168),  # red
-    "disasm_view_branch_target_text_color": QColor(137, 180, 250),  # blue
-    "disasm_view_ir_default_color": QColor(88, 91, 112),  # surface2
-    "disasm_view_label_color": QColor(137, 220, 235),  # sky
-    "disasm_view_label_highlight_color": QColor(105, 110, 150),
-    "disasm_view_target_addr_color": QColor(166, 227, 161),  # green
-    "disasm_view_antitarget_addr_color": QColor(243, 139, 168),  # red
-    "disasm_view_node_shadow_color": QColor(0, 0, 0, 0),  # transparent
-    "disasm_view_node_background_color": QColor(30, 30, 46),  # base
-    "disasm_view_node_zoomed_out_background_color": QColor(49, 50, 68),  # surface0
-    "disasm_view_node_border_color": QColor(49, 50, 68),  # surface0
-    "disasm_view_node_address_color": QColor(205, 214, 244),  # text
-    "disasm_view_node_mnemonic_color": QColor(137, 220, 235),  # sky
-    "disasm_view_printable_byte_color": QColor(166, 227, 161),  # green
-    "disasm_view_printable_character_color": QColor(166, 227, 161),  # green
-    "disasm_view_unprintable_byte_color": QColor(243, 139, 168),  # red
-    "disasm_view_unprintable_character_color": QColor(243, 139, 168),  # red
-    "disasm_view_unknown_byte_color": QColor(137, 220, 235),  # sky
-    "disasm_view_unknown_character_color": QColor(137, 220, 235),  # sky
-    "disasm_view_back_edge_color": QColor(166, 227, 161),  # green
-    "disasm_view_true_edge_color": QColor(166, 227, 161),  # green
-    "disasm_view_false_edge_color": QColor(243, 139, 168),  # red
-    "disasm_view_direct_jump_edge_color": QColor(137, 220, 235),  # sky
-    "disasm_view_exception_edge_color": QColor(243, 139, 168),  # red
-
-    # Hex View Colors
-    "hex_view_selection_color": QColor(105, 110, 150),  # Custom highlight
-    "hex_view_selection_alt_color": QColor(105, 110, 150),  # Custom highlight
-    "hex_view_data_color": QColor(137, 180, 250),  # blue
-    "hex_view_string_color": QColor(249, 226, 175),  # yellow
-    "hex_view_instruction_color": QColor(166, 227, 161),  # green
-
-    # Function Table Colors
-    "function_table_color": QColor(205, 214, 244),  # text
-    "function_table_syscall_color": QColor(243, 139, 168),  # red
-    "function_table_plt_color": QColor(166, 227, 161),  # green
-    "function_table_simprocedure_color": QColor(180, 190, 254),  # lavender
-    "function_table_alignment_color": QColor(249, 226, 175),  # yellow
-    "function_table_signature_bg_color": QColor(245, 224, 220),  # rosewater
-
-    # Palette Colors
-    "palette_window": QColor(30, 30, 46),  # base
-    "palette_windowtext": QColor(205, 214, 244),  # text
-    "palette_base": QColor(30, 30, 46),  # base
-    "palette_alternatebase": QColor(49, 50, 68),  # surface0
-    "palette_tooltipbase": QColor(30, 30, 46),  # base
-    "palette_tooltiptext": QColor(88, 91, 112),  # surface2
-    "palette_text": QColor(205, 214, 244),  # text
-    "palette_button": QColor(30, 30, 46),  # base
-    "palette_buttontext": QColor(88, 91, 112),  # surface2
-    "palette_brighttext": QColor(88, 91, 112),  # surface2
-    "palette_highlight": QColor(105, 110, 150),  # Custom highlight
-    "palette_highlightedtext": QColor(255, 255, 255),  # White text for contrast
-
-    # Feature Map Colors
-    "feature_map_regular_function_color": QColor(166, 227, 161),  # green
-    "feature_map_unknown_color": QColor(137, 220, 235),  # sky
-    "feature_map_delimiter_color": QColor(249, 226, 175),  # yellow
-    "feature_map_data_color": QColor(180, 190, 254),  # lavender
-    "feature_map_string_color": QColor(249, 226, 175),  # yellow
-
-    # Pseudocode Colors
-    "pseudocode_comment_color": QColor(205, 214, 244),  # text
-    "pseudocode_function_color": QColor(166, 227, 161),  # green
-    "pseudocode_library_function_color": QColor(243, 139, 168),  # red
-    "pseudocode_quotation_color": QColor(166, 227, 161),  # green
-    "pseudocode_keyword_color": QColor(137, 220, 235),  # sky
-    "pseudocode_types_color": QColor(249, 226, 175),  # yellow
-    "pseudocode_variable_color": QColor(205, 214, 244),  # text
-    "pseudocode_label_color": QColor(137, 220, 235),  # sky
-    "pseudocode_highlight_color": QColor(105, 110, 150),  # Custom highlight
-
-    # Proximity View Colors
-    "proximity_node_background_color": QColor(30, 30, 46),  # base
-    "proximity_node_selected_background_color": QColor(105, 110, 150),  # Custom highlight
-    "proximity_node_border_color": QColor(88, 91, 112),  # surface2
-    "proximity_function_node_text_color": QColor(166, 227, 161),  # green
-    "proximity_string_node_text_color": QColor(249, 226, 175),  # yellow
-    "proximity_integer_node_text_color": QColor(137, 220, 235),  # sky
-    "proximity_variable_node_text_color": QColor(180, 190, 254),  # lavender
-    "proximity_unknown_node_text_color": QColor(245, 224, 220),  # rosewater
-    "proximity_call_node_text_color": QColor(166, 227, 161),  # green
-    "proximity_call_node_text_color_plt": QColor(137, 180, 250),  # blue
-    "proximity_call_node_text_color_simproc": QColor(243, 139, 168),  # red
-
-    # Palette Colors
-    "palette_mid": QColor(68, 71, 90),  # A mid-tone color between surface0 and base
-    "palette_placeholdertext": QColor(137, 220, 235, 128),  # Sky color with 50% opacity for placeholder text
-    "palette_light": QColor(68, 71, 90),  # Lighter than base but not too bright
-    "palette_midlight": QColor(58, 60, 78),  # A slightly lighter surface color for a subtle lift
-    "palette_dark": QColor(20, 20, 30),  # A darker version of the base for depth
-    "palette_shadow": QColor(0, 0, 0, 50),  # A soft shadow with 50% opacity
-    "palette_link": QColor(137, 220, 235),  # Sky color for links
-    "palette_linkvisited": QColor(180, 190, 254),  # Lavender color to indicate visited links
-
-    # Disabled Colors
-    "palette_disabled_text": QColor(88, 91, 112, 128),  # Surface2 color with 50% opacity for disabled text
-    "palette_disabled_buttontext": QColor(88, 91, 112, 128),  # Surface2 color with 50% opacity for disabled button text
-    "palette_disabled_windowtext": QColor(88, 91, 112, 128),  # Surface2 color with 50% opacity for disabled window text
-
-    # Disassembly View Colors
-    "disasm_view_node_instruction_selected_background_color": QColor(105, 110, 150),  # Custom highlight for selected instruction background
-    "disasm_view_operand_highlight_color": QColor(105, 110, 150, 128),  # Custom highlight with 50% opacity for operand highlight
-    "disasm_view_selected_node_border_color": QColor(105, 110, 150),  # Custom highlight for selected node border
-    "disasm_view_operand_select_color": QColor(105, 110, 150),  # Custom highlight for operand selection
-    }
+        # Disassembly View Colors
+        "disasm_view_minimap_background_color": QColor(30, 30, 46),  # base
+        "disasm_view_minimap_outline_color": QColor(88, 91, 112),  # surface2
+        "disasm_view_operand_color": QColor(137, 220, 235),  # sky
+        "disasm_view_operand_constant_color": QColor(249, 226, 175),  # yellow
+        "disasm_view_variable_label_color": QColor(166, 227, 161),  # green
+        "disasm_view_background_color": QColor(30, 30, 46),  # base
+        "disasm_view_function_color": QColor(166, 227, 161),  # green
+        "disasm_view_string_color": QColor(249, 226, 175),  # yellow
+        "disasm_view_comment_color": QColor(205, 214, 244),  # text
+        "disasm_view_variable_ident_color": QColor(180, 190, 254),  # lavender
+        "disasm_view_variable_offset_color": QColor(243, 139, 168),  # red
+        "disasm_view_branch_target_text_color": QColor(137, 180, 250),  # blue
+        "disasm_view_ir_default_color": QColor(88, 91, 112),  # surface2
+        "disasm_view_label_color": QColor(137, 220, 235),  # sky
+        "disasm_view_label_highlight_color": QColor(105, 110, 150),
+        "disasm_view_target_addr_color": QColor(166, 227, 161),  # green
+        "disasm_view_antitarget_addr_color": QColor(243, 139, 168),  # red
+        "disasm_view_node_shadow_color": QColor(0, 0, 0, 0),  # transparent
+        "disasm_view_node_background_color": QColor(30, 30, 46),  # base
+        "disasm_view_node_zoomed_out_background_color": QColor(49, 50, 68),  # surface0
+        "disasm_view_node_border_color": QColor(49, 50, 68),  # surface0
+        "disasm_view_node_address_color": QColor(205, 214, 244),  # text
+        "disasm_view_node_mnemonic_color": QColor(137, 220, 235),  # sky
+        "disasm_view_printable_byte_color": QColor(166, 227, 161),  # green
+        "disasm_view_printable_character_color": QColor(166, 227, 161),  # green
+        "disasm_view_unprintable_byte_color": QColor(243, 139, 168),  # red
+        "disasm_view_unprintable_character_color": QColor(243, 139, 168),  # red
+        "disasm_view_unknown_byte_color": QColor(137, 220, 235),  # sky
+        "disasm_view_unknown_character_color": QColor(137, 220, 235),  # sky
+        "disasm_view_back_edge_color": QColor(166, 227, 161),  # green
+        "disasm_view_true_edge_color": QColor(166, 227, 161),  # green
+        "disasm_view_false_edge_color": QColor(243, 139, 168),  # red
+        "disasm_view_direct_jump_edge_color": QColor(137, 220, 235),  # sky
+        "disasm_view_exception_edge_color": QColor(243, 139, 168),  # red
+        # Hex View Colors
+        "hex_view_selection_color": QColor(105, 110, 150),  # Custom highlight
+        "hex_view_selection_alt_color": QColor(105, 110, 150),  # Custom highlight
+        "hex_view_data_color": QColor(137, 180, 250),  # blue
+        "hex_view_string_color": QColor(249, 226, 175),  # yellow
+        "hex_view_instruction_color": QColor(166, 227, 161),  # green
+        # Function Table Colors
+        "function_table_color": QColor(205, 214, 244),  # text
+        "function_table_syscall_color": QColor(243, 139, 168),  # red
+        "function_table_plt_color": QColor(166, 227, 161),  # green
+        "function_table_simprocedure_color": QColor(180, 190, 254),  # lavender
+        "function_table_alignment_color": QColor(249, 226, 175),  # yellow
+        "function_table_signature_bg_color": QColor(245, 224, 220),  # rosewater
+        # Palette Colors
+        "palette_window": QColor(30, 30, 46),  # base
+        "palette_windowtext": QColor(205, 214, 244),  # text
+        "palette_base": QColor(30, 30, 46),  # base
+        "palette_alternatebase": QColor(49, 50, 68),  # surface0
+        "palette_tooltipbase": QColor(30, 30, 46),  # base
+        "palette_tooltiptext": QColor(88, 91, 112),  # surface2
+        "palette_text": QColor(205, 214, 244),  # text
+        "palette_button": QColor(30, 30, 46),  # base
+        "palette_buttontext": QColor(88, 91, 112),  # surface2
+        "palette_brighttext": QColor(88, 91, 112),  # surface2
+        "palette_highlight": QColor(105, 110, 150),  # Custom highlight
+        "palette_highlightedtext": QColor(255, 255, 255),  # White text for contrast
+        # Feature Map Colors
+        "feature_map_regular_function_color": QColor(166, 227, 161),  # green
+        "feature_map_unknown_color": QColor(137, 220, 235),  # sky
+        "feature_map_delimiter_color": QColor(249, 226, 175),  # yellow
+        "feature_map_data_color": QColor(180, 190, 254),  # lavender
+        "feature_map_string_color": QColor(249, 226, 175),  # yellow
+        # Pseudocode Colors
+        "pseudocode_comment_color": QColor(205, 214, 244),  # text
+        "pseudocode_function_color": QColor(166, 227, 161),  # green
+        "pseudocode_library_function_color": QColor(243, 139, 168),  # red
+        "pseudocode_quotation_color": QColor(166, 227, 161),  # green
+        "pseudocode_keyword_color": QColor(137, 220, 235),  # sky
+        "pseudocode_types_color": QColor(249, 226, 175),  # yellow
+        "pseudocode_variable_color": QColor(205, 214, 244),  # text
+        "pseudocode_label_color": QColor(137, 220, 235),  # sky
+        "pseudocode_highlight_color": QColor(105, 110, 150),  # Custom highlight
+        # Proximity View Colors
+        "proximity_node_background_color": QColor(30, 30, 46),  # base
+        "proximity_node_selected_background_color": QColor(105, 110, 150),  # Custom highlight
+        "proximity_node_border_color": QColor(88, 91, 112),  # surface2
+        "proximity_function_node_text_color": QColor(166, 227, 161),  # green
+        "proximity_string_node_text_color": QColor(249, 226, 175),  # yellow
+        "proximity_integer_node_text_color": QColor(137, 220, 235),  # sky
+        "proximity_variable_node_text_color": QColor(180, 190, 254),  # lavender
+        "proximity_unknown_node_text_color": QColor(245, 224, 220),  # rosewater
+        "proximity_call_node_text_color": QColor(166, 227, 161),  # green
+        "proximity_call_node_text_color_plt": QColor(137, 180, 250),  # blue
+        "proximity_call_node_text_color_simproc": QColor(243, 139, 168),  # red
+        # Palette Colors
+        "palette_mid": QColor(68, 71, 90),  # A mid-tone color between surface0 and base
+        "palette_placeholdertext": QColor(137, 220, 235, 128),  # Sky color with 50% opacity for placeholder text
+        "palette_light": QColor(68, 71, 90),  # Lighter than base but not too bright
+        "palette_midlight": QColor(58, 60, 78),  # A slightly lighter surface color for a subtle lift
+        "palette_dark": QColor(20, 20, 30),  # A darker version of the base for depth
+        "palette_shadow": QColor(0, 0, 0, 50),  # A soft shadow with 50% opacity
+        "palette_link": QColor(137, 220, 235),  # Sky color for links
+        "palette_linkvisited": QColor(180, 190, 254),  # Lavender color to indicate visited links
+        # Disabled Colors
+        "palette_disabled_text": QColor(88, 91, 112, 128),  # Surface2 color with 50% opacity for disabled text
+        "palette_disabled_buttontext": QColor(
+            88, 91, 112, 128
+        ),  # Surface2 color with 50% opacity for disabled button text
+        "palette_disabled_windowtext": QColor(
+            88, 91, 112, 128
+        ),  # Surface2 color with 50% opacity for disabled window text
+        # Disassembly View Colors
+        "disasm_view_node_instruction_selected_background_color": QColor(
+            105, 110, 150
+        ),  # Custom highlight for selected instruction background
+        "disasm_view_operand_highlight_color": QColor(
+            105, 110, 150, 128
+        ),  # Custom highlight with 50% opacity for operand highlight
+        "disasm_view_selected_node_border_color": QColor(105, 110, 150),  # Custom highlight for selected node border
+        "disasm_view_operand_select_color": QColor(105, 110, 150),  # Custom highlight for operand selection
+    },
 }
