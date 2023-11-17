@@ -1,0 +1,25 @@
+ads--CDockAreaWidget {
+    background: palette(dark);
+}
+
+ads--CDockWidgetTab {
+    background: palette(mid);
+    border-color: palette(light);
+}
+
+QMenuBar {
+    background-color: palette(dark);
+}
+
+ToolBarHandle {
+    background-color: palette(dark);
+}
+
+QMainWindow > QToolBar {
+    background-color: palette(dark);
+    border: 0;
+}
+
+QStatusBar {
+    background-color: palette(dark);
+}
