@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 
 class QStringModel(QAbstractTableModel):
-    HEADER = ["Address", "Length", "String"]
+    HEADER = ["Address", "Size (Bytes)", "String"]
 
     ADDRESS_COL = 0
-    LENGTH_COL = 1
+    SIZE_COL = 1
     STRING_COL = 2
 
     def __init__(self, cfg, func=None):
@@ -146,7 +146,7 @@ class QStringModel(QAbstractTableModel):
     def _get_column_data(self, v: "MemoryData", col: int) -> Any:
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
-            self.LENGTH_COL: lambda x: x.size,
+            self.SIZE_COL: lambda x: x.size,
             self.STRING_COL: lambda x: filter_string_for_display(self._get_decoded_string_content(x))
             if x.content is not None
             else "<ERROR>",
