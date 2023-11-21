@@ -54,6 +54,7 @@ class FunctionDialog(QDialog):
                 "<Unknown>" if self.function.calling_convention is None else f"{self.function.calling_convention}",
             ),
             ("Tags:", ", ".join(self.function.tags)),
+            ("Cyclomatic Complexity:", str(self.function.cyclomatic_complexity)),
         ]:
             main_layout.addWidget(QLabel(label), r, 0)
             le = QLineEdit(text, self)
