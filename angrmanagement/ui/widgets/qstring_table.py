@@ -1,6 +1,7 @@
 import re
 from typing import TYPE_CHECKING, Any
 
+from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort
 from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
@@ -67,7 +68,7 @@ class QStringModel(QAbstractTableModel):
         if self.cfg is None:
             return lst
         for v in self.cfg.memory_data.values():
-            if v.sort == "string":
+            if v.sort in {MemoryDataSort.String, MemoryDataSort.UnicodeString}:
                 if self._function is None:
                     lst.append(v)
                 else:
@@ -137,11 +138,16 @@ class QStringModel(QAbstractTableModel):
                 return f"{data:x}"
             return data
 
+    @staticmethod
+    def _get_decoded_string_content(md: "MemoryData") -> str:
+        sort_to_encoding = {MemoryDataSort.String: "utf-8", MemoryDataSort.UnicodeString: "utf_16_le"}
+        return md.content.decode(sort_to_encoding[md.sort])
+
     def _get_column_data(self, v: "MemoryData", col: int) -> Any:
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
             self.LENGTH_COL: lambda x: x.size,
-            self.STRING_COL: lambda x: filter_string_for_display(x.content.decode("utf-8"))
+            self.STRING_COL: lambda x: filter_string_for_display(self._get_decoded_string_content(x))
             if x.content is not None
             else "<ERROR>",
         }
