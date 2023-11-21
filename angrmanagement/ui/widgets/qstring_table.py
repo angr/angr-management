@@ -15,11 +15,12 @@ if TYPE_CHECKING:
 
 
 class QStringModel(QAbstractTableModel):
-    HEADER = ["Address", "Size (Bytes)", "String"]
+    HEADER = ["Address", "Size (Bytes)", "Length", "String"]
 
     ADDRESS_COL = 0
     SIZE_COL = 1
-    STRING_COL = 2
+    LENGTH_COL = 2
+    STRING_COL = 3
 
     def __init__(self, cfg, func=None):
         super().__init__()
@@ -147,6 +148,7 @@ class QStringModel(QAbstractTableModel):
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
             self.SIZE_COL: lambda x: x.size,
+            self.LENGTH_COL: lambda x: len(self._get_decoded_string_content(x)) if x.content is not None else "<ERROR>",
             self.STRING_COL: lambda x: filter_string_for_display(self._get_decoded_string_content(x))
             if x.content is not None
             else "<ERROR>",
@@ -182,7 +184,7 @@ class QStringTable(QTableView):
 
         # let the last column (string) fill table width
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.horizontalHeader().setSectionResizeMode(QStringModel.STRING_COL, QHeaderView.Stretch)
 
         self.doubleClicked.connect(self._on_string_selected)
 
