@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 from angr.analyses.decompiler.decompilation_options import options as dec_options
 from angr.analyses.decompiler.optimization_passes import get_default_optimization_passes, get_optimization_passes
-from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, STMT_OPTS
+from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, MULTI_STMT_OPTS, STMT_OPTS
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
@@ -174,10 +174,10 @@ class QDecompilationOptions(QWidget):
         ]
 
     def get_default_peephole_opts(self):  # pylint: disable=no-self-use
-        return STMT_OPTS + EXPR_OPTS
+        return MULTI_STMT_OPTS + STMT_OPTS + EXPR_OPTS
 
     def get_all_peephole_opts(self):  # pylint: disable=no-self-use
-        return STMT_OPTS + EXPR_OPTS
+        return MULTI_STMT_OPTS + STMT_OPTS + EXPR_OPTS
 
     def _init_widgets(self):
         # search box
