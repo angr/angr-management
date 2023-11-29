@@ -109,6 +109,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     splash_pixmap = QPixmap(splashscreen_location)
     current_screen = QGuiApplication.screenAt(QCursor.pos())
     splash = SplashScreen(current_screen, splash_pixmap, Qt.WindowStaysOnTopHint)
+    splash.setFixedSize(splash_pixmap.size())
 
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
     splash.setWindowIcon(QIcon(icon_location))
