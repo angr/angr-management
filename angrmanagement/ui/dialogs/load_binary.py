@@ -33,6 +33,8 @@ try:
 except ImportError:
     pypcode = None
 
+from angrmanagement.logic import GlobalInfo
+
 
 class LoadBinaryError(Exception):
     """
@@ -483,7 +485,7 @@ class LoadBinary(QDialog):
     @staticmethod
     def run(partial_ld, suggested_backend=None) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
         try:
-            dialog = LoadBinary(partial_ld, suggested_backend=suggested_backend)
+            dialog = LoadBinary(partial_ld, suggested_backend=suggested_backend, parent=GlobalInfo.main_window)
             dialog.setModal(True)
             dialog.exec_()
             return dialog.load_options
