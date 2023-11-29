@@ -6,7 +6,6 @@
 
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,

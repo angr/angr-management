@@ -1,7 +1,7 @@
 from pygments.lexers.c_cpp import CLexer
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import PygmentsSyntaxHighlighter
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,
