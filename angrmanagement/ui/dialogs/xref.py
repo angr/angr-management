@@ -27,8 +27,6 @@ class XRefDialog(QDialog):
     ):
         super().__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint | Qt.WindowCloseButtonHint)
-
         self._variable_manager = variable_manager
         self._variable = variable
         self._xrefs_manager = xrefs_manager
@@ -53,6 +51,10 @@ class XRefDialog(QDialog):
             raise ValueError("Either variable or dst_addr must be specified.")
 
         self._init_widgets()
+
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint | Qt.WindowCloseButtonHint)
+        self.setMinimumSize(self.sizeHint())
+        self.adjustSize()
 
     def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(600, 400)

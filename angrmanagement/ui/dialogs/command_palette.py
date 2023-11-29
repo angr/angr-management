@@ -221,12 +221,15 @@ class PaletteDialog(QDialog):
 
     def __init__(self, model, delegate=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Palette")
         self._model = model
         self._delegate = delegate or PaletteItemDelegate()
         self._init_widgets()
 
         self.selected_item = None
+
+        self.setWindowTitle("Palette")
+        self.setMinimumSize(self.sizeHint())
+        self.adjustSize()
 
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(500, 400)

@@ -6,7 +6,6 @@
 
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -54,9 +53,8 @@ class AssemblePatchDialog(QDialog):
 
         self._init_widgets()
         self.setWindowTitle(f"Assemble Patch at {self._patch_addr:#x}")
-
-    def sizeHint(self):  # pylint:disable=no-self-use
-        return QSize(400, 150)
+        self.setMinimumWidth(500)
+        self.adjustSize()
 
     #
     # Private methods

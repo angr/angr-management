@@ -1,7 +1,7 @@
 from pygments.lexers.c_cpp import CLexer
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import PygmentsSyntaxHighlighter
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -29,12 +29,11 @@ class FunctionDialog(QDialog):
         super().__init__(parent)
         self.workspace = GlobalInfo.main_window.workspace
         self.function = function
+        self._init_widgets()
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle(f"Function {self.function.name}")
-        self._init_widgets()
-
-    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
-        return QSize(600, 300)
+        self.setMinimumWidth(600)
+        self.adjustSize()
 
     def _init_widgets(self):
         font = QFont(Conf.disasm_font)
