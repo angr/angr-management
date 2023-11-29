@@ -210,8 +210,10 @@ class AnalysisOptionsDialog(QDialog):
         self._workspace: Workspace = workspace
         self._analyses: AnalysesConfiguration = analyses
         self._mappers: Sequence[AnalysisOptionWidgetMapper] = []
-        self.setWindowTitle("Run Analysis")
         self._init_widgets()
+        self.setWindowTitle("Run Analysis")
+        self.setMinimumSize(self.sizeHint())
+        self.adjustSize()
 
     def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(800, 600)

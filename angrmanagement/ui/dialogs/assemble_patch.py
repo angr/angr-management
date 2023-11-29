@@ -54,9 +54,8 @@ class AssemblePatchDialog(QDialog):
 
         self._init_widgets()
         self.setWindowTitle(f"Assemble Patch at {self._patch_addr:#x}")
-
-    def sizeHint(self):  # pylint:disable=no-self-use
-        return QSize(400, 150)
+        self.setMinimumWidth(500)
+        self.adjustSize()
 
     #
     # Private methods
