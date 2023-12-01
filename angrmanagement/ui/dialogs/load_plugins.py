@@ -70,9 +70,7 @@ class LoadPlugins(QDialog):
         plugin_group.setLayout(sublayout)
 
         layout = QVBoxLayout()
-        # layout.addWidget(auto_load_libs)
         layout.addWidget(plugin_group)
-        layout.addStretch(0)
 
         frame = QFrame(self)
         frame.setLayout(layout)
