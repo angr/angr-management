@@ -6,7 +6,7 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 import angr
 import PySide6
 from angr import Block
-from angr.knowledge_plugins.cfg import MemoryData
+from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.patches import Patch
 from PySide6.QtCore import QEvent, QMarginsF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QColor, QCursor, QFont, QPainterPath, QPen, QWheelEvent
@@ -1844,7 +1844,8 @@ class HexView(ViewStatePublisherMixin, SynchronizedView):
                 if item_addr >= self.inner_widget.hex.display_end_addr:
                     break
                 if isinstance(item, MemoryData):
-                    color = Conf.hex_view_string_color if item.sort == "string" else Conf.hex_view_data_color
+                    is_string = item.sort in (MemoryDataSort.String, MemoryDataSort.UnicodeString)
+                    color = Conf.hex_view_string_color if is_string else Conf.hex_view_data_color
                     regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
                 elif isinstance(item, Block):
                     try:
