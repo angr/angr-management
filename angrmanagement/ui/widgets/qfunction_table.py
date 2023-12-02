@@ -37,13 +37,14 @@ class QFunctionTableModel(QAbstractTableModel):
     The table model for QFunctionTable.
     """
 
-    Headers = ["Name", "Tags", "Address", "Binary", "Size", "Blocks"]
+    Headers = ["Name", "Tags", "Address", "Binary", "Size", "Blocks", "Complexity"]
     NAME_COL = 0
     TAGS_COL = 1
     ADDRESS_COL = 2
     BINARY_COL = 3
     SIZE_COL = 4
     BLOCKS_COL = 5
+    COMPLEXITY_COL = 6
 
     def __init__(self, workspace, instance, func_list):
         super().__init__()
@@ -190,6 +191,8 @@ class QFunctionTableModel(QAbstractTableModel):
             return func.size
         elif idx == self.BLOCKS_COL:
             return len(func.block_addrs_set)
+        elif idx == self.COMPLEXITY_COL:
+            return func.cyclomatic_complexity
         else:
             return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
 
