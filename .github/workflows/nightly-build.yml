@@ -128,7 +128,7 @@ jobs:
           set -x
           hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
           open /tmp/am-mount/*/*.app
-          sleep 30
+          sleep 60
           windows=$(osascript -e '
             tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
           ')
