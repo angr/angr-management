@@ -114,34 +114,37 @@ class PluginManager:
             else:
                 self.activate_plugin(desc.shortname, plugin_cls)
 
+    def register_active_plugin(self, shortname: str, plugin_obj: BasePlugin):
+        self.active_plugins[shortname] = plugin_obj
+        plugin_cls = plugin_obj.__class__
+        plugin_obj.__cached_status_bar_widgets = []
+        plugin_obj.__cached_toolbar_actions = []  # a hack, lol. really this could be a mapping on PluginManager but idc
+        plugin_obj.__cached_menu_actions = []  # as above
+
+        if self.workspace is not None:
+            self._register_status_bar_widgets(plugin_obj)
+            self._register_toolbar_actions(plugin_cls, plugin_obj)
+            self._register_menu_buttons(plugin_cls, plugin_obj)
+
+            for dview in self.workspace.view_manager.views_by_category["disassembly"]:
+                plugin_obj.instrument_disassembly_view(dview)
+            for cview in self.workspace.view_manager.views_by_category["pseudocode"]:
+                plugin_obj.instrument_code_view(cview)
+
+            self._register_url_actions(plugin_cls, plugin_obj)
+            self._register_configuration_entries(plugin_cls)
+
+        for action in plugin_cls.URL_ACTIONS:
+            register_url_action(action, UrlActionBinaryAware)
+
     def activate_plugin(self, shortname: str, plugin_cls: Type[BasePlugin]):
         self.verify_plugin_class(plugin_cls)  # perform the sanity checks
         if self.get_plugin_instance(plugin_cls) is not None:
             return
 
         try:
-            plugin = plugin_cls(self.workspace)
-            self.active_plugins[shortname] = plugin
-            plugin.__cached_status_bar_widgets = []
-            plugin.__cached_toolbar_actions = []  # a hack, lol. really this could be a mapping on PluginManager but idc
-            plugin.__cached_menu_actions = []  # as above
-
-            if self.workspace is not None:
-                self._register_status_bar_widgets(plugin)
-                self._register_toolbar_actions(plugin_cls, plugin)
-                self._register_menu_buttons(plugin_cls, plugin)
-
-                for dview in self.workspace.view_manager.views_by_category["disassembly"]:
-                    plugin.instrument_disassembly_view(dview)
-                for cview in self.workspace.view_manager.views_by_category["pseudocode"]:
-                    plugin.instrument_code_view(cview)
-
-                self._register_url_actions(plugin_cls, plugin)
-                self._register_configuration_entries(plugin_cls)
-
-            for action in plugin_cls.URL_ACTIONS:
-                register_url_action(action, UrlActionBinaryAware)
-
+            plugin_obj = plugin_cls(self.workspace)
+            self.register_active_plugin(shortname, plugin_obj)
         except Exception:  # pylint: disable=broad-except
             log.warning("Plugin %s failed to activate:", plugin_cls.get_display_name(), exc_info=True)
         else:
