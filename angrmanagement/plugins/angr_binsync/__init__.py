@@ -1,3 +1,3 @@
-from binsync.decompilers.angr.plugin import BinSyncPlugin
+from binsync.interface_overrides.angr import BinsyncPlugin
 
-__all__ = ["BinSyncPlugin"]
+__all__ = ["BinsyncPlugin"]
