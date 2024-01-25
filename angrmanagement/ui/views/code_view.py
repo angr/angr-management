@@ -270,6 +270,8 @@ class CodeView(BaseView):
 
                 # update self
                 self.codegen.am_obj = new_codegen
+            elif event == "retype_function":
+                self.decompile(clear_prototype=False, reset_cache=True)
 
             # regenerate text in the end
             self.codegen.regenerate_text()
