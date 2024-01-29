@@ -149,9 +149,9 @@ class QStringModel(QAbstractTableModel):
             self.ADDRESS_COL: lambda x: x.addr,
             self.SIZE_COL: lambda x: x.size,
             self.LENGTH_COL: lambda x: len(self._get_decoded_string_content(x)) if x.content is not None else "<ERROR>",
-            self.STRING_COL: lambda x: filter_string_for_display(self._get_decoded_string_content(x))
-            if x.content is not None
-            else "<ERROR>",
+            self.STRING_COL: lambda x: (
+                filter_string_for_display(self._get_decoded_string_content(x)) if x.content is not None else "<ERROR>"
+            ),
         }
 
         if col in mapping:

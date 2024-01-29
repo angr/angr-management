@@ -21,7 +21,6 @@ class SingleInstanceException(BaseException):
 
 
 class SingleInstance:
-
     """Class that can be instantiated only once per machine.
 
     If you want to prevent your script from running in parallel just instantiate SingleInstance() class. If is there
