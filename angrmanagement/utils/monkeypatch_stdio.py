@@ -1,6 +1,7 @@
 """
 monkeypatch_stdio - Monkeypatches stdout and stderr to be NullWriters.
 """
+
 import sys
 
 
