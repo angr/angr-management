@@ -1,4 +1,4 @@
-__version__ = "9.2.87.dev0"
+__version__ = "9.2.87"
 
 
 try:
