@@ -18,6 +18,7 @@ jobs:
           - ubuntu-22.04
           - windows-2022
           - macos-12
+          - macos-14
       fail-fast: false
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -116,6 +117,7 @@ jobs:
       matrix:
         os:
           - macos-12
+          - macos-14
       fail-fast: false
     name: Test on ${{ matrix.os }}
     needs: build
