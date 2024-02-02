@@ -18,6 +18,7 @@ jobs:
           - ubuntu-22.04
           - windows-2022
           - macos-12
+          - macos-14
       fail-fast: false
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -116,6 +117,7 @@ jobs:
       matrix:
         os:
           - macos-12
+          - macos-14
       fail-fast: false
     name: Test on ${{ matrix.os }}
     needs: build
@@ -168,6 +170,12 @@ jobs:
             This release is an automatically generated pre-release. We do our
             best to make sure everything works, but please be advised that
             features may break or change without notice.
+
+            Mac users: If you are using an Apple silicon Mac, use the macOS 14
+            build. If you are using an Intel Mac, use the macOS 12 build. Both
+            are currently not signed, so you will need to right-click and select
+            "Open" the first time you run them.
+
           GH_TOKEN: ${{ github.token }}
 
   report:
