@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
     QListView,
     QListWidget,
     QListWidgetItem,
-    QPushButton,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -140,11 +139,8 @@ class ThemeAndColors(Page):
                 current_theme_idx = idx
             self._schemes_combo.addItem(name)
         self._schemes_combo.setCurrentIndex(current_theme_idx)
+        self._schemes_combo.currentTextChanged.connect(self._on_scheme_selected)
         scheme_loader_layout.addWidget(self._schemes_combo)
-        load_btn = QPushButton("Load")
-        load_btn.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-        load_btn.clicked.connect(self._on_load_scheme_clicked)
-        scheme_loader_layout.addWidget(load_btn)
         page_layout.addLayout(scheme_loader_layout)
 
         edit_colors_layout = QVBoxLayout()
@@ -177,9 +173,10 @@ class ThemeAndColors(Page):
             if prop in self._conf_to_save:
                 self._conf_to_save[prop] = value
 
-    def _on_load_scheme_clicked(self):
-        self._load_color_scheme(self._schemes_combo.currentText())
+    def _on_scheme_selected(self, text: str):
+        self._load_color_scheme(text)
         self.save_config()
+        refresh_theme()
 
     def save_config(self):
         # pylint: disable=assigning-non-slot
