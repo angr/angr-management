@@ -292,7 +292,7 @@ class BintraceDebugger(Debugger):
                 num_nested_calls += 1
 
         all_funcs = self.workspace.main_instance.project.kb.functions
-        return [((all_funcs[addr] if (addr in all_funcs) else addr), e) for (addr, e) in called_addrs]
+        return [((all_funcs.get(addr, addr)), e) for (addr, e) in called_addrs]
 
     def get_called_functions_recursive(
         self, event: Optional[TraceEvent] = None, max_depth: Optional[int] = None, depth: int = 0

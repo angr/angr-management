@@ -237,14 +237,12 @@ class QTraceViewer(QWidget):
         numIDs = len(trace_ids)
         view.clearContents()
         view.setRowCount(numIDs)
-        row = 0  # start after label row
-        for traceID in trace_ids:
+        for row, traceID in enumerate(trace_ids):
             inputID = self.multi_trace.am_obj.get_input_id_for_trace_id(traceID)
             if inputID is None:
                 self.workspace.log("No inputID found for trace %s" % traceID)
             view.setItem(row, 0, QTableWidgetItem(traceID))
             view.setItem(row, 1, QTableWidgetItem(inputID))
-            row += 1
 
     def _refresh_heatmap(self):
         multiTrace = self.multi_trace.am_obj

@@ -24,8 +24,7 @@ class Breakpoint:
     def __init__(self, type_: BreakpointType, addr: int, size: int = 1, comment: str = ""):
         self.type: BreakpointType = type_
         self.addr: int = addr
-        self._size: int = 1
-        self.size = size
+        self._size = size
         self.comment: str = comment
 
     @property
