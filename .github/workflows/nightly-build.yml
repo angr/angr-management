@@ -128,7 +128,7 @@ jobs:
           name: angr-management-${{ matrix.os }}
       - run: |
           set -x
-          hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
+          hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS-$(uname -m).dmg
           open /tmp/am-mount/*/*.app
           for i in {0..7}; do
             sleep 15
