@@ -130,13 +130,16 @@ jobs:
           set -x
           hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
           open /tmp/am-mount/*/*.app
-          sleep 60
-          windows=$(osascript -e '
-            tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
-          ')
-          if [ "$windows" == "" ]; then
-            exit 1
-          fi
+          for i in {0..7}; do
+            sleep 15
+            windows=$(osascript -e '
+              tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
+            ')
+            if [ "$windows" != "" ]; then
+              exit o
+            fi
+          done
+          exit 1
 
   deploy:
     name: Deploy release
@@ -171,10 +174,9 @@ jobs:
             best to make sure everything works, but please be advised that
             features may break or change without notice.
 
-            Mac users: If you are using an Apple silicon Mac, use the macOS 14
-            build. If you are using an Intel Mac, use the macOS 12 build. Both
-            are currently not signed, so you will need to right-click and select
-            "Open" the first time you run them.
+            Mac users: Make sure to select the build that matches your CPU
+            archetecture. Both are currently not signed, so you will need to
+            right-click and select "Open" the first time you run them.
 
           GH_TOKEN: ${{ github.token }}
 
