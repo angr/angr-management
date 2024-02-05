@@ -122,7 +122,7 @@ class QXRefVariableModel(QXRefModel):
             self.TEXT_COL: self._text,
         }
 
-        handler = mapping.get(idx, None)
+        handler = mapping.get(idx)
         if handler is not None:
             return handler(ref)
         return None
@@ -207,7 +207,7 @@ class QXRefAddressModel(QXRefModel):
             self.TEXT_COL: self._text,
         }
 
-        handler = mapping.get(idx, None)
+        handler = mapping.get(idx)
         if handler is not None:
             return handler(ref)
         return None
