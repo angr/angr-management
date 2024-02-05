@@ -8,6 +8,11 @@ on:
   schedule:
   - cron: "0 0 * * *"
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy the nightly build"
+        required: false
+        default: "false"
 
 jobs:
   build:
@@ -148,7 +153,7 @@ jobs:
       - test_windows
       - test_macos
     runs-on: ubuntu-22.04
-    if: ${{ github.event_name == 'schedule' }}
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.deploy == 'true'}}
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
