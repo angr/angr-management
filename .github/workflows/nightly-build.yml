@@ -136,7 +136,7 @@ jobs:
               tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
             ')
             if [ "$windows" != "" ]; then
-              exit o
+              exit 0
             fi
           done
           exit 1
