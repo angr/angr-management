@@ -1,8 +1,9 @@
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Set, Union
+from typing import Any, Optional, Set, Union
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator, CVariable
+from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
@@ -20,9 +21,6 @@ from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
 from .disassembly_view import DisassemblyView
 from .view import BaseView
-
-if TYPE_CHECKING:
-    from angr.knowledge_plugins.functions.function import Function
 
 log = logging.getLogger(__name__)
 
@@ -348,6 +346,11 @@ class CodeView(BaseView):
         self.current_node.am_obj = selected_node
         self.current_node.am_event()
 
+    def _navigate_to_function(self, from_addr: int, to_func: Function):
+        self.jump_history.record_address(from_addr)
+        self.jump_history.jump_to(to_func.addr)
+        self.workspace.decompile_function(to_func, view=self)
+
     def _on_mouse_doubleclicked(self):
         if self._doc is None:
             return
@@ -359,12 +362,14 @@ class CodeView(BaseView):
             if isinstance(selected_node, CFunctionCall):
                 # decompile this new function
                 if selected_node.callee_func is not None:
-                    self.jump_history.record_address(selected_node.tags["ins_addr"])
-                    self.jump_history.jump_to(selected_node.callee_func.addr)
-                    self.workspace.decompile_function(selected_node.callee_func, view=self)
+                    self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
+                    for v in selected_node.reference_values.values():
+                        if isinstance(v, Function):
+                            self._navigate_to_function(selected_node.tags["ins_addr"], v)
+                            return
                     self.workspace.jump_to(selected_node.value)
             elif isinstance(selected_node, CVariable):
                 var = selected_node.variable
