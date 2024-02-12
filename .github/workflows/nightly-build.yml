@@ -53,13 +53,14 @@ jobs:
         if: startsWith(matrix.os, 'windows')
       - run: bash .github/workflows/nightly-build.sh
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
           path: |
             upload/*.tar.gz
             upload/*.zip
             upload/*.dmg
+          compression-level: 0
 
   test_ubuntu:
     strategy:
@@ -74,7 +75,7 @@ jobs:
     steps:
       - run: sudo apt-get update && sudo apt-get install -y xvfb x11-utils libegl1
         name: Install X11 app testing utilities
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
       - run: |
@@ -101,7 +102,7 @@ jobs:
     needs: build
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
       - run: |
@@ -128,7 +129,7 @@ jobs:
     needs: build
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
       - run: |
@@ -156,7 +157,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.deploy == 'true'}}
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Run find
         run: find .
       - name: Delete old nightly
