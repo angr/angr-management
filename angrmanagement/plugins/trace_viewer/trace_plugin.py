@@ -209,7 +209,6 @@ class TraceViewer(BasePlugin):
         "Open AFL bitmap...",
         "Open inverted AFL bitmap...",
         "Reset AFL bitmap",
-        "Open traces from CHECRS...",
     ]
     ADD_TRACE_ID = 0
     RESET_TRACE_ID = 1
@@ -231,7 +230,6 @@ class TraceViewer(BasePlugin):
             self.OPEN_AFL_BITMAP_ID: self.open_bitmap_multi_trace,
             self.OPEN_AFL_BITMAP_INVERTED_ID: self.open_inverted_bitmap_multi_trace,
             self.RESET_AFL_BITMAP: self.reset_bitmap,
-            self.OPEN_TRACES_FROM_CHECRS: self.open_traces_from_checrs,
         }
 
         mapping.get(idx)()
