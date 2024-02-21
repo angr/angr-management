@@ -1,4 +1,3 @@
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
 
 from angrmanagement.logic import GlobalInfo
@@ -34,7 +33,7 @@ class FileMenu(Menu):
         self._project = main_window.workspace.main_instance.project
 
         self._save_entries = [
-            MenuEntry("&Save angr database...", main_window.save_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_S)),
+            MenuEntry("&Save angr database...", main_window.save_database, shortcut=QKeySequence("Ctrl+S")),
             MenuEntry("S&ave angr database as...", main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
             MenuEntry("Save patched binary as...", main_window.save_patched_binary_as),
         ]
@@ -44,9 +43,7 @@ class FileMenu(Menu):
         self.recent_menu = Menu("Load recent")
         self.entries.extend(
             [
-                MenuEntry(
-                    "L&oad a new binary...", main_window.open_file_button, shortcut=QKeySequence(Qt.CTRL | Qt.Key_O)
-                ),
+                MenuEntry("L&oad a new binary...", main_window.open_file_button, shortcut=QKeySequence("Ctrl+O")),
                 *(
                     []
                     if archr is None
@@ -54,25 +51,23 @@ class FileMenu(Menu):
                         MenuEntry(
                             "Loa&d a new docker target...",
                             main_window.open_docker_button,
-                            shortcut=QKeySequence(Qt.SHIFT | Qt.CTRL | Qt.Key_O),
+                            shortcut=QKeySequence("Ctrl+Shift+O"),
                         ),
                     ]
                 ),
                 MenuEntry(
                     "Load a &trace file...",
                     main_window.open_trace_file_button,
-                    shortcut=QKeySequence(Qt.SHIFT | Qt.CTRL | Qt.Key_T),
+                    shortcut=QKeySequence("Ctrl+Shift+T"),
                 ),
                 self.recent_menu,
                 MenuSeparator(),
-                MenuEntry(
-                    "&Load angr database...", main_window.load_database, shortcut=QKeySequence(Qt.CTRL | Qt.Key_L)
-                ),
+                MenuEntry("&Load angr database...", main_window.load_database, shortcut=QKeySequence("Ctrl+L")),
                 *self._save_entries,
                 MenuSeparator(),
                 MenuEntry("Load a new &trace...", main_window.load_trace),
                 MenuSeparator(),
-                MenuEntry("&Preferences...", main_window.preferences, shortcut=QKeySequence(Qt.CTRL | Qt.Key_Comma)),
+                MenuEntry("&Preferences...", main_window.preferences, shortcut=QKeySequence("Ctrl+Comma")),
                 MenuSeparator(),
                 MenuEntry("E&xit", main_window.quit),
             ]
