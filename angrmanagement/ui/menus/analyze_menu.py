@@ -15,7 +15,7 @@ class AnalyzeMenu(Menu):
                 MenuEntry(
                     "View in Proximity &Browser",
                     main_window.view_proximity_for_current_function,
-                    shortcut=QKeySequence(Qt.CTRL | Qt.Key_B),
+                    shortcut=QKeySequence("Ctrl+B"),
                 ),
                 MenuEntry("&Interact", main_window.interact, shortcut=QKeySequence(Qt.Key_F6)),
             ],
