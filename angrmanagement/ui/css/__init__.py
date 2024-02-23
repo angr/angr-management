@@ -57,12 +57,8 @@ def refresh_theme():
     app = QApplication.instance()
 
     # determine the default application style according to the OS
-    if sys.platform == "win32":
-        app_style = None if Conf.theme_name == "Light" else "Fusion"
-    elif sys.platform == "darwin":
-        app_style = None if Conf.theme_name == "Light" else "Fusion"
-    elif sys.platform == "linux":
-        app_style = "Fusion"
+    if sys.platform == "win32" and Conf.theme_name == "Light":
+        app_style = None
     else:
         app_style = "Fusion"
 
