@@ -3,7 +3,6 @@ import datetime
 import logging
 import os
 import pickle
-import sys
 import time
 from functools import partial
 from typing import TYPE_CHECKING, Optional
@@ -333,11 +332,6 @@ class MainWindow(QMainWindow):
 
         for path in Conf.recent_files:
             self._file_menu.add_recent(path)
-
-        # TODO: Eventually fix menu bars to have native support on MacOS
-        # if on a Mac, don't use the native menu bar (bug mitigation from QT)
-        if sys.platform == "darwin":
-            self.menuBar().setNativeMenuBar(False)
 
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
