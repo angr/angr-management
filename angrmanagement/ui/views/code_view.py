@@ -7,7 +7,17 @@ from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
-from PySide6.QtWidgets import QComboBox, QDockWidget, QFrame, QHBoxLayout, QMainWindow, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDockWidget,
+    QFrame,
+    QHBoxLayout,
+    QMainWindow,
+    QTextEdit,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from angrmanagement.config import Conf
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
@@ -450,15 +460,14 @@ class CodeView(BaseView):
         self._textedit = QCCodeEdit(self)
         self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self._textedit.setLineWrapMode(QCCodeEdit.NoWrap)
-        textedit_dock = QDockWidget("Code", self._textedit)
-        window.setCentralWidget(textedit_dock)
-        textedit_dock.setWidget(self._textedit)
+        window.setCentralWidget(self._textedit)
 
-        # decompilation
+        # decompilation options
         self._options = QDecompilationOptions(self, self.instance)
         options_dock = QDockWidget("Decompilation Options", self._options)
         window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
+        options_dock.setVisible(False)
 
         # status bar
         status_bar = QFrame()
@@ -471,6 +480,9 @@ class CodeView(BaseView):
         status_layout = QHBoxLayout()
         status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
+        options_toggle_btn = QToolButton()
+        options_toggle_btn.setDefaultAction(options_dock.toggleViewAction())
+        status_layout.addWidget(options_toggle_btn)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(3)
