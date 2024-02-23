@@ -32,7 +32,7 @@ class CSS:
         try:
             with open(base_css_path, encoding="utf-8") as f:
                 css = f.read()
-        except Exception:  # pylint: disable=braod-except
+        except Exception:  # pylint: disable=broad-except
             log.warning("Failed to load base theme at %s", base_css_path)
             css = ""
 
