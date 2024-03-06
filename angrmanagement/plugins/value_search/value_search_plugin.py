@@ -63,6 +63,17 @@ class ValueSearch(BasePlugin):
 
         return enc_value
 
+    def _double_to_bytes(self, f_value: float):
+        if self._endness_encoding is None:
+            self._find_endness_encoding()
+
+        try:
+            enc_value = struct.pack(f"{self._endness_encoding}d", f_value)
+        except struct.error:
+            enc_value = None
+
+        return enc_value
+
     def _int_to_bytes(self, i_value: int):
         if self._endness_encoding is None:
             self._find_endness_encoding()
@@ -85,6 +96,9 @@ class ValueSearch(BasePlugin):
         elif type_ == "float":
             f_val = float(value)
             value = self._float_to_bytes(f_val)
+        elif type_ == "double":
+            f_val = float(value)
+            value = self._double_to_bytes(f_val)
         else:
             value = value.encode().decode("unicode_escape").encode("latin-1")
 
