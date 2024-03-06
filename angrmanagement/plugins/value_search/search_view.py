@@ -82,7 +82,7 @@ class SearchView(BaseView):
         self._constants_list.addItems(list(CONSTANTS_BY_NAME.keys()))
         self._constants_list.currentTextChanged.connect(self._on_constants_changed)
         self._type_list = QComboBox(parent=self)
-        self._type_list.addItems(["bytes", "int", "float"])
+        self._type_list.addItems(["bytes", "int", "float", "double"])
         self._search_button = QPushButton("Search", parent=self)
         self._filter_string = QLineEdit(self)
         self._search_button.clicked.connect(self._on_search_click)
