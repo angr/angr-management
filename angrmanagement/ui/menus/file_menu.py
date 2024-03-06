@@ -1,4 +1,4 @@
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QAction, QKeySequence
 
 from angrmanagement.logic import GlobalInfo
 
@@ -67,7 +67,12 @@ class FileMenu(Menu):
                 MenuSeparator(),
                 MenuEntry("Load a new &trace...", main_window.load_trace),
                 MenuSeparator(),
-                MenuEntry("&Preferences...", main_window.preferences, shortcut=QKeySequence("Ctrl+Comma")),
+                MenuEntry(
+                    "&Preferences...",
+                    main_window.preferences,
+                    shortcut=QKeySequence("Ctrl+Comma"),
+                    role=QAction.PreferencesRole,
+                ),
                 MenuSeparator(),
                 MenuEntry("E&xit", main_window.quit),
             ]
