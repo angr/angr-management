@@ -1,4 +1,4 @@
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QAction, QKeySequence
 
 from .menu import Menu, MenuEntry, MenuSeparator
 
@@ -15,6 +15,6 @@ class HelpMenu(Menu):
             [
                 MenuEntry("&Documentation", main_window.open_doc_link, shortcut=QKeySequence("Alt+H")),
                 MenuSeparator(),
-                MenuEntry("About angr...", main_window.open_about_dialog),
+                MenuEntry("About angr...", main_window.open_about_dialog, role=QAction.AboutRole),
             ]
         )

@@ -5,7 +5,19 @@ from PySide6.QtWidgets import QMenu
 
 
 class MenuEntry:
-    def __init__(self, caption, action, shortcut=None, checkable=False, checked=False, enabled=True, key=None):
+    _qaction: Optional[QAction]
+
+    def __init__(
+        self,
+        caption,
+        action,
+        shortcut=None,
+        checkable=False,
+        checked=False,
+        enabled=True,
+        key=None,
+        role: QAction.MenuRole = QAction.MenuRole.NoRole,
+    ):
         self.caption = caption
         self.action = action
         self.shortcut = shortcut
@@ -15,6 +27,7 @@ class MenuEntry:
         self.key = key
 
         self._qaction = None
+        self._role = role
 
     def set_qaction(self, qaction: QAction):
         self._qaction = qaction
