@@ -25,7 +25,7 @@ from pyqodeng.core import api, modes, panels
 from pyqodeng.core.api.syntax_highlighter import COLOR_SCHEME_KEYS
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
+from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu, QMessageBox
 
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.dialogs.retype_node import RetypeNode
@@ -670,12 +670,15 @@ class QCCodeEdit(api.CodeEdit):
             self.action_float,
             self.action_double,
             self._separator(),
+            self.action_remove_stmt,
+            self._separator(),
             self.action_edit_constant,
         ]
 
         self.call_actions = [
             self.action_rename_node,
             self.action_xref,
+            self._separator(),
             self.action_remove_stmt,
             self._separator(),
             self.action_edit_operator,
@@ -707,38 +710,47 @@ class QCCodeEdit(api.CodeEdit):
         dialog.exec_()
 
     def _on_remove_stmt_clicked(self):
-        if isinstance(self._selected_node, CFunctionCall):
-            proj = self.instance.project
-            block = proj.factory.block(self._selected_node.tags["vex_block_addr"], cross_insn_opt=False)
-            vex_block_copy = block.vex.copy()
+        if isinstance(self._selected_node, (CFunctionCall, CConstant)):
+            block_addr = self._selected_node.tags["vex_block_addr"]
+            ins_addr = self._selected_node.tags["ins_addr"]
+        else:
+            return
 
-            # remove all statements that correspond to the ins_addr
-            start_idx = [
-                i
-                for i, stmt in enumerate(vex_block_copy.statements)
-                if isinstance(stmt, pyvex.stmt.IMark)
-                and (stmt.addr + stmt.delta) == self._selected_node.tags["ins_addr"]
-            ][0]
-            try:
-                end_idx = next(
-                    iter(
-                        i
-                        for i, stmt in enumerate(vex_block_copy.statements)
-                        if isinstance(stmt, pyvex.stmt.IMark)
-                        and (stmt.addr + stmt.delta) > self._selected_node.tags["ins_addr"]
-                    )
+        proj = self.instance.project
+        block = proj.factory.block(block_addr, cross_insn_opt=False)
+        vex_block_copy = block.vex.copy()
+
+        # remove all statements that correspond to the ins_addr
+        start_idx = [
+            i
+            for i, stmt in enumerate(vex_block_copy.statements)
+            if isinstance(stmt, pyvex.stmt.IMark) and (stmt.addr + stmt.delta) == ins_addr
+        ][0]
+        try:
+            end_idx = next(
+                iter(
+                    i
+                    for i, stmt in enumerate(vex_block_copy.statements)
+                    if isinstance(stmt, pyvex.stmt.IMark) and (stmt.addr + stmt.delta) > ins_addr
                 )
-            except StopIteration:
-                end_idx = None
+            )
+        except StopIteration:
+            end_idx = None
 
-            if end_idx is not None:
-                vex_block_copy.statements = vex_block_copy.statements[:start_idx] + vex_block_copy[end_idx:]
-            else:
-                vex_block_copy.statements = vex_block_copy.statements[:start_idx]
+        if end_idx is not None:
+            vex_block_copy.statements = vex_block_copy.statements[:start_idx] + vex_block_copy.statements[end_idx:]
+        else:
+            vex_block_copy.statements = vex_block_copy.statements[:start_idx]
 
-            v = proj.analyses.Viscosity(block, vex_block_copy)
-            if v.result:
-                for edit in v.result:
-                    patch = Viscosity.edit_to_patch(edit, proj)
-                    self.instance.kb.patches.add_patch_obj(patch)
-                self.instance.patches.am_event()
+        v = proj.analyses.Viscosity(block, vex_block_copy)
+        if v.result:
+            for edit in v.result:
+                patch = Viscosity.edit_to_patch(edit, proj)
+                self.instance.kb.patches.add_patch_obj(patch)
+            self.instance.patches.am_event()
+            QMessageBox.information(
+                None,
+                "A new patch has been generated",
+                f"We generated a new patch to remove the statement (instruction address {ins_addr:#x}). Please switch "
+                f"to the patch view to examine the patch.",
+            )
