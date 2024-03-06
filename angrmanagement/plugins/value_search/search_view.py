@@ -70,7 +70,7 @@ class SearchView(BaseView):
         else:
             hex_view = self.workspace.view_manager.current_view_in_category("hex")
         if hex_view is not None:
-            hex_view.jump_to(s[0])
+            hex_view.jump_to(s.addr)
             self.workspace.view_manager.raise_view(hex_view)
 
     #
