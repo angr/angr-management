@@ -159,7 +159,7 @@ class QSearchTable(QTableView):
     def filter_string(self, v):
         self._filter = v
         found_values, beastr = self._parent.plugin.on_search_trigger(
-            self._filter, self._parent._selected_type, self._parent.alignment
+            self._filter, self._parent._selected_type, self._parent.alignment, self._parent.should_search_code
         )
         values = [SearchItem(addr, v, beastr) for addr in found_values]
         self._model.layoutAboutToBeChanged.emit()
