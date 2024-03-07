@@ -40,9 +40,11 @@ mkdir upload
 
 # Prepare onedirs
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    mkdir /tmp/angr-management-dmg
-    cp -r dist/*.app /tmp/angr-management-dmg
-    hdiutil create upload/angr-management-macOS-$(uname -m).dmg -volname "angr-management nightly" -srcfolder /tmp/angr-management-dmg
+    mkdir /tmp/angr-management-zip
+    ZIP_PATH=$(pwd)/upload/angr-management-macOS-$(uname -m).zip
+    pushd dist
+    zip -r $ZIP_PATH *.app
+    popd
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     tar -C dist -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management
