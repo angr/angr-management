@@ -73,7 +73,7 @@ class LoadBinary(QDialog):
         self.suggested_backend = suggested_backend
         self.suggested_os_name = suggested_os_name
         self.available_backends: Dict[str, cle.Backend] = cle.ALL_BACKENDS
-        self.available_os = os_mapping
+        self.available_simos = {}
         self.arch = partial_ld.main_object.arch
         self.available_archs = archinfo.all_arches[::]
         # _try_loading will try its best to fill in the following two properties from partial_ld
@@ -90,6 +90,9 @@ class LoadBinary(QDialog):
         # return values
         self.load_options = None
         self.simos = None
+
+        for _, simos in os_mapping.items():
+            self.available_simos[simos.__name__] = simos
 
         self.setWindowTitle("Load a new binary")
 
@@ -262,10 +265,10 @@ class LoadBinary(QDialog):
         os_layout.addWidget(os_caption)
 
         os_dropdown = QComboBox()
-        for os_name, _ in self.available_os.items():
-            os_dropdown.addItem(os_name)
+        for simos_name in self.available_simos:
+            os_dropdown.addItem(simos_name)
         if self.suggested_os_name is not None:
-            os_dropdown.setCurrentText(self.suggested_os_name)
+            os_dropdown.setCurrentText(os_mapping[self.suggested_os_name].__name__)
         os_layout.addWidget(os_dropdown)
 
         self.option_widgets["os"] = os_dropdown
@@ -465,8 +468,8 @@ class LoadBinary(QDialog):
             return
 
         os_dropdown: QComboBox = self.option_widgets["os"]
-        OS: str = os_dropdown.currentText()
-        if not OS or OS not in self.available_os:
+        cur_simos_name: str = os_dropdown.currentText()
+        if not cur_simos_name or cur_simos_name not in self.available_simos:
             QMessageBox.critical(None, "Incorrect OS selection", "Please select a OS before continue.")
             return
 
@@ -486,7 +489,8 @@ class LoadBinary(QDialog):
         self.load_options["main_opts"] = {
             "backend": backend,
         }
-        self.simos = OS
+
+        self.simos = self.available_simos[cur_simos_name]
 
         if self._base_addr_checkbox.isChecked():
             try:
