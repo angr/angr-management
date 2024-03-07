@@ -60,7 +60,9 @@ class LoadBinary(QDialog):
     Dialog displaying loading options for a binary.
     """
 
-    def __init__(self, partial_ld, suggested_backend: Optional[cle.Backend] = None, suggested_os_name = None, parent=None):
+    def __init__(
+        self, partial_ld, suggested_backend: Optional[cle.Backend] = None, suggested_os_name=None, parent=None
+    ):
         super().__init__(parent)
 
         # initialization
@@ -249,7 +251,6 @@ class LoadBinary(QDialog):
         backend_layout.addWidget(backend_dropdown)
 
         self.option_widgets["backend"] = backend_dropdown
-
 
         #
         # OS selection
@@ -514,9 +515,16 @@ class LoadBinary(QDialog):
         self.close()
 
     @staticmethod
-    def run(partial_ld, suggested_backend=None, suggested_os_name=None) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
+    def run(
+        partial_ld, suggested_backend=None, suggested_os_name=None
+    ) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
         try:
-            dialog = LoadBinary(partial_ld, suggested_backend=suggested_backend, suggested_os_name=suggested_os_name, parent=GlobalInfo.main_window)
+            dialog = LoadBinary(
+                partial_ld,
+                suggested_backend=suggested_backend,
+                suggested_os_name=suggested_os_name,
+                parent=GlobalInfo.main_window,
+            )
             dialog.setModal(True)
             dialog.exec_()
             return dialog.load_options, dialog.simos

@@ -111,7 +111,9 @@ class LoadBinaryJob(Job):
                 return
 
         self._progress_callback(50)
-        new_load_options, simos = gui_thread_schedule(LoadBinary.run, (partial_ld, partial_ld.main_object.__class__, partial_ld.main_object.os))
+        new_load_options, simos = gui_thread_schedule(
+            LoadBinary.run, (partial_ld, partial_ld.main_object.__class__, partial_ld.main_object.os)
+        )
         if new_load_options is None:
             return
 
