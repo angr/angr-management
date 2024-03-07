@@ -262,7 +262,7 @@ class LoadBinary(QDialog):
         os_layout.addWidget(os_caption)
 
         os_dropdown = QComboBox()
-        for os_name, simos in self.available_os.items():
+        for os_name, _ in self.available_os.items():
             os_dropdown.addItem(os_name)
         if self.suggested_os_name is not None:
             os_dropdown.setCurrentText(self.suggested_os_name)
