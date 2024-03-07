@@ -91,7 +91,7 @@ class LoadBinary(QDialog):
         self.load_options = None
         self.simos = None
 
-        for osname, simos in os_mapping.items():
+        for _, simos in os_mapping.items():
             self.available_simos[simos.__name__] = simos
 
         self.setWindowTitle("Load a new binary")
@@ -265,7 +265,7 @@ class LoadBinary(QDialog):
         os_layout.addWidget(os_caption)
 
         os_dropdown = QComboBox()
-        for simos_name in self.available_simos.keys():
+        for simos_name in self.available_simos:
             os_dropdown.addItem(simos_name)
         if self.suggested_os_name is not None:
             os_dropdown.setCurrentText(os_mapping[self.suggested_os_name].__name__)
