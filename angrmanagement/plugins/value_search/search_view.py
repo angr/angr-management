@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from angrmanagement.ui.views.view import BaseView
 
@@ -30,6 +30,7 @@ class SearchView(BaseView):
         self._alignment_input: QLineEdit
 
         self._selected_type = "bytes"
+        self.should_search_code = False
 
         self._init_widgets()
         self.reload()
@@ -64,11 +65,11 @@ class SearchView(BaseView):
         :param s:
         :return:
         """
-
-        if len(self.workspace.view_manager.views_by_category["hex"]) == 1:
-            hex_view = self.workspace.view_manager.first_view_in_category("hex")
+        view_name = "disassembly" if self.should_search_code else "hex"
+        if len(self.workspace.view_manager.views_by_category[view_name]) == 1:
+            hex_view = self.workspace.view_manager.first_view_in_category(view_name)
         else:
-            hex_view = self.workspace.view_manager.current_view_in_category("hex")
+            hex_view = self.workspace.view_manager.current_view_in_category(view_name)
         if hex_view is not None:
             hex_view.jump_to(s.addr)
             self.workspace.view_manager.raise_view(hex_view)
@@ -81,8 +82,11 @@ class SearchView(BaseView):
         self._constants_list = QComboBox(parent=self)
         self._constants_list.addItems(list(CONSTANTS_BY_NAME.keys()))
         self._constants_list.currentTextChanged.connect(self._on_constants_changed)
+        self._search_code_box = QCheckBox("Search code", parent=self)
+        self._search_code_box.setChecked(False)
+        self._search_code_box.stateChanged.connect(self._on_search_code_changed)
         self._type_list = QComboBox(parent=self)
-        self._type_list.addItems(["bytes", "int", "float", "double"])
+        self._type_list.addItems(["bytes", "char", "int", "float", "double"])
         self._search_button = QPushButton("Search", parent=self)
         self._filter_string = QLineEdit(self)
         self._search_button.clicked.connect(self._on_search_click)
@@ -93,6 +97,7 @@ class SearchView(BaseView):
         search_layout = QHBoxLayout()
         search_layout.addWidget(QLabel("Constants:", self))
         search_layout.addWidget(self._constants_list, 15)
+        search_layout.addWidget(self._search_code_box)
         search_layout.addWidget(QLabel("Type:", self))
         search_layout.addWidget(self._type_list, 10)
         search_layout.addWidget(QLabel("Alignment (bytes):", self))
@@ -112,6 +117,9 @@ class SearchView(BaseView):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
+
+    def _on_search_code_changed(self, state):
+        self.should_search_code = state == 2
 
     def _on_constants_changed(self, value):
         constant_val = CONSTANTS_BY_NAME.get(value, None)

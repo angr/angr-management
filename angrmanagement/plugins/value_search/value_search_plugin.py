@@ -43,6 +43,22 @@ class ValueSearch(BasePlugin):
     # helpers
     #
 
+    def search_in_code(self, value: bytes):
+        imms = []
+        for func in self.workspace.main_instance.kb.functions.values():
+            for block in func.blocks:
+                for insn in block.capstone.insns:
+                    if hasattr(insn, "operands"):
+                        for op in insn.operands:
+                            if op.type == 2:
+                                imm = self._int_to_bytes(op.imm, strip_zeros=True)
+                                print(f"Found: {imm} ({op.imm}) at {hex(insn.address)}")
+                                if imm == value:
+                                    imms.append(insn.address)
+
+        print("Finished searching in code")
+        return imms
+
     def search_by_bytes(self, value: bytes, alignment: int):
         if value is None:
             return []
@@ -74,7 +90,7 @@ class ValueSearch(BasePlugin):
 
         return enc_value
 
-    def _int_to_bytes(self, i_value: int):
+    def _int_to_bytes(self, i_value: int, strip_zeros=False):
         if self._endness_encoding is None:
             self._find_endness_encoding()
 
@@ -83,13 +99,16 @@ class ValueSearch(BasePlugin):
         except struct.error:
             enc_value = None
 
+        if enc_value is not None and strip_zeros:
+            enc_value = enc_value.lstrip(b"\x00") if self._endness_encoding == ">" else enc_value.rstrip(b"\x00")
+
         return enc_value
 
     #
     # callbacks
     #
 
-    def on_search_trigger(self, value: str, type_: str, alignment: int):
+    def on_search_trigger(self, value: str, type_: str, alignment: int, should_search_code: bool):
         if type_ == "int":
             i_val = int(value, 0)
             value = self._int_to_bytes(i_val)
@@ -99,7 +118,12 @@ class ValueSearch(BasePlugin):
         elif type_ == "double":
             f_val = float(value)
             value = self._double_to_bytes(f_val)
+        elif type == "char":
+            value = value.encode()
         else:
             value = value.encode().decode("unicode_escape").encode("latin-1")
 
-        return self.search_by_bytes(value, alignment), value
+        if should_search_code:
+            return self.search_in_code(value), value
+        else:
+            return self.search_by_bytes(value, alignment), value
