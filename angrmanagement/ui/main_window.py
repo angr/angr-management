@@ -226,10 +226,9 @@ class MainWindow(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open a binary",
-            Conf.last_used_directory,
+            self._get_recent_dir(),
             "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
         )
-        Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
 
     def _pick_image_dialog(self):
@@ -932,6 +931,13 @@ class MainWindow(QMainWindow):
         self._file_menu.add_recent(file_path)
         Conf.recent_file(file_path)
         save_config()
+
+    def _get_recent_dir(self) -> str:
+        if Conf.recent_files:
+            recent_dir = os.path.dirname(Conf.recent_files[-1])
+            if os.path.isdir(recent_dir):
+                return recent_dir
+        return ""
 
     def _load_database(self, file_path: str):
         other_kbs = {}
