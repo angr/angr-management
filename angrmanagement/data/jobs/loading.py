@@ -111,7 +111,7 @@ class LoadBinaryJob(Job):
                 return
 
         self._progress_callback(50)
-        new_load_options = gui_thread_schedule(LoadBinary.run, (partial_ld, partial_ld.main_object.__class__))
+        new_load_options, simos = gui_thread_schedule(LoadBinary.run, (partial_ld, partial_ld.main_object.__class__, partial_ld.main_object.os))
         if new_load_options is None:
             return
 
@@ -121,7 +121,7 @@ class LoadBinaryJob(Job):
 
         self.load_options.update(new_load_options)
 
-        proj = angr.Project(self.fname, load_options=self.load_options, engine=engine)
+        proj = angr.Project(self.fname, load_options=self.load_options, engine=engine, simos=simos)
         self._progress_callback(95)
 
         def callback():
