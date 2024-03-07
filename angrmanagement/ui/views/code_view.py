@@ -263,6 +263,7 @@ class CodeView(BaseView):
             # do not regenerate text
             pass
         else:
+            update_var_types = False
             if event == "retype_variable":
                 dec = self.instance.project.analyses.Decompiler(
                     self._function.am_obj, variable_kb=self.instance.pseudocode_variable_kb, decompile=False
@@ -270,6 +271,7 @@ class CodeView(BaseView):
                 dec_cache = self.instance.kb.structured_code[(self._function.addr, "pseudocode")]
                 new_codegen = dec.reflow_variable_types(
                     dec_cache.type_constraints,
+                    dec_cache.func_typevar,
                     dec_cache.var_to_typevar or {},
                     dec_cache.codegen,
                 )
@@ -278,9 +280,15 @@ class CodeView(BaseView):
 
                 # update self
                 self.codegen.am_obj = new_codegen
+                update_var_types = True
 
-            # regenerate text in the end
-            self.codegen.regenerate_text()
+            if not update_var_types:
+                # regenerate text in the end
+                self.codegen.regenerate_text()
+            else:
+                # trigger a full analysis
+                self.codegen.cleanup()
+                self.codegen._analyze()
 
         self._options.dirty = False
         if self._doc is None:
