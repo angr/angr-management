@@ -262,8 +262,6 @@ ENTRIES = [
     CE("flirt_signatures_root", str, "./flirt_signatures/"),
     # Library documentation
     CE("library_docs_root", str, "./library_docs/"),
-    # last-used directory
-    CE("last_used_directory", str, ""),
     # feature map
     CE("feature_map_regular_function_color", QColor, QColor(0x00, 0xA0, 0xE8)),
     CE("feature_map_unknown_color", QColor, QColor(0x0A, 0x0A, 0x0A)),
@@ -313,7 +311,6 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         "_code_font_height",
         "_code_font_width",
         "_code_font_ascent",
-        "_last_used_directory",
     )
 
     def __init__(self, entries=None):
@@ -322,7 +319,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = None
         self._symexec_font_width = self._symexec_font_ascent = None
         self._code_font = self._code_font_metrics = self._code_font_height = None
-        self._code_font_width = self._code_font_ascent = self._last_used_directory = None
+        self._code_font_width = self._code_font_ascent = None
 
         if entries is None:
             self._entries = {}
@@ -466,14 +463,6 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
     def code_font_ascent(self):
         self._code_manage_font_cache()
         return self._code_font_ascent
-
-    @property
-    def last_used_directory(self):
-        return self._last_used_directory
-
-    @last_used_directory.setter
-    def last_used_directory(self, new_dir):
-        self._last_used_directory = new_dir
 
     def init_font_config(self):
         if self.ui_default_font is None:
