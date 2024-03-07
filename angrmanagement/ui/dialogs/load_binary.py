@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import archinfo
 import cle
 from angr.calling_conventions import unify_arch_name
+from angr.simos import os_mapping
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -59,7 +60,9 @@ class LoadBinary(QDialog):
     Dialog displaying loading options for a binary.
     """
 
-    def __init__(self, partial_ld, suggested_backend: Optional[cle.Backend] = None, parent=None):
+    def __init__(
+        self, partial_ld, suggested_backend: Optional[cle.Backend] = None, suggested_os_name=None, parent=None
+    ):
         super().__init__(parent)
 
         # initialization
@@ -68,7 +71,9 @@ class LoadBinary(QDialog):
         self.sha256 = None
         self.option_widgets = {}
         self.suggested_backend = suggested_backend
+        self.suggested_os_name = suggested_os_name
         self.available_backends: Dict[str, cle.Backend] = cle.ALL_BACKENDS
+        self.available_os = os_mapping
         self.arch = partial_ld.main_object.arch
         self.available_archs = archinfo.all_arches[::]
         # _try_loading will try its best to fill in the following two properties from partial_ld
@@ -84,6 +89,7 @@ class LoadBinary(QDialog):
 
         # return values
         self.load_options = None
+        self.simos = None
 
         self.setWindowTitle("Load a new binary")
 
@@ -247,6 +253,24 @@ class LoadBinary(QDialog):
         self.option_widgets["backend"] = backend_dropdown
 
         #
+        # OS selection
+        #
+        os_layout = QHBoxLayout()
+        os_caption = QLabel()
+        os_caption.setText("OS:")
+        os_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        os_layout.addWidget(os_caption)
+
+        os_dropdown = QComboBox()
+        for os_name, _ in self.available_os.items():
+            os_dropdown.addItem(os_name)
+        if self.suggested_os_name is not None:
+            os_dropdown.setCurrentText(self.suggested_os_name)
+        os_layout.addWidget(os_dropdown)
+
+        self.option_widgets["os"] = os_dropdown
+
+        #
         # Architecture selection
         #
 
@@ -357,6 +381,7 @@ class LoadBinary(QDialog):
 
         layout = QVBoxLayout()
         layout.addLayout(backend_layout)
+        layout.addLayout(os_layout)
         layout.addLayout(blob_layout)
         layout.addLayout(arch_layout)
         layout.addWidget(load_debug_info)
@@ -439,6 +464,12 @@ class LoadBinary(QDialog):
             QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
             return
 
+        os_dropdown: QComboBox = self.option_widgets["os"]
+        OS: str = os_dropdown.currentText()
+        if not OS or OS not in self.available_os:
+            QMessageBox.critical(None, "Incorrect OS selection", "Please select a OS before continue.")
+            return
+
         arch_tree: QTreeWidget = self.option_widgets["arch"]
         item = arch_tree.currentItem()
         if not isinstance(item, ArchTreeWidgetItem):
@@ -455,6 +486,7 @@ class LoadBinary(QDialog):
         self.load_options["main_opts"] = {
             "backend": backend,
         }
+        self.simos = OS
 
         if self._base_addr_checkbox.isChecked():
             try:
@@ -483,12 +515,19 @@ class LoadBinary(QDialog):
         self.close()
 
     @staticmethod
-    def run(partial_ld, suggested_backend=None) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
+    def run(
+        partial_ld, suggested_backend=None, suggested_os_name=None
+    ) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
         try:
-            dialog = LoadBinary(partial_ld, suggested_backend=suggested_backend, parent=GlobalInfo.main_window)
+            dialog = LoadBinary(
+                partial_ld,
+                suggested_backend=suggested_backend,
+                suggested_os_name=suggested_os_name,
+                parent=GlobalInfo.main_window,
+            )
             dialog.setModal(True)
             dialog.exec_()
-            return dialog.load_options
+            return dialog.load_options, dialog.simos
         except LoadBinaryError:
             pass
         return None, None, None
