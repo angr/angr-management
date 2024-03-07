@@ -38,6 +38,7 @@ class PreciseDiffPlugin(BasePlugin):
 
         self.prefer_symbols = True
         self.resolve_strings = True
+        self.use_addrs = False
         self.diff_algo_class = BFSFunctionDiff
         self.add_color = QColor(0xDDFFDD)
         self.del_color = QColor(0xFF7F7F)
@@ -165,10 +166,14 @@ class PreciseDiffPlugin(BasePlugin):
         og_func = func_obj.am_obj
         og_func_name = og_func.name
 
+        lookup_sym = og_func.addr if self.use_addrs else og_func_name
         try:
-            revised_func = self.diff_instance.kb.functions[og_func_name]
+            revised_func = self.diff_instance.kb.functions[lookup_sym]
         except KeyError:
-            logger.warning("The function %s does not exist in the diffed binary", og_func)
+            logger.warning(
+                "The function %s does not exist in the diffed binary",
+                hex(lookup_sym) if self.use_addrs else og_func_name,
+            )
             return
 
         self.jump_to_in_revised_view(revised_func)
