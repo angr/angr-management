@@ -56,6 +56,14 @@ class SettingsDialog(QDialog):
             and checking for the same index in the new binary.
             """
         )
+        self._use_addrs = QCheckBox("Use addresses for alignment")
+        self._use_addrs.setToolTip(
+            """
+            When enabled, the diffing algorithm will attempt to diff functions at the same addresses across
+            both binaries. When disabled we attempt to use symbols.
+            """
+        )
+        self._use_addrs.setChecked(self.diff_plugin.use_addrs)
 
         if self.diff_plugin.diff_algo_class == BFSFunctionDiff:
             self._bfs_diff_btn.setChecked(True)
@@ -66,6 +74,7 @@ class SettingsDialog(QDialog):
 
         algo_group_layout.addWidget(self._bfs_diff_btn)
         algo_group_layout.addWidget(self._linear_diff_btn)
+        algo_group_layout.addWidget(self._use_addrs)
         algo_group.setLayout(algo_group_layout)
 
         upper_layout.addWidget(algo_group)
@@ -165,6 +174,7 @@ class SettingsDialog(QDialog):
             self.diff_plugin.diff_algo_class = BFSFunctionDiff
         else:
             self.diff_plugin.diff_algo_class = LinearFunctionDiff
+        self.diff_plugin.use_addrs = self._use_addrs.isChecked()
 
         # instruction options
         self.diff_plugin.prefer_symbols = self._prefer_symbols.isChecked()
