@@ -1,6 +1,12 @@
 from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple
 
 import ailment
+
+try:
+    import pypcode
+except ImportError:
+    pypcode = None
+
 import pyvex
 from PySide6.QtCore import QObject, QPointF, QRectF, Qt
 from PySide6.QtGui import QFont, QMouseEvent, QPainter, QTextCharFormat, QTextCursor, QTextDocument
@@ -449,6 +455,9 @@ class QAilLoadObj(QAilTextObj):
             self.add_text(")")
 
 
+OBJ_CLASS_TO_QBLOCKCODE_CLASS = {}
+
+
 class QIROpObj(QBlockCodeObj):
     """
     Renders a Lifter IR object
@@ -468,19 +477,7 @@ class QIROpObj(QBlockCodeObj):
         self.add_irobj(obj.obj)
 
     def add_irobj(self, obj):
-        subobjcls = {
-            pyvex.stmt.WrTmp: QIROpVexWrTmpObj,
-            pyvex.expr.RdTmp: QIROpVexRdTmpObj,
-            pyvex.stmt.Store: QIROpVexStoreObj,
-            pyvex.expr.Load: QIROpVexLoadObj,
-            pyvex.stmt.Put: QIROpVexPutObj,
-            pyvex.stmt.Exit: QIROpVexExitObj,
-            pyvex.expr.Const: QIROpVexConstObj,
-            pyvex.expr.Binop: QIROpVexBinopObj,
-            pyvex.expr.Unop: QIROpVexUnopObj,
-            VexIRTmpWrapper: QIROpVexTmpObj,
-            VexIRRegWrapper: QIROpVexRegObj,
-        }.get(type(obj), QIROpTextObj)
+        subobjcls = OBJ_CLASS_TO_QBLOCKCODE_CLASS.get(type(obj), QIROpTextObj)
         subobj = subobjcls(obj, self.infodock, parent=self, options=self.options, irobj=self.irobj)
         self._add_subobj(subobj)
 
@@ -496,6 +493,19 @@ class QIROpTextObj(QIROpObj):
             self.add_text("%#x" % obj)
         else:
             self.add_text(str(obj))
+
+
+class QIrOpPcodeOp(QIROpTextObj):
+    """
+    Renders a P-code op.
+    """
+
+    def create_subobjs(self, obj: "pypcode.PcodeOp"):
+        self.add_text(pypcode.PcodePrettyPrinter.fmt_op(obj))
+
+
+if pypcode:
+    OBJ_CLASS_TO_QBLOCKCODE_CLASS.update({pypcode.PcodeOp: QIrOpPcodeOp})
 
 
 class QIROpVexConstObj(QIROpTextObj):
@@ -701,6 +711,23 @@ class QIROpVexUnopObj(QIROpTextObj):
         self.add_text("(")
         self.add_irobj(obj.args[0])
         self.add_text(")")
+
+
+OBJ_CLASS_TO_QBLOCKCODE_CLASS.update(
+    {
+        pyvex.stmt.WrTmp: QIROpVexWrTmpObj,
+        pyvex.expr.RdTmp: QIROpVexRdTmpObj,
+        pyvex.stmt.Store: QIROpVexStoreObj,
+        pyvex.expr.Load: QIROpVexLoadObj,
+        pyvex.stmt.Put: QIROpVexPutObj,
+        pyvex.stmt.Exit: QIROpVexExitObj,
+        pyvex.expr.Const: QIROpVexConstObj,
+        pyvex.expr.Binop: QIROpVexBinopObj,
+        pyvex.expr.Unop: QIROpVexUnopObj,
+        VexIRTmpWrapper: QIROpVexTmpObj,
+        VexIRRegWrapper: QIROpVexRegObj,
+    }
+)
 
 
 class QBlockCode(QCachedGraphicsItem):
