@@ -365,15 +365,24 @@ class LoadBinary(QDialog):
         load_debug_info.setChecked(True)
         self.option_widgets["load_debug_info"] = load_debug_info
 
-        # auto load libs
+        layout = QVBoxLayout()
+        layout.addLayout(backend_layout)
+        layout.addLayout(os_layout)
+        layout.addLayout(blob_layout)
+        layout.addLayout(arch_layout)
+        layout.addWidget(load_debug_info)
 
+        frame = QFrame(self)
+        frame.setLayout(layout)
+        tab.addTab(frame, "Loading Options")
+
+        # auto load libs
         auto_load_libs = QCheckBox()
         auto_load_libs.setText("Automatically load all libraries (slow, not recommended)")
         auto_load_libs.setChecked(False)
         self.option_widgets["auto_load_libs"] = auto_load_libs
 
         # dependencies list
-
         dep_group = QGroupBox("Dependencies")
         dep_list = QListWidget()
         self.option_widgets["dep_list"] = dep_list
@@ -383,17 +392,12 @@ class LoadBinary(QDialog):
         dep_group.setLayout(sublayout)
 
         layout = QVBoxLayout()
-        layout.addLayout(backend_layout)
-        layout.addLayout(os_layout)
-        layout.addLayout(blob_layout)
-        layout.addLayout(arch_layout)
-        layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
         layout.addWidget(dep_group, stretch=1)
 
         frame = QFrame(self)
         frame.setLayout(layout)
-        tab.addTab(frame, "Loading Options")
+        tab.addTab(frame, "Dependencies")
 
     def _split_arches(self, all_arches) -> Tuple[Any, List, List]:
         """
