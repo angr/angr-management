@@ -1,7 +1,18 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QLineEdit, QSpinBox, QPushButton, QVBoxLayout
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+)
 
 from angrmanagement.ui.views.view import BaseView
 
@@ -75,9 +86,6 @@ class SearchView(BaseView):
     #
 
     def _init_widgets(self):
-        self._constants_list = QComboBox(parent=self)
-        self._constants_list.addItems(list(CONSTANTS_BY_NAME.keys()))
-        self._constants_list.currentTextChanged.connect(self._on_constants_changed)
         self._search_code_box = QCheckBox("Search code", parent=self)
         self._search_code_box.setChecked(False)
         self._search_code_box.stateChanged.connect(self._on_search_code_changed)
@@ -90,9 +98,18 @@ class SearchView(BaseView):
         self._alignment_input.setValue(1)
         self._alignment_input.setRange(1, 256)
 
+        constants_btn = QPushButton(self)
+        constants_btn.setText("Constants")
+        constants_mnu = QMenu(self)
+        constants_btn.setMenu(constants_mnu)
+        for n, v in CONSTANTS_BY_NAME.items():
+            act = QAction(f"{n}: {v}", constants_mnu)
+            act.setData(str(v))
+            act.triggered.connect(self._on_constant_selected)
+            constants_mnu.addAction(act)
+
         search_layout = QHBoxLayout()
-        search_layout.addWidget(QLabel("Constants:", self))
-        search_layout.addWidget(self._constants_list, 15)
+        search_layout.addWidget(constants_btn, 15)
         search_layout.addWidget(self._search_code_box)
         search_layout.addWidget(QLabel("Type:", self))
         search_layout.addWidget(self._type_list, 10)
@@ -117,7 +134,5 @@ class SearchView(BaseView):
     def _on_search_code_changed(self, state):
         self.should_search_code = state == 2
 
-    def _on_constants_changed(self, value):
-        constant_val = CONSTANTS_BY_NAME.get(value, None)
-        if constant_val is not None:
-            self._filter_string.setText(str(constant_val))
+    def _on_constant_selected(self):
+        self._filter_string.setText(self.sender().data())

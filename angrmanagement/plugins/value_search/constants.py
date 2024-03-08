@@ -30,7 +30,6 @@ MAX_FLOAT64 = 1.7976931348623157e308
 
 # All consts
 CONSTANTS_BY_NAME = {
-    "": None,
     "Machine Epsilon (Double Precision)": MACHINE_EPSILON_DOUBLE_PRECISION,
     "Machine Epsilon (Single Precision)": MACHINE_EPSILON_SINGLE_PRECISION,
     "Planck Constant": PLANCK_CONSTANT,
