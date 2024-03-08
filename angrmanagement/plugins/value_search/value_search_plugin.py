@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 class ValueSearch(BasePlugin):
+    """
+    Plugin to search for values in the binary.
+    """
+
     def __init__(self, workspace):
         super().__init__(workspace)
 
