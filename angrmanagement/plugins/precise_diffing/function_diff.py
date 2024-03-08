@@ -80,7 +80,7 @@ class FunctionDiff:
                         try:
                             base_mem_op_addr = list(base_mem_ops[0].values)[0].val
                             rev_mem_op_addr = list(rev_mem_ops[0].values)[0].val
-                        except (IndexError, KeyError, ValueError):
+                        except (IndexError, KeyError, ValueError, AttributeError):
                             return FunctionDiff.OBJ_CHANGED
 
                         base_str = string_at_addr(
