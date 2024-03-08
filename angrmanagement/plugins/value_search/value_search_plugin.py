@@ -52,11 +52,8 @@ class ValueSearch(BasePlugin):
                         for op in insn.operands:
                             if op.type == 2:
                                 imm = self._int_to_bytes(op.imm, strip_zeros=True)
-                                print(f"Found: {imm} ({op.imm}) at {hex(insn.address)}")
                                 if imm == value:
                                     imms.append(insn.address)
-
-        print("Finished searching in code")
         return imms
 
     def search_by_bytes(self, value: bytes, alignment: int):
