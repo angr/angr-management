@@ -1,6 +1,7 @@
 from PySide6.QtGui import QAction, QKeySequence
 
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.ui.icons import icon
 
 from .menu import Menu, MenuEntry, MenuSeparator
 
@@ -72,6 +73,7 @@ class FileMenu(Menu):
                     main_window.preferences,
                     shortcut=QKeySequence("Ctrl+Comma"),
                     role=QAction.PreferencesRole,
+                    icon=icon("preferences"),
                 ),
                 MenuSeparator(),
                 MenuEntry("E&xit", main_window.quit),

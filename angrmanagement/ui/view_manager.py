@@ -80,6 +80,8 @@ class ViewManager:
         dw.setFeature(QtAds.CDockWidget.DockWidgetDeleteOnClose, True)
         dw.closed.connect(functools.partial(self._on_dock_widget_closed, dw))
         dw.setWidget(view)
+        if view.icon:
+            dw.setIcon(view.icon)
 
         area = self.DOCKING_POSITIONS.get(view.default_docking_position, QtAds.RightDockWidgetArea)
         area_widget = self.main_window.dock_manager.addDockWidgetTab(area, dw)
