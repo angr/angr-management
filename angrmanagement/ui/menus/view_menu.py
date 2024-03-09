@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING, Type
 
 from PySide6.QtGui import QKeySequence
 
+from angrmanagement.ui.icons import icon
+
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
@@ -19,14 +21,19 @@ class NewViewMenu(Menu):
 
         self.entries.extend(
             [
-                MenuEntry("&Linear Disassembly", main_window.workspace.create_and_show_linear_disassembly_view),
+                MenuEntry(
+                    "&Linear Disassembly",
+                    main_window.workspace.create_and_show_linear_disassembly_view,
+                    icon=icon("disassembly-linear"),
+                ),
                 MenuEntry(
                     "&Graph Disassembly",
                     main_window.workspace.create_and_show_graph_disassembly_view,
                     shortcut=QKeySequence("Ctrl+N"),
+                    icon=icon("disassembly-graph"),
                 ),
                 MenuSeparator(),
-                MenuEntry("&Hex", main_window.workspace.create_and_show_hex_view),
+                MenuEntry("&Hex", main_window.workspace.create_and_show_hex_view, icon=icon("hex-view")),
             ]
         )
 
@@ -84,7 +91,10 @@ class ViewMenu(Menu):
         self.entries.extend(
             [
                 MenuEntry(
-                    "Command Palette...", main_window.show_command_palette, shortcut=QKeySequence("Ctrl+Shift+P")
+                    "Command Palette...",
+                    main_window.show_command_palette,
+                    shortcut=QKeySequence("Ctrl+Shift+P"),
+                    icon=icon("command-palette"),
                 ),
                 MenuSeparator(),
                 ToolbarMenu(main_window),
@@ -98,17 +108,25 @@ class ViewMenu(Menu):
                 MenuSeparator(),
                 NewViewMenu(main_window),
                 MenuSeparator(),
-                MenuEntry("&Linear Disassembly", main_window.workspace.show_linear_disassembly_view),
-                MenuEntry("&Graph Disassembly", main_window.workspace.show_graph_disassembly_view),
+                MenuEntry(
+                    "&Linear Disassembly",
+                    main_window.workspace.show_linear_disassembly_view,
+                    icon=icon("disassembly-linear"),
+                ),
+                MenuEntry(
+                    "&Graph Disassembly",
+                    main_window.workspace.show_graph_disassembly_view,
+                    icon=icon("disassembly-graph"),
+                ),
                 MenuSeparator(),
-                MenuEntry("&Hex", main_window.workspace.show_hex_view),
+                MenuEntry("&Hex", main_window.workspace.show_hex_view, icon=icon("hex-view")),
                 MenuEntry("Pro&ximity", main_window.view_proximity_for_current_function),
-                MenuEntry("Pseudo&code", main_window.workspace.show_pseudocode_view),
-                MenuEntry("&Strings", main_window.workspace.show_strings_view),
-                MenuEntry("&Patches", main_window.workspace.show_patches_view),
-                MenuEntry("&Types", main_window.workspace.show_types_view),
-                MenuEntry("&Functions", main_window.workspace.show_functions_view),
-                MenuEntry("&Traces", main_window.workspace.show_traces_view),
+                MenuEntry("Pseudo&code", main_window.workspace.show_pseudocode_view, icon=icon("pseudocode-view")),
+                MenuEntry("&Strings", main_window.workspace.show_strings_view, icon=icon("strings-view")),
+                MenuEntry("&Patches", main_window.workspace.show_patches_view, icon=icon("patches-view")),
+                MenuEntry("&Types", main_window.workspace.show_types_view, icon=icon("types-view")),
+                MenuEntry("&Functions", main_window.workspace.show_functions_view, icon=icon("functions-view")),
+                MenuEntry("&Traces", main_window.workspace.show_traces_view, icon=icon("traces-view")),
                 MenuEntry("&Trace Map", main_window.workspace.show_trace_map_view),
                 MenuSeparator(),
                 MenuEntry("Symbolic &Execution", main_window.workspace.show_symexec_view),
@@ -119,7 +137,7 @@ class ViewMenu(Menu):
                 MenuEntry("&Breakpoints", main_window.workspace.show_breakpoints_view),
                 MenuEntry("&Call Explorer", main_window.workspace.show_call_explorer_view),
                 MenuSeparator(),
-                MenuEntry("&Console", main_window.workspace.show_console_view),
-                MenuEntry("&Log", main_window.workspace.show_log_view),
+                MenuEntry("&Console", main_window.workspace.show_console_view, icon=icon("console-view")),
+                MenuEntry("&Log", main_window.workspace.show_log_view, icon=icon("log-view")),
             ]
         )

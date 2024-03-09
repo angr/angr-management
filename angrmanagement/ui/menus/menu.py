@@ -1,7 +1,10 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu
+
+if TYPE_CHECKING:
+    from PySide6.QtGui import QIcon
 
 
 class MenuEntry:
@@ -17,6 +20,7 @@ class MenuEntry:
         enabled=True,
         key=None,
         role: QAction.MenuRole = QAction.MenuRole.NoRole,
+        icon: Optional["QIcon"] = None,
     ):
         self.caption = caption
         self.action = action
@@ -25,6 +29,7 @@ class MenuEntry:
         self.checked_initially = checked
         self.enabled = enabled
         self.key = key
+        self.icon = icon
 
         self._qaction = None
         self._role = role
@@ -117,6 +122,8 @@ class Menu:
 
         if isinstance(entry, MenuEntry):
             action = QAction(entry.caption, menu)
+            if entry.icon:
+                action.setIcon(entry.icon)
             action.triggered.connect(entry.action)
             entry.set_qaction(action)
 

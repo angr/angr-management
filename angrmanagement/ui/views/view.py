@@ -4,6 +4,8 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFrame, QMenu
 
+from angrmanagement.ui.icons import icon
+
 if TYPE_CHECKING:
     import PySide6.QtGui
 
@@ -42,6 +44,7 @@ class BaseView(QFrame):
         self.height_hint = -1
         self.index: int = 1
         self.base_caption: str = "View"
+        self.icon = icon(category + "-view")
 
     @property
     def function(self):
