@@ -4,9 +4,11 @@ from PySide6.QtCore import QEvent, QMarginsF, QPoint, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QImage, QMouseEvent, QPainter, QVector2D
 from PySide6.QtWidgets import (
     QApplication,
+    QGestureEvent,
     QGraphicsScene,
     QGraphicsSceneMouseEvent,
     QGraphicsView,
+    QPinchGesture,
     QStyleOptionGraphicsItem,
 )
 
@@ -112,6 +114,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         # self.setRenderHints(
         # QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+
+        self.grabGesture(Qt.PinchGesture)
 
     def _initial_position(self):
         raise NotImplementedError
@@ -307,3 +311,23 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self._is_dragging = False
 
         super().mouseReleaseEvent(event)
+
+    def event(self, event):
+        if event.type() == QEvent.Gesture and isinstance(event, QGestureEvent):
+            return self._handle_pinch_gesture(event)
+        return super().event(event)
+
+    def _handle_pinch_gesture(self, event: QGestureEvent):
+        for gesture in event.gestures():
+            if isinstance(gesture, QPinchGesture):
+                if gesture.state() == Qt.GestureState.GestureStarted:
+                    self.pinchGestureStarted()
+                elif gesture.state() == Qt.GestureState.GestureUpdated:
+                    self.pinchGestureUpdated(gesture)
+
+    def pinchGestureStarted(self):
+        self._gesture_last_scale = 1.0
+
+    def pinchGestureUpdated(self, gesture: QPinchGesture):
+        newScale = gesture.scaleFactor() / self._gesture_last_scale
+        self.zoom(at=gesture.centerPoint().toPoint(), factor=newScale)
