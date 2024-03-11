@@ -1,3 +1,5 @@
+import platform
+
 from PySide6.QtGui import QAction, QKeySequence
 
 from angrmanagement.logic import GlobalInfo
@@ -73,7 +75,7 @@ class FileMenu(Menu):
                     main_window.preferences,
                     shortcut=QKeySequence("Ctrl+Comma"),
                     role=QAction.PreferencesRole,
-                    icon=icon("preferences"),
+                    icon=icon("preferences") if platform.system() != "Darwin" else None,
                 ),
                 MenuSeparator(),
                 MenuEntry("E&xit", main_window.quit),
