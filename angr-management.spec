@@ -89,6 +89,7 @@ a = Analysis(
         "charset_normalizer.md__mypyc",
         "PySide6.support.deprecated",
         "PySide6.QtWebEngineWidgets",
+        "binsync.interface_overrides.angr"
     ],
     hookspath=[],
     hooksconfig={},
