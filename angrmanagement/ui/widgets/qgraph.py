@@ -116,6 +116,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         # QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         self.grabGesture(Qt.PinchGesture)
+        self._gesture_last_scale = 1.0
 
     def _initial_position(self):
         raise NotImplementedError
