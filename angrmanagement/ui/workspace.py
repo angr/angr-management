@@ -13,6 +13,7 @@ from angr.knowledge_plugins.patches import Patch
 from angr.misc.testing import is_testing
 from cle import SymbolType
 from PySide6.QtWidgets import QMessageBox
+from PySide6QtAds import SideBarBottom
 
 from angrmanagement.config import Conf
 from angrmanagement.data.analysis_options import (
@@ -113,15 +114,21 @@ class Workspace:
         ]
         if Conf.has_operation_mango:
             self.default_tabs.append(DependencyView(self, self._main_instance, "center"))
-        self.default_tabs += [
+        minimized_tabs = [
             ConsoleView(self, self._main_instance, "bottom"),
             LogView(self, self._main_instance, "bottom"),
         ]
+        self.default_tabs += minimized_tabs
 
         enabled_tabs = [x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
         for tab in self.default_tabs:
             if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs) == 0:
                 self.add_view(tab)
+
+        for view in minimized_tabs:
+            dock = self.view_manager.view_to_dock.get(view, None)
+            if dock is not None:
+                dock.setAutoHide(True, SideBarBottom)
 
         self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.main_instance.debugger_mgr.debugger)
         self.on_debugger_state_updated()
