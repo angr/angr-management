@@ -161,6 +161,8 @@ class ViewManager:
         if dock is None:
             return
 
+        if dock.isAutoHide():
+            dock.toggleView(True)
         if not dock.isTabbed():
             dock.show()
         dock.raise_()

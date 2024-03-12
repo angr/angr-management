@@ -368,6 +368,8 @@ class MainWindow(QMainWindow):
         )
         self.dock_manager = QtAds.CDockManager(self)
         self.dock_manager.setStyleSheet("")  # Clear stylesheet overrides
+        self.dock_manager.setAutoHideConfigFlags(QtAds.CDockManager.DefaultAutoHideConfig)
+        self.dock_manager.createSideTabBarWidgets()
         self.setCentralWidget(self.dock_manager)
         wk = Workspace(self, Instance())
         self.workspace = wk

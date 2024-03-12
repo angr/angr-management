@@ -23,3 +23,11 @@ QMainWindow > QToolBar {
 QStatusBar {
     background-color: palette(dark);
 }
+
+ads--CAutoHideTab {
+    background: palette(shadow);
+}
+
+ads--CAutoHideSideBar{
+    background: palette(shadow);
+}
