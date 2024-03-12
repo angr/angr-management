@@ -11,6 +11,7 @@ from angr.knowledge_plugins.patches import Patch
 from angr.misc.testing import is_testing
 from cle import SymbolType
 from PySide6.QtWidgets import QMessageBox
+from PySide6QtAds import SideBarBottom
 
 from angrmanagement.config import Conf
 from angrmanagement.data.analysis_options import (
@@ -120,6 +121,9 @@ class Workspace:
         for tab in self.default_tabs:
             if tab.__class__.__name__ in enabled_tabs or len(enabled_tabs) == 0:
                 self.add_view(tab)
+
+        self.view_manager.docks[-1].setAutoHide(True, SideBarBottom)
+        self.view_manager.docks[-2].setAutoHide(True, SideBarBottom)
 
         self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.main_instance.debugger_mgr.debugger)
         self.on_debugger_state_updated()
