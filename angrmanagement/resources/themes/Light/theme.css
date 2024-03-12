@@ -1,0 +1,4 @@
+ads--CAutoHideDockContainer #dockAreaAutoHideButton {
+    qproperty-icon: url("$theme/images/drawing-pin-light.svg");
+    qproperty-iconSize: 15px;
+}

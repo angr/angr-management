@@ -3,3 +3,15 @@ close.svg, tab-menu.svg
 	license: MIT
 	source: https://icons.radix-ui.com/
 	acquired-on: 11/1/2022
+
+drawing-pin.svg
+	copyright: 2022–present WorkOS
+	license: MIT
+	source: https://icons.radix-ui.com/
+	acquired-on: 3/21/2024
+	color modified for theme
+
+minimize-button.svg
+	copyright: QtADS
+	license: LGPL
+	acquired-on: 3/21/2024
