@@ -179,9 +179,7 @@ class QLogWidget(QTableView):
         for row_index in selection:
             record = self.model.log[row_index.row()]
             content.append(
-                "{} | {} | {} | {}".format(
-                    QLogTableModel.level_to_text(record.level), str(record.timestamp), record.source, record.content
-                )
+                f"{QLogTableModel.level_to_text(record.level)} | {str(record.timestamp)} | {record.source} | {record.content}"
             )
         self._copy_to_clipboard(os.linesep.join(content))
 
@@ -196,9 +194,7 @@ class QLogWidget(QTableView):
         content = []
         for record in self.model.log:
             content.append(
-                "{} | {} | {} | {}".format(
-                    QLogTableModel.level_to_text(record.level), str(record.timestamp), record.source, record.content
-                )
+                f"{QLogTableModel.level_to_text(record.level)} | {str(record.timestamp)} | {record.source} | {record.content}"
             )
         self._copy_to_clipboard(os.linesep.join(content))
 
