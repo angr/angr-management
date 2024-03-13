@@ -45,6 +45,7 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
 from .dialogs.preferences import Preferences
+from .dialogs.welcome import WelcomeDialog
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.file_menu import FileMenu
 from .menus.help_menu import HelpMenu
@@ -200,6 +201,11 @@ class MainWindow(QMainWindow):
             self.showMaximized()
             self.windowHandle().screenChanged.connect(self.on_screen_changed)
             self.show()
+
+    def show_welcome_dialog(self):
+        dlg = WelcomeDialog(self)
+        dlg.setModal(True)
+        dlg.show()
 
     def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
         return QSize(1200, 800)

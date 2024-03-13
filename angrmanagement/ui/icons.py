@@ -6,12 +6,15 @@ if TYPE_CHECKING:
     from PySide6.QtGui import QIcon
 
 NAME_TO_QTAWESOME_NAME = {
+    "about": "fa5s.info-circle",
     "command-palette": "ph.squares-four-light",
     "console-view": "mdi.console-line",
     "disassembly-graph": "fa5s.sitemap",
     "disassembly-linear": "msc.list-selection",
     "disassembly-view": "msc.symbol-constant",
     "docs": "mdi6.book-open-page-variant",
+    "file": "mdi.file",
+    "file-open": "mdi.folder-open",
     "functions-view": "mdi.function",
     "hex-view": "mdi.hexadecimal",
     "log-view": "mdi.message-bulleted",

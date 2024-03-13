@@ -155,6 +155,9 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     main_window.initialized = True
     main_window.workspace.view_manager.main_window_initialized()
 
+    if file_to_open is None:
+        main_window.show_welcome_dialog()
+
     app.exec_()
 
 
