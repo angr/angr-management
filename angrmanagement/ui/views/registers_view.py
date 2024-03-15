@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QVBoxL
 from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     import angr
@@ -128,13 +128,13 @@ class QRegisterTableWidget(QTableView):
         self.model.layoutChanged.emit()
 
 
-class RegistersView(BaseView):
+class RegistersView(InstanceView):
     """
     Register table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("registers", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("registers", workspace, default_docking_position, instance)
 
         self.base_caption = "Registers"
         self._tbl_widget: Optional[QRegisterTableWidget] = None

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     import PySide6
@@ -116,13 +116,13 @@ class QTraceTableWidget(QTableView):
             menu.exec_(event.globalPos())
 
 
-class TracesView(BaseView):
+class TracesView(InstanceView):
     """
     Traces table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("traces", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("traces", workspace, default_docking_position, instance)
 
         self.base_caption = "Traces"
         self._tbl_widget: Optional[QTraceTableWidget] = None

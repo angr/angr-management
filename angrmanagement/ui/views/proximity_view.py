@@ -11,7 +11,7 @@ from angr.analyses.proximity_graph import (
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
-from angrmanagement.ui.views.view import BaseView
+from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph
 from angrmanagement.ui.widgets.qproximitygraph_block import (
     QProximityGraphBlock,
@@ -24,13 +24,13 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
 
 
-class ProximityView(BaseView):
+class ProximityView(InstanceView):
     """
     Proximity View
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("proximity", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("proximity", workspace, default_docking_position, instance)
 
         self.base_caption = "Proximity"
 

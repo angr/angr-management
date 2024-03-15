@@ -8,15 +8,15 @@ from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLa
 from angrmanagement.ui.widgets.qfunction_combobox import QFunctionComboBox
 from angrmanagement.ui.widgets.qstring_table import QStringTable
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 
-class StringsView(BaseView):
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("strings", workspace, instance, default_docking_position, *args, **kwargs)
+class StringsView(InstanceView):
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("strings", workspace, default_docking_position, instance)
 
         self.base_caption = "Strings"
 

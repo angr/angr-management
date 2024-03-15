@@ -7,22 +7,20 @@ from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.ui.dialogs.type_editor import CTypeEditor
 from angrmanagement.ui.widgets.qtypedef import QCTypeDef
 
-from .view import BaseView
+from .view import FunctionView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.types import TypesStore
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
 
 
-class TypesView(BaseView):
+class TypesView(FunctionView):
     """
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
     """
 
-    FUNCTION_SPECIFIC_VIEW = True
-
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("types", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("types", workspace, default_docking_position, instance)
 
         self.base_caption = "Types"
 
@@ -39,15 +37,6 @@ class TypesView(BaseView):
     #
     # Properties
     #
-
-    @property
-    def function(self) -> ObjectContainer:
-        return self._function
-
-    @function.setter
-    def function(self, v):
-        self._function.am_obj = v
-        self._function.am_event()
 
     @property
     def current_typestore(self) -> "TypesStore":

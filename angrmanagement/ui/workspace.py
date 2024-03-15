@@ -40,6 +40,7 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.plugins import PluginManager
 from angrmanagement.ui.dialogs import AnalysisOptionsDialog
 from angrmanagement.ui.dialogs.function import FunctionDialog
+from angrmanagement.ui.views.view import FunctionView
 from angrmanagement.utils import locate_function
 from angrmanagement.utils.daemon_thread import start_daemon_thread
 
@@ -171,7 +172,7 @@ class Workspace:
 
         # Ask all current views to display this function
         current_view = self.view_manager.current_tab
-        if current_view is None or not current_view.FUNCTION_SPECIFIC_VIEW:
+        if current_view is None or not isinstance(current_view, FunctionView):
             # we don't have a current view or the current view does not have function-specific content. create a
             # disassembly view to display the selected function.
             disasm_view = self._get_or_create_view("dissasembly", DisassemblyView)

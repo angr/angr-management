@@ -8,7 +8,7 @@ from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
@@ -54,13 +54,13 @@ class CallTreeItem(QStandardItem):
         self.expandable: bool = True
 
 
-class CallExplorerView(BaseView):
+class CallExplorerView(InstanceView):
     """
     Call Explorer view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("call_explorer", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("call_explorer", workspace, default_docking_position, instance)
 
         self._last_updated_func: Optional[Union[int, Function]] = None
         self._inhibit_update: bool = False

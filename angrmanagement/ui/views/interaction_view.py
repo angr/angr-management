@@ -7,7 +7,7 @@ from typing import Optional
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QInputDialog, QLineEdit
 
-from .view import BaseView
+from .view import InstanceView
 
 try:
     import nclib
@@ -67,9 +67,9 @@ class InteractionState(enum.Enum):
     VIEWING = 4
 
 
-class InteractionView(BaseView):
-    def __init__(self, workspace, instance, *args, **kwargs):
-        super().__init__("interaction", workspace, instance, *args, **kwargs)
+class InteractionView(InstanceView):
+    def __init__(self, workspace, instance):
+        super().__init__("interaction", workspace, "bottom", instance)
         self.base_caption = "Interaction"
         self.current_log = (
             []

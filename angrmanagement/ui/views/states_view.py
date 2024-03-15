@@ -3,12 +3,12 @@ from PySide6.QtWidgets import QHBoxLayout
 
 from angrmanagement.ui.widgets.qstate_table import QStateTable
 
-from .view import BaseView
+from .view import InstanceView
 
 
-class StatesView(BaseView):
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("states", workspace, instance, default_docking_position, *args, **kwargs)
+class StatesView(InstanceView):
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("states", workspace, default_docking_position, instance)
 
         self.base_caption = "States"
         self._state_table: QStateTable

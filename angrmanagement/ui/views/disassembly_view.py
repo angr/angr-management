@@ -1,3 +1,4 @@
+import functools
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING, Optional, Tuple, Union
@@ -41,7 +42,7 @@ from angrmanagement.ui.widgets.qblock_code import QVariableObj
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
 from angrmanagement.utils import locate_function
 
-from .view import SynchronizedView, ViewStatePublisherMixin
+from .view import SynchronizedFunctionView
 
 if TYPE_CHECKING:
     import PySide6
@@ -53,18 +54,16 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 
-class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
+class DisassemblyView(SynchronizedFunctionView):
     """
     Disassembly View
     """
 
-    FUNCTION_SPECIFIC_VIEW = True
-
     view_visibility_changed = Signal()
     disassembly_level_changed = Signal(DisassemblyLevel)
 
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__("disassembly", instance, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("disassembly", workspace, default_docking_position, instance)
 
         self.base_caption = "Disassembly"
         self._disassembly_level = DisassemblyLevel.MachineCode
@@ -84,7 +83,6 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.infodock = InfoDock(self)
         self._variable_recovery_flavor = "fast"
         self.variable_manager: Optional[VariableManager] = None
-        self._current_function = ObjectContainer(None, "The currently selected function")
 
         self._insn_menu: Optional[DisasmInsnContextMenu] = None
         self._label_menu: Optional[DisasmLabelContextMenu] = None
@@ -224,15 +222,11 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
 
     @property
     def current_function(self) -> ObjectContainer:
-        return self._current_function
+        return self.function
 
-    @property
-    def function(self) -> ObjectContainer:
-        return self._current_function
-
-    @function.setter
+    @SynchronizedFunctionView.function.setter
     def function(self, v):
-        if v is not self._current_function.am_obj:
+        if v is not self.function.am_obj:
             self.display_function(v)
 
     #
@@ -266,7 +260,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.instance.set_comment_callback = v
 
     def on_variable_recovered(self, func_addr: int):
-        if not self._current_function.am_none and self._current_function.addr == func_addr:
+        if not self.function.am_none and self.function.addr == func_addr:
             self.reload()
 
     #
@@ -613,8 +607,8 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if self.infodock.selected_insns:
             # display the currently selected instruction
             self._jump_to(next(iter(self.infodock.selected_insns)))
-        elif self._current_function.am_obj is not None:
-            self._flow_graph.show_instruction(self._current_function.addr)
+        elif self.function.am_obj is not None:
+            self._flow_graph.show_instruction(self.function.addr)
 
         self._flow_graph.setFocus()
         self.view_visibility_changed.emit()
@@ -631,14 +625,16 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if self.infodock.selected_insns:
             # display the currently selected instruction
             self._linear_viewer.show_instruction(next(iter(self.infodock.selected_insns)))
-        elif self._current_function.am_obj is not None:
-            self._linear_viewer.show_instruction(self._current_function.addr)
+        elif self.function.am_obj is not None:
+            self._linear_viewer.show_instruction(self.function.addr)
 
         self._linear_viewer.setFocus()
         self.view_visibility_changed.emit()
         self._linear_viewer.refresh()
 
     def display_function(self, function):
+        if function is None:
+            return
         if function.addr not in self.instance.kb.variables.function_managers:
             # variable information is not available
             if self.instance.variable_recovery_job is not None:
@@ -648,13 +644,13 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self._display_function(function)
 
     def decompile_current_function(self):
-        if self._current_function.am_obj is not None:
+        if self.function.am_obj is not None:
             try:
                 curr_ins = next(iter(self.infodock.selected_insns))
             except StopIteration:
                 curr_ins = None
 
-            self.workspace.decompile_function(self._current_function.am_obj, curr_ins=curr_ins)
+            self.workspace.decompile_function(self.function.am_obj, curr_ins=curr_ins)
 
     def toggle_show_minimap(self, show_minimap: Optional[bool] = None) -> None:
         """
@@ -876,6 +872,7 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
+        self.function.am_subscribe(functools.partial(self.display_function, self.function.am_obj))
 
     def _on_breakpoints_updated(self, **kwargs):  # pylint:disable=unused-argument
         self.refresh()
@@ -906,8 +903,8 @@ class DisassemblyView(ViewStatePublisherMixin, SynchronizedView):
         if the_func is not None:
             self.set_synchronized_cursor_address(the_func.addr)
 
-        self._current_function.am_obj = the_func
-        self._current_function.am_event()
+        self.function.am_obj = the_func
+        self.function.am_event()
 
         # set status bar
         self._statusbar.function = the_func
