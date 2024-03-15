@@ -60,6 +60,8 @@ class ObjectContainer(EventSentinel):
 
     @am_obj.setter
     def am_obj(self, v):
+        if v is self:
+            raise ValueError("Cannot set am_obj to self")
         if type(self._am_obj) is ObjectContainer:
             self._am_obj.am_unsubscribe(self.__forwarder)
         if type(v) is ObjectContainer:
