@@ -178,9 +178,12 @@ class SynchronizedView(BaseView):
     Base class for views which can be synchronized.
     """
 
-    def __init__(self):
-        self._processing_synchronized_cursor_update: bool = False
-        self.sync_state: SynchronizedViewState = SynchronizedViewState()
+    _processing_synchronized_cursor_update: bool
+    sync_state: SynchronizedViewState
+
+    def __init__(self):  # pylint: disable=super-init-not-called
+        self._processing_synchronized_cursor_update = False
+        self.sync_state = SynchronizedViewState()
         self.sync_state.register_view(self)
 
     def desync(self):
