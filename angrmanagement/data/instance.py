@@ -173,7 +173,7 @@ class Instance:
     # Public methods
     #
 
-    def register_container(self, name, default_val_func, ty, description, **kwargs):
+    def register_container(self, name, default_val_func, ty, description, logging_permitted: bool = True):
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:
@@ -181,9 +181,11 @@ class Instance:
 
         else:
             self._container_defaults[name] = (default_val_func, ty)
-            self.extra_containers[name] = ObjectContainer(default_val_func(), description, **kwargs)
+            self.extra_containers[name] = ObjectContainer(
+                default_val_func(), description, logging_permitted=logging_permitted
+            )
 
-    def initialize(self, initialized=False, **kwargs):  # pylint:disable=unused-argument
+    def initialize(self, initialized=False):
         if self.project.am_none:
             return
 
@@ -357,11 +359,10 @@ class Instance:
     def _set_status(self, status_text):
         GlobalInfo.main_window.status = status_text
 
-    def _reset_containers(self, **kwargs):
-        # pylint:disable=consider-using-dict-items
+    def _reset_containers(self):
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
-            self.extra_containers[name].am_event(**kwargs)
+            self.extra_containers[name].am_event()
 
         for dbg in list(self.debugger_list_mgr.debugger_list):
             self.debugger_list_mgr.remove_debugger(dbg)

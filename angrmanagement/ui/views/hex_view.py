@@ -240,8 +240,8 @@ class HexGraphicsObject(QGraphicsObject):
     cursor_changed = Signal()
     viewport_changed = Signal()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__()
         self.setFlag(QGraphicsItem.ItemUsesExtendedStyleOption, True)  # Give me more specific paint update rect info
         self.setFlag(QGraphicsItem.ItemIsFocusable, True)  # Give me focus/key events
         self.setFlag(QGraphicsItem.ItemClipsToShape, True)
@@ -1099,8 +1099,8 @@ class HexGraphicsView(QAbstractScrollArea):
 
     cursor_changed = Signal()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
         self._processing_scroll_event: bool = False
 
         self._view: QGraphicsView = HexGraphicsSubView(parent=self)

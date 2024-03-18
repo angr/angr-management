@@ -74,8 +74,8 @@ class QTraceTableWidget(QTableView):
     Trace table widget.
     """
 
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, instance, parent=None):
+        super().__init__(parent=parent)
         self.instance = instance
 
         hheader = self.horizontalHeader()
@@ -135,7 +135,7 @@ class TracesView(InstanceView):
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(200, 200)
 
     def _init_widgets(self):

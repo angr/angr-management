@@ -30,7 +30,7 @@ class LogView(InstanceView):
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint: disable=unused-argument
+    def minimumSizeHint():
         return QSize(0, 50)
 
     def _init_widgets(self):

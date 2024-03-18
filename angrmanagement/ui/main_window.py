@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
         dlg.setModal(True)
         dlg.show()
 
-    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(1200, 800)
 
     #

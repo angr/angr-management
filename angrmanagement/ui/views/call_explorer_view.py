@@ -81,7 +81,7 @@ class CallExplorerView(InstanceView):
         self._on_debugger_state_updated()
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(200, 200)
 
     def _init_widgets(self):

@@ -303,7 +303,7 @@ class QSimulationManagers(QFrame):
 
         self._simgr_viewer.select_state(self.state.am_obj)
 
-    def _watch_simgrs(self, **kwargs):  # pylint: disable=unused-argument
+    def _watch_simgrs(self):
         self.refresh()
 
     def _on_explore_addr_changed(self, item: QTreeWidgetItem):  # pylint: disable=unused-argument

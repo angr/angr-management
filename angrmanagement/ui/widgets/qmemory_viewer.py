@@ -144,7 +144,7 @@ class QMemoryViewer(QFrame):
     # Overridden methods
     #
 
-    def sizeHint(self, *args, **kwargs):
+    def sizeHint(self):
         return QSize(100, 100)
 
     #

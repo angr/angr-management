@@ -39,8 +39,8 @@ class CustomToolBar(QFrame):
     Widget to contain the tool bar handle and main widget.
     """
 
-    def __init__(self, widget, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, widget):
+        super().__init__()
         self.setWidget(widget)
 
     def setWidget(self, widget):
@@ -61,8 +61,8 @@ class ToolBarDockWidget(QDockWidget):
     Custom tool bar using QDockWidget for better resize handling than QToolBar for large widgets.
     """
 
-    def __init__(self, widget, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, widget, title, parent):
+        super().__init__(title, parent)
         self.toolbar = CustomToolBar(widget)
         self.setWidget(self.toolbar)
         self.setTitleBarWidget(self.toolbar.handle)

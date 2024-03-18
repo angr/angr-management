@@ -143,7 +143,7 @@ class QRegisterViewer(QFrame):
     # Overridden methods
     #
 
-    def sizeHint(self, *args, **kwargs):
+    def sizeHint(self):
         return QSize(100, 100)
 
     #
@@ -214,7 +214,7 @@ class QRegisterViewer(QFrame):
         base_layout.addWidget(area)
         self.setLayout(base_layout)
 
-    def _watch_state(self, **kwargs):
+    def _watch_state(self):
         if not self._registers:
             self._init_widgets()
 

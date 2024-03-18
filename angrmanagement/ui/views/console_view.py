@@ -69,7 +69,7 @@ class ConsoleView(InstanceView):
         self._ipython_widget.input_buffer = text
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint: disable=unused-argument
+    def minimumSizeHint():
         return QSize(0, 50)
 
     def _init_widgets(self):

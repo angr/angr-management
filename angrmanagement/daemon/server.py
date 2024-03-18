@@ -157,13 +157,8 @@ def run_daemon_process():
     subprocess.Popen(apppath + ["-D"], stdin=None, stdout=None, stderr=None, close_fds=True, **flags)
 
 
-def daemon_conn(port=DEFAULT_PORT, service=None):
-    kwargs = {}
-    if service is not None:
-        kwargs["service"] = service
-    kwargs["config"] = {"allow_public_attrs": True}
-    conn = rpyc.connect("localhost", port, **kwargs)
-    return conn
+def daemon_conn(port=DEFAULT_PORT, service=rpyc.VoidService):
+    return rpyc.connect("localhost", port, service=service, config={"allow_public_attrs": True})
 
 
 def register_server_exposed_method(method_name: str, method: Callable):

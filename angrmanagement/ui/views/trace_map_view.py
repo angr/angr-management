@@ -19,7 +19,7 @@ class TraceMapView(InstanceView):
         self._init_widgets()
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(25, 25)
 
     @staticmethod

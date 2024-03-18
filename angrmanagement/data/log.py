@@ -57,8 +57,8 @@ class LogDumpHandler(logging.Handler):
     Dumps log messages.
     """
 
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, instance, level=logging.NOTSET):
+        super().__init__(level=level)
         self.instance = instance
 
     def emit(self, record: logging.LogRecord) -> None:
@@ -84,7 +84,7 @@ def install_queue_handler(queue: Queue):
         logging.root.handlers.insert(0, AMQueueHandler(queue))
 
 
-def initialize(*args, **kwargs) -> None:
+def initialize(level=logging.NOTSET) -> None:
     """
     Installs a LogDumpHandler and sets up forwarding from other processes to this one
     """
@@ -93,6 +93,6 @@ def initialize(*args, **kwargs) -> None:
     Initializer.get().register(install_queue_handler, queue)
     install_queue_handler(queue)
     # Install a listener which forwards log records to the LogDumpHandler
-    listener = QueueListener(queue, LogDumpHandler(*args, **kwargs))
+    listener = QueueListener(queue, LogDumpHandler(level))
     atexit.register(listener.stop)
     listener.start()

@@ -23,7 +23,7 @@ class QVEXTempsViewer(QFrame):
     # Overridden methods
     #
 
-    def sizeHint(self, *args, **kwargs):
+    def sizeHint(self):
         return QSize(100, 100)
 
     #
@@ -82,5 +82,5 @@ class QVEXTempsViewer(QFrame):
 
         self._area.setWidget(container)
 
-    def _watch_state(self, **kwargs):
+    def _watch_state(self):
         self._load_tmps()

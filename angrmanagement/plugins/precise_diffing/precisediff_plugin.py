@@ -150,8 +150,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.current_revised_view.display_function(func)
         self.current_revised_view.jump_to(func.addr)
 
-    # pylint:disable=unused-argument
-    def syncronize_with_original_disassembly_view(self, *args, **kwargs):
+    def syncronize_with_original_disassembly_view(self):
         og_view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
         if not og_view:
             return
