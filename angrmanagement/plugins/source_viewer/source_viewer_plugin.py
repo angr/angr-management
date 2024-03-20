@@ -13,7 +13,7 @@ from qtpy import QtCore, QtGui
 from sortedcontainers import SortedDict
 
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.views import BaseView
+from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
@@ -212,7 +212,7 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
             self.tabs[fn] = editor
 
 
-class SourceViewer(BaseView):
+class SourceViewer(InstanceView):
     """
     Main class of the Source Viewer Plugin
     """
@@ -221,8 +221,8 @@ class SourceViewer(BaseView):
 
     main: Optional[SourceCodeViewerTabWidget] = None
 
-    def __init__(self, workspace: "Workspace", *args, **kwargs):
-        super().__init__("SourceViewer", workspace, *args, **kwargs)
+    def __init__(self, workspace: "Workspace"):
+        super().__init__("SourceViewer", workspace, "center", workspace.main_instance)
         self.base_caption = "Source Viewer"
         self.workspace = workspace
         self.instance = workspace.main_instance
@@ -282,6 +282,6 @@ class SourceViewerPlugin(BasePlugin):
 
     def __init__(self, workspace):
         super().__init__(workspace)
-        self.source_viewer = SourceViewer(workspace, "center")
+        self.source_viewer = SourceViewer(workspace)
         workspace.default_tabs += [self.source_viewer]
         workspace.add_view(self.source_viewer)

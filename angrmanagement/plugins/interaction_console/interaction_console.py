@@ -6,20 +6,20 @@ from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QPushButton
 from qtterm import TerminalWidget
 
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.views import BaseView
 from angrmanagement.ui.views.interaction_view import (
     PlainTextProtocol,
     SavedInteraction,
 )
+from angrmanagement.ui.views.view import InstanceView
 
 
-class ConsoleView(BaseView):
+class ConsoleView(InstanceView):
     """
     ConsoleView
     """
 
-    def __init__(self, workspace, *args, **kwargs):
-        super().__init__("interaction console", workspace, *args, **kwargs)
+    def __init__(self, workspace):
+        super().__init__("interaction console", workspace, "center", workspace.main_instance)
 
         self.base_caption = "Interaction Console"
         self.workspace = workspace
@@ -137,7 +137,7 @@ class InteractionConsole(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.console_view = ConsoleView(self.workspace, "center")
+        self.console_view = ConsoleView(self.workspace)
         self.workspace.default_tabs += [self.console_view]
         self.workspace.add_view(self.console_view)
 

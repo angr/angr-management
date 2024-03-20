@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from angrmanagement.ui.views.view import BaseView
+from angrmanagement.ui.views.view import InstanceView
 
 from .constants import CONSTANTS_BY_NAME
 from .qsearch_table import QSearchTable
@@ -23,14 +23,14 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
 
-class SearchView(BaseView):
+class SearchView(InstanceView):
     """
     Container view for the QSearchTable Object.
     Has handlers for switching between search types and executing the search.
     """
 
     def __init__(self, plugin, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("search", workspace, instance, default_docking_position, *args, **kwargs)
+        super().__init__("search", workspace, default_docking_position, instance, *args, **kwargs)
 
         self.base_caption = "Search"
         self.plugin = plugin
