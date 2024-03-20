@@ -92,11 +92,7 @@ def _apply_trace_offset(addr, mapping, project_baddr, runtime_baddr):
         if last_obj_idx is None or last_obj_idx >= len(mapping):
             idx, obj = _find_obj_in_mapping(addr, mapping)
             last_obj_idx = idx
-        elif addr < mapping[last_obj_idx].base_addr:
-            # find again
-            idx, obj = _find_obj_in_mapping(addr, mapping)
-            last_obj_idx = idx
-        elif addr >= mapping[last_obj_idx + 1].base_addr:
+        elif addr < mapping[last_obj_idx].base_addr or addr >= mapping[last_obj_idx + 1].base_addr:
             # find again
             idx, obj = _find_obj_in_mapping(addr, mapping)
             last_obj_idx = idx

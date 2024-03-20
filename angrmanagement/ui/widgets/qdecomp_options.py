@@ -33,13 +33,7 @@ class QDecompilationOption(QTreeWidgetItem):
         # optional and may not exist
         self._combo_box = None
 
-        if self.type == OptionType.OPTIMIZATION_PASS:
-            self.setText(0, option.NAME)
-            self.setToolTip(0, option.DESCRIPTION)
-        elif self.type == OptionType.OPTION:
-            self.setText(0, option.NAME)
-            self.setToolTip(0, option.DESCRIPTION)
-        elif self.type == OptionType.PEEPHOLE_OPTIMIZATION:
+        if self.type in (OptionType.OPTIMIZATION_PASS, OptionType.OPTION, OptionType.PEEPHOLE_OPTIMIZATION):
             self.setText(0, option.NAME)
             self.setToolTip(0, option.DESCRIPTION)
         else:
@@ -163,14 +157,14 @@ class QDecompilationOptions(QWidget):
         if self._instance is None or self._instance.project.am_none:
             return []
         return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
-            x for x, de, in self._code_view.workspace.plugins.optimization_passes() if de
+            x for x, de in self._code_view.workspace.plugins.optimization_passes() if de
         ]
 
     def get_all_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
         return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
-            x for x, _, in self._code_view.workspace.plugins.optimization_passes()
+            x for x, _ in self._code_view.workspace.plugins.optimization_passes()
         ]
 
     def get_default_peephole_opts(self):  # pylint: disable=no-self-use

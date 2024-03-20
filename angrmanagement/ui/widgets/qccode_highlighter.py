@@ -75,9 +75,13 @@ def _format_node(obj):
     if isinstance(obj, SimType):
         return FORMATS["type"]
     elif isinstance(obj, CFunctionCall):
-        if obj.callee_func is not None:
-            if obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall:
-                return FORMATS["library_function"]
+        if (
+            obj.callee_func is not None
+            and obj.callee_func.is_simprocedure
+            or obj.callee_func.is_plt
+            or obj.callee_func.is_syscall
+        ):
+            return FORMATS["library_function"]
         return FORMATS["function"]
     elif isinstance(obj, CFunction):
         return FORMATS["function"]

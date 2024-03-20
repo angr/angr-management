@@ -125,21 +125,28 @@ class TraceViewer(BasePlugin):
     def handle_click_block(self, qblock, event):
         btn = event.button()
 
-        if QApplication.keyboardModifiers() == Qt.ControlModifier and btn == Qt.RightButton:
-            if self.multi_trace is not None and self.multi_trace.am_obj is not None:
-                the_trace = self.multi_trace.get_any_trace(qblock.addr)
-                if the_trace is not None:
-                    self.trace.am_obj = TraceStatistics(self.workspace, the_trace, self.multi_trace.base_addr)
-                    self.trace.am_event()
-                    return True
+        if (
+            QApplication.keyboardModifiers() == Qt.ControlModifier
+            and btn == Qt.RightButton
+            and self.multi_trace is not None
+            and self.multi_trace.am_obj is not None
+        ):
+            the_trace = self.multi_trace.get_any_trace(qblock.addr)
+            if the_trace is not None:
+                self.trace.am_obj = TraceStatistics(self.workspace, the_trace, self.multi_trace.base_addr)
+                self.trace.am_event()
+                return True
 
         return False
 
     def draw_insn(self, qinsn, painter):
         # legend
-        if not self.multi_trace.am_none and isinstance(self.multi_trace.am_obj, MultiTrace):
-            if not self.multi_trace.is_active_tab:
-                return  # skip
+        if (
+            not self.multi_trace.am_none
+            and isinstance(self.multi_trace.am_obj, MultiTrace)
+            and not self.multi_trace.is_active_tab
+        ):
+            return  # skip
         strata = self._gen_strata(qinsn.insn.addr)
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING

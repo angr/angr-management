@@ -34,8 +34,4 @@ select =  [
 ]
 
 ignore = [
-    # Ignore SIM checks that don't yet support autofixing
-    "SIM102",
-    "SIM114",
-    "SIM115",
 ]

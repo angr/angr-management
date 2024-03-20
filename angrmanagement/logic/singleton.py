@@ -65,7 +65,7 @@ class SingleInstance:
                 print(e.errno)
                 raise
         else:  # non Windows
-            self.fp = open(self.lockfile, "w")
+            self.fp = open(self.lockfile, "w")  # noqa: SIM115
             self.fp.flush()
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)

@@ -213,9 +213,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
         # func name
         self._func_name_item = QGraphicsSimpleTextItem(self._func_name, self)
-        if self._node.callee.is_simprocedure:
-            pen_color = self.CALL_NODE_TEXT_COLOR_SIMPROC
-        elif self._node.callee.is_plt:
+        if self._node.callee.is_simprocedure or self._node.callee.is_plt:
             pen_color = self.CALL_NODE_TEXT_COLOR_SIMPROC
         else:
             pen_color = self.CALL_NODE_TEXT_COLOR

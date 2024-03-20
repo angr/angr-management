@@ -140,16 +140,7 @@ class LoadBinary(QDialog):
             dep_list.addItem(dep_item)
 
         if partial_ld.main_object is not None:
-            if isinstance(partial_ld.main_object, cle.MetaELF):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-            elif isinstance(partial_ld.main_object, cle.PE):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-            elif isinstance(partial_ld.main_object, cle.MachO):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-            elif isinstance(partial_ld.main_object, cle.CGC):
+            if isinstance(partial_ld.main_object, (cle.MetaELF, cle.PE, cle.MachO, cle.CGC)):
                 self._base_addr = partial_ld.main_object.mapped_base
                 self._entry_addr = partial_ld.main_object.entry
             else:
@@ -422,9 +413,7 @@ class LoadBinary(QDialog):
                 if self.arch is not None:
                     if self.arch.name == arch.id:
                         the_arch = arch
-                    elif self.arch.name.lower() in arch.id.lower():
-                        recommended_arches.append(arch)
-                    elif self.arch.name == unify_arch_name(arch.id):
+                    elif self.arch.name.lower() in arch.id.lower() or self.arch.name == unify_arch_name(arch.id):
                         recommended_arches.append(arch)
                     else:
                         other_arches.append(arch)
