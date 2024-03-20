@@ -19,7 +19,7 @@ class ConsoleView(InstanceView):
     """
 
     def __init__(self, workspace):
-        super().__init__("interaction console", workspace, "bottom", workspace.main_instance)
+        super().__init__("interaction console", workspace, "center", workspace.main_instance)
 
         self.base_caption = "Interaction Console"
         self.workspace = workspace
@@ -137,7 +137,7 @@ class InteractionConsole(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.console_view = ConsoleView(self.workspace, "center")
+        self.console_view = ConsoleView(self.workspace)
         self.workspace.default_tabs += [self.console_view]
         self.workspace.add_view(self.console_view)
 
