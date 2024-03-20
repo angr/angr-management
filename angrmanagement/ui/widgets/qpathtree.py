@@ -110,8 +110,7 @@ class QPathTree(QFrame):
                         yield (parent_history, bot_history)
                         work.add(parent_history)
                         break
-                    else:
-                        working_history = parent_history
+                    working_history = parent_history
                 except KeyError:
                     # the parent history is not found in the path mapping
                     log.error("Parent history %s is not found", parent_history)

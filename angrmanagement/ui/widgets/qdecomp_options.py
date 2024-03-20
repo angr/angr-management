@@ -33,11 +33,7 @@ class QDecompilationOption(QTreeWidgetItem):
         # optional and may not exist
         self._combo_box = None
 
-        if (
-            self.type == OptionType.OPTIMIZATION_PASS
-            or self.type == OptionType.OPTION
-            or self.type == OptionType.PEEPHOLE_OPTIMIZATION
-        ):
+        if self.type in (OptionType.OPTIMIZATION_PASS, OptionType.OPTION, OptionType.PEEPHOLE_OPTIMIZATION):
             self.setText(0, option.NAME)
             self.setToolTip(0, option.DESCRIPTION)
         else:
