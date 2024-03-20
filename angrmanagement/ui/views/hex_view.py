@@ -38,7 +38,7 @@ from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.utils import is_printable
 
-from .view import SynchronizedView, ViewStatePublisherMixin
+from .view import SynchronizedInstanceView
 
 log = logging.getLogger(__name__)
 
@@ -1312,15 +1312,15 @@ class HexGraphicsView(QAbstractScrollArea):
         super().keyPressEvent(event)
 
 
-class HexView(ViewStatePublisherMixin, SynchronizedView):
+class HexView(SynchronizedInstanceView):
     """
     View and edit memory/object code in classic hex editor format.
     """
 
     _widgets_initialized: bool = False
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("hex", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("hex", workspace, default_docking_position, instance)
         self.base_caption: str = "Hex"
         self.smart_highlighting_enabled: bool = True
         self._clipboard = None

@@ -2,16 +2,16 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from angrmanagement.ui.widgets.qfunction_table import QFunctionTable
 
-from .view import BaseView
+from .view import InstanceView
 
 
-class FunctionsView(BaseView):
+class FunctionsView(InstanceView):
     """
     View displaying functions in the project.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("functions", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("functions", workspace, default_docking_position, instance)
 
         self.base_caption = "Functions"
         self._function_table: QFunctionTable

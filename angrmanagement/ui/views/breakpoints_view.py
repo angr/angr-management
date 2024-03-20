@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView,
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.ui.dialogs import BreakpointDialog
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     import PySide6
@@ -143,13 +143,13 @@ class QBreakpointTableWidget(QTableView):
             self.breakpoint_mgr.remove_breakpoint(b)
 
 
-class BreakpointsView(BaseView):
+class BreakpointsView(InstanceView):
     """
     Breakpoints table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("breakpoints", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("breakpoints", workspace, default_docking_position, instance)
         self.base_caption = "Breakpoints"
         self._tbl_widget: Optional[QBreakpointTableWidget] = None
         self._init_widgets()

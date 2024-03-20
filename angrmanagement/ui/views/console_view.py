@@ -4,18 +4,18 @@ from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 from traitlets.config.configurable import MultipleInstanceError
 
-from .view import BaseView
+from .view import InstanceView
 
 _l = logging.getLogger(name=__name__)
 
 
-class ConsoleView(BaseView):
+class ConsoleView(InstanceView):
     """
     Console view providing IPython interactive session.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("console", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("console", workspace, default_docking_position, instance)
 
         self.base_caption = "Console"
         self._ipython_widget = None

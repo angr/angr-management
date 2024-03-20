@@ -6,7 +6,7 @@ import PySide6QtAds as QtAds
 from bidict import bidict
 from PySide6.QtWidgets import QSizePolicy
 
-from .views.view import ViewStatePublisherMixin
+from angrmanagement.ui.views.view import InstanceView
 
 if TYPE_CHECKING:
     from .views.view import BaseView
@@ -116,7 +116,7 @@ class ViewManager:
         view = self.view_to_dock.inverse.get(new, None)
         if view:
             self._promote_view(view)
-        if isinstance(view, ViewStatePublisherMixin):
+        if isinstance(view, InstanceView):
             view.on_focused()
 
     def _on_dock_widget_closed(self, dock: QtAds.CDockWidget) -> None:

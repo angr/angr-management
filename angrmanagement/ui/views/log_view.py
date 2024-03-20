@@ -1,22 +1,18 @@
-import logging
-
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
 from angrmanagement.ui.widgets.qlog_widget import QLogWidget
 
-from .view import BaseView
-
-_l = logging.getLogger(name=__name__)
+from .view import InstanceView
 
 
-class LogView(BaseView):
+class LogView(InstanceView):
     """
     Log view displays logging output.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("log", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("log", workspace, default_docking_position, instance)
 
         self.base_caption = "Log"
         self._log_widget: QLogWidget = None

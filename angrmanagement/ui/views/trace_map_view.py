@@ -3,17 +3,17 @@ from typing import Optional
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QVBoxLayout
 
-from angrmanagement.ui.views.view import BaseView
+from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets import QTraceMap
 
 
-class TraceMapView(BaseView):
+class TraceMapView(InstanceView):
     """
     View container for QTraceMap.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("tracemap", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("tracemap", workspace, default_docking_position, instance)
         self.base_caption: str = "Trace Map"
         self.inner_widget: Optional[QTraceMap] = None
         self._init_widgets()

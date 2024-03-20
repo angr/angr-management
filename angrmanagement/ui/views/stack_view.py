@@ -9,7 +9,7 @@ from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.logic.debugger import DebuggerWatcher
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     import angr
@@ -154,13 +154,13 @@ class QStackTableWidget(QTableView):
         return mnu
 
 
-class StackView(BaseView):
+class StackView(InstanceView):
     """
     Stack table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("stack", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("stack", workspace, default_docking_position, instance)
 
         self.base_caption = "Stack"
         self._tbl_widget: Optional[QStackTableWidget] = None

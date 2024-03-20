@@ -30,21 +30,19 @@ from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
 from .disassembly_view import DisassemblyView
-from .view import BaseView
+from .view import FunctionView
 
 log = logging.getLogger(__name__)
 
 
-class CodeView(BaseView):
+class CodeView(FunctionView):
     """
     A view to display pseudocode or source code. You should control this view by manipulating and observing its four
     ObjectContainers: .addr, .current_node, .codegen, and .function.
     """
 
-    FUNCTION_SPECIFIC_VIEW = True
-
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("pseudocode", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("pseudocode", workspace, default_docking_position, instance)
 
         self.base_caption = "Pseudocode"
 
@@ -93,16 +91,6 @@ class CodeView(BaseView):
     @property
     def document(self):
         return self._doc
-
-    @property
-    def function(self) -> ObjectContainer:
-        return self._function
-
-    @function.setter
-    def function(self, v):
-        if v is not self._function.am_obj:
-            self._function.am_obj = v
-            self._function.am_event(focus=True)
 
     #
     # Public methods

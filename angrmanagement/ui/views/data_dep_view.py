@@ -1,4 +1,3 @@
-import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
 from angr.analyses.data_dep import MemDepNode, RegDepNode, TmpDepNode
@@ -13,27 +12,24 @@ from angrmanagement.ui.dialogs.data_dep_graph_search import QDataDepGraphSearch
 from angrmanagement.ui.widgets.qdatadep_graph import QDataDepGraph
 from angrmanagement.ui.widgets.qdatadepgraph_block import QDataDepGraphBlock
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     from angr import SimState
     from angr.analyses import DataDependencyGraphAnalysis
     from angr.analyses.data_dep import BaseDepNode
     from capstone import CsInsn
-_l = logging.getLogger(__name__)
 
 
-class DataDepView(BaseView):
+class DataDepView(InstanceView):
     """Workspace view used to display a data dependency graph on the screen"""
 
     @property
     def function(self):
         raise NotImplementedError("Does not apply!")
 
-    FUNCTION_SPECIFIC_VIEW = False
-
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("data_dependency", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("data_dependency", workspace, default_docking_position, instance)
 
         self.base_caption = "Data Dependency"
 

@@ -9,20 +9,20 @@ from PySide6.QtWidgets import QHBoxLayout
 from angrmanagement.ui.widgets.qdep_graph import QDependencyGraph
 from angrmanagement.ui.widgets.qdepgraph_block import QDepGraphBlock
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.key_definitions.atoms import Atom
     from angr.knowledge_plugins.key_definitions.definition import Definition
 
 
-class DependencyView(BaseView):
+class DependencyView(InstanceView):
     """
     Creates view for dependency analysis.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("dependencies", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace, instance, default_docking_position):
+        super().__init__("dependencies", workspace, default_docking_position, instance)
 
         self.base_caption = "Dependencies"
 

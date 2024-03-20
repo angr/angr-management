@@ -6,12 +6,12 @@ from angrmanagement.ui.widgets.qpathtree import QPathTree
 from angrmanagement.ui.widgets.qsimulation_managers import QSimulationManagers
 from angrmanagement.ui.widgets.state_inspector import StateInspector
 
-from .view import BaseView
+from .view import InstanceView
 
 
-class SymexecView(BaseView):
-    def __init__(self, workspace, instance, *args, **kwargs):
-        super().__init__("symexec", workspace, instance, *args, **kwargs)
+class SymexecView(InstanceView):
+    def __init__(self, workspace, instance):
+        super().__init__("symexec", workspace, "right", instance)
 
         self.base_caption = "Symbolic Execution"
 
