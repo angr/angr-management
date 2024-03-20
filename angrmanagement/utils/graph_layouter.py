@@ -662,9 +662,7 @@ class GraphLayouter:
 
         row_max_ids = {}
         for col, row in self._grid_max_horizontal_id:
-            if row not in row_max_ids:
-                row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
-            elif self._grid_max_horizontal_id[(col, row)] > row_max_ids[row]:
+            if row not in row_max_ids or self._grid_max_horizontal_id[(col, row)] > row_max_ids[row]:
                 row_max_ids[row] = self._grid_max_horizontal_id[(col, row)]
 
         y = 0

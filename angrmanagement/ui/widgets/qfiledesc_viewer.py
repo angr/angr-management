@@ -50,7 +50,8 @@ class QFileDescriptorViewer(QFrame):
         filename, folder = QFileDialog.getSaveFileName(self, "Save content to ...", "", "Any file (*);")
         if filename and folder:
             save_to = os.path.join(folder, filename)
-            open(save_to, "wb").write(self._state.posix.dumps(self._current_fd))
+            with open(save_to, "wb") as f:
+                f.write(self._state.posix.dumps(self._current_fd))
 
     def _init_widgets(self):
         layout = QVBoxLayout()

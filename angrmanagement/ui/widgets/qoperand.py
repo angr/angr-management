@@ -454,9 +454,10 @@ class QOperand(QCachedGraphicsItem):
                 # this is the source operand
                 # which variable is read here?
                 for var, offset in variable_and_offsets:
-                    if arch.registers[reg_name][0] == var.reg:
-                        if self._variable_has_access(var, self.insn.addr, "read"):
-                            return var, offset
+                    if arch.registers[reg_name][0] == var.reg and self._variable_has_access(
+                        var, self.insn.addr, "read"
+                    ):
+                        return var, offset
 
                 log.debug(
                     "Cannot find any source variable for operand %d at instruction %#x.",
@@ -508,8 +509,11 @@ class QOperand(QCachedGraphicsItem):
         if highlight_mode == OperandHighlightMode.SAME_TEXT or self.variable is None:
             # when there is no related variable, we highlight as long as they have the same text
             return other.text == self.text
-        elif highlight_mode == OperandHighlightMode.SAME_IDENT:
-            if self.variable is not None and other.variable_ident is not None:
-                return self.func_addr == other.func_addr and self.variable.ident == other.variable_ident
+        elif (
+            highlight_mode == OperandHighlightMode.SAME_IDENT
+            and self.variable is not None
+            and other.variable_ident is not None
+        ):
+            return self.func_addr == other.func_addr and self.variable.ident == other.variable_ident
 
         return False

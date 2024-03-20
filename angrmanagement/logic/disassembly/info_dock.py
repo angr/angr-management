@@ -259,12 +259,11 @@ class InfoDock(QObject):
             self.selected_variables.am_event()
 
     def toggle_variable_selection(self, unified_variable: "SimVariable", unique: bool = True):
-        if len(self.selected_variables) > 1:
+        if len(self.selected_variables) > 1 and unique:
             # multiple variables are selected
-            if unique:
-                # clear existing selections and select this one
-                self.select_variable(unified_variable, unique=True)
-                return True
+            # clear existing selections and select this one
+            self.select_variable(unified_variable, unique=True)
+            return True
 
         if unified_variable in self.selected_variables:
             self.unselect_variable(unified_variable)
@@ -330,9 +329,12 @@ class InfoDock(QObject):
         if self.highlight_mode == OperandHighlightMode.SAME_TEXT or selected.variable is None:
             # when there is no related variable, we highlight as long as they have the same text
             return operand.text == selected.text
-        elif self.highlight_mode == OperandHighlightMode.SAME_IDENT:
-            if selected.variable is not None and operand.variable is not None:
-                return selected.variable.ident == operand.variable.ident
+        elif (
+            self.highlight_mode == OperandHighlightMode.SAME_IDENT
+            and selected.variable is not None
+            and operand.variable is not None
+        ):
+            return selected.variable.ident == operand.variable.ident
 
         return False
 

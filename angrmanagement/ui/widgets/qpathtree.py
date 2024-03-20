@@ -73,11 +73,13 @@ class QPathTree(QFrame):
         seen = set()
         while len(work) > 0:
             path = work.pop()
-            # print(path.path_id)
-            if not hierarchy.history_contains(path.history) or len(hierarchy.history_successors(path.history)) == 0:
-                if path.path_id not in seen:
-                    yield path
-                    seen.add(path.path_id)
+            if (
+                not hierarchy.history_contains(path.history)
+                or len(hierarchy.history_successors(path.history)) == 0
+                and path.path_id not in seen
+            ):
+                yield path
+                seen.add(path.path_id)
             # get parents
             if hierarchy.history_contains(path.history):
                 parents = hierarchy.history_predecessors(path.history)

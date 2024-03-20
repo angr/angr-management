@@ -135,12 +135,11 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
                 start_point = QPointF(*from_)
                 end_point = QPointF(*to_)
                 # optimization: don't draw edges that are outside of the current scope
-                if (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y()) and (
-                    end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y()
-                ):
-                    continue
-                elif (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y()) and (
-                    end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y()
+                if (
+                    (start_point.x() > bottomright_point.x() or start_point.y() > bottomright_point.y())
+                    and (end_point.x() > bottomright_point.x() or end_point.y() > bottomright_point.y())
+                    or (start_point.x() < topleft_point.x() or start_point.y() < topleft_point.y())
+                    and (end_point.x() < topleft_point.x() or end_point.y() < topleft_point.y())
                 ):
                     continue
                 painter.drawPolyline((start_point, end_point))

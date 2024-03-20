@@ -21,10 +21,13 @@ class QCommentTextBox(QPlainTextEdit):
         return None
 
     def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Return and QApplication.keyboardModifiers() == Qt.ControlModifier:
-            if self._textconfirmed_callback is not None:
-                self._textconfirmed_callback()
-                return True
+        if (
+            event.key() == Qt.Key_Return
+            and QApplication.keyboardModifiers() == Qt.ControlModifier
+            and self._textconfirmed_callback is not None
+        ):
+            self._textconfirmed_callback()
+            return True
         return super().keyReleaseEvent(event)
 
 

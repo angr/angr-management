@@ -156,10 +156,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
         elif role == Qt.BackgroundColorRole:
             color = self.workspace.plugins.color_func(func)
-            if color is None:
+            if color is None and func.from_signature:
                 # default colors
-                if func.from_signature:
-                    color = self._config.function_table_signature_bg_color
+                color = self._config.function_table_signature_bg_color
             return color
 
         elif role == Qt.FontRole:
