@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
@@ -23,7 +25,7 @@ class BaseView(QFrame):
     def __init__(
         self,
         category: str,
-        workspace: "Workspace",
+        workspace: Workspace,
         default_docking_position: str,
     ) -> None:
         super().__init__()
@@ -60,7 +62,7 @@ class BaseView(QFrame):
         self.old_width = event.oldSize().width()
         self.old_height = event.oldSize().height()
 
-    def closeEvent(self, event: "PySide6.QtGui.QCloseEvent") -> None:
+    def closeEvent(self, event: PySide6.QtGui.QCloseEvent) -> None:
         self.workspace.view_manager.remove_view(self)
         event.accept()
 
@@ -84,9 +86,9 @@ class ViewState:
     A basic view state to be published through ViewStatePublisherMixin.
     """
 
-    cursors: List[int]
+    cursors: list[int]
 
-    def __init__(self, cursors: Optional[List[int]] = None):
+    def __init__(self, cursors: list[int] | None = None):
         self.cursors = cursors or []
 
 
@@ -95,12 +97,10 @@ class InstanceView(BaseView):
     Base class for views that are associated with an instance.
     """
 
-    instance: "Instance"
+    instance: Instance
     published_view_state: ViewState
 
-    def __init__(
-        self, category: str, workspace: "Workspace", default_docking_position: str, instance: "Instance"
-    ) -> None:
+    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         BaseView.__init__(self, category, workspace, default_docking_position)
         self.instance = instance
         self.published_view_state = ViewState()
@@ -122,18 +122,16 @@ class FunctionView(InstanceView):
     # TODO: function would ideally be provided in the constructor
     _function: ObjectContainer
 
-    def __init__(
-        self, category: str, workspace: "Workspace", default_docking_position: str, instance: "Instance"
-    ) -> None:
+    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         InstanceView.__init__(self, category, workspace, default_docking_position, instance)
         self._function = ObjectContainer(None, "Current function")
 
     @property
-    def function(self) -> Optional["angr.knowledge_plugins.Function"]:
+    def function(self) -> angr.knowledge_plugins.Function | None:
         return self._function
 
     @function.setter
-    def function(self, function: "angr.knowledge_plugins.Function") -> None:
+    def function(self, function: angr.knowledge_plugins.Function) -> None:
         self._function.am_obj = function
         self._function.am_event()
 
@@ -143,16 +141,16 @@ class SynchronizedViewState:
     Simple state tracking for synchronized views.
     """
 
-    views: Set["SynchronizedView"]
-    cursor_address: Optional[int]
-    highlight_regions: Dict["SynchronizedView", Sequence["SynchronizedHighlightRegion"]]
+    views: set[SynchronizedView]
+    cursor_address: int | None
+    highlight_regions: dict[SynchronizedView, Sequence[SynchronizedHighlightRegion]]
 
     def __init__(self) -> None:
         self.views = set()
         self.cursor_address = None
         self.highlight_regions = {}
 
-    def register_view(self, view: "SynchronizedView") -> None:
+    def register_view(self, view: SynchronizedView) -> None:
         """
         Register a synchronized view.
         """
@@ -160,7 +158,7 @@ class SynchronizedViewState:
         for v in self.views:
             v.on_synchronized_view_group_changed()
 
-    def unregister_view(self, view: "SynchronizedView") -> None:
+    def unregister_view(self, view: SynchronizedView) -> None:
         """
         Unregister a synchronized view.
         """
@@ -192,7 +190,7 @@ class SynchronizedView(BaseView):
         """
         self.sync_with_state_object()
 
-    def sync_with_state_object(self, state: Optional[SynchronizedViewState] = None):
+    def sync_with_state_object(self, state: SynchronizedViewState | None = None):
         """
         Synchronize with another view state.
         """
@@ -201,7 +199,7 @@ class SynchronizedView(BaseView):
         self.sync_state.register_view(self)
         self.sync_from_state()
 
-    def sync_with_view(self, view: "SynchronizedView"):
+    def sync_with_view(self, view: SynchronizedView):
         """
         Synchronize with another view.
         """
@@ -214,7 +212,7 @@ class SynchronizedView(BaseView):
         self.on_synchronized_cursor_address_changed()
         self.on_synchronized_highlight_regions_changed()
 
-    def set_synchronized_cursor_address(self, address: Optional[int]):
+    def set_synchronized_cursor_address(self, address: int | None):
         """
         Set synchronized cursor address.
         """
@@ -236,7 +234,7 @@ class SynchronizedView(BaseView):
         finally:
             self._processing_synchronized_cursor_update = False
 
-    def set_synchronized_highlight_regions(self, regions: Sequence["SynchronizedHighlightRegion"]):
+    def set_synchronized_highlight_regions(self, regions: Sequence[SynchronizedHighlightRegion]):
         """
         Set synchronized highlight regions for this view.
         """
@@ -255,7 +253,7 @@ class SynchronizedView(BaseView):
         Handle view being added to or removed from the view synchronization group.
         """
 
-    def closeEvent(self, event: "PySide6.QtGui.QCloseEvent"):
+    def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
         """
         View close event handler.
         """
@@ -291,9 +289,7 @@ class SynchronizedInstanceView(InstanceView, SynchronizedView):
     Base class for views that are associated with an instance and can be synchronized.
     """
 
-    def __init__(
-        self, category: str, workspace: "Workspace", default_docking_position: str, instance: "Instance"
-    ) -> None:
+    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         InstanceView.__init__(self, category, workspace, default_docking_position, instance)
         SynchronizedView.__init__(self)
 
@@ -303,8 +299,6 @@ class SynchronizedFunctionView(FunctionView, SynchronizedView):
     Base class for views that are function-specific and can be synchronized.
     """
 
-    def __init__(
-        self, category: str, workspace: "Workspace", default_docking_position: str, instance: "Instance"
-    ) -> None:
+    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         FunctionView.__init__(self, category, workspace, default_docking_position, instance)
         SynchronizedView.__init__(self)

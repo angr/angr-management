@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import os
 import string
 from functools import partial
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING
 
 import qtawesome as qta
 from angr.analyses.code_tagging import CodeTags
@@ -64,7 +66,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return 0
 
     @property
-    def func_list(self) -> List["Function"]:
+    def func_list(self) -> list[Function]:
         if self._func_list is not None:
             return self._func_list
         return self._raw_func_list
@@ -272,7 +274,7 @@ class QFunctionTableHeaderView(QHeaderView):
     The header for QFunctionTableView.
     """
 
-    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:  # pylint:disable=unused-argument
+    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
         menu = QMenu("Column Menu", self)
         for idx in range(self.model().columnCount()):
             column_text = self.model().headerData(idx, Qt.Orientation.Horizontal, Qt.DisplayRole)
@@ -337,7 +339,7 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
         self.doubleClicked.connect(self._on_function_selected)
 
-    def refresh(self, added_funcs: Optional[Set[int]] = None, removed_funcs: Optional[Set[int]] = None):
+    def refresh(self, added_funcs: set[int] | None = None, removed_funcs: set[int] | None = None):
         if added_funcs:
             new_funcs = []
             for addr in added_funcs:
@@ -395,7 +397,7 @@ class QFunctionTableView(QTableView):
         self._function_table.show_filter_box(prefix=text)
         return True
 
-    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent") -> None:  # pylint:disable=unused-argument
+    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
         rows = self.selectionModel().selectedRows()
         funcs = [self.instance.kb.functions[r.data()] for r in rows]
         self._context_menu.set(funcs).qmenu().popup(QCursor.pos())
@@ -439,7 +441,7 @@ class QFunctionTable(QWidget):
         self._toolbar: FunctionTableToolbar
         self._status_label: QLabel
 
-        self._last_known_func_addrs: Set[int] = set()
+        self._last_known_func_addrs: set[int] = set()
         self._function_count = None
 
         self._init_widgets(selection_callback)
@@ -449,7 +451,7 @@ class QFunctionTable(QWidget):
         return self._table_view.show_alignment_functions
 
     @property
-    def function_manager(self) -> Optional["FunctionManager"]:
+    def function_manager(self) -> FunctionManager | None:
         if self._table_view is not None:
             return self._table_view.function_manager
         return None
@@ -555,7 +557,7 @@ class QFunctionTable(QWidget):
 
         self.setLayout(layout)
 
-    def _updated_functions(self, function_manager: "FunctionManager") -> Tuple[Set[int], Set[int]]:
+    def _updated_functions(self, function_manager: FunctionManager) -> tuple[set[int], set[int]]:
         if len(self._last_known_func_addrs) == len(function_manager.function_addrs_set):
             return set(), set()
         new_func_addrs_set = function_manager.function_addrs_set.copy()

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import claripy
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel

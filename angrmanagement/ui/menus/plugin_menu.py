@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from angrmanagement.ui.icons import icon
 
 from .menu import Menu, MenuEntry

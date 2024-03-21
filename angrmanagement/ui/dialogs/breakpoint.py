@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -26,18 +28,18 @@ class BreakpointDialog(QDialog):
     TODO: decouple breakpoints from workspace.instance (main_instance)
     """
 
-    def __init__(self, breakpoint_: Breakpoint, workspace: "Workspace", parent=None):
+    def __init__(self, breakpoint_: Breakpoint, workspace: Workspace, parent=None):
         super().__init__(parent)
         self.breakpoint = breakpoint_
         self.workspace = workspace
         self.setWindowTitle("Edit Breakpoint")
         self.main_layout: QVBoxLayout = QVBoxLayout()
-        self._type_radio_group: Optional[QButtonGroup] = None
-        self._address_box: Optional[QAddressInput] = None
-        self._size_box: Optional[QLineEdit] = None
-        self._comment_box: Optional[QLineEdit] = None
-        self._status_label: Optional[QLabel] = None
-        self._ok_button: Optional[QPushButton] = None
+        self._type_radio_group: QButtonGroup | None = None
+        self._address_box: QAddressInput | None = None
+        self._size_box: QLineEdit | None = None
+        self._comment_box: QLineEdit | None = None
+        self._status_label: QLabel | None = None
+        self._ok_button: QPushButton | None = None
         self._init_widgets()
         self.setLayout(self.main_layout)
         self._validate()

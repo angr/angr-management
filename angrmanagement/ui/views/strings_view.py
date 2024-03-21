@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING
 
@@ -56,7 +58,7 @@ class StringsView(InstanceView):
 
         self.reload()
 
-    def _on_string_selected(self, s: "MemoryData"):
+    def _on_string_selected(self, s: MemoryData):
         """
         A string reference is selected.
 

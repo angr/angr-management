@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from angr.sim_type import ALL_TYPES, SimStruct, SimUnion, TypeRef
@@ -39,7 +41,7 @@ class TypesView(FunctionView):
     #
 
     @property
-    def current_typestore(self) -> "TypesStore":
+    def current_typestore(self) -> TypesStore:
         if self._function.am_none:
             return self.instance.kb.types
         var_manager: VariableManagerInternal = self.instance.pseudocode_variable_kb.variables[self._function.addr]

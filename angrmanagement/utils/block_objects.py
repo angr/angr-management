@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class FunctionHeader:
     __slots__ = (
         "name",

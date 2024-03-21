@@ -2,6 +2,7 @@
 
 # https://stackoverflow.com/questions/4795757/is-there-a-better-way-to-wordwrap-text-in-qtooltip-than-just-using-regexp
 # credit: Cecil Curry
+from __future__ import annotations
 
 import html
 

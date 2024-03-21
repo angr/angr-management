@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from angr.knowledge_plugins.key_definitions.constants import OP_AFTER, OP_BEFORE
 from PySide6.QtWidgets import (
@@ -21,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class DependsOn(QDialog):
-    def __init__(self, addr: int, operand, instr=None, func: Optional["Function"] = None, parent=None):
+    def __init__(self, addr: int, operand, instr=None, func: Function | None = None, parent=None):
         super().__init__(parent)
 
         self._addr = addr
@@ -30,9 +32,9 @@ class DependsOn(QDialog):
         self._function = func
 
         # output
-        self.location: Optional[int] = None
-        self.arg: Optional[Any] = None
-        self.reg: Optional[Any] = None
+        self.location: int | None = None
+        self.arg: Any | None = None
+        self.reg: Any | None = None
 
         # UI widgets
         self._instr_layout: QHBoxLayout = None

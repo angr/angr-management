@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pygments.lexers.c_cpp import CLexer
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import PygmentsSyntaxHighlighter

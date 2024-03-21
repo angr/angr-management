@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtCore import QObject, Signal
 
 from angrmanagement.data.object_container import EventSentinel

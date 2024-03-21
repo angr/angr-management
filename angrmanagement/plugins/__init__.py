@@ -6,6 +6,8 @@ This file intentionally does not reuse angr.misc.autoimport since it has additio
 loading out-of-tree files).
 """
 
+from __future__ import annotations
+
 import logging
 
 from .base_plugin import BasePlugin

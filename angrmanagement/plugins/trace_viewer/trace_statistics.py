@@ -1,10 +1,12 @@
 # pylint:disable=missing-class-docstring
+from __future__ import annotations
+
 import logging
 import os
 import random
 from bisect import bisect_left
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from angr.errors import SimEngineError
 from PySide6.QtGui import QColor
@@ -50,20 +52,20 @@ class TraceStatistics:
 
     def __init__(self, workspace, trace, baddr):
         self.workspace = workspace
-        self.trace: Dict[str, Any] = trace
+        self.trace: dict[str, Any] = trace
         self.bbl_addrs = trace["bb_addrs"]
         self.syscalls = trace["syscalls"]
         self.id = trace["id"]
         self.created_at = trace["created_at"]
         self.input_id = trace["input_id"]
         self.complete = trace["complete"]
-        self.mapping: Optional[List[ObjectAndBase]] = None
+        self.mapping: list[ObjectAndBase] | None = None
         if "map" in trace:
-            map_dict: Dict[str, int] = trace["map"]
+            map_dict: dict[str, int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
             self.mapping = sorted(self.mapping, key=lambda o: o.base_addr)  # sort it based on base addresses
-        self.trace_func: List[TraceFunc] = []
-        self.func_addr_in_trace: Set[int] = set()
+        self.trace_func: list[TraceFunc] = []
+        self.func_addr_in_trace: set[int] = set()
         self._func_color = {}
         self.count = None
         self._mark_color = {}
@@ -78,11 +80,11 @@ class TraceStatistics:
             self.project_baddr = self.project.loader.main_object.mapped_base
         self.runtime_baddr = baddr  # this will not be used if self.mapping is available
 
-        self._cached_object_project_base_addrs: Dict[str, int] = {}
+        self._cached_object_project_base_addrs: dict[str, int] = {}
 
         self._statistics(self.bbl_addrs)
 
-    def find_object_base_in_project(self, object_name: str) -> Optional[int]:
+    def find_object_base_in_project(self, object_name: str) -> int | None:
         """
         Find the base address of an object in angr project. Returns None if the project is not mapped. Results are
         cached in self._cached_object_project_base_addrs.
@@ -150,7 +152,7 @@ class TraceStatistics:
     def get_func_from_position(self, position):
         return self.trace_func[position].func
 
-    def _apply_trace_offset(self, addr) -> Optional[int]:
+    def _apply_trace_offset(self, addr) -> int | None:
         if self.mapping is not None and self.mapping:
             # find the base address that this address belongs to
             idx = bisect_left(self.mapping, addr)

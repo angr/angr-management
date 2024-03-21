@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
@@ -27,7 +29,7 @@ class CallTreeModel(QStandardItemModel):
     Headers = ["Function"]
 
     def hasChildren(self, index):
-        item: Optional[CallTreeItem] = self.itemFromIndex(index)
+        item: CallTreeItem | None = self.itemFromIndex(index)
         if isinstance(item, CallTreeItem):
             return item.expandable
         return super().hasChildren(index)
@@ -48,7 +50,7 @@ class CallTreeItem(QStandardItem):
     def __init__(self, function, event):
         name = hex(function) if isinstance(function, int) else function.name
         super().__init__(name)
-        self.function: Union[int, Function] = function
+        self.function: int | Function = function
         self.event: TraceEvent = event
         self.populated: bool = False
         self.expandable: bool = True
@@ -62,11 +64,11 @@ class CallExplorerView(InstanceView):
     def __init__(self, workspace, instance, default_docking_position):
         super().__init__("call_explorer", workspace, default_docking_position, instance)
 
-        self._last_updated_func: Optional[Union[int, Function]] = None
+        self._last_updated_func: int | Function | None = None
         self._inhibit_update: bool = False
 
         self.base_caption = "Call Explorer"
-        self._tree: Optional[QTreeWidget] = None
+        self._tree: QTreeWidget | None = None
         self._init_widgets()
         self.reload()
 

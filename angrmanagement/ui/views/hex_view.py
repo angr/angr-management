@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import functools
 import logging
 from enum import Enum
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, Sequence, Tuple, Union
 
 import angr
 import PySide6
@@ -63,20 +65,20 @@ class HexHighlightRegion:
     Defines a highlighted region.
     """
 
-    def __init__(self, color: QColor, addr: HexAddress, size: int, tooltip: Optional[str] = None):
+    def __init__(self, color: QColor, addr: HexAddress, size: int, tooltip: str | None = None):
         self.color: QColor = color
         self.addr: HexAddress = addr
         self.size: int = size
         self.active: bool = False
-        self._tooltip: Optional[str] = tooltip
+        self._tooltip: str | None = tooltip
 
-    def gen_context_menu_actions(self) -> Optional[QMenu]:  # pylint: disable=no-self-use
+    def gen_context_menu_actions(self) -> QMenu | None:  # pylint: disable=no-self-use
         """
         Get submenu for this highlight region.
         """
         return None
 
-    def get_tooltip(self) -> Optional[str]:
+    def get_tooltip(self) -> str | None:
         """
         Return a tooltip for this region.
         """
@@ -88,12 +90,12 @@ class BreakpointHighlightRegion(HexHighlightRegion):
     Defines a highlighted region indicating a patch.
     """
 
-    def __init__(self, bp: Breakpoint, view: "HexView"):
+    def __init__(self, bp: Breakpoint, view: HexView):
         super().__init__(Qt.cyan, bp.addr, bp.size)
         self.bp: Breakpoint = bp
         self.view: HexView = view
 
-    def gen_context_menu_actions(self) -> Optional[QMenu]:
+    def gen_context_menu_actions(self) -> QMenu | None:
         """
         Get submenu for this highlight region.
         """
@@ -114,7 +116,7 @@ class BreakpointHighlightRegion(HexHighlightRegion):
         """
         self.view.instance.breakpoint_mgr.remove_breakpoint(self.bp)
 
-    def get_tooltip(self) -> Optional[str]:
+    def get_tooltip(self) -> str | None:
         """
         Return a tooltip for this region.
         """
@@ -131,18 +133,18 @@ class PatchHighlightRegion(HexHighlightRegion):
     Defines a highlighted region indicating a patch.
     """
 
-    def __init__(self, patch: Patch, view: "HexView"):
+    def __init__(self, patch: Patch, view: HexView):
         super().__init__(Qt.yellow, patch.addr, len(patch))
         self.patch: Patch = patch
         self.view: HexView = view
 
-    def get_tooltip(self) -> Optional[str]:
+    def get_tooltip(self) -> str | None:
         """
         Return a tooltip for this region.
         """
         return f"Patch 0x{self.patch.addr:x} ({len(self.patch)} bytes)"
 
-    def gen_context_menu_actions(self) -> Optional[QMenu]:
+    def gen_context_menu_actions(self) -> QMenu | None:
         """
         Get submenu for this highlight region.
         """
@@ -202,13 +204,13 @@ class PatchHighlightRegion(HexHighlightRegion):
             pm.add_patch_obj(new_patch)
             pm.am_event()
 
-    def can_merge_with(self, other: "PatchHighlightRegion") -> bool:
+    def can_merge_with(self, other: PatchHighlightRegion) -> bool:
         """
         Determine if this patch can be merged with `other`. We only consider directly adjacent patches.
         """
         return other.patch.addr == (self.patch.addr + len(self.patch))
 
-    def merge_with(self, other: "PatchHighlightRegion"):
+    def merge_with(self, other: PatchHighlightRegion):
         """
         Merge `other` into this patch.
         """
@@ -250,9 +252,9 @@ class HexGraphicsObject(QGraphicsObject):
         self.start_addr: HexAddress = 0
         self.num_bytes: int = 0
         self.end_addr: HexAddress = 0  # Exclusive
-        self.read_func: Optional[HexDataProvider] = None
+        self.read_func: HexDataProvider | None = None
         self.write_func: Callable[[HexAddress, HexByteValue], bool] = None
-        self.data: Optional[HexDataBuffer] = None
+        self.data: HexDataBuffer | None = None
         self.addr_offset: int = 0
         self.addr_width: int = 0
         self.ascii_column_offsets: Sequence[int] = []
@@ -269,8 +271,8 @@ class HexGraphicsObject(QGraphicsObject):
         self.row_padding: int = 0
         self.section_space: int = 0
         self.cursor: HexAddress = self.start_addr
-        self.cursor_nibble: Optional[int] = None
-        self.selection_start: Optional[HexAddress] = None
+        self.cursor_nibble: int | None = None
+        self.selection_start: HexAddress | None = None
         self.mouse_pressed: bool = False
         self.num_rows: int = 0
         self.font: QFont = QFont(Conf.disasm_font)
@@ -385,7 +387,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         return False
 
-    def set_data(self, data: HexDataBuffer, start_addr: HexAddress = 0, num_bytes: Optional[int] = None):
+    def set_data(self, data: HexDataBuffer, start_addr: HexAddress = 0, num_bytes: int | None = None):
         """
         Assign the buffer to be displayed with bytes.
         """
@@ -413,7 +415,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         self.set_data(b"")
 
-    def point_to_row(self, p: QPointF) -> Optional[int]:
+    def point_to_row(self, p: QPointF) -> int | None:
         """
         Return index of row containing point `p`, or None if the point is not contained.
         """
@@ -421,7 +423,7 @@ class HexGraphicsObject(QGraphicsObject):
         return row if row < self.num_rows else None
 
     @staticmethod
-    def point_to_column(p: QPointF, columns: Sequence[int]) -> Optional[int]:
+    def point_to_column(p: QPointF, columns: Sequence[int]) -> int | None:
         """
         Given a point `p` and list of column offsets `columns`, return the index of column point p or None if the point
         is not contained.
@@ -432,7 +434,7 @@ class HexGraphicsObject(QGraphicsObject):
                 return i
         return None
 
-    def point_to_addr(self, pt: QPointF) -> Optional[Tuple[int, bool]]:
+    def point_to_addr(self, pt: QPointF) -> tuple[int, bool] | None:
         """
         Get the (address, ascii_column) tuple for a given point. If the point falls within the bytes display region,
         ascii_column is False. If the point falls within the ASCII display region, ascii_column is True.
@@ -568,7 +570,7 @@ class HexGraphicsObject(QGraphicsObject):
         return self.get_highlight_regions_at_addr(self.cursor)
 
     def set_cursor(
-        self, addr: int, ascii_column: Optional[bool] = None, nibble: Optional[int] = None, update_viewport: bool = True
+        self, addr: int, ascii_column: bool | None = None, nibble: int | None = None, update_viewport: bool = True
     ):
         """
         Move cursor to address `addr`.
@@ -849,7 +851,7 @@ class HexGraphicsObject(QGraphicsObject):
         spath.closeSubpath()
         return spath
 
-    def get_selection(self) -> Optional[Tuple[int, int]]:
+    def get_selection(self) -> tuple[int, int] | None:
         """
         Get active selection, returning (minaddr, maxaddr) inclusive.
         """
@@ -1273,7 +1275,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self.update_scene_rect()
         self._update_vertical_scrollbar()
 
-    def adjust_viewport_scale(self, scale: Optional[float] = None):
+    def adjust_viewport_scale(self, scale: float | None = None):
         """
         Reset viewport scaling. If `scale` is None, viewport scaling is reset to default.
         """
@@ -1437,7 +1439,7 @@ class HexView(SynchronizedInstanceView):
             if dbg.am_none:
                 v = "?"
             else:
-                state: Optional[angr.SimState] = dbg.simstate
+                state: angr.SimState | None = dbg.simstate
                 if state is None:
                     v = "?"
                 else:

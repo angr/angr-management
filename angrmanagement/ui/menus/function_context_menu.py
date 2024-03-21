@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from angrmanagement.logic import GlobalInfo
 
 from .menu import Menu, MenuEntry

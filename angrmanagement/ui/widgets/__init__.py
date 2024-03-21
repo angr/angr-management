@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .qaddress_input import QAddressInput
 from .qdisasm_base_control import DisassemblyLevel
 

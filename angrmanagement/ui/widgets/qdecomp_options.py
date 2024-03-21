@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.decompilation_options import options as dec_options
 from angr.analyses.decompiler.optimization_passes import get_default_optimization_passes, get_optimization_passes
@@ -239,7 +241,7 @@ class QDecompilationOptions(QWidget):
         # expand all
         self._treewidget.expandAll()
 
-    def _set_visibility(self, filter_by: Optional[str] = None):
+    def _set_visibility(self, filter_by: str | None = None):
         for w in self._qoptions:
             w.setHidden(
                 bool(filter_by) and not (filter_by in w.option.NAME.lower() or filter_by in w.option.category.lower())

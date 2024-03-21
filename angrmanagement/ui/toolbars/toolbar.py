@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
@@ -13,7 +13,7 @@ class Toolbar:
         self.name = name
 
         self.actions = []
-        self._cached: Optional[QToolBar] = None
+        self._cached: QToolBar | None = None
         self._cached_actions = {}
 
     def shutdown(self):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout
 
 

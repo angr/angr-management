@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import enum
 import logging
 import sys
 from threading import Thread
-from typing import Optional
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QInputDialog, QLineEdit
@@ -37,7 +38,7 @@ class SavedInteraction:
 class ProtocolInteractor:
     def __init__(self, view, sock):
         self.view: InteractionView = view
-        self.sock: Optional[nclib.Netcat] = sock
+        self.sock: nclib.Netcat | None = sock
 
     def consume_data(self, data):
         # try to decode it
@@ -76,10 +77,10 @@ class InteractionView(InstanceView):
         )  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
         # "in" here means it's input to the program
         self.log_controls = []
-        self.sock: Optional[nclib.Netcat] = None
+        self.sock: nclib.Netcat | None = None
 
         self._state = None
-        self._last_img_name: Optional[str] = None
+        self._last_img_name: str | None = None
 
         self.widget_button_start = None
         self.widget_button_stop = None
@@ -93,8 +94,8 @@ class InteractionView(InstanceView):
         self.widget_group_save = None
         self.widget_group_load = None
 
-        self.running_protocol: Optional[ProtocolInteractor] = None
-        self.chosen_protocol: Optional[type] = None
+        self.running_protocol: ProtocolInteractor | None = None
+        self.chosen_protocol: type | None = None
 
         self._init_widgets()
         self._state_transition(InteractionState.BEGINNING)

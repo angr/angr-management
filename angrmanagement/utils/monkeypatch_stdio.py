@@ -2,6 +2,8 @@
 monkeypatch_stdio - Monkeypatches stdout and stderr to be NullWriters.
 """
 
+from __future__ import annotations
+
 import sys
 
 

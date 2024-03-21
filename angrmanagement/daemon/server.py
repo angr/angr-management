@@ -1,4 +1,6 @@
 # pylint:disable=import-outside-toplevel,unused-argument
+from __future__ import annotations
+
 import subprocess
 import sys
 import threading

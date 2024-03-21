@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtCore import QRectF, Qt
 
 from .qgraph_object import QCachedGraphicsItem

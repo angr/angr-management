@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QCheckBox,

@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QVBoxLayout
@@ -15,7 +15,7 @@ class TraceMapView(InstanceView):
     def __init__(self, workspace, instance, default_docking_position):
         super().__init__("tracemap", workspace, default_docking_position, instance)
         self.base_caption: str = "Trace Map"
-        self.inner_widget: Optional[QTraceMap] = None
+        self.inner_widget: QTraceMap | None = None
         self._init_widgets()
 
     @staticmethod

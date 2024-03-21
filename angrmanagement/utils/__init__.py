@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import itertools
-from typing import Optional
 
 from .block_objects import FunctionHeader, Label, PhiVariable, Variables
 
@@ -224,7 +225,7 @@ def filter_string_for_display(s):
     return output
 
 
-def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str]:
+def get_string_for_display(cfg, insn_addr, project, max_size=20) -> str | None:
     str_content = None
 
     try:

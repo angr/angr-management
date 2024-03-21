@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.clinic import Clinic
 from angr.analyses.disassembly import Instruction, IROp
@@ -64,8 +66,8 @@ class QBlock(QCachedGraphicsItem):
         self._config = Conf
 
         self.objects = []  # instructions and labels
-        self._block_item: Optional[QPainterPath] = None
-        self._block_item_obj: Optional[QGraphicsPathItem] = None
+        self._block_item: QPainterPath | None = None
+        self._block_item_obj: QGraphicsPathItem | None = None
         self.addr_to_insns = {}
         self.addr_to_labels = {}
         self.qblock_annotations = {}

@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
@@ -33,9 +35,9 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         # widgets
         self._addr_item: QGraphicsSimpleTextItem = None
-        self._label_item: Optional[QGraphicsSimpleTextItem] = None
-        self._line_items: List[
-            Tuple[int, QGraphicsSimpleTextItem, List[QGraphicsSimpleTextItem], List[QGraphicsSimpleTextItem]]
+        self._label_item: QGraphicsSimpleTextItem | None = None
+        self._line_items: list[
+            tuple[int, QGraphicsSimpleTextItem, list[QGraphicsSimpleTextItem], list[QGraphicsSimpleTextItem]]
         ] = None
 
         self._init_widgets()

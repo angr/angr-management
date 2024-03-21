@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import os
-from typing import List, Optional, Tuple
 
 import angr
 from PySide6.QtCore import Qt
@@ -74,15 +75,15 @@ class NewState(QDialog):
         # Shall we push the new state to instance.stats and call states.am_event(src="new", state=self.state)
         self._push_to_instance = push_to_instance
 
-        self._name_edit: Optional[QLineEdit] = None
-        self._base_state_combo: Optional[QStateComboBox] = None
-        self._mode_combo: Optional[QComboBox] = None
-        self._editor: Optional[QTextEdit] = None
+        self._name_edit: QLineEdit | None = None
+        self._base_state_combo: QStateComboBox | None = None
+        self._mode_combo: QComboBox | None = None
+        self._editor: QTextEdit | None = None
         self._ok_button = None
 
-        self._args: Optional[List[str]] = None
-        self._env_config: List[Tuple[str, str]] = []
-        self._fs_config: Optional[List[Tuple[str, str]]] = None
+        self._args: list[str] | None = None
+        self._env_config: list[tuple[str, str]] = []
+        self._fs_config: list[tuple[str, str]] | None = None
         self._sockets_config = None
 
         self.setWindowTitle("New State")

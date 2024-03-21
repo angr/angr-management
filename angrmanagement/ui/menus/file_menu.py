@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import platform
 
 from PySide6.QtGui import QAction, QKeySequence

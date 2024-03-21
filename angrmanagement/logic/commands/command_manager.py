@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, Sequence
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
     from .command import Command
@@ -10,20 +12,20 @@ class CommandManager:
     """
 
     def __init__(self):
-        self._commands: Dict[str, Command] = {}
+        self._commands: dict[str, Command] = {}
 
-    def register_command(self, command: "Command"):
+    def register_command(self, command: Command):
         assert command.name not in self._commands, "Command by this name already registered"
         self._commands[command.name] = command
 
-    def register_commands(self, commands: Sequence["Command"]):
+    def register_commands(self, commands: Sequence[Command]):
         for command in commands:
             self.register_command(command)
 
-    def unregister_command(self, command: "Command"):
+    def unregister_command(self, command: Command):
         self._commands.pop(command.name, None)
 
-    def unregister_commands(self, commands: Sequence["Command"]):
+    def unregister_commands(self, commands: Sequence[Command]):
         for command in commands:
             self.unregister_command(command)
 

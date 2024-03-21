@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .server import daemon_conn, daemon_exists, run_daemon_process, start_daemon
 from .url_handler import handle_url
 

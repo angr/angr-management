@@ -1,4 +1,6 @@
 # pylint:disable=no-self-use
+from __future__ import annotations
+
 from PySide6.QtCore import QMargins, QRect, QSize, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QDockWidget, QFrame, QHBoxLayout, QStyle, QStyleOptionToolBar, QWidget

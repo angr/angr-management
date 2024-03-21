@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ailment.expression import BinaryOp, Load, Op, UnaryOp
 from ailment.statement import Assignment, Store
@@ -177,7 +179,7 @@ class QCCodeEdit(api.CodeEdit):
 
         return super().event(event)
 
-    def get_closest_insaddr(self, node, expr=None) -> Optional[int]:
+    def get_closest_insaddr(self, node, expr=None) -> int | None:
         addr = (getattr(node, "tags", None) or {}).get("ins_addr", None)
         if addr is None:
             if expr:

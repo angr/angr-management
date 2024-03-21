@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import networkx
 from angr import SIM_PROCEDURES
@@ -30,11 +32,11 @@ class DependencyView(InstanceView):
         self._graph_widget: QDependencyGraph = None
 
         # data
-        self.sink_atom: Optional[Atom] = None
-        self.sink_ins_addr: Optional[int] = None
-        self.closures: Optional[Dict[Definition, networkx.DiGraph]] = None
-        self._graph: Optional[networkx.DiGraph] = None
-        self.hovered_block: Optional[QDepGraphBlock] = None
+        self.sink_atom: Atom | None = None
+        self.sink_ins_addr: int | None = None
+        self.closures: dict[Definition, networkx.DiGraph] | None = None
+        self._graph: networkx.DiGraph | None = None
+        self.hovered_block: QDepGraphBlock | None = None
 
         self._init_widgets()
         self._register_events()
@@ -85,9 +87,7 @@ class DependencyView(InstanceView):
     def _register_events(self):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
-    def _convert_node(
-        self, node: "Definition", converted: Dict["Definition", QDepGraphBlock]
-    ) -> Optional[QDepGraphBlock]:
+    def _convert_node(self, node: Definition, converted: dict[Definition, QDepGraphBlock]) -> QDepGraphBlock | None:
         if node in converted:
             return converted[node]
 

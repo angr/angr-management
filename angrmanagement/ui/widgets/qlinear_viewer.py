@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
@@ -96,7 +98,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._init_widgets()
         self.initialize()
 
-    def reload(self, old_infodock: Optional["InfoDock"] = None):
+    def reload(self, old_infodock: InfoDock | None = None):
         curr_offset = self._offset
         self.initialize()
         self._offset = None  # force a re-generation of objects
@@ -518,7 +520,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _addr_from_offset(self, mr, base_offset, offset):
         return mr.addr + (offset - base_offset)
 
-    def _get_disasm(self, func: "Function") -> Optional[Union["Clinic", "Disassembly"]]:
+    def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:
         """
         Get disassembly analysis object for a given function
         """

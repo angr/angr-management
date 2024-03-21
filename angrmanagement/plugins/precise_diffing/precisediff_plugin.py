@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
@@ -30,11 +31,11 @@ class PreciseDiffPlugin(BasePlugin):
 
     def __init__(self, workspace):
         super().__init__(workspace)
-        self.diff_instance: Optional[Instance] = None
-        self.current_revised_view: Optional[DisassemblyView] = None
+        self.diff_instance: Instance | None = None
+        self.current_revised_view: DisassemblyView | None = None
 
-        self.loaded_binary: Optional[Path] = None
-        self.diff_algo: Optional[FunctionDiff] = None
+        self.loaded_binary: Path | None = None
+        self.diff_algo: FunctionDiff | None = None
 
         self.prefer_symbols = True
         self.resolve_strings = True

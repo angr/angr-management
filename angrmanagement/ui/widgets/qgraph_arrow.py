@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import math
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QBrush, QColor, QKeyEvent, QPainterPath, QPainterPathStroker, QPen
@@ -208,7 +210,7 @@ class QGraphArrowBezier(QGraphArrow):
 
 
 class QDepGraphArrow(QGraphArrowBezier):
-    def __init__(self, dep_view: "DependencyView", *args, **kwargs):
+    def __init__(self, dep_view: DependencyView, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._dep_view = dep_view
 
@@ -219,7 +221,7 @@ class QDepGraphArrow(QGraphArrowBezier):
 
 
 class QProximityGraphArrow(QGraphArrow):
-    def __init__(self, proximity_view: "ProximityView", *args, **kwargs):
+    def __init__(self, proximity_view: ProximityView, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._proximity_view = proximity_view
 
@@ -234,7 +236,7 @@ class QProximityGraphArrow(QGraphArrow):
 class QDataDepGraphArrow(QGraphArrow):
     """Used to represent an edge between two QDataDepGraphBlocks"""
 
-    def __init__(self, data_dep_view: "DataDepView", *args, **kwargs):
+    def __init__(self, data_dep_view: DataDepView, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setFlags(QGraphicsItem.ItemIsFocusable)
         self._data_dep_view = data_dep_view
@@ -290,7 +292,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
 
     dash_len = 5.0
 
-    def _calculate_dash_pattern(self) -> List[float]:
+    def _calculate_dash_pattern(self) -> list[float]:
         """
         Builds dash pattern list dynamically, ensuring the correct number of dashes and spacing per each distance that
         must be covered

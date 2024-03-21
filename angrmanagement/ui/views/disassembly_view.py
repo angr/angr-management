@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import functools
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
@@ -11,7 +13,6 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVB
 
 from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
-from angrmanagement.data.instance import ObjectContainer
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
     import PySide6
     from angr.knowledge_plugins import VariableManager
 
+    from angrmanagement.data.instance import ObjectContainer
     from angrmanagement.logic.disassembly.info_dock import OperandDescriptor
 
 
@@ -76,16 +78,16 @@ class DisassemblyView(SynchronizedFunctionView):
         self._show_exception_edges = True
 
         self._prefer_graph = True
-        self._current_view: Union[QLinearDisassembly, QDisassemblyGraph, None] = None
+        self._current_view: QLinearDisassembly | QDisassemblyGraph | None = None
 
         self._statusbar = None
         self.jump_history: JumpHistory = JumpHistory()
         self.infodock = InfoDock(self)
         self._variable_recovery_flavor = "fast"
-        self.variable_manager: Optional[VariableManager] = None
+        self.variable_manager: VariableManager | None = None
 
-        self._insn_menu: Optional[DisasmInsnContextMenu] = None
-        self._label_menu: Optional[DisasmLabelContextMenu] = None
+        self._insn_menu: DisasmInsnContextMenu | None = None
+        self._label_menu: DisasmLabelContextMenu | None = None
 
         self._insn_addr_on_context_menu = None
         self._label_addr_on_context_menu = None
@@ -212,7 +214,7 @@ class DisassemblyView(SynchronizedFunctionView):
             # TODO: Rerun the variable recovery analysis and update the current view
 
     @property
-    def current_graph(self) -> Union[QLinearDisassemblyView, QDisassemblyGraph]:
+    def current_graph(self) -> QLinearDisassemblyView | QDisassemblyGraph:
         """
         Return the current disassembly control, either linear viewer or flow graph.
 
@@ -353,7 +355,7 @@ class DisassemblyView(SynchronizedFunctionView):
         menu.addSeparator()
         menu.addMenu(self.get_synchronize_with_submenu())
 
-    def contextMenuEvent(self, event: "PySide6.QtGui.QContextMenuEvent"):  # pylint: disable=unused-argument
+    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent):  # pylint: disable=unused-argument
         """
         Display view context menu.
         """
@@ -409,7 +411,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if self.infodock.selected_insns:
             self.workspace.undefine_code(next(iter(self.infodock.selected_insns)))
 
-    def get_context_menu_for_selected_object(self) -> Optional[QMenu]:
+    def get_context_menu_for_selected_object(self) -> QMenu | None:
         """
         Returns a QMenu object for the currently selected QBlockCodeObj
         """
@@ -502,7 +504,7 @@ class DisassemblyView(SynchronizedFunctionView):
             dialog = FuncDocDialog(self.instance, addr=target, name=operand.text, doc_tuple=doc_tuple, parent=self)
             dialog.show()
 
-    def popup_dependson_dialog(self, addr: Optional[int] = None, use_operand=False, func: bool = False):
+    def popup_dependson_dialog(self, addr: int | None = None, use_operand=False, func: bool = False):
         if use_operand:
             r = self._flow_graph.get_selected_operand_info()
             if r is not None:
@@ -654,7 +656,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
             self.workspace.decompile_function(self.function.am_obj, curr_ins=curr_ins)
 
-    def toggle_show_minimap(self, show_minimap: Optional[bool] = None) -> None:
+    def toggle_show_minimap(self, show_minimap: bool | None = None) -> None:
         """
         Toggle minimap display preference
         """
@@ -663,7 +665,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._show_minimap = show_minimap
         self._current_view.refresh()
 
-    def toggle_smart_highlighting(self, enabled: Optional[bool] = None) -> None:
+    def toggle_smart_highlighting(self, enabled: bool | None = None) -> None:
         """
         Toggle between the smart highlighting mode and the text-based highlighting mode.
         """
@@ -673,7 +675,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._flow_graph.refresh()
         self._linear_viewer.refresh()
 
-    def toggle_show_address(self, show_address: Optional[bool] = None) -> None:
+    def toggle_show_address(self, show_address: bool | None = None) -> None:
         """
         Toggle whether addresses are shown on disassembly graph.
         """
@@ -682,7 +684,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._show_address = show_address
         self._current_view.refresh()
 
-    def toggle_show_variable(self, show_variable: Optional[bool] = None) -> None:
+    def toggle_show_variable(self, show_variable: bool | None = None) -> None:
         """
         Toggle whether variables are shown on disassembly graph.
         """
@@ -691,7 +693,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._show_variable = show_variable
         self._current_view.refresh()
 
-    def toggle_show_variable_identifier(self, show_ident: Optional[bool] = None) -> None:
+    def toggle_show_variable_identifier(self, show_ident: bool | None = None) -> None:
         """
         Toggle whether variable identifiers are shown on disassembly graph.
         """
@@ -700,7 +702,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._show_variable_ident = show_ident
         self._current_view.refresh()
 
-    def toggle_show_exception_edges(self, show_exception_edges: Optional[bool] = None) -> None:
+    def toggle_show_exception_edges(self, show_exception_edges: bool | None = None) -> None:
         """
         Toggle whether exception edges and the nodes that are only reachable through exception edges should be shown
         or not.
@@ -796,8 +798,8 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def fetch_qblock_annotations(self, qblock):
         addr_to_annotations = defaultdict(list)
-        for annotations in self.workspace.plugins.build_qblock_annotations(qblock):
-            addr_to_annotations[annotations.addr].append(annotations)
+        for annotations_ in self.workspace.plugins.build_qblock_annotations(qblock):
+            addr_to_annotations[annotations_.addr].append(annotations)
         for addr in qblock.addr_to_insns:
             if addr in self.instance.project._sim_procedures:
                 hook_annotation = QHookAnnotation(addr)
@@ -972,7 +974,7 @@ class DisassemblyView(SynchronizedFunctionView):
     # Utils
     #
 
-    def _address_in_selection(self) -> Optional[Tuple[str, int]]:
+    def _address_in_selection(self) -> tuple[str, int] | None:
         if self._insn_addr_on_context_menu is not None:
             return "insn", self._insn_addr_on_context_menu
         if len(self.infodock.selected_operands) == 1:
@@ -985,7 +987,7 @@ class DisassemblyView(SynchronizedFunctionView):
             return "insn", next(iter(self.infodock.selected_labels))
         return None
 
-    def _instruction_address_in_selection(self) -> Optional[int]:
+    def _instruction_address_in_selection(self) -> int | None:
         if self._insn_addr_on_context_menu is not None:
             return self._insn_addr_on_context_menu
         if len(self.infodock.selected_insns) == 1:
@@ -994,7 +996,7 @@ class DisassemblyView(SynchronizedFunctionView):
             return next(iter(self.infodock.selected_labels))
         return None
 
-    def _get_instruction_size(self, addr: int) -> Optional[int]:
+    def _get_instruction_size(self, addr: int) -> int | None:
         kb = self.instance.project.kb
         f = kb.functions.floor_func(addr)
         if f is None:

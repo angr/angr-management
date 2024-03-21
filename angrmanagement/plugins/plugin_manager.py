@@ -1,8 +1,10 @@
 # pylint:disable=unused-private-member
+from __future__ import annotations
+
 import functools
 import logging
 import os
-from typing import TYPE_CHECKING, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING
 
 from angrmanagement.config import Conf, save_config
 from angrmanagement.config.config_manager import ENTRIES
@@ -44,12 +46,12 @@ class PluginManager:
     first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
     """
 
-    def __init__(self, workspace: Optional["Workspace"]):
+    def __init__(self, workspace: Workspace | None):
         self.workspace = workspace
         # should one or both of these be ObjectContainers? I think no since we should be synchronizing on models, not
         # views/controllers. not super clear... that's not a hard and fast rule
-        self.loaded_plugins: Dict[str, PluginDescription] = {}
-        self.active_plugins: Dict[str, BasePlugin] = {}
+        self.loaded_plugins: dict[str, PluginDescription] = {}
+        self.active_plugins: dict[str, BasePlugin] = {}
 
     def discover_and_initialize_plugins(self):
         os.environ["AM_BUILTIN_PLUGINS"] = os.path.dirname(__file__)
@@ -91,13 +93,13 @@ class PluginManager:
                                 if isinstance(plugin_cls, Exception):
                                     log.warning("Exception occurred during plugin loading: %s", plugin_cls)
                                 else:
-                                    plugin_cls: Type[BasePlugin]
+                                    plugin_cls: type[BasePlugin]
                                     for action in plugin_cls.URL_ACTIONS:
                                         register_url_action(action, UrlActionBinaryAware)
                     else:
                         self.activate_plugin_by_name(desc.shortname)
 
-    def verify_plugin_class(self, plugin_cls: Type[BasePlugin]):
+    def verify_plugin_class(self, plugin_cls: type[BasePlugin]):
         if type(plugin_cls) is not type or not issubclass(plugin_cls, BasePlugin):
             raise TypeError("Cannot load a plugin which is not a BasePlugin subclass")
         if hasattr(plugin_cls, "_%s__i_hold_this_abstraction_token" % plugin_cls.__name__):
@@ -137,7 +139,7 @@ class PluginManager:
         for action in plugin_cls.URL_ACTIONS:
             register_url_action(action, UrlActionBinaryAware)
 
-    def activate_plugin(self, shortname: str, plugin_cls: Type[BasePlugin]):
+    def activate_plugin(self, shortname: str, plugin_cls: type[BasePlugin]):
         self.verify_plugin_class(plugin_cls)  # perform the sanity checks
         if self.get_plugin_instance(plugin_cls) is not None:
             return
@@ -163,7 +165,7 @@ class PluginManager:
                 widget.show()
                 plugin.__cached_status_bar_widgets.append(widget)
 
-    def _register_toolbar_actions(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
+    def _register_toolbar_actions(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
             action = ToolbarAction(
                 icon,
@@ -174,7 +176,7 @@ class PluginManager:
             plugin.__cached_toolbar_actions.append(action)
             self.workspace._main_window._file_toolbar.add(action)
 
-    def _register_menu_buttons(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
+    def _register_menu_buttons(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         if plugin_cls.MENU_BUTTONS:
             self.workspace._main_window._plugin_menu.add(MenuSeparator())
         for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
@@ -184,14 +186,14 @@ class PluginManager:
             plugin.__cached_menu_actions.append(action)
             self.workspace._main_window._plugin_menu.add(action)
 
-    def _register_url_actions(self, plugin_cls: Type[BasePlugin], plugin: BasePlugin) -> None:
+    def _register_url_actions(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         for action in plugin_cls.URL_ACTIONS:
             DaemonClient.register_handler(
                 action, functools.partial(self._dispatch_single, plugin, BasePlugin.handle_url_action, False, action)
             )
 
     @staticmethod
-    def _register_configuration_entries(plugin_cls: Type[BasePlugin]) -> None:
+    def _register_configuration_entries(plugin_cls: type[BasePlugin]) -> None:
         new_entries_added = False
         for ent in plugin_cls.CONFIG_ENTRIES:
             if ent not in ENTRIES:
@@ -203,7 +205,7 @@ class PluginManager:
             # reload configuration manager so that it's aware of newly added entries
             Conf.reinterpet()
 
-    def get_plugin_instance_by_name(self, shortname: str) -> Optional[BasePlugin]:
+    def get_plugin_instance_by_name(self, shortname: str) -> BasePlugin | None:
         instances = [plugin for key, plugin in self.active_plugins.items() if key == shortname]
         if not instances:
             return None
@@ -211,7 +213,7 @@ class PluginManager:
             log.error("Somehow there is more than one instance of %s active?", shortname)
         return instances[0]
 
-    def get_plugin_instance(self, plugin_cls: Type[BasePlugin]) -> Optional[BasePlugin]:
+    def get_plugin_instance(self, plugin_cls: type[BasePlugin]) -> BasePlugin | None:
         instances = [plugin for plugin in self.active_plugins.values() if type(plugin) is plugin_cls]
         if len(instances) == 0:
             return None
@@ -225,7 +227,7 @@ class PluginManager:
                 self.deactivate_plugin(plugin)
                 break
 
-    def deactivate_plugin(self, plugin: Union[BasePlugin, Type[BasePlugin]]):
+    def deactivate_plugin(self, plugin: BasePlugin | type[BasePlugin]):
         # this method should work on both instances and classes
         if type(plugin) is type:
             plugin = self.get_plugin_instance(plugin)
@@ -293,19 +295,19 @@ class PluginManager:
             self.workspace.log("Deactivating %s for error during sensitive operation" % plugin.get_display_name())
             self.deactivate_plugin(plugin)
 
-    def color_insn(self, addr, selected, disasm_view) -> Optional["QColor"]:
+    def color_insn(self, addr, selected, disasm_view) -> QColor | None:
         for res in self._dispatch(BasePlugin.color_insn, True, addr, selected, disasm_view):
             if res is not None:
                 return res
         return None
 
-    def color_block(self, addr) -> Optional["QColor"]:
+    def color_block(self, addr) -> QColor | None:
         for res in self._dispatch(BasePlugin.color_block, True, addr):
             if res is not None:
                 return res
         return None
 
-    def color_func(self, func) -> Optional["QColor"]:
+    def color_func(self, func) -> QColor | None:
         for res in self._dispatch(BasePlugin.color_func, True, func):
             if res is not None:
                 return res
@@ -337,7 +339,7 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.handle_raise_view, False, view):
             pass
 
-    def build_qblock_annotations(self, qblock: "QBlock"):
+    def build_qblock_annotations(self, qblock: QBlock):
         for res in self._dispatch(BasePlugin.build_qblock_annotations, False, qblock):
             yield from res
 

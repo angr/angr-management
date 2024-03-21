@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.analyses.data_dep import MemDepNode, RegDepNode, TmpDepNode
 
@@ -34,7 +36,7 @@ class DataDepView(InstanceView):
         self.base_caption = "Data Dependency"
 
         # Get all instructions in the program
-        self._instructions: Dict[int, CsInsn] = {}
+        self._instructions: dict[int, CsInsn] = {}
         inst = self.instance
         for _, func in inst.kb.functions.items():
             for block in func.blocks:
@@ -42,35 +44,35 @@ class DataDepView(InstanceView):
                 for ins in disass.insns:
                     self._instructions[ins.address] = ins
 
-        self._end_state: Optional[SimState] = None
-        self._start_addr: Optional[int] = None
-        self._end_addr: Optional[int] = None
-        self._block_addrs: Optional[List[int]] = None
+        self._end_state: SimState | None = None
+        self._start_addr: int | None = None
+        self._end_addr: int | None = None
+        self._block_addrs: list[int] | None = None
 
         # UI widgets
-        self._graph_widget: Optional[QDataDepGraph] = None
+        self._graph_widget: QDataDepGraph | None = None
 
         # Data
-        self._data_dep: Optional[DataDependencyGraphAnalysis] = None
-        self._ddg: Optional[DiGraph] = None  # Derived from analysis, can be full, simplified, or subgraph
-        self._graph: Optional[DiGraph] = None
-        self._traced_ancestors: Set[QDataDepGraphBlock] = set()
-        self._traced_descendants: Set[QDataDepGraphBlock] = set()
+        self._data_dep: DataDependencyGraphAnalysis | None = None
+        self._ddg: DiGraph | None = None  # Derived from analysis, can be full, simplified, or subgraph
+        self._graph: DiGraph | None = None
+        self._traced_ancestors: set[QDataDepGraphBlock] = set()
+        self._traced_descendants: set[QDataDepGraphBlock] = set()
 
         self._init_widgets()
         self._register_events()
 
     @property
-    def _data_dep_graph(self) -> Optional["DiGraph"]:
+    def _data_dep_graph(self) -> DiGraph | None:
         return self._ddg
 
     @_data_dep_graph.setter
-    def _data_dep_graph(self, new_ddg: "DiGraph"):
+    def _data_dep_graph(self, new_ddg: DiGraph):
         self._ddg = new_ddg
         self._graph_widget.ref_graph = new_ddg
 
     @property
-    def traced_ancestors(self) -> Set[QDataDepGraphBlock]:
+    def traced_ancestors(self) -> set[QDataDepGraphBlock]:
         return self._traced_ancestors
 
     def update_ancestors(self, block: QDataDepGraphBlock):
@@ -79,7 +81,7 @@ class DataDepView(InstanceView):
         self.redraw_graph()
 
     @property
-    def traced_descendants(self) -> Set[QDataDepGraphBlock]:
+    def traced_descendants(self) -> set[QDataDepGraphBlock]:
         return self._traced_descendants
 
     def update_descendants(self, block: QDataDepGraphBlock):
@@ -88,7 +90,7 @@ class DataDepView(InstanceView):
         self.redraw_graph()
 
     @property
-    def graph_widget(self) -> Optional["QDataDepGraph"]:
+    def graph_widget(self) -> QDataDepGraph | None:
         return self._graph_widget
 
     @property
@@ -184,8 +186,8 @@ class DataDepView(InstanceView):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _convert_node(
-        self, node: "BaseDepNode", converted: Dict["BaseDepNode", QDataDepGraphBlock]
-    ) -> Optional[QDataDepGraphBlock]:
+        self, node: BaseDepNode, converted: dict[BaseDepNode, QDataDepGraphBlock]
+    ) -> QDataDepGraphBlock | None:
         if isinstance(node, (MemDepNode, RegDepNode)):
             cs_instr = self._instructions.get(node.ins_addr, None)
             instr = cs_instr.insn if cs_instr else None

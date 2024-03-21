@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
 
 
 class QSimulationManagers(QFrame):
-    def __init__(self, workspace, instance: "Instance", simgr, state, parent=None):
+    def __init__(self, workspace, instance: Instance, simgr, state, parent=None):
         """
         :param instance:                The data source for this project
         :param object parent:           The parent widget.
@@ -119,7 +121,7 @@ class QSimulationManagers(QFrame):
 
         self.setLayout(layout)
 
-    def select_states(self, states: "List[SimState]"):
+    def select_states(self, states: list[SimState]):
         stash_tree_item = self._simgr_viewer.get_stash_tree_item("active")
         states_set = set(states)
         for state_tree_item in stash_tree_item:

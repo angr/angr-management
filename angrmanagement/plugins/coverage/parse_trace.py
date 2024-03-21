@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import bisect
 import functools
 import logging
 import os
-from typing import Dict, List, Optional, Tuple
 
 from angr.errors import SimEngineError
 
@@ -20,7 +21,7 @@ class ObjectAndBase:
         "proj_base_addr",
     )
 
-    def __init__(self, obj_name: str, base_addr: int, proj_base_addr: Optional[int]):
+    def __init__(self, obj_name: str, base_addr: int, proj_base_addr: int | None):
         self.obj_name = obj_name
         self.base_addr = base_addr
         self.proj_base_addr = proj_base_addr
@@ -63,10 +64,10 @@ def _find_object_base_in_project(object_name, project):
 
 
 # cache the last index
-last_obj_idx: Optional[int] = None
+last_obj_idx: int | None = None
 
 
-def _find_obj_in_mapping(addr, mapping) -> Tuple[int, Optional[ObjectAndBase]]:
+def _find_obj_in_mapping(addr, mapping) -> tuple[int, ObjectAndBase | None]:
     idx = bisect.bisect_left(mapping, addr)
     obj = None
     if 0 <= idx < len(mapping):
@@ -122,9 +123,9 @@ def trace_to_bb_addrs(trace, project, trace_base):
     """
     bbl_addrs = trace["bb_addrs"]
 
-    mapping: Optional[List[ObjectAndBase]] = None
+    mapping: list[ObjectAndBase] | None = None
     if "map" in trace:
-        map_dict: Dict[str, int] = trace["map"]
+        map_dict: dict[str, int] = trace["map"]
         mapping = [
             ObjectAndBase(name, base_addr, _find_object_base_in_project(name, project.am_obj))
             for name, base_addr in map_dict.items()

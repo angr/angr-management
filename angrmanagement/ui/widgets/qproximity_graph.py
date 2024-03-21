@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPointF, Qt
 
@@ -22,7 +24,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, instance, proximity_view: "ProximityView", parent=None):
+    def __init__(self, instance, proximity_view: ProximityView, parent=None):
         super().__init__(parent=parent)
 
         self._instance = instance
@@ -30,10 +32,10 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
 
         self._graph = None
         self.blocks = set()
-        self._edges: List[Edge] = []
-        self._arrows_by_src: Dict[Any, List[QProximityGraphArrow]] = defaultdict(list)
-        self._arrows_by_dst: Dict[Any, List[QProximityGraphArrow]] = defaultdict(list)
-        self._arrows: List[QProximityGraphArrow] = []
+        self._edges: list[Edge] = []
+        self._arrows_by_src: dict[Any, list[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows_by_dst: dict[Any, list[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows: list[QProximityGraphArrow] = []
 
     @property
     def graph(self):
@@ -112,7 +114,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
         ibr = self.scene().itemsBoundingRect()
         return ibr.center()
 
-    def _sort_nodes(self, nodes: List["QProximityGraphBlock"]) -> List["QProximityGraphBlock"]:
+    def _sort_nodes(self, nodes: list[QProximityGraphBlock]) -> list[QProximityGraphBlock]:
         # Sort nodes based on the address of their first ref_at address in each function
         sorted_nodes = sorted(nodes, key=lambda x: next(iter(x._node.ref_at)) if x._node.ref_at else 0)
         return sorted_nodes

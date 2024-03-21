@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from inspect import isfunction
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QContextMenuEvent, QCursor
@@ -116,7 +118,7 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
 
 
 class QSimulationManagerViewer(QTreeWidget):
-    state_clipboard: List["SimState"]
+    state_clipboard: list[SimState]
 
     def __init__(self, simgr, parent=None):
         super().__init__(parent)

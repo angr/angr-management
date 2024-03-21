@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu
@@ -8,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class MenuEntry:
-    _qaction: Optional[QAction]
+    _qaction: QAction | None
 
     def __init__(
         self,
@@ -20,7 +22,7 @@ class MenuEntry:
         enabled=True,
         key=None,
         role: QAction.MenuRole = QAction.MenuRole.NoRole,
-        icon: Optional["QIcon"] = None,
+        icon: QIcon | None = None,
     ):
         self.caption = caption
         self.action = action
@@ -74,7 +76,7 @@ class Menu:
         self.entries = []
         self._keyed_entries = None
 
-        self._qmenu: Optional[QMenu] = None
+        self._qmenu: QMenu | None = None
 
         for child in children:
             self.add(child)

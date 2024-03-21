@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
@@ -41,7 +41,7 @@ class RenameDialog(QDialog):
         self._status_label: QLabel = None
         self._ok_button: QPushButton = None
         self.main_layout: QVBoxLayout = QVBoxLayout()
-        self.result: Optional[str] = None
+        self.result: str | None = None
         self._init_widgets()
         self.setLayout(self.main_layout)
         self.setWindowTitle(window_title)

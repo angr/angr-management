@@ -1,4 +1,6 @@
-from typing import Iterator, Optional, Tuple
+from __future__ import annotations
+
+from typing import Iterator
 
 from sortedcontainers import SortedDict
 
@@ -90,7 +92,7 @@ class TaggedIntervalMap:
         for addr in keys_to_drop:
             del self._map[addr]
 
-    def irange(self, min_addr: Optional[int] = None, max_addr: Optional[int] = None) -> Iterator[Tuple[int, int, int]]:
+    def irange(self, min_addr: int | None = None, max_addr: int | None = None) -> Iterator[tuple[int, int, int]]:
         """
         Iterate over intervals intersecting [min_addr, max_addr], yielding interval (addr, size, tags) tuples. Implicit
         gap intervals (with tags=0) are also returned.

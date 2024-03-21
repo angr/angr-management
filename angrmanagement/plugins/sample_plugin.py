@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Iterator, List
 
 from angrmanagement.plugins import BasePlugin
@@ -20,8 +22,8 @@ class SamplePlugin(BasePlugin):
     def build_context_menu_functions(self, funcs):  # pylint: disable=unused-argument
         yield ("owo", [("uwu", lambda: None), ("o_O", lambda: None)])
 
-    def step_callback(self, simgr: "SimulationManager"):
+    def step_callback(self, simgr: SimulationManager):
         print("Active States: %s" % simgr)
 
-    def build_qblock_annotations(self, qblock: "QBlock") -> Iterator[QInstructionAnnotation]:
+    def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:
         return [QPassthroughCount(qblock.addr, "entry")]

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 import sys
 import time
 from queue import Queue
-from typing import TYPE_CHECKING, Callable, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Callable, List, Optional, Type
 
 import angr
 from angr.analyses.disassembly import Instruction
@@ -34,9 +36,9 @@ class Instance:
     """
 
     project: ObjectContainer
-    cfg: Union[angr.analyses.cfg.CFGBase, ObjectContainer]
-    cfb: Union[angr.analyses.cfg.CFBlanket, ObjectContainer]
-    log: Union[List[LogRecord], ObjectContainer]
+    cfg: angr.analyses.cfg.CFGBase | ObjectContainer
+    cfb: angr.analyses.cfg.CFBlanket | ObjectContainer
+    log: list[LogRecord] | ObjectContainer
 
     def __init__(self):
         # pylint:disable=import-outside-toplevel
@@ -49,7 +51,7 @@ class Instance:
         )
 
         self._live = False
-        self.variable_recovery_job: Optional[VariableRecoveryJob] = None
+        self.variable_recovery_job: VariableRecoveryJob | None = None
         self._analysis_configuration = None
 
         self.jobs = []
@@ -92,11 +94,11 @@ class Instance:
         self.project.am_subscribe(self.initialize)
 
         # Callbacks
-        self._insn_backcolor_callback: Optional[Callable[[int, bool], None]] = None  # (addr, is_selected)
-        self._label_rename_callback: Optional[Callable[[int, str], None]] = None  # (addr, new_name)
-        self._set_comment_callback: Optional[Callable[[int, str], None]] = None  # (addr, comment_text)
-        self.handle_comment_changed_callback: Optional[Callable[[int, str, bool, bool, bool], None]] = None
-        self.job_worker_exception_callback: Optional[Callable[[Exception], None]] = None
+        self._insn_backcolor_callback: Callable[[int, bool], None] | None = None  # (addr, is_selected)
+        self._label_rename_callback: Callable[[int, str], None] | None = None  # (addr, new_name)
+        self._set_comment_callback: Callable[[int, str], None] | None = None  # (addr, comment_text)
+        self.handle_comment_changed_callback: Callable[[int, str, bool, bool, bool], None] | None = None
+        self.job_worker_exception_callback: Callable[[Exception], None] | None = None
 
         # Setup logging
         initialize(self)
@@ -120,7 +122,7 @@ class Instance:
     #
 
     @property
-    def kb(self) -> Optional[angr.KnowledgeBase]:
+    def kb(self) -> angr.KnowledgeBase | None:
         if self.project.am_none:
             return None
         return self.project.kb
@@ -251,7 +253,7 @@ class Instance:
     def delete_hook(self, addr):
         self.project.unhook(addr)
 
-    def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
+    def add_breakpoint(self, obj: str | int, type_: str | None = None, size: int | None = None):
         """
         Convenience function to add a breakpoint.
 

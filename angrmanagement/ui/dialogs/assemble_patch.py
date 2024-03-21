@@ -3,8 +3,9 @@
 # - Show symbols in disassembly text
 # - Support editing existing patches
 # - Handle overlap with existing patches
+from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -36,7 +37,7 @@ class AssemblePatchDialog(QDialog):
     Dialog for making a patch from assembly code.
     """
 
-    def __init__(self, address: int, instance: "Instance", parent=None):
+    def __init__(self, address: int, instance: Instance, parent=None):
         super().__init__(parent)
 
         self.instance: Instance = instance
@@ -46,7 +47,7 @@ class AssemblePatchDialog(QDialog):
         insn = block.disassembly.insns[0]
 
         self._original_bytes: bytes = block.bytes[: insn.size]
-        self._new_bytes: Optional[bytes] = self._original_bytes
+        self._new_bytes: bytes | None = self._original_bytes
         self._initial_text = insn.mnemonic
         if insn.op_str:
             self._initial_text += " " + insn.op_str

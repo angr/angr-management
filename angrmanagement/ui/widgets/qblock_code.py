@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Sequence
 
 import ailment
 
@@ -44,14 +46,14 @@ class QBlockCodeObj(QObject):
     """
 
     obj: Any
-    infodock: "InfoDock"
+    infodock: InfoDock
     parent: Any
     options: QBlockCodeOptions
-    span: Optional[Tuple[int, int]]
-    subobjs: Sequence["QBlockCodeObj"]
+    span: tuple[int, int] | None
+    subobjs: Sequence[QBlockCodeObj]
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj: Any, infodock: "InfoDock", parent: Any, options: QBlockCodeOptions = None):
+    def __init__(self, obj: Any, infodock: InfoDock, parent: Any, options: QBlockCodeOptions = None):
         super().__init__()
         self.obj = obj
         self.infodock = infodock
@@ -124,7 +126,7 @@ class QBlockCodeObj(QObject):
         """
         return self.span[0] <= pos < self.span[1]
 
-    def get_hit_obj(self, pos: int) -> "QBlockCodeObj":
+    def get_hit_obj(self, pos: int) -> QBlockCodeObj:
         """
         Find the leaf node for a given character offset
         """
@@ -137,7 +139,7 @@ class QBlockCodeObj(QObject):
                     return hit
         return self
 
-    def _add_subobj(self, obj: "QBlockCodeObj"):
+    def _add_subobj(self, obj: QBlockCodeObj):
         """
         Add display object `obj` to the list of subobjects
         """
@@ -500,7 +502,7 @@ class QIrOpPcodeOp(QIROpTextObj):
     Renders a P-code op.
     """
 
-    def create_subobjs(self, obj: "pypcode.PcodeOp"):
+    def create_subobjs(self, obj: pypcode.PcodeOp):
         self.add_text(pypcode.PcodePrettyPrinter.fmt_op(obj))
 
 
@@ -536,10 +538,10 @@ class VexIRTmpWrapper:
         "reg_name",
     )
 
-    tid: "TmpVar"
-    reg_name: Optional[str]
+    tid: TmpVar
+    reg_name: str | None
 
-    def __init__(self, tid: "TmpVar", reg_name: Optional[str] = None):
+    def __init__(self, tid: TmpVar, reg_name: str | None = None):
         self.tid = tid
         self.reg_name = reg_name or ("t%d" % self.tid)
 
@@ -557,10 +559,10 @@ class VexIRRegWrapper:
         "reg_name",
     )
 
-    offset: "RegisterOffset"
-    reg_name: Optional[str]
+    offset: RegisterOffset
+    reg_name: str | None
 
-    def __init__(self, offset: "RegisterOffset", reg_name: Optional[str] = None):
+    def __init__(self, offset: RegisterOffset, reg_name: str | None = None):
         self.offset = offset
         self.reg_name = reg_name or ("offset=%s" % self.offset)
 
@@ -745,8 +747,8 @@ class QBlockCode(QCachedGraphicsItem):
     _addr_str: str
     obj: QBlockCodeObj
     _config: ConfigurationManager
-    disasm_view: "QDisassemblyBaseControl"
-    infodock: "InfoDock"
+    disasm_view: QDisassemblyBaseControl
+    infodock: InfoDock
     parent: Any
 
     def __init__(
@@ -754,9 +756,9 @@ class QBlockCode(QCachedGraphicsItem):
         addr: int,
         obj: QBlockCodeObj,
         config: ConfigurationManager,
-        disasm_view: "QDisassemblyBaseControl",
+        disasm_view: QDisassemblyBaseControl,
         instance,
-        infodock: "InfoDock",
+        infodock: InfoDock,
         parent: Any = None,
     ):
         super().__init__(parent=parent)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import partial
 from typing import TYPE_CHECKING, Callable
 
@@ -17,7 +19,7 @@ class DisasmInsnContextMenu(Menu):
     and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
 
-    def __init__(self, disasm_view: "DisassemblyView"):
+    def __init__(self, disasm_view: DisassemblyView):
         super().__init__("", parent=disasm_view)
 
         self.insn_addr = None
@@ -50,7 +52,7 @@ class DisasmInsnContextMenu(Menu):
         )
 
     @property
-    def _disasm_view(self) -> "DisassemblyView":
+    def _disasm_view(self) -> DisassemblyView:
         return self.parent
 
     def _popup_newstate_dialog(self):
@@ -99,7 +101,7 @@ class DisasmInsnContextMenu(Menu):
     # Public Methods
     #
 
-    def add_menu_entry(self, text, callback: Callable[["DisasmInsnContextMenu"], None], add_separator_first=True):
+    def add_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True):
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))

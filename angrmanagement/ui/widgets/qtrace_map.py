@@ -1,4 +1,6 @@
-from typing import Optional, Sequence
+from __future__ import annotations
+
+from typing import Sequence
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPen, QPolygonF
@@ -37,7 +39,7 @@ class TraceMapItem(QGraphicsItem):
         self._addr: int = 0
         self._indicator_items: Sequence[QGraphicsItem] = []
 
-        self._hover_addr: Optional[int] = None
+        self._hover_addr: int | None = None
         self._hover_items: Sequence[QGraphicsItem] = []
 
         self._checkpoints = []
@@ -109,7 +111,7 @@ class TraceMapItem(QGraphicsItem):
         """
         return QRectF(0, 0, self._width, self._height)
 
-    def _get_pos_from_addr(self, addr: int) -> Optional[int]:
+    def _get_pos_from_addr(self, addr: int) -> int | None:
         """
         Get scene X coordinate from address, or None if it could not be mapped.
         """
@@ -117,7 +119,7 @@ class TraceMapItem(QGraphicsItem):
             return None
         return int(addr / self._total_size * self._width)
 
-    def _get_addr_from_pos(self, pos: int) -> Optional[int]:
+    def _get_addr_from_pos(self, pos: int) -> int | None:
         """
         Get address from scene X coordinate, or None if it could not be mapped.
         """
@@ -363,7 +365,7 @@ class QTraceMapView(QGraphicsView):
         """
         self.update_size()
 
-    def adjust_viewport_scale(self, scale: Optional[float] = None, point: Optional[QPoint] = None):
+    def adjust_viewport_scale(self, scale: float | None = None, point: QPoint | None = None):
         """
         Adjust viewport scale factor.
         """

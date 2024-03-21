@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import List
 
 import networkx
 from angr.utils.graph import GraphUtils
@@ -318,7 +319,7 @@ class GraphLayouter:
         self._col_widths = []
         self._grid_coordinates = {}
 
-        self.edges: List[Edge] = []
+        self.edges: list[Edge] = []
         self.node_coordinates = {}
 
         self._layout()

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Signal
@@ -14,7 +16,7 @@ class QIconLabel(QWidget):
 
     clicked = Signal()
 
-    def __init__(self, icon: "QIcon", text: str = ""):
+    def __init__(self, icon: QIcon, text: str = ""):
         super().__init__()
         lyt = QHBoxLayout()
         lyt.setContentsMargins(0, 0, 0, 0)

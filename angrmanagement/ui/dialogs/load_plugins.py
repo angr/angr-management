@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -105,7 +107,7 @@ class LoadPlugins(QDialog):
     #
 
     def _on_ok_clicked(self):
-        list_items: List[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)
+        list_items: list[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)
         for i in list_items:
             checked = i.checkState() == Qt.Checked
 

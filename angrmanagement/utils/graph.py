@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 from collections import defaultdict
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtWidgets import QTabWidget
 
 from .qconstraint_viewer import QConstraintViewer

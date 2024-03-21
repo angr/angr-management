@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -132,7 +134,7 @@ class QStringModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    def _get_column_text(self, v: "MemoryData", col: int):
+    def _get_column_text(self, v: MemoryData, col: int):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
             if col == self.ADDRESS_COL and isinstance(data, int):
@@ -140,11 +142,11 @@ class QStringModel(QAbstractTableModel):
             return data
 
     @staticmethod
-    def _get_decoded_string_content(md: "MemoryData") -> str:
+    def _get_decoded_string_content(md: MemoryData) -> str:
         sort_to_encoding = {MemoryDataSort.String: "utf-8", MemoryDataSort.UnicodeString: "utf_16_le"}
         return md.content.decode(sort_to_encoding[md.sort])
 
-    def _get_column_data(self, v: "MemoryData", col: int) -> Any:
+    def _get_column_data(self, v: MemoryData, col: int) -> Any:
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
             self.SIZE_COL: lambda x: x.size,
@@ -254,7 +256,7 @@ class QStringTable(QTableView):
         if self._selected is not None:
             self._selected(selected_item)
 
-    def keyPressEvent(self, event: "QKeyEvent") -> None:
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key_X:
             # xrefs
             if self._model is None:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QVBoxLayout
 
 from angrmanagement.ui.widgets import QAddressInput

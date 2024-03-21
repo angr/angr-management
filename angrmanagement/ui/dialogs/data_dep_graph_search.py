@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6 import QtWidgets
 
@@ -20,7 +22,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._curr_value_text = ""
         self._curr_addr_text = ""
         self._curr_name_text = ""
-        self._rel_nodes: List[QDataDepGraphBlock] = []
+        self._rel_nodes: list[QDataDepGraphBlock] = []
         self._curr_search_idx = -1
 
         self._name_line_edit = QtWidgets.QLineEdit(self)
@@ -38,7 +40,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._search_btn.clicked.connect(self._on_search_click)
         self._close_btn.clicked.connect(self._on_close_click)
 
-    def _safe_node_retrieval(self) -> Optional["QDataDepGraphBlock"]:
+    def _safe_node_retrieval(self) -> QDataDepGraphBlock | None:
         if self._rel_nodes and 0 <= self._curr_search_idx < len(self._rel_nodes):
             return self._rel_nodes[self._curr_search_idx]
         else:
@@ -55,7 +57,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         Iterate through matching nodes
         """
 
-        def _node_predicate(node: "BaseDepNode"):
+        def _node_predicate(node: BaseDepNode):
             nonlocal val_as_int
             nonlocal addr_as_int
 

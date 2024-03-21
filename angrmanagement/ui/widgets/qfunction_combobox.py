@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QComboBox
 
@@ -13,7 +15,7 @@ class QFunctionComboBox(QComboBox):
         self._show_all_functions = show_all_functions
         self._selection_callback = selection_callback
 
-        self._function_manager: Optional[FunctionManager] = None
+        self._function_manager: FunctionManager | None = None
 
         self.currentIndexChanged.connect(self._on_current_index_changed)
 
@@ -70,7 +72,7 @@ class QFunctionComboBox(QComboBox):
     #
 
     @staticmethod
-    def _repr_function(func: "Function") -> str:
+    def _repr_function(func: Function) -> str:
         demangled_name = func.demangled_name
         if len(demangled_name) > 30:
             demangled_name = demangled_name[:30] + "..."

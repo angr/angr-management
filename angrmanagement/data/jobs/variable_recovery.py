@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
@@ -18,8 +20,8 @@ class VariableRecoveryJob(Job):
         self,
         on_finish=None,
         on_variable_recovered=None,
-        workers: Optional[int] = None,
-        func_addr: Optional[int] = None,
+        workers: int | None = None,
+        func_addr: int | None = None,
         auto_start=False,
         **kwargs,
     ):
@@ -29,7 +31,7 @@ class VariableRecoveryJob(Job):
         self.on_variable_recovered = on_variable_recovered
         self.workers = workers
         self.ccc = None
-        self.instance: Optional[Instance] = None
+        self.instance: Instance | None = None
         self.started = False
         self.auto_start = auto_start
         self.func_addr = func_addr
@@ -57,7 +59,7 @@ class VariableRecoveryJob(Job):
         callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
         self.ccc.prioritize_functions({func_addr} | callees)
 
-    def _run(self, inst: "Instance"):
+    def _run(self, inst: Instance):
         self.instance = inst
         self.started = True
 

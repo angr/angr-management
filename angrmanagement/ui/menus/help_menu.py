@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtGui import QAction, QKeySequence
 
 from angrmanagement.ui.icons import icon
