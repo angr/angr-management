@@ -35,6 +35,14 @@ def create_char_format(color: QColor, weight: QFont.Weight, style: QFont.Style) 
 
 
 def reset_formats():
+    bg = QTextCharFormat()
+    bg.setBackground(Conf.palette_base)
+    FORMATS["background"] = bg
+
+    fg = QTextCharFormat()
+    fg.setForeground(Conf.palette_text)
+    FORMATS["normal"] = fg
+
     FORMATS["keyword"] = create_char_format(
         Conf.pseudocode_keyword_color, Conf.pseudocode_keyword_weight, Conf.pseudocode_keyword_style
     )
