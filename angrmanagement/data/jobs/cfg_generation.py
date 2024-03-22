@@ -104,5 +104,5 @@ class CFGGenerationJob(Job):
         self.instance.cfg = cfg
         self.instance.cfb = cfb
 
-    def _on_cfb_object_added(self, addr, obj) -> None:
+    def _on_cfb_object_added(self, addr: int, obj) -> None:
         self.instance.cfb.am_event(object_added=(addr, obj))

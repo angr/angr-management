@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QImage, QLinearGradient, QPainter, QPen
@@ -17,6 +18,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(name=__name__)
 
@@ -44,7 +48,7 @@ class QTraceViewer(QWidget):
     MARK_WIDTH = TRACE_FUNC_X - LEGEND_X + TRACE_FUNC_WIDTH
     MARK_HEIGHT = 1
 
-    def __init__(self, workspace, disasm_view, parent=None) -> None:
+    def __init__(self, workspace: Workspace, disasm_view, parent=None) -> None:
         super().__init__(parent=parent)
         self.workspace = workspace
         self.disasm_view = disasm_view

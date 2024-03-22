@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDockWidget, QHBoxLayout, QMainWindow
 
-from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.ui.widgets.qpathtree import QPathTree
 from angrmanagement.ui.widgets.qsimulation_managers import QSimulationManagers
 from angrmanagement.ui.widgets.state_inspector import StateInspector
 
 from .view import InstanceView
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class SymexecView(InstanceView):
-    def __init__(self, workspace, instance) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance) -> None:
         super().__init__("symexec", workspace, "right", instance)
 
         self.base_caption = "Symbolic Execution"
@@ -65,16 +70,16 @@ class SymexecView(InstanceView):
                 }
             )
 
-    def avoid_addr_in_exec(self, addr) -> None:
+    def avoid_addr_in_exec(self, addr: int) -> None:
         self._simgrs.add_avoid_address(addr)
 
-    def find_addr_in_exec(self, addr) -> None:
+    def find_addr_in_exec(self, addr: int) -> None:
         self._simgrs.add_find_address(addr)
 
-    def remove_avoid_addr_in_exec(self, addr) -> None:
+    def remove_avoid_addr_in_exec(self, addr: int) -> None:
         self._simgrs.remove_avoid_address(addr)
 
-    def remove_find_addr_in_exec(self, addr) -> None:
+    def remove_find_addr_in_exec(self, addr: int) -> None:
         self._simgrs.remove_find_address(addr)
 
     def redraw_graph(self) -> None:
@@ -137,7 +142,7 @@ class SymexecView(InstanceView):
     # Private methods
     #
 
-    def _switch_to_disassembly_view(self, addr) -> None:
+    def _switch_to_disassembly_view(self, addr: int) -> None:
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         else:

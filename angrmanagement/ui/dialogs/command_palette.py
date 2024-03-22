@@ -289,7 +289,7 @@ class CommandPaletteDialog(PaletteDialog):
     Dialog for selecting commands.
     """
 
-    def __init__(self, workspace, parent=None) -> None:
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(CommandPaletteModel(workspace), PaletteItemDelegate(display_icons=False), parent)
         self.setWindowTitle("Command Palette")
 
@@ -299,6 +299,6 @@ class GotoPaletteDialog(PaletteDialog):
     Dialog for selecting navigation targets.
     """
 
-    def __init__(self, workspace, parent=None) -> None:
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(GotoPaletteModel(workspace), parent=parent)
         self.setWindowTitle("Goto Anything")

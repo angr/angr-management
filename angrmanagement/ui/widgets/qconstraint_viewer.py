@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QConstraintViewer(QFrame):
@@ -10,7 +15,7 @@ class QConstraintViewer(QFrame):
 
     COLUMNS = ["Constraint", "Cardinality", "Depth", "# Variables"]
 
-    def __init__(self, state, parent, workspace) -> None:
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
 
         self._state = state

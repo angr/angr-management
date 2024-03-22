@@ -6,6 +6,7 @@ import logging
 import math
 import threading
 import time
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QColor
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
@@ -17,6 +18,9 @@ from angrmanagement.plugins import BasePlugin
 from angrmanagement.utils.io import download_url
 
 from .parse_trace import trace_to_bb_addrs
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +53,7 @@ class CoveragePlugin(BasePlugin):
     Implements the fuzzing coverage view.
     """
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.workspace = workspace
@@ -120,7 +124,7 @@ class CoveragePlugin(BasePlugin):
 
         return covered_bbls, len(func_bbls)
 
-    def color_block(self, addr):
+    def color_block(self, addr: int):
         if not self.running:
             return None
         with self.coverage_lock:

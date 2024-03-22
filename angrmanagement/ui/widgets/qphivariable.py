@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QRectF, Qt
 
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class QPhiVariable(QCachedGraphicsItem):
     IDENT_LEFT_PADDING = 5
 
-    def __init__(self, instance, disasm_view, phi_variable, config, parent=None) -> None:
+    def __init__(self, instance: Instance, disasm_view, phi_variable, config, parent=None) -> None:
         """
 
         :param workspace:

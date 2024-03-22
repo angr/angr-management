@@ -11,6 +11,7 @@ from angrmanagement.ui.widgets.qinst_annotation import QActiveCount, QPassthroug
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views import DisassemblyView, SymexecView
+    from angrmanagement.ui.workspace import Workspace
 
 
 class ExecutionStatisticsViewer(BasePlugin):
@@ -20,7 +21,7 @@ class ExecutionStatisticsViewer(BasePlugin):
     fetch_qblock_annotations function.
     """
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         self.passthrough_counts = defaultdict(int)
         self.addr_to_active_states = defaultdict(list)

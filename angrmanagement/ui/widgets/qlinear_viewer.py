@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from angr.analyses.decompiler import Clinic
     from angr.knowledge_plugins import Function
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.logic.disassembly import InfoDock
 
 
@@ -63,7 +64,7 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
 
-    def __init__(self, instance, disasm_view, parent=None) -> None:
+    def __init__(self, instance: Instance, disasm_view, parent=None) -> None:
         QDisassemblyBaseControl.__init__(self, instance, disasm_view, QAbstractScrollArea)
         QAbstractScrollArea.__init__(self, parent=parent)
 
@@ -276,7 +277,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self.navigate_to_addr(insn_addr)
 
-    def navigate_to_addr(self, addr) -> None:
+    def navigate_to_addr(self, addr: int) -> None:
         if not self._addr_to_region_offset:
             return
         try:

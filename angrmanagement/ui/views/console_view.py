@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 from traitlets.config.configurable import MultipleInstanceError
 
 from .view import InstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 _l = logging.getLogger(name=__name__)
 
@@ -16,7 +21,7 @@ class ConsoleView(InstanceView):
     Console view providing IPython interactive session.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("console", workspace, default_docking_position, instance)
 
         self.base_caption = "Console"

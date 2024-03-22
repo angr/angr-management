@@ -9,10 +9,11 @@ if TYPE_CHECKING:
     from angr.sim_manager import SimulationManager
 
     from angrmanagement.ui.widgets.qblock import QBlock
+    from angrmanagement.ui.workspace import Workspace
 
 
 class SamplePlugin(BasePlugin):
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         workspace.main_instance.register_container("bookmarks", list, List[int], "Bookmarked addresses")

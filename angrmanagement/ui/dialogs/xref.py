@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QDialog, QVBoxLayout
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.widgets.qxref_viewer import QXRefViewer
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 _l = logging.getLogger(__name__)
 
@@ -18,12 +22,12 @@ class XRefDialog(QDialog):
 
     def __init__(
         self,
-        addr=None,
+        addr: int | None = None,
         variable_manager=None,
         variable=None,
         xrefs_manager=None,
         dst_addr=None,
-        instance=None,
+        instance: Instance | None = None,
         disassembly_view=None,
         parent=None,
     ) -> None:
@@ -79,7 +83,7 @@ class XRefDialog(QDialog):
 
         self.setLayout(layout)
 
-    def jump_to(self, addr) -> None:
+    def jump_to(self, addr: int) -> None:
         self.close()
         disasm_view = self._disassembly_view
         if disasm_view is None:

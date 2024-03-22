@@ -15,9 +15,12 @@ from .view import InstanceView
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class StringsView(InstanceView):
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("strings", workspace, default_docking_position, instance)
 
         self.base_caption = "Strings"

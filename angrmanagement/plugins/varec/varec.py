@@ -6,6 +6,7 @@ import random
 import re
 import string
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 import requests
 from PySide6.QtGui import Qt
@@ -15,13 +16,16 @@ from sortedcontainers import SortedDict
 from angrmanagement.config import Conf
 from angrmanagement.plugins.base_plugin import BasePlugin
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class VaRec(BasePlugin):
     """
     The plugin for supporting the VaRec plugin (private for now until it is released to the public).
     """
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.transitions: set[tuple[int, int]] = set()

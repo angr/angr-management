@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPainter, QPen
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QScrollArea, QVBoxLayout, QWidget
@@ -7,6 +9,9 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QScrollAre
 from angrmanagement.config import Conf
 
 from .qast_viewer import QASTViewer
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class AddressPiece:
@@ -21,7 +26,7 @@ class NewLinePiece:
 
 
 class QMemoryView(QWidget):
-    def __init__(self, state, workspace, parent=None) -> None:
+    def __init__(self, state, workspace: Workspace, parent=None) -> None:
         super().__init__(parent)
         self.workspace = workspace
 
@@ -114,7 +119,7 @@ class QMemoryView(QWidget):
 
 
 class QMemoryViewer(QFrame):
-    def __init__(self, state, parent, workspace) -> None:
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
         self.workspace = workspace
 

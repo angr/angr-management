@@ -5,10 +5,14 @@ import logging
 from datetime import datetime
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
+from typing import TYPE_CHECKING
 
 from angr.utils.mp import Initializer
 
 from angrmanagement.config import Conf
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class LogTimeStamp:
@@ -57,7 +61,7 @@ class LogDumpHandler(logging.Handler):
     Dumps log messages.
     """
 
-    def __init__(self, instance, level=logging.NOTSET) -> None:
+    def __init__(self, instance: Instance, level=logging.NOTSET) -> None:
         super().__init__(level=level)
         self.instance = instance
 

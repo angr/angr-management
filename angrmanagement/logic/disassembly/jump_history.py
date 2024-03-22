@@ -29,7 +29,7 @@ class JumpHistory:
     def __len__(self) -> int:
         return len(self._history)
 
-    def jump_to(self, addr) -> None:
+    def jump_to(self, addr: int) -> None:
         if self._pos != len(self._history) - 1:
             self.trim()
 
@@ -37,7 +37,7 @@ class JumpHistory:
             self._history.append(addr)
             self._pos = len(self._history) - 1
 
-    def record_address(self, addr) -> None:
+    def record_address(self, addr: int) -> None:
         if 0 <= self._pos < len(self._history):
             self._history[self._pos] = addr
         else:

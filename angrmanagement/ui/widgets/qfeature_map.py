@@ -29,6 +29,8 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 if TYPE_CHECKING:
     from angr.analyses.cfg.cfb import MemoryRegion
 
+    from angrmanagement.data.instance import Instance
+
 
 log = logging.getLogger(name=__name__)
 
@@ -105,7 +107,7 @@ class FeatureMapItem(QGraphicsItem):
     ZVALUE_HOVER = 1
     ZVALUE_CURSOR = 2
 
-    def __init__(self, instance, *args, **kwargs) -> None:
+    def __init__(self, instance: Instance, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.instance = instance
 
@@ -609,7 +611,7 @@ class QFeatureMapView(QGraphicsView):
     Main view for feature map scene.
     """
 
-    def __init__(self, instance, parent=None) -> None:
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -756,7 +758,7 @@ class QFeatureMap(QWidget):
     Byte-level map of the memory space.
     """
 
-    def __init__(self, instance, parent=None) -> None:
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
         self._init_widgets()

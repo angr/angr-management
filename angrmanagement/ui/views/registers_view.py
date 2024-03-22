@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     import PySide6
     from archinfo import Register
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QRegisterTableModel(QAbstractTableModel):
     """
@@ -135,7 +138,7 @@ class RegistersView(InstanceView):
     Register table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("registers", workspace, default_docking_position, instance)
 
         self.base_caption = "Registers"

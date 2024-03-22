@@ -12,6 +12,7 @@ from .qgraph import QZoomableDraggableGraphicsView
 from .qgraph_arrow import QProximityGraphArrow
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.proximity_view import ProximityView
     from angrmanagement.ui.widgets.qproximitygraph_block import QProximityGraphBlock
     from angrmanagement.utils.edge import Edge
@@ -24,7 +25,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, instance, proximity_view: ProximityView, parent=None) -> None:
+    def __init__(self, instance: Instance, proximity_view: ProximityView, parent=None) -> None:
         super().__init__(parent=parent)
 
         self._instance = instance

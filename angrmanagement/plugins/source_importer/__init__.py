@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.plugins import BasePlugin
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class SourceImporterPlugin(BasePlugin):
@@ -15,7 +19,7 @@ class SourceImporterPlugin(BasePlugin):
 
     DISPLAY_NAME = "Source Importer"
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.source_paths = []

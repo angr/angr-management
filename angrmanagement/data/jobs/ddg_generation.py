@@ -6,7 +6,7 @@ from .job import Job
 
 
 class DDGGenerationJob(Job):
-    def __init__(self, addr) -> None:
+    def __init__(self, addr: int) -> None:
         super().__init__("DDG generation")
         self._addr = addr
 

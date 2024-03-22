@@ -60,10 +60,10 @@ class BreakpointManager:
         self.breakpoints.remove(bp)
         self.breakpoints.am_event(removed=bp)
 
-    def add_exec_breakpoint(self, addr) -> None:
+    def add_exec_breakpoint(self, addr: int) -> None:
         self.add_breakpoint(Breakpoint(BreakpointType.Execute, addr))
 
-    def toggle_exec_breakpoint(self, addr) -> None:
+    def toggle_exec_breakpoint(self, addr: int) -> None:
         # is there a breakpoint at this address?
         found_bp = None
         for bp in self.breakpoints:

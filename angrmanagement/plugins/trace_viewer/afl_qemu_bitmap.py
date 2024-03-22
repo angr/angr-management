@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import logging
 import math
+from typing import TYPE_CHECKING
 
 import networkx as nx
 from angr.knowledge_plugins.functions import Function
 from PySide6.QtGui import QColor
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 _l = logging.getLogger(name=__name__)
 
@@ -21,7 +25,7 @@ class AFLQemuBitmap:
         QColor(0xFD, 0xD4, 0x9E, 0x60),
     ]
 
-    def __init__(self, workspace, bitmap, base_addr, bits_inverted: bool = False) -> None:
+    def __init__(self, workspace: Workspace, bitmap, base_addr, bits_inverted: bool = False) -> None:
         self.workspace = workspace
         self.virgin_bitmap = bitmap
         if bits_inverted:
@@ -54,7 +58,7 @@ class AFLQemuBitmap:
                 new = max(old, hitcount)
                 self._node_hitcount_summary[addr] = new
 
-    def get_hit_miss_color(self, addr):
+    def get_hit_miss_color(self, addr: int):
         # TODO: sometimes there's addresses here that are not in the hitcount, don't know why
         hitcount = self._node_hitcount_summary.get(addr, 0)
         if hitcount == 0:
@@ -74,16 +78,16 @@ class AFLQemuBitmap:
 
         return self.function_info[func.addr]["coverage"]
 
-    def get_any_trace(self, addr):
+    def get_any_trace(self, addr: int):
         raise NotImplementedError
 
-    def runtime_to_project_addr(self, addr):
+    def runtime_to_project_addr(self, addr: int):
         return addr - self.runtime_baddr + self.project_baddr
 
-    def project_to_runtime_addr(self, addr):
+    def project_to_runtime_addr(self, addr: int):
         return addr - self.project_baddr + self.runtime_baddr
 
-    def addr_hash(self, addr):
+    def addr_hash(self, addr: int):
         return ((addr >> 4) ^ (addr << 8)) & (self.bitmap_size - 1)
 
     def possible_dynamic_basic_block_succs(self, g, node):

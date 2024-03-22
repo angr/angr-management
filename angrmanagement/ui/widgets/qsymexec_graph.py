@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QBrush, QColor, QPen
 
@@ -7,12 +9,15 @@ from angrmanagement.utils.graph_layouter import GraphLayouter
 
 from .qgraph import QZoomableDraggableGraphicsView
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QSymExecGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, current_state, workspace, symexec_view, parent=None) -> None:
+    def __init__(self, current_state, workspace: Workspace, symexec_view, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.state = current_state

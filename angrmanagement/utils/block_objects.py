@@ -32,6 +32,6 @@ class PhiVariable(Variables):
 class Label:
     __slots__ = ["addr", "text"]
 
-    def __init__(self, addr, text: str) -> None:
+    def __init__(self, addr: int, text: str) -> None:
         self.addr = addr
         self.text = text

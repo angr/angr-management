@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
@@ -7,9 +9,13 @@ from angrmanagement.ui.widgets.qstate_table import QStateTable
 
 from .view import InstanceView
 
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class StatesView(InstanceView):
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("states", workspace, default_docking_position, instance)
 
         self.base_caption = "States"

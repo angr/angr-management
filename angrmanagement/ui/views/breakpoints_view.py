@@ -13,6 +13,7 @@ from .view import InstanceView
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
 
@@ -150,7 +151,7 @@ class BreakpointsView(InstanceView):
     Breakpoints table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("breakpoints", workspace, default_docking_position, instance)
         self.base_caption = "Breakpoints"
         self._tbl_widget: QBreakpointTableWidget | None = None

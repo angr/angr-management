@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QLabel, QPlainTextEdit, QVBoxLayout
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QCommentTextBox(QPlainTextEdit):
@@ -38,7 +43,7 @@ class SetComment(QDialog):
     Dialog for setting comment.
     """
 
-    def __init__(self, workspace, comment_addr, parent=None) -> None:
+    def __init__(self, workspace: Workspace, comment_addr, parent=None) -> None:
         super().__init__(parent)
 
         # initialization

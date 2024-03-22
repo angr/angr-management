@@ -17,13 +17,16 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.key_definitions.atoms import Atom
     from angr.knowledge_plugins.key_definitions.definition import Definition
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class DependencyView(InstanceView):
     """
     Creates view for dependency analysis.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("dependencies", workspace, default_docking_position, instance)
 
         self.base_caption = "Dependencies"

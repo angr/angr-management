@@ -80,7 +80,7 @@ class UrlActionJumpTo(UrlActionBase):
     Implements the jump-to action.
     """
 
-    def __init__(self, addr=None, symbol=None, target_id=None) -> None:
+    def __init__(self, addr: int | None = None, symbol=None, target_id=None) -> None:
         super().__init__(target_id=target_id)
         self.addr = addr
         self.symbol = symbol
@@ -104,7 +104,7 @@ class UrlActionCommentAt(UrlActionBase):
     Implements the comment-at action.
     """
 
-    def __init__(self, addr, comment: str, target_id=None) -> None:
+    def __init__(self, addr: int, comment: str, target_id=None) -> None:
         super().__init__(target_id)
         self.addr = addr
         self.comment = comment

@@ -23,6 +23,8 @@ from .qvariable import QVariable
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QGraphicsPathItem
 
+    from angrmanagement.data.instance import Instance
+
 
 class QBlock(QCachedGraphicsItem):
     TOP_PADDING = 5
@@ -36,12 +38,12 @@ class QBlock(QCachedGraphicsItem):
 
     def __init__(
         self,
-        instance,
+        instance: Instance,
         func_addr,
         disasm_view,
         disasm,
         infodock,
-        addr,
+        addr: int,
         cfg_nodes,
         out_branches,
         scene,
@@ -392,7 +394,7 @@ class QLinearBlock(QBlock):
         return "linear"
 
     @staticmethod
-    def format_address(addr) -> str:
+    def format_address(addr: int) -> str:
         return f"{addr:08x}"
 
     def layout_widgets(self) -> None:

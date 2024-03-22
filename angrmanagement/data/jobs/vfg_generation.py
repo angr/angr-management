@@ -4,7 +4,7 @@ from .job import Job
 
 
 class VFGGenerationJob(Job):
-    def __init__(self, addr) -> None:
+    def __init__(self, addr: int) -> None:
         super().__init__("VFG generation")
         self._addr = addr
 

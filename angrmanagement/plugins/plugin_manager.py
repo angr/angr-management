@@ -295,13 +295,13 @@ class PluginManager:
             self.workspace.log("Deactivating %s for error during sensitive operation" % plugin.get_display_name())
             self.deactivate_plugin(plugin)
 
-    def color_insn(self, addr, selected, disasm_view) -> QColor | None:
+    def color_insn(self, addr: int, selected, disasm_view) -> QColor | None:
         for res in self._dispatch(BasePlugin.color_insn, True, addr, selected, disasm_view):
             if res is not None:
                 return res
         return None
 
-    def color_block(self, addr) -> QColor | None:
+    def color_block(self, addr: int) -> QColor | None:
         for res in self._dispatch(BasePlugin.color_block, True, addr):
             if res is not None:
                 return res
@@ -457,7 +457,7 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.handle_project_save, False, file_name):
             pass
 
-    def on_workspace_initialized(self, workspace) -> None:
+    def on_workspace_initialized(self, workspace: Workspace) -> None:
         for _ in self._dispatch(BasePlugin.on_workspace_initialized, False, workspace):
             pass
 

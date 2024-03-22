@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator, CVariable
@@ -34,6 +34,10 @@ from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 from .disassembly_view import DisassemblyView
 from .view import FunctionView
 
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 log = logging.getLogger(__name__)
 
 
@@ -43,7 +47,7 @@ class CodeView(FunctionView):
     ObjectContainers: .addr, .current_node, .codegen, and .function.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("pseudocode", workspace, default_docking_position, instance)
 
         self.base_caption = "Pseudocode"

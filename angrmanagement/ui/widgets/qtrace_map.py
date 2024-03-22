@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPen, QPolygonF
@@ -19,6 +19,9 @@ from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+
 
 class TraceMapItem(QGraphicsItem):
     """
@@ -29,7 +32,7 @@ class TraceMapItem(QGraphicsItem):
     ZVALUE_ADDR = 2
     ZVALUE_HOVER = 3
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         super().__init__()
         self.instance = instance
 
@@ -137,7 +140,7 @@ class TraceMapItem(QGraphicsItem):
         return QRectF(x, 0, width, self._height)
 
     def _create_line_indicator(
-        self, addr, item_map, color=Qt.yellow, show_frontier: bool = False, z=None, z_frontier=None
+        self, addr: int, item_map, color=Qt.yellow, show_frontier: bool = False, z=None, z_frontier=None
     ) -> None:
         """
         Generate a cursor at a given address.
@@ -317,7 +320,7 @@ class QTraceMapView(QGraphicsView):
     and vertical orientations.
     """
 
-    def __init__(self, instance, parent=None) -> None:
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -447,7 +450,7 @@ class QTraceMap(QWidget):
     Map of the current trace, with debugger playback position and checkpoint indicators.
     """
 
-    def __init__(self, instance, parent=None) -> None:
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
         self.view: QTraceMapView = None

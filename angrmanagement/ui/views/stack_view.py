@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     import angr
     import PySide6
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QStackTableModel(QAbstractTableModel):
     """
@@ -161,7 +164,7 @@ class StackView(InstanceView):
     Stack table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("stack", workspace, default_docking_position, instance)
 
         self.base_caption = "Stack"

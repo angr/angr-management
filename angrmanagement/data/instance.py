@@ -24,6 +24,8 @@ from .log import LogRecord, initialize
 from .object_container import ObjectContainer
 
 if TYPE_CHECKING:
+    from angrmanagement.data.jobs.job import Job
+
     from .jobs import VariableRecoveryJob
 
 
@@ -197,11 +199,11 @@ class Instance:
     def initialize_pseudocode_variable_kb(self) -> None:
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
 
-    def add_job(self, job) -> None:
+    def add_job(self, job: Job) -> None:
         self.jobs.append(job)
         self._jobs_queue.put(job)
 
-    def get_instruction_text_at(self, addr):
+    def get_instruction_text_at(self, addr: int):
         """
         Get the text representation of an instruction at `addr`.
 
@@ -252,7 +254,7 @@ class Instance:
                 last_has_job = time.time()
                 time.sleep(0.05)
 
-    def delete_hook(self, addr) -> None:
+    def delete_hook(self, addr: int) -> None:
         self.project.unhook(addr)
 
     def add_breakpoint(self, obj: str | int, type_: str | None = None, size: int | None = None) -> None:
@@ -301,7 +303,7 @@ class Instance:
         bp = Breakpoint(bp_type_map[type_], addr, size)
         self.breakpoint_mgr.add_breakpoint(bp)
 
-    def set_comment(self, addr, comment_text) -> None:
+    def set_comment(self, addr: int, comment_text) -> None:
         kb = self.project.kb
         exists = addr in kb.comments
 
@@ -388,5 +390,5 @@ def callback_worker_blocking_job_2() -> None:
         gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
 
-def callback_job_complete(instance, job, result) -> None:
+def callback_job_complete(instance: Instance, job: Job, result) -> None:
     gui_thread_schedule_async(job.finish, args=(instance, result))

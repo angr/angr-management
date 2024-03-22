@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
-from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
 from angrmanagement.ui.toolbars import FunctionTableToolbar
 
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function, FunctionManager
 
     from angrmanagement.ui.views.functions_view import FunctionsView
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -48,7 +49,7 @@ class QFunctionTableModel(QAbstractTableModel):
     BLOCKS_COL = 5
     COMPLEXITY_COL = 6
 
-    def __init__(self, workspace, instance, func_list) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, func_list) -> None:
         super().__init__()
 
         self._func_list = None
@@ -300,7 +301,7 @@ class QFunctionTableView(QTableView):
     The table view for QFunctionTable.
     """
 
-    def __init__(self, parent, workspace, instance, selection_callback=None) -> None:
+    def __init__(self, parent, workspace: Workspace, instance: Instance, selection_callback=None) -> None:
         super().__init__(parent)
         self.workspace = workspace
         self.instance = instance
@@ -431,7 +432,7 @@ class QFunctionTable(QWidget):
     Implements a table for listing function details.
     """
 
-    def __init__(self, parent, instance, selection_callback=None) -> None:
+    def __init__(self, parent, instance: Instance, selection_callback=None) -> None:
         super().__init__(parent)
         self.instance = instance
 

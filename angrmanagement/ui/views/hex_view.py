@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import logging
 from enum import Enum
-from typing import Callable, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Sequence, Tuple, Union
 
 import angr
 import PySide6
@@ -41,6 +41,10 @@ from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.utils import is_printable
 
 from .view import SynchronizedInstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
@@ -1252,7 +1256,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self.update_scene_rect()
         self.update_display_num_rows()
 
-    def set_region_callback(self, write, mem, addr, size: int) -> None:
+    def set_region_callback(self, write, mem, addr: int, size: int) -> None:
         """
         Set current buffer.
         """
@@ -1321,7 +1325,7 @@ class HexView(SynchronizedInstanceView):
 
     _widgets_initialized: bool = False
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("hex", workspace, default_docking_position, instance)
         self.base_caption: str = "Hex"
         self.smart_highlighting_enabled: bool = True

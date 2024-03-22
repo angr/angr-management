@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import AutoIndentMode, CaretLineHighlighterMode, PygmentsSyntaxHighlighter
 from PySide6.QtGui import QTextOption
@@ -15,13 +17,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class HookDialog(QDialog):
     """
     Provide templetes of hook function.
     """
 
-    def __init__(self, workspace, addr=None, parent=None) -> None:
+    def __init__(self, workspace: Workspace, addr: int | None = None, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
@@ -42,7 +47,7 @@ class HookDialog(QDialog):
     # Private methods
     #
 
-    def _add_templates(self, addr) -> None:
+    def _add_templates(self, addr: int) -> None:
         self.templates[
             "base"
         ] = f"""\

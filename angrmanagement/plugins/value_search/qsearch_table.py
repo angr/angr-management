@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from angr.analyses.cfg.cfg_fast import MemoryData
     from PySide6.QtGui import QKeyEvent
 
+    from angrmanagement.data.instance import Instance
+
     from .search_view import SearchView
 
 
@@ -120,7 +122,7 @@ class QSearchTable(QTableView):
     The value search table widget.
     """
 
-    def __init__(self, instance, parent, selection_callback=None) -> None:
+    def __init__(self, instance: Instance, parent, selection_callback=None) -> None:
         super().__init__(parent)
         self._parent: SearchView = parent
 

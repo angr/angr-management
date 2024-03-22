@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from .qast_viewer import QASTViewer
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QVEXTempsViewer(QFrame):
-    def __init__(self, state, parent, workspace) -> None:
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
         self.workspace = workspace
 

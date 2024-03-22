@@ -4,8 +4,12 @@ import bisect
 import functools
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from angr.errors import SimEngineError
+
+if TYPE_CHECKING:
+    from angr import Project
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +38,7 @@ class ObjectAndBase:
         raise TypeError("Unsupported type %s" % type(other))
 
 
-def _valid_addr(addr, project):
+def _valid_addr(addr: int, project: Project):
     if not addr and addr != 0:
         return None
     try:
@@ -44,7 +48,7 @@ def _valid_addr(addr, project):
 
 
 @functools.lru_cache(1024)
-def _find_object_base_in_project(object_name: str, project):
+def _find_object_base_in_project(object_name: str, project: Project):
     base_addr = None
     base_obj_name = os.path.basename(object_name)
     for obj in project.loader.all_objects:
@@ -67,7 +71,7 @@ def _find_object_base_in_project(object_name: str, project):
 last_obj_idx: int | None = None
 
 
-def _find_obj_in_mapping(addr, mapping) -> tuple[int, ObjectAndBase | None]:
+def _find_obj_in_mapping(addr: int, mapping) -> tuple[int, ObjectAndBase | None]:
     idx = bisect.bisect_left(mapping, addr)
     obj = None
     if 0 <= idx < len(mapping):
@@ -85,7 +89,7 @@ def _find_obj_in_mapping(addr, mapping) -> tuple[int, ObjectAndBase | None]:
     return idx, obj
 
 
-def _apply_trace_offset(addr, mapping, project_baddr, runtime_baddr):
+def _apply_trace_offset(addr: int, mapping, project_baddr, runtime_baddr):
     global last_obj_idx
 
     if mapping is not None and mapping:
@@ -117,7 +121,7 @@ def _apply_trace_offset(addr, mapping, project_baddr, runtime_baddr):
         return None
 
 
-def trace_to_bb_addrs(trace, project, trace_base):
+def trace_to_bb_addrs(trace, project: Project, trace_base):
     """
     convert the trace object to a list of basic blocks, using the given angr project
     """

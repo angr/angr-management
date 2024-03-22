@@ -32,7 +32,7 @@ class BasePlugin:
     REQUIRE_WORKSPACE = True
     __i_hold_this_abstraction_token = True
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         self.workspace: Workspace | None = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
@@ -84,10 +84,10 @@ class BasePlugin:
     # UI Callbacks
     #
 
-    def color_insn(self, addr, selected, disasm_view) -> QColor | None:
+    def color_insn(self, addr: int, selected, disasm_view) -> QColor | None:
         return None
 
-    def color_block(self, addr) -> QColor | None:
+    def color_block(self, addr: int) -> QColor | None:
         return None
 
     def color_func(self, func) -> QColor | None:

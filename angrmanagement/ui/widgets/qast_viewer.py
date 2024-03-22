@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import claripy
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
 from angrmanagement.config import Conf
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QASTViewer(QFrame):
     def __init__(
         self,
         ast,
-        workspace=None,
+        workspace: Workspace | None = None,
         custom_painting: bool = False,
         display_size: bool = True,
         byte_format=None,

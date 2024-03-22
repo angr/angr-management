@@ -30,7 +30,7 @@ class ClientService(rpyc.Service):
     def workspace(self):
         return GlobalInfo.main_window.workspace
 
-    def exposed_jumpto(self, addr, symbol) -> None:
+    def exposed_jumpto(self, addr: int, symbol) -> None:
         if self.workspace is not None:
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
             if addr is not None:
@@ -39,7 +39,7 @@ class ClientService(rpyc.Service):
                 # TODO: Support it
                 gui_thread_schedule_async(self.workspace.jump_to, args=(symbol,))
 
-    def exposed_commentat(self, addr, comment: str) -> None:
+    def exposed_commentat(self, addr: int, comment: str) -> None:
         if self.workspace is not None and addr is not None:
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
             gui_thread_schedule_async(self.workspace.set_comment(addr, comment))

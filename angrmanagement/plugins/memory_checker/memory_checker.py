@@ -12,11 +12,13 @@ if TYPE_CHECKING:
     from angr.sim_state import SimState
     from angr.state_plugins.sim_action import SimAction
 
+    from angrmanagement.ui.workspace import Workspace
+
 
 class MemoryChecker(BasePlugin):
     AllowList = ["free", "malloc", "__libc_start_main"]
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         self.states = self.workspace.main_instance.states
         self.states.am_subscribe(self.install_state_plugin)

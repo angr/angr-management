@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
@@ -7,12 +9,15 @@ from angrmanagement.config import Conf
 
 from .qgraph_object import QCachedGraphicsItem
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QUnknownBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = "Unknown"
 
-    def __init__(self, workspace, addr, bytes_, parent=None) -> None:
+    def __init__(self, workspace: Workspace, addr: int, bytes_, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.workspace = workspace

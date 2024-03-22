@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QDialog, QGridLayout, QLabel, QTextEdit, QVBoxLayout
 
 from angrmanagement.config import Conf
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class FuncDocDialog(QDialog):
@@ -11,7 +16,9 @@ class FuncDocDialog(QDialog):
     Implements the FuncDoc dialog.
     """
 
-    def __init__(self, instance, addr=None, name: str = "", doc_tuple=None, parent=None) -> None:
+    def __init__(
+        self, instance: Instance, addr: int | None = None, name: str = "", doc_tuple=None, parent=None
+    ) -> None:
         super().__init__(parent)
 
         # initialization

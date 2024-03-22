@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QVBoxLayout
 
 from angrmanagement.ui.widgets.filesystem_table import QFileSystemTable
 
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+
 
 class FilesystemMount(QDialog):
-    def __init__(self, fs_config=None, instance=None, parent=None) -> None:
+    def __init__(self, fs_config=None, instance: Instance | None = None, parent=None) -> None:
         super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)

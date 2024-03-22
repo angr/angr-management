@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import socket
+from typing import TYPE_CHECKING
 
 import claripy
 from angr.storage.file import SimPacketsStream
@@ -19,6 +20,9 @@ from PySide6.QtWidgets import (
     QTreeView,
     QVBoxLayout,
 )
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 _socket_families_wanted = ["AF_INET", "AF_INET6", "AF_UNIX", "AF_CAN", "AF_PACKET", "AF_RDS"]
 
@@ -83,7 +87,7 @@ class SimPackagePersistentEditor(QStyledItemDelegate):
     """
 
     # pylint: disable=no-self-use, unused-argument
-    def __init__(self, parent=None, instance=None) -> None:
+    def __init__(self, parent=None, instance: Instance | None = None) -> None:
         super().__init__(parent)
         self.instance = instance
 
@@ -294,7 +298,7 @@ class SocketConfig(QDialog):
     family = list(socket_family.keys())
     typ = list(socket_type.keys())
 
-    def __init__(self, socket_config=None, instance=None, parent=None) -> None:
+    def __init__(self, socket_config=None, instance: Instance | None = None, parent=None) -> None:
         super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)

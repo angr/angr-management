@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QVBoxLayout
 
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets import QTraceMap
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class TraceMapView(InstanceView):
@@ -12,7 +18,7 @@ class TraceMapView(InstanceView):
     View container for QTraceMap.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("tracemap", workspace, default_docking_position, instance)
         self.base_caption: str = "Trace Map"
         self.inner_widget: QTraceMap | None = None

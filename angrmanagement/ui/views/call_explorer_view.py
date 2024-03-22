@@ -15,6 +15,9 @@ from .view import InstanceView
 if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 try:
     from bintrace import TraceEvent
 except ImportError:
@@ -61,7 +64,7 @@ class CallExplorerView(InstanceView):
     Call Explorer view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("call_explorer", workspace, default_docking_position, instance)
 
         self._last_updated_func: int | Function | None = None

@@ -22,6 +22,7 @@ from .qgraph_object import QCachedGraphicsItem
 if TYPE_CHECKING:
     from archinfo import RegisterOffset, TmpVar
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.logic.disassembly.info_dock import InfoDock
     from angrmanagement.ui.widgets.qdisasm_base_control import QDisassemblyBaseControl
 
@@ -188,7 +189,7 @@ class QAilObj(QBlockCodeObj):
     Renders an AIL object
     """
 
-    def __init__(self, obj: Any, instance, *args, stmt=None, **kwargs) -> None:
+    def __init__(self, obj: Any, instance: Instance, *args, stmt=None, **kwargs) -> None:
         self.stmt = stmt or obj
         self.instance = instance
         super().__init__(obj, *args, **kwargs)
@@ -757,7 +758,7 @@ class QBlockCode(QCachedGraphicsItem):
         obj: QBlockCodeObj,
         config: ConfigurationManager,
         disasm_view: QDisassemblyBaseControl,
-        instance,
+        instance: Instance,
         infodock: InfoDock,
         parent: Any = None,
     ) -> None:

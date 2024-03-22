@@ -10,7 +10,9 @@ from .view import InstanceView
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.data.trace import Trace
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QTraceTableModel(QAbstractTableModel):
@@ -21,7 +23,7 @@ class QTraceTableModel(QAbstractTableModel):
     Headers = ["Source"]
     COL_SOURCE = 0
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         super().__init__()
         self.instance = instance
         self.instance.current_trace.am_subscribe(self._on_traces_updated)
@@ -74,7 +76,7 @@ class QTraceTableWidget(QTableView):
     Trace table widget.
     """
 
-    def __init__(self, instance, parent=None) -> None:
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent=parent)
         self.instance = instance
 
@@ -123,7 +125,7 @@ class TracesView(InstanceView):
     Traces table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("traces", workspace, default_docking_position, instance)
 
         self.base_caption = "Traces"

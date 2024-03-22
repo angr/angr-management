@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.patches import Patch
     from PySide6.QtGui import QCloseEvent
 
+    from angrmanagement.data.instance import Instance
+
 
 class QPatchTableItem:
     """
@@ -45,7 +47,7 @@ class QPatchTable(QTableWidget):
 
     HEADER = ["Address", "Size", "Old Bytes", "New Bytes", "Comment"]
 
-    def __init__(self, instance, parent) -> None:
+    def __init__(self, instance: Instance, parent) -> None:
         super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
@@ -99,7 +101,7 @@ class QPatchTable(QTableWidget):
             self.reload()
 
     @staticmethod
-    def _get_bytes(proj, addr, size: int):
+    def _get_bytes(proj, addr: int, size: int):
         try:
             return proj.loader.memory.load(addr, size)
         except KeyError:

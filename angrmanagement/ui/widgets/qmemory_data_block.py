@@ -13,13 +13,17 @@ from .qgraph_object import QCachedGraphicsItem
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
+    from angrmanagement.data.instance import Instance
+
 
 class QMemoryDataBlock(QCachedGraphicsItem):
     ADDRESS_LABEL_OFFSET = 20
     LINEAR_INSTRUCTION_OFFSET = 120
     BYTE_AREA_SPACING = 15
 
-    def __init__(self, instance, infodock, addr, memory_data, bytes_per_line: int = 16, parent=None) -> None:
+    def __init__(
+        self, instance: Instance, infodock, addr: int, memory_data, bytes_per_line: int = 16, parent=None
+    ) -> None:
         super().__init__(parent=parent)
         self.instance = instance
         self.infodock = infodock
@@ -145,7 +149,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             addr += end_pos - i
             i = end_pos
 
-    def _init_line(self, addr, byte_offset, all_bytes):
+    def _init_line(self, addr: int, byte_offset, all_bytes):
         # colors
         printable_byte_color = Conf.disasm_view_printable_byte_color
         printable_char_color = Conf.disasm_view_printable_character_color

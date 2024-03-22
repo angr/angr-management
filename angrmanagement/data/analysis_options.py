@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence
 if TYPE_CHECKING:
     import angr
 
+    from angrmanagement.data.instance import Instance
+
 
 def extract_first_paragraph_from_docstring(desc: str) -> str:
     desc = desc.splitlines()
@@ -38,7 +40,7 @@ class AnalysesConfiguration:
     Configuration for a sequence of analyses.
     """
 
-    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance) -> None:
+    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance: Instance) -> None:
         self.instance = instance
         self.analyses: Sequence[AnalysisConfiguration] = analyses
 
@@ -65,7 +67,7 @@ class AnalysisConfiguration:
     Configuration for an analysis.
     """
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         self.instance = instance
         self.project: angr.Project = self.instance.project.am_obj
         self.enabled: bool = False
@@ -199,7 +201,7 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
     Configuration for CFGFast analysis.
     """
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "cfg"
         self.display_name = "Control-Flow Graph Recovery"
@@ -249,7 +251,7 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
     Configuration for Flirt analysis.
     """
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "flirt"
         self.display_name = "Function Signature Matching"
@@ -262,7 +264,7 @@ class CodeTaggingConfiguration(AnalysisConfiguration):
     Configuration for Code Tagging.
     """
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "code_tagging"
         self.display_name = "Tag Functions Based on Syntactic Features"
@@ -278,7 +280,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     SMALL_BINARY_SIZE = 65536
     MEDIUM_BINARY_SIZE = 400000
 
-    def __init__(self, instance) -> None:
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "varec"
         self.display_name = "Recover Variables on All Functions"

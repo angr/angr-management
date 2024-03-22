@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from angr.analyses.disassembly import ConstantOperand, MemoryOperand, RegisterOperand, Value
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -9,6 +10,9 @@ from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 from angrmanagement.logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +24,7 @@ class QOperand(QCachedGraphicsItem):
 
     def __init__(
         self,
-        instance,
+        instance: Instance,
         func_addr,
         disasm_view,
         disasm,

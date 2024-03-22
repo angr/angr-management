@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views import DisassemblyView
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qoperand import QOperand
@@ -23,7 +24,7 @@ class QDisassemblyBaseControl:
     The base control class of QLinearViewer and QDisassemblyGraph. Implements or declares common shorthands and methods.
     """
 
-    def __init__(self, instance, disasm_view, base_cls) -> None:
+    def __init__(self, instance: Instance, disasm_view, base_cls) -> None:
         self.instance = instance
         self.disasm_view: DisassemblyView = disasm_view
         self._base_cls = base_cls

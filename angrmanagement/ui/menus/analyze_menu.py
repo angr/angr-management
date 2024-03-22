@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
 
@@ -7,9 +9,12 @@ from angrmanagement.ui.icons import icon
 
 from .menu import Menu, MenuEntry, MenuSeparator
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.main_window import MainWindow
+
 
 class AnalyzeMenu(Menu):
-    def __init__(self, main_window) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&Analyze", parent=main_window)
         self.entries.extend(
             [

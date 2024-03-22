@@ -15,6 +15,8 @@ from .qoperand import QOperand
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
+
 
 class QInstruction(QCachedGraphicsItem):
     GRAPH_ADDR_SPACING = 20
@@ -28,7 +30,7 @@ class QInstruction(QCachedGraphicsItem):
     COMMENT_PREFIX = "// "
 
     def __init__(
-        self, instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None
+        self, instance: Instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None
     ) -> None:
         super().__init__(parent=parent)
 

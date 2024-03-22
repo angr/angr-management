@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
 
 
@@ -78,7 +79,7 @@ class QDecompilationOptions(QWidget):
     reload(force=True) to reset values to their defaults whenever the current project changes.
     """
 
-    def __init__(self, code_view, instance) -> None:
+    def __init__(self, code_view, instance: Instance) -> None:
         super().__init__()
 
         self.dirty = True

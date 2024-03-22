@@ -17,7 +17,7 @@ class ToolbarManager:
     Manages toolbars shown on the main window.
     """
 
-    def __init__(self, main_window) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         self._main_window: MainWindow = main_window
         self.active: Mapping[type[Toolbar], Toolbar] = {}
         self.all_toolbars = [FileToolbar, DebugToolbar, FeatureMapToolbar]

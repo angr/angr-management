@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import logging
 import struct
+from typing import TYPE_CHECKING
 
 from angrmanagement.plugins import BasePlugin
 
 from .search_view import SearchView
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +19,7 @@ class ValueSearch(BasePlugin):
     Plugin to search for values in the binary.
     """
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self._endness_encoding = None
@@ -32,7 +36,7 @@ class ValueSearch(BasePlugin):
     def handle_click_menu(self, idx: int) -> None:
         pass
 
-    def color_insn(self, addr, selected, disasm_view) -> None:
+    def color_insn(self, addr: int, selected, disasm_view) -> None:
         pass
 
     def teardown(self) -> None:

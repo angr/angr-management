@@ -86,7 +86,7 @@ class Workspace:
     This class implements the angr management workspace.
     """
 
-    def __init__(self, main_window, instance) -> None:
+    def __init__(self, main_window: MainWindow, instance: Instance) -> None:
         self.main_window: MainWindow = main_window
         self._main_instance = instance
         instance.workspace = self
@@ -421,7 +421,7 @@ class Workspace:
         elif isinstance(obj, Function):
             self.jump_to(obj.addr)
 
-    def jump_to(self, addr, view=None, use_animation: bool = False) -> None:
+    def jump_to(self, addr: int, view=None, use_animation: bool = False) -> None:
         if view is None or view.category != "disassembly":
             view = self._get_or_create_view("disassembly", DisassemblyView)
 
@@ -475,7 +475,7 @@ class Workspace:
         bp = Breakpoint(bp_type_map[type_], addr, size)
         self.main_instance.breakpoint_mgr.add_breakpoint(bp)
 
-    def set_comment(self, addr, comment_text) -> None:
+    def set_comment(self, addr: int, comment_text) -> None:
         self.main_instance.set_comment(addr, comment_text)
 
         disasm_view = self._get_or_create_view("disassembly", DisassemblyView)

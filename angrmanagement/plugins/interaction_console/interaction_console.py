@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from typing import TYPE_CHECKING
 
 import archr
 from PySide6.QtCore import Qt
@@ -14,13 +15,16 @@ from angrmanagement.ui.views.interaction_view import (
 )
 from angrmanagement.ui.views.view import InstanceView
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class ConsoleView(InstanceView):
     """
     ConsoleView
     """
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__("interaction console", workspace, "center", workspace.main_instance)
 
         self.base_caption = "Interaction Console"

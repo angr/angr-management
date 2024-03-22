@@ -6,10 +6,13 @@ import os
 import random
 from bisect import bisect_left
 from collections import defaultdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from angr.errors import SimEngineError
 from PySide6.QtGui import QColor
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(name=__name__)
 
@@ -50,7 +53,7 @@ class TraceStatistics:
     BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")
 
-    def __init__(self, workspace, trace, baddr) -> None:
+    def __init__(self, workspace: Workspace, trace, baddr) -> None:
         self.workspace = workspace
         self.trace: dict[str, Any] = trace
         self.bbl_addrs = trace["bb_addrs"]
@@ -128,7 +131,7 @@ class TraceStatistics:
     def set_mark_color(self, p, color) -> None:
         self._mark_color[p] = color
 
-    def get_mark_color(self, addr, i):
+    def get_mark_color(self, addr: int, i):
         try:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
@@ -137,7 +140,7 @@ class TraceStatistics:
             return self.BBL_EMPTY_COLOR
         return mark_color
 
-    def get_positions(self, addr):
+    def get_positions(self, addr: int):
         return self._positions[addr]
 
     def get_count(self, ins):
@@ -152,7 +155,7 @@ class TraceStatistics:
     def get_func_from_position(self, position):
         return self.trace_func[position].func
 
-    def _apply_trace_offset(self, addr) -> int | None:
+    def _apply_trace_offset(self, addr: int) -> int | None:
         if self.mapping is not None and self.mapping:
             # find the base address that this address belongs to
             idx = bisect_left(self.mapping, addr)
@@ -232,7 +235,7 @@ class TraceStatistics:
         print("Trace is loaded.")
         self.count = len(self.trace_func)
 
-    def _get_bbl(self, addr):
+    def _get_bbl(self, addr: int):
         try:
             return self.workspace.main_instance.project.factory.block(addr)
         except SimEngineError:
@@ -251,5 +254,5 @@ class TraceStatistics:
         b = random.randint(0, 255)
         return QColor(r, g, b)
 
-    def _get_position(self, addr, i):
+    def _get_position(self, addr: int, i):
         return self._positions[addr][i]

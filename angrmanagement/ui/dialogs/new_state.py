@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 import angr
 from PySide6.QtCore import Qt
@@ -24,6 +25,10 @@ from angrmanagement.ui.widgets import QStateComboBox
 from angrmanagement.utils.namegen import NameGenerator
 
 from .socket_config import SocketConfig
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class StateMetadata(angr.SimStatePlugin):
@@ -60,7 +65,13 @@ class NewState(QDialog):
     """
 
     def __init__(
-        self, workspace, instance, addr=None, create_simgr: bool = False, parent=None, push_to_instance: bool = True
+        self,
+        workspace: Workspace,
+        instance: Instance,
+        addr: int | None = None,
+        create_simgr: bool = False,
+        parent=None,
+        push_to_instance: bool = True,
     ) -> None:
         super().__init__(parent)
 

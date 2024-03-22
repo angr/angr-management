@@ -116,7 +116,7 @@ class FunctionDiff:
 
             return FunctionDiff.OBJ_UNMODIFIED
 
-    def addr_diff_value(self, addr):
+    def addr_diff_value(self, addr: int):
         if addr in self.rev_del_set:
             return self.OBJ_DELETED
         elif addr in self.rev_add_set:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 import angr
 from PySide6.QtCore import Qt
@@ -9,6 +10,10 @@ from PySide6.QtWidgets import QAbstractItemView, QMenu, QTableWidget, QTableWidg
 
 from angrmanagement.ui.dialogs.new_state import NewState
 from angrmanagement.utils.namegen import NameGenerator
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QStateTableItem(QTableWidgetItem):
@@ -62,7 +67,7 @@ class QStateTable(QTableWidget):
     The table which is the subject of the States View
     """
 
-    def __init__(self, workspace, instance, parent, selection_callback=None) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, parent, selection_callback=None) -> None:
         super().__init__(parent)
 
         self._selected = selection_callback

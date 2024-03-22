@@ -40,7 +40,7 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     def symexec_view(self) -> SymexecView:
         return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
-    def __init__(self, addr, text: str, *args, **kwargs) -> None:
+    def __init__(self, addr: int, text: str, *args, **kwargs) -> None:
         super().__init__(text, *args, **kwargs)
         self.addr = addr
         self.setBrush(QBrush(self.foreground_color))
@@ -60,7 +60,7 @@ class QStatsAnnotation(QInstructionAnnotation):
     Abstract Stats Annotation Class.
     """
 
-    def __init__(self, addr, text: str, *args, **kwargs) -> None:
+    def __init__(self, addr: int, text: str, *args, **kwargs) -> None:
         super().__init__(addr, text, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.hovered = False
@@ -97,7 +97,7 @@ class QActiveCount(QStatsAnnotation):
     background_color = QColor(0, 255, 0, 30)
     foreground_color = QColor(0, 60, 0)
 
-    def __init__(self, addr, states) -> None:
+    def __init__(self, addr: int, states) -> None:
         super().__init__(addr, str(len(states)))
         self.states = states
 
@@ -137,7 +137,7 @@ class QPassthroughCount(QStatsAnnotation):
     background_color = QColor(255, 0, 0, 30)
     foreground_color = QColor(60, 0, 0)
 
-    def __init__(self, addr, count: int) -> None:
+    def __init__(self, addr: int, count: int) -> None:
         super().__init__(addr, str(count))
 
     # def mousePressEvent(self, event):
@@ -155,7 +155,7 @@ class QHookAnnotation(QInstructionAnnotation):
     background_color = QColor(230, 230, 230)
     foreground_color = QColor(50, 50, 50)
 
-    def __init__(self, addr, *args, **kwargs) -> None:
+    def __init__(self, addr: int, *args, **kwargs) -> None:
         super().__init__(addr, "hook", *args, **kwargs)
 
     def contextMenuEvent(self, event) -> None:  # pylint: disable=unused-argument
@@ -177,7 +177,7 @@ class QExploreAnnotation(QInstructionAnnotation):
     foreground_color = QColor(230, 230, 230)
     text = None
 
-    def __init__(self, addr, qsimgrs: QSimulationManagers, *args, **kwargs) -> None:
+    def __init__(self, addr: int, qsimgrs: QSimulationManagers, *args, **kwargs) -> None:
         super().__init__(addr, self.text, *args, **kwargs)
         self.qsimgrs = qsimgrs
 
@@ -264,7 +264,7 @@ class QBlockAnnotations(QGraphicsItem):
         self.width = max_width
         self._init_widgets()
 
-    def get(self, addr):
+    def get(self, addr: int):
         return self.addr_to_annotations.get(addr)
 
     def paint(self, painter, *args, **kwargs) -> None:

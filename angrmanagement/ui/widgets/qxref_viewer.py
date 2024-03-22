@@ -21,7 +21,7 @@ class XRefMode:
 class QXRefModel(QAbstractTableModel):
     HEADER = []
 
-    def __init__(self, addr, instance, view) -> None:
+    def __init__(self, addr: int, instance: Instance, view) -> None:
         super().__init__()
 
         self.addr = addr
@@ -257,7 +257,7 @@ class QXRefAddressModel(QXRefModel):
 class QXRefViewer(QTableView):
     def __init__(
         self,
-        addr=None,
+        addr: int | None = None,
         variable_manager=None,
         variable=None,
         xrefs_manager=None,

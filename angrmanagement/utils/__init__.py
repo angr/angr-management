@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import itertools
+from typing import TYPE_CHECKING
 
 from .block_objects import FunctionHeader, Label, PhiVariable, Variables
 
+if TYPE_CHECKING:
+    from angr import Project
 
-def locate_function(inst, addr):
+
+def locate_function(inst, addr: int):
     """
     Locate the function that contains the address.
 
@@ -27,7 +31,7 @@ def locate_function(inst, addr):
     return None
 
 
-def get_label_text(addr, kb, function=None):
+def get_label_text(addr: int, kb, function=None):
     if addr in kb.labels:
         return kb.labels[addr] + ":"
 
@@ -119,7 +123,7 @@ def get_out_branches(supernode):
     return supernode.out_branches
 
 
-def address_to_text(addr, kb):
+def address_to_text(addr: int, kb):
     """
     Properly convert an address to text for a label.
 
@@ -154,14 +158,14 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
         return next(iter(out_branch_map.values()))
 
 
-def fast_memory_load_pointer(project, addr, size: int | None = None):
+def fast_memory_load_pointer(project: Project, addr: int, size: int | None = None):
     try:
         return project.loader.memory.unpack_word(addr, size=size)
     except KeyError:
         return None
 
 
-def string_at_addr(cfg, addr, project, max_size: int = 50):
+def string_at_addr(cfg, addr: int, project: Project, max_size: int = 50):
     try:
         mem_data = cfg.memory_data[addr]
     except KeyError:
@@ -192,7 +196,7 @@ def string_at_addr(cfg, addr, project, max_size: int = 50):
         return None
 
 
-def should_display_string_label(cfg, insn_addr, project):
+def should_display_string_label(cfg, insn_addr, project: Project):
     if insn_addr not in cfg.insn_addr_to_memory_data:
         return False
 
@@ -225,7 +229,7 @@ def filter_string_for_display(s):
     return output
 
 
-def get_string_for_display(cfg, insn_addr, project, max_size: int = 20) -> str | None:
+def get_string_for_display(cfg, insn_addr, project: Project, max_size: int = 20) -> str | None:
     str_content = None
 
     try:

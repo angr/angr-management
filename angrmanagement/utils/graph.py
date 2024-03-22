@@ -199,7 +199,7 @@ class OutBranch:
             return "<OutBranch at None, type %s>" % self.type
         return f"<OutBranch at {self.ins_addr:#x}, type {self.type}>"
 
-    def add_target(self, addr) -> None:
+    def add_target(self, addr: int) -> None:
         self.targets.add(addr)
 
     def merge(self, other):
@@ -239,7 +239,7 @@ class OutBranch:
 
 
 class SuperCFGNode:
-    def __init__(self, addr, idx: int | None = None) -> None:
+    def __init__(self, addr: int, idx: int | None = None) -> None:
         self.addr = addr
         self.idx = idx
 

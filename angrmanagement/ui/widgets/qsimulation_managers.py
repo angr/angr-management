@@ -25,10 +25,11 @@ if TYPE_CHECKING:
     from angr import SimState
 
     from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QSimulationManagers(QFrame):
-    def __init__(self, workspace, instance: Instance, simgr, state, parent=None) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, simgr, state, parent=None) -> None:
         """
         :param instance:                The data source for this project
         :param object parent:           The parent widget.
@@ -78,20 +79,20 @@ class QSimulationManagers(QFrame):
             if simgr is self.simgr.am_obj:
                 self._simgrs_list.setCurrentIndex(i)
 
-    def add_avoid_address(self, addr) -> None:
+    def add_avoid_address(self, addr: int) -> None:
         self.add_address_to_list(self._avoids_list, addr)
 
-    def add_find_address(self, addr) -> None:
+    def add_find_address(self, addr: int) -> None:
         self.add_address_to_list(self._finds_list, addr)
 
-    def remove_find_address(self, addr) -> None:
+    def remove_find_address(self, addr: int) -> None:
         self._remove_addr(self._finds_list, addr)
 
-    def remove_avoid_address(self, addr) -> None:
+    def remove_avoid_address(self, addr: int) -> None:
         self._remove_addr(self._avoids_list, addr)
 
     @staticmethod
-    def add_address_to_list(qtreelist: QTreeWidget, addr):
+    def add_address_to_list(qtreelist: QTreeWidget, addr: int):
         for i in range(qtreelist.topLevelItemCount()):
             item: QTreeWidgetItem = qtreelist.topLevelItem(i)
             if int(item.text(0), 16) == addr:
@@ -361,7 +362,7 @@ class QSimulationManagers(QFrame):
                 pass
 
     @staticmethod
-    def _remove_addr(qlist: QTreeWidget, addr) -> None:
+    def _remove_addr(qlist: QTreeWidget, addr: int) -> None:
         for i in range(qlist.topLevelItemCount()):
             qitem = qlist.topLevelItem(i)
             if int(qitem.text(0), 16) == addr:

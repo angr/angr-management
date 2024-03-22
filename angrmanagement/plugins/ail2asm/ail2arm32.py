@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import ailment
 
 from angrmanagement.plugins import BasePlugin
 
 from .asm_output import AsmOutput
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class AIL2ARM32(BasePlugin):
@@ -12,7 +17,7 @@ class AIL2ARM32(BasePlugin):
     Assemble expressions into assembly.
     """
 
-    def __init__(self, workspace, sp_adjust: int = 0x30) -> None:
+    def __init__(self, workspace: Workspace, sp_adjust: int = 0x30) -> None:
         super().__init__(workspace)
         self.sp_adjust = sp_adjust
         self.registers_in_use = []

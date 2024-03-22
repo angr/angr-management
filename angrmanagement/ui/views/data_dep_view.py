@@ -22,6 +22,9 @@ if TYPE_CHECKING:
     from angr.analyses.data_dep import BaseDepNode
     from capstone import CsInsn
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class DataDepView(InstanceView):
     """Workspace view used to display a data dependency graph on the screen"""
@@ -30,7 +33,7 @@ class DataDepView(InstanceView):
     def function(self):
         raise NotImplementedError("Does not apply!")
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("data_dependency", workspace, default_docking_position, instance)
 
         self.base_caption = "Data Dependency"

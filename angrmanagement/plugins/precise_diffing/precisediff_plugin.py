@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
@@ -16,6 +17,9 @@ from .diff_view import DiffDisassemblyView
 from .function_diff import BFSFunctionDiff, FunctionDiff
 from .settings_dialog import SettingsDialog
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +33,7 @@ class PreciseDiffPlugin(BasePlugin):
     RELOAD_BINARY_CMD_EVT = 2
     MENU_BUTTONS = ("Precise Diffing settings...", "Load binary for Precise Diffing...", "Refresh loaded diff binary")
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         self.diff_instance: Instance | None = None
         self.current_revised_view: DisassemblyView | None = None
@@ -69,7 +73,7 @@ class PreciseDiffPlugin(BasePlugin):
         elif idx == self.RELOAD_BINARY_CMD_EVT and self.loaded_binary is not None:
             self.load_revised_binary_from_file(self.loaded_binary)
 
-    def color_insn(self, addr, selected, disasm_view):
+    def color_insn(self, addr: int, selected, disasm_view):
         if disasm_view != self.current_revised_view:
             return None
 

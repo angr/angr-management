@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import platform
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QAction, QKeySequence
 
@@ -8,6 +9,9 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.icons import icon
 
 from .menu import Menu, MenuEntry, MenuSeparator
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.main_window import MainWindow
 
 try:
     import archr
@@ -33,7 +37,7 @@ class FileMenu(Menu):
     Lays out the entries under the 'File' menu
     """
 
-    def __init__(self, main_window) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&File", parent=main_window)
         self._project = main_window.workspace.main_instance.project
 

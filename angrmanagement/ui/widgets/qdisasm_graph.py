@@ -19,6 +19,7 @@ from .qgraph_arrow import QDisasmGraphArrow
 from .qminimap import QMiniMapView
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.logic.disassembly import InfoDock
 
 
@@ -58,7 +59,7 @@ class QViewPortMover:
 
 
 class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView):
-    def __init__(self, instance, disasm_view, parent=None) -> None:
+    def __init__(self, instance: Instance, disasm_view, parent=None) -> None:
         QDisassemblyBaseControl.__init__(self, instance, disasm_view, QZoomableDraggableGraphicsView)
         QZoomableDraggableGraphicsView.__init__(self, parent=parent)
 
@@ -353,7 +354,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             else:
                 self.centerOn(x, y)
 
-    def update_label(self, addr, is_renaming: bool = False) -> None:
+    def update_label(self, addr: int, is_renaming: bool = False) -> None:
         block: QGraphBlock = self._insaddr_to_block.get(addr, None)
         if block is not None:
             if is_renaming:

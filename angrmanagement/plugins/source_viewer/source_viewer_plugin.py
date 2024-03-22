@@ -109,7 +109,7 @@ class SourceCodeViewer(CodeEdit):
         desc = self.viewer.add_point(self.file.path, self.current_line, "avoid")
         self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
-    def jump_to(self, addr) -> None:
+    def jump_to(self, addr: int) -> None:
         self.viewer.workspace.jump_to(addr)
 
     def add_marker_fn(self, line) -> None:
@@ -282,7 +282,7 @@ class SourceViewerPlugin(BasePlugin):
     Plugin loader
     """
 
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         self.source_viewer = SourceViewer(workspace)
         workspace.default_tabs += [self.source_viewer]

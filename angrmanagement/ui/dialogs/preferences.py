@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime
 from itertools import chain
+from typing import TYPE_CHECKING
 
 from bidict import bidict
 from PySide6.QtGui import QColor
@@ -36,6 +37,9 @@ from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qcolor_option import QColorOption
 from angrmanagement.ui.widgets.qfont_option import QFontOption
 from angrmanagement.utils.layout import add_to_grid
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class Page(QWidget):
@@ -254,7 +258,7 @@ class Preferences(QDialog):
     Application preferences dialog.
     """
 
-    def __init__(self, workspace, parent=None) -> None:
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(parent)
 
         self.workspace = workspace

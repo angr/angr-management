@@ -15,13 +15,16 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.types import TypesStore
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class TypesView(FunctionView):
     """
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("types", workspace, default_docking_position, instance)
 
         self.base_caption = "Types"

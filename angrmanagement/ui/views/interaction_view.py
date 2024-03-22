@@ -4,11 +4,16 @@ import enum
 import logging
 import sys
 from threading import Thread
+from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QInputDialog, QLineEdit
 
 from .view import InstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 try:
     import nclib
@@ -69,7 +74,7 @@ class InteractionState(enum.Enum):
 
 
 class InteractionView(InstanceView):
-    def __init__(self, workspace, instance) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance) -> None:
         super().__init__("interaction", workspace, "bottom", instance)
         self.base_caption = "Interaction"
         self.current_log = (

@@ -18,7 +18,7 @@ class NewViewMenu(Menu):
     Sub-menu to construct new Views
     """
 
-    def __init__(self, main_window) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&New", parent=main_window)
 
         self.entries.extend(
@@ -68,7 +68,7 @@ class ToolbarMenu(Menu):
     Sub-menu to control toolbar visibility.
     """
 
-    def __init__(self, main_window) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&Toolbars", parent=main_window)
         tm = main_window.toolbar_manager
         self.entries.extend([MenuEntry("Show all", tm.show_all), MenuEntry("Hide all", tm.hide_all), MenuSeparator()])
@@ -87,7 +87,7 @@ class ViewMenu(Menu):
     Main View menu
     """
 
-    def __init__(self, main_window) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&View", parent=main_window)
 
         self.entries.extend(

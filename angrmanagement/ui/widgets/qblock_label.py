@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
@@ -8,9 +10,12 @@ from angrmanagement.config import Conf
 
 from .qgraph_object import QCachedGraphicsItem
 
+if TYPE_CHECKING:
+    from traitlets import Instance
+
 
 class QBlockLabel(QCachedGraphicsItem):
-    def __init__(self, addr, text: str, config, disasm_view, instance, infodock, parent=None) -> None:
+    def __init__(self, addr: int, text: str, config, disasm_view, instance: Instance, infodock, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.instance = instance

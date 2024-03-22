@@ -24,6 +24,9 @@ from .qsearch_table import QSearchTable
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class SearchView(InstanceView):
     """
@@ -31,7 +34,9 @@ class SearchView(InstanceView):
     Has handlers for switching between search types and executing the search.
     """
 
-    def __init__(self, plugin, workspace, instance, default_docking_position, *args, **kwargs) -> None:
+    def __init__(
+        self, plugin, workspace: Workspace, instance: Instance, default_docking_position: str, *args, **kwargs
+    ) -> None:
         super().__init__("search", workspace, default_docking_position, instance, *args, **kwargs)
 
         self.base_caption = "Search"

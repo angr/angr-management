@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from angr.sim_type import normalize_cpp_function_name
 from PySide6.QtGui import QColor, Qt
 from sortedcontainers import SortedDict
@@ -8,9 +10,12 @@ from angrmanagement.plugins.base_plugin import BasePlugin
 
 from .sinks import VulnerabilityType, sink_manager
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class DependencyViewer(BasePlugin):
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.transitions: set[tuple[int, int]] = set()
@@ -18,7 +23,7 @@ class DependencyViewer(BasePlugin):
 
         self.sink_color = Qt.yellow
 
-    def color_insn(self, addr, selected, disasm_view) -> QColor | None:
+    def color_insn(self, addr: int, selected, disasm_view) -> QColor | None:
         if not selected:
             try:
                 block_addr = next(self.covered_blocks.irange(maximum=addr, reverse=True))

@@ -65,14 +65,14 @@ class ManagementService(rpyc.Service):
             apppath + ["-d", bin_path], shell=shell, stdin=None, stdout=None, stderr=None, close_fds=True, **flags
         )
 
-    def exposed_jumpto(self, addr, symbol, target_id: str) -> None:
+    def exposed_jumpto(self, addr: int, symbol, target_id: str) -> None:
         conn = self._get_conn(target_id)
         conn.root.jumpto(addr, symbol)
 
     def exposed_register_binary(self, bin_path, target_id: str) -> None:
         TargetIDtoCONN[target_id] = self._conn
 
-    def exposed_commentat(self, addr, comment: str, target_id: str) -> None:
+    def exposed_commentat(self, addr: int, comment: str, target_id: str) -> None:
         conn = self._get_conn(target_id)
         conn.root.commentat(addr, comment)
 

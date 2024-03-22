@@ -20,10 +20,11 @@ from .trace_statistics import TraceStatistics
 
 if TYPE_CHECKING:
     from angrmanagement.data.object_container import ObjectContainer
+    from angrmanagement.ui.workspace import Workspace
 
 
 class TraceViewer(BasePlugin):
-    def __init__(self, workspace) -> None:
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.workspace.main_instance.register_container(
@@ -117,7 +118,7 @@ class TraceViewer(BasePlugin):
         dview.layout().addWidget(trace_viewer)
         trace_viewer.hide()
 
-    def color_block(self, addr):
+    def color_block(self, addr: int):
         if not self.multi_trace.am_none:
             if isinstance(self.multi_trace.am_obj, MultiTrace) and not self.multi_trace.is_active_tab:
                 return None
@@ -159,7 +160,7 @@ class TraceViewer(BasePlugin):
                 painter.drawRect(legend_x, 0, w, qinsn.height)
                 legend_x += w
 
-    def _gen_strata(self, addr):
+    def _gen_strata(self, addr: int):
         if not self.trace.am_none:
             # count is cached in trace.
             count = self.trace.get_count(addr)

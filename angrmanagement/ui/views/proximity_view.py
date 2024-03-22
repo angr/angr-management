@@ -25,13 +25,16 @@ from angrmanagement.ui.widgets.qproximitygraph_block import (
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class ProximityView(InstanceView):
     """
     Proximity View
     """
 
-    def __init__(self, workspace, instance, default_docking_position) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("proximity", workspace, default_docking_position, instance)
 
         self.base_caption = "Proximity"

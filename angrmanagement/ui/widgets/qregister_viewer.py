@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from .qast_viewer import QASTViewer
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +133,7 @@ class QRegisterViewer(QFrame):
     ARCH_REGISTERS["ARMEL"] = ARCH_REGISTERS["ARM"]
     ARCH_REGISTERS["ARMHF"] = ARCH_REGISTERS["ARM"]
 
-    def __init__(self, state, parent, workspace) -> None:
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
 
         self._state = state

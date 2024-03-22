@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Generator
 
-from angr import KnowledgeBase
+from angr import KnowledgeBase, Project
 from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg
@@ -172,7 +172,7 @@ class DependencyAnalysisJob(Job):
         subject: str,
         sink_atoms: list[tuple[Atom, SimType]],
         kb,
-        project,
+        project: Project,
         max_depth: int,
         excluded_funtions: set[int],
         observation_points: set[tuple],
@@ -234,7 +234,7 @@ class DependencyAnalysisJob(Job):
             yield idx, len(starts), rda
 
     @staticmethod
-    def _get_new_kb_with_cfgs_and_functions(project, kb):
+    def _get_new_kb_with_cfgs_and_functions(project: Project, kb):
         new_kb = KnowledgeBase(project)
 
         new_kb.cfgs = kb.cfgs.copy()

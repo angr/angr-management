@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from PySide6.QtWidgets import QLineEdit
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class QAddressInput(QLineEdit):
     def __init__(
-        self, textchanged_callback: Callable | None, instance, parent=None, default: str | None = None
+        self, textchanged_callback: Callable | None, instance: Instance, parent=None, default: str | None = None
     ) -> None:
         super().__init__(parent)
 

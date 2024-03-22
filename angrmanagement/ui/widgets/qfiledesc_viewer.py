@@ -9,6 +9,8 @@ from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QPushButton, QText
 if typing.TYPE_CHECKING:
     from angr.sim_state import SimState
 
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QFileDescriptorViewer(QFrame):
     """
@@ -22,7 +24,7 @@ class QFileDescriptorViewer(QFrame):
         2: "stderr",
     }
 
-    def __init__(self, state, parent, workspace) -> None:
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
 
         self._state: SimState = state

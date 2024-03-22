@@ -21,13 +21,13 @@ class PoisonKnowledge(KnowledgeBasePlugin):
         self.global_poison = set()
         self.local_poison = defaultdict(set)
 
-    def is_poisoned_local(self, func, addr) -> bool:
+    def is_poisoned_local(self, func, addr: int) -> bool:
         return addr in self.local_poison[func]
 
-    def is_poisoned_global(self, addr) -> bool:
+    def is_poisoned_global(self, addr: int) -> bool:
         return addr in self.global_poison
 
-    def is_poisoned(self, func, addr):
+    def is_poisoned(self, func, addr: int):
         return self.is_poisoned_local(func, addr) or self.is_poisoned_global(addr)
 
     def copy(self):
@@ -52,7 +52,7 @@ class PoisonPass(OptimizationPass):
         super().__init__(func, **kwargs)
         self.analyze()
 
-    def is_poisoned(self, addr):
+    def is_poisoned(self, addr: int):
         return self.project.kb.decompiler_poison.is_poisoned(self._func.addr, addr)
 
     def _check(self):
