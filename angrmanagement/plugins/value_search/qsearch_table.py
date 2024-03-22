@@ -51,7 +51,7 @@ class QSearchModel(QAbstractTableModel):
     def values(self, values) -> None:
         self._values = values
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.rowCount()
 
     def rowCount(self, parent=None) -> int:  # pylint: disable=unused-argument

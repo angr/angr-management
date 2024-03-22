@@ -36,7 +36,7 @@ class QXRefModel(QAbstractTableModel):
     def xrefs(self, v) -> None:
         self.view.items = v
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.xrefs)
 
     def rowCount(self, parent=None):
@@ -265,7 +265,7 @@ class QXRefViewer(QTableView):
         instance: Instance = None,
         xref_dialog=None,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent)
 
         self.verticalHeader().setVisible(False)

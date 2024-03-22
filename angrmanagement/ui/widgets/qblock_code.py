@@ -545,7 +545,7 @@ class VexIRTmpWrapper:
         self.tid = tid
         self.reg_name = reg_name or ("t%d" % self.tid)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.reg_name
 
 
@@ -566,7 +566,7 @@ class VexIRRegWrapper:
         self.offset = offset
         self.reg_name = reg_name or ("offset=%s" % self.offset)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.reg_name
 
 

@@ -491,7 +491,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         raise AttributeError(item)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key, value) -> None:
         if key in self.__slots__ or key in type(self).__dict__:
             super().__setattr__(key, value)
             return

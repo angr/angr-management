@@ -89,7 +89,7 @@ class QStringModel(QAbstractTableModel):
             self._values = self._get_all_string_memory_data()
         return self._values
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.rowCount()
 
     def rowCount(self, parent=None) -> int:  # pylint: disable=unused-argument

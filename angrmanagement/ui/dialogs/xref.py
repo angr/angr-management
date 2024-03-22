@@ -26,7 +26,7 @@ class XRefDialog(QDialog):
         instance=None,
         disassembly_view=None,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent)
 
         self._variable_manager = variable_manager

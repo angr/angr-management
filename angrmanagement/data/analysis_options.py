@@ -42,7 +42,7 @@ class AnalysesConfiguration:
         self.instance = instance
         self.analyses: Sequence[AnalysisConfiguration] = analyses
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.analyses)
 
     def __iter__(self):

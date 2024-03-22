@@ -290,7 +290,7 @@ class GraphLayouter:
         y_margin: int = 5,
         row_margin: int = 16,
         col_margin: int = 16,
-    ):
+    ) -> None:
         self.graph = graph
         self._node_sizes = node_sizes
         self._node_compare_key = node_compare_key

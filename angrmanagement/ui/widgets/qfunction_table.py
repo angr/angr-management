@@ -58,7 +58,7 @@ class QFunctionTableModel(QAbstractTableModel):
         self._config = Conf
         self._data_cache = {}
 
-    def __len__(self):
+    def __len__(self) -> int:
         if self._func_list is not None:
             return len(self._func_list)
         if self._raw_func_list is not None:

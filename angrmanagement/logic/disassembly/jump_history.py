@@ -26,7 +26,7 @@ class JumpHistory:
         else:
             return None
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._history)
 
     def jump_to(self, addr) -> None:

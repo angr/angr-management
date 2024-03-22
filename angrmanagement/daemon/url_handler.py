@@ -134,7 +134,7 @@ class UrlActionBinaryAware(UrlActionBase):
     The base class of all binary-aware URL actions.
     """
 
-    def __init__(self, target_id=None, action=None, kwargs=None):
+    def __init__(self, target_id=None, action=None, kwargs=None) -> None:
         super().__init__(target_id)
         self.action = action
         self.kwargs = kwargs

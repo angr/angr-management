@@ -64,10 +64,10 @@ class GUIObjProxy:
     def __nonzero__(self):
         return gui_thread_schedule(lambda: bool(object.__getattribute__(self, "_obj")))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return gui_thread_schedule(lambda: str(object.__getattribute__(self, "_obj")))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return gui_thread_schedule(lambda: repr(object.__getattribute__(self, "_obj")))
 
     #

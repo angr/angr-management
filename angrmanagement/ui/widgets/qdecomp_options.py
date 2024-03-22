@@ -27,7 +27,7 @@ class QDecompilationOption(QTreeWidgetItem):
     The UI entry for a single decompliation option. Get status with item.state.
     """
 
-    def __init__(self, parent, option, type_: int, enabled: bool = True):
+    def __init__(self, parent, option, type_: int, enabled: bool = True) -> None:
         super().__init__(parent)
         self.option = option
         self.type = type_

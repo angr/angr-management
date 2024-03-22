@@ -38,7 +38,7 @@ class SingleInstance:
     own singleton instances.
     """
 
-    def __init__(self, flavor_id: str = "", lockfile: str = ""):
+    def __init__(self, flavor_id: str = "", lockfile: str = "") -> None:
         self.initialized = False
         if lockfile:
             self.lockfile = lockfile

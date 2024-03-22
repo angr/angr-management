@@ -83,7 +83,7 @@ class ObjectContainer(EventSentinel):
             return object.__getattribute__(self, item)
         return getattr(self._am_obj, item)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key, value) -> None:
         if key.startswith(("am_", "_am_")):
             return object.__setattr__(self, key, value)
         return setattr(self._am_obj, key, value)
@@ -100,7 +100,7 @@ class ObjectContainer(EventSentinel):
     def __iter__(self):
         return iter(self._am_obj)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._am_obj)
 
     def __eq__(self, other):
