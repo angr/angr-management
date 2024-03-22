@@ -29,7 +29,7 @@ class SimgrStepJob(Job):
         if self._callback is not None:
             self._callback(result)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self._until_branch:
             return "Stepping %r until branch" % self._simgr
         else:

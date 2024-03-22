@@ -27,7 +27,7 @@ class SimgrExploreJob(Job):
         super().finish(inst, result)
         self._callback(result)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Exploring %r" % self._simgr
 
     def keyboard_interrupt(self) -> None:

@@ -235,7 +235,7 @@ class QFunctionTableModel(QAbstractTableModel):
     def _get_tags_display_string(cls, tags):
         return ", ".join(cls.TAG_STRS.get(t, t) for t in tags)
 
-    def _func_match_keyword(self, func, keyword, extra_columns: int = 0):
+    def _func_match_keyword(self, func, keyword, extra_columns: int = 0) -> bool:
         """
         Check whether the function matches against the given keyword or not.
 
@@ -415,7 +415,7 @@ class QFunctionTableFilterBox(QLineEdit):
 
         self.installEventFilter(self)
 
-    def eventFilter(self, obj, event):  # pylint:disable=unused-argument
+    def eventFilter(self, obj, event) -> bool:  # pylint:disable=unused-argument
         if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
             if self.text():
                 self.setText("")

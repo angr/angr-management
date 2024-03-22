@@ -124,7 +124,7 @@ class TraceViewer(BasePlugin):
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
-    def handle_click_block(self, qblock, event):
+    def handle_click_block(self, qblock, event) -> bool:
         btn = event.button()
 
         if (

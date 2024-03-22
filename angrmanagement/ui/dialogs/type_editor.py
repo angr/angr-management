@@ -118,7 +118,7 @@ class CTypeEditor(QDialog):
             self.result = result
 
 
-def edit_field(ty, field, predefined_types=None):
+def edit_field(ty, field, predefined_types=None) -> bool:
     if isinstance(ty, sim_type.SimStruct):
         fields = ty.fields
     elif isinstance(ty, sim_type.SimUnion):

@@ -194,7 +194,7 @@ class OutBranch:
 
         self.targets = set()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.ins_addr is None:
             return "<OutBranch at None, type %s>" % self.type
         return f"<OutBranch at {self.ins_addr:#x}, type {self.type}>"
@@ -303,7 +303,7 @@ class SuperCFGNode:
                 item = next(iter(outs.values()))
                 self.out_branches[ins_addr][item.stmt_idx] = item
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<SuperCFGNode %#08x, %d blocks, %d out branches>" % (
             self.addr,
             len(self.cfg_nodes),

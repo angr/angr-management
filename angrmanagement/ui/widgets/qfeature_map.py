@@ -310,7 +310,7 @@ class FeatureMapItem(QGraphicsItem):
             position += self._region_to_width[mr]
 
     @staticmethod
-    def _should_show_region_to_scale(mr: MemoryRegion):
+    def _should_show_region_to_scale(mr: MemoryRegion) -> bool:
         return not isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject))
 
     def _get_region_at_addr(self, addr: int) -> MemoryRegion | None:

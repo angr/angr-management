@@ -132,7 +132,7 @@ def start_daemon(port=DEFAULT_PORT) -> None:
     server.start()
 
 
-def daemon_exists():
+def daemon_exists() -> bool:
     try:
         inst = SingleInstance()
     except SingleInstanceException:

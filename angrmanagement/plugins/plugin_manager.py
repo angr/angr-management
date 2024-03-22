@@ -388,37 +388,37 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.step_callback, True, simgr):
             pass
 
-    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name) -> bool:
         for res in self._dispatch(BasePlugin.handle_stack_var_renamed, False, func, offset, old_name, new_name):
             if res:
                 return True
         return False
 
-    def handle_stack_var_retyped(self, func, offset, old_type, new_type):
+    def handle_stack_var_retyped(self, func, offset, old_type, new_type) -> bool:
         for res in self._dispatch(BasePlugin.handle_stack_var_retyped, False, func, offset, old_type, new_type):
             if res:
                 return True
         return False
 
-    def handle_func_arg_renamed(self, func, offset, old_name, new_name):
+    def handle_func_arg_renamed(self, func, offset, old_name, new_name) -> bool:
         for res in self._dispatch(BasePlugin.handle_func_arg_renamed, False, func, offset, old_name, new_name):
             if res:
                 return True
         return False
 
-    def handle_func_arg_retyped(self, func, offset, old_type, new_type):
+    def handle_func_arg_retyped(self, func, offset, old_type, new_type) -> bool:
         for res in self._dispatch(BasePlugin.handle_func_arg_retyped, False, func, offset, old_type, new_type):
             if res:
                 return True
         return False
 
-    def handle_global_var_renamed(self, address, old_name, new_name):
+    def handle_global_var_renamed(self, address, old_name, new_name) -> bool:
         for res in self._dispatch(BasePlugin.handle_global_var_renamed, False, address, old_name, new_name):
             if res:
                 return True
         return False
 
-    def handle_global_var_retyped(self, address, old_type, new_type):
+    def handle_global_var_retyped(self, address, old_type, new_type) -> bool:
         for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, address, old_type, new_type):
             if res:
                 return True
@@ -436,7 +436,7 @@ class PluginManager:
     def handle_function_retyped(self, func, old_type, new_type):
         return any(res for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type))
 
-    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
+    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool) -> bool:
         for res in self._dispatch(BasePlugin.handle_comment_changed, False, address, old_cmt, new_cmt, created, decomp):
             if res:
                 return True

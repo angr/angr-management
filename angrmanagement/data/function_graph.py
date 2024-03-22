@@ -3,7 +3,7 @@ from __future__ import annotations
 from angrmanagement.utils.graph import to_supergraph
 
 
-def edge_qualifies(data):
+def edge_qualifies(data) -> bool:
     return data["type"] not in ("call", "return_from_call")
 
 

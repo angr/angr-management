@@ -105,5 +105,5 @@ class VariableRecoveryJob(Job):
         self.ccc = None  # essentially disabling self.prioritize_function()
         super().finish(inst, result)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Variable Recovery Job>"

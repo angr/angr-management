@@ -22,5 +22,5 @@ class CodeTaggingJob(Job):
             percentage = i / func_count * 100
             super()._progress_callback(percentage)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "CodeTaggingJob"

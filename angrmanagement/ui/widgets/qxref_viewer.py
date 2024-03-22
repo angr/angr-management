@@ -136,7 +136,7 @@ class QXRefVariableModel(QXRefModel):
             return f"{addr:#x} ({self.instance.kb.functions[node.function_address].name})"
         return hex(addr)
 
-    def _direction(self, _r):
+    def _direction(self, _r) -> str:
         """
 
         :param VariableAccess _r:
@@ -221,7 +221,7 @@ class QXRefAddressModel(QXRefModel):
             return f"{addr:#x} ({self.instance.kb.functions[node.function_address].name})"
         return hex(addr)
 
-    def _direction(self, _r):
+    def _direction(self, _r) -> str:
         """
 
         :param XRef _r:

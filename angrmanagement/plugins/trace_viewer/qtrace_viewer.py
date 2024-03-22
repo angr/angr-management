@@ -360,7 +360,7 @@ class QTraceViewer(QWidget):
             func = self.trace.get_func_from_position(self.curr_position)
             self._jump_bbl(func, bbl_addr)
 
-    def eventFilter(self, obj, event):  # specifically to catch arrow keys #pylint: disable=unused-argument
+    def eventFilter(self, obj, event) -> bool:  # specifically to catch arrow keys #pylint: disable=unused-argument
         # more elegant solution to link w/ self.view's scroll bar keypressevent?
         if event.type() == QEvent.Type.KeyPress:
             if not event.modifiers() & Qt.ShiftModifier:  # shift + arrowkeys

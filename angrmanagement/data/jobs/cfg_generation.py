@@ -74,7 +74,7 @@ class CFGGenerationJob(Job):
         except Exception:  # pylint:disable=broad-exception-caught
             _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Generating CFG"
 
     #

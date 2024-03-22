@@ -21,10 +21,10 @@ class PoisonKnowledge(KnowledgeBasePlugin):
         self.global_poison = set()
         self.local_poison = defaultdict(set)
 
-    def is_poisoned_local(self, func, addr):
+    def is_poisoned_local(self, func, addr) -> bool:
         return addr in self.local_poison[func]
 
-    def is_poisoned_global(self, addr):
+    def is_poisoned_global(self, addr) -> bool:
         return addr in self.global_poison
 
     def is_poisoned(self, func, addr):

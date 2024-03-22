@@ -227,7 +227,7 @@ class InfoDock(QObject):
         else:
             self.select_instruction(insn_addr, unique=unique, insn_pos=insn_pos)
 
-    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique=False):
+    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique=False) -> bool:
         """
         Toggle the selection state of an operand of an instruction in the disassembly view.
 
@@ -262,7 +262,7 @@ class InfoDock(QObject):
             self.selected_variables.remove(unified_variable)
             self.selected_variables.am_event()
 
-    def toggle_variable_selection(self, unified_variable: SimVariable, unique: bool = True):
+    def toggle_variable_selection(self, unified_variable: SimVariable, unique: bool = True) -> bool:
         if len(self.selected_variables) > 1 and unique:
             # multiple variables are selected
             # clear existing selections and select this one
@@ -297,10 +297,10 @@ class InfoDock(QObject):
     def is_block_hovered(self, block_addr):
         return block_addr == self.hovered_block.am_obj
 
-    def is_block_selected(self, block_addr):
+    def is_block_selected(self, block_addr) -> bool:
         return block_addr in self.selected_blocks
 
-    def is_instruction_selected(self, ins_addr):
+    def is_instruction_selected(self, ins_addr) -> bool:
         """
         Check if an instruction at @ins_addr is currently selected or not.
 
@@ -310,7 +310,7 @@ class InfoDock(QObject):
         """
         return ins_addr in self.selected_insns
 
-    def is_operand_selected(self, ins_addr, operand_index):
+    def is_operand_selected(self, ins_addr, operand_index) -> bool:
         """
         Check if an operand at @ins_addr and @operand_index is currently selected or not.
 
@@ -320,7 +320,7 @@ class InfoDock(QObject):
         """
         return (ins_addr, operand_index) in self.selected_operands
 
-    def is_label_selected(self, label_addr):
+    def is_label_selected(self, label_addr) -> bool:
         return label_addr in self.selected_labels
 
     def is_variable_selected(self, unique_variable_ident: str) -> bool:

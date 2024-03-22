@@ -33,7 +33,7 @@ class MemoryChecker(BasePlugin):
         return state.solver.eval(ptr)
 
     @staticmethod
-    def check_address_is_free(state: SimState, ptr_list: list[SimAction]):
+    def check_address_is_free(state: SimState, ptr_list: list[SimAction]) -> bool:
         ptr_dict = SortedDict([(MemoryChecker.eval_ptr(state, x.addr.ast), x) for x in ptr_list])
         len_list = len(ptr_dict)
         for chunk in state.heap.free_chunks():

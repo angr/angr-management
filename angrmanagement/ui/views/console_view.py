@@ -26,7 +26,7 @@ class ConsoleView(InstanceView):
             self.mainWindowInitializedEvent()
 
     @property
-    def ipython_widget_available(self):
+    def ipython_widget_available(self) -> bool:
         return self._ipython_widget is not None
 
     def mainWindowInitializedEvent(self) -> None:

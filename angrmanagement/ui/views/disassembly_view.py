@@ -720,7 +720,7 @@ class DisassemblyView(SynchronizedFunctionView):
                 self._flow_graph.function_graph.clear_cache()
                 self._flow_graph.reload()
 
-    def jump_to(self, addr, src_ins_addr=None, use_animation=False):
+    def jump_to(self, addr, src_ins_addr=None, use_animation=False) -> bool:
         # Record the current instruction address first
         if src_ins_addr is not None:
             self.jump_history.record_address(src_ins_addr)
@@ -938,7 +938,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if console_view is not None:
             console_view.set_current_function(the_func)
 
-    def _jump_to(self, addr, use_animation=False):
+    def _jump_to(self, addr, use_animation=False) -> bool:
         if self._prefer_graph and self._current_view is self._linear_viewer:
             self.display_disasm_graph(prefer=False)
 

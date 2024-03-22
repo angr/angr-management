@@ -71,7 +71,7 @@ class ObjectContainer(EventSentinel):
         self._am_obj = v
 
     @property
-    def am_none(self):
+    def am_none(self) -> bool:
         return self._am_obj is None
 
     def __forwarder(self, **kwargs) -> None:
@@ -106,8 +106,8 @@ class ObjectContainer(EventSentinel):
     def __eq__(self, other):
         return self is other or self._am_obj == other
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self == other
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"(container: {self.am_name}){repr(self._am_obj)}"

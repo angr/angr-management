@@ -32,7 +32,7 @@ class AvailableDebuggersModel(QAbstractItemModel):
     def rowCount(self, parent):  # pylint:disable=unused-argument
         return len(self.debugger_list_mgr.debugger_list) + 1
 
-    def columnCount(self, parent):  # pylint:disable=unused-argument,no-self-use
+    def columnCount(self, parent) -> int:  # pylint:disable=unused-argument,no-self-use
         return 1
 
     def index(self, row, col, parent):  # pylint:disable=unused-argument

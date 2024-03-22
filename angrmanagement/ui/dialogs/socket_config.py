@@ -47,7 +47,7 @@ class SocketItem:  # pylint: disable=no-self-use, unused-argument
     def childCount(self):
         return len(self.children)
 
-    def columnCount(self):
+    def columnCount(self) -> int:
         return 1
 
     def data(self, column):
@@ -59,7 +59,7 @@ class SocketItem:  # pylint: disable=no-self-use, unused-argument
         else:
             return None
 
-    def setData(self, column, data):
+    def setData(self, column, data) -> bool:
         if column == 0:
             if self.node_type in ("Socket", "Accepted"):
                 self.ident = data

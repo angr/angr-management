@@ -27,5 +27,5 @@ class FlirtSignatureRecognitionJob(Job):
         else:
             _l.warning("No FLIRT signatures exist for architecture %s.", inst.project.arch.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "FlirtSignatureRecognitionJob"

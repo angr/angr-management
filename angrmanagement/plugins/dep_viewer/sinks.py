@@ -9,7 +9,7 @@ class VulnerabilityType:
     SQL_INJECTION = 3
 
     @staticmethod
-    def to_string(vuln_type: int):
+    def to_string(vuln_type: int) -> str:
         if vuln_type == VulnerabilityType.PATH_TRAVERSAL:
             return "Path travesal"
         elif vuln_type == VulnerabilityType.COMMAND_INJECTION:
@@ -31,7 +31,7 @@ class FunctionArgumentSink(BaseSink):
         self.arg_idx = arg_idx
         self.platforms = platforms
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<TS %s:arg %d>" % (self.func_name, self.arg_idx)
 
 

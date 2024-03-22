@@ -11,7 +11,7 @@ from angrmanagement.config import Conf
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 
 
-def isurl(uri):
+def isurl(uri) -> bool:
     try:
         result = urllib.parse.urlparse(uri)
         if result.scheme in ("http", "https"):

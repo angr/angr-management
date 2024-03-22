@@ -81,7 +81,7 @@ class DockShortcutEventFilter(QObject):
         super().__init__()
         self._main_window: MainWindow = main_window
 
-    def eventFilter(self, qobject, event):
+    def eventFilter(self, qobject, event) -> bool:
         if event.type() == QEvent.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
             self._main_window.show_command_palette(qobject)
             return True
@@ -104,7 +104,7 @@ class ShiftShiftEventFilter(QObject):
         self._last_press_time: float = 0
         self._did_process_qwindow_event: bool = False
 
-    def eventFilter(self, qobject, event):
+    def eventFilter(self, qobject, event) -> bool:
         # Key Event propagation will begin at QWindow and continue down the widget tree. Use KeyEvent on QWindow to
         # distinguish unique key presses, then intercept KeyEvent at first QWidget the event is propagated to.
 
@@ -983,7 +983,7 @@ class MainWindow(QMainWindow):
         self.workspace.main_instance.on_cfg_generated()
         self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
-    def _save_database(self, file_path):
+    def _save_database(self, file_path) -> bool:
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 

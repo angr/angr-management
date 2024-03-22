@@ -105,10 +105,10 @@ class BasePlugin:
     def instrument_code_view(self, cview: code_view.CodeView) -> None:
         pass
 
-    def handle_click_insn(self, qinsn, event: QGraphicsSceneMouseEvent):
+    def handle_click_insn(self, qinsn, event: QGraphicsSceneMouseEvent) -> bool:
         return False
 
-    def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent):
+    def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent) -> bool:
         return False
 
     def handle_raise_view(self, view) -> None:
@@ -175,40 +175,40 @@ class BasePlugin:
 
     OPTIMIZATION_PASSES: list[tuple[type[OptimizationPass], bool]] = []
 
-    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name) -> bool:
         return False
 
-    def handle_stack_var_retyped(self, func, offset, old_type, new_type):
+    def handle_stack_var_retyped(self, func, offset, old_type, new_type) -> bool:
         return False
 
-    def handle_func_arg_renamed(self, func, offset, old_name, new_name):
+    def handle_func_arg_renamed(self, func, offset, old_name, new_name) -> bool:
         return False
 
-    def handle_func_arg_retyped(self, func, offset, old_type, new_type):
+    def handle_func_arg_retyped(self, func, offset, old_type, new_type) -> bool:
         return False
 
-    def handle_global_var_renamed(self, address, old_name, new_name):
+    def handle_global_var_renamed(self, address, old_name, new_name) -> bool:
         return False
 
-    def handle_global_var_retyped(self, address, old_type, new_type):
+    def handle_global_var_retyped(self, address, old_type, new_type) -> bool:
         return False
 
-    def handle_other_var_renamed(self, var, old_name, new_name):
+    def handle_other_var_renamed(self, var, old_name, new_name) -> bool:
         return False
 
-    def handle_other_var_retyped(self, var, old_type, new_type):
+    def handle_other_var_retyped(self, var, old_type, new_type) -> bool:
         return False
 
-    def handle_function_renamed(self, func, old_name, new_name):
+    def handle_function_renamed(self, func, old_name, new_name) -> bool:
         return False
 
-    def handle_function_retyped(self, func, old_type, new_type):
+    def handle_function_retyped(self, func, old_type, new_type) -> bool:
         return False
 
-    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool):
+    def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool) -> bool:
         return False
 
-    def handle_struct_changed(self, old_struct, new_struct):
+    def handle_struct_changed(self, old_struct, new_struct) -> bool:
         return False
 
     def decompile_callback(self, func) -> None:

@@ -35,7 +35,7 @@ class PaletteModel(QAbstractItemModel):
     def rowCount(self, _):
         return len(self._filtered_items)
 
-    def columnCount(self, _):  # pylint:disable=no-self-use
+    def columnCount(self, _) -> int:  # pylint:disable=no-self-use
         return 1
 
     def index(self, row, col, _):

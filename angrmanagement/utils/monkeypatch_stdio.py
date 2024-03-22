@@ -21,7 +21,7 @@ class NullWriter:  # pylint: disable=no-self-use,unused-argument
     def flush(self, *args) -> None:
         pass
 
-    def isatty(self):
+    def isatty(self) -> bool:
         return False
 
 

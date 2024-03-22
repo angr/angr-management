@@ -271,7 +271,7 @@ class QGraphBlock(QBlock):
     BLOCK_ANNOTATIONS_LEFT_PADDING = 2
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         return "graph"
 
     def layout_widgets(self) -> None:
@@ -388,11 +388,11 @@ class QLinearBlock(QBlock):
         self._width = 0
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         return "linear"
 
     @staticmethod
-    def format_address(addr):
+    def format_address(addr) -> str:
         return f"{addr:08x}"
 
     def layout_widgets(self) -> None:

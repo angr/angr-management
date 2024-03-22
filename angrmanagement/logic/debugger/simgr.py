@@ -30,7 +30,7 @@ class SimulationDebugger(Debugger):
         self._sim_mgr.am_subscribe(self._watch_simgr)
         self._sim_mgr_view.state.am_subscribe(self._watch_state)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self._sim_mgr.am_none:
             return "No Simulation Manager"
         if self.simstate is None:

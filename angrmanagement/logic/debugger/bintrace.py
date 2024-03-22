@@ -43,7 +43,7 @@ class BintraceDebugger(Debugger):
         )
         self._cached_simstate = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         pc = self.simstate.solver.eval(self.simstate.regs.pc)
         return f"{os.path.basename(self._btrace.path)} @ {pc:x}"
 

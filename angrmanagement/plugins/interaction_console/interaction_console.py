@@ -110,7 +110,7 @@ class ConsoleView(InstanceView):
     def _save_interaction(self, conversation) -> None:
         target_port = self.target.tcp_ports[0]
 
-        def direction(srcport, dstport):
+        def direction(srcport, dstport) -> str:
             if srcport == target_port:
                 return "out"
             if dstport == target_port:

@@ -19,5 +19,5 @@ class PrototypeFindingJob(Job):
     def finish(self, inst, result) -> None:
         super().finish(inst, result)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "PrototypeFindingJob"

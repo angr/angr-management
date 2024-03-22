@@ -15,5 +15,5 @@ class VFGGenerationJob(Job):
         super().finish(inst, result)
         inst.vfgs[self._addr] = result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Generating VFG for function at %#x" % self._addr

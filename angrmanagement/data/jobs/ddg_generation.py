@@ -18,5 +18,5 @@ class DDGGenerationJob(Job):
         super().finish(inst, result)
         inst.ddgs[self._addr] = result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Generating VSA_DDG for function at %#x" % self._addr
