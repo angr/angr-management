@@ -21,7 +21,7 @@ class TypesView(FunctionView):
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, instance, default_docking_position) -> None:
         super().__init__("types", workspace, default_docking_position, instance)
 
         self.base_caption = "Types"
@@ -51,7 +51,7 @@ class TypesView(FunctionView):
     # Other methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         outer_layout = QVBoxLayout()
         scroll_area = QScrollArea()
         scroll_contents = QWidget()
@@ -85,7 +85,7 @@ class TypesView(FunctionView):
         # TODO: Support dark mode
         # scroll_contents.setStyleSheet("background-color: white;")
 
-    def reload(self):
+    def reload(self) -> None:
         for child in list(self._layout.parent().children()):
             if type(child) is QCTypeDef:
                 self._layout.takeAt(0)
@@ -105,7 +105,7 @@ class TypesView(FunctionView):
             widget = QCTypeDef(self._layout.parent(), ty, types_store)
             self._layout.insertWidget(self._layout.count() - 1, widget)
 
-    def _on_new_type(self):
+    def _on_new_type(self) -> None:
         dialog = CTypeEditor(
             None,
             self.instance.project.arch,
@@ -138,5 +138,5 @@ class TypesView(FunctionView):
         # reload
         self.reload()
 
-    def _on_persistent_types_clicked(self):
+    def _on_persistent_types_clicked(self) -> None:
         self.function = None

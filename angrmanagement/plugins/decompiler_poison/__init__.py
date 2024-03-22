@@ -16,7 +16,7 @@ class PoisonKnowledge(KnowledgeBasePlugin):
     See PoisonPlugin. This is the storage mechanism in the knowledgebase.
     """
 
-    def __init__(self, kb):
+    def __init__(self, kb) -> None:
         self.kb = kb
         self.global_poison = set()
         self.local_poison = defaultdict(set)
@@ -48,7 +48,7 @@ class PoisonPass(OptimizationPass):
     NAME = "Poison Pass"
     DESCRIPTION = __doc__.strip()
 
-    def __init__(self, func, **kwargs):
+    def __init__(self, func, **kwargs) -> None:
         super().__init__(func, **kwargs)
         self.analyze()
 
@@ -58,7 +58,7 @@ class PoisonPass(OptimizationPass):
     def _check(self):
         return True, None
 
-    def _analyze(self, cache=None):
+    def _analyze(self, cache=None) -> None:
         poisoned = []
 
         for block in list(self._graph.nodes()):
@@ -116,7 +116,7 @@ class PoisonPlugin(BasePlugin):
     def knowledge(self) -> PoisonKnowledge:
         return self.workspace.main_instance.kb.decompiler_poison
 
-    def set_poison_local(self, func, callee, value):
+    def set_poison_local(self, func, callee, value) -> None:
         if value:
             self.knowledge.local_poison[func].add(callee)
         else:
@@ -124,7 +124,7 @@ class PoisonPlugin(BasePlugin):
         if isinstance(self.workspace.view_manager.current_tab, CodeView):
             self.workspace.view_manager.current_tab.decompile()
 
-    def set_poison_global(self, callee, value):
+    def set_poison_global(self, callee, value) -> None:
         if value:
             self.knowledge.global_poison.add(callee)
         else:
@@ -148,7 +148,7 @@ class PoisonPlugin(BasePlugin):
             if poison:
                 yield ("local_poison_" + hex(func), self._poison_to_string(poison))
 
-    def angrdb_load_entry(self, key: str, value: str):
+    def angrdb_load_entry(self, key: str, value: str) -> None:
         if key == "global_poison":
             self.workspace.main_instance.kb.decompiler_poison.global_poison = self._string_to_poison(value)
         elif key.startswith("local_poison_"):

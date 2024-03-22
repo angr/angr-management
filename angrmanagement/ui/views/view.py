@@ -88,7 +88,7 @@ class ViewState:
 
     cursors: list[int]
 
-    def __init__(self, cursors: list[int] | None = None):
+    def __init__(self, cursors: list[int] | None = None) -> None:
         self.cursors = cursors or []
 
 
@@ -105,10 +105,10 @@ class InstanceView(BaseView):
         self.instance = instance
         self.published_view_state = ViewState()
 
-    def on_focused(self):
+    def on_focused(self) -> None:
         self.notify_view_state_updated()
 
-    def notify_view_state_updated(self):
+    def notify_view_state_updated(self) -> None:
         if self.workspace.view_manager.most_recently_focused_view is self:
             self.instance.active_view_state.am_obj = self.published_view_state
             self.instance.active_view_state.am_event()
@@ -179,18 +179,18 @@ class SynchronizedView(BaseView):
     _processing_synchronized_cursor_update: bool
     sync_state: SynchronizedViewState
 
-    def __init__(self):  # pylint: disable=super-init-not-called
+    def __init__(self) -> None:  # pylint: disable=super-init-not-called
         self._processing_synchronized_cursor_update = False
         self.sync_state = SynchronizedViewState()
         self.sync_state.register_view(self)
 
-    def desync(self):
+    def desync(self) -> None:
         """
         Stop synchronization with any previously synchronized views.
         """
         self.sync_with_state_object()
 
-    def sync_with_state_object(self, state: SynchronizedViewState | None = None):
+    def sync_with_state_object(self, state: SynchronizedViewState | None = None) -> None:
         """
         Synchronize with another view state.
         """
@@ -199,20 +199,20 @@ class SynchronizedView(BaseView):
         self.sync_state.register_view(self)
         self.sync_from_state()
 
-    def sync_with_view(self, view: SynchronizedView):
+    def sync_with_view(self, view: SynchronizedView) -> None:
         """
         Synchronize with another view.
         """
         self.sync_with_state_object(view.sync_state)
 
-    def sync_from_state(self):
+    def sync_from_state(self) -> None:
         """
         Update this view to reflect the synchronized view state.
         """
         self.on_synchronized_cursor_address_changed()
         self.on_synchronized_highlight_regions_changed()
 
-    def set_synchronized_cursor_address(self, address: int | None):
+    def set_synchronized_cursor_address(self, address: int | None) -> None:
         """
         Set synchronized cursor address.
         """
@@ -222,7 +222,7 @@ class SynchronizedView(BaseView):
                 if view is not self:
                     view.on_synchronized_cursor_address_changed()
 
-    def on_synchronized_cursor_address_changed(self):
+    def on_synchronized_cursor_address_changed(self) -> None:
         """
         Handle synchronized cursor address change event.
         """
@@ -234,7 +234,7 @@ class SynchronizedView(BaseView):
         finally:
             self._processing_synchronized_cursor_update = False
 
-    def set_synchronized_highlight_regions(self, regions: Sequence[SynchronizedHighlightRegion]):
+    def set_synchronized_highlight_regions(self, regions: Sequence[SynchronizedHighlightRegion]) -> None:
         """
         Set synchronized highlight regions for this view.
         """
@@ -243,17 +243,17 @@ class SynchronizedView(BaseView):
             if view is not self:
                 view.on_synchronized_highlight_regions_changed()
 
-    def on_synchronized_highlight_regions_changed(self):
+    def on_synchronized_highlight_regions_changed(self) -> None:
         """
         Handle synchronized highlight region change event.
         """
 
-    def on_synchronized_view_group_changed(self):
+    def on_synchronized_view_group_changed(self) -> None:
         """
         Handle view being added to or removed from the view synchronization group.
         """
 
-    def closeEvent(self, event: PySide6.QtGui.QCloseEvent):
+    def closeEvent(self, event: PySide6.QtGui.QCloseEvent) -> None:
         """
         View close event handler.
         """

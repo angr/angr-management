@@ -11,7 +11,7 @@ class FuncDocDialog(QDialog):
     Implements the FuncDoc dialog.
     """
 
-    def __init__(self, instance, addr=None, name="", doc_tuple=None, parent=None):
+    def __init__(self, instance, addr=None, name="", doc_tuple=None, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
@@ -28,7 +28,7 @@ class FuncDocDialog(QDialog):
         self._init_widgets()
         self.setLayout(self.main_layout)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QGridLayout()
 
         # validation_failures = set()

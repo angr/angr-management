@@ -12,7 +12,7 @@ T = TypeVar("T")
 
 
 class ExecuteCodeEvent(QEvent):
-    def __init__(self, callable, args=None, kwargs=None):
+    def __init__(self, callable, args=None, kwargs=None) -> None:
         super().__init__(QEvent.User)
         self.callable = callable
         self.args = args
@@ -41,7 +41,7 @@ class GUIObjProxy:
 
     __slots__ = ["_obj", "__weakref__"]
 
-    def __init__(self, obj):
+    def __init__(self, obj) -> None:
         object.__setattr__(self, "_obj", obj)
 
     #
@@ -55,10 +55,10 @@ class GUIObjProxy:
             return result
         return GUIObjProxy(result)
 
-    def __delattr__(self, name):
+    def __delattr__(self, name) -> None:
         gui_thread_schedule(lambda: delattr(object.__getattribute__(self, "_obj"), name))
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name, value) -> None:
         gui_thread_schedule(lambda: setattr(object.__getattribute__(self, "_obj"), name, value))
 
     def __nonzero__(self):

@@ -21,7 +21,7 @@ class ObjectAndBase:
         "proj_base_addr",
     )
 
-    def __init__(self, obj_name: str, base_addr: int, proj_base_addr: int | None):
+    def __init__(self, obj_name: str, base_addr: int, proj_base_addr: int | None) -> None:
         self.obj_name = obj_name
         self.base_addr = base_addr
         self.proj_base_addr = proj_base_addr

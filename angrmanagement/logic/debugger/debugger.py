@@ -14,7 +14,7 @@ class Debugger:
     Provides a generic interface with common debugger operations to control program execution and inspect program state.
     """
 
-    def __init__(self, workspace: Workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__()
         self.workspace: Workspace = workspace
         self.instance: Instance = workspace.main_instance
@@ -27,7 +27,7 @@ class Debugger:
         """
         return ""
 
-    def init(self):
+    def init(self) -> None:
         """
         Initialize target connection.
         """
@@ -137,14 +137,14 @@ class DebuggerListManager:
     Manages the list of active debuggers.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.debugger_list = ObjectContainer([], "List of active debuggers")
 
-    def add_debugger(self, dbg: Debugger):
+    def add_debugger(self, dbg: Debugger) -> None:
         self.debugger_list.append(dbg)
         self.debugger_list.am_event(added=dbg)
 
-    def remove_debugger(self, dbg: Debugger):
+    def remove_debugger(self, dbg: Debugger) -> None:
         self.debugger_list.remove(dbg)
         self.debugger_list.am_event(removed=dbg)
 
@@ -154,19 +154,19 @@ class DebuggerManager:
     Manages one selected active debugger container.
     """
 
-    def __init__(self, debugger_list_mgr: DebuggerListManager):
+    def __init__(self, debugger_list_mgr: DebuggerListManager) -> None:
         self.debugger: ObjectContainer = ObjectContainer(None, "Current debugger")
         debugger_list_mgr.debugger_list.am_subscribe(self._on_debugger_list_event)
 
-    def _on_debugger_list_event(self, **kwargs):
+    def _on_debugger_list_event(self, **kwargs) -> None:
         if "removed" in kwargs:
             self._on_debugger_removed(kwargs["removed"])
 
-    def _on_debugger_removed(self, dbg: Debugger):
+    def _on_debugger_removed(self, dbg: Debugger) -> None:
         if self.debugger.am_obj is dbg:
             self.set_debugger(None)
 
-    def set_debugger(self, dbg: Debugger | None):
+    def set_debugger(self, dbg: Debugger | None) -> None:
         self.debugger.am_obj = dbg
         self.debugger.am_event()
 
@@ -176,7 +176,7 @@ class DebuggerWatcher:
     Watcher object that subscribes to debugger events whenever debugger changes.
     """
 
-    def __init__(self, state_updated_callback: Callable, debugger: ObjectContainer):
+    def __init__(self, state_updated_callback: Callable, debugger: ObjectContainer) -> None:
         """
         :param state_updated_callback: Callable to be called whenever the debugger state changes.
         :param debugger: Debugger container to monitor.
@@ -188,24 +188,24 @@ class DebuggerWatcher:
         self.debugger.am_subscribe(self._on_debugger_updated)
         self._subscribe_to_events()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self.debugger.am_unsubscribe(self._on_debugger_updated)
         self._unsubscribe_from_events()
 
-    def _unsubscribe_from_events(self):
+    def _unsubscribe_from_events(self) -> None:
         if self._last_selected_debugger:
             self._last_selected_debugger.state_changed.am_unsubscribe(self._on_debugger_state_updated)
             self._last_selected_debugger = None
 
-    def _subscribe_to_events(self):
+    def _subscribe_to_events(self) -> None:
         if not self.debugger.am_none:
             self.debugger.state_changed.am_subscribe(self._on_debugger_state_updated)
             self._last_selected_debugger = self.debugger.am_obj
 
-    def _on_debugger_updated(self, *args, **kwargs):  # pylint:disable=unused-argument
+    def _on_debugger_updated(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         self._unsubscribe_from_events()
         self._subscribe_to_events()
         self._on_debugger_state_updated()
 
-    def _on_debugger_state_updated(self):
+    def _on_debugger_state_updated(self) -> None:
         self.state_updated_callback()

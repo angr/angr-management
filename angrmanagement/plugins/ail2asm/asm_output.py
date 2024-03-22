@@ -9,7 +9,7 @@ class AsmOutput(QDialog):
     Displays generated assembly code
     """
 
-    def __init__(self, s: str, parent=None):
+    def __init__(self, s: str, parent=None) -> None:
         super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
@@ -32,7 +32,7 @@ class AsmOutput(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # Assembly label
 
         asm_label = QLabel(self)

@@ -24,7 +24,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, instance, proximity_view: ProximityView, parent=None):
+    def __init__(self, instance, proximity_view: ProximityView, parent=None) -> None:
         super().__init__(parent=parent)
 
         self._instance = instance
@@ -42,22 +42,22 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
         return self._graph
 
     @graph.setter
-    def graph(self, v):
+    def graph(self, v) -> None:
         if v is not self._graph:
             self._graph = v
             self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         self.request_relayout()
 
-    def refresh(self):
+    def refresh(self) -> None:
         for block in self.blocks:
             block.refresh()
         scene = self.scene()
         if scene is not None:
             scene.update(self.sceneRect())
 
-    def request_relayout(self):
+    def request_relayout(self) -> None:
         self._reset_scene()
         if self.graph is None:
             return
@@ -123,7 +123,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         """
 
         :param QKeyEvent event:
@@ -138,7 +138,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
 
         super().keyPressEvent(event)
 
-    def on_block_hovered(self, block):
+    def on_block_hovered(self, block) -> None:
         if block is None:
             return
         scene = self.scene()

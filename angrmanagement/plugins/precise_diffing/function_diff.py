@@ -38,7 +38,7 @@ class FunctionDiff:
         prefer_symbols=True,
         resolve_strings=True,
         **kwargs,
-    ):
+    ) -> None:
         self.func_base = func_base
         self.func_rev = func_rev
         self.disas_base = disas_base
@@ -124,7 +124,7 @@ class FunctionDiff:
         else:
             return self.OBJ_UNMODIFIED
 
-    def compute_function_diff(self):
+    def compute_function_diff(self) -> None:
         pass
 
 
@@ -142,7 +142,7 @@ class LinearFunctionDiff(FunctionDiff):
         prefer_symbols=True,
         resolve_strings=True,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
             func_base,
             func_rev,
@@ -156,7 +156,7 @@ class LinearFunctionDiff(FunctionDiff):
         self.rev_insns = self._linear_asm_from_function(func_rev, disas=self.disas_rev)
         self.compute_function_diff()
 
-    def compute_function_diff(self):
+    def compute_function_diff(self) -> None:
         for idx, base_insn in enumerate(self.base_insns):
             if idx >= len(self.rev_insns):
                 break
@@ -190,7 +190,7 @@ class BFSFunctionDiff(FunctionDiff):
         view_base: DisassemblyView = None,
         view_rev: DisassemblyView = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(func_base, func_rev, **kwargs)
         self.base_cfg = view_base._flow_graph.function_graph.supergraph
         self.rev_cfg = view_rev._flow_graph.function_graph.supergraph
@@ -229,7 +229,7 @@ class BFSFunctionDiff(FunctionDiff):
         block_levels = [[start_block]] + block_levels
         return block_levels
 
-    def compute_function_diff(self):
+    def compute_function_diff(self) -> None:
         base_levels = self.bfs_list_block_levels(self.base_cfg)
         rev_levels = self.bfs_list_block_levels(self.rev_cfg)
         diff_map = {}

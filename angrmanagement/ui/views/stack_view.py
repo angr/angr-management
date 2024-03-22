@@ -27,7 +27,7 @@ class QStackTableModel(QAbstractTableModel):
     COL_OFFSET = 0
     COL_VALUE = 1
 
-    def __init__(self, log_widget: QStackTableWidget = None):
+    def __init__(self, log_widget: QStackTableWidget = None) -> None:
         super().__init__()
         self._log_widget = log_widget
         self.state: angr.SimState = None
@@ -75,7 +75,7 @@ class QStackTableWidget(QTableView):
     Stack table widget.
     """
 
-    def __init__(self, stack_view):
+    def __init__(self, stack_view) -> None:
         super().__init__()
         self.stack_view = stack_view
 
@@ -106,23 +106,23 @@ class QStackTableWidget(QTableView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self._dbg_watcher.shutdown()
         super().closeEvent(event)
 
-    def _on_debugger_state_updated(self):
+    def _on_debugger_state_updated(self) -> None:
         dbg = self._dbg_manager.debugger
         self.model.state = None if dbg.am_none else dbg.simstate
         self.model.layoutChanged.emit()
 
-    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent):  # pylint:disable=unused-argument
+    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
         if not self.selectedIndexes():
             return
 
         mnu = self._get_breakpoint_submenu()
         mnu.exec_(QCursor.pos())
 
-    def _set_breakpoint(self, bp_type: BreakpointType = BreakpointType.Execute):
+    def _set_breakpoint(self, bp_type: BreakpointType = BreakpointType.Execute) -> None:
         """
         Set breakpoint at current cursor.
         """
@@ -161,7 +161,7 @@ class StackView(InstanceView):
     Stack table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, instance, default_docking_position) -> None:
         super().__init__("stack", workspace, default_docking_position, instance)
 
         self.base_caption = "Stack"
@@ -173,14 +173,14 @@ class StackView(InstanceView):
         self.height_hint = 400
         self.updateGeometry()
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     @staticmethod
     def minimumSizeHint():
         return QSize(200, 200)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         self._tbl_widget = QStackTableWidget(self)

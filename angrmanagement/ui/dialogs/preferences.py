@@ -56,7 +56,7 @@ class Integration(Page):
 
     NAME = "OS Integration"
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
 
         self._url_scheme_chk: QCheckBox
@@ -65,7 +65,7 @@ class Integration(Page):
         self._init_widgets()
         self._load_config()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # os integration
         os_integration = QGroupBox("OS integration")
         self._url_scheme_chk = QCheckBox("Register angr URL scheme (angr://).")
@@ -85,7 +85,7 @@ class Integration(Page):
         layout.addStretch()
         self.setLayout(layout)
 
-    def _load_config(self):
+    def _load_config(self) -> None:
         scheme = AngrUrlScheme()
         try:
             registered, register_as = scheme.is_url_scheme_registered()
@@ -95,7 +95,7 @@ class Integration(Page):
             # the current OS is not supported
             self._url_scheme_chk.setDisabled(True)
 
-    def save_config(self):
+    def save_config(self) -> None:
         scheme = AngrUrlScheme()
         try:
             registered, _ = scheme.is_url_scheme_registered()
@@ -117,7 +117,7 @@ class ThemeAndColors(Page):
 
     NAME = "Theme and Colors"
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
 
         self._colors_to_save = {}
@@ -126,7 +126,7 @@ class ThemeAndColors(Page):
 
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         page_layout = QVBoxLayout()
 
         scheme_loader_layout = QHBoxLayout()
@@ -167,7 +167,7 @@ class ThemeAndColors(Page):
 
         self.setLayout(page_layout)
 
-    def _load_color_scheme(self, name):
+    def _load_color_scheme(self, name) -> None:
         for prop, value in COLOR_SCHEMES[name].items():
             if prop in self._colors_to_save:
                 row = self._colors_to_save[prop][1]
@@ -175,12 +175,12 @@ class ThemeAndColors(Page):
             if prop in self._conf_to_save:
                 self._conf_to_save[prop] = value
 
-    def _on_scheme_selected(self, text: str):
+    def _on_scheme_selected(self, text: str) -> None:
         self._load_color_scheme(text)
         self.save_config()
         refresh_theme()
 
-    def save_config(self):
+    def save_config(self) -> None:
         # pylint: disable=assigning-non-slot
         Conf.theme_name = self._schemes_combo.currentText()
         for ce, row in self._colors_to_save.values():
@@ -196,11 +196,11 @@ class Style(Page):
 
     NAME = "Style"
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         page_layout = QVBoxLayout(self)
 
         # Log format
@@ -241,7 +241,7 @@ class Style(Page):
 
         page_layout.addStretch()
 
-    def save_config(self):
+    def save_config(self) -> None:
         fmt = self.log_format_entry.currentText()
         if fmt:
             Conf.log_timestamp_format = self._fmt_map.get(fmt, fmt)
@@ -254,7 +254,7 @@ class Preferences(QDialog):
     Application preferences dialog.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace, parent=None) -> None:
         super().__init__(parent)
 
         self.workspace = workspace
@@ -263,7 +263,7 @@ class Preferences(QDialog):
 
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # contents
         contents = QListWidget()
         contents.setViewMode(QListView.ListMode)
@@ -271,7 +271,7 @@ class Preferences(QDialog):
         # set the width to match the width of the content
         contents.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
 
-        def item_changed(item: QListWidgetItem):
+        def item_changed(item: QListWidgetItem) -> None:
             pageno: Page = item.data(1)
             pages.setCurrentIndex(pageno)
 
@@ -306,7 +306,7 @@ class Preferences(QDialog):
 
         self.setLayout(main_layout)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         for page in self._pages:
             page.save_config()
         save_config()

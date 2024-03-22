@@ -12,7 +12,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, current_state, workspace, symexec_view, parent=None):
+    def __init__(self, current_state, workspace, symexec_view, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.state = current_state
@@ -31,15 +31,15 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
         return self._graph
 
     @graph.setter
-    def graph(self, v):
+    def graph(self, v) -> None:
         if v is not self._graph:
             self._graph = v
             self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         self.request_relayout()
 
-    def request_relayout(self):
+    def request_relayout(self) -> None:
         self._reset_scene()
         if self.graph is None:
             return
@@ -86,7 +86,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         """
 
         :param QKeyEvent event:
@@ -101,7 +101,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         super().keyPressEvent(event)
 
-    def _watch_state(self):
+    def _watch_state(self) -> None:
         for block in self.blocks:
             if block.get_state() == self.state:
                 block.selected = True
@@ -124,7 +124,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
                 return block
         return None
 
-    def _draw_edges(self, painter, topleft_point, bottomright_point):
+    def _draw_edges(self, painter, topleft_point, bottomright_point) -> None:
         for edge in self._edges:
             edge_coords = edge.coordinates
 

@@ -34,7 +34,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: BaseProxiNode):
+    def __init__(self, is_selected, proximity_view: ProximityView, node: BaseProxiNode) -> None:
         super().__init__()
 
         self._proximity_view = proximity_view
@@ -62,20 +62,20 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         self.setAcceptHoverEvents(True)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         pass
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._update_size()
 
     #
     # Event handlers
     #
 
-    def mousePressEvent(self, event):  # pylint: disable=useless-super-delegation
+    def mousePressEvent(self, event) -> None:  # pylint: disable=useless-super-delegation
         super().mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             self.selected = not self.selected
             self._proximity_view.redraw_graph()
@@ -83,7 +83,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseReleaseEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         # Jump to the reference address of the node
         if event.button() == Qt.LeftButton:
             if self._node.ref_at:
@@ -93,13 +93,17 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
+    def hoverEnterEvent(
+        self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent
+    ) -> None:  # pylint:disable=unused-argument
         self._proximity_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):  # pylint:disable=unused-argument
+    def hoverLeaveEvent(
+        self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent
+    ) -> None:  # pylint:disable=unused-argument
         self._proximity_view.hover_leave_block(self)
 
-    def _paint_boundary(self, painter):
+    def _paint_boundary(self, painter) -> None:
         painter.setFont(Conf.symexec_font)
         normal_background = Conf.proximity_node_background_color
         selected_background = Conf.proximity_node_selected_background_color
@@ -113,7 +117,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
         painter.setPen(QPen(border_color, 1.5))
         painter.drawRect(0, 0, self.width, self.height)
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -141,7 +145,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         self._width = 25
         self._height = 25
         self.recalculate_size()
@@ -152,19 +156,19 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
     Function Block
     """
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: FunctionProxiNode):
+    def __init__(self, is_selected, proximity_view: ProximityView, node: FunctionProxiNode) -> None:
         self._text = None
         self._text_item: QGraphicsSimpleTextItem = None
         super().__init__(is_selected, proximity_view, node)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._text = f"Function {self._node.func.name}"
         self._text_item = QGraphicsSimpleTextItem(self._text, self)
         self._text_item.setFont(Conf.symexec_font)
         self._text_item.setBrush(self.FUNCTION_NODE_TEXT_COLOR)
         self._text_item.setPos(self.HORIZONTAL_PADDING, self.VERTICAL_PADDING)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         if event.button() == Qt.LeftButton and (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
             # ctrl + double click to collapse a function call
             event.accept()
@@ -173,10 +177,10 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
 
         super().mouseDoubleClickEvent(event)
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         self._paint_boundary(painter)
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         width_candidates = [
             self.HORIZONTAL_PADDING * 2 + self._text_item.boundingRect().width(),
         ]
@@ -194,7 +198,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
     Call Block
     """
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: CallProxiNode):
+    def __init__(self, is_selected, proximity_view: ProximityView, node: CallProxiNode) -> None:
         self._func_name: str = None
         self._args: list[tuple[type, str]] = None
 
@@ -205,7 +209,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
         super().__init__(is_selected, proximity_view, node)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._node: CallProxiNode
         self._func_name = self._node.callee.name
         if self._node.args is not None:
@@ -279,7 +283,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
             return UnknownProxiNode, str(arg.dummy_value)
         return object, "Unknown"
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         if event.button() == Qt.LeftButton and (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
             # ctrl + double click to expand a function call
             event.accept()
@@ -288,10 +292,10 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
         super().mouseDoubleClickEvent(event)
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         self._paint_boundary(painter)
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         width_candidates = [
             self.HORIZONTAL_PADDING * 2
             + self._func_name_item.boundingRect().width()
@@ -313,12 +317,12 @@ class QProximityGraphStringBlock(QProximityGraphBlock):
     String Block
     """
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: StringProxiNode):
+    def __init__(self, is_selected, proximity_view: ProximityView, node: StringProxiNode) -> None:
         self._text = None
         self._text_item: QGraphicsSimpleTextItem = None
         super().__init__(is_selected, proximity_view, node)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._text = '"' + self._node.content.decode("utf-8") + '"'
 
         self._text_item = QGraphicsSimpleTextItem(self._text, self)
@@ -326,10 +330,10 @@ class QProximityGraphStringBlock(QProximityGraphBlock):
         self._text_item.setFont(Conf.symexec_font)
         self._text_item.setPos(self.HORIZONTAL_PADDING, self.VERTICAL_PADDING)
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         self._paint_boundary(painter)
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         width_candidates = [
             self.HORIZONTAL_PADDING * 2 + self._text_item.boundingRect().width(),
         ]

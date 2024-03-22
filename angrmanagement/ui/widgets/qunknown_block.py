@@ -12,7 +12,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = "Unknown"
 
-    def __init__(self, workspace, addr, bytes_, parent=None):
+    def __init__(self, workspace, addr, bytes_, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.workspace = workspace
@@ -34,7 +34,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         # painter.setRenderHints(
         #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         # painter.setFont(self._config.disasm_font)
@@ -47,7 +47,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # Address
         self._addr_text = "%08x" % self.addr
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
@@ -88,7 +88,7 @@ class QUnknownBlock(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         # address

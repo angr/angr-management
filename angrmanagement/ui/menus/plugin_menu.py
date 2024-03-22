@@ -6,7 +6,7 @@ from .menu import Menu, MenuEntry
 
 
 class PluginMenu(Menu):
-    def __init__(self, main_window):
+    def __init__(self, main_window) -> None:
         super().__init__("&Plugins", parent=main_window)
 
         self.entries.extend(

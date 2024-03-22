@@ -9,7 +9,7 @@ class QCommentTextBox(QPlainTextEdit):
     Multiline text box for comment entry.
     """
 
-    def __init__(self, textchanged_callback=None, textconfirmed_callback=None, parent=None):
+    def __init__(self, textchanged_callback=None, textconfirmed_callback=None, parent=None) -> None:
         super().__init__(parent)
         if textchanged_callback is not None:
             self.textChanged.connect(textchanged_callback)
@@ -38,7 +38,7 @@ class SetComment(QDialog):
     Dialog for setting comment.
     """
 
-    def __init__(self, workspace, comment_addr, parent=None):
+    def __init__(self, workspace, comment_addr, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
@@ -56,7 +56,7 @@ class SetComment(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # name label
         comment_lbl = QLabel(self)
         comment_lbl.setText("Comment text")
@@ -84,7 +84,7 @@ class SetComment(QDialog):
     # Event handlers
     #
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         comment_txt = self._comment_textbox.text
         self._workspace.set_comment(self._comment_addr, comment_txt)
         self.close()

@@ -49,7 +49,7 @@ class CoveragePlugin(BasePlugin):
     Implements the fuzzing coverage view.
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace) -> None:
         super().__init__(workspace)
 
         self.workspace = workspace
@@ -87,7 +87,7 @@ class CoveragePlugin(BasePlugin):
     START_SHOWING_COVERAGE = 0
     STOP_SHOWING_COVERAGE = 1
 
-    def handle_click_menu(self, idx):
+    def handle_click_menu(self, idx) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -98,13 +98,13 @@ class CoveragePlugin(BasePlugin):
 
         mapping.get(idx)()
 
-    def start(self):
+    def start(self) -> None:
         self.running = True
         self.slacrs_thread = threading.Thread(target=self.listen_for_events, daemon=True)
         self.slacrs_thread.start()
         gui_thread_schedule(self._refresh_gui)
 
-    def stop(self):
+    def stop(self) -> None:
         self.running = False
         gui_thread_schedule(self._refresh_gui)
         if self.workspace._main_window is not None:
@@ -162,16 +162,16 @@ class CoveragePlugin(BasePlugin):
 
         return fraction_covered, f"{int(round(fraction_covered*100,0))}%"
 
-    def _refresh_gui(self):
+    def _refresh_gui(self) -> None:
         self.workspace.refresh()
 
-    def reset_coverage(self):
+    def reset_coverage(self) -> None:
         with self.coverage_lock:
             self.seen_traces = set()
             self.bbl_coverage = set()
             self.bbl_coverage_hash = 0
 
-    def update_coverage_from_list(self, trace_addrs):
+    def update_coverage_from_list(self, trace_addrs) -> None:
         log.info("Processing %d from the trace", len(trace_addrs))
         with self.coverage_lock:
             for addr in trace_addrs:
@@ -182,7 +182,7 @@ class CoveragePlugin(BasePlugin):
             self.bbl_coverage_hash = new_hash
             gui_thread_schedule(self._refresh_gui)
 
-    def update_coverage(self):
+    def update_coverage(self) -> None:
         self.set_status("Retrieving fuzzing coverage information...", 0.0)
         session = self.slacrs_instance.session()
         if session:
@@ -197,7 +197,7 @@ class CoveragePlugin(BasePlugin):
                 self.update_one_coverage(trace)
         self.set_status("Fuzzing coverage updated", 100.0)
 
-    def update_one_coverage(self, trace):
+    def update_one_coverage(self, trace) -> None:
         with self.coverage_lock:
             if trace.id in self.seen_traces:
                 log.info("Already seen trace %s, skipping", trace.id)
@@ -228,7 +228,7 @@ class CoveragePlugin(BasePlugin):
             self.seen_traces.add(trace.id)
         log.info("Done processing trace %s.", trace.id)
 
-    def listen_for_events(self):
+    def listen_for_events(self) -> None:
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while not self.connector and self.running:
             self.connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
@@ -270,6 +270,6 @@ class CoveragePlugin(BasePlugin):
                 session.close()
             self.set_status("Fuzzing coverage updated", 100.0)
 
-    def set_status(self, status: str, percentage: float):
+    def set_status(self, status: str, percentage: float) -> None:
         if self.workspace._main_window is not None:
             gui_thread_schedule_async(self.workspace._main_window.progress, (status, percentage))

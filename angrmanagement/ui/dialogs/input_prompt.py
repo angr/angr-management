@@ -8,7 +8,7 @@ class InputPromptDialog(QDialog):
     A generic dialog to prompt for text input.
     """
 
-    def __init__(self, window_title: str, prompt_text: str, initial_input_text: str = "", parent=None):
+    def __init__(self, window_title: str, prompt_text: str, initial_input_text: str = "", parent=None) -> None:
         super().__init__(parent)
         self.prompt_text: str = prompt_text
         self.initial_input_text: str = initial_input_text
@@ -24,7 +24,7 @@ class InputPromptDialog(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         prompt_lbl = QLabel(self)
         prompt_lbl.setText(self.prompt_text)
 
@@ -50,6 +50,6 @@ class InputPromptDialog(QDialog):
     # Event handlers
     #
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         self.result = self.input_edt.text()
         self.close()

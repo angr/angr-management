@@ -8,7 +8,7 @@ from .qgraph_object import QCachedGraphicsItem
 class QPhiVariable(QCachedGraphicsItem):
     IDENT_LEFT_PADDING = 5
 
-    def __init__(self, instance, disasm_view, phi_variable, config, parent=None):
+    def __init__(self, instance, disasm_view, phi_variable, config, parent=None) -> None:
         """
 
         :param workspace:
@@ -45,7 +45,7 @@ class QPhiVariable(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         if self.disasm_view.show_variable_identifier is False:
             # Phi variables are not displayed if variable identifies are hidden
             return
@@ -86,7 +86,7 @@ class QPhiVariable(QCachedGraphicsItem):
         painter.setPen(Qt.darkGreen)
         painter.drawText(x, self._config.disasm_font_ascent, ")")
 
-    def refresh(self):
+    def refresh(self) -> None:
         super().refresh()
 
         self._update_size()
@@ -95,7 +95,7 @@ class QPhiVariable(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # variable name
         self._variable_name = "{%s}" % ("Unk" if not self.phi.name else self.phi.name)
         # variable ident
@@ -112,7 +112,7 @@ class QPhiVariable(QCachedGraphicsItem):
 
         self._update_size()
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         if self.disasm_view.show_variable_identifier is False:
             # Phi variables are not displayed if variable identifies are hidden
             self._width = 0

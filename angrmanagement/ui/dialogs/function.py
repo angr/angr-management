@@ -27,7 +27,7 @@ class FunctionDialog(QDialog):
     Dialog displaying information about a Function.
     """
 
-    def __init__(self, function, parent=None):
+    def __init__(self, function, parent=None) -> None:
         super().__init__(parent)
         self.workspace = GlobalInfo.main_window.workspace
         self.function = function
@@ -37,7 +37,7 @@ class FunctionDialog(QDialog):
         self.setMinimumWidth(600)
         self.adjustSize()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         font = QFont(Conf.disasm_font)
 
         main_layout = QGridLayout()
@@ -120,15 +120,15 @@ class FunctionDialog(QDialog):
         main_layout.setRowStretch(r, 1)
         r += 1
 
-    def _decompile(self):
+    def _decompile(self) -> None:
         self.workspace.decompile_function(self.function)
         self.accept()
 
-    def _disassemble(self):
+    def _disassemble(self) -> None:
         self.workspace.jump_to(self.function.addr)
         self.accept()
 
-    def _show_xrefs(self):
+    def _show_xrefs(self) -> None:
         # FIXME: Make this an action on workspace
         dialog = XRefDialog(
             addr=self.function.addr,
@@ -140,7 +140,7 @@ class FunctionDialog(QDialog):
         dialog.exec_()
         self.accept()
 
-    def _show_strings(self):
+    def _show_strings(self) -> None:
         self.workspace.show_strings_view()
         view = self.workspace.view_manager.first_view_in_category("strings")
         if view is not None:

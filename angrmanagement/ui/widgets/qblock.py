@@ -47,7 +47,7 @@ class QBlock(QCachedGraphicsItem):
         scene,
         parent=None,
         idx=None,
-    ):
+    ) -> None:
         super().__init__(parent=parent)
 
         # initialization
@@ -104,17 +104,17 @@ class QBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         super().clear_cache()
         for obj in self.objects:
             obj.clear_cache()
 
-    def _update_block_code_options(self):
+    def _update_block_code_options(self) -> None:
         self._block_code_options.show_conditional_jump_targets = self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS
         self._block_code_options.show_variables = self.disasm_view.show_variable
         self._block_code_options.show_variable_identifiers = self.disasm_view.show_variable_identifier
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._update_block_code_options()
         for obj in self.objects:
             obj.refresh()
@@ -123,7 +123,7 @@ class QBlock(QCachedGraphicsItem):
         self._create_block_item()
         self.update()
 
-    def reload(self):
+    def reload(self) -> None:
         self._init_widgets()
         self.refresh()
 
@@ -142,7 +142,7 @@ class QBlock(QCachedGraphicsItem):
     # Initialization
     #
 
-    def _create_block_item(self):
+    def _create_block_item(self) -> None:
         """
         Create the block background and border.
         """
@@ -161,7 +161,7 @@ class QBlock(QCachedGraphicsItem):
             self._config.disasm_view_node_rounding,
         )
 
-    def _init_ail_block_widgets(self):
+    def _init_ail_block_widgets(self) -> None:
         bn = self.cfg_nodes
         if bn.addr in self.disasm.kb.labels:
             label = QBlockLabel(
@@ -192,7 +192,7 @@ class QBlock(QCachedGraphicsItem):
             self.objects.append(obj)
             self.addr_to_insns[bn.addr] = obj
 
-    def _init_disassembly_block_widgets(self):
+    def _init_disassembly_block_widgets(self) -> None:
         for obj in get_block_objects(self.disasm, self.cfg_nodes, self.func_addr):
             if isinstance(obj, Instruction):
                 out_branch = get_out_branches_for_insn(self.out_branches, obj.addr)
@@ -245,7 +245,7 @@ class QBlock(QCachedGraphicsItem):
                     )
                 )
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         if self.scene is not None:
             for obj in self.objects:
                 self.scene.removeItem(obj)
@@ -274,7 +274,7 @@ class QGraphBlock(QBlock):
     def mode(self):
         return "graph"
 
-    def layout_widgets(self):
+    def layout_widgets(self) -> None:
         x, y = self.LEFT_PADDING, self.TOP_PADDING
 
         if self.qblock_annotations and self.qblock_annotations.scene():
@@ -293,15 +293,15 @@ class QGraphBlock(QBlock):
                     qinsn_annotation.setY(obj.y())
             y += obj.boundingRect().height()
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self, event) -> None:
         self.infodock.hover_block(self.addr)
         event.accept()
 
-    def hoverLeaveEvent(self, event):
+    def hoverLeaveEvent(self, event) -> None:
         self.infodock.unhover_block(self.addr)
         event.accept()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if self.disasm_view.workspace.plugins.handle_click_block(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
@@ -322,17 +322,17 @@ class QGraphBlock(QBlock):
 
         return self._config.disasm_view_node_background_color
 
-    def _set_block_objects_visibility(self, visible: bool):
+    def _set_block_objects_visibility(self, visible: bool) -> None:
         for obj in self.objects:
             obj.setVisible(visible)
             obj.setEnabled(visible)
 
-    def restore_temporarily_hidden_objects(self):
+    def restore_temporarily_hidden_objects(self) -> None:
         if self._objects_are_temporarily_hidden != self._objects_are_hidden:
             self._set_block_objects_visibility(not self._objects_are_hidden)
             self._objects_are_temporarily_hidden = self._objects_are_hidden
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
 
@@ -365,7 +365,7 @@ class QGraphBlock(QBlock):
         # extra content
         self.disasm_view.workspace.plugins.draw_block(self, painter)
 
-    def on_selected(self):
+    def on_selected(self) -> None:
         self.infodock.select_block(self.addr)
 
     def _boundingRect(self):
@@ -382,7 +382,7 @@ class QGraphBlock(QBlock):
 class QLinearBlock(QBlock):
     ADDRESS_PADDING = 10
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._height = 0
         self._width = 0
@@ -395,7 +395,7 @@ class QLinearBlock(QBlock):
     def format_address(addr):
         return f"{addr:08x}"
 
-    def layout_widgets(self):
+    def layout_widgets(self) -> None:
         y_offset = 0
 
         max_width = 0
@@ -411,7 +411,7 @@ class QLinearBlock(QBlock):
         self._height = y_offset
         self._width = max_width
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         painter.setFont(self._config.disasm_font)
 
     def _boundingRect(self):

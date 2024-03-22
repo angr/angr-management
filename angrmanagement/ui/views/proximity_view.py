@@ -31,7 +31,7 @@ class ProximityView(InstanceView):
     Proximity View
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, instance, default_docking_position) -> None:
         super().__init__("proximity", workspace, default_docking_position, instance)
 
         self.base_caption = "Proximity"
@@ -55,7 +55,7 @@ class ProximityView(InstanceView):
         return self._function
 
     @function.setter
-    def function(self, v):
+    def function(self, v) -> None:
         if v is not None and v is not self._function:
             self._function = v
             self._expand_function_addrs.clear()
@@ -70,7 +70,7 @@ class ProximityView(InstanceView):
         )
         return dec
 
-    def run_analysis(self):
+    def run_analysis(self) -> None:
         dec = self.get_decompilation()
 
         inst = self.instance
@@ -85,33 +85,33 @@ class ProximityView(InstanceView):
 
         self.reload()
 
-    def hover_enter_block(self, block: QProximityGraphBlock):
+    def hover_enter_block(self, block: QProximityGraphBlock) -> None:
         self.hovered_block = block
         if self._graph_widget is not None:
             self._graph_widget.on_block_hovered(block)
         self.redraw_graph()
 
-    def hover_leave_block(self, block: QProximityGraphBlock):  # pylint: disable=unused-argument
+    def hover_leave_block(self, block: QProximityGraphBlock) -> None:  # pylint: disable=unused-argument
         self.hovered_block = None
         self.redraw_graph()
 
-    def expand_function(self, func):
+    def expand_function(self, func) -> None:
         if func.addr not in self._expand_function_addrs:
             self._expand_function_addrs.add(func.addr)
             # re-run the analysis
             self.run_analysis()
 
-    def collapse_function(self, func):
+    def collapse_function(self, func) -> None:
         if func.addr in self._expand_function_addrs:
             self._expand_function_addrs.discard(func.addr)
             # re-run the analysis
             self.run_analysis()
 
-    def on_screen_changed(self):
+    def on_screen_changed(self) -> None:
         if self._graph_widget is not None:
             self._graph_widget.refresh()
 
-    def reload(self):
+    def reload(self) -> None:
         if self._graph_widget is None:
             return
         # re-generate the graph
@@ -124,18 +124,18 @@ class ProximityView(InstanceView):
         self._graph = self._create_ui_graph()
         self._graph_widget.graph = self._graph
 
-    def clear(self):
+    def clear(self) -> None:
         self._proximity_graph = None
         self.reload()
 
-    def redraw_graph(self):
+    def redraw_graph(self) -> None:
         if self._graph_widget is not None:
             self._graph_widget.viewport().update()
 
     def sizeHint(self):
         return QSize(400, 800)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._graph_widget = QProximityGraph(self.instance, self)
 
         hlayout = QHBoxLayout()
@@ -144,13 +144,13 @@ class ProximityView(InstanceView):
 
         self.setLayout(hlayout)
 
-    def _register_events(self):
+    def _register_events(self) -> None:
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
-    def _unregister_events(self):
+    def _unregister_events(self) -> None:
         self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self._unregister_events()
         super().closeEvent(event)
 

@@ -16,12 +16,12 @@ if TYPE_CHECKING:
 class MemoryChecker(BasePlugin):
     AllowList = ["free", "malloc", "__libc_start_main"]
 
-    def __init__(self, workspace):
+    def __init__(self, workspace) -> None:
         super().__init__(workspace)
         self.states = self.workspace.main_instance.states
         self.states.am_subscribe(self.install_state_plugin)
 
-    def install_state_plugin(self, **kwargs):
+    def install_state_plugin(self, **kwargs) -> None:
         if kwargs.get("src", None) != "new":
             return
         state: SimState = kwargs.get("state")
@@ -69,5 +69,5 @@ class MemoryChecker(BasePlugin):
                 address_list.append(act)
         return MemoryChecker.check_address_is_free(state, address_list)
 
-    def step_callback(self, simgr):
+    def step_callback(self, simgr) -> None:
         simgr.move("active", "use_after_free", self.check_use_after_free)

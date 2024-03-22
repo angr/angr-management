@@ -36,7 +36,7 @@ def create_char_format(color: QColor, weight: QFont.Weight, style: QFont.Style) 
     return f
 
 
-def reset_formats():
+def reset_formats() -> None:
     bg = QTextCharFormat()
     bg.setBackground(Conf.palette_base)
     FORMATS["background"] = bg
@@ -184,13 +184,13 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bwhile\b", "keyword"),
     ]
 
-    def __init__(self, parent, color_scheme=None):
+    def __init__(self, parent, color_scheme=None) -> None:
         super().__init__(parent, color_scheme=color_scheme)
 
         self.doc: QCodeDocument = parent
         self.comment_status = False
 
-    def highlight_block(self, text, block):
+    def highlight_block(self, text, block) -> None:
         # this code makes the assumption that this function is only ever called on lines in sequence in order
         # it might also fuck up if it ever calls it starting in the middle...
         if block.previous() is None:

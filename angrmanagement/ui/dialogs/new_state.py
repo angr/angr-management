@@ -31,7 +31,7 @@ class StateMetadata(angr.SimStatePlugin):
     Helper class for metadata.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.name = None  # the state's name
         self.base_name = None  # the name of the base state this was created from
@@ -59,7 +59,7 @@ class NewState(QDialog):
     Dialog to create a new simulation state.
     """
 
-    def __init__(self, workspace, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True):
+    def __init__(self, workspace, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True) -> None:
         super().__init__(parent)
 
         # initialization
@@ -98,7 +98,7 @@ class NewState(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QGridLayout()
         row = 0
 
@@ -112,7 +112,7 @@ class NewState(QDialog):
         name_box = QLineEdit(self)
         name_box.setText(NameGenerator.random_name())
 
-        def handle_name(txt):
+        def handle_name(txt) -> None:
             nonlocal validation_failures
             key = {"name"}
             if txt and not any(s.gui_data.name == txt for s in self.instance.states):
@@ -135,7 +135,7 @@ class NewState(QDialog):
         address_box = QLineEdit(self)
         address_box.setText(hex(self.instance.project.entry) if self._addr is None else hex(self._addr))
 
-        def handle_address(_):
+        def handle_address(_) -> None:
             nonlocal validation_failures
             key = {"addr"}
             if parse_address() is not None:
@@ -172,7 +172,7 @@ class NewState(QDialog):
         template_combo.addItem("Entry state", "entry")
         template_combo.addItem("Full-init state", "full")
 
-        def handle_template(_):
+        def handle_template(_) -> None:
             base_allowed = template_combo.currentData() in ("blank", "call")
             base_state_combo.setHidden(not base_allowed)
             base_state_label.setHidden(not base_allowed)
@@ -209,7 +209,7 @@ class NewState(QDialog):
         args_edit.setFixedHeight(60)
         self._args_edit = args_edit
 
-        def handle_args():
+        def handle_args() -> None:
             self._args = [self.instance.project.filename.encode() or b"dummy_filename"] + [
                 x.encode() for x in args_edit.toPlainText().split()
             ]
@@ -229,7 +229,7 @@ class NewState(QDialog):
         layout.addWidget(env_label, row, 0)
         layout.addWidget(env_button, row, 1)
 
-        def env_edit_button():
+        def env_edit_button() -> None:
             env_dialog = EnvConfig(env_config=self._env_config, instance=self.instance, parent=self)
             env_dialog.exec_()
             self._env_config = env_dialog.env_config
@@ -248,7 +248,7 @@ class NewState(QDialog):
         layout.addWidget(fs_label, row, 0)
         layout.addWidget(fs_button, row, 1)
 
-        def fs_edit_button():
+        def fs_edit_button() -> None:
             fs_dialog = FilesystemMount(fs_config=self._fs_config, instance=self.instance, parent=self)
             fs_dialog.exec_()
             self._fs_config = fs_dialog.fs_config
@@ -267,7 +267,7 @@ class NewState(QDialog):
         layout.addWidget(socket_label, row, 0)
         layout.addWidget(socket_button, row, 1)
 
-        def socket_edit_button():
+        def socket_edit_button() -> None:
             socket_dialog = SocketConfig(socket_config=self._sockets_config, instance=self.instance)
             socket_dialog.exec_()
             self._sockets_config = socket_dialog.socket_config
@@ -289,7 +289,7 @@ class NewState(QDialog):
         mode_combo.addItem("Tracing", "tracing")
         self._mode_combo = mode_combo
 
-        def mode_changed():
+        def mode_changed() -> None:
             self._options.clear()
             self._options.update(angr.sim_options.modes[mode_combo.currentData()])
             for child in children_items:
@@ -335,7 +335,7 @@ class NewState(QDialog):
             child.setCheckState(0, Qt.Checked if option in self._options else Qt.Unchecked)
             children_items.append(child)
 
-        def maintain_model(item: QTreeWidgetItem, _):
+        def maintain_model(item: QTreeWidgetItem, _) -> None:
             option = item.text(0)
             if not is_option(option):
                 return
@@ -367,7 +367,7 @@ class NewState(QDialog):
         options_filter_box = QLineEdit(self)
         options_filter_box.setPlaceholderText("Filter")
 
-        def do_filter(text):
+        def do_filter(text) -> None:
             for child in children_items:
                 child.setHidden(text.upper() not in child.text(0))
 
@@ -382,7 +382,7 @@ class NewState(QDialog):
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
 
-        def do_ok():
+        def do_ok() -> None:
             name = name_box.text()
             template = template_combo.currentData()
             addr = parse_address()
@@ -436,7 +436,7 @@ class NewState(QDialog):
         ok_button = buttons.button(QDialogButtonBox.Ok)
         buttons.accepted.connect(do_ok)
 
-        def validation_update():
+        def validation_update() -> None:
             ok_button.setDisabled(bool(validation_failures))
 
         buttons.rejected.connect(self.close)

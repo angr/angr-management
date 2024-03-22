@@ -9,7 +9,7 @@ from .menu import Menu, MenuEntry, MenuSeparator
 
 
 class DisasmLabelContextMenu(Menu):
-    def __init__(self, disasm_view):
+    def __init__(self, disasm_view) -> None:
         super().__init__("", parent=disasm_view)
 
         self.addr: int = None
@@ -41,22 +41,22 @@ class DisasmLabelContextMenu(Menu):
     def _disasm_view(self):
         return self.parent
 
-    def _popup_newstate_dialog(self):
+    def _popup_newstate_dialog(self) -> None:
         self._disasm_view.popup_newstate_dialog(async_=True)
 
-    def _popup_dependson_dialog(self):
+    def _popup_dependson_dialog(self) -> None:
         self._disasm_view.popup_dependson_dialog(addr=self.addr, func=True)
 
-    def _toggle_label_selection(self):
+    def _toggle_label_selection(self) -> None:
         self._disasm_view.infodock.toggle_label_selection(self.addr)
 
-    def _avoid_in_execution(self):
+    def _avoid_in_execution(self) -> None:
         self._disasm_view.avoid_addr_in_exec(self.addr)
 
-    def _find_in_execution(self):
+    def _find_in_execution(self) -> None:
         self._disasm_view.find_addr_in_exec(self.addr)
 
-    def _popup_xrefs(self):
+    def _popup_xrefs(self) -> None:
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
             return
         self._disasm_view.popup_xref_dialog(addr=self.addr, variable=None, dst_addr=self.addr, async_=True)
@@ -65,12 +65,14 @@ class DisasmLabelContextMenu(Menu):
     # Public Methods
     #
 
-    def add_menu_entry(self, text, callback: Callable[[DisasmLabelContextMenu], None], add_separator_first=True):
+    def add_menu_entry(
+        self, text, callback: Callable[[DisasmLabelContextMenu], None], add_separator_first=True
+    ) -> None:
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))
 
-    def remove_menu_entry(self, text, remove_preceding_separator=True):
+    def remove_menu_entry(self, text, remove_preceding_separator=True) -> None:
         for idx, m in enumerate(self.entries):
             if not isinstance(m, MenuEntry):
                 continue

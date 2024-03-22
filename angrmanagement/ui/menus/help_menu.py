@@ -12,7 +12,7 @@ class HelpMenu(Menu):
     Main 'Help' menu
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window) -> None:
         super().__init__("&Help", parent=main_window)
 
         self.entries.extend(

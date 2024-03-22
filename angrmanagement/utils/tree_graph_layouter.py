@@ -26,7 +26,7 @@ class TreeGraphEdgeRouter:
         node_sizes: dict[Any, tuple[float, float]],
         horizontal_spacing: int,
         vertical_spacing: int,
-    ):
+    ) -> None:
         self.layers = layers
         self.vertical = vertical
         self.layer_widths = layer_widths
@@ -44,7 +44,7 @@ class TreeGraphEdgeRouter:
         else:
             self._route_horizontal()
 
-    def _route_vertical(self):
+    def _route_vertical(self) -> None:
         curr_y = 0
         for i, layer in enumerate(self.layers):
             curr_y += self.layer_heights[i] + self.vertical_spacing
@@ -77,7 +77,7 @@ class TreeGraphEdgeRouter:
 
                     self.edges.append(edge)
 
-    def _route_horizontal(self):
+    def _route_horizontal(self) -> None:
         curr_x = 0
         for i, layer in enumerate(self.layers):
             curr_x += self.layer_widths[i] + self.horizontal_spacing
@@ -128,7 +128,7 @@ class TreeGraphLayouter:
         horizontal_spacing: int = 145,
         vertical_spacing: int = 15,
         layer_sorter=None,
-    ):
+    ) -> None:
         self._graph = graph
         self._node_sizes = node_sizes
 
@@ -146,7 +146,7 @@ class TreeGraphLayouter:
 
         self._layout()
 
-    def _layout(self):
+    def _layout(self) -> None:
         layers: list[list[Any]] = []
 
         if not self._initial_nodes:

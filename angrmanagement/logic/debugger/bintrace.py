@@ -32,7 +32,7 @@ class BintraceDebugger(Debugger):
     Trace playback debugger.
     """
 
-    def __init__(self, trace: BintraceTrace, workspace: Workspace):
+    def __init__(self, trace: BintraceTrace, workspace: Workspace) -> None:
         super().__init__(workspace)
         assert bintrace is not None
         assert isinstance(trace, BintraceTrace)
@@ -47,14 +47,14 @@ class BintraceDebugger(Debugger):
         pc = self.simstate.solver.eval(self.simstate.regs.pc)
         return f"{os.path.basename(self._btrace.path)} @ {pc:x}"
 
-    def _on_state_change(self):
+    def _on_state_change(self) -> None:
         """
         Common handler for state changes.
         """
         self._cached_simstate = None
         self.state_changed.am_event()
 
-    def _sync_breakpoints(self):
+    def _sync_breakpoints(self) -> None:
         """
         Synchronize breakpoints set in Workspace with trace debugger.
         """
@@ -82,7 +82,7 @@ class BintraceDebugger(Debugger):
     def can_step_backward(self) -> bool:
         return self._trace_dbg.can_step_backward
 
-    def step_backward(self):
+    def step_backward(self) -> None:
         if self.can_step_backward:
             self._trace_dbg.step_backward()
             self._on_state_change()
@@ -91,7 +91,7 @@ class BintraceDebugger(Debugger):
     def can_step_forward(self) -> bool:
         return self._trace_dbg.can_step_forward
 
-    def step_forward(self, until_addr: int | None = None):
+    def step_forward(self, until_addr: int | None = None) -> None:
         if self.can_step_forward:
             self._trace_dbg.step_forward(until_addr=until_addr)
             self._on_state_change()
@@ -100,7 +100,7 @@ class BintraceDebugger(Debugger):
     def can_continue_backward(self) -> bool:
         return self._trace_dbg.can_continue_backward
 
-    def continue_backward(self):
+    def continue_backward(self) -> None:
         if self.can_continue_backward:
             self._sync_breakpoints()
             self._trace_dbg.continue_backward()
@@ -110,7 +110,7 @@ class BintraceDebugger(Debugger):
     def can_continue_forward(self) -> bool:
         return self._trace_dbg.can_continue_forward
 
-    def continue_forward(self):
+    def continue_forward(self) -> None:
         if self.can_continue_forward:
             self._sync_breakpoints()
             self._trace_dbg.continue_forward()
@@ -128,14 +128,14 @@ class BintraceDebugger(Debugger):
     def can_stop(self) -> bool:
         return True
 
-    def stop(self):
+    def stop(self) -> None:
         pass
 
     @property
     def is_exited(self) -> bool:
         return False
 
-    def replay_to_nth_event(self, n: int):
+    def replay_to_nth_event(self, n: int) -> None:
         """
         Replay to the Nth event, skipping over stop events and ending on the nearest execution event.
         """
@@ -167,7 +167,7 @@ class BintraceDebugger(Debugger):
         else:
             return self.get_function_for_event(self._trace_dbg.state.event)
 
-    def replay_to_event(self, until):
+    def replay_to_event(self, until) -> None:
         self._trace_dbg.state = self._btrace.replay(self._trace_dbg.state, until)
         self._on_state_change()
 

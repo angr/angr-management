@@ -21,7 +21,7 @@ class TypeBox(QLineEdit):
     Implements a line edit widget for inputting types.
     """
 
-    def __init__(self, textchanged_callback, predefined_types=None, parent=None):
+    def __init__(self, textchanged_callback, predefined_types=None, parent=None) -> None:
         super().__init__(parent)
 
         self._cvariable: CVariable | None = None
@@ -29,7 +29,7 @@ class TypeBox(QLineEdit):
 
         self.textChanged.connect(textchanged_callback)
 
-    def set_type(self, type_: SimType, cvariable: CVariable = None):
+    def set_type(self, type_: SimType, cvariable: CVariable = None) -> None:
         self._cvariable = cvariable
         if cvariable is not None and isinstance(cvariable.unified_variable, SimVariable):
             type_str = type_.c_repr(name=cvariable.unified_variable.name)
@@ -91,7 +91,7 @@ class RetypeNode(QDialog):
         node_type=None,
         variable=None,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent)
 
         # initialization
@@ -131,7 +131,7 @@ class RetypeNode(QDialog):
                 r.update(pseudocode_cache.local_types)
         return r
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # Type label
 
         type_label = QLabel(self)
@@ -168,7 +168,7 @@ class RetypeNode(QDialog):
     # Event handlers
     #
 
-    def _on_type_changed(self, new_text):  # pylint:disable=unused-argument
+    def _on_type_changed(self, new_text) -> None:  # pylint:disable=unused-argument
         if self._type_box is None:
             # initialization is not done yet
             return
@@ -186,10 +186,10 @@ class RetypeNode(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         self.new_type = self._type_box.sim_type
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.new_type = None
         self.close()

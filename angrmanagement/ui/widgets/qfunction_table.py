@@ -48,7 +48,7 @@ class QFunctionTableModel(QAbstractTableModel):
     BLOCKS_COL = 5
     COMPLEXITY_COL = 6
 
-    def __init__(self, workspace, instance, func_list):
+    def __init__(self, workspace, instance, func_list) -> None:
         super().__init__()
 
         self._func_list = None
@@ -72,13 +72,13 @@ class QFunctionTableModel(QAbstractTableModel):
         return self._raw_func_list
 
     @func_list.setter
-    def func_list(self, v):
+    def func_list(self, v) -> None:
         self._func_list = None
         self._raw_func_list = v
         self._data_cache.clear()
         self.emit(SIGNAL("layoutChanged()"))
 
-    def filter(self, keyword):
+    def filter(self, keyword) -> None:
         if not keyword or self._raw_func_list is None:
             # remove the filtering
             self._func_list = None
@@ -168,7 +168,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
         return None
 
-    def sort(self, column, order):
+    def sort(self, column, order) -> None:
         self.layoutAboutToBeChanged.emit()
         self.func_list = sorted(
             self.func_list, key=lambda f: self._get_column_data(f, column), reverse=order == Qt.DescendingOrder
@@ -290,7 +290,7 @@ class QFunctionTableHeaderView(QHeaderView):
     def visibleSectionCount(self):
         return self.model().columnCount() - self.hiddenSectionCount()
 
-    def setSectionVisible(self, idx, visible):
+    def setSectionVisible(self, idx, visible) -> None:
         if visible or self.visibleSectionCount() > 1:
             self.setSectionHidden(idx, not visible)
 
@@ -300,7 +300,7 @@ class QFunctionTableView(QTableView):
     The table view for QFunctionTable.
     """
 
-    def __init__(self, parent, workspace, instance, selection_callback=None):
+    def __init__(self, parent, workspace, instance, selection_callback=None) -> None:
         super().__init__(parent)
         self.workspace = workspace
         self.instance = instance
@@ -339,7 +339,7 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
         self.doubleClicked.connect(self._on_function_selected)
 
-    def refresh(self, added_funcs: set[int] | None = None, removed_funcs: set[int] | None = None):
+    def refresh(self, added_funcs: set[int] | None = None, removed_funcs: set[int] | None = None) -> None:
         if added_funcs:
             new_funcs = []
             for addr in added_funcs:
@@ -359,30 +359,30 @@ class QFunctionTableView(QTableView):
         return self._functions
 
     @function_manager.setter
-    def function_manager(self, functions):
+    def function_manager(self, functions) -> None:
         self._functions = functions
         self.load_functions()
 
-    def subscribe_func_select(self, callback):
+    def subscribe_func_select(self, callback) -> None:
         self._selected_func.am_subscribe(callback)
 
-    def filter(self, keyword):
+    def filter(self, keyword) -> None:
         self.filter_text = keyword
         self._model.filter(keyword)
 
-    def jump_to_result(self, index=0):
+    def jump_to_result(self, index=0) -> None:
         if len(self._model.func_list) > index:
             self._selected_func.am_obj = self._model.func_list[index]
             self._selected_func.am_event(func=self._selected_func.am_obj)
 
-    def load_functions(self):
+    def load_functions(self) -> None:
         if not self.show_alignment_functions:
             self._model.func_list = [v for v in self._functions.values() if not v.alignment]
         else:
             self._model.func_list = list(self._functions.values())
         self._model.filter(self.filter_text)
 
-    def _on_function_selected(self, model_index):
+    def _on_function_selected(self, model_index) -> None:
         row = model_index.row()
         self._selected_func.am_obj = self._model.func_list[row]
         self._selected_func.am_event(func=self._selected_func.am_obj)
@@ -408,7 +408,7 @@ class QFunctionTableFilterBox(QLineEdit):
     The filter box for QFunctionTable.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__()
 
         self._table = parent
@@ -431,7 +431,7 @@ class QFunctionTable(QWidget):
     Implements a table for listing function details.
     """
 
-    def __init__(self, parent, instance, selection_callback=None):
+    def __init__(self, parent, instance, selection_callback=None) -> None:
         super().__init__(parent)
         self.instance = instance
 
@@ -472,7 +472,7 @@ class QFunctionTable(QWidget):
     # Public methods
     #
 
-    def refresh(self):
+    def refresh(self) -> None:
         if self.function_manager is None:
             return
 
@@ -486,25 +486,25 @@ class QFunctionTable(QWidget):
         self._function_count = len(self._last_known_func_addrs)
         self.update_displayed_function_count()
 
-    def show_filter_box(self, prefix=""):
+    def show_filter_box(self, prefix="") -> None:
         if prefix:
             self._filter_box.setText(prefix)
         self._filter_box.show()
         self._filter_box.setFocus()
 
-    def clear_filter_box(self):
+    def clear_filter_box(self) -> None:
         self._filter_box.setText("")
         self._table_view.setFocus()
 
-    def toggle_show_alignment_functions(self):
+    def toggle_show_alignment_functions(self) -> None:
         self._table_view.show_alignment_functions = not self._table_view.show_alignment_functions
         self._table_view.load_functions()
         self.update_displayed_function_count()
 
-    def subscribe_func_select(self, callback):
+    def subscribe_func_select(self, callback) -> None:
         self._table_view.subscribe_func_select(callback)
 
-    def update_displayed_function_count(self):
+    def update_displayed_function_count(self) -> None:
         cnt = self._table_view.model().rowCount()
         if self.function_manager is None:
             self._status_label.setText("")
@@ -514,7 +514,7 @@ class QFunctionTable(QWidget):
         else:
             self._status_label.setText("%d/%d functions" % (cnt, len(self.function_manager)))
 
-    def filter_functions(self, text):
+    def filter_functions(self, text) -> None:
         self._table_view.filter(text)
         self.update_displayed_function_count()
 
@@ -522,7 +522,7 @@ class QFunctionTable(QWidget):
     # Private methods
     #
 
-    def _init_widgets(self, selection_callback=None):
+    def _init_widgets(self, selection_callback=None) -> None:
         # function table view
         self._table_view = QFunctionTableView(self, self._view.workspace, self.instance, selection_callback)
 
@@ -570,9 +570,9 @@ class QFunctionTable(QWidget):
     # Events
     #
 
-    def _on_filter_box_text_changed(self, text):
+    def _on_filter_box_text_changed(self, text) -> None:
         self.filter_functions(text)
 
-    def _on_filter_box_return_pressed(self):
+    def _on_filter_box_return_pressed(self) -> None:
         self._table_view.jump_to_result()
         self.clear_filter_box()

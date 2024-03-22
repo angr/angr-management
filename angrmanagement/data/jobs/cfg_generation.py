@@ -20,7 +20,7 @@ class CFGGenerationJob(Job):
         "normalize": True,  # this is what people naturally expect
     }
 
-    def __init__(self, on_finish=None, **kwargs):
+    def __init__(self, on_finish=None, **kwargs) -> None:
         super().__init__(name="CFG generation", on_finish=on_finish)
 
         # TODO: sanitize arguments
@@ -63,7 +63,7 @@ class CFGGenerationJob(Job):
 
         return cfg, cfb
 
-    def finish(self, inst, result):
+    def finish(self, inst, result) -> None:
         try:
             cfg, cfb = result
             inst.cfb = cfb
@@ -81,7 +81,7 @@ class CFGGenerationJob(Job):
     # Private methods
     #
 
-    def _progress_callback(self, percentage, text=None, cfg=None):
+    def _progress_callback(self, percentage, text=None, cfg=None) -> None:
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return
@@ -98,11 +98,11 @@ class CFGGenerationJob(Job):
                 ),
             )
 
-    def _refresh(self, cfg, cfb):
+    def _refresh(self, cfg, cfb) -> None:
         # do not signal events. that will happen on a timer to not overwhelm the renderer
         # instance will exist because _run must be used first
         self.instance.cfg = cfg
         self.instance.cfb = cfb
 
-    def _on_cfb_object_added(self, addr, obj):
+    def _on_cfb_object_added(self, addr, obj) -> None:
         self.instance.cfb.am_event(object_added=(addr, obj))

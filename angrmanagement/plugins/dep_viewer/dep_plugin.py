@@ -10,7 +10,7 @@ from .sinks import VulnerabilityType, sink_manager
 
 
 class DependencyViewer(BasePlugin):
-    def __init__(self, workspace):
+    def __init__(self, workspace) -> None:
         super().__init__(workspace)
 
         self.transitions: set[tuple[int, int]] = set()

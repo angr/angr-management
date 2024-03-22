@@ -13,7 +13,7 @@ class LoadDockerPromptError(Exception):
 
 
 class LoadDockerPrompt(QInputDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
 
         self.setComboBoxItems(get_docker_images(self))

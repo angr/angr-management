@@ -45,7 +45,7 @@ class AnalysisOptionWidgetMapper:
     option: AnalysisOption
     widget: QWidget | None
 
-    def __init__(self, option: AnalysisOption):
+    def __init__(self, option: AnalysisOption) -> None:
         self.option = option
         self.widget = None
 
@@ -82,7 +82,7 @@ class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
         self.widget.stateChanged.connect(self._on_checkbox_changed)
         return self.widget
 
-    def _on_checkbox_changed(self, _):
+    def _on_checkbox_changed(self, _) -> None:
         self.option.value = self.widget.isChecked()
 
 
@@ -93,7 +93,7 @@ class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     option: StringAnalysisOption
 
-    def __init__(self, option: AnalysisOption):
+    def __init__(self, option: AnalysisOption) -> None:
         super().__init__(option)
 
         self.checkbox = None
@@ -126,11 +126,11 @@ class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
         self.widget.setLayout(layout)
         return self.widget
 
-    def _on_toggled(self):
+    def _on_toggled(self) -> None:
         self.textbox.setEnabled(self.checkbox.isChecked())
         self.option.enabled = self.checkbox.isChecked()
 
-    def _on_text_changed(self, value: str):
+    def _on_text_changed(self, value: str) -> None:
         self.option.value = value
 
 
@@ -165,7 +165,7 @@ class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
         self.widget.setLayout(layout)
         return self.widget
 
-    def _on_dial_changed(self, value: int):
+    def _on_dial_changed(self, value: int) -> None:
         self.option.value = value
 
 
@@ -176,7 +176,7 @@ class ChoiceAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     option: ChoiceAnalysisOption
 
-    def __init__(self, option: ChoiceAnalysisOption):
+    def __init__(self, option: ChoiceAnalysisOption) -> None:
         super().__init__(option)
         self.combobox = None
 
@@ -201,7 +201,7 @@ class ChoiceAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
         self.widget.setLayout(layout)
         return self.widget
 
-    def _on_combo_changed(self, index):
+    def _on_combo_changed(self, index) -> None:
         self.option.value = self.combobox.itemData(index)
 
 
@@ -210,7 +210,7 @@ class AnalysisOptionsDialog(QDialog):
     Dialog displaying available analyses and configuration options.
     """
 
-    def __init__(self, analyses: AnalysesConfiguration, workspace: Workspace, parent=None):
+    def __init__(self, analyses: AnalysesConfiguration, workspace: Workspace, parent=None) -> None:
         super().__init__(parent)
         self._workspace: Workspace = workspace
         self._analyses: AnalysesConfiguration = analyses
@@ -227,7 +227,7 @@ class AnalysisOptionsDialog(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
 
@@ -302,7 +302,7 @@ class AnalysisOptionsDialog(QDialog):
 
         ok_button.setFocus()
 
-    def _update_item_details(self):
+    def _update_item_details(self) -> None:
         while self._options_layout.count():
             item = self._options_layout.takeAt(0)
             widget = item.widget()
@@ -329,10 +329,10 @@ class AnalysisOptionsDialog(QDialog):
     # Event handlers
     #
 
-    def _on_item_changed(self, item):
+    def _on_item_changed(self, item) -> None:
         analysis = self._analyses[self._analysis_list.indexFromItem(item).row()]
         analysis.enabled = item.checkState() == Qt.Checked
         self._update_item_details()
 
-    def _on_run_clicked(self):
+    def _on_run_clicked(self) -> None:
         self.accept()

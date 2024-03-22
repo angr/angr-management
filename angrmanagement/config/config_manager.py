@@ -28,7 +28,7 @@ class UninterpretedCE(CE):
     A config entry which has not been parsed because no type was available for it.
     """
 
-    def __init__(self, name, value, default_value=None):
+    def __init__(self, name, value, default_value=None) -> None:
         super().__init__(name, UninterpretedCE, value, default_value=default_value)
 
 
@@ -317,7 +317,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         "_code_font_ascent",
     )
 
-    def __init__(self, entries=None):
+    def __init__(self, entries=None) -> None:
         self._disasm_font = self._disasm_font_metrics = self._disasm_font_height = None
         self._disasm_font_width = self._disasm_font_ascent = None
         self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = None
@@ -331,7 +331,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         else:
             self._entries = entries
 
-    def load_initial_entries(self, reset: bool = True):
+    def load_initial_entries(self, reset: bool = True) -> None:
         """
         Load configuration entries into self._entries.
 
@@ -356,7 +356,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         ascent = metrics.ascent()
         return real_font, metrics, height, width, ascent
 
-    def _disasm_manage_font_cache(self):
+    def _disasm_manage_font_cache(self) -> None:
         (
             self._disasm_font,
             self._disasm_font_metrics,
@@ -372,7 +372,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
             self._disasm_font_ascent,
         )
 
-    def _symexec_manage_font_cache(self):
+    def _symexec_manage_font_cache(self) -> None:
         (
             self._symexec_font,
             self._symexec_font_metrics,
@@ -388,7 +388,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
             self._symexec_font_ascent,
         )
 
-    def _code_manage_font_cache(self):
+    def _code_manage_font_cache(self) -> None:
         (
             self._code_font,
             self._code_font_metrics,
@@ -468,7 +468,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         self._code_manage_font_cache()
         return self._code_font_ascent
 
-    def init_font_config(self):
+    def init_font_config(self) -> None:
         if self.ui_default_font is None:
             self.ui_default_font = QApplication.font("QMenu")
         if self.tabular_view_font is None:
@@ -476,7 +476,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
     recent_files: list[str]
 
-    def recent_file(self, file_path: str):
+    def recent_file(self, file_path: str) -> None:
         with contextlib.suppress(ValueError):
             self.recent_files.remove(file_path)
         self.recent_files = self.recent_files[:9]
@@ -568,7 +568,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         return v
 
-    def reinterpet(self):
+    def reinterpet(self) -> None:
         """
         Walks the ENTRIES list, trying to update self's entries with respect to anything that may have been added to
         the global list. Tries to fix up UninterpretedCEs. Should be called e.g. after loading plugins.
@@ -589,7 +589,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         with open(path, encoding="utf-8") as f:
             return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 
-    def save(self, f):
+    def save(self, f) -> None:
         out = {}
         for k, v in self._entries.items():
             v = v.value
@@ -599,7 +599,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         tomlkit.dump(out, f)
 
-    def save_file(self, path: str):
+    def save_file(self, path: str) -> None:
         with open(path, "w", encoding="utf-8") as f:
             self.save(f)
 

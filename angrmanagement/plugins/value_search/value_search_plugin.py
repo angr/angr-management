@@ -15,13 +15,13 @@ class ValueSearch(BasePlugin):
     Plugin to search for values in the binary.
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace) -> None:
         super().__init__(workspace)
 
         self._endness_encoding = None
         self._create_search_view()
 
-    def _find_endness_encoding(self):
+    def _find_endness_encoding(self) -> None:
         endness = self.workspace.main_instance.project.arch.memory_endness
         self._endness_encoding = ">" if endness.endswith("BE") else "<"
 
@@ -29,20 +29,20 @@ class ValueSearch(BasePlugin):
     # UI Callback Handlers
     #
 
-    def handle_click_menu(self, idx):
+    def handle_click_menu(self, idx) -> None:
         pass
 
-    def color_insn(self, addr, selected, disasm_view):
+    def color_insn(self, addr, selected, disasm_view) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         self._destroy_search_view()
 
-    def _create_search_view(self):
+    def _create_search_view(self) -> None:
         self.search_view = SearchView(self, self.workspace, self.workspace.main_instance, "center")
         self.workspace.add_view(self.search_view)
 
-    def _destroy_search_view(self):
+    def _destroy_search_view(self) -> None:
         self.workspace.remove_view(self.search_view)
 
     #

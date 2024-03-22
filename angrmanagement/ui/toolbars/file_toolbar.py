@@ -15,7 +15,7 @@ except ImportError:
 
 
 class FileToolbar(Toolbar):
-    def __init__(self, main_window):
+    def __init__(self, main_window) -> None:
         super().__init__(main_window, "File")
 
         self.actions = [

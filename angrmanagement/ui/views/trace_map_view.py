@@ -12,7 +12,7 @@ class TraceMapView(InstanceView):
     View container for QTraceMap.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, instance, default_docking_position) -> None:
         super().__init__("tracemap", workspace, default_docking_position, instance)
         self.base_caption: str = "Trace Map"
         self.inner_widget: QTraceMap | None = None
@@ -26,7 +26,7 @@ class TraceMapView(InstanceView):
     def sizeHint():
         return QSize(25, 25)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         """
         Initialize widgets for this view.
         """

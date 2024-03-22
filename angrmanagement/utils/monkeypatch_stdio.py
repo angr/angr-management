@@ -15,17 +15,17 @@ class NullWriter:  # pylint: disable=no-self-use,unused-argument
     softspace = 0
     encoding = "UTF-8"
 
-    def write(self, *args):
+    def write(self, *args) -> None:
         pass
 
-    def flush(self, *args):
+    def flush(self, *args) -> None:
         pass
 
     def isatty(self):
         return False
 
 
-def monkeypatch_stdio():
+def monkeypatch_stdio() -> None:
     """
     Monkeypatch stdout and stderr to be NullWriters.
     """

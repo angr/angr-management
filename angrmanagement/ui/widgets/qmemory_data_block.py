@@ -19,7 +19,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     BYTE_AREA_SPACING = 15
 
-    def __init__(self, instance, infodock, addr, memory_data, bytes_per_line=16, parent=None):
+    def __init__(self, instance, infodock, addr, memory_data, bytes_per_line=16, parent=None) -> None:
         super().__init__(parent=parent)
         self.instance = instance
         self.infodock = infodock
@@ -54,7 +54,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     def height(self):
         return self.boundingRect().height()
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         should_highlight = self.infodock.is_label_selected(self.addr)
 
         highlight_color = Conf.disasm_view_label_highlight_color
@@ -67,7 +67,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             # unselect all other labels
             self.infodock.unselect_all_labels()
@@ -78,7 +78,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._addr_text = "%08x" % self.addr
         self._bytes = []
         if self.memory_data.content:
@@ -110,7 +110,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _init_label_item(self):
+    def _init_label_item(self) -> None:
         lbl_text = get_label_text(self.addr, self.instance.kb)
         if lbl_text:
             self._label_item = QGraphicsSimpleTextItem(lbl_text, self)
@@ -121,7 +121,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
                 self._label_item.setParentItem(None)
                 self._label_item = None
 
-    def _init_bytes(self):
+    def _init_bytes(self) -> None:
         if self._line_items:
             # remove existing items
             for line in self._line_items:
@@ -202,7 +202,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
         return addr_item, bytes_list, character_list
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         #

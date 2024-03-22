@@ -21,7 +21,7 @@ class XRefMode:
 class QXRefModel(QAbstractTableModel):
     HEADER = []
 
-    def __init__(self, addr, instance, view):
+    def __init__(self, addr, instance, view) -> None:
         super().__init__()
 
         self.addr = addr
@@ -33,7 +33,7 @@ class QXRefModel(QAbstractTableModel):
         return self.view.items
 
     @xrefs.setter
-    def xrefs(self, v):
+    def xrefs(self, v) -> None:
         self.view.items = v
 
     def __len__(self):
@@ -73,7 +73,7 @@ class QXRefModel(QAbstractTableModel):
 
         return None
 
-    def sort(self, column, order):
+    def sort(self, column, order) -> None:
         self.layoutAboutToBeChanged.emit()
 
         self.xrefs = sorted(
@@ -320,7 +320,7 @@ class QXRefViewer(QTableView):
 
         self.doubleClicked.connect(self._on_item_doubleclicked)
 
-    def _reload(self):
+    def _reload(self) -> None:
         if self.mode == XRefMode.Variable:
             self.items = self._variable_manager.get_variable_accesses(self._variable, same_name=True)
             self.items = sorted(self.items, key=lambda item: item.location.ins_addr)
@@ -359,7 +359,7 @@ class QXRefViewer(QTableView):
     # Signal handlers
     #
 
-    def _on_item_doubleclicked(self, model_index):
+    def _on_item_doubleclicked(self, model_index) -> None:
         row = model_index.row()
         xref_dialog = self._xref_dialog
         if xref_dialog is None:

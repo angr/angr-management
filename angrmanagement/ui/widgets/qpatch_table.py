@@ -17,7 +17,7 @@ class QPatchTableItem:
     Item in the patch table describing a patch.
     """
 
-    def __init__(self, patch, old_bytes):
+    def __init__(self, patch, old_bytes) -> None:
         self.patch = patch
         self.old_bytes = old_bytes
 
@@ -45,7 +45,7 @@ class QPatchTable(QTableWidget):
 
     HEADER = ["Address", "Size", "Old Bytes", "New Bytes", "Comment"]
 
-    def __init__(self, instance, parent):
+    def __init__(self, instance, parent) -> None:
         super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
@@ -61,7 +61,7 @@ class QPatchTable(QTableWidget):
         self.cellChanged.connect(self._on_cell_changed)
         self.reload()
 
-    def _on_cell_changed(self, row: int, column: int):
+    def _on_cell_changed(self, row: int, column: int) -> None:
         """
         Handle item change events, specifically to support editing comments.
         """
@@ -77,7 +77,7 @@ class QPatchTable(QTableWidget):
         else:
             return None
 
-    def reload(self):
+    def reload(self) -> None:
         self._reloading = True
         self.clearContents()
 
@@ -94,7 +94,7 @@ class QPatchTable(QTableWidget):
 
         self._reloading = False
 
-    def _watch_patches(self, **kwargs):  # pylint: disable=unused-argument
+    def _watch_patches(self, **kwargs) -> None:  # pylint: disable=unused-argument
         if not self.instance.patches.am_none:
             self.reload()
 
@@ -111,7 +111,7 @@ class QPatchTable(QTableWidget):
         """
         return {self.items[idx.row()].patch for idx in self.selectedIndexes()}
 
-    def revert_selected_patches(self):
+    def revert_selected_patches(self) -> None:
         """
         Revert any selected patches.
         """
@@ -130,7 +130,7 @@ class QPatchTable(QTableWidget):
                 self.instance.patches.remove_patch(patch.addr)
             self.instance.patches.am_event(removed=selected_patches)
 
-    def contextMenuEvent(self, event: QContextMenuEvent):  # pylint: disable=unused-argument
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:  # pylint: disable=unused-argument
         """
         Display view context menu.
         """

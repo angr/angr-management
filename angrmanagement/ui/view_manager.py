@@ -27,7 +27,7 @@ class ViewManager:
         "bottom": QtAds.BottomDockWidgetArea,
     }
 
-    def __init__(self, workspace):
+    def __init__(self, workspace) -> None:
         self.workspace = workspace
         self.views: list[BaseView] = []
         self.docks = []

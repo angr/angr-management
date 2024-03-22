@@ -16,7 +16,7 @@ class QStateTableItem(QTableWidgetItem):
     An entry within a QStateTable
     """
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         super().__init__()
 
         self.state = state
@@ -62,7 +62,7 @@ class QStateTable(QTableWidget):
     The table which is the subject of the States View
     """
 
-    def __init__(self, workspace, instance, parent, selection_callback=None):
+    def __init__(self, workspace, instance, parent, selection_callback=None) -> None:
         super().__init__(parent)
 
         self._selected = selection_callback
@@ -83,7 +83,7 @@ class QStateTable(QTableWidget):
         self.states.am_subscribe(self._watch_states)
         self.reload()
 
-    def closeEvent(self, _):
+    def closeEvent(self, _) -> None:
         self.states.am_unsubscribe(self._watch_states)
 
     def current_state_record(self):
@@ -93,7 +93,7 @@ class QStateTable(QTableWidget):
         else:
             return None
 
-    def reload(self):
+    def reload(self) -> None:
         # current_row = self.currentRow()
         self.clearContents()
 
@@ -108,11 +108,11 @@ class QStateTable(QTableWidget):
         # if 0 <= current_row < len(self.items):
         #    self.setCurrentItem(current_row, 0)
 
-    def _on_state_selected(self, *args):  # pylint: disable=unused-argument
+    def _on_state_selected(self, *args) -> None:  # pylint: disable=unused-argument
         if self._selected is not None:
             self._selected(self.current_state_record())
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event) -> None:
         sr = self.current_state_record()
 
         menu = QMenu("", self)
@@ -134,27 +134,27 @@ class QStateTable(QTableWidget):
 
         menu.exec_(event.globalPos())
 
-    def _action_new_state(self):
+    def _action_new_state(self) -> None:
         dialog = NewState(self.workspace, self.instance, parent=self)
         dialog.exec_()
 
-    def _action_duplicate(self):
+    def _action_duplicate(self) -> None:
         state = self.states[self.currentRow()]
         copy = state.copy()
         copy.gui_data.name = self._get_copied_state_name(copy.gui_data.name)
         self.states.append(copy)
         self.states.am_event(src="duplicate", state=copy)
 
-    def _action_delete(self):
+    def _action_delete(self) -> None:
         tmp = self.states.pop(self.currentRow())
         self.states.am_event(src="delete", state=tmp)
 
-    def _action_new_simulation_manager(self):
+    def _action_new_simulation_manager(self) -> None:
         state = self.states[self.currentRow()]
         simgr_name = NameGenerator.random_name()
         self.workspace.create_simulation_manager(state, simgr_name)
 
-    def _watch_states(self):
+    def _watch_states(self) -> None:
         self.reload()
 
     def _get_copied_state_name(self, current_name):

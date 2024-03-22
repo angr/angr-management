@@ -21,7 +21,7 @@ class TraceFunc:
         "func",
     )
 
-    def __init__(self, bbl_addr=None, func_name=None, func=None):
+    def __init__(self, bbl_addr=None, func_name=None, func=None) -> None:
         self.bbl_addr = bbl_addr
         self.func_name = func_name
         self.func = func
@@ -33,7 +33,7 @@ class ObjectAndBase:
         "base_addr",
     )
 
-    def __init__(self, obj_name: str, base_addr: int):
+    def __init__(self, obj_name: str, base_addr: int) -> None:
         self.obj_name = obj_name
         self.base_addr = base_addr
 
@@ -50,7 +50,7 @@ class TraceStatistics:
     BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")
 
-    def __init__(self, workspace, trace, baddr):
+    def __init__(self, workspace, trace, baddr) -> None:
         self.workspace = workspace
         self.trace: dict[str, Any] = trace
         self.bbl_addrs = trace["bb_addrs"]
@@ -125,7 +125,7 @@ class TraceStatistics:
             self._func_color[func_name] = color
         return color
 
-    def set_mark_color(self, p, color):
+    def set_mark_color(self, p, color) -> None:
         self._mark_color[p] = color
 
     def get_mark_color(self, addr, i):
@@ -184,7 +184,7 @@ class TraceStatistics:
             # this object is probably created before an angr project is created. just give up.
             return None
 
-    def _statistics(self, trace_addrs):
+    def _statistics(self, trace_addrs) -> None:
         """
         :param trace: basic block address list
         """

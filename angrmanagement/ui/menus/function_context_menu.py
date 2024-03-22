@@ -6,7 +6,7 @@ from .menu import Menu, MenuEntry
 
 
 class FunctionContextMenu(Menu):
-    def __init__(self, workspace, parent):
+    def __init__(self, workspace, parent) -> None:
         super().__init__("Function", parent=parent)
         self.workspace = workspace
 

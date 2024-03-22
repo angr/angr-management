@@ -4,7 +4,7 @@ from .menu import Menu, MenuEntry
 
 
 class DisasmOptionsMenu(Menu):
-    def __init__(self, disasm_view):
+    def __init__(self, disasm_view) -> None:
         super().__init__("", parent=disasm_view)
 
         self._show_minimap_action = MenuEntry(
@@ -43,26 +43,26 @@ class DisasmOptionsMenu(Menu):
             ]
         )
 
-    def _show_minimap(self):
+    def _show_minimap(self) -> None:
         checked = self._show_minimap_action.checked
         self.parent.toggle_show_minimap(checked)
 
-    def _smart_highlighting(self):
+    def _smart_highlighting(self) -> None:
         checked = self._smart_highlighting_action.checked
         self.parent.toggle_smart_highlighting(checked)
 
-    def _show_address(self):
+    def _show_address(self) -> None:
         checked = self._show_address_action.checked
         self.parent.toggle_show_address(checked)
 
-    def _show_variable(self):
+    def _show_variable(self) -> None:
         checked = self._show_variable_action.checked
         self.parent.toggle_show_variable(checked)
 
-    def _show_variable_identifier(self):
+    def _show_variable_identifier(self) -> None:
         checked = self._show_variable_ident_action.checked
         self.parent.toggle_show_variable_identifier(checked)
 
-    def _show_exception_edges(self):
+    def _show_exception_edges(self) -> None:
         checked = self._show_exception_edges_action.checked
         self.parent.toggle_show_exception_edges(checked)

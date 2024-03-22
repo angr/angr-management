@@ -9,15 +9,15 @@ log = logging.getLogger(__name__)
 
 
 class EventSentinel:
-    def __init__(self, logging_permitted: bool = True):
+    def __init__(self, logging_permitted: bool = True) -> None:
         self.am_subscribers = []
         self.am_logging_permitted: bool = logging_permitted
 
-    def am_subscribe(self, listener):
+    def am_subscribe(self, listener) -> None:
         if listener is not None:
             self.am_subscribers.append(listener)
 
-    def am_unsubscribe(self, listener):
+    def am_unsubscribe(self, listener) -> None:
         if listener is not None:
             try:
                 self.am_subscribers.remove(listener)
@@ -28,7 +28,7 @@ class EventSentinel:
                     print("Double-unsubscribe of listener")  # No f-string in case str uses logging
                     traceback.print_exc()
 
-    def am_event(self, **kwargs):
+    def am_event(self, **kwargs) -> None:
         for listener in self.am_subscribers:
             try:
                 listener(**kwargs)
@@ -48,7 +48,7 @@ class ObjectContainer(EventSentinel):
     only the kwargs passed to the am_event of EventSentinel are synchronized
     """
 
-    def __init__(self, obj, name=None, notes="", logging_permitted: bool = True):
+    def __init__(self, obj, name=None, notes="", logging_permitted: bool = True) -> None:
         super().__init__(logging_permitted=logging_permitted)
         self._am_obj = None
         self.am_obj = obj
@@ -74,7 +74,7 @@ class ObjectContainer(EventSentinel):
     def am_none(self):
         return self._am_obj is None
 
-    def __forwarder(self, **kwargs):
+    def __forwarder(self, **kwargs) -> None:
         kwargs["forwarded"] = True
         self.am_event(**kwargs)
 
@@ -91,7 +91,7 @@ class ObjectContainer(EventSentinel):
     def __getitem__(self, item):
         return self._am_obj[item]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self._am_obj[key] = value
 
     def __dir__(self):

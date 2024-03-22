@@ -9,7 +9,7 @@ from .view import InstanceView
 
 
 class StatesView(InstanceView):
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, instance, default_docking_position) -> None:
         super().__init__("states", workspace, default_docking_position, instance)
 
         self.base_caption = "States"
@@ -17,10 +17,10 @@ class StatesView(InstanceView):
 
         self._init_widgets()
 
-    def reload(self):
+    def reload(self) -> None:
         self._state_table.state_manager = self.instance.states
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         """
         Close children before exiting
         """
@@ -29,7 +29,7 @@ class StatesView(InstanceView):
     def sizeHint(self):
         return QSize(400, 800)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._state_table = QStateTable(self.workspace, self.instance, self, selection_callback=self._on_state_selected)
 
         hlayout = QHBoxLayout()
@@ -38,7 +38,7 @@ class StatesView(InstanceView):
 
         self.setLayout(hlayout)
 
-    def _on_state_selected(self, state):
+    def _on_state_selected(self, state) -> None:
         """
         A new function is on selection right now. Update the disassembly view that is currently at front.
 

@@ -12,7 +12,7 @@ from .view import InstanceView
 
 
 class SymexecView(InstanceView):
-    def __init__(self, workspace, instance):
+    def __init__(self, workspace, instance) -> None:
         super().__init__("symexec", workspace, "right", instance)
 
         self.base_caption = "Symbolic Execution"
@@ -43,17 +43,17 @@ class SymexecView(InstanceView):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
-    def select_simgr(self, simgr):
+    def select_simgr(self, simgr) -> None:
         self.current_simgr.am_obj = simgr
         self.current_simgr.am_event(src="from above")
 
-    def select_states(self, states):
+    def select_states(self, states) -> None:
         self._simgrs.select_states(states)
 
-    def view_state(self, state):
+    def view_state(self, state) -> None:
         self._state_viewer.state = state
 
         # push namespace into the console
@@ -65,23 +65,23 @@ class SymexecView(InstanceView):
                 }
             )
 
-    def avoid_addr_in_exec(self, addr):
+    def avoid_addr_in_exec(self, addr) -> None:
         self._simgrs.add_avoid_address(addr)
 
-    def find_addr_in_exec(self, addr):
+    def find_addr_in_exec(self, addr) -> None:
         self._simgrs.add_find_address(addr)
 
-    def remove_avoid_addr_in_exec(self, addr):
+    def remove_avoid_addr_in_exec(self, addr) -> None:
         self._simgrs.remove_avoid_address(addr)
 
-    def remove_find_addr_in_exec(self, addr):
+    def remove_find_addr_in_exec(self, addr) -> None:
         self._simgrs.remove_find_address(addr)
 
-    def redraw_graph(self):
+    def redraw_graph(self) -> None:
         if self.graph is not None:
             self.graph.viewport().update()
 
-    def switch_to_disassembly_view(self):
+    def switch_to_disassembly_view(self) -> None:
         if self._selected_state_block:
             addr = self._selected_state_block.state.addr
             self._switch_to_disassembly_view(addr)
@@ -90,7 +90,7 @@ class SymexecView(InstanceView):
     # Events
     #
 
-    def closeEvent(self, _):
+    def closeEvent(self, _) -> None:
         """
         Close children before exiting
         """
@@ -100,7 +100,7 @@ class SymexecView(InstanceView):
     # Initialization
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         main = QMainWindow()
         main.setWindowFlags(Qt.Widget)
 
@@ -137,7 +137,7 @@ class SymexecView(InstanceView):
     # Private methods
     #
 
-    def _switch_to_disassembly_view(self, addr):
+    def _switch_to_disassembly_view(self, addr) -> None:
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         else:

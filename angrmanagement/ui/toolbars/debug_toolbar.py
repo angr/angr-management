@@ -23,7 +23,7 @@ class AvailableDebuggersModel(QAbstractItemModel):
     Data provider for available debuggers combo box.
     """
 
-    def __init__(self, workspace: Workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__()
         self.debugger_mgr: DebuggerManager = workspace.main_instance.debugger_mgr
         self.debugger_list_mgr: DebuggerListManager = workspace.main_instance.debugger_list_mgr
@@ -62,7 +62,7 @@ class DebugToolbar(Toolbar):
     TODO: decouple this from MainWindow and workspace.instance (main_instance)
     """
 
-    def __init__(self, main_window: MainWindow):
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__(main_window, "DebugToolbar")
         self.workspace: Workspace = main_window.workspace
         self.instance: Instance = self.workspace.main_instance
@@ -145,7 +145,7 @@ class DebugToolbar(Toolbar):
 
         self._dbg_watcher: DebuggerWatcher | None = None
 
-    def _on_visibility_changed(self, visible: bool):
+    def _on_visibility_changed(self, visible: bool) -> None:
         if visible:
             self.instance.debugger_list_mgr.debugger_list.am_subscribe(self._update_dbg_list_combo)
             self._dbg_watcher = DebuggerWatcher(self._dbg_state_changed, self._dbg_mgr.debugger)
@@ -154,30 +154,30 @@ class DebugToolbar(Toolbar):
             self._dbg_watcher.shutdown()
             self._dbg_watcher = None
 
-    def _select_dbg_by_index(self, index: int):
+    def _select_dbg_by_index(self, index: int) -> None:
         dbg = self._dbg_model.index_to_debugger(index)
         self._dbg_mgr.set_debugger(dbg)
 
-    def _dbg_state_changed(self):
+    def _dbg_state_changed(self) -> None:
         self._update_dbg_list_combo()
         self._update_state()
 
-    def _select_current_dbg_in_combo(self, *args, **kwargs):  # pylint:disable=unused-argument
+    def _select_current_dbg_in_combo(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         dbg = self._dbg_mgr.debugger.am_obj
         self._dbg_combo.setCurrentIndex(self._dbg_model.debugger_to_index(dbg))
 
-    def _update_new_dbg_list(self):
+    def _update_new_dbg_list(self) -> None:
         self._new_dbg_sim.setDisabled(self.instance.project.am_none)
         self._new_dbg_trace.setDisabled(self.instance.current_trace.am_none)
 
-    def _update_dbg_list_combo(self, *args, **kwargs):  # pylint:disable=unused-argument
+    def _update_dbg_list_combo(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         dl = self.instance.debugger_list_mgr.debugger_list
         self._dbg_combo.setEnabled(len(dl) > 0)
         self._select_current_dbg_in_combo()
         self._dbg_model.layoutChanged.emit()
         self._dbg_combo.update()
 
-    def _update_state(self):
+    def _update_state(self) -> None:
         dbg = self._dbg_mgr.debugger.am_obj
         dbg_active = dbg is not None
 
@@ -200,29 +200,29 @@ class DebugToolbar(Toolbar):
         else:
             self._run_lbl.setText("")
 
-    def _on_start(self):
+    def _on_start(self) -> None:
         self._cached.widgetForAction(self._cached_actions[self._start_act]).showMenu()
 
-    def _on_stop(self):
+    def _on_stop(self) -> None:
         self._dbg_mgr.debugger.stop()
         self._dbg_list_mgr.remove_debugger(self._dbg_mgr.debugger.am_obj)
 
-    def _on_cont(self):
+    def _on_cont(self) -> None:
         self._dbg_mgr.debugger.continue_forward()
 
-    def _on_cont_backward(self):
+    def _on_cont_backward(self) -> None:
         self._dbg_mgr.debugger.continue_backward()
 
-    def _on_halt(self):
+    def _on_halt(self) -> None:
         self._dbg_mgr.debugger.halt()
 
-    def _on_step(self):
+    def _on_step(self) -> None:
         self._dbg_mgr.debugger.step_forward()
 
-    def _on_step_over(self):
+    def _on_step_over(self) -> None:
         b = self._dbg_mgr.debugger.simstate.block()
         until_addr = b.instruction_addrs[0] + b.size if b.instructions == 1 and b.vex.jumpkind == "Ijk_Call" else None
         self._dbg_mgr.debugger.step_forward(until_addr=until_addr)
 
-    def _on_step_backward(self):
+    def _on_step_backward(self) -> None:
         self._dbg_mgr.debugger.step_backward()

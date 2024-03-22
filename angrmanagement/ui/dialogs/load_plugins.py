@@ -32,7 +32,7 @@ class QPluginListWidgetItem(QListWidgetItem):
     Plugin list item.
     """
 
-    def __init__(self, plugin_desc, **kwargs):
+    def __init__(self, plugin_desc, **kwargs) -> None:
         super().__init__(**kwargs)
         self.plugin_desc: PluginDescription = plugin_desc
         self.setText(plugin_desc.name)
@@ -46,7 +46,7 @@ class LoadPlugins(QDialog):
     Dialog to display loaded plugins, enable/disable plugins, and load new plugins.
     """
 
-    def __init__(self, plugin_mgr, parent=None):
+    def __init__(self, plugin_mgr, parent=None) -> None:
         super().__init__(parent)
 
         self._pm: PluginManager = plugin_mgr
@@ -63,7 +63,7 @@ class LoadPlugins(QDialog):
     # Private methods
     #
 
-    def _init_plugin_list(self):
+    def _init_plugin_list(self) -> None:
         plugin_group = QGroupBox("Plugins")
         self._installed_plugin_list = QListWidget(self)
 
@@ -79,7 +79,7 @@ class LoadPlugins(QDialog):
 
         self.main_layout.addWidget(frame)
 
-    def _populate_installed_plugin_list(self):
+    def _populate_installed_plugin_list(self) -> None:
         for _, desc in self._pm.loaded_plugins.items():
             plugin_item = QPluginListWidgetItem(plugin_desc=desc)
             if self._pm.get_plugin_instance_by_name(desc.shortname) is not None:
@@ -88,7 +88,7 @@ class LoadPlugins(QDialog):
                 plugin_item.setCheckState(Qt.Unchecked)
             self._installed_plugin_list.addItem(plugin_item)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         load_button = QPushButton(self)
         load_button.setText("Load Plugin")
         load_button.clicked.connect(self._on_load_clicked)
@@ -106,7 +106,7 @@ class LoadPlugins(QDialog):
     # Event handlers
     #
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         list_items: list[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)
         for i in list_items:
             checked = i.checkState() == Qt.Checked
@@ -119,7 +119,7 @@ class LoadPlugins(QDialog):
         self._pm.save_enabled_plugins_to_config()
         self.close()
 
-    def _on_load_clicked(self):
+    def _on_load_clicked(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
             self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)"
         )

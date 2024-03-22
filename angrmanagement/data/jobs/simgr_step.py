@@ -4,7 +4,7 @@ from .job import Job
 
 
 class SimgrStepJob(Job):
-    def __init__(self, simgr, callback=None, until_branch=False, step_callback=None):
+    def __init__(self, simgr, callback=None, until_branch=False, step_callback=None) -> None:
         super().__init__("Simulation manager stepping")
         self._simgr = simgr
         self._callback = callback
@@ -24,7 +24,7 @@ class SimgrStepJob(Job):
 
         return self._simgr
 
-    def finish(self, inst, result):
+    def finish(self, inst, result) -> None:
         super().finish(inst, result)
         if self._callback is not None:
             self._callback(result)
@@ -37,7 +37,7 @@ class SimgrStepJob(Job):
 
     @classmethod
     def create(cls, simgr, **kwargs):
-        def callback(result):
+        def callback(result) -> None:
             simgr.am_event(src="job_done", job="step", result=result)
 
         return cls(simgr, callback=callback, **kwargs)

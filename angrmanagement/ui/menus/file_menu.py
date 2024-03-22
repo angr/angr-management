@@ -20,11 +20,11 @@ class RecentMenuEntry(MenuEntry):
     Represents an entry in the "Load recent" list. Holds a path and an indication of what's at that path.
     """
 
-    def __init__(self, path):
+    def __init__(self, path) -> None:
         self.path = path
         super().__init__(path, self.action_target)
 
-    def action_target(self):
+    def action_target(self) -> None:
         GlobalInfo.main_window.load_file(self.path)
 
 
@@ -33,7 +33,7 @@ class FileMenu(Menu):
     Lays out the entries under the 'File' menu
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window) -> None:
         super().__init__("&File", parent=main_window)
         self._project = main_window.workspace.main_instance.project
 
@@ -84,12 +84,12 @@ class FileMenu(Menu):
             ]
         )
 
-    def _edit_save(self, **_):
+    def _edit_save(self, **_) -> None:
         enable: bool = not self._project.am_none
         for i in self._save_entries:
             (i.enable if enable else i.disable)()
 
-    def add_recent(self, path: str):
+    def add_recent(self, path: str) -> None:
         for entry in list(self.recent_menu.entries):
             if entry.path == path:
                 self.recent_menu.remove(entry)

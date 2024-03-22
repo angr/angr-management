@@ -30,7 +30,7 @@ class DataDepView(InstanceView):
     def function(self):
         raise NotImplementedError("Does not apply!")
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, instance, default_docking_position) -> None:
         super().__init__("data_dependency", workspace, default_docking_position, instance)
 
         self.base_caption = "Data Dependency"
@@ -67,7 +67,7 @@ class DataDepView(InstanceView):
         return self._ddg
 
     @_data_dep_graph.setter
-    def _data_dep_graph(self, new_ddg: DiGraph):
+    def _data_dep_graph(self, new_ddg: DiGraph) -> None:
         self._ddg = new_ddg
         self._graph_widget.ref_graph = new_ddg
 
@@ -75,7 +75,7 @@ class DataDepView(InstanceView):
     def traced_ancestors(self) -> set[QDataDepGraphBlock]:
         return self._traced_ancestors
 
-    def update_ancestors(self, block: QDataDepGraphBlock):
+    def update_ancestors(self, block: QDataDepGraphBlock) -> None:
         self._traced_descendants.clear()
         self._traced_ancestors = self._graph_widget.get_ancestors(block)
         self.redraw_graph()
@@ -84,7 +84,7 @@ class DataDepView(InstanceView):
     def traced_descendants(self) -> set[QDataDepGraphBlock]:
         return self._traced_descendants
 
-    def update_descendants(self, block: QDataDepGraphBlock):
+    def update_descendants(self, block: QDataDepGraphBlock) -> None:
         self._traced_ancestors.clear()
         self._traced_descendants = self._graph_widget.get_descendants(block)
         self.redraw_graph()
@@ -103,7 +103,7 @@ class DataDepView(InstanceView):
         }
 
     @analysis_params.setter
-    def analysis_params(self, new_params: dict):
+    def analysis_params(self, new_params: dict) -> None:
         if new_params == self.analysis_params:
             # Nothing new, no need to rerun analysis
             return
@@ -120,7 +120,7 @@ class DataDepView(InstanceView):
         # except KeyError:
         #     _l.error("Unable to generate data dependency graph with provided parameters!")
 
-    def run_analysis(self):
+    def run_analysis(self) -> None:
         inst = self.instance
 
         data_dep: DataDependencyGraphAnalysis = inst.project.analyses.DataDep(
@@ -134,7 +134,7 @@ class DataDepView(InstanceView):
         self._data_dep_graph = data_dep.graph
         self.reload()
 
-    def hover_enter_block(self, block: QDataDepGraphBlock, modifiers: QtCore.Qt.KeyboardModifierMask):
+    def hover_enter_block(self, block: QDataDepGraphBlock, modifiers: QtCore.Qt.KeyboardModifierMask) -> None:
         # If the user is holding down 'Control' while hovering, should show descendants instead
         if modifiers & QtCore.Qt.ControlModifier:
             self._traced_descendants = self._graph_widget.get_descendants(block)
@@ -145,16 +145,16 @@ class DataDepView(InstanceView):
         #     self._graph_widget.on_block_hovered(block)
         self.redraw_graph()
 
-    def hover_leave_block(self):
+    def hover_leave_block(self) -> None:
         self._traced_ancestors.clear()
         self._traced_descendants.clear()
         self.redraw_graph()
 
-    def on_screen_changed(self):
+    def on_screen_changed(self) -> None:
         if self._graph_widget is not None:
             self._graph_widget.refresh()
 
-    def reload(self):
+    def reload(self) -> None:
         if self._graph_widget is None:
             return
 
@@ -168,21 +168,21 @@ class DataDepView(InstanceView):
         self._graph = self._create_ui_graph()
         self._graph_widget.graph = self._graph
 
-    def redraw_graph(self):
+    def redraw_graph(self) -> None:
         if self._graph_widget.graph is not None:
             self._graph_widget.viewport().update()
 
     def sizeHint(self):
         return QtCore.QSize(400, 800)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._graph_widget = QDataDepGraph(self.workspace, self, self)
 
         h_layout = QtWidgets.QHBoxLayout(self)
         h_layout.addWidget(self._graph_widget)
         h_layout.setContentsMargins(0, 0, 0, 0)
 
-    def _register_events(self):
+    def _register_events(self) -> None:
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
 
     def _convert_node(
@@ -220,13 +220,13 @@ class DataDepView(InstanceView):
             return False
         return any(node for node in self._data_dep_graph.nodes if isinstance(node, TmpDepNode))
 
-    def use_subgraph(self, block: QDataDepGraphBlock, backwards: bool):
+    def use_subgraph(self, block: QDataDepGraphBlock, backwards: bool) -> None:
         dep_node = block.node
         # Determine if any temp nodes exist in the graph and, if so, include them in subgraph
         self._data_dep_graph = self._data_dep.get_data_dep(dep_node, self._graph_has_tmp_nodes(), backwards)
         self.reload()
 
-    def _toggle_graph(self):
+    def _toggle_graph(self) -> None:
         """Switches the current graph being shown between the full and simplified graph"""
         if self._data_dep_graph is self._data_dep.simplified_graph:
             self._data_dep_graph = self._data_dep.graph

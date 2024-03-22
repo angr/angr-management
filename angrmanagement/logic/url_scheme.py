@@ -59,7 +59,7 @@ class AngrUrlScheme:
     # Windows
     #
 
-    def _register_url_scheme_windows(self):
+    def _register_url_scheme_windows(self) -> None:
         app_path_ = app_path(pythonw=True)
 
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
@@ -80,7 +80,7 @@ class AngrUrlScheme:
         reg.endGroup()
         reg.endGroup()
 
-    def _unregister_url_scheme_windows(self):
+    def _unregister_url_scheme_windows(self) -> None:
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.NativeFormat)
 
@@ -134,7 +134,7 @@ Type=Application
         if retcode != 0:
             raise ValueError('Failed to setup the URL scheme. Command "%s" failed.' % " ".join(cmd_0))
 
-    def _unregister_url_scheme_linux(self):
+    def _unregister_url_scheme_linux(self) -> None:
         angr_desktop_path = self._angr_desktop_path()
         if os.path.isfile(angr_desktop_path):
             os.unlink(angr_desktop_path)

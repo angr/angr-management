@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class LogMenu(Menu):
-    def __init__(self, log_widget: QLogWidget):
+    def __init__(self, log_widget: QLogWidget) -> None:
         super().__init__("", parent=log_widget)
 
         self.entries.extend(

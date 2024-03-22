@@ -46,14 +46,14 @@ class PluginManager:
     first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
     """
 
-    def __init__(self, workspace: Workspace | None):
+    def __init__(self, workspace: Workspace | None) -> None:
         self.workspace = workspace
         # should one or both of these be ObjectContainers? I think no since we should be synchronizing on models, not
         # views/controllers. not super clear... that's not a hard and fast rule
         self.loaded_plugins: dict[str, PluginDescription] = {}
         self.active_plugins: dict[str, BasePlugin] = {}
 
-    def discover_and_initialize_plugins(self):
+    def discover_and_initialize_plugins(self) -> None:
         os.environ["AM_BUILTIN_PLUGINS"] = os.path.dirname(__file__)
         enabled_plugins = [plugin_.strip() for plugin_ in Conf.enabled_plugins.split(",") if plugin_.strip()]
         for search_dir in Conf.plugin_search_path.split(":"):
@@ -107,7 +107,7 @@ class PluginManager:
         if plugin_cls.REQUIRE_WORKSPACE and self.workspace is None:
             raise RuntimeError("Cannot load plugin %s in headless mode.")
 
-    def activate_plugin_by_name(self, shortname: str):
+    def activate_plugin_by_name(self, shortname: str) -> None:
         desc = self.loaded_plugins[shortname]
         basedir = os.path.join(os.path.dirname(desc.plugin_file_path))
         for plugin_cls in load_plugins_from_file(os.path.join(basedir, desc.entrypoints[0])):
@@ -116,7 +116,7 @@ class PluginManager:
             else:
                 self.activate_plugin(desc.shortname, plugin_cls)
 
-    def register_active_plugin(self, shortname: str, plugin_obj: BasePlugin):
+    def register_active_plugin(self, shortname: str, plugin_obj: BasePlugin) -> None:
         self.active_plugins[shortname] = plugin_obj
         plugin_cls = plugin_obj.__class__
         plugin_obj.__cached_status_bar_widgets = []
@@ -139,7 +139,7 @@ class PluginManager:
         for action in plugin_cls.URL_ACTIONS:
             register_url_action(action, UrlActionBinaryAware)
 
-    def activate_plugin(self, shortname: str, plugin_cls: type[BasePlugin]):
+    def activate_plugin(self, shortname: str, plugin_cls: type[BasePlugin]) -> None:
         self.verify_plugin_class(plugin_cls)  # perform the sanity checks
         if self.get_plugin_instance(plugin_cls) is not None:
             return
@@ -152,7 +152,7 @@ class PluginManager:
         else:
             log.info("Activated plugin %s", plugin_cls.get_display_name())
 
-    def save_enabled_plugins_to_config(self):
+    def save_enabled_plugins_to_config(self) -> None:
         # pylint: disable=assigning-non-slot
         Conf.enabled_plugins = ",".join(self.active_plugins.keys())
         save_config()
@@ -221,13 +221,13 @@ class PluginManager:
             log.error("Somehow there is more than one instance of %s active?", plugin_cls.get_display_name())
         return instances[0]
 
-    def deactivate_plugin_by_name(self, shortname: str):
+    def deactivate_plugin_by_name(self, shortname: str) -> None:
         for key, plugin in self.active_plugins.items():
             if key == shortname:
                 self.deactivate_plugin(plugin)
                 break
 
-    def deactivate_plugin(self, plugin: BasePlugin | type[BasePlugin]):
+    def deactivate_plugin(self, plugin: BasePlugin | type[BasePlugin]) -> None:
         # this method should work on both instances and classes
         if type(plugin) is type:
             plugin = self.get_plugin_instance(plugin)
@@ -288,7 +288,7 @@ class PluginManager:
             self._handle_error(plugin, func, sensitive, e)
             return None
 
-    def _handle_error(self, plugin, func, sensitive, exc):
+    def _handle_error(self, plugin, func, sensitive, exc) -> None:
         self.workspace.log(f"Plugin {plugin.get_display_name()} errored during {func.__name__}")
         self.workspace.log(exc)
         if sensitive:
@@ -313,19 +313,19 @@ class PluginManager:
                 return res
         return None
 
-    def draw_insn(self, qinsn, painter):
+    def draw_insn(self, qinsn, painter) -> None:
         for _ in self._dispatch(BasePlugin.draw_insn, True, qinsn, painter):
             pass
 
-    def draw_block(self, qblock, painter):
+    def draw_block(self, qblock, painter) -> None:
         for _ in self._dispatch(BasePlugin.draw_block, True, qblock, painter):
             pass
 
-    def instrument_disassembly_view(self, dview):
+    def instrument_disassembly_view(self, dview) -> None:
         for _ in self._dispatch(BasePlugin.instrument_disassembly_view, False, dview):
             pass
 
-    def instrument_code_view(self, cview):
+    def instrument_code_view(self, cview) -> None:
         for _ in self._dispatch(BasePlugin.instrument_code_view, False, cview):
             pass
 
@@ -335,7 +335,7 @@ class PluginManager:
     def handle_click_block(self, qblock, event):
         return any(res for res in self._dispatch(BasePlugin.handle_click_block, False, qblock, event))
 
-    def handle_raise_view(self, view):
+    def handle_raise_view(self, view) -> None:
         for _ in self._dispatch(BasePlugin.handle_raise_view, False, view):
             pass
 
@@ -384,7 +384,7 @@ class PluginManager:
                     return 0, ""
         raise IndexError("Not enough columns")
 
-    def step_callback(self, simgr):
+    def step_callback(self, simgr) -> None:
         for _ in self._dispatch(BasePlugin.step_callback, True, simgr):
             pass
 
@@ -445,19 +445,19 @@ class PluginManager:
     def handle_struct_changed(self, old_struct, new_struct):
         return any(res for res in self._dispatch(BasePlugin.handle_struct_changed, False, old_struct, new_struct))
 
-    def decompile_callback(self, func):
+    def decompile_callback(self, func) -> None:
         for _ in self._dispatch(BasePlugin.decompile_callback, False, func):
             pass
 
-    def handle_project_initialization(self):
+    def handle_project_initialization(self) -> None:
         for _ in self._dispatch(BasePlugin.handle_project_initialization, False):
             pass
 
-    def handle_project_save(self, file_name: str):
+    def handle_project_save(self, file_name: str) -> None:
         for _ in self._dispatch(BasePlugin.handle_project_save, False, file_name):
             pass
 
-    def on_workspace_initialized(self, workspace):
+    def on_workspace_initialized(self, workspace) -> None:
         for _ in self._dispatch(BasePlugin.on_workspace_initialized, False, workspace):
             pass
 
@@ -471,7 +471,7 @@ class PluginManager:
                     entries[key] = value
         return entries
 
-    def angrdb_load_entries(self, entries):
+    def angrdb_load_entries(self, entries) -> None:
         plugin_name_to_plugin = self.active_plugins
 
         for key, value in entries.items():

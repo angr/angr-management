@@ -14,7 +14,7 @@ class StateInspector(QTabWidget):
     Dispaly detail information for a selected state.
     """
 
-    def __init__(self, workspace, state, parent=None):
+    def __init__(self, workspace, state, parent=None) -> None:
         super().__init__(parent=parent)
         self.workspace = workspace
         self._state = state
@@ -27,7 +27,7 @@ class StateInspector(QTabWidget):
 
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._register_viewer = QRegisterViewer(self._state, self, self.workspace)
         self.addTab(self._register_viewer, "Registers")
 

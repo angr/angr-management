@@ -7,7 +7,7 @@ from .qast_viewer import QASTViewer
 
 
 class QVEXTempsViewer(QFrame):
-    def __init__(self, state, parent, workspace):
+    def __init__(self, state, parent, workspace) -> None:
         super().__init__(parent)
         self.workspace = workspace
 
@@ -30,7 +30,7 @@ class QVEXTempsViewer(QFrame):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         area = QScrollArea()
         area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -42,7 +42,7 @@ class QVEXTempsViewer(QFrame):
         base_layout.addWidget(area)
         self.setLayout(base_layout)
 
-    def _load_tmps(self):
+    def _load_tmps(self) -> None:
         state = self.state.am_obj
 
         layout = QVBoxLayout()
@@ -82,5 +82,5 @@ class QVEXTempsViewer(QFrame):
 
         self._area.setWidget(container)
 
-    def _watch_state(self):
+    def _watch_state(self) -> None:
         self._load_tmps()

@@ -23,7 +23,7 @@ class QDisassemblyBaseControl:
     The base control class of QLinearViewer and QDisassemblyGraph. Implements or declares common shorthands and methods.
     """
 
-    def __init__(self, instance, disasm_view, base_cls):
+    def __init__(self, instance, disasm_view, base_cls) -> None:
         self.instance = instance
         self.disasm_view: DisassemblyView = disasm_view
         self._base_cls = base_cls
@@ -66,7 +66,7 @@ class QDisassemblyBaseControl:
 
         return None
 
-    def set_disassembly_level(self, level: DisassemblyLevel):
+    def set_disassembly_level(self, level: DisassemblyLevel) -> None:
         self._disassembly_level = level
         self.reload()
 
@@ -74,7 +74,7 @@ class QDisassemblyBaseControl:
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
 
         if key == Qt.Key_N:

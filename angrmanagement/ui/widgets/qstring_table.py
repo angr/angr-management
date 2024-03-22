@@ -24,7 +24,7 @@ class QStringModel(QAbstractTableModel):
     LENGTH_COL = 2
     STRING_COL = 3
 
-    def __init__(self, cfg, func=None):
+    def __init__(self, cfg, func=None) -> None:
         super().__init__()
 
         self._cfg = cfg
@@ -38,7 +38,7 @@ class QStringModel(QAbstractTableModel):
         return self._cfg
 
     @cfg.setter
-    def cfg(self, v):
+    def cfg(self, v) -> None:
         self.beginResetModel()
         self._cfg = v
         self._values = None
@@ -49,7 +49,7 @@ class QStringModel(QAbstractTableModel):
         return self._xrefs
 
     @xrefs.setter
-    def xrefs(self, v):
+    def xrefs(self, v) -> None:
         self.beginResetModel()
         self._xrefs = v
         self._values = None
@@ -60,7 +60,7 @@ class QStringModel(QAbstractTableModel):
         return self._function
 
     @function.setter
-    def function(self, v):
+    def function(self, v) -> None:
         self.beginResetModel()
         self._function = v
         self._values = None
@@ -162,7 +162,7 @@ class QStringModel(QAbstractTableModel):
 
 
 class QStringTable(QTableView):
-    def __init__(self, instance, parent, selection_callback=None):
+    def __init__(self, instance, parent, selection_callback=None) -> None:
         super().__init__(parent)
 
         self._instance = instance
@@ -199,7 +199,7 @@ class QStringTable(QTableView):
         return self._model.cfg
 
     @cfg.setter
-    def cfg(self, v):
+    def cfg(self, v) -> None:
         self._model.cfg = v
         self.fast_resize()
 
@@ -208,7 +208,7 @@ class QStringTable(QTableView):
         return self._model.xrefs
 
     @xrefs.setter
-    def xrefs(self, v):
+    def xrefs(self, v) -> None:
         self._model.xrefs = v
 
     @property
@@ -216,7 +216,7 @@ class QStringTable(QTableView):
         return self._model.function
 
     @function.setter
-    def function(self, v):
+    def function(self, v) -> None:
         self._model.function = v
         self.fast_resize()
 
@@ -225,7 +225,7 @@ class QStringTable(QTableView):
         return self._filter
 
     @filter_string.setter
-    def filter_string(self, v):
+    def filter_string(self, v) -> None:
         self._filter = v
         if isinstance(v, re.Pattern):
             self._proxy.setFilterRegExp(self._filter.pattern)
@@ -237,7 +237,7 @@ class QStringTable(QTableView):
     # Public methods
     #
 
-    def fast_resize(self):
+    def fast_resize(self) -> None:
         self.setVisible(False)
         self.resizeColumnsToContents()
         self.setVisible(True)
@@ -246,7 +246,7 @@ class QStringTable(QTableView):
     # Event handlers
     #
 
-    def _on_string_selected(self, model_index):
+    def _on_string_selected(self, model_index) -> None:
         model_index = self._proxy.mapToSource(model_index)
         selected_index = model_index.row()
         if self._model is None:

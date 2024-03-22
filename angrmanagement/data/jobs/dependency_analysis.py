@@ -42,7 +42,7 @@ class DependencyAnalysisJob(Job):
     Implements a job for dependency analysis.
     """
 
-    def __init__(self, func_addr=None, func_arg_idx=None):
+    def __init__(self, func_addr=None, func_arg_idx=None) -> None:
         super().__init__("DependencyAnalysis")
 
         self.func_addr: int | None = func_addr
@@ -74,7 +74,7 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def _run(self, inst: Instance):
+    def _run(self, inst: Instance) -> None:
         self._progress_callback(0.0)
         self._perform(inst)
         self._progress_callback(100.0)
@@ -246,7 +246,7 @@ class DependencyAnalysisJob(Job):
         return new_kb
 
     @staticmethod
-    def _display_import_error():
+    def _display_import_error() -> None:
         QMessageBox.critical(
             None,
             "Import error",
@@ -254,7 +254,7 @@ class DependencyAnalysisJob(Job):
         )
 
     @staticmethod
-    def _display_closures(inst, sink_atom: Atom, sink_addr: int, closures):
+    def _display_closures(inst, sink_atom: Atom, sink_addr: int, closures) -> None:
         view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return

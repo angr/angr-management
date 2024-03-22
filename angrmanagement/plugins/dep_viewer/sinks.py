@@ -25,7 +25,7 @@ class BaseSink:
 
 
 class FunctionArgumentSink(BaseSink):
-    def __init__(self, lib: str | None, func_name, arg_idx, platforms: list[str] | None = None):
+    def __init__(self, lib: str | None, func_name, arg_idx, platforms: list[str] | None = None) -> None:
         self.lib = lib
         self.func_name = func_name
         self.arg_idx = arg_idx
@@ -36,7 +36,7 @@ class FunctionArgumentSink(BaseSink):
 
 
 class SinkManager:
-    def __init__(self, sinks: dict[int, list[BaseSink]]):
+    def __init__(self, sinks: dict[int, list[BaseSink]]) -> None:
         self.sinks = sinks
 
         # lookup caches
@@ -44,7 +44,7 @@ class SinkManager:
 
         self._init_caches()
 
-    def _init_caches(self):
+    def _init_caches(self) -> None:
         for vuln_type, sinks in self.sinks.items():
             for sink in sinks:
                 if isinstance(sink, FunctionArgumentSink):

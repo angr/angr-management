@@ -17,7 +17,7 @@ class QStateBlock(QGraphicsItem):
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, symexec_view, state=None, history=None):
+    def __init__(self, is_selected, symexec_view, state=None, history=None) -> None:
         super().__init__()
 
         self.symexec_view = symexec_view
@@ -49,7 +49,7 @@ class QStateBlock(QGraphicsItem):
         else:
             return None
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         addr = None
         if self.state.regs._ip.symbolic:
             self._label_str = str(self.state.regs._ip)
@@ -79,10 +79,10 @@ class QStateBlock(QGraphicsItem):
                     self._function_str = f"{the_func.name}{offset:+x}"
         self._function_str = "Function: %s" % self._function_str
 
-    def mousePressEvent(self, event):  # pylint: disable=no-self-use
+    def mousePressEvent(self, event) -> None:  # pylint: disable=no-self-use
         super().mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse release event')
         if event.button() == Qt.LeftButton:
             self.selected = not self.selected
@@ -91,7 +91,7 @@ class QStateBlock(QGraphicsItem):
 
         super().mouseReleaseEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
             if self.state is not None:
@@ -103,7 +103,7 @@ class QStateBlock(QGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -155,7 +155,7 @@ class QStateBlock(QGraphicsItem):
     # Private methods
     #
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         width_candidates = [
             self.HORIZONTAL_PADDING * 2 + len(self._label_str) * self._config.symexec_font_width,
             self.HORIZONTAL_PADDING * 2 + len(self._function_str) * self._config.symexec_font_width,

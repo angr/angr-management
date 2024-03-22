@@ -34,11 +34,11 @@ class VaildLineNumberPanel(LineNumberPanel):
     the invaild are grey.
     """
 
-    def __init__(self, valid_line=None):
+    def __init__(self, valid_line=None) -> None:
         super().__init__()
         self._valid_line = valid_line or set()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         # Paints the line numbers
         self._line_color_u = drift_color(self._background_brush.color(), 250)
         self._line_color_s = drift_color(self._background_brush.color(), 280)
@@ -75,7 +75,7 @@ class SourceCodeViewer(CodeEdit):
     viewer: SourceViewer | None = None
     current_line: int = -1
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__(parent=parent, create_default_actions=False)
 
         self._valid_line = None
@@ -91,28 +91,28 @@ class SourceCodeViewer(CodeEdit):
         self.panels.append(self.breakpoint_panel)
         # self.panels.append(self.state_panel)
 
-    def set_valid_line(self, valid_line):
+    def set_valid_line(self, valid_line) -> None:
         self.linenumber_panel._valid_line = valid_line
         self._valid_line = valid_line
         self.update()
 
-    def updateState(self, state_counter):
+    def updateState(self, state_counter) -> None:
         self.state_panel.updateState(state_counter)
 
-    def add_find(self):
+    def add_find(self) -> None:
         icon = self.style().standardIcon(QStyle.SP_FileDialogContentsView)
         desc = self.viewer.add_point(self.file.path, self.current_line, "find")
         self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
-    def add_avoid(self):
+    def add_avoid(self) -> None:
         icon = self.style().standardIcon(QStyle.SP_BrowserStop)
         desc = self.viewer.add_point(self.file.path, self.current_line, "avoid")
         self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
-    def jump_to(self, addr):
+    def jump_to(self, addr) -> None:
         self.viewer.workspace.jump_to(addr)
 
-    def add_marker_fn(self, line):
+    def add_marker_fn(self, line) -> None:
         self.current_line = line + 1
         if self.current_line not in self._valid_line:
             return
@@ -126,23 +126,23 @@ class SourceCodeViewer(CodeEdit):
                 jump_menu.addAction("0x%x" % addr, lambda addr=addr: self.jump_to(addr))
         menu.exec_(QCursor.pos())
 
-    def remove_marker_fn(self, line):
+    def remove_marker_fn(self, line) -> None:
         self.current_line = line + 1
         self.viewer.remove_point(self.file.path, self.current_line)
         lst = self.breakpoint_panel.marker_for_line(line)
         for m in lst:
             self.breakpoint_panel.remove_marker(m)
 
-    def edit_marker_fn(self, line):
+    def edit_marker_fn(self, line) -> None:
         self.current_line = line + 1
         menu = QMenu()
         menu.addAction("Edit Condition", self.edit_cond)
         menu.exec_(QCursor.pos())
 
-    def edit_cond(self):
+    def edit_cond(self) -> None:
         pass
 
-    def setHighlighter(self):
+    def setHighlighter(self) -> None:
         self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
         QPlainTextEdit.setReadOnly(self, True)
         self.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
@@ -155,7 +155,7 @@ class SourceCodeViewer(CodeEdit):
 
         return super().event(event)
 
-    def comment(self):
+    def comment(self) -> None:
         doc = self.document()
         cursor = self.textCursor()
         cursor.clearSelection()
@@ -192,13 +192,13 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
     viewer: SourceViewer | None = None
     tabs: dict[str, SourceCodeViewer] = {}
 
-    def __init__(self, parent=None, addr_to_line: SortedDict = None, viewer=None):
+    def __init__(self, parent=None, addr_to_line: SortedDict = None, viewer=None) -> None:
         super().__init__(parent=parent)
         self.viewer = viewer
         if addr_to_line is not None:
             self.load(addr_to_line)
 
-    def load(self, addr_to_line: SortedDict):
+    def load(self, addr_to_line: SortedDict) -> None:
         self.addr_to_line = addr_to_line  # (filename, line.state.line)
         self.line_to_addr = defaultdict(list)
         self.file_list = set()
@@ -223,7 +223,7 @@ class SourceViewer(InstanceView):
 
     main: SourceCodeViewerTabWidget | None = None
 
-    def __init__(self, workspace: Workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__("SourceViewer", workspace, "center", workspace.main_instance)
         self.base_caption = "Source Viewer"
         self.workspace = workspace
@@ -239,14 +239,14 @@ class SourceViewer(InstanceView):
     def symexec_view(self) -> SymexecView:
         return self.workspace.view_manager.first_view_in_category("symexec")
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.main = SourceCodeViewerTabWidget()
         self.main.viewer = self
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.main)
         self.setLayout(main_layout)
 
-    def load_from_proejct(self, **kwargs):  # pylint: disable=unused-argument
+    def load_from_proejct(self, **kwargs) -> None:  # pylint: disable=unused-argument
         if self.instance.project.am_none:
             return
         loader: Loader = self.instance.project.loader
@@ -266,7 +266,7 @@ class SourceViewer(InstanceView):
                 symexec_view.avoid_addr_in_exec(addr)
         return "\n".join([("0x%x" % i) for i in address_list])
 
-    def remove_point(self, fn, line):
+    def remove_point(self, fn, line) -> None:
         symexec_view = self.symexec_view
         if not symexec_view:
             return
@@ -282,7 +282,7 @@ class SourceViewerPlugin(BasePlugin):
     Plugin loader
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace) -> None:
         super().__init__(workspace)
         self.source_viewer = SourceViewer(workspace)
         workspace.default_tabs += [self.source_viewer]

@@ -8,7 +8,7 @@ from .toolbar_action import ToolbarAction, ToolbarSplitter
 
 
 class Toolbar:
-    def __init__(self, window, name):
+    def __init__(self, window, name) -> None:
         self.window = window
         self.name = name
 
@@ -16,7 +16,7 @@ class Toolbar:
         self._cached: QToolBar | None = None
         self._cached_actions = {}
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Prepare for deletion.
         """
@@ -62,7 +62,7 @@ class Toolbar:
         else:
             raise TypeError("Bad toolbar action", action)
 
-    def add(self, element):
+    def add(self, element) -> None:
         if self._cached is not None:
             act = self._translate_element(self._cached, element)
             if act is not None:

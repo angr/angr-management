@@ -6,7 +6,9 @@ from PySide6.QtWidgets import QLineEdit
 
 
 class QAddressInput(QLineEdit):
-    def __init__(self, textchanged_callback: Callable | None, instance, parent=None, default: str | None = None):
+    def __init__(
+        self, textchanged_callback: Callable | None, instance, parent=None, default: str | None = None
+    ) -> None:
         super().__init__(parent)
 
         self.instance = instance

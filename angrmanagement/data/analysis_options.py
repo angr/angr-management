@@ -38,7 +38,7 @@ class AnalysesConfiguration:
     Configuration for a sequence of analyses.
     """
 
-    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance):
+    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance) -> None:
         self.instance = instance
         self.analyses: Sequence[AnalysisConfiguration] = analyses
 
@@ -65,7 +65,7 @@ class AnalysisConfiguration:
     Configuration for an analysis.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance) -> None:
         self.instance = instance
         self.project: angr.Project = self.instance.project.am_obj
         self.enabled: bool = False
@@ -85,7 +85,7 @@ class AnalysisConfiguration:
         self.update_dict(o)
         return o
 
-    def update_dict(self, out: Mapping[str, Any]):
+    def update_dict(self, out: Mapping[str, Any]) -> None:
         """
         Update dictionary `out` with configuration for this option.
         """
@@ -100,12 +100,12 @@ class AnalysisOption:
     Configurable option for an analysis.
     """
 
-    def __init__(self, name: str, display_name: str, tooltip: str):
+    def __init__(self, name: str, display_name: str, tooltip: str) -> None:
         self.name: str = name
         self.display_name: str = display_name
         self.tooltip: str = tooltip
 
-    def update_dict(self, out: Mapping[str, Any]):
+    def update_dict(self, out: Mapping[str, Any]) -> None:
         """
         Update dictionary `out` with configuration for this option.
         """
@@ -116,12 +116,12 @@ class PrimitiveAnalysisOption(AnalysisOption):
     Configurable option for an analysis, with a fundamental type (e.g. bool)
     """
 
-    def __init__(self, name: str, description: str, default: Any, tooltip: str):
+    def __init__(self, name: str, description: str, default: Any, tooltip: str) -> None:
         super().__init__(name, description, tooltip)
         self.default: Any = default
         self.value: Any = default
 
-    def update_dict(self, out: Mapping[str, Any]):
+    def update_dict(self, out: Mapping[str, Any]) -> None:
         """
         Update `out` dictionary with configuration for this option.
         """
@@ -133,7 +133,7 @@ class BoolAnalysisOption(PrimitiveAnalysisOption):
     Boolean option for an analysis.
     """
 
-    def __init__(self, name: str, description: str, default: bool = False, tooltip: str = ""):
+    def __init__(self, name: str, description: str, default: bool = False, tooltip: str = "") -> None:
         super().__init__(name, description, default, tooltip)
 
 
@@ -145,7 +145,9 @@ class StringAnalysisOption(PrimitiveAnalysisOption):
     :ivar enabled:  Is this option enabled by the user or not.
     """
 
-    def __init__(self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False):
+    def __init__(
+        self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False
+    ) -> None:
         self.optional = optional
         self.enabled = not self.optional
         super().__init__(name, description, default, tooltip)
@@ -164,7 +166,7 @@ class IntAnalysisOption(PrimitiveAnalysisOption):
         tooltip: str = "",
         minimum: int | None = None,
         maximum: int | None = None,
-    ):
+    ) -> None:
         super().__init__(name, description, default, tooltip)
         self.minimum_value = minimum
         self.maximum_value = maximum
@@ -175,7 +177,9 @@ class ChoiceAnalysisOption(PrimitiveAnalysisOption):
     A multi-value choice.
     """
 
-    def __init__(self, name: str, description: str, choices: Mapping[Any, str], default: Any, tooltip: str = ""):
+    def __init__(
+        self, name: str, description: str, choices: Mapping[Any, str], default: Any, tooltip: str = ""
+    ) -> None:
         super().__init__(name, description, default, tooltip)
         self.choices = choices
 
@@ -195,7 +199,7 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
     Configuration for CFGFast analysis.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance) -> None:
         super().__init__(instance)
         self.name = "cfg"
         self.display_name = "Control-Flow Graph Recovery"
@@ -245,7 +249,7 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
     Configuration for Flirt analysis.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance) -> None:
         super().__init__(instance)
         self.name = "flirt"
         self.display_name = "Function Signature Matching"
@@ -258,7 +262,7 @@ class CodeTaggingConfiguration(AnalysisConfiguration):
     Configuration for Code Tagging.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance) -> None:
         super().__init__(instance)
         self.name = "code_tagging"
         self.display_name = "Tag Functions Based on Syntactic Features"
@@ -274,7 +278,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     SMALL_BINARY_SIZE = 65536
     MEDIUM_BINARY_SIZE = 400000
 
-    def __init__(self, instance):
+    def __init__(self, instance) -> None:
         super().__init__(instance)
         self.name = "varec"
         self.display_name = "Recover Variables on All Functions"

@@ -32,11 +32,11 @@ class LoadTargetJob(Job):
     Job to load archr target and angr project.
     """
 
-    def __init__(self, target, on_finish=None):
+    def __init__(self, target, on_finish=None) -> None:
         super().__init__("Loading target", on_finish=on_finish)
         self.target = target
 
-    def _run(self, inst):
+    def _run(self, inst) -> None:
         self._progress_callback(5)
         with self.target.build().start() as t:
             self._progress_callback(10)
@@ -61,12 +61,12 @@ class LoadBinaryJob(Job):
     Job to display binary load dialog and create angr project.
     """
 
-    def __init__(self, fname, load_options=None, on_finish=None):
+    def __init__(self, fname, load_options=None, on_finish=None) -> None:
         super().__init__("Loading file", on_finish=on_finish)
         self.load_options = load_options or {}
         self.fname = fname
 
-    def _run(self, inst):
+    def _run(self, inst) -> None:
         self._progress_callback(5)
 
         load_as_blob = False
@@ -128,7 +128,7 @@ class LoadBinaryJob(Job):
         proj = angr.Project(self.fname, load_options=self.load_options, engine=engine, simos=simos)
         self._progress_callback(95)
 
-        def callback():
+        def callback() -> None:
             inst._reset_containers()
             inst.project.am_obj = proj
             inst.project.am_event()
@@ -148,7 +148,7 @@ class LoadAngrDBJob(Job):
         other_kbs: dict[str, KnowledgeBase] | None = None,
         extra_info: dict | None = None,
         on_finish=None,
-    ):
+    ) -> None:
         super().__init__("Loading angr database", on_finish=on_finish)
         self.file_path = file_path
         self.kb_names = kb_names
@@ -158,7 +158,7 @@ class LoadAngrDBJob(Job):
 
         self.project = None
 
-    def _run(self, inst):
+    def _run(self, inst) -> None:
         self._progress_callback(5)
 
         angrdb = AngrDB()

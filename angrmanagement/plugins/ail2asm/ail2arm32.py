@@ -12,7 +12,7 @@ class AIL2ARM32(BasePlugin):
     Assemble expressions into assembly.
     """
 
-    def __init__(self, workspace, sp_adjust=0x30):
+    def __init__(self, workspace, sp_adjust=0x30) -> None:
         super().__init__(workspace)
         self.sp_adjust = sp_adjust
         self.registers_in_use = []
@@ -26,7 +26,7 @@ class AIL2ARM32(BasePlugin):
         self.registers_in_use.append(reg)
         return reg
 
-    def return_register(self, reg):
+    def return_register(self, reg) -> None:
         self.registers_in_use.remove(reg)
         self.free_registers.append(reg)
 
@@ -227,5 +227,5 @@ class AIL2ARM32(BasePlugin):
         else:
             raise Exception("Unsupported expression")
 
-    def display_output(self, s: str):
+    def display_output(self, s: str) -> None:
         AsmOutput(s, parent=self.workspace.main_window).exec_()

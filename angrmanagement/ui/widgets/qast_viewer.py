@@ -8,7 +8,9 @@ from angrmanagement.config import Conf
 
 
 class QASTViewer(QFrame):
-    def __init__(self, ast, workspace=None, custom_painting=False, display_size=True, byte_format=None, parent=None):
+    def __init__(
+        self, ast, workspace=None, custom_painting=False, display_size=True, byte_format=None, parent=None
+    ) -> None:
         super().__init__(parent)
 
         # configs
@@ -42,7 +44,7 @@ class QASTViewer(QFrame):
         else:
             self.reload()
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         if self._ast is not None and not self._ast.symbolic:
             self.workspace.viz(self._ast._model_concrete.value)
 
@@ -55,7 +57,7 @@ class QASTViewer(QFrame):
         return self._ast
 
     @ast.setter
-    def ast(self, v):
+    def ast(self, v) -> None:
         self._ast = v
         self.reload()
 
@@ -101,7 +103,7 @@ class QASTViewer(QFrame):
     # Public methods
     #
 
-    def paint(self, painter):
+    def paint(self, painter) -> None:
         """
 
         :param QPainter painter:
@@ -114,7 +116,7 @@ class QASTViewer(QFrame):
 
         painter.drawText(self.x, self.y + Conf.symexec_font_ascent, self._ast_str)
 
-    def reload(self):
+    def reload(self) -> None:
         # build string representations
         self._build_strings()
 
@@ -127,7 +129,7 @@ class QASTViewer(QFrame):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QHBoxLayout()
 
         ast_label = QLabel(self)
@@ -149,7 +151,7 @@ class QASTViewer(QFrame):
 
         self.setLayout(layout)
 
-    def _reload_widgets(self):
+    def _reload_widgets(self) -> None:
         if self._ast is None:
             self._ast_label.setText("")
             return
@@ -174,7 +176,7 @@ class QASTViewer(QFrame):
         self._ast_label.style().unpolish(self._ast_label)
         self._ast_label.style().polish(self._ast_label)
 
-    def _build_strings(self):
+    def _build_strings(self) -> None:
         if self._ast is None:
             self._ast_label.setText("")
             return
@@ -202,7 +204,7 @@ class QASTViewer(QFrame):
                 else:
                     self._ast_str = ast.__repr__(max_depth=1)
 
-    def _determine_size(self):
+    def _determine_size(self) -> None:
         self._height = Conf.symexec_font_height
         self._width = Conf.symexec_font_width * len(self._ast_str)
         if self._display_size:

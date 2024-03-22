@@ -21,7 +21,7 @@ class QDisasmStatusBar(QFrame):
     Status and control bar for disassembly views
     """
 
-    def __init__(self, disasm_view, parent=None):
+    def __init__(self, disasm_view, parent=None) -> None:
         super().__init__(parent)
 
         self.disasm_view = disasm_view
@@ -43,7 +43,7 @@ class QDisasmStatusBar(QFrame):
         return self._function
 
     @function.setter
-    def function(self, f):
+    def function(self, f) -> None:
         self._function = f
         self._update_function_label()
 
@@ -51,7 +51,7 @@ class QDisasmStatusBar(QFrame):
     # Initialization
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._nav_toolbar = NavToolbar(
             self.disasm_view.jump_history,
             self.disasm_view.jump_back,
@@ -105,38 +105,38 @@ class QDisasmStatusBar(QFrame):
 
         self.setLayout(layout)
 
-    def _init_menu(self):
+    def _init_menu(self) -> None:
         self._options_menu = DisasmOptionsMenu(self.disasm_view)
 
     #
     # Private methods
     #
 
-    def _view_combo_changed(self, index: int):
+    def _view_combo_changed(self, index: int) -> None:
         {
             QLinearDisassembly: self.disasm_view.display_linear_viewer,
             QDisassemblyGraph: self.disasm_view.display_disasm_graph,
         }[self._view_combo.itemData(index)]()
 
-    def _update_view_combo(self):
+    def _update_view_combo(self) -> None:
         graph_type = type(self.disasm_view.current_graph)
         index = self._view_combo.findData(graph_type)
         self._view_combo.setCurrentIndex(index)
 
-    def _disasm_level_combo_changed(self, index: int):
+    def _disasm_level_combo_changed(self, index: int) -> None:
         new_level = self._disasm_level_combo.itemData(index)
         self.disasm_view.set_disassembly_level(new_level)
 
-    def _update_disasm_level_combo(self):
+    def _update_disasm_level_combo(self) -> None:
         new_level = self.disasm_view.disassembly_level
         index = self._disasm_level_combo.findData(new_level)
         self._disasm_level_combo.setCurrentIndex(index)
 
-    def _update_function_label(self):
+    def _update_function_label(self) -> None:
         s = f"{self._function.name} ({self._function.addr:x})" if self._function is not None else ""
         self._function_label.setText(s)
 
-    def _on_saveimage_btn_clicked(self):
+    def _on_saveimage_btn_clicked(self) -> None:
         filename, folder = QFileDialog.getSaveFileName(self, "Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
         if not filename or not folder:
             return

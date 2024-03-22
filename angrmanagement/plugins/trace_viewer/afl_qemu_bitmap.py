@@ -21,7 +21,7 @@ class AFLQemuBitmap:
         QColor(0xFD, 0xD4, 0x9E, 0x60),
     ]
 
-    def __init__(self, workspace, bitmap, base_addr, bits_inverted=False):
+    def __init__(self, workspace, bitmap, base_addr, bits_inverted=False) -> None:
         self.workspace = workspace
         self.virgin_bitmap = bitmap
         if bits_inverted:
@@ -40,7 +40,7 @@ class AFLQemuBitmap:
 
         self._compute_hitcounts()
 
-    def _compute_hitcounts(self):
+    def _compute_hitcounts(self) -> None:
         func_manager = self.workspace.main_instance.project.kb.functions
         for func_addr in func_manager:
             func = func_manager[func_addr]
@@ -185,7 +185,7 @@ class AFLQemuBitmap:
 
         return hitcount_graph
 
-    def _calc_function_info(self, func):
+    def _calc_function_info(self, func) -> None:
         node_hitcounts = self._node_hitcounts[func]
 
         block_addrs = list(func.block_addrs)

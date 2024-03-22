@@ -61,7 +61,7 @@ class XRefDialog(QDialog):
     def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(600, 400)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # xref viewer
         xref_viewer = QXRefViewer(
             addr=self._addr,
@@ -79,7 +79,7 @@ class XRefDialog(QDialog):
 
         self.setLayout(layout)
 
-    def jump_to(self, addr):
+    def jump_to(self, addr) -> None:
         self.close()
         disasm_view = self._disassembly_view
         if disasm_view is None:

@@ -58,7 +58,7 @@ class QLogTableModel(QAbstractTableModel):
     COL_SOURCE = 2
     COL_CONTENT = 3
 
-    def __init__(self, log_widget: QLogWidget = None):
+    def __init__(self, log_widget: QLogWidget = None) -> None:
         super().__init__()
         self._log_widget = log_widget
         self._log: list[LogRecord] = []
@@ -138,7 +138,7 @@ class QLogWidget(QTableView):
     Log table. Displays log messages.
     """
 
-    def __init__(self, log_view):
+    def __init__(self, log_view) -> None:
         super().__init__()
 
         self.log_view = log_view
@@ -171,11 +171,11 @@ class QLogWidget(QTableView):
     # Public methods
     #
 
-    def clear_log(self):
+    def clear_log(self) -> None:
         self.log_view.instance.log.am_obj = []
         self.log_view.instance.log.am_event()
 
-    def copy_selected(self):
+    def copy_selected(self) -> None:
         content = []
         selection = self.selectionModel().selectedRows()
         for row_index in selection:
@@ -188,14 +188,14 @@ class QLogWidget(QTableView):
             )
         self._copy_to_clipboard(os.linesep.join(content))
 
-    def copy_selected_messages(self):
+    def copy_selected_messages(self) -> None:
         content = []
         selection = self.selectionModel().selectedRows()
         for row_index in selection:
             content.append(self.model.log[row_index.row()].content)
         self._copy_to_clipboard(os.linesep.join(content))
 
-    def copy_all(self):
+    def copy_all(self) -> None:
         content = []
         for record in self.model.log:
             content.append(
@@ -206,7 +206,7 @@ class QLogWidget(QTableView):
             )
         self._copy_to_clipboard(os.linesep.join(content))
 
-    def copy_all_messages(self):
+    def copy_all_messages(self) -> None:
         content = [record.content for record in self.model.log]
         self._copy_to_clipboard(os.linesep.join(content))
 
@@ -214,17 +214,17 @@ class QLogWidget(QTableView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.log_view.instance.log.am_unsubscribe(self._on_new_logrecord)
         super().closeEvent(event)
 
-    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent):
+    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent) -> None:
         self._context_menu.popup(QCursor.pos())
 
-    def _on_new_logrecord(self, log_record: LogRecord = None):
+    def _on_new_logrecord(self, log_record: LogRecord = None) -> None:
         gui_thread_schedule_async(self._on_new_logrecord_core, (log_record,))
 
-    def _on_new_logrecord_core(self, log_record: LogRecord = None):
+    def _on_new_logrecord_core(self, log_record: LogRecord = None) -> None:
         self._before_row_insert()
 
         if log_record is None:
@@ -240,21 +240,21 @@ class QLogWidget(QTableView):
 
         self._after_row_insert()
 
-    def _before_row_insert(self):
+    def _before_row_insert(self) -> None:
         scrollbar = self.verticalScrollBar()
         self._auto_scroll = scrollbar.value() == scrollbar.maximum()
 
-    def _after_row_insert(self):
+    def _after_row_insert(self) -> None:
         if self._auto_scroll:
             self.scrollToBottom()
 
-    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent):
+    def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -> None:
         if event.matches(QKeySequence.Copy):
             self.copy_selected_messages()
         else:
             super().keyPressEvent(event)
 
-    def _on_double_clicked(self, item):
+    def _on_double_clicked(self, item) -> None:
         # Expand/collapse row
         if self.rowHeight(item.row()) > 20:
             self.setRowHeight(item.row(), 20)

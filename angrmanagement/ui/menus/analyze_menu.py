@@ -9,7 +9,7 @@ from .menu import Menu, MenuEntry, MenuSeparator
 
 
 class AnalyzeMenu(Menu):
-    def __init__(self, main_window):
+    def __init__(self, main_window) -> None:
         super().__init__("&Analyze", parent=main_window)
         self.entries.extend(
             [

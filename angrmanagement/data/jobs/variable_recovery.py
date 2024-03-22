@@ -24,7 +24,7 @@ class VariableRecoveryJob(Job):
         func_addr: int | None = None,
         auto_start=False,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(name="Variable Recovery", on_finish=on_finish)
 
         self.variable_recovery_args = kwargs
@@ -39,7 +39,7 @@ class VariableRecoveryJob(Job):
 
         self._last_progress_callback_triggered = None
 
-    def prioritize_function(self, func_addr: int):
+    def prioritize_function(self, func_addr: int) -> None:
         """
         Prioritize the specified function and its callee functions.
 
@@ -59,7 +59,7 @@ class VariableRecoveryJob(Job):
         callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
         self.ccc.prioritize_functions({func_addr} | callees)
 
-    def _run(self, inst: Instance):
+    def _run(self, inst: Instance) -> None:
         self.instance = inst
         self.started = True
 
@@ -90,10 +90,10 @@ class VariableRecoveryJob(Job):
         )
         self.ccc.work()
 
-    def _cc_callback(self, func_addr: int):
+    def _cc_callback(self, func_addr: int) -> None:
         gui_thread_schedule_async(self.on_variable_recovered, args=(func_addr,))
 
-    def _progress_callback(self, percentage, text=None):
+    def _progress_callback(self, percentage, text=None) -> None:
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return
@@ -101,7 +101,7 @@ class VariableRecoveryJob(Job):
 
         super()._progress_callback(percentage, text=text)
 
-    def finish(self, inst, result):
+    def finish(self, inst, result) -> None:
         self.ccc = None  # essentially disabling self.prioritize_function()
         super().finish(inst, result)
 

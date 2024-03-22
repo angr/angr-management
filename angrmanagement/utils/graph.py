@@ -187,7 +187,7 @@ def to_supergraph(transition_graph):
 
 
 class OutBranch:
-    def __init__(self, ins_addr, stmt_idx, branch_type):
+    def __init__(self, ins_addr, stmt_idx, branch_type) -> None:
         self.ins_addr = ins_addr
         self.stmt_idx = stmt_idx
         self.type = branch_type
@@ -199,7 +199,7 @@ class OutBranch:
             return "<OutBranch at None, type %s>" % self.type
         return f"<OutBranch at {self.ins_addr:#x}, type {self.type}>"
 
-    def add_target(self, addr):
+    def add_target(self, addr) -> None:
         self.targets.add(addr)
 
     def merge(self, other):
@@ -239,7 +239,7 @@ class OutBranch:
 
 
 class SuperCFGNode:
-    def __init__(self, addr, idx=None):
+    def __init__(self, addr, idx=None) -> None:
         self.addr = addr
         self.idx = idx
 
@@ -259,7 +259,7 @@ class SuperCFGNode:
 
         return s
 
-    def insert_cfgnode(self, cfg_node):
+    def insert_cfgnode(self, cfg_node) -> None:
         # TODO: Make it binary search/insertion
         for i, n in enumerate(self.cfg_nodes):
             if cfg_node.addr < n.addr:
@@ -274,13 +274,13 @@ class SuperCFGNode:
         # update addr
         self.addr = self.cfg_nodes[0].addr
 
-    def register_out_branch(self, ins_addr, stmt_idx, branch_type, target_addr):
+    def register_out_branch(self, ins_addr, stmt_idx, branch_type, target_addr) -> None:
         if ins_addr not in self.out_branches or stmt_idx not in self.out_branches[ins_addr]:
             self.out_branches[ins_addr][stmt_idx] = OutBranch(ins_addr, stmt_idx, branch_type)
 
         self.out_branches[ins_addr][stmt_idx].add_target(target_addr)
 
-    def merge(self, other):
+    def merge(self, other) -> None:
         """
         Merge another supernode into the current one.
 
