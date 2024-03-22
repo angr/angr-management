@@ -456,6 +456,7 @@ class CodeView(FunctionView):
         self._textedit = QCCodeEdit(self)
         self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self._textedit.setLineWrapMode(QCCodeEdit.NoWrap)
+        self._textedit.background = Conf.palette_base
         window.setCentralWidget(self._textedit)
 
         # decompilation options
