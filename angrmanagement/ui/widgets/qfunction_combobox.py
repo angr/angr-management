@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class QFunctionComboBox(QComboBox):
-    def __init__(self, show_all_functions=False, selection_callback=None, parent=None) -> None:
+    def __init__(self, show_all_functions: bool = False, selection_callback=None, parent=None) -> None:
         super().__init__(parent)
 
         self._show_all_functions = show_all_functions

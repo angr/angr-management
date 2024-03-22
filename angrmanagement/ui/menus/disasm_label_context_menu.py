@@ -66,13 +66,13 @@ class DisasmLabelContextMenu(Menu):
     #
 
     def add_menu_entry(
-        self, text, callback: Callable[[DisasmLabelContextMenu], None], add_separator_first=True
+        self, text, callback: Callable[[DisasmLabelContextMenu], None], add_separator_first: bool = True
     ) -> None:
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))
 
-    def remove_menu_entry(self, text, remove_preceding_separator=True) -> None:
+    def remove_menu_entry(self, text, remove_preceding_separator: bool = True) -> None:
         for idx, m in enumerate(self.entries):
             if not isinstance(m, MenuEntry):
                 continue

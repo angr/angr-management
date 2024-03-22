@@ -119,7 +119,7 @@ class InfoDock(QObject):
             self.selected_blocks.am_event()
         self._update_published_view_state()
 
-    def select_instruction(self, insn_addr, unique=True, insn_pos=None, use_animation=True) -> None:
+    def select_instruction(self, insn_addr, unique: bool = True, insn_pos=None, use_animation: bool = True) -> None:
         self.disasm_view.set_synchronized_cursor_address(insn_addr)
 
         self.unselect_all_labels()
@@ -214,7 +214,7 @@ class InfoDock(QObject):
         self.selected_labels.am_event()
         self._update_published_view_state()
 
-    def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique=False) -> None:
+    def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique: bool = False) -> None:
         """
         Toggle the selection state of an instruction in the disassembly view.
 
@@ -227,7 +227,7 @@ class InfoDock(QObject):
         else:
             self.select_instruction(insn_addr, unique=unique, insn_pos=insn_pos)
 
-    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique=False) -> bool:
+    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique: bool = False) -> bool:
         """
         Toggle the selection state of an operand of an instruction in the disassembly view.
 

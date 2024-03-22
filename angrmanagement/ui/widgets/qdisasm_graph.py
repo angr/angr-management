@@ -325,7 +325,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene.setSceneRect(QRectF(rect.x() - 200, rect.y() - 200, rect.width() + 400, rect.height() + 400))
 
     def show_instruction(
-        self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=True
+        self, insn_addr, insn_pos=None, centering: bool = False, use_block_pos: bool = False, use_animation: bool = True
     ) -> None:
         block: QGraphBlock = self._insaddr_to_block.get(insn_addr, None)
         if block is not None:
@@ -353,7 +353,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             else:
                 self.centerOn(x, y)
 
-    def update_label(self, addr, is_renaming=False) -> None:
+    def update_label(self, addr, is_renaming: bool = False) -> None:
         block: QGraphBlock = self._insaddr_to_block.get(addr, None)
         if block is not None:
             if is_renaming:

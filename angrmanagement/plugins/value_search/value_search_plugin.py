@@ -93,7 +93,7 @@ class ValueSearch(BasePlugin):
 
         return enc_value
 
-    def _int_to_bytes(self, i_value: int, strip_zeros=False):
+    def _int_to_bytes(self, i_value: int, strip_zeros: bool = False):
         if self._endness_encoding is None:
             self._find_endness_encoding()
 

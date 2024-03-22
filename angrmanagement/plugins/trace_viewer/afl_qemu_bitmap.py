@@ -21,7 +21,7 @@ class AFLQemuBitmap:
         QColor(0xFD, 0xD4, 0x9E, 0x60),
     ]
 
-    def __init__(self, workspace, bitmap, base_addr, bits_inverted=False) -> None:
+    def __init__(self, workspace, bitmap, base_addr, bits_inverted: bool = False) -> None:
         self.workspace = workspace
         self.virgin_bitmap = bitmap
         if bits_inverted:

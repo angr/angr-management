@@ -35,8 +35,8 @@ class FunctionDiff:
         func_rev: Function,
         disas_base: Disassembly = None,
         disas_rev: Disassembly = None,
-        prefer_symbols=True,
-        resolve_strings=True,
+        prefer_symbols: bool = True,
+        resolve_strings: bool = True,
         **kwargs,
     ) -> None:
         self.func_base = func_base
@@ -55,7 +55,9 @@ class FunctionDiff:
     def prefer_symbols(self):
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
 
-    def _linear_asm_from_function(self, func: Function, disas: Disassembly = None, as_dict=False) -> list[CapstoneInsn]:
+    def _linear_asm_from_function(
+        self, func: Function, disas: Disassembly = None, as_dict: bool = False
+    ) -> list[CapstoneInsn]:
         sorted_blocks = sorted(func.blocks, key=lambda b: b.addr)
         instruction_lists = [block.disassembly.insns for block in sorted_blocks]
         instructions = list(itertools.chain.from_iterable(instruction_lists))
@@ -139,8 +141,8 @@ class LinearFunctionDiff(FunctionDiff):
         func_rev: Function,
         disas_base: Disassembly = None,
         disas_rev: Disassembly = None,
-        prefer_symbols=True,
-        resolve_strings=True,
+        prefer_symbols: bool = True,
+        resolve_strings: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(

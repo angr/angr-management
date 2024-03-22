@@ -9,7 +9,13 @@ from angrmanagement.config import Conf
 
 class QASTViewer(QFrame):
     def __init__(
-        self, ast, workspace=None, custom_painting=False, display_size=True, byte_format=None, parent=None
+        self,
+        ast,
+        workspace=None,
+        custom_painting: bool = False,
+        display_size: bool = True,
+        byte_format=None,
+        parent=None,
     ) -> None:
         super().__init__(parent)
 

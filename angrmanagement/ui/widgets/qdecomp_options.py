@@ -27,7 +27,7 @@ class QDecompilationOption(QTreeWidgetItem):
     The UI entry for a single decompliation option. Get status with item.state.
     """
 
-    def __init__(self, parent, option, type_: int, enabled=True):
+    def __init__(self, parent, option, type_: int, enabled: bool = True):
         super().__init__(parent)
         self.option = option
         self.type = type_
@@ -102,7 +102,7 @@ class QDecompilationOptions(QWidget):
 
         self.reload(True)
 
-    def reload(self, force=False) -> None:
+    def reload(self, force: bool = False) -> None:
         if force or self._options is None:
             self._options = self.get_default_options()
 
@@ -196,7 +196,7 @@ class QDecompilationOptions(QWidget):
 
         self.setLayout(layout)
 
-    def _reload_options(self, reset_values=False) -> None:
+    def _reload_options(self, reset_values: bool = False) -> None:
         vals_options = dict(self.option_and_values)
         vals_peephole = self.selected_peephole_opts
         vals_passes = self.selected_passes

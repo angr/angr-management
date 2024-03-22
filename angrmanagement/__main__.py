@@ -42,7 +42,7 @@ def set_windows_event_loop_policy() -> None:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def start_management(filepath=None, use_daemon=None, profiling=False) -> None:
+def start_management(filepath=None, use_daemon=None, profiling: bool = False) -> None:
     set_app_user_model_id()
     set_windows_event_loop_policy()
 

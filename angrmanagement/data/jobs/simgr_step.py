@@ -4,7 +4,7 @@ from .job import Job
 
 
 class SimgrStepJob(Job):
-    def __init__(self, simgr, callback=None, until_branch=False, step_callback=None) -> None:
+    def __init__(self, simgr, callback=None, until_branch: bool = False, step_callback=None) -> None:
         super().__init__("Simulation manager stepping")
         self._simgr = simgr
         self._callback = callback

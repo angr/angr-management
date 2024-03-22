@@ -139,7 +139,9 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
 
-    def __init__(self, app: QApplication | None = None, parent=None, show=True, use_daemon=False) -> None:
+    def __init__(
+        self, app: QApplication | None = None, parent=None, show: bool = True, use_daemon: bool = False
+    ) -> None:
         super().__init__(parent)
         self.initialized = False
 

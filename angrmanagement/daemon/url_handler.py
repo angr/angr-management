@@ -55,7 +55,7 @@ class UrlActionOpen(UrlActionBase):
     Implements the open action.
     """
 
-    def __init__(self, bin_path, target_id=None, headless=False) -> None:
+    def __init__(self, bin_path, target_id=None, headless: bool = False) -> None:
         super().__init__(target_id=target_id)
         self.bin_path = bin_path
         self.headless = headless
@@ -168,7 +168,7 @@ _ACT2CLS: dict[str, type[UrlActionBase]] = {
 }
 
 
-def handle_url(url, act=True):
+def handle_url(url, act: bool = True):
     o = urllib.parse.urlparse(url)
     params = urllib.parse.parse_qs(o.query)
 

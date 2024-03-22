@@ -38,7 +38,7 @@ class Job:
     The base class of all Jobs in angr management.
     """
 
-    def __init__(self, name, on_finish=None, blocking=False) -> None:
+    def __init__(self, name, on_finish=None, blocking: bool = False) -> None:
         self.name = name
         self.progress_percentage = 0.0
         self.last_text: str | None = None

@@ -252,7 +252,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
 
     def show_instruction(
-        self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False
+        self,
+        insn_addr,
+        insn_pos=None,
+        centering: bool = False,
+        use_block_pos: bool = False,
+        use_animation: bool = False,
     ) -> None:
         """
 

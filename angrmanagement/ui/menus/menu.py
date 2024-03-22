@@ -17,9 +17,9 @@ class MenuEntry:
         caption,
         action,
         shortcut=None,
-        checkable=False,
-        checked=False,
-        enabled=True,
+        checkable: bool = False,
+        checked: bool = False,
+        enabled: bool = True,
         key=None,
         role: QAction.MenuRole = QAction.MenuRole.NoRole,
         icon: QIcon | None = None,
@@ -86,7 +86,7 @@ class Menu:
             self._keyed_entries = {ent.key: ent for ent in self.entries if isinstance(ent, MenuEntry)}
         return self._keyed_entries.get(key, None)
 
-    def qmenu(self, extra_entries=None, cached=True):
+    def qmenu(self, extra_entries=None, cached: bool = True):
         if extra_entries is None:
             extra_entries = []
 

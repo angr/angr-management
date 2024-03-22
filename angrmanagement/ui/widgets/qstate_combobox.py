@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QComboBox
 
 
 class QStateComboBox(QComboBox):
-    def __init__(self, instance, allow_none=True, parent=None) -> None:
+    def __init__(self, instance, allow_none: bool = True, parent=None) -> None:
         super().__init__(parent)
         self.states = instance.states
         self.allow_none = allow_none

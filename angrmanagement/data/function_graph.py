@@ -8,7 +8,7 @@ def edge_qualifies(data) -> bool:
 
 
 class FunctionGraph:
-    def __init__(self, function, exception_edges=True) -> None:
+    def __init__(self, function, exception_edges: bool = True) -> None:
         self.function = function
         self.exception_edges = exception_edges
         self.edges = None

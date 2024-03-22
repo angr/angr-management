@@ -321,7 +321,7 @@ class QSimulationManagers(QFrame):
     # Private methods
     #
 
-    def _filter_actives(self, simgr, events=True) -> bool:
+    def _filter_actives(self, simgr, events: bool = True) -> bool:
         if not self._oneactive_checkbox.isChecked():
             return False
         if len(simgr.active) < 2:

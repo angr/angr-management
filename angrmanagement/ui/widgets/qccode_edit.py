@@ -358,7 +358,7 @@ class QCCodeEdit(api.CodeEdit):
 
             self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
-    def comment(self, expr=False, node=None) -> None:
+    def comment(self, expr: bool = False, node=None) -> None:
         addr = self.get_closest_insaddr(node, expr=expr)
         if addr is None:
             return

@@ -185,7 +185,7 @@ class Instance:
                 default_val_func(), description, logging_permitted=logging_permitted
             )
 
-    def initialize(self, initialized=False) -> None:
+    def initialize(self, initialized: bool = False) -> None:
         if self.project.am_none:
             return
 

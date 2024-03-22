@@ -421,7 +421,7 @@ class Workspace:
         elif isinstance(obj, Function):
             self.jump_to(obj.addr)
 
-    def jump_to(self, addr, view=None, use_animation=False) -> None:
+    def jump_to(self, addr, view=None, use_animation: bool = False) -> None:
         if view is None or view.category != "disassembly":
             view = self._get_or_create_view("disassembly", DisassemblyView)
 
@@ -483,7 +483,7 @@ class Workspace:
             # redraw
             disasm_view.current_graph.refresh()
 
-    def run_analysis(self, prompt_for_configuration=True) -> None:
+    def run_analysis(self, prompt_for_configuration: bool = True) -> None:
         if self.main_instance.project.am_none:
             return
 

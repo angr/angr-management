@@ -454,7 +454,7 @@ class DisassemblyView(SynchronizedFunctionView):
         dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
 
-    def popup_newstate_dialog(self, async_=True) -> None:
+    def popup_newstate_dialog(self, async_: bool = True) -> None:
         addr = self._instruction_address_in_selection()
         if addr is None:
             return
@@ -465,7 +465,7 @@ class DisassemblyView(SynchronizedFunctionView):
         else:
             dialog.exec_()
 
-    def popup_hook_dialog(self, async_=True, addr=None) -> None:
+    def popup_hook_dialog(self, async_: bool = True, addr=None) -> None:
         addr = addr or self._instruction_address_in_selection()
 
         if addr is None:
@@ -504,7 +504,7 @@ class DisassemblyView(SynchronizedFunctionView):
             dialog = FuncDocDialog(self.instance, addr=target, name=operand.text, doc_tuple=doc_tuple, parent=self)
             dialog.show()
 
-    def popup_dependson_dialog(self, addr: int | None = None, use_operand=False, func: bool = False):
+    def popup_dependson_dialog(self, addr: int | None = None, use_operand: bool = False, func: bool = False):
         if use_operand:
             r = self._flow_graph.get_selected_operand_info()
             if r is not None:
@@ -546,7 +546,7 @@ class DisassemblyView(SynchronizedFunctionView):
                 func_arg_idx=dependson.arg,
             )
 
-    def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_=True) -> None:
+    def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_: bool = True) -> None:
         if operand is not None:
             if operand.variable is not None:
                 # Display cross references to this variable
@@ -558,7 +558,7 @@ class DisassemblyView(SynchronizedFunctionView):
                 # Display cross references to an address
                 self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value, async_=async_)
 
-    def popup_xref_dialog(self, addr=None, variable=None, dst_addr=None, async_=True) -> None:
+    def popup_xref_dialog(self, addr=None, variable=None, dst_addr=None, async_: bool = True) -> None:
         if variable is not None:
             dialog = XRefDialog(
                 addr=addr,
@@ -590,7 +590,7 @@ class DisassemblyView(SynchronizedFunctionView):
     # Public methods
     #
 
-    def toggle_disasm_view(self, prefer=True) -> None:
+    def toggle_disasm_view(self, prefer: bool = True) -> None:
         if self._flow_graph.isHidden():
             # Show flow graph
             self.display_disasm_graph(prefer)
@@ -598,7 +598,7 @@ class DisassemblyView(SynchronizedFunctionView):
             # Show linear viewer
             self.display_linear_viewer(prefer)
 
-    def display_disasm_graph(self, prefer=True) -> None:
+    def display_disasm_graph(self, prefer: bool = True) -> None:
         if prefer:
             self._prefer_graph = True
 
@@ -616,7 +616,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.view_visibility_changed.emit()
         self._flow_graph.refresh()
 
-    def display_linear_viewer(self, prefer=True) -> None:
+    def display_linear_viewer(self, prefer: bool = True) -> None:
         if prefer:
             self._prefer_graph = False
 
@@ -720,7 +720,7 @@ class DisassemblyView(SynchronizedFunctionView):
                 self._flow_graph.function_graph.clear_cache()
                 self._flow_graph.reload()
 
-    def jump_to(self, addr, src_ins_addr=None, use_animation=False) -> bool:
+    def jump_to(self, addr, src_ins_addr=None, use_animation: bool = False) -> bool:
         # Record the current instruction address first
         if src_ins_addr is not None:
             self.jump_history.record_address(src_ins_addr)
@@ -938,7 +938,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if console_view is not None:
             console_view.set_current_function(the_func)
 
-    def _jump_to(self, addr, use_animation=False) -> bool:
+    def _jump_to(self, addr, use_animation: bool = False) -> bool:
         if self._prefer_graph and self._current_view is self._linear_viewer:
             self.display_disasm_graph(prefer=False)
 

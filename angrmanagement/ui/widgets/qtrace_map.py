@@ -137,7 +137,7 @@ class TraceMapItem(QGraphicsItem):
         return QRectF(x, 0, width, self._height)
 
     def _create_line_indicator(
-        self, addr, item_map, color=Qt.yellow, show_frontier=False, z=None, z_frontier=None
+        self, addr, item_map, color=Qt.yellow, show_frontier: bool = False, z=None, z_frontier=None
     ) -> None:
         """
         Generate a cursor at a given address.

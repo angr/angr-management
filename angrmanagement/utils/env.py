@@ -13,7 +13,7 @@ def is_pyinstaller() -> bool:
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-def app_path(pythonw=None, as_list=False) -> str | list[str]:
+def app_path(pythonw=None, as_list: bool = False) -> str | list[str]:
     """
     Return the path of the application.
 

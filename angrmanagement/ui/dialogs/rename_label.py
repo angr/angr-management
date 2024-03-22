@@ -29,7 +29,7 @@ class RenameLabel(QDialog):
     Dialog to rename labels.
     """
 
-    def __init__(self, disasm_view, label_addr, full_refresh=False, parent=None) -> None:
+    def __init__(self, disasm_view, label_addr, full_refresh: bool = False, parent=None) -> None:
         super().__init__(parent)
 
         # initialization

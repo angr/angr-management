@@ -59,7 +59,9 @@ class NewState(QDialog):
     Dialog to create a new simulation state.
     """
 
-    def __init__(self, workspace, instance, addr=None, create_simgr=False, parent=None, push_to_instance=True) -> None:
+    def __init__(
+        self, workspace, instance, addr=None, create_simgr: bool = False, parent=None, push_to_instance: bool = True
+    ) -> None:
         super().__init__(parent)
 
         # initialization

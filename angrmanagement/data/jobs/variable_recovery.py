@@ -22,7 +22,7 @@ class VariableRecoveryJob(Job):
         on_variable_recovered=None,
         workers: int | None = None,
         func_addr: int | None = None,
-        auto_start=False,
+        auto_start: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(name="Variable Recovery", on_finish=on_finish)

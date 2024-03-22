@@ -138,7 +138,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
 
-    def zoom(self, out=False, at=None, reset=False, restore=False, factor=1.25) -> None:
+    def zoom(self, out: bool = False, at=None, reset: bool = False, restore: bool = False, factor=1.25) -> None:
         if at is None:
             at = self.scene().sceneRect().center().toPoint()
         lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())

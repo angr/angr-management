@@ -107,7 +107,7 @@ class CodeView(FunctionView):
     def decompile(
         self,
         clear_prototype: bool = True,
-        focus=False,
+        focus: bool = False,
         focus_addr=None,
         flavor="pseudocode",
         reset_cache: bool = False,
@@ -182,7 +182,9 @@ class CodeView(FunctionView):
     # Event callbacks
     #
 
-    def _on_new_addr(self, already_moved=False, focus=False, **kwargs) -> None:  # pylint: disable=unused-argument
+    def _on_new_addr(
+        self, already_moved: bool = False, focus: bool = False, **kwargs
+    ) -> None:  # pylint: disable=unused-argument
         if already_moved:
             return
 
@@ -217,7 +219,7 @@ class CodeView(FunctionView):
         self.addr.am_event(already_moved=True)
 
     # pylint: disable=unused-argument
-    def _on_codegen_changes(self, already_regenerated=False, event: str | None = None, **kwargs) -> None:
+    def _on_codegen_changes(self, already_regenerated: bool = False, event: str | None = None, **kwargs) -> None:
         """
         The callback function that triggers an update of the codegen.
 
@@ -309,7 +311,7 @@ class CodeView(FunctionView):
             self._options.hide()
 
     def _on_new_function(
-        self, focus=False, focus_addr=None, flavor=None, **kwargs
+        self, focus: bool = False, focus_addr=None, flavor=None, **kwargs
     ) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
