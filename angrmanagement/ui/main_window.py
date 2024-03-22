@@ -1,11 +1,13 @@
 # pylint:disable=no-self-use
+from __future__ import annotations
+
 import datetime
 import logging
 import os
 import pickle
 import time
 from functools import partial
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import angr
 import angr.flirt
@@ -75,7 +77,7 @@ class DockShortcutEventFilter(QObject):
     Filter to support shortcuts on floating dock windows that overlap main window registered menu action shortcuts.
     """
 
-    def __init__(self, main_window: "MainWindow"):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self._main_window: MainWindow = main_window
 
@@ -95,7 +97,7 @@ class ShiftShiftEventFilter(QObject):
     activation_count: int = 2
     timeout_secs: float = 1
 
-    def __init__(self, main_window: "MainWindow"):
+    def __init__(self, main_window: MainWindow):
         super().__init__()
         self._main_window: MainWindow = main_window
         self._press_count: int = 0
@@ -137,7 +139,7 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
 
-    def __init__(self, app: Optional["QApplication"] = None, parent=None, show=True, use_daemon=False):
+    def __init__(self, app: QApplication | None = None, parent=None, show=True, use_daemon=False):
         super().__init__(parent)
         self.initialized = False
 
@@ -151,7 +153,7 @@ class MainWindow(QMainWindow):
         # initialization
         self.setMinimumSize(QSize(400, 400))
 
-        self.app: Optional[QApplication] = app
+        self.app: QApplication | None = app
         self.workspace: Workspace = None
         self.dock_manager: QtAds.CDockManager
         self._dock_shortcut_event_filter = DockShortcutEventFilter(self)
@@ -845,7 +847,7 @@ class MainWindow(QMainWindow):
     def run_induction_variable_analysis(self):
         self.workspace._get_or_create_view("disassembly", DisassemblyView).run_induction_variable_analysis()
 
-    def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
+    def run_dependency_analysis(self, func_addr: int | None = None, func_arg_idx: int | None = None):
         if self.workspace is None or self.workspace.main_instance is None:
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)

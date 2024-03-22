@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class SynchronizedHighlightRegion:
     """
     A region of memory to be highlighted in synchronized views.

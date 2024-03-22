@@ -1,4 +1,6 @@
 # pylint:disable=missing-class-docstring,wrong-import-order
+from __future__ import annotations
+
 import os
 import threading
 import unittest

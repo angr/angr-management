@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import multiprocessing
 import platform
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 if TYPE_CHECKING:
     import angr
@@ -36,7 +38,7 @@ class AnalysesConfiguration:
     Configuration for a sequence of analyses.
     """
 
-    def __init__(self, analyses: Sequence["AnalysisConfiguration"], instance):
+    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance):
         self.instance = instance
         self.analyses: Sequence[AnalysisConfiguration] = analyses
 
@@ -46,12 +48,12 @@ class AnalysesConfiguration:
     def __iter__(self):
         return iter(self.analyses)
 
-    def __getitem__(self, key: Union[int, str]):
+    def __getitem__(self, key: int | str):
         if isinstance(key, int):
             return self.analyses[key]
         return self.by_name(key)
 
-    def by_name(self, name: str) -> "AnalysisConfiguration":
+    def by_name(self, name: str) -> AnalysisConfiguration:
         for a in self.analyses:
             if a.name == name:
                 return a
@@ -160,8 +162,8 @@ class IntAnalysisOption(PrimitiveAnalysisOption):
         description: str,
         default: int = 0,
         tooltip: str = "",
-        minimum: Optional[int] = None,
-        maximum: Optional[int] = None,
+        minimum: int | None = None,
+        maximum: int | None = None,
     ):
         super().__init__(name, description, default, tooltip)
         self.minimum_value = minimum

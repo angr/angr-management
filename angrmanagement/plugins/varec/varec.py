@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import itertools
 import json
 import random
 import re
 import string
 from collections import defaultdict
-from typing import Set, Tuple
 
 import requests
 from PySide6.QtGui import Qt
@@ -23,7 +24,7 @@ class VaRec(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.transitions: Set[Tuple[int, int]] = set()
+        self.transitions: set[tuple[int, int]] = set()
         self.covered_blocks = SortedDict()
 
         self.sink_color = Qt.yellow

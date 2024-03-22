@@ -1,6 +1,8 @@
 # pylint:disable=unused-private-member
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable
 
 _l = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class BasePlugin:
     __i_hold_this_abstraction_token = True
 
     def __init__(self, workspace):
-        self.workspace: Optional[Workspace] = workspace
+        self.workspace: Workspace | None = workspace
         _l.info("Loaded plugin %s", self.__class__.__name__)
 
         # valid things that we want you do be able to do in __init__:
@@ -52,13 +54,13 @@ class BasePlugin:
     # Generic callbacks
     #
 
-    def status_bar_permanent_widgets(self) -> Optional[Generator]:
+    def status_bar_permanent_widgets(self) -> Generator | None:
         """
         Yields all widgets that should be added to the right side of the status bar of the main window.
         """
         return None
 
-    def on_workspace_initialized(self, workspace: "Workspace"):
+    def on_workspace_initialized(self, workspace: Workspace):
         """
         A handler that is called right after a workspace is initialized.
         """
@@ -82,96 +84,96 @@ class BasePlugin:
     # UI Callbacks
     #
 
-    def color_insn(self, addr, selected, disasm_view) -> Optional["QColor"]:
+    def color_insn(self, addr, selected, disasm_view) -> QColor | None:
         return None
 
-    def color_block(self, addr) -> Optional["QColor"]:
+    def color_block(self, addr) -> QColor | None:
         return None
 
-    def color_func(self, func) -> Optional["QColor"]:
+    def color_func(self, func) -> QColor | None:
         return None
 
-    def draw_insn(self, qinsn: "QInstruction", painter: "QPainter"):
+    def draw_insn(self, qinsn: QInstruction, painter: QPainter):
         pass
 
-    def draw_block(self, qblock: "QBlock", painter: "QPainter"):
+    def draw_block(self, qblock: QBlock, painter: QPainter):
         pass
 
-    def instrument_disassembly_view(self, dview: "disassembly_view.DisassemblyView"):
+    def instrument_disassembly_view(self, dview: disassembly_view.DisassemblyView):
         pass
 
-    def instrument_code_view(self, cview: "code_view.CodeView"):
+    def instrument_code_view(self, cview: code_view.CodeView):
         pass
 
-    def handle_click_insn(self, qinsn, event: "QGraphicsSceneMouseEvent"):
+    def handle_click_insn(self, qinsn, event: QGraphicsSceneMouseEvent):
         return False
 
-    def handle_click_block(self, qblock, event: "QGraphicsSceneMouseEvent"):
+    def handle_click_block(self, qblock, event: QGraphicsSceneMouseEvent):
         return False
 
     def handle_raise_view(self, view):
         pass
 
     # iterable of tuples (icon, tooltip)
-    TOOLBAR_BUTTONS: List[Tuple["QIcon", str]] = []
+    TOOLBAR_BUTTONS: list[tuple[QIcon, str]] = []
 
     def handle_click_toolbar(self, idx):
         pass
 
     # Iterable of button texts
-    MENU_BUTTONS: List[str] = []
+    MENU_BUTTONS: list[str] = []
 
     def handle_click_menu(self, idx):
         pass
 
     # Iterable of column names
-    FUNC_COLUMNS: List[str] = []
+    FUNC_COLUMNS: list[str] = []
 
-    def extract_func_column(self, func, idx) -> Tuple[Any, str]:
+    def extract_func_column(self, func, idx) -> tuple[Any, str]:
         # should return a tuple of the sortable column data and the rendered string
         return 0, ""
 
-    def build_context_menu_insn(self, item) -> Iterable[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_insn(self, item) -> Iterable[None | tuple[str, Callable]]:
         """
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
 
-    def build_context_menu_block(self, item) -> Iterable[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_block(self, item) -> Iterable[None | tuple[str, Callable]]:
         """
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
 
-    def build_context_menu_node(self, node) -> Iterable[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_node(self, node) -> Iterable[None | tuple[str, Callable]]:
         """
         Use None to insert a MenuSeparator(). The tuples are: (menu entry text, callback)
         """
         return []
 
-    def build_context_menu_functions(self, funcs) -> Iterable[Union[None, Tuple[str, Callable]]]:
+    def build_context_menu_functions(self, funcs) -> Iterable[None | tuple[str, Callable]]:
         return []
 
-    def build_qblock_annotations(self, qblock: "QBlock") -> Iterable["QInstructionAnnotation"]:
+    def build_qblock_annotations(self, qblock: QBlock) -> Iterable[QInstructionAnnotation]:
         return []
 
     # Iterable of URL actions
-    URL_ACTIONS: List[str] = []
+    URL_ACTIONS: list[str] = []
 
     def handle_url_action(self, action, kwargs):
         pass
 
-    def step_callback(self, simgr: "SimulationManager"):
+    def step_callback(self, simgr: SimulationManager):
         pass
 
     # Custom configuration entries
-    CONFIG_ENTRIES: List["ConfigurationEntry"] = []
+    CONFIG_ENTRIES: list[ConfigurationEntry] = []
 
     #
     # Decompiler Callbacks
     #
 
-    OPTIMIZATION_PASSES: List[Tuple[Type["OptimizationPass"], bool]] = []
+    OPTIMIZATION_PASSES: list[tuple[type[OptimizationPass], bool]] = []
 
     def handle_stack_var_renamed(self, func, offset, old_name, new_name):
         return False

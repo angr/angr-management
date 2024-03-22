@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import qtawesome
 
@@ -29,6 +31,6 @@ NAME_TO_QTAWESOME_NAME = {
 }
 
 
-def icon(key, *args, **kwargs) -> Optional["QIcon"]:
+def icon(key, *args, **kwargs) -> QIcon | None:
     qta_name = NAME_TO_QTAWESOME_NAME.get(key)
     return qtawesome.icon(qta_name, *args, **kwargs) if qta_name else None

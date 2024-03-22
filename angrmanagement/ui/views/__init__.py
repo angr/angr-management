@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .breakpoints_view import BreakpointsView
 from .call_explorer_view import CallExplorerView
 from .code_view import CodeView

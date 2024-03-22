@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
@@ -33,14 +35,14 @@ class QTraceTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
-    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.instance.traces)
 
-    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -48,7 +50,7 @@ class QTraceTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -60,7 +62,7 @@ class QTraceTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, trace: "Trace", col: int) -> Any:
+    def _get_column_text(self, trace: Trace, col: int) -> Any:
         if col == QTraceTableModel.COL_SOURCE:
             return trace.source + (" (Current)" if self.instance.current_trace.am_obj is trace else "")
         else:
@@ -125,7 +127,7 @@ class TracesView(InstanceView):
         super().__init__("traces", workspace, default_docking_position, instance)
 
         self.base_caption = "Traces"
-        self._tbl_widget: Optional[QTraceTableWidget] = None
+        self._tbl_widget: QTraceTableWidget | None = None
         self._init_widgets()
         self.reload()
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from IPython.lib import guisupport
 
 from angrmanagement.ui.css import CSS

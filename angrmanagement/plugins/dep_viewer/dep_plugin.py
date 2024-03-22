@@ -1,4 +1,4 @@
-from typing import Optional, Set, Tuple
+from __future__ import annotations
 
 from angr.sim_type import normalize_cpp_function_name
 from PySide6.QtGui import QColor, Qt
@@ -13,12 +13,12 @@ class DependencyViewer(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.transitions: Set[Tuple[int, int]] = set()
+        self.transitions: set[tuple[int, int]] = set()
         self.covered_blocks = SortedDict()
 
         self.sink_color = Qt.yellow
 
-    def color_insn(self, addr, selected, disasm_view) -> Optional[QColor]:
+    def color_insn(self, addr, selected, disasm_view) -> QColor | None:
         if not selected:
             try:
                 block_addr = next(self.covered_blocks.irange(maximum=addr, reverse=True))
@@ -48,7 +48,7 @@ class DependencyViewer(BasePlugin):
         vuln_type, sink = vulntype_and_sinks[0]
         return 1, VulnerabilityType.to_string(vuln_type)
 
-    def color_func(self, func) -> Optional[QColor]:
+    def color_func(self, func) -> QColor | None:
         # test if we have a match
         match = sink_manager.has_function_sink(func.demangled_name)
         if match:

@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import qtawesome as qta
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
@@ -21,7 +23,7 @@ class AvailableDebuggersModel(QAbstractItemModel):
     Data provider for available debuggers combo box.
     """
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         super().__init__()
         self.debugger_mgr: DebuggerManager = workspace.main_instance.debugger_mgr
         self.debugger_list_mgr: DebuggerListManager = workspace.main_instance.debugger_list_mgr
@@ -47,10 +49,10 @@ class AvailableDebuggersModel(QAbstractItemModel):
         self.last_str[row] = "No Debugger" if dbg is None else str(dbg)
         return self.last_str[row]
 
-    def debugger_to_index(self, dbg: Optional[Debugger]) -> int:
+    def debugger_to_index(self, dbg: Debugger | None) -> int:
         return 0 if dbg is None else (self.debugger_list_mgr.debugger_list.index(dbg) + 1)
 
-    def index_to_debugger(self, index: int) -> Optional[Debugger]:
+    def index_to_debugger(self, index: int) -> Debugger | None:
         return None if index == 0 else (self.debugger_list_mgr.debugger_list[index - 1])
 
 
@@ -60,7 +62,7 @@ class DebugToolbar(Toolbar):
     TODO: decouple this from MainWindow and workspace.instance (main_instance)
     """
 
-    def __init__(self, main_window: "MainWindow"):
+    def __init__(self, main_window: MainWindow):
         super().__init__(main_window, "DebugToolbar")
         self.workspace: Workspace = main_window.workspace
         self.instance: Instance = self.workspace.main_instance
@@ -141,7 +143,7 @@ class DebugToolbar(Toolbar):
         self._run_lbl.setText("")
         self._cached.addWidget(self._run_lbl)
 
-        self._dbg_watcher: Optional[DebuggerWatcher] = None
+        self._dbg_watcher: DebuggerWatcher | None = None
 
     def _on_visibility_changed(self, visible: bool):
         if visible:

@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Sequence
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
@@ -34,14 +36,14 @@ class QBreakpointTableModel(QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
-    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.breakpoint_mgr.breakpoints)
 
-    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -49,7 +51,7 @@ class QBreakpointTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -61,7 +63,7 @@ class QBreakpointTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, bp: "Breakpoint", column: int) -> str:
+    def _get_column_text(self, bp: Breakpoint, column: int) -> str:
         if column == self.COL_TYPE:
             return {BreakpointType.Execute: "Execute", BreakpointType.Read: "Read", BreakpointType.Write: "Write"}.get(
                 bp.type
@@ -81,7 +83,7 @@ class QBreakpointTableWidget(QTableView):
     Breakpoint table widget.
     """
 
-    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: "Workspace", *args, **kwargs):
+    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: Workspace, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.breakpoint_mgr = breakpoint_mgr
@@ -151,7 +153,7 @@ class BreakpointsView(InstanceView):
     def __init__(self, workspace, instance, default_docking_position):
         super().__init__("breakpoints", workspace, default_docking_position, instance)
         self.base_caption = "Breakpoints"
-        self._tbl_widget: Optional[QBreakpointTableWidget] = None
+        self._tbl_widget: QBreakpointTableWidget | None = None
         self._init_widgets()
         self.reload()
 

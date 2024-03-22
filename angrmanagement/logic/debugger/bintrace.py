@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 import os
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Sequence
 
 from angrmanagement.data.breakpoint import BreakpointType
 from angrmanagement.data.trace import BintraceTrace
@@ -30,7 +32,7 @@ class BintraceDebugger(Debugger):
     Trace playback debugger.
     """
 
-    def __init__(self, trace: BintraceTrace, workspace: "Workspace"):
+    def __init__(self, trace: BintraceTrace, workspace: Workspace):
         super().__init__(workspace)
         assert bintrace is not None
         assert isinstance(trace, BintraceTrace)
@@ -67,7 +69,7 @@ class BintraceDebugger(Debugger):
         }
 
     @property
-    def simstate(self) -> "SimState":
+    def simstate(self) -> SimState:
         if self._cached_simstate is None:
             self._cached_simstate = self._trace_dbg.simstate
         return self._cached_simstate
@@ -89,7 +91,7 @@ class BintraceDebugger(Debugger):
     def can_step_forward(self) -> bool:
         return self._trace_dbg.can_step_forward
 
-    def step_forward(self, until_addr: Optional[int] = None):
+    def step_forward(self, until_addr: int | None = None):
         if self.can_step_forward:
             self._trace_dbg.step_forward(until_addr=until_addr)
             self._on_state_change()
@@ -148,7 +150,7 @@ class BintraceDebugger(Debugger):
         if self._trace_dbg.single_step_range is None:
             step_region_addr, step_region_size = None, 1
         else:
-            self._trace_dbg.single_step_range: Tuple[int, int]
+            self._trace_dbg.single_step_range: tuple[int, int]
             step_region_addr, step_region_size = self._trace_dbg.single_step_range
 
         until = t.get_prev_exec_event(until, addr=step_region_addr, size=step_region_size)
@@ -175,7 +177,7 @@ class BintraceDebugger(Debugger):
     # FIXME: Factor this out of debugger
     #
 
-    def get_function_for_event(self, event: TraceEvent) -> Optional["Function"]:
+    def get_function_for_event(self, event: TraceEvent) -> Function | None:
         """
         Find currently execution function at `event`.
         """
@@ -198,8 +200,8 @@ class BintraceDebugger(Debugger):
             return None
 
     def get_called_functions(
-        self, event: Optional[TraceEvent] = None, only_after_event: bool = False
-    ) -> Sequence[Tuple["Function", TraceEvent]]:
+        self, event: TraceEvent | None = None, only_after_event: bool = False
+    ) -> Sequence[tuple[Function, TraceEvent]]:
         """
         Enumerate 1st order outgoing calls of function at `event`.
         """
@@ -295,7 +297,7 @@ class BintraceDebugger(Debugger):
         return [((all_funcs.get(addr, addr)), e) for (addr, e) in called_addrs]
 
     def get_called_functions_recursive(
-        self, event: Optional[TraceEvent] = None, max_depth: Optional[int] = None, depth: int = 0
+        self, event: TraceEvent | None = None, max_depth: int | None = None, depth: int = 0
     ):
         if max_depth is not None and max_depth == depth:
             return

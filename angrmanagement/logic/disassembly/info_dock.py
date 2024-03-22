@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal
@@ -71,7 +73,7 @@ class InfoDock(QObject):
         self.selected_operands.clear()
         self.hovered_block.am_obj = None
 
-    def copy(self) -> "InfoDock":
+    def copy(self) -> InfoDock:
         r = InfoDock(self.disasm_view)
         r.variable_manager = self.variable_manager
         r.highlight_mode = self.highlight_mode
@@ -242,7 +244,7 @@ class InfoDock(QObject):
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
             return True
 
-    def select_variable(self, unified_variable: "SimVariable", unique: bool = True):
+    def select_variable(self, unified_variable: SimVariable, unique: bool = True):
         self.unselect_all_labels()
         self.unselect_all_instructions()
         self.unselect_all_operands()
@@ -253,12 +255,12 @@ class InfoDock(QObject):
             self.selected_variables.add(unified_variable)
             self.selected_variables.am_event()
 
-    def unselect_variable(self, unified_variable: "SimVariable"):
+    def unselect_variable(self, unified_variable: SimVariable):
         if unified_variable in self.selected_variables:
             self.selected_variables.remove(unified_variable)
             self.selected_variables.am_event()
 
-    def toggle_variable_selection(self, unified_variable: "SimVariable", unique: bool = True):
+    def toggle_variable_selection(self, unified_variable: SimVariable, unique: bool = True):
         if len(self.selected_variables) > 1 and unique:
             # multiple variables are selected
             # clear existing selections and select this one

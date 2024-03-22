@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QColorDialog, QFrame, QHBoxLayout, QLabel, QWidget
@@ -9,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class QColorOption(QWidget):
-    def __init__(self, color: "QColor", label: str, parent=None):
+    def __init__(self, color: QColor, label: str, parent=None):
         super().__init__(parent=parent)
 
         self.color = ObjectContainer(color, "The current color")

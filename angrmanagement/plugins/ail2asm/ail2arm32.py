@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ailment
 
 from angrmanagement.plugins import BasePlugin

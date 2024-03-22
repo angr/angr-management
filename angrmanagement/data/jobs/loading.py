@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING
 
 import angr
 import archinfo
@@ -142,9 +144,9 @@ class LoadAngrDBJob(Job):
     def __init__(
         self,
         file_path: str,
-        kb_names: List[str],
-        other_kbs: Optional[Dict[str, "KnowledgeBase"]] = None,
-        extra_info: Optional[Dict] = None,
+        kb_names: list[str],
+        other_kbs: dict[str, KnowledgeBase] | None = None,
+        extra_info: dict | None = None,
         on_finish=None,
     ):
         super().__init__("Loading angr database", on_finish=on_finish)

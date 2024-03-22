@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
@@ -51,7 +53,7 @@ class QDisassemblyBaseControl:
     # Public methods
     #
 
-    def get_selected_operand_info(self) -> Optional[Tuple["QBlock", int, "QOperand"]]:
+    def get_selected_operand_info(self) -> tuple[QBlock, int, QOperand] | None:
         if not self.infodock.selected_operands:
             return None
 

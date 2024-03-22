@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.api.panel import Panel
@@ -10,7 +12,6 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
 from qtpy import QtCore, QtGui
-from sortedcontainers import SortedDict
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views.view import InstanceView
@@ -19,6 +20,7 @@ from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 if TYPE_CHECKING:
     from cle import Loader
+    from sortedcontainers import SortedDict
 
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
     from angrmanagement.ui.views.symexec_view import SymexecView
@@ -70,7 +72,7 @@ class SourceCodeViewer(CodeEdit):
     Used by SourceCodeViewerTabWidget.
     """
 
-    viewer: Optional["SourceViewer"] = None
+    viewer: SourceViewer | None = None
     current_line: int = -1
 
     def __init__(self, parent):
@@ -185,10 +187,10 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
 
     editors = {mimetype: SourceCodeViewer for mimetype in SourceCodeViewer.mimetypes}
     fallback_editor = SourceCodeViewer
-    addr_to_line: Optional[SortedDict] = None
-    line_to_addr: Optional[dict] = None
-    viewer: Optional["SourceViewer"] = None
-    tabs: Dict[str, SourceCodeViewer] = {}
+    addr_to_line: SortedDict | None = None
+    line_to_addr: dict | None = None
+    viewer: SourceViewer | None = None
+    tabs: dict[str, SourceCodeViewer] = {}
 
     def __init__(self, parent=None, addr_to_line: SortedDict = None, viewer=None):
         super().__init__(parent=parent)
@@ -217,11 +219,11 @@ class SourceViewer(InstanceView):
     Main class of the Source Viewer Plugin
     """
 
-    addr_to_line: Optional[SortedDict] = None
+    addr_to_line: SortedDict | None = None
 
-    main: Optional[SourceCodeViewerTabWidget] = None
+    main: SourceCodeViewerTabWidget | None = None
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         super().__init__("SourceViewer", workspace, "center", workspace.main_instance)
         self.base_caption = "Source Viewer"
         self.workspace = workspace
@@ -230,11 +232,11 @@ class SourceViewer(InstanceView):
         self._init_widgets()
 
     @property
-    def disasm_view(self) -> "DisassemblyView":
+    def disasm_view(self) -> DisassemblyView:
         return self.workspace.view_manager.first_view_in_category("disassembly")
 
     @property
-    def symexec_view(self) -> "SymexecView":
+    def symexec_view(self) -> SymexecView:
         return self.workspace.view_manager.first_view_in_category("symexec")
 
     def _init_widgets(self):

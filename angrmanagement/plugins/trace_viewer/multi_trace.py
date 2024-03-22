@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 from PySide6.QtGui import QColor

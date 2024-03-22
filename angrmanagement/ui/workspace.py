@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 import os
 import time
 import traceback
-from typing import TYPE_CHECKING, Callable, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 from angr import StateHierarchy
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
@@ -92,7 +94,7 @@ class Workspace:
         self.command_manager: CommandManager = CommandManager()
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
-        self.variable_recovery_job: Optional[VariableRecoveryJob] = None
+        self.variable_recovery_job: VariableRecoveryJob | None = None
         self._first_cfg_generation_callback_completed: bool = False
 
         # Configure callbacks on main_instance
@@ -133,11 +135,11 @@ class Workspace:
     #
 
     @property
-    def _main_window(self) -> "MainWindow":
+    def _main_window(self) -> MainWindow:
         return self.main_window
 
     @property
-    def main_instance(self) -> "Instance":
+    def main_instance(self) -> Instance:
         return self._main_instance
 
     #
@@ -358,7 +360,7 @@ class Workspace:
 
         self.view_manager.raise_view(view)
 
-    def reload(self, categories: Optional[List[str]] = None):
+    def reload(self, categories: list[str] | None = None):
         """
         Ask all or specified views to reload the underlying data and regenerate the UI. This is usually expensive.
 
@@ -379,7 +381,7 @@ class Workspace:
             except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
 
-    def refresh(self, categories: Optional[List[str]] = None):
+    def refresh(self, categories: list[str] | None = None):
         """
         Ask all or specified views to refresh based on changes in the underlying data and refresh the UI if needed. This
         may be called frequently so it must be extremely fast.
@@ -427,7 +429,7 @@ class Workspace:
         view.setFocus()
         view.jump_to(addr, use_animation=use_animation)
 
-    def add_breakpoint(self, obj: Union[str, int], type_: Optional[str] = None, size: Optional[int] = None):
+    def add_breakpoint(self, obj: str | int, type_: str | None = None, size: int | None = None):
         """
         Convenience function to add a breakpoint.
 
@@ -646,10 +648,10 @@ class Workspace:
             self.main_instance.debugger_list_mgr.add_debugger(dbg)
             self.main_instance.debugger_mgr.set_debugger(dbg)
 
-    def is_current_trace(self, trace: Optional[Trace]) -> bool:
+    def is_current_trace(self, trace: Trace | None) -> bool:
         return self.main_instance.current_trace.am_obj is trace
 
-    def set_current_trace(self, trace: Optional[Trace]):
+    def set_current_trace(self, trace: Trace | None):
         self.main_instance.current_trace.am_obj = trace
         self.main_instance.current_trace.am_event()
 
@@ -733,7 +735,7 @@ class Workspace:
             console.print_text(msg)
             console.print_text("\n")
 
-    def show_view(self, category: str, type_: Type[BaseView], position: str = "center"):
+    def show_view(self, category: str, type_: type[BaseView], position: str = "center"):
         view = self._get_or_create_view(category, type_, position=position)
         self.raise_view(view)
         view.setFocus()
@@ -828,14 +830,14 @@ class Workspace:
         if self.main_instance is None:
             return
 
-        view: Optional[DisassemblyView] = self.view_manager.first_view_in_category("disassembly")
+        view: DisassemblyView | None = self.view_manager.first_view_in_category("disassembly")
         if view is not None:
             selected_insns = view.current_graph.infodock.selected_insns
             if selected_insns:
                 for insn in selected_insns:
                     self.main_instance.breakpoint_mgr.toggle_exec_breakpoint(insn)
 
-    def step_forward(self, until_addr: Optional[int] = None):
+    def step_forward(self, until_addr: int | None = None):
         if self.main_instance is None:
             return
 
@@ -938,7 +940,7 @@ class Workspace:
             }
         )
 
-    def show_function_info(self, function: Union[str, int, "Function"]):
+    def show_function_info(self, function: str | int | Function):
         if isinstance(function, (str, int)):
             function = self.main_instance.project.kb.functions[function]
         FunctionDialog(function).exec_()
@@ -979,7 +981,7 @@ class Workspace:
     # Private methods
     #
 
-    def _get_or_create_view(self, category: str, view_type: Type[T], position: str = "center") -> T:
+    def _get_or_create_view(self, category: str, view_type: type[T], position: str = "center") -> T:
         view = self.view_manager.current_view_in_category(category)
         if view is None:
             view = self.view_manager.first_view_in_category(category)

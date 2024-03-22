@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import binascii
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import archinfo
 import cle
@@ -60,9 +62,7 @@ class LoadBinary(QDialog):
     Dialog displaying loading options for a binary.
     """
 
-    def __init__(
-        self, partial_ld, suggested_backend: Optional[cle.Backend] = None, suggested_os_name=None, parent=None
-    ):
+    def __init__(self, partial_ld, suggested_backend: cle.Backend | None = None, suggested_os_name=None, parent=None):
         super().__init__(parent)
 
         # initialization
@@ -72,13 +72,13 @@ class LoadBinary(QDialog):
         self.option_widgets = {}
         self.suggested_backend = suggested_backend
         self.suggested_os_name = suggested_os_name
-        self.available_backends: Dict[str, cle.Backend] = cle.ALL_BACKENDS
+        self.available_backends: dict[str, cle.Backend] = cle.ALL_BACKENDS
         self.available_simos = {}
         self.arch = partial_ld.main_object.arch
         self.available_archs = archinfo.all_arches[::]
         # _try_loading will try its best to fill in the following two properties from partial_ld
-        self._base_addr: Optional[int] = None
-        self._entry_addr: Optional[int] = None
+        self._base_addr: int | None = None
+        self._entry_addr: int | None = None
 
         self._base_addr_checkbox = None
         self._entry_addr_checkbox = None
@@ -390,7 +390,7 @@ class LoadBinary(QDialog):
         frame.setLayout(layout)
         tab.addTab(frame, "Dependencies")
 
-    def _split_arches(self, all_arches) -> Tuple[Any, List, List]:
+    def _split_arches(self, all_arches) -> tuple[Any, list, list]:
         """
         Split a list of architectures into three categories: The (probably) ideal architecture, recommended
         architectures, and other architectures.
@@ -512,9 +512,7 @@ class LoadBinary(QDialog):
         self.close()
 
     @staticmethod
-    def run(
-        partial_ld, suggested_backend=None, suggested_os_name=None
-    ) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
+    def run(partial_ld, suggested_backend=None, suggested_os_name=None) -> tuple[dict | None, dict | None, dict | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,

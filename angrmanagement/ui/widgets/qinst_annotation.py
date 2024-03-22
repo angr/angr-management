@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Dict, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QMarginsF
 from PySide6.QtGui import QBrush, QColor, QCursor, QPainterPath
@@ -31,11 +33,11 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     addr = None
 
     @property
-    def disasm_view(self) -> "DisassemblyView":
+    def disasm_view(self) -> DisassemblyView:
         return self.parentItem().disasm_view
 
     @property
-    def symexec_view(self) -> "SymexecView":
+    def symexec_view(self) -> SymexecView:
         return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
     def __init__(self, addr, text, *args, **kwargs):
@@ -175,7 +177,7 @@ class QExploreAnnotation(QInstructionAnnotation):
     foreground_color = QColor(230, 230, 230)
     text = None
 
-    def __init__(self, addr, qsimgrs: "QSimulationManagers", *args, **kwargs):
+    def __init__(self, addr, qsimgrs: QSimulationManagers, *args, **kwargs):
         super().__init__(addr, self.text, *args, **kwargs)
         self.qsimgrs = qsimgrs
 
@@ -249,13 +251,13 @@ class QBlockAnnotations(QGraphicsItem):
 
     PADDING = 10
 
-    def __init__(self, addr_to_annotations: Dict[int, List[QInstructionAnnotation]], *, parent, disasm_view):
+    def __init__(self, addr_to_annotations: dict[int, list[QInstructionAnnotation]], *, parent, disasm_view):
         super().__init__(parent=parent)
         self.addr_to_annotations = addr_to_annotations
         self.disasm_view: DisassemblyView = disasm_view
         max_width = 0
-        for _addr, annotations in self.addr_to_annotations.items():
-            width = sum(a.boundingRect().width() + self.PADDING for a in annotations)
+        for _addr, annotations_ in self.addr_to_annotations.items():
+            width = sum(a.boundingRect().width() + self.PADDING for a in annotations_)
             max_width = max(max_width, width)
             for annotation in annotations:
                 annotation.setParentItem(self)
@@ -274,8 +276,8 @@ class QBlockAnnotations(QGraphicsItem):
     def _init_widgets(self):
         # Set the x positions of all the annotations. The y positions will be set later while laying out the
         # instructions
-        for _addr, annotations in self.addr_to_annotations.items():
+        for _addr, annotations_ in self.addr_to_annotations.items():
             x = self.width
-            for annotation in annotations:
+            for annotation in annotations_:
                 annotation.setX(x - annotation.boundingRect().width())
                 x -= annotation.boundingRect().width() + self.PADDING

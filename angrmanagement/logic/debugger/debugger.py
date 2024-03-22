@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Callable, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable
 
 from angrmanagement.data.object_container import EventSentinel, ObjectContainer
 
@@ -12,7 +14,7 @@ class Debugger:
     Provides a generic interface with common debugger operations to control program execution and inspect program state.
     """
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace):
         super().__init__()
         self.workspace: Workspace = workspace
         self.instance: Instance = workspace.main_instance
@@ -57,7 +59,7 @@ class Debugger:
         """
         return False
 
-    def step_forward(self, until_addr: Optional[int] = None):
+    def step_forward(self, until_addr: int | None = None):
         """
         Step forward by one machine instruction.
         """
@@ -164,7 +166,7 @@ class DebuggerManager:
         if self.debugger.am_obj is dbg:
             self.set_debugger(None)
 
-    def set_debugger(self, dbg: Optional[Debugger]):
+    def set_debugger(self, dbg: Debugger | None):
         self.debugger.am_obj = dbg
         self.debugger.am_event()
 
@@ -180,7 +182,7 @@ class DebuggerWatcher:
         :param debugger: Debugger container to monitor.
         """
         super().__init__()
-        self._last_selected_debugger: Optional[Debugger] = None
+        self._last_selected_debugger: Debugger | None = None
         self.state_updated_callback: Callable = state_updated_callback
         self.debugger: ObjectContainer = debugger
         self.debugger.am_subscribe(self._on_debugger_updated)

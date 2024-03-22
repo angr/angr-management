@@ -1,4 +1,4 @@
-from typing import List
+from __future__ import annotations
 
 from PySide6.QtCore import QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
@@ -24,7 +24,7 @@ class QUnknownBlock(QCachedGraphicsItem):
 
         self._addr_text = None
         self._addr_item: QGraphicsSimpleTextItem = None
-        self._byte_lines: List[QGraphicsSimpleTextItem] = None
+        self._byte_lines: list[QGraphicsSimpleTextItem] = None
 
         self._config = Conf
 

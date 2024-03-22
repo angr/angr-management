@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from angr.analyses.data_dep import ConstantDepNode, TmpDepNode
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -28,7 +30,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     CONSTANT_BACKGROUND = QtGui.QColor(0x87, 0xFF, 0x65)  # Green
     TMP_BACKGROUND = QtGui.QColor(0xEF, 0x47, 0x6F)  # Pink
 
-    def __init__(self, is_selected: bool, data_dep_view: "DataDepView", node: "BaseDepNode", instr: Optional["CsInsn"]):
+    def __init__(self, is_selected: bool, data_dep_view: DataDepView, node: BaseDepNode, instr: CsInsn | None):
         super().__init__()
         self.setFlags(QtWidgets.QGraphicsItem.ItemIsFocusable)
 
@@ -38,11 +40,11 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self._node: BaseDepNode = node
         self._instr = instr
 
-        self._header_text: Optional[str] = None
-        self._instruction_text: Optional[str] = None
+        self._header_text: str | None = None
+        self._instruction_text: str | None = None
         self._y_off = 0  # Used to track height
-        self._header_text_item: Optional[QtWidgets.QGraphicsSimpleTextItem] = None
-        self._instruction_text_item: Optional[QtWidgets.QGraphicsSimpleTextItem] = None
+        self._header_text_item: QtWidgets.QGraphicsSimpleTextItem | None = None
+        self._instruction_text_item: QtWidgets.QGraphicsSimpleTextItem | None = None
 
         self._init_widgets()
         self._update_size()
@@ -59,7 +61,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self.update()
 
     @property
-    def node(self) -> "BaseDepNode":
+    def node(self) -> BaseDepNode:
         return self._node
 
     def _build_simple_text_item(self, text: str) -> QtWidgets.QGraphicsSimpleTextItem:
@@ -122,7 +124,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         self,
         painter: QtGui.QPainter,
         option: QtWidgets.QStyleOptionGraphicsItem,  # pylint: disable=unused-argument
-        widget: Optional[QtWidgets.QWidget] = ...,
+        widget: QtWidgets.QWidget | None = ...,
     ):  # pylint: disable=unused-argument
         self._paint_boundary(painter)
 

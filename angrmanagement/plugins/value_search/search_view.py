@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
@@ -65,7 +67,7 @@ class SearchView(InstanceView):
         self._value_table.filter_string = pattern
         self.reload()
 
-    def _on_string_selected(self, s: "MemoryData"):
+    def _on_string_selected(self, s: MemoryData):
         """
         A string reference is selected.
 

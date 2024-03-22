@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins.variables.variable_access import VariableAccess
 from angr.knowledge_plugins.xrefs.xref import XRef, XRefType
@@ -27,7 +29,7 @@ class QXRefModel(QAbstractTableModel):
         self.view = view
 
     @property
-    def xrefs(self) -> List[VariableAccess]:
+    def xrefs(self) -> list[VariableAccess]:
         return self.view.items
 
     @xrefs.setter
@@ -260,7 +262,7 @@ class QXRefViewer(QTableView):
         variable=None,
         xrefs_manager=None,
         dst_addr=None,
-        instance: "Instance" = None,
+        instance: Instance = None,
         xref_dialog=None,
         parent=None,
     ):

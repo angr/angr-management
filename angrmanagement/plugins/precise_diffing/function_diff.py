@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import itertools
 import re
-from typing import List, Union
+from typing import TYPE_CHECKING
 
 import networkx as nx
 from angr.analyses.disassembly import Disassembly, Instruction, MemoryOperand
-from angr.block import CapstoneInsn
-from angr.knowledge_plugins.functions.function import Function
 
-from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils import string_at_addr
+
+if TYPE_CHECKING:
+    from angr.block import CapstoneInsn
+    from angr.knowledge_plugins.functions.function import Function
+
+    from angrmanagement.ui.views import DisassemblyView
 
 
 class FunctionDiff:
@@ -50,7 +55,7 @@ class FunctionDiff:
     def prefer_symbols(self):
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
 
-    def _linear_asm_from_function(self, func: Function, disas: Disassembly = None, as_dict=False) -> List[CapstoneInsn]:
+    def _linear_asm_from_function(self, func: Function, disas: Disassembly = None, as_dict=False) -> list[CapstoneInsn]:
         sorted_blocks = sorted(func.blocks, key=lambda b: b.addr)
         instruction_lists = [block.disassembly.insns for block in sorted_blocks]
         instructions = list(itertools.chain.from_iterable(instruction_lists))
@@ -61,7 +66,7 @@ class FunctionDiff:
 
         return symbolized_instructions if not as_dict else {i.addr: i for i in symbolized_instructions}
 
-    def diff_insn(self, base_insn: Union[CapstoneInsn, Instruction], rev_insn: Union[CapstoneInsn, Instruction]):
+    def diff_insn(self, base_insn: CapstoneInsn | Instruction, rev_insn: CapstoneInsn | Instruction):
         if self._prefer_symbols:
             if base_insn.render() == rev_insn.render():
                 return FunctionDiff.OBJ_UNMODIFIED

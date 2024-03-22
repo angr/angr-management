@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -32,11 +34,11 @@ class ExecutionStatisticsViewer(BasePlugin):
         self._init_widgets()
 
     @property
-    def disasm_view(self) -> "DisassemblyView":
+    def disasm_view(self) -> DisassemblyView:
         return self.workspace.view_manager.first_view_in_category("disassembly")
 
     @property
-    def symexec_view(self) -> "SymexecView":
+    def symexec_view(self) -> SymexecView:
         return self.workspace.view_manager.first_view_in_category("symexec")
 
     def count_passthrough(self, simgr):

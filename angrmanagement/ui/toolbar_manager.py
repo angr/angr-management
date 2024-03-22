@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Mapping, Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Mapping
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDockWidget
@@ -17,14 +19,14 @@ class ToolbarManager:
 
     def __init__(self, main_window):
         self._main_window: MainWindow = main_window
-        self.active: Mapping[Type[Toolbar], Toolbar] = {}
+        self.active: Mapping[type[Toolbar], Toolbar] = {}
         self.all_toolbars = [FileToolbar, DebugToolbar, FeatureMapToolbar]
 
     @staticmethod
-    def get_name_for_toolbar_class(toolbar_cls: Type["Toolbar"]) -> str:
+    def get_name_for_toolbar_class(toolbar_cls: type[Toolbar]) -> str:
         return {FileToolbar: "File", DebugToolbar: "Debug", FeatureMapToolbar: "Feature Map"}[toolbar_cls]
 
-    def show_toolbar_by_class(self, cls: Type["Toolbar"]):
+    def show_toolbar_by_class(self, cls: type[Toolbar]):
         if cls not in self.active:
             tb = cls(self._main_window)
             self.active[cls] = tb
@@ -36,7 +38,7 @@ class ToolbarManager:
         else:
             self.active[cls].qtoolbar().show()
 
-    def hide_toolbar_by_class(self, cls: Type["Toolbar"]):
+    def hide_toolbar_by_class(self, cls: type[Toolbar]):
         if cls in self.active:
             tb = self.active.pop(cls)
             qtb = tb.qtoolbar()
@@ -46,7 +48,7 @@ class ToolbarManager:
                 self._main_window.removeToolBar(qtb)
             tb.shutdown()
 
-    def set_toolbar_visible_by_class(self, cls: Type["Toolbar"], visible: bool):
+    def set_toolbar_visible_by_class(self, cls: type[Toolbar], visible: bool):
         if visible:
             self.show_toolbar_by_class(cls)
         else:

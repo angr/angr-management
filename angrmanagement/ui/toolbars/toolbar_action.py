@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ToolbarAction:
     def __init__(self, icon, name, tooltip, triggered, checkable=False, shortcut=None):
         self.icon = icon

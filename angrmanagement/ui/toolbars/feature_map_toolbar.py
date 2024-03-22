@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from angrmanagement.ui.widgets.qfeature_map import QFeatureMap
 
 from .toolbar import Toolbar

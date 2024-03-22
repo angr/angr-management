@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton
 
@@ -25,13 +27,13 @@ class QDisasmStatusBar(QFrame):
         self.disasm_view = disasm_view
 
         # widgets
-        self._nav_toolbar: Optional[NavToolbar] = None
+        self._nav_toolbar: NavToolbar | None = None
         self._function_label: QLabel = None
         self._options_menu: DisasmOptionsMenu = None
         self._view_combo: QComboBox = None
 
         # information
-        self._function: Optional[Function] = None
+        self._function: Function | None = None
 
         self._init_menu()
         self._init_widgets()

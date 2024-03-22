@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins.key_definitions.atoms import Atom, MemoryLocation, Register, SpOffset
 from PySide6.QtCore import QRectF, Qt
@@ -25,8 +27,8 @@ class QDepGraphBlock(QCachedGraphicsItem):
     def __init__(
         self,
         is_selected,
-        dep_view: "DependencyView",
-        definition: "Definition" = None,
+        dep_view: DependencyView,
+        definition: Definition = None,
         atom: Atom = None,
         addr: int = None,
     ):
@@ -45,8 +47,8 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self._instruction_item: QGraphicsSimpleTextItem = None
         self._function_str: str = None
         self._function_item: QGraphicsSimpleTextItem = None
-        self._text: Optional[str] = None
-        self._text_item: Optional[QGraphicsSimpleTextItem] = None
+        self._text: str | None = None
+        self._text_item: QGraphicsSimpleTextItem | None = None
 
         self.definition = definition
         self.atom = atom
@@ -165,10 +167,10 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):
+    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
         self._dep_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):
+    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent):
         self._dep_view.hover_leave_block()
 
     def paint(self, painter, option, widget):  # pylint: disable=unused-argument

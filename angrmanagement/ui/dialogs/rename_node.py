@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CFunctionCall, CStructField, CVariable
 from angr.sim_type import NamedTypeMixin, SimType, SimTypePointer, TypeRef
@@ -51,10 +53,10 @@ class RenameNode(QDialog):
 
     def __init__(
         self,
-        code_view: Optional["CodeView"] = None,
-        node: Optional[CConstruct] = None,
+        code_view: CodeView | None = None,
+        node: CConstruct | None = None,
         parent=None,
-        func: Optional["Function"] = None,
+        func: Function | None = None,
     ):
         super().__init__(parent)
 
@@ -63,7 +65,7 @@ class RenameNode(QDialog):
 
         self._code_view = code_view
         self._node = node
-        self._func: Optional[Function] = func
+        self._func: Function | None = func
 
         self._name_box: NodeNameBox = None
         self._status_label = None

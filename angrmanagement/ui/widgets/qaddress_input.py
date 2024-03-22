@@ -1,10 +1,12 @@
-from typing import Callable, Optional
+from __future__ import annotations
+
+from typing import Callable
 
 from PySide6.QtWidgets import QLineEdit
 
 
 class QAddressInput(QLineEdit):
-    def __init__(self, textchanged_callback: Optional[Callable], instance, parent=None, default: Optional[str] = None):
+    def __init__(self, textchanged_callback: Callable | None, instance, parent=None, default: str | None = None):
         super().__init__(parent)
 
         self.instance = instance

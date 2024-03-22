@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
@@ -42,13 +44,13 @@ class AnalysisOptionWidgetMapper:
 
     def __init__(self, option: AnalysisOption):
         self.option: AnalysisOption = option
-        self.widget: Optional[QWidget] = None
+        self.widget: QWidget | None = None
 
     def create_widget(self) -> QWidget:
         raise NotImplementedError
 
     @classmethod
-    def get_mapper_for_option(cls, option: AnalysisOption) -> "AnalysisOptionWidgetMapper":
+    def get_mapper_for_option(cls, option: AnalysisOption) -> AnalysisOptionWidgetMapper:
         if isinstance(option, BoolAnalysisOption):
             return BoolAnalysisOptionWidgetMapper(option)
         elif isinstance(option, IntAnalysisOption):
@@ -205,7 +207,7 @@ class AnalysisOptionsDialog(QDialog):
     Dialog displaying available analyses and configuration options.
     """
 
-    def __init__(self, analyses: AnalysesConfiguration, workspace: "Workspace", parent=None):
+    def __init__(self, analyses: AnalysesConfiguration, workspace: Workspace, parent=None):
         super().__init__(parent)
         self._workspace: Workspace = workspace
         self._analyses: AnalysesConfiguration = analyses

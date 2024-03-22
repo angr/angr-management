@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import importlib
 import logging
 import os
 import sys
-from typing import List, Tuple
 
 from .base_plugin import BasePlugin
 from .plugin_description import PluginDescription
@@ -10,7 +11,7 @@ from .plugin_description import PluginDescription
 log = logging.getLogger(__name__)
 
 
-def load_plugin_descriptions_from_dir(path: str) -> List[Tuple[str, PluginDescription]]:
+def load_plugin_descriptions_from_dir(path: str) -> list[tuple[str, PluginDescription]]:
     try:
         dlist = os.listdir(path)
     except OSError:
@@ -24,7 +25,7 @@ def load_plugin_descriptions_from_dir(path: str) -> List[Tuple[str, PluginDescri
     return plugins
 
 
-def load_plugin_description(path: str) -> List[PluginDescription]:
+def load_plugin_description(path: str) -> list[PluginDescription]:
     try:
         flist = os.listdir(path)
     except OSError:

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 import time
 from threading import Lock
-from typing import TYPE_CHECKING, List, Mapping, Optional
+from typing import TYPE_CHECKING, Mapping
 
 import cle
 from angr.block import Block
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(name=__name__)
 
 
-def _get_tags_for_item(item) -> Optional[int]:
+def _get_tags_for_item(item) -> int | None:
     """
     Generate bit mask based for the type of item provided, or None if it could not be mapped.
     """
@@ -47,7 +49,7 @@ def _get_tags_for_item(item) -> Optional[int]:
     return 1 << b
 
 
-def _get_feature_tag_colors() -> List[QColor]:
+def _get_feature_tag_colors() -> list[QColor]:
     """
     Generate list of colors corresponding to each tag bit.
     """
@@ -79,7 +81,7 @@ class FeatureMapPalette:
     def _get_brush_for_tags(self, tags: int) -> QBrush:
         return QBrush(self._blend_colors(self._get_colors_for_tags(tags)))
 
-    def _get_colors_for_tags(self, tags: int) -> List[QColor]:
+    def _get_colors_for_tags(self, tags: int) -> list[QColor]:
         return [self._feature_colors[i] for i in range(len(self._feature_colors)) if tags & (1 << i)]
 
     @staticmethod
@@ -126,16 +128,16 @@ class FeatureMapItem(QGraphicsItem):
         self._region_to_width: Mapping[MemoryRegion, float] = {}
         self._position_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
 
-        self._cursor_addrs: List[int] = []
-        self._cursor_items: List[QGraphicsItem] = []
-        self._hover_region: Optional[MemoryRegion] = None
-        self._hover_region_item: Optional[QGraphicsItem] = None
+        self._cursor_addrs: list[int] = []
+        self._cursor_items: list[QGraphicsItem] = []
+        self._hover_region: MemoryRegion | None = None
+        self._hover_region_item: QGraphicsItem | None = None
 
         self._feature_palette: FeatureMapPalette
         self._refresh_palette()
 
-        self._nbits_per_lod: List[int] = [13, 12, 8, 6, 4, 0]
-        self._cfb_feature_maps: List[TaggedIntervalMap]
+        self._nbits_per_lod: list[int] = [13, 12, 8, 6, 4, 0]
+        self._cfb_feature_maps: list[TaggedIntervalMap]
         self._cfb_feature_maps_lock: Lock = Lock()
         self._clear_cfb_feature_maps()
 
@@ -251,7 +253,7 @@ class FeatureMapItem(QGraphicsItem):
                 time_end - time_start,
             )
 
-    def _find_first_overlapping_region(self, mr: "MemoryRegion") -> Optional["MemoryRegion"]:
+    def _find_first_overlapping_region(self, mr: MemoryRegion) -> MemoryRegion | None:
         """
         Find the first region in self._addr_to_region that `mr` overlaps, if any.
         """
@@ -308,10 +310,10 @@ class FeatureMapItem(QGraphicsItem):
             position += self._region_to_width[mr]
 
     @staticmethod
-    def _should_show_region_to_scale(mr: "MemoryRegion"):
+    def _should_show_region_to_scale(mr: MemoryRegion):
         return not isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject))
 
-    def _get_region_at_addr(self, addr: int) -> Optional["MemoryRegion"]:
+    def _get_region_at_addr(self, addr: int) -> MemoryRegion | None:
         start_idx = max(0, self._addr_to_region.bisect_left(addr) - 1)
         for mr_addr in self._addr_to_region.islice(start_idx):
             mr = self._addr_to_region[mr_addr]
@@ -322,7 +324,7 @@ class FeatureMapItem(QGraphicsItem):
             return mr
         return None
 
-    def _get_position_at_addr(self, addr: int) -> Optional[float]:
+    def _get_position_at_addr(self, addr: int) -> float | None:
         mr = self._get_region_at_addr(addr)
         if mr is None or mr.size == 0:
             return None
@@ -332,14 +334,14 @@ class FeatureMapItem(QGraphicsItem):
         assert offset >= 0
         return mr_pos + mr_width * offset / mr.size
 
-    def _floor_position_to_nearest_region(self, pos: float) -> Optional["MemoryRegion"]:
+    def _floor_position_to_nearest_region(self, pos: float) -> MemoryRegion | None:
         try:
             pos = next(self._position_to_region.irange(maximum=pos, reverse=True))
             return self._position_to_region[pos]
         except StopIteration:
             return None
 
-    def _get_addr_at_position(self, pos: float) -> Optional[int]:
+    def _get_addr_at_position(self, pos: float) -> int | None:
         mr = self._floor_position_to_nearest_region(pos)
         if mr is None:
             return None
@@ -349,7 +351,7 @@ class FeatureMapItem(QGraphicsItem):
             return mr.addr
         return mr.addr + int(pos / width * mr.size)
 
-    def _get_region_display_rect(self, mr: "MemoryRegion") -> QRectF:
+    def _get_region_display_rect(self, mr: MemoryRegion) -> QRectF:
         x = self._region_to_position[mr]
         width = self._region_to_width[mr]
         return QRectF(x, 0, width, self._height)
@@ -657,7 +659,7 @@ class QFeatureMapView(QGraphicsView):
         self._update_feature_map_item_size()
         return super().resizeEvent(event)
 
-    def adjust_viewport_scale(self, scale: Optional[float] = None, point: Optional[QPoint] = None):
+    def adjust_viewport_scale(self, scale: float | None = None, point: QPoint | None = None):
         """
         Adjust viewport scale factor.
         """

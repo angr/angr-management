@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr import options
 from angr.state_plugins.heap import SimHeapPTMalloc
@@ -31,7 +33,7 @@ class MemoryChecker(BasePlugin):
         return state.solver.eval(ptr)
 
     @staticmethod
-    def check_address_is_free(state: "SimState", ptr_list: "List[SimAction]"):
+    def check_address_is_free(state: SimState, ptr_list: list[SimAction]):
         ptr_dict = SortedDict([(MemoryChecker.eval_ptr(state, x.addr.ast), x) for x in ptr_list])
         len_list = len(ptr_dict)
         for chunk in state.heap.free_chunks():
@@ -51,11 +53,11 @@ class MemoryChecker(BasePlugin):
         return False
 
     @staticmethod
-    def check_use_after_free(state: "SimState"):
+    def check_use_after_free(state: SimState):
         # heap: SimHeapPTMalloc = state.heap
         # heap.print_heap_state()
 
-        actions: List[SimAction] = state.history.actions.hardcopy
+        actions: list[SimAction] = state.history.actions.hardcopy
         last_bbl_addr = actions[-1].bbl_addr
         address_list = []
         for act in reversed(actions):

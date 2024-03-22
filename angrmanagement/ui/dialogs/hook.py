@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import AutoIndentMode, CaretLineHighlighterMode, PygmentsSyntaxHighlighter
 from PySide6.QtGui import QTextOption

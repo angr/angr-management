@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import contextlib
-import enum
 import logging
 import os
 import re
-from typing import Any, Callable, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable
 
 import tomlkit
 import tomlkit.exceptions
@@ -14,6 +15,9 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from angrmanagement.utils.env import app_root
 
 from .config_entry import ConfigurationEntry as CE
+
+if TYPE_CHECKING:
+    import enum
 
 _l = logging.getLogger(__name__)
 color_re = re.compile("[0-9a-fA-F]+")
@@ -28,7 +32,7 @@ class UninterpretedCE(CE):
         super().__init__(name, UninterpretedCE, value, default_value=default_value)
 
 
-def tomltype2pytype(v, ty: Optional[Type]) -> Any:
+def tomltype2pytype(v, ty: type | None) -> Any:
     if ty is str:
         if not isinstance(v, tomlkit.items.String):
             raise TypeError
@@ -44,7 +48,7 @@ def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     return str(v) if isinstance(v, tomlkit.items.String) else v.unwrap()
 
 
-def color_parser(config_option, value) -> Optional[QColor]:
+def color_parser(config_option, value) -> QColor | None:
     if not isinstance(value, str) or not color_re.match(value) or len(value) not in (3, 6, 8, 12):
         _l.error("Failed to parse value %r as rgb color for option %s", value, config_option)
         return None
@@ -60,7 +64,7 @@ def color_serializer(config_option, value: QColor) -> str:
     return f"{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}"
 
 
-def font_parser(config_option, value) -> Optional[QFont]:
+def font_parser(config_option, value) -> QFont | None:
     if not isinstance(value, str) or "px " not in value:
         _l.error("Failed to parse value %r as font for option %s", value, config_option)
         return None
@@ -85,7 +89,7 @@ def font_serializer(config_option, value: QFont) -> str:
 
 def enum_parser_serializer_generator(
     the_enum: enum.Enum, default
-) -> Tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
+) -> tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
     def parser(config_option: str, value: str) -> enum.Enum:
         try:
             return the_enum[value]
@@ -470,7 +474,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         if self.tabular_view_font is None:
             self.tabular_view_font = QApplication.font("QMenu")
 
-    recent_files: List[str]
+    recent_files: list[str]
 
     def recent_file(self, file_path: str):
         with contextlib.suppress(ValueError):

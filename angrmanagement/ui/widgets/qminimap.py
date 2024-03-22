@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, Qt
@@ -122,7 +124,7 @@ class QMiniMapView(QGraphicsView):
     support viewport control.
     """
 
-    def __init__(self, target_view: "QBaseGraphicsView", *args, **kwargs):
+    def __init__(self, target_view: QBaseGraphicsView, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._target_view: QBaseGraphicsView = target_view
         self._is_mouse_pressed: bool = False

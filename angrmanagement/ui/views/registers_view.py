@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
 from PySide6.QtGui import QBrush, QFont
@@ -24,7 +26,7 @@ class QRegisterTableModel(QAbstractTableModel):
     COL_REGISTER = 0
     COL_VALUE = 1
 
-    def __init__(self, log_widget: "QRegisterTableWidget" = None):
+    def __init__(self, log_widget: QRegisterTableWidget = None):
         super().__init__()
         self._log_widget = log_widget
         self.state: angr.SimState = None
@@ -33,14 +35,14 @@ class QRegisterTableModel(QAbstractTableModel):
     def _filtered_register_list(self):
         return [reg for reg in self.state.arch.register_list if reg.general_purpose]
 
-    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return 0 if self.state is None else len(self._filtered_register_list())
 
-    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -48,7 +50,7 @@ class QRegisterTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -61,7 +63,7 @@ class QRegisterTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, reg: "Register", col: int) -> Any:
+    def _get_column_text(self, reg: Register, col: int) -> Any:
         mapping = {
             QRegisterTableModel.COL_REGISTER: lambda x: x.name,
             QRegisterTableModel.COL_VALUE: lambda x: repr(self.state.regs.get(x.name)),
@@ -71,7 +73,7 @@ class QRegisterTableModel(QAbstractTableModel):
             return None
         return func(reg)
 
-    def _did_data_change(self, reg: "Register") -> bool:
+    def _did_data_change(self, reg: Register) -> bool:
         if self._last_state is None:
             return False
         different = self.state.solver.eval(self.state.regs.get(reg.name) != self._last_state.regs.get(reg.name))
@@ -137,7 +139,7 @@ class RegistersView(InstanceView):
         super().__init__("registers", workspace, default_docking_position, instance)
 
         self.base_caption = "Registers"
-        self._tbl_widget: Optional[QRegisterTableWidget] = None
+        self._tbl_widget: QRegisterTableWidget | None = None
         self._init_widgets()
         self.reload()
 

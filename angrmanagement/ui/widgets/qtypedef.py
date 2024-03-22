@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from angr.sim_type import SimStruct, SimTypeBottom, SimUnion, TypeRef
@@ -20,7 +22,7 @@ class QCTypeDef(QWidget):
     A widget to display a C SimType.
     """
 
-    def __init__(self, parent, ty: TypeRef, all_types: "TypesStore"):
+    def __init__(self, parent, ty: TypeRef, all_types: TypesStore):
         super().__init__(parent)
 
         self.type = ty

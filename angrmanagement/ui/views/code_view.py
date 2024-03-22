@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import Any, Optional, Set, Union
+from typing import Any
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator, CVariable
@@ -46,22 +48,22 @@ class CodeView(FunctionView):
 
         self.base_caption = "Pseudocode"
 
-        self._function: Union[ObjectContainer, Function] = ObjectContainer(None, "The function to decompile")
+        self._function: ObjectContainer | Function = ObjectContainer(None, "The function to decompile")
         self.current_node = ObjectContainer(None, "Current selected C-code node")
-        self.addr: Union[ObjectContainer, int] = ObjectContainer(0, "Current cursor address")
-        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(
+        self.addr: ObjectContainer | int = ObjectContainer(0, "Current cursor address")
+        self.codegen: ObjectContainer | CStructuredCodeGenerator = ObjectContainer(
             None, "The currently-displayed codegen object"
         )
 
-        self._last_function: Optional[Function] = None
-        self._textedit: Optional[QCCodeEdit] = None
-        self._doc: Optional[QCodeDocument] = None
-        self._options: Optional[QDecompilationOptions] = None
+        self._last_function: Function | None = None
+        self._textedit: QCCodeEdit | None = None
+        self._doc: QCodeDocument | None = None
+        self._options: QDecompilationOptions | None = None
         self.jump_history: JumpHistory = JumpHistory()
-        self._nav_toolbar: Optional[NavToolbar] = None
-        self._view_selector: Optional[QComboBox] = None
+        self._nav_toolbar: NavToolbar | None = None
+        self._view_selector: QComboBox | None = None
 
-        self.vars_must_struct: Set[str] = set()
+        self.vars_must_struct: set[str] = set()
 
         self._init_widgets()
 
@@ -215,7 +217,7 @@ class CodeView(FunctionView):
         self.addr.am_event(already_moved=True)
 
     # pylint: disable=unused-argument
-    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str] = None, **kwargs):
+    def _on_codegen_changes(self, already_regenerated=False, event: str | None = None, **kwargs):
         """
         The callback function that triggers an update of the codegen.
 
@@ -231,8 +233,8 @@ class CodeView(FunctionView):
         if self.codegen.am_none:
             return
 
-        old_lineno: Optional[int] = None
-        old_node: Optional[Any] = None
+        old_lineno: int | None = None
+        old_node: Any | None = None
         old_font = None
         if self._last_function is self._function.am_obj and self._doc is not None:
             # we are re-rendering the current function (e.g., triggered by a node renaming). the cursor should stay at

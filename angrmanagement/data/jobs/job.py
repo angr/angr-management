@@ -1,9 +1,10 @@
 # pylint:disable=global-statement
+from __future__ import annotations
+
 import ctypes
 import datetime
 import logging
 import time
-from typing import Optional
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -40,7 +41,7 @@ class Job:
     def __init__(self, name, on_finish=None, blocking=False):
         self.name = name
         self.progress_percentage = 0.0
-        self.last_text: Optional[str] = None
+        self.last_text: str | None = None
         self.start_at: float = 0.0
         self.last_gui_updated_at: float = 0.0
         self.blocking = blocking

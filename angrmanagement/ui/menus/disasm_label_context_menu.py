@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import partial
 from typing import Callable
 
@@ -63,7 +65,7 @@ class DisasmLabelContextMenu(Menu):
     # Public Methods
     #
 
-    def add_menu_entry(self, text, callback: Callable[["DisasmLabelContextMenu"], None], add_separator_first=True):
+    def add_menu_entry(self, text, callback: Callable[[DisasmLabelContextMenu], None], add_separator_first=True):
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))

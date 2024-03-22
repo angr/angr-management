@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import functools
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
 from PySide6.QtGui import QAction, QCursor, QFont
@@ -25,19 +27,19 @@ class QStackTableModel(QAbstractTableModel):
     COL_OFFSET = 0
     COL_VALUE = 1
 
-    def __init__(self, log_widget: "QStackTableWidget" = None):
+    def __init__(self, log_widget: QStackTableWidget = None):
         super().__init__()
         self._log_widget = log_widget
         self.state: angr.SimState = None
 
-    def rowCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return 0 if self.state is None else 15
 
-    def columnCount(self, parent: "PySide6.QtCore.QModelIndex" = ...) -> int:  # pylint:disable=unused-argument
+    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(
-        self, section: int, orientation: "PySide6.QtCore.Qt.Orientation", role: int = ...
+        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
         if role != Qt.DisplayRole:
             return None
@@ -45,7 +47,7 @@ class QStackTableModel(QAbstractTableModel):
             return self.Headers[section]
         return None
 
-    def data(self, index: "PySide6.QtCore.QModelIndex", role: int = ...) -> Any:
+    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return None
         row = index.row()
@@ -113,7 +115,7 @@ class QStackTableWidget(QTableView):
         self.model.state = None if dbg.am_none else dbg.simstate
         self.model.layoutChanged.emit()
 
-    def contextMenuEvent(self, arg__1: "PySide6.QtGui.QContextMenuEvent"):  # pylint:disable=unused-argument
+    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent):  # pylint:disable=unused-argument
         if not self.selectedIndexes():
             return
 
@@ -163,7 +165,7 @@ class StackView(InstanceView):
         super().__init__("stack", workspace, default_docking_position, instance)
 
         self.base_caption = "Stack"
-        self._tbl_widget: Optional[QStackTableWidget] = None
+        self._tbl_widget: QStackTableWidget | None = None
         self._init_widgets()
         self.reload()
 

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import binascii
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QContextMenuEvent, QCursor
@@ -103,7 +105,7 @@ class QPatchTable(QTableWidget):
         except KeyError:
             return None
 
-    def get_selected_patches(self) -> Set["Patch"]:
+    def get_selected_patches(self) -> set[Patch]:
         """
         Get the set of selected patches.
         """
@@ -140,5 +142,5 @@ class QPatchTable(QTableWidget):
             mnu.addAction(act)
         mnu.exec_(QCursor.pos())
 
-    def closeEvent(self, event: "QCloseEvent") -> None:  # pylint:disable=unused-argument
+    def closeEvent(self, event: QCloseEvent) -> None:  # pylint:disable=unused-argument
         self.instance.patches.am_unsubscribe(self._watch_patches)

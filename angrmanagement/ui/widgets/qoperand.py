@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 from angr.analyses.disassembly import ConstantOperand, MemoryOperand, RegisterOperand, Value
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -48,7 +49,7 @@ class QOperand(QCachedGraphicsItem):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
-        self._branch_target: Optional[int] = None
+        self._branch_target: int | None = None
 
         # the variable involved
         self.variable = None
@@ -59,14 +60,14 @@ class QOperand(QCachedGraphicsItem):
 
         # "widgets"
         self._label = None
-        self._label_item: Optional[QGraphicsSimpleTextItem] = None
+        self._label_item: QGraphicsSimpleTextItem | None = None
         self._variable_label = None
-        self._variable_label_item: Optional[QGraphicsSimpleTextItem] = None
+        self._variable_label_item: QGraphicsSimpleTextItem | None = None
         self._variable_ident = None
-        self._variable_ident_item: Optional[QGraphicsSimpleTextItem] = None
+        self._variable_ident_item: QGraphicsSimpleTextItem | None = None
         self._branch_targets = None
         self._branch_targets_text = None
-        self._branch_targets_item: Optional[QGraphicsSimpleTextItem] = None
+        self._branch_targets_item: QGraphicsSimpleTextItem | None = None
         self._is_target_func = None
 
         self._width = None

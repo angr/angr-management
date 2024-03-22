@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
@@ -21,7 +23,7 @@ class SearchItem:
     """
 
     addr: int
-    search_value: Union[int, float, bytes]
+    search_value: int | float | bytes
     search_value_as_bytes: bytes
 
 
@@ -94,7 +96,7 @@ class QSearchModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    def _get_column_text(self, v: "MemoryData", col: int):
+    def _get_column_text(self, v: MemoryData, col: int):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
             if col == self.ADDRESS_COL and isinstance(data, int):
@@ -120,7 +122,7 @@ class QSearchTable(QTableView):
 
     def __init__(self, instance, parent, selection_callback=None):
         super().__init__(parent)
-        self._parent: "SearchView" = parent
+        self._parent: SearchView = parent
 
         self._instance = instance
         self._selected = selection_callback
@@ -189,7 +191,7 @@ class QSearchTable(QTableView):
         if self._selected is not None:
             self._selected(selected_item)
 
-    def keyPressEvent(self, event: "QKeyEvent") -> None:
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key_X:
             # xrefs
             if self._model is None:

@@ -1,4 +1,6 @@
 # pylint:disable=import-outside-toplevel,unused-import,no-member
+from __future__ import annotations
+
 import asyncio
 import ctypes
 import multiprocessing
@@ -8,7 +10,6 @@ import sys
 import threading
 import time
 import warnings
-from typing import Optional
 
 from . import __version__
 
@@ -61,7 +62,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         _progress: float = 0.0
         _progress_message: str = ""
 
-        def setProgress(self, progress: float, progress_message: Optional[str] = None):
+        def setProgress(self, progress: float, progress_message: str | None = None):
             self._progress = progress
             if self._progress_message is not None:
                 self._progress_message = progress_message

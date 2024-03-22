@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.analyses.disassembly import Value
 from PySide6.QtCore import QRectF, Qt
@@ -44,19 +46,19 @@ class QInstruction(QCachedGraphicsItem):
         self._mnemonic = None
         self._addr_item: QGraphicsSimpleTextItem = None
         self._mnemonic_item: QGraphicsSimpleTextItem = None
-        self._operands: List[QOperand] = []
-        self._commas: List[QGraphicsSimpleTextItem] = []
+        self._operands: list[QOperand] = []
+        self._commas: list[QGraphicsSimpleTextItem] = []
         self._string = None
-        self._string_item: Optional[QGraphicsSimpleTextItem] = None
+        self._string_item: QGraphicsSimpleTextItem | None = None
         self._comment = None
-        self._comment_items: Optional[List[QGraphicsSimpleTextItem]] = None  # one comment per line
+        self._comment_items: list[QGraphicsSimpleTextItem] | None = None  # one comment per line
         self._legend = None
         self._width = 0
         self._height = 0
 
         self._init_widgets()
 
-    def contextMenuEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneContextMenuEvent") -> None:
+    def contextMenuEvent(self, event: PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
         pass
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):

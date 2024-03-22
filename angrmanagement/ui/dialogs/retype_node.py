@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import angr
 import pycparser
@@ -22,12 +24,12 @@ class TypeBox(QLineEdit):
     def __init__(self, textchanged_callback, predefined_types=None, parent=None):
         super().__init__(parent)
 
-        self._cvariable: Optional[CVariable] = None
+        self._cvariable: CVariable | None = None
         self._predefined_types = predefined_types
 
         self.textChanged.connect(textchanged_callback)
 
-    def set_type(self, type_: "SimType", cvariable: CVariable = None):
+    def set_type(self, type_: SimType, cvariable: CVariable = None):
         self._cvariable = cvariable
         if cvariable is not None and isinstance(cvariable.unified_variable, SimVariable):
             type_str = type_.c_repr(name=cvariable.unified_variable.name)
@@ -51,7 +53,7 @@ class TypeBox(QLineEdit):
             return parsed_type
         return None
 
-    def _is_valid_type_str(self, type_str: str) -> Tuple[bool, Optional["SimType"]]:
+    def _is_valid_type_str(self, type_str: str) -> tuple[bool, SimType | None]:
         """
         We accept two forms of type strings. The user can either specify a full variable declaration, like "char var",
         or only specify a type string, like "char". This method first attempts to parse the string as a variable
@@ -83,9 +85,9 @@ class RetypeNode(QDialog):
 
     def __init__(
         self,
-        instance: "Instance",
-        code_view: Optional["CodeView"] = None,
-        node: Optional[CConstruct] = None,
+        instance: Instance,
+        code_view: CodeView | None = None,
+        node: CConstruct | None = None,
         node_type=None,
         variable=None,
         parent=None,
@@ -118,7 +120,7 @@ class RetypeNode(QDialog):
     # Private methods
     #
 
-    def _get_predefined_types(self) -> Dict[Any, "SimType"]:
+    def _get_predefined_types(self) -> dict[Any, SimType]:
         # global types
         r = dict(self._instance.kb.types)
         # local types

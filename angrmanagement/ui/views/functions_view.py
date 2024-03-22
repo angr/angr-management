@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtWidgets import QVBoxLayout
 
 from angrmanagement.ui.widgets.qfunction_table import QFunctionTable

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .analysis_options import AnalysisOptionsDialog
 from .assemble_patch import AssemblePatchDialog
 from .breakpoint import BreakpointDialog

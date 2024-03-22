@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict
 
 import ailment
@@ -111,7 +113,7 @@ class PoisonPlugin(BasePlugin):
             pass
 
     @property
-    def knowledge(self) -> "PoisonKnowledge":
+    def knowledge(self) -> PoisonKnowledge:
         return self.workspace.main_instance.kb.decompiler_poison
 
     def set_poison_local(self, func, callee, value):

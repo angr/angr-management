@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class IndirectJump:
     """
     A meta class describing an indirect jump instruction.

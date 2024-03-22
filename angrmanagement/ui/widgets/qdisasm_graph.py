@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.utils import to_ail_supergraph
 from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimeLine
@@ -26,7 +28,7 @@ _l = logging.getLogger(__name__)
 class QViewPortMover:
     def __init__(
         self,
-        disasm_graph: "QDisassemblyGraph",
+        disasm_graph: QDisassemblyGraph,
         x: int,
         y: int,
         target_x: int,
@@ -111,7 +113,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     # Public methods
     #
 
-    def reload(self, old_infodock: Optional["InfoDock"] = None):
+    def reload(self, old_infodock: InfoDock | None = None):
         # if there is an instruction in selection, we will want to select that instruction again after reloading this
         # view.
         selected_insns = old_infodock.selected_insns.am_obj if old_infodock is not None else set()

@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.calling_conventions import SimRegArg
 from PySide6.QtCore import QRectF, Qt
@@ -37,7 +39,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
         self._function_name_item: QGraphicsSimpleTextItem = None
         self._args_str_item: QGraphicsSimpleTextItem = None
-        self._prototype_arg_item: Optional[QGraphicsSimpleTextItem] = None
+        self._prototype_arg_item: QGraphicsSimpleTextItem | None = None
 
         self._init_widgets()
 

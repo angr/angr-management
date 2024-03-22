@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -47,11 +49,11 @@ class TraceViewer(BasePlugin):
     #
 
     @property
-    def trace(self) -> Union["ObjectContainer", Optional[TraceStatistics]]:
+    def trace(self) -> ObjectContainer | TraceStatistics | None:
         return self.workspace.main_instance.trace
 
     @property
-    def multi_trace(self) -> Union["ObjectContainer", Optional[MultiTrace], AFLQemuBitmap]:
+    def multi_trace(self) -> ObjectContainer | MultiTrace | None | AFLQemuBitmap:
         return self.workspace.main_instance.multi_trace
 
     #
@@ -360,7 +362,7 @@ class TraceViewer(BasePlugin):
         except ValueError:
             return None
 
-    def _open_json_trace_dialog(self) -> Tuple[Optional[List[int]], Optional[int]]:
+    def _open_json_trace_dialog(self) -> tuple[list[int] | None, int | None]:
         # project = self.workspace.instance.project
         trace_file_name = self._open_trace_dialog(tfilter="json (*.json)")
 

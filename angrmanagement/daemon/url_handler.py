@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import base64
 import binascii
 import urllib.parse
-from typing import Dict, Optional, Type
 
 
 class UrlActionBase:
@@ -148,7 +149,7 @@ class UrlActionBinaryAware(UrlActionBase):
 
     @classmethod
     def _from_params(cls, params):
-        target_id: Optional[str] = cls._one_param(params, "target_id")
+        target_id: str | None = cls._one_param(params, "target_id")
         action = cls._one_param(params, "action")
         kwargs = {}
         for k, v in params.items():
@@ -160,7 +161,7 @@ class UrlActionBinaryAware(UrlActionBase):
         return cls(target_id=target_id, action=action, kwargs=kwargs)
 
 
-_ACT2CLS: Dict[str, Type[UrlActionBase]] = {
+_ACT2CLS: dict[str, type[UrlActionBase]] = {
     "open": UrlActionOpen,
     "jumpto": UrlActionJumpTo,
     "commentat": UrlActionCommentAt,
@@ -177,5 +178,5 @@ def handle_url(url, act=True):
     return action
 
 
-def register_url_action(action: str, action_handler: Type[UrlActionBase]):
+def register_url_action(action: str, action_handler: type[UrlActionBase]):
     _ACT2CLS[action] = action_handler

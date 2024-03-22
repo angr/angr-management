@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import os
-from typing import Optional
 
 from PySide6.QtCore import QStandardPaths
 
@@ -17,7 +18,7 @@ if config_dir == "":
     config_dir = os.path.join(system_config_dir, "angr-management")
     os.makedirs(config_dir, exist_ok=True)
 
-config_path: Optional[str]
+config_path: str | None
 if config_dir != "":
     config_path = os.path.join(config_dir, "config.toml")
     try:

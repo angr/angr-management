@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import atexit
 import logging
 from datetime import datetime
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
-from typing import Optional
 
 from angr.utils.mp import Initializer
 
@@ -20,8 +21,8 @@ class LogTimeStamp:
         :param unix_time: The unix time the timestamp represents
         """
         self._ts = datetime.fromtimestamp(unix_timestamp)
-        self._cache_key: Optional[str] = None
-        self._cache_str: Optional[str] = None
+        self._cache_key: str | None = None
+        self._cache_str: str | None = None
 
     def __str__(self) -> str:
         """

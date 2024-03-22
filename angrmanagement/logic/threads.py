@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import contextlib
 import threading
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
+from typing import Any, Callable, TypeVar
 
 from PySide6.QtCore import QCoreApplication, QEvent
 
@@ -196,7 +198,7 @@ def is_gui_thread() -> bool:
 
 
 def gui_thread_schedule(
-    callable: Callable[..., T], args: Tuple[Any] = None, timeout: int = None, kwargs: Optional[Dict[str, Any]] = None
+    callable: Callable[..., T], args: tuple[Any] = None, timeout: int = None, kwargs: dict[str, Any] | None = None
 ) -> T:
     """
     Schedules the given callable to be executed on the GUI thread. If the current thread is the GUI thread, the callable
@@ -237,7 +239,7 @@ def gui_thread_schedule(
 
 
 def gui_thread_schedule_async(
-    callable: Callable[..., T], args: Tuple[Any] = None, kwargs: Dict[str, Any] = None
+    callable: Callable[..., T], args: tuple[Any] = None, kwargs: dict[str, Any] = None
 ) -> None:
     """
     Schedules the given callable to be executed on the GUI thread. If the current thread is the GUI thread, the callable
