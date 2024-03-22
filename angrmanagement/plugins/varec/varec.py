@@ -21,8 +21,8 @@ class VaRec(BasePlugin):
     The plugin for supporting the VaRec plugin (private for now until it is released to the public).
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, workspace):
+        super().__init__(workspace)
 
         self.transitions: set[tuple[int, int]] = set()
         self.covered_blocks = SortedDict()

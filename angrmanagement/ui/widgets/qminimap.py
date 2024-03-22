@@ -23,8 +23,8 @@ class QMiniMapViewportBox(QGraphicsItem):
 
     PEN_WIDTH: float = 2
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__()
         self._scene_rect: QRectF = QRectF()
         self._viewport_rect: QRectF = QRectF()
 
@@ -72,8 +72,8 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
     For performance, the scene is cached in a QImage and only updated when update_scene_drawing is called.
     """
 
-    def __init__(self, target_view: QGraphicsView, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, target_view: QGraphicsView):
+        super().__init__()
         self._view: QGraphicsView = target_view
         self._minimap_scene_rect: QRectF = QRectF()
         self._scene_img: QImage = QImage()
@@ -124,8 +124,8 @@ class QMiniMapView(QGraphicsView):
     support viewport control.
     """
 
-    def __init__(self, target_view: QBaseGraphicsView, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, target_view: QBaseGraphicsView, parent=None):
+        super().__init__(parent=parent)
         self._target_view: QBaseGraphicsView = target_view
         self._is_mouse_pressed: bool = False
         self._scale: float = 1.0

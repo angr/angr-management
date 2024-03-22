@@ -58,7 +58,7 @@ class XRefDialog(QDialog):
         self.setMinimumSize(self.sizeHint())
         self.adjustSize()
 
-    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(600, 400)
 
     def _init_widgets(self):

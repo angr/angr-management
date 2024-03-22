@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 class MemoryChecker(BasePlugin):
     AllowList = ["free", "malloc", "__libc_start_main"]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, workspace):
+        super().__init__(workspace)
         self.states = self.workspace.main_instance.states
         self.states.am_subscribe(self.install_state_plugin)
 

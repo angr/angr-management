@@ -42,9 +42,12 @@ class AnalysisOptionWidgetMapper:
     Analysis option widget creation and event handling.
     """
 
+    option: AnalysisOption
+    widget: QWidget | None
+
     def __init__(self, option: AnalysisOption):
-        self.option: AnalysisOption = option
-        self.widget: QWidget | None = None
+        self.option = option
+        self.widget = None
 
     def create_widget(self) -> QWidget:
         raise NotImplementedError
@@ -173,8 +176,8 @@ class ChoiceAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
 
     option: ChoiceAnalysisOption
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, option: ChoiceAnalysisOption):
+        super().__init__(option)
         self.combobox = None
 
     def create_widget(self, parent=None) -> QWidget:
@@ -217,7 +220,7 @@ class AnalysisOptionsDialog(QDialog):
         self.setMinimumSize(self.sizeHint())
         self.adjustSize()
 
-    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(800, 600)
 
     #

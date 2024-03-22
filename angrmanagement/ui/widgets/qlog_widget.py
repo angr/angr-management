@@ -138,8 +138,8 @@ class QLogWidget(QTableView):
     Log table. Displays log messages.
     """
 
-    def __init__(self, log_view, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, log_view):
+        super().__init__()
 
         self.log_view = log_view
         # True if we want the log panel to automatically scroll to bottom

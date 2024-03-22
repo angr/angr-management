@@ -16,8 +16,8 @@ class QStateTableItem(QTableWidgetItem):
     An entry within a QStateTable
     """
 
-    def __init__(self, state, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, state):
+        super().__init__()
 
         self.state = state
 
@@ -154,7 +154,7 @@ class QStateTable(QTableWidget):
         simgr_name = NameGenerator.random_name()
         self.workspace.create_simulation_manager(state, simgr_name)
 
-    def _watch_states(self, **kwargs):  # pylint: disable=unused-argument
+    def _watch_states(self):
         self.reload()
 
     def _get_copied_state_name(self, current_name):

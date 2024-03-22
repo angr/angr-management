@@ -75,8 +75,8 @@ class QStackTableWidget(QTableView):
     Stack table widget.
     """
 
-    def __init__(self, stack_view, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, stack_view):
+        super().__init__()
         self.stack_view = stack_view
 
         hheader = self.horizontalHeader()
@@ -177,7 +177,7 @@ class StackView(InstanceView):
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(200, 200)
 
     def _init_widgets(self):

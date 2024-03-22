@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 
 
 class TraceViewer(BasePlugin):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, workspace):
+        super().__init__(workspace)
 
         self.workspace.main_instance.register_container(
             "trace", lambda: None, Optional[TraceStatistics], "The current trace"

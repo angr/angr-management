@@ -83,8 +83,8 @@ class QBreakpointTableWidget(QTableView):
     Breakpoint table widget.
     """
 
-    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: Workspace, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: Workspace):
+        super().__init__()
         self.workspace = workspace
         self.breakpoint_mgr = breakpoint_mgr
 
@@ -161,7 +161,7 @@ class BreakpointsView(InstanceView):
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(200, 200)
 
     def _init_widgets(self):

@@ -29,8 +29,8 @@ class TraceMapItem(QGraphicsItem):
     ZVALUE_ADDR = 2
     ZVALUE_HOVER = 3
 
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, instance):
+        super().__init__()
         self.instance = instance
 
         self._width: int = 1
@@ -233,7 +233,7 @@ class TraceMapItem(QGraphicsItem):
         for checkpoint_addr in self._checkpoints:
             self._create_line_indicator(checkpoint_addr, self._checkpoint_items, color=color, z=self.ZVALUE_CHECKPOINT)
 
-    def _gen_current_indicator(self, **kwargs):  # pylint: disable=unused-argument
+    def _gen_current_indicator(self):  # pylint: disable=unused-argument
         """
         Create current address indicator.
         """

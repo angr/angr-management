@@ -20,8 +20,8 @@ class ExecutionStatisticsViewer(BasePlugin):
     fetch_qblock_annotations function.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, workspace):
+        super().__init__(workspace)
         self.passthrough_counts = defaultdict(int)
         self.addr_to_active_states = defaultdict(list)
         self.returning_to_here_states = defaultdict(list)

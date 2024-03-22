@@ -89,8 +89,8 @@ class QRegisterTableWidget(QTableView):
     Register table widget.
     """
 
-    def __init__(self, register_view, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, register_view):
+        super().__init__()
         self.register_view = register_view
 
         hheader = self.horizontalHeader()
@@ -151,7 +151,7 @@ class RegistersView(InstanceView):
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(200, 200)
 
     def _init_widgets(self):

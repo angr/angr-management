@@ -10,6 +10,6 @@ class InvalidURLError(AngrManagementError):
 
 
 class UnexpectedStatusCodeError(AngrManagementError):
-    def __init__(self, status_code, *args):
-        super().__init__(*args)
+    def __init__(self, status_code):
+        super().__init__()
         self.status_code = status_code

@@ -48,8 +48,8 @@ class ObjectContainer(EventSentinel):
     only the kwargs passed to the am_event of EventSentinel are synchronized
     """
 
-    def __init__(self, obj, name=None, notes="", **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, obj, name=None, notes="", logging_permitted: bool = True):
+        super().__init__(logging_permitted=logging_permitted)
         self._am_obj = None
         self.am_obj = obj
         self.am_name = name if name is not None else NameGenerator.random_name()
