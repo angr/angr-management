@@ -23,7 +23,7 @@ class OperandDescriptor:
         "variable_ident",
     )
 
-    def __init__(self, text, num_value, func_addr=None, variable_ident=None) -> None:
+    def __init__(self, text: str, num_value, func_addr=None, variable_ident=None) -> None:
         self.text = text
         self.num_value = num_value
         self.func_addr = func_addr

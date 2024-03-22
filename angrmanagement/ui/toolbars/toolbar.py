@@ -8,7 +8,7 @@ from .toolbar_action import ToolbarAction, ToolbarSplitter
 
 
 class Toolbar:
-    def __init__(self, window, name) -> None:
+    def __init__(self, window, name: str) -> None:
         self.window = window
         self.name = name
 

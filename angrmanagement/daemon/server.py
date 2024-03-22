@@ -72,7 +72,7 @@ class ManagementService(rpyc.Service):
     def exposed_register_binary(self, bin_path, target_id: str) -> None:
         TargetIDtoCONN[target_id] = self._conn
 
-    def exposed_commentat(self, addr, comment, target_id: str) -> None:
+    def exposed_commentat(self, addr, comment: str, target_id: str) -> None:
         conn = self._get_conn(target_id)
         conn.root.commentat(addr, comment)
 
@@ -112,7 +112,7 @@ def monitor_thread(server) -> None:
         time.sleep(1)
 
 
-def start_daemon(port=DEFAULT_PORT) -> None:
+def start_daemon(port: int = DEFAULT_PORT) -> None:
     try:
         from angrmanagement.logic import GlobalInfo
 
@@ -157,7 +157,7 @@ def run_daemon_process() -> None:
     subprocess.Popen(apppath + ["-D"], stdin=None, stdout=None, stderr=None, close_fds=True, **flags)
 
 
-def daemon_conn(port=DEFAULT_PORT, service=rpyc.VoidService):
+def daemon_conn(port: int = DEFAULT_PORT, service=rpyc.VoidService):
     return rpyc.connect("localhost", port, service=service, config={"allow_public_attrs": True})
 
 

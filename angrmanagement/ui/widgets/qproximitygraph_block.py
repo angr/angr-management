@@ -34,7 +34,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: BaseProxiNode) -> None:
+    def __init__(self, is_selected: bool, proximity_view: ProximityView, node: BaseProxiNode) -> None:
         super().__init__()
 
         self._proximity_view = proximity_view
@@ -156,7 +156,7 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
     Function Block
     """
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: FunctionProxiNode) -> None:
+    def __init__(self, is_selected: bool, proximity_view: ProximityView, node: FunctionProxiNode) -> None:
         self._text = None
         self._text_item: QGraphicsSimpleTextItem = None
         super().__init__(is_selected, proximity_view, node)
@@ -198,7 +198,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
     Call Block
     """
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: CallProxiNode) -> None:
+    def __init__(self, is_selected: bool, proximity_view: ProximityView, node: CallProxiNode) -> None:
         self._func_name: str = None
         self._args: list[tuple[type, str]] = None
 
@@ -317,7 +317,7 @@ class QProximityGraphStringBlock(QProximityGraphBlock):
     String Block
     """
 
-    def __init__(self, is_selected, proximity_view: ProximityView, node: StringProxiNode) -> None:
+    def __init__(self, is_selected: bool, proximity_view: ProximityView, node: StringProxiNode) -> None:
         self._text = None
         self._text_item: QGraphicsSimpleTextItem = None
         super().__init__(is_selected, proximity_view, node)

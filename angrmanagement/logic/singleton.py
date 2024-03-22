@@ -96,7 +96,7 @@ class SingleInstance:
             sys.exit(-1)
 
 
-def f(initializer: Initializer, name) -> None:
+def f(initializer: Initializer, name: str) -> None:
     initializer.initialize()
     tmp = logger.level
     logger.setLevel(logging.CRITICAL)  # we do not want to see the warning

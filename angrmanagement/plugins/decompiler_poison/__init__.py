@@ -137,7 +137,7 @@ class PoisonPlugin(BasePlugin):
         return ",".join(hex(a) for a in a_set)
 
     @staticmethod
-    def _string_to_poison(a_string):
+    def _string_to_poison(a_string: str):
         return {int(a, 16) for a in a_string.split(",")}
 
     def angrdb_store_entries(self):

@@ -29,7 +29,7 @@ class ValueSearch(BasePlugin):
     # UI Callback Handlers
     #
 
-    def handle_click_menu(self, idx) -> None:
+    def handle_click_menu(self, idx: int) -> None:
         pass
 
     def color_insn(self, addr, selected, disasm_view) -> None:

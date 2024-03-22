@@ -288,7 +288,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         offset_into_region = addr - floor_region_addr
         self.navigate_to(floor_region_offset + offset_into_region)
 
-    def navigate_to(self, offset) -> None:
+    def navigate_to(self, offset: int) -> None:
         self.verticalScrollBar().setValue(offset * self._line_height)
         self.prepare_objects(offset, start_line=0)
 
@@ -320,7 +320,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.objects.clear()
         self._offset = None
 
-    def prepare_objects(self, offset, start_line: int = 0) -> None:
+    def prepare_objects(self, offset: int, start_line: int = 0) -> None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.
@@ -517,14 +517,14 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         except StopIteration:
             return 0
 
-    def _region_from_offset(self, offset):
+    def _region_from_offset(self, offset: int):
         try:
             off = next(self._offset_to_region.irange(maximum=offset, reverse=True))
             return off, self._offset_to_region[off]
         except StopIteration:
             return None, None
 
-    def _addr_from_offset(self, mr, base_offset, offset):
+    def _addr_from_offset(self, mr, base_offset, offset: int):
         return mr.addr + (offset - base_offset)
 
     def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:

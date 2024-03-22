@@ -50,7 +50,7 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
     A custom tree-view widget item for the architecture selection TreeView.
     """
 
-    def __init__(self, name, arch) -> None:
+    def __init__(self, name: str, arch) -> None:
         super().__init__()
         self.name = name
         self.arch = arch
@@ -63,7 +63,11 @@ class LoadBinary(QDialog):
     """
 
     def __init__(
-        self, partial_ld, suggested_backend: cle.Backend | None = None, suggested_os_name=None, parent=None
+        self,
+        partial_ld,
+        suggested_backend: cle.Backend | None = None,
+        suggested_os_name: str | None = None,
+        parent=None,
     ) -> None:
         super().__init__(parent)
 
@@ -514,7 +518,9 @@ class LoadBinary(QDialog):
         self.close()
 
     @staticmethod
-    def run(partial_ld, suggested_backend=None, suggested_os_name=None) -> tuple[dict | None, dict | None, dict | None]:
+    def run(
+        partial_ld, suggested_backend=None, suggested_os_name: str | None = None
+    ) -> tuple[dict | None, dict | None, dict | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,

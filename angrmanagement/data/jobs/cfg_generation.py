@@ -81,7 +81,7 @@ class CFGGenerationJob(Job):
     # Private methods
     #
 
-    def _progress_callback(self, percentage, text=None, cfg=None) -> None:
+    def _progress_callback(self, percentage, text: str | None = None, cfg=None) -> None:
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return

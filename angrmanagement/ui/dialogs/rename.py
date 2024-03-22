@@ -21,7 +21,7 @@ class NameLineEdit(QLineEdit):
         return None
 
     @staticmethod
-    def _is_valid_node_name(name):
+    def _is_valid_node_name(name: str):
         return name and " " not in name.strip()
 
 

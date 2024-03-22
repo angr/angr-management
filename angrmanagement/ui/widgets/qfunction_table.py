@@ -179,7 +179,7 @@ class QFunctionTableModel(QAbstractTableModel):
     # Private methods
     #
 
-    def _get_column_data(self, func, idx):
+    def _get_column_data(self, func, idx: int):
         if idx == self.NAME_COL:
             return func.demangled_name
         elif idx == self.TAGS_COL:
@@ -197,7 +197,7 @@ class QFunctionTableModel(QAbstractTableModel):
         else:
             return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
 
-    def _get_column_text(self, func, idx):
+    def _get_column_text(self, func, idx: int):
         if idx < len(self.Headers):
             data = self._get_column_data(func, idx)
             if idx == self.ADDRESS_COL:
@@ -290,7 +290,7 @@ class QFunctionTableHeaderView(QHeaderView):
     def visibleSectionCount(self):
         return self.model().columnCount() - self.hiddenSectionCount()
 
-    def setSectionVisible(self, idx, visible) -> None:
+    def setSectionVisible(self, idx: int, visible) -> None:
         if visible or self.visibleSectionCount() > 1:
             self.setSectionHidden(idx, not visible)
 
@@ -514,7 +514,7 @@ class QFunctionTable(QWidget):
         else:
             self._status_label.setText("%d/%d functions" % (cnt, len(self.function_manager)))
 
-    def filter_functions(self, text) -> None:
+    def filter_functions(self, text: str) -> None:
         self._table_view.filter(text)
         self.update_displayed_function_count()
 
@@ -570,7 +570,7 @@ class QFunctionTable(QWidget):
     # Events
     #
 
-    def _on_filter_box_text_changed(self, text) -> None:
+    def _on_filter_box_text_changed(self, text: str) -> None:
         self.filter_functions(text)
 
     def _on_filter_box_return_pressed(self) -> None:

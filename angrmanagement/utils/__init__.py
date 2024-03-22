@@ -154,7 +154,7 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
         return next(iter(out_branch_map.values()))
 
 
-def fast_memory_load_pointer(project, addr, size=None):
+def fast_memory_load_pointer(project, addr, size: int | None = None):
     try:
         return project.loader.memory.unpack_word(addr, size=size)
     except KeyError:

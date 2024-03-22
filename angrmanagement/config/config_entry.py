@@ -42,7 +42,7 @@ class ConfigurationEntry:
 
     __slots__ = ("name", "type_", "_value", "default_value")
 
-    def __init__(self, name, type_, value, default_value=None) -> None:
+    def __init__(self, name: str, type_, value, default_value=None) -> None:
         self.name = name
         self.type_ = type_
         self._value = _make_config_entry_value(value, self.type_)

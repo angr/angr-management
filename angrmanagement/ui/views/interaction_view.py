@@ -29,7 +29,7 @@ _l = logging.getLogger(name=__name__)
 
 # not a namedtuple so it can be mutable. I think this is not a terrible idea.
 class SavedInteraction:
-    def __init__(self, name, protocol, log) -> None:
+    def __init__(self, name: str, protocol, log) -> None:
         self.name = name
         self.protocol = protocol
         self.log = log
@@ -278,7 +278,7 @@ class InteractionView(InstanceView):
         self._state_transition(InteractionState.RUNNING)
         Thread(target=self._socket_thread, args=(img_name,), daemon=True).start()
 
-    def _socket_thread(self, img_name) -> None:
+    def _socket_thread(self, img_name: str) -> None:
         with archr.targets.DockerImageTarget(img_name).build().start() as target, target.flight_context() as flight:
             sock = flight.default_channel
             sock._raise_timeout = True

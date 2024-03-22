@@ -26,7 +26,7 @@ except ImportError:
     log.error("You don't have slacrs module installed locally, CoveragePlugin going to have a bad time.")
 
 
-def generate_light_gradients(color, number, lightness: int = 20):
+def generate_light_gradients(color, number: int, lightness: int = 20):
     """
     return a List of QColors, where the colors are ordered in terms of
     lightness (last is given as color) the rest (total of number) are
@@ -87,7 +87,7 @@ class CoveragePlugin(BasePlugin):
     START_SHOWING_COVERAGE = 0
     STOP_SHOWING_COVERAGE = 1
 
-    def handle_click_menu(self, idx) -> None:
+    def handle_click_menu(self, idx: int) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -149,7 +149,7 @@ class CoveragePlugin(BasePlugin):
 
     FUNC_COLUMNS = ("Fuzzing Coverage",)
 
-    def extract_func_column(self, func, idx):
+    def extract_func_column(self, func, idx: int):
         assert idx == 0
         if not self.running:
             return 0, "0%"

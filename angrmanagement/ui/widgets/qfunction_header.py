@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class QFunctionHeader(QCachedGraphicsItem):
-    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None) -> None:
+    def __init__(self, addr, name: str, prototype, args, config, disasm_view, workspace, infodock, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.workspace = workspace

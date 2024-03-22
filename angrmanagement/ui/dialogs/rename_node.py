@@ -41,7 +41,7 @@ class NodeNameBox(QLineEdit):
         return None
 
     @staticmethod
-    def _is_valid_node_name(name):
+    def _is_valid_node_name(name: str):
         stripped = name.strip()
         return stripped and " " not in stripped
 

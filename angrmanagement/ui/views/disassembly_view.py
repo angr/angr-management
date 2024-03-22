@@ -748,7 +748,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def select_label(self, label_addr) -> None:
         self.infodock.select_label(label_addr)
 
-    def rename_label(self, addr, new_name, is_func: bool = False, full_refresh: bool = False) -> None:
+    def rename_label(self, addr, new_name: str, is_func: bool = False, full_refresh: bool = False) -> None:
         if self._flow_graph.disasm is not None:
             is_renaming = False
 

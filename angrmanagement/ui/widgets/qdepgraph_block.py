@@ -26,7 +26,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
     def __init__(
         self,
-        is_selected,
+        is_selected: bool,
         dep_view: DependencyView,
         definition: Definition = None,
         atom: Atom = None,

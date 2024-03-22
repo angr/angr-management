@@ -17,7 +17,7 @@ class QStateBlock(QGraphicsItem):
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
 
-    def __init__(self, is_selected, symexec_view, state=None, history=None) -> None:
+    def __init__(self, is_selected: bool, symexec_view, state=None, history=None) -> None:
         super().__init__()
 
         self.symexec_view = symexec_view

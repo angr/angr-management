@@ -31,7 +31,7 @@ class AIL2ARM32(BasePlugin):
         self.free_registers.append(reg)
 
     @staticmethod
-    def opcode_variant(opcode, size=None, signed=None, cond=None):
+    def opcode_variant(opcode, size: int | None = None, signed=None, cond=None):
         if size is not None:
             if size == 4:
                 pass

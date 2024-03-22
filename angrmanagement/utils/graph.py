@@ -239,7 +239,7 @@ class OutBranch:
 
 
 class SuperCFGNode:
-    def __init__(self, addr, idx=None) -> None:
+    def __init__(self, addr, idx: int | None = None) -> None:
         self.addr = addr
         self.idx = idx
 

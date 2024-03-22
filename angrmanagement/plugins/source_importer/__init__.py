@@ -37,7 +37,7 @@ class SourceImporterPlugin(BasePlugin):
 
     MENU_BUTTONS = ["Import source path"]
 
-    def handle_click_menu(self, idx) -> None:
+    def handle_click_menu(self, idx: int) -> None:
         if idx != 0:
             return
         result = QFileDialog.getExistingDirectory(

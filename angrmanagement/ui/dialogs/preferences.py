@@ -167,7 +167,7 @@ class ThemeAndColors(Page):
 
         self.setLayout(page_layout)
 
-    def _load_color_scheme(self, name) -> None:
+    def _load_color_scheme(self, name: str) -> None:
         for prop, value in COLOR_SCHEMES[name].items():
             if prop in self._colors_to_save:
                 row = self._colors_to_save[prop][1]

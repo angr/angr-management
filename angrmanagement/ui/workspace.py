@@ -623,7 +623,7 @@ class Workspace:
         view.function.am_obj = func
         view.function.am_event(focus=True, focus_addr=curr_ins)
 
-    def create_simulation_manager(self, state, state_name, view=None) -> None:
+    def create_simulation_manager(self, state, state_name: str, view=None) -> None:
         inst = self.main_instance
         hierarchy = StateHierarchy()
         simgr = inst.project.factory.simulation_manager(state, hierarchy=hierarchy)
@@ -716,7 +716,7 @@ class Workspace:
         job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
         self.main_instance.add_job(job)
 
-    def interact_program(self, img_name, view=None) -> None:
+    def interact_program(self, img_name: str, view=None) -> None:
         if view is None or view.category != "interaction":
             view = self._get_or_create_view("interaction", InteractionView)
         view.initialize(img_name)
@@ -849,7 +849,7 @@ class Workspace:
 
         self.main_instance.debugger_mgr.debugger.continue_forward()
 
-    def append_code_to_console(self, hook_code_string) -> None:
+    def append_code_to_console(self, hook_code_string: str) -> None:
         console = self._get_or_create_view("console", ConsoleView)
         console.set_input_buffer(hook_code_string)
 

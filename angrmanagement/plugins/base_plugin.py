@@ -117,19 +117,19 @@ class BasePlugin:
     # iterable of tuples (icon, tooltip)
     TOOLBAR_BUTTONS: list[tuple[QIcon, str]] = []
 
-    def handle_click_toolbar(self, idx) -> None:
+    def handle_click_toolbar(self, idx: int) -> None:
         pass
 
     # Iterable of button texts
     MENU_BUTTONS: list[str] = []
 
-    def handle_click_menu(self, idx) -> None:
+    def handle_click_menu(self, idx: int) -> None:
         pass
 
     # Iterable of column names
     FUNC_COLUMNS: list[str] = []
 
-    def extract_func_column(self, func, idx) -> tuple[Any, str]:
+    def extract_func_column(self, func, idx: int) -> tuple[Any, str]:
         # should return a tuple of the sortable column data and the rendered string
         return 0, ""
 
@@ -175,31 +175,31 @@ class BasePlugin:
 
     OPTIMIZATION_PASSES: list[tuple[type[OptimizationPass], bool]] = []
 
-    def handle_stack_var_renamed(self, func, offset, old_name, new_name) -> bool:
+    def handle_stack_var_renamed(self, func, offset: int, old_name: str, new_name: str) -> bool:
         return False
 
-    def handle_stack_var_retyped(self, func, offset, old_type, new_type) -> bool:
+    def handle_stack_var_retyped(self, func, offset: int, old_type, new_type) -> bool:
         return False
 
-    def handle_func_arg_renamed(self, func, offset, old_name, new_name) -> bool:
+    def handle_func_arg_renamed(self, func, offset: int, old_name: str, new_name: str) -> bool:
         return False
 
-    def handle_func_arg_retyped(self, func, offset, old_type, new_type) -> bool:
+    def handle_func_arg_retyped(self, func, offset: int, old_type, new_type) -> bool:
         return False
 
-    def handle_global_var_renamed(self, address, old_name, new_name) -> bool:
+    def handle_global_var_renamed(self, address, old_name: str, new_name: str) -> bool:
         return False
 
     def handle_global_var_retyped(self, address, old_type, new_type) -> bool:
         return False
 
-    def handle_other_var_renamed(self, var, old_name, new_name) -> bool:
+    def handle_other_var_renamed(self, var, old_name: str, new_name: str) -> bool:
         return False
 
     def handle_other_var_retyped(self, var, old_type, new_type) -> bool:
         return False
 
-    def handle_function_renamed(self, func, old_name, new_name) -> bool:
+    def handle_function_renamed(self, func, old_name: str, new_name: str) -> bool:
         return False
 
     def handle_function_retyped(self, func, old_type, new_type) -> bool:

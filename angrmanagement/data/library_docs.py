@@ -33,7 +33,7 @@ class LibraryDocs:
 
         self.func_docs = docs
 
-    def get_docstring_for_func_name(self, func_name):
+    def get_docstring_for_func_name(self, func_name: str):
         for library in self.func_docs:
             for func_dict in library:
                 if "name" not in func_dict:

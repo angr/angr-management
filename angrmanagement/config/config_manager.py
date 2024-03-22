@@ -28,7 +28,7 @@ class UninterpretedCE(CE):
     A config entry which has not been parsed because no type was available for it.
     """
 
-    def __init__(self, name, value, default_value=None) -> None:
+    def __init__(self, name: str, value, default_value=None) -> None:
         super().__init__(name, UninterpretedCE, value, default_value=default_value)
 
 
@@ -346,7 +346,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
                     self._entries[entry.name] = entry.copy()
 
     @staticmethod
-    def _manage_font_cache(real_font, font, metrics, height, width, ascent):
+    def _manage_font_cache(real_font, font, metrics, height, width: int, ascent):
         if real_font == font:
             return font, metrics, height, width, ascent
 

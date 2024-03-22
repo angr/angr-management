@@ -46,7 +46,7 @@ class QBlock(QCachedGraphicsItem):
         out_branches,
         scene,
         parent=None,
-        idx=None,
+        idx: int | None = None,
     ) -> None:
         super().__init__(parent=parent)
 

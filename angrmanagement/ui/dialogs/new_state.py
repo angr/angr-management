@@ -114,7 +114,7 @@ class NewState(QDialog):
         name_box = QLineEdit(self)
         name_box.setText(NameGenerator.random_name())
 
-        def handle_name(txt) -> None:
+        def handle_name(txt: str) -> None:
             nonlocal validation_failures
             key = {"name"}
             if txt and not any(s.gui_data.name == txt for s in self.instance.states):
@@ -369,7 +369,7 @@ class NewState(QDialog):
         options_filter_box = QLineEdit(self)
         options_filter_box.setPlaceholderText("Filter")
 
-        def do_filter(text) -> None:
+        def do_filter(text: str) -> None:
             for child in children_items:
                 child.setHidden(text.upper() not in child.text(0))
 

@@ -257,7 +257,7 @@ class PaletteDialog(QDialog):
         self.setLayout(self._layout)
         self._set_filter_text("")
 
-    def _set_filter_text(self, text) -> None:
+    def _set_filter_text(self, text: str) -> None:
         self._model.set_filter_text(text)
         self._view.setCurrentIndex(self._model.index(0, 0, None))
 

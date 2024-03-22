@@ -21,7 +21,7 @@ class TraceFunc:
         "func",
     )
 
-    def __init__(self, bbl_addr=None, func_name=None, func=None) -> None:
+    def __init__(self, bbl_addr=None, func_name: str | None = None, func=None) -> None:
         self.bbl_addr = bbl_addr
         self.func_name = func_name
         self.func = func
@@ -117,7 +117,7 @@ class TraceStatistics:
         self._cached_object_project_base_addrs[object_name] = base_addr
         return base_addr
 
-    def get_func_color(self, func_name):
+    def get_func_color(self, func_name: str):
         if func_name in self._func_color:
             return self._func_color[func_name]
         else:

@@ -157,7 +157,7 @@ class QStateTable(QTableWidget):
     def _watch_states(self) -> None:
         self.reload()
 
-    def _get_copied_state_name(self, current_name):
+    def _get_copied_state_name(self, current_name: str):
         """
         Get a non-duplicating name for the copied state.
 

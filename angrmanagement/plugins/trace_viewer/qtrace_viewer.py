@@ -396,7 +396,7 @@ class QTraceViewer(QWidget):
         # TODO: this ought to happen automatically as a result of the am_event
         self.disasm_view.current_graph.show_instruction(bbl_addr)
 
-    def _get_mark_color(self, i, total):
+    def _get_mark_color(self, i, total: int):
         relative_gradient_pos = i * 1000 // total
         return self.legend_img.pixelColor(self.LEGEND_WIDTH // 2, relative_gradient_pos)
 

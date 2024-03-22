@@ -93,7 +93,7 @@ class VariableRecoveryJob(Job):
     def _cc_callback(self, func_addr: int) -> None:
         gui_thread_schedule_async(self.on_variable_recovered, args=(func_addr,))
 
-    def _progress_callback(self, percentage, text=None) -> None:
+    def _progress_callback(self, percentage, text: str | None = None) -> None:
         t = time.time()
         if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
             return

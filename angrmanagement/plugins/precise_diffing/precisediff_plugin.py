@@ -51,7 +51,7 @@ class PreciseDiffPlugin(BasePlugin):
     # UI Callback Handlers
     #
 
-    def handle_click_menu(self, idx) -> None:
+    def handle_click_menu(self, idx: int) -> None:
         if idx == self.DIFF_SETTINGS_CMD_EVT:
             dialog = SettingsDialog(self)
             dialog.exec()

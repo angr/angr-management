@@ -296,7 +296,7 @@ class TraceMapItem(QGraphicsItem):
     def hoverLeaveEvent(self, event) -> None:  # pylint: disable=unused-argument
         self._remove_hover_indicators()
 
-    def select_offset(self, offset) -> None:
+    def select_offset(self, offset: int) -> None:
         """
         Update listeners with new desired location.
         """

@@ -169,7 +169,7 @@ class DependencyAnalysisJob(Job):
 
     @staticmethod
     def _dependencies(
-        subject,
+        subject: str,
         sink_atoms: list[tuple[Atom, SimType]],
         kb,
         project,

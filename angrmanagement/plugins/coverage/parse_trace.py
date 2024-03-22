@@ -44,7 +44,7 @@ def _valid_addr(addr, project):
 
 
 @functools.lru_cache(1024)
-def _find_object_base_in_project(object_name, project):
+def _find_object_base_in_project(object_name: str, project):
     base_addr = None
     base_obj_name = os.path.basename(object_name)
     for obj in project.loader.all_objects:

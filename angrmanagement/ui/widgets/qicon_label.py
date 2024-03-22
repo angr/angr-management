@@ -34,7 +34,7 @@ class QIconLabel(QWidget):
     def mouseReleaseEvent(self, _) -> None:
         self.clicked.emit()
 
-    def setText(self, text) -> None:
+    def setText(self, text: str) -> None:
         self._text_label.setText(text)
         self._update_visibility()
 

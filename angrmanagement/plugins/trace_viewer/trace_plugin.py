@@ -197,7 +197,7 @@ class TraceViewer(BasePlugin):
 
     FUNC_COLUMNS = ("Coverage",)
 
-    def extract_func_column(self, func, idx):
+    def extract_func_column(self, func, idx: int):
         assert idx == 0
         if self.multi_trace.am_none:
             cov = 0
@@ -226,7 +226,7 @@ class TraceViewer(BasePlugin):
     RESET_AFL_BITMAP = 4
     OPEN_TRACES_FROM_CHECRS = 5
 
-    def handle_click_menu(self, idx) -> None:
+    def handle_click_menu(self, idx: int) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 

@@ -31,7 +31,7 @@ class DependencyViewer(BasePlugin):
 
     FUNC_COLUMNS = ("Vuln Sink",)
 
-    def extract_func_column(self, func, idx):
+    def extract_func_column(self, func, idx: int):
         assert idx == 0
 
         func_name = func.demangled_name

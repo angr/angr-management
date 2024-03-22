@@ -173,7 +173,7 @@ class Instance:
     # Public methods
     #
 
-    def register_container(self, name, default_val_func, ty, description, logging_permitted: bool = True):
+    def register_container(self, name: str, default_val_func, ty, description: str, logging_permitted: bool = True):
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:

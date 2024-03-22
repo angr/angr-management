@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 class ToolbarAction:
-    def __init__(self, icon, name, tooltip, triggered, checkable: bool = False, shortcut=None) -> None:
+    def __init__(self, icon, name: str, tooltip, triggered, checkable: bool = False, shortcut=None) -> None:
         self.icon = icon
         self.name = name
         self.tooltip = tooltip

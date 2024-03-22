@@ -190,7 +190,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
         self.doc: QCodeDocument = parent
         self.comment_status = False
 
-    def highlight_block(self, text, block) -> None:
+    def highlight_block(self, text: str, block) -> None:
         # this code makes the assumption that this function is only ever called on lines in sequence in order
         # it might also fuck up if it ever calls it starting in the middle...
         if block.previous() is None:

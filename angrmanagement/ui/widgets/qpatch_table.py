@@ -99,7 +99,7 @@ class QPatchTable(QTableWidget):
             self.reload()
 
     @staticmethod
-    def _get_bytes(proj, addr, size):
+    def _get_bytes(proj, addr, size: int):
         try:
             return proj.loader.memory.load(addr, size)
         except KeyError:

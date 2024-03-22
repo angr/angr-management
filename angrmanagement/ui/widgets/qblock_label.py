@@ -10,7 +10,7 @@ from .qgraph_object import QCachedGraphicsItem
 
 
 class QBlockLabel(QCachedGraphicsItem):
-    def __init__(self, addr, text, config, disasm_view, instance, infodock, parent=None) -> None:
+    def __init__(self, addr, text: str, config, disasm_view, instance, infodock, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.instance = instance

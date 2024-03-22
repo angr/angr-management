@@ -8,7 +8,7 @@ class FunctionHeader:
         "args",
     )
 
-    def __init__(self, name, prototype=None, args=None) -> None:
+    def __init__(self, name: str, prototype=None, args=None) -> None:
         self.name = name
         self.prototype = prototype
         self.args = args
@@ -32,6 +32,6 @@ class PhiVariable(Variables):
 class Label:
     __slots__ = ["addr", "text"]
 
-    def __init__(self, addr, text) -> None:
+    def __init__(self, addr, text: str) -> None:
         self.addr = addr
         self.text = text

@@ -83,7 +83,7 @@ class QXRefModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    def _get_column_text(self, xref, idx):
+    def _get_column_text(self, xref, idx: int):
         if idx < len(self.HEADER):
             data = self._get_column_data(xref, idx)
             if isinstance(data, int):
@@ -94,7 +94,7 @@ class QXRefModel(QAbstractTableModel):
     # Abstract methods
     #
 
-    def _get_column_data(self, xref, idx):
+    def _get_column_data(self, xref, idx: int):
         raise NotImplementedError
 
 
@@ -108,7 +108,7 @@ class QXRefVariableModel(QXRefModel):
     PC_COL = 4
     TEXT_COL = 5
 
-    def _get_column_data(self, ref, idx):
+    def _get_column_data(self, ref, idx: int):
         """
 
         :param VariableAccess ref:
@@ -195,7 +195,7 @@ class QXRefAddressModel(QXRefModel):
     PC_COL = 2
     TEXT_COL = 3
 
-    def _get_column_data(self, ref, idx):
+    def _get_column_data(self, ref, idx: int):
         """
 
         :param XRef ref:

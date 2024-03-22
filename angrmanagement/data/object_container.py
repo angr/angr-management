@@ -48,7 +48,7 @@ class ObjectContainer(EventSentinel):
     only the kwargs passed to the am_event of EventSentinel are synchronized
     """
 
-    def __init__(self, obj, name=None, notes: str = "", logging_permitted: bool = True) -> None:
+    def __init__(self, obj, name: str | None = None, notes: str = "", logging_permitted: bool = True) -> None:
         super().__init__(logging_permitted=logging_permitted)
         self._am_obj = None
         self.am_obj = obj

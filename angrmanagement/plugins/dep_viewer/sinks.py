@@ -25,7 +25,7 @@ class BaseSink:
 
 
 class FunctionArgumentSink(BaseSink):
-    def __init__(self, lib: str | None, func_name, arg_idx, platforms: list[str] | None = None) -> None:
+    def __init__(self, lib: str | None, func_name: str, arg_idx, platforms: list[str] | None = None) -> None:
         self.lib = lib
         self.func_name = func_name
         self.arg_idx = arg_idx
@@ -50,7 +50,7 @@ class SinkManager:
                 if isinstance(sink, FunctionArgumentSink):
                     self._func_to_sinks[sink.func_name].append((vuln_type, sink))
 
-    def has_function_sink(self, func_name, lib: str | None = None) -> bool:
+    def has_function_sink(self, func_name: str, lib: str | None = None) -> bool:
         if func_name not in self._func_to_sinks:
             return False
         if lib is None:
@@ -59,7 +59,7 @@ class SinkManager:
         sinks = self._func_to_sinks[func_name]
         return any(sink[1].lib == lib for sink in sinks)
 
-    def get_function_sinks(self, func_name, lib: str | None = None) -> list[tuple[int, FunctionArgumentSink]]:
+    def get_function_sinks(self, func_name: str, lib: str | None = None) -> list[tuple[int, FunctionArgumentSink]]:
         if func_name not in self._func_to_sinks:
             return []
         if lib is None:

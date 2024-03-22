@@ -19,7 +19,7 @@ class SimgrViewerAbstractTreeItem(QTreeWidgetItem):
 
 
 class StashTreeItem(SimgrViewerAbstractTreeItem):
-    def __init__(self, stash_name, simgr_viewer) -> None:
+    def __init__(self, stash_name: str, simgr_viewer) -> None:
         self.simgr_viewer = simgr_viewer
         self.stash_name = stash_name
         super().__init__(simgr_viewer)
@@ -98,7 +98,7 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
             self.add_menu_action(menu, "Paste state", self.paste_states)
         menu.exec_(QCursor.pos())
 
-    def add_menu_action(self, menu, string, action) -> None:
+    def add_menu_action(self, menu, string: str, action) -> None:
         plural = ""
         if len(self.simgr_viewer.selectedItems()) > 1:
             plural = "s"
@@ -153,11 +153,11 @@ class QSimulationManagerViewer(QTreeWidget):
             self.simgr.drop(stash=stash_name, filter_func=lambda state, state_set=states: state in state_set)
             self.get_stash_tree_item(stash_name).refresh()
 
-    def paste_from_clipboard(self, stash_name) -> None:
+    def paste_from_clipboard(self, stash_name: str) -> None:
         self.simgr.populate(stash_name, self.state_clipboard)
         self.get_stash_tree_item(stash_name).refresh()
 
-    def move_to_stash(self, stash_name):
+    def move_to_stash(self, stash_name: str):
         lambda_str = ""
         lambda_func = None
         while True:
@@ -227,7 +227,7 @@ class QSimulationManagerViewer(QTreeWidget):
                     continue
                 break
 
-    def get_stash_tree_item(self, stash_name):
+    def get_stash_tree_item(self, stash_name: str):
         return self.stash_tree_items[stash_name]
 
     def _init_widgets(self) -> None:

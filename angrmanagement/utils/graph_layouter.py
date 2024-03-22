@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Sequence
 
 import networkx
 from angr.utils.graph import GraphUtils
@@ -282,7 +283,7 @@ class GraphLayouter:
     def __init__(
         self,
         graph,
-        node_sizes,
+        node_sizes: Sequence[int],
         node_compare_key=None,
         node_sorter=None,
         x_margin: int = 10,
@@ -785,10 +786,10 @@ class GraphLayouter:
             end_point = (x, dst_node_y - 6)
             edge.add_coordinate(*end_point)
 
-    def _indexed_x(self, base_x, idx):
+    def _indexed_x(self, base_x, idx: int):
         return base_x + idx * self.x_margin
 
-    def _indexed_y(self, base_y, idx):
+    def _indexed_y(self, base_y, idx: int):
         return base_y + idx * self.y_margin
 
     def _nointersecting_y(self, row, starting_col, ending_col, default=None):

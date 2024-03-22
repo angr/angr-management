@@ -47,7 +47,7 @@ class QIPythonWidget(RichJupyterWidget):
     def clear_terminal(self) -> None:
         self._control.clear()
 
-    def print_text(self, text) -> None:
+    def print_text(self, text: str) -> None:
         self._append_plain_text(text, True)
 
     def execute_command(self, command) -> None:

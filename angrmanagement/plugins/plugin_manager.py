@@ -359,7 +359,7 @@ class PluginManager:
         for res in self._dispatch(BasePlugin.build_context_menu_functions, False, funcs):
             yield from res
 
-    def get_func_column(self, idx):
+    def get_func_column(self, idx: int):
         for plugin in self.active_plugins.values():
             if idx >= len(plugin.FUNC_COLUMNS):
                 idx -= len(plugin.FUNC_COLUMNS)
@@ -370,7 +370,7 @@ class PluginManager:
     def count_func_columns(self):
         return sum(len(plugin.FUNC_COLUMNS) for plugin in self.active_plugins.values())
 
-    def extract_func_column(self, func, idx):
+    def extract_func_column(self, func, idx: int):
         for plugin in self.active_plugins.values():
             if idx >= len(plugin.FUNC_COLUMNS):
                 idx -= len(plugin.FUNC_COLUMNS)
@@ -388,31 +388,31 @@ class PluginManager:
         for _ in self._dispatch(BasePlugin.step_callback, True, simgr):
             pass
 
-    def handle_stack_var_renamed(self, func, offset, old_name, new_name) -> bool:
+    def handle_stack_var_renamed(self, func, offset: int, old_name: str, new_name: str) -> bool:
         for res in self._dispatch(BasePlugin.handle_stack_var_renamed, False, func, offset, old_name, new_name):
             if res:
                 return True
         return False
 
-    def handle_stack_var_retyped(self, func, offset, old_type, new_type) -> bool:
+    def handle_stack_var_retyped(self, func, offset: int, old_type, new_type) -> bool:
         for res in self._dispatch(BasePlugin.handle_stack_var_retyped, False, func, offset, old_type, new_type):
             if res:
                 return True
         return False
 
-    def handle_func_arg_renamed(self, func, offset, old_name, new_name) -> bool:
+    def handle_func_arg_renamed(self, func, offset: int, old_name: str, new_name: str) -> bool:
         for res in self._dispatch(BasePlugin.handle_func_arg_renamed, False, func, offset, old_name, new_name):
             if res:
                 return True
         return False
 
-    def handle_func_arg_retyped(self, func, offset, old_type, new_type) -> bool:
+    def handle_func_arg_retyped(self, func, offset: int, old_type, new_type) -> bool:
         for res in self._dispatch(BasePlugin.handle_func_arg_retyped, False, func, offset, old_type, new_type):
             if res:
                 return True
         return False
 
-    def handle_global_var_renamed(self, address, old_name, new_name) -> bool:
+    def handle_global_var_renamed(self, address, old_name: str, new_name: str) -> bool:
         for res in self._dispatch(BasePlugin.handle_global_var_renamed, False, address, old_name, new_name):
             if res:
                 return True
@@ -424,13 +424,13 @@ class PluginManager:
                 return True
         return False
 
-    def handle_other_var_renamed(self, var, old_name, new_name):
+    def handle_other_var_renamed(self, var, old_name: str, new_name: str):
         return any(res for res in self._dispatch(BasePlugin.handle_other_var_renamed, False, var, old_name, new_name))
 
     def handle_other_var_retyped(self, var, old_type, new_type):
         return any(res for res in self._dispatch(BasePlugin.handle_other_var_retyped, False, var, old_type, new_type))
 
-    def handle_function_renamed(self, func, old_name, new_name):
+    def handle_function_renamed(self, func, old_name: str, new_name: str):
         return any(res for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name))
 
     def handle_function_retyped(self, func, old_type, new_type):

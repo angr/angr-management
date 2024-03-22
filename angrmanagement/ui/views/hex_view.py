@@ -938,7 +938,7 @@ class HexGraphicsObject(QGraphicsObject):
             pen_width = 1.0
             half_pen_width = pen_width / 2.0
 
-            def set_pen_brush_for_active_selection(active) -> None:
+            def set_pen_brush_for_active_selection(active: bool) -> None:
                 if active:
                     painter.setPen(QPen(Conf.hex_view_selection_color, pen_width))
                     painter.setBrush(QColor(255, 255, 255, 10))
@@ -1018,7 +1018,7 @@ class HexGraphicsObject(QGraphicsObject):
         if self.show_cursor and (self.display_start_addr <= self.cursor < self.display_end_addr):
             cursor_height = self.row_padding / 2
 
-            def set_pen_brush_for_active_cursor(active) -> None:
+            def set_pen_brush_for_active_cursor(active: bool) -> None:
                 painter.setPen(Qt.NoPen)
                 if active:
                     col = Conf.palette_text if self.cursor_blink_state else Qt.NoBrush
@@ -1252,7 +1252,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self.update_scene_rect()
         self.update_display_num_rows()
 
-    def set_region_callback(self, write, mem, addr, size) -> None:
+    def set_region_callback(self, write, mem, addr, size: int) -> None:
         """
         Set current buffer.
         """

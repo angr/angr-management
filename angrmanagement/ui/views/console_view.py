@@ -63,7 +63,7 @@ class ConsoleView(InstanceView):
 
         self._ipython_widget.print_text(msg)
 
-    def set_input_buffer(self, text) -> None:
+    def set_input_buffer(self, text: str) -> None:
         if self._ipython_widget is None:
             return
         self._ipython_widget.input_buffer = text

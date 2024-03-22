@@ -38,7 +38,7 @@ class Job:
     The base class of all Jobs in angr management.
     """
 
-    def __init__(self, name, on_finish=None, blocking: bool = False) -> None:
+    def __init__(self, name: str, on_finish=None, blocking: bool = False) -> None:
         self.name = name
         self.progress_percentage = 0.0
         self.last_text: str | None = None
@@ -93,7 +93,7 @@ class Job:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
                 log.error("Failed to interrupt thread")
 
-    def _progress_callback(self, percentage, text=None) -> None:
+    def _progress_callback(self, percentage, text: str | None = None) -> None:
         delta = percentage - self.progress_percentage
 
         if (delta > 0.02 or self.last_text != text) and time.time() - self.last_gui_updated_at >= 0.1:
@@ -101,7 +101,7 @@ class Job:
             self.progress_percentage = percentage
             gui_thread_schedule_async(self._set_progress, args=(text,))
 
-    def _set_progress(self, text=None) -> None:
+    def _set_progress(self, text: str | None = None) -> None:
         status = self.name
         if text:
             status += ": " + text

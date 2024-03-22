@@ -40,7 +40,7 @@ class QInstructionAnnotation(QGraphicsSimpleTextItem):
     def symexec_view(self) -> SymexecView:
         return self.parentItem().disasm_view.workspace.view_manager.first_view_in_category("symexec")
 
-    def __init__(self, addr, text, *args, **kwargs) -> None:
+    def __init__(self, addr, text: str, *args, **kwargs) -> None:
         super().__init__(text, *args, **kwargs)
         self.addr = addr
         self.setBrush(QBrush(self.foreground_color))
@@ -60,7 +60,7 @@ class QStatsAnnotation(QInstructionAnnotation):
     Abstract Stats Annotation Class.
     """
 
-    def __init__(self, addr, text, *args, **kwargs) -> None:
+    def __init__(self, addr, text: str, *args, **kwargs) -> None:
         super().__init__(addr, text, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.hovered = False
@@ -137,7 +137,7 @@ class QPassthroughCount(QStatsAnnotation):
     background_color = QColor(255, 0, 0, 30)
     foreground_color = QColor(60, 0, 0)
 
-    def __init__(self, addr, count) -> None:
+    def __init__(self, addr, count: int) -> None:
         super().__init__(addr, str(count))
 
     # def mousePressEvent(self, event):
