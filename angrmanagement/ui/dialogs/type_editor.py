@@ -27,7 +27,13 @@ class CTypeEditor(QDialog):
     """
 
     def __init__(
-        self, parent, arch, base_text="", multiline: bool = False, allow_multiple: bool = False, predefined_types=None
+        self,
+        parent,
+        arch,
+        base_text: str = "",
+        multiline: bool = False,
+        allow_multiple: bool = False,
+        predefined_types=None,
     ) -> None:
         super().__init__(parent)
 

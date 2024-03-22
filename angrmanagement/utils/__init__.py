@@ -161,7 +161,7 @@ def fast_memory_load_pointer(project, addr, size=None):
         return None
 
 
-def string_at_addr(cfg, addr, project, max_size=50):
+def string_at_addr(cfg, addr, project, max_size: int = 50):
     try:
         mem_data = cfg.memory_data[addr]
     except KeyError:
@@ -225,7 +225,7 @@ def filter_string_for_display(s):
     return output
 
 
-def get_string_for_display(cfg, insn_addr, project, max_size=20) -> str | None:
+def get_string_for_display(cfg, insn_addr, project, max_size: int = 20) -> str | None:
     str_content = None
 
     try:

@@ -19,7 +19,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     BYTE_AREA_SPACING = 15
 
-    def __init__(self, instance, infodock, addr, memory_data, bytes_per_line=16, parent=None) -> None:
+    def __init__(self, instance, infodock, addr, memory_data, bytes_per_line: int = 16, parent=None) -> None:
         super().__init__(parent=parent)
         self.instance = instance
         self.infodock = infodock

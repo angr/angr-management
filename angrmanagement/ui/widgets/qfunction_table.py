@@ -370,7 +370,7 @@ class QFunctionTableView(QTableView):
         self.filter_text = keyword
         self._model.filter(keyword)
 
-    def jump_to_result(self, index=0) -> None:
+    def jump_to_result(self, index: int = 0) -> None:
         if len(self._model.func_list) > index:
             self._selected_func.am_obj = self._model.func_list[index]
             self._selected_func.am_event(func=self._selected_func.am_obj)
@@ -486,7 +486,7 @@ class QFunctionTable(QWidget):
         self._function_count = len(self._last_known_func_addrs)
         self.update_displayed_function_count()
 
-    def show_filter_box(self, prefix="") -> None:
+    def show_filter_box(self, prefix: str = "") -> None:
         if prefix:
             self._filter_box.setText(prefix)
         self._filter_box.show()

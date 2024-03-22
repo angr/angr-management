@@ -66,7 +66,9 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         """
         self._is_extra_render_pass = is_extra_pass
 
-    def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50) -> None:
+    def save_image_to(
+        self, path, top_margin: int = 50, bottom_margin: int = 50, left_margin: int = 50, right_margin: int = 50
+    ) -> None:
         margins = QMarginsF(left_margin, top_margin, right_margin, bottom_margin)
 
         oldRect = self.scene().sceneRect()
@@ -138,7 +140,9 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
 
-    def zoom(self, out: bool = False, at=None, reset: bool = False, restore: bool = False, factor=1.25) -> None:
+    def zoom(
+        self, out: bool = False, at=None, reset: bool = False, restore: bool = False, factor: float = 1.25
+    ) -> None:
         if at is None:
             at = self.scene().sceneRect().center().toPoint()
         lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())

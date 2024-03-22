@@ -27,7 +27,7 @@ EDGE_STYLES = {EdgeSort.DIRECT_JUMP: Qt.SolidLine, EdgeSort.EXCEPTION_EDGE: Qt.D
 
 
 class QGraphArrow(QGraphicsItem):
-    def __init__(self, edge, arrow_location="end", arrow_direction="down", parent=None) -> None:
+    def __init__(self, edge, arrow_location: str = "end", arrow_direction: str = "down", parent=None) -> None:
         super().__init__(parent)
 
         self.edge = edge
@@ -167,7 +167,9 @@ class QDisasmGraphArrow(QGraphArrow):
 
 
 class QGraphArrowBezier(QGraphArrow):
-    def __init__(self, edge, arrow_location="end", arrow_direction="down", radius=18, parent=None) -> None:
+    def __init__(
+        self, edge, arrow_location: str = "end", arrow_direction: str = "down", radius: int = 18, parent=None
+    ) -> None:
         self._radius = radius
         super().__init__(edge, arrow_location=arrow_location, arrow_direction=arrow_direction, parent=parent)
 

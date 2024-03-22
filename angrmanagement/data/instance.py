@@ -238,7 +238,7 @@ class Instance:
         if current_job:
             current_job.keyboard_interrupt()
 
-    def join_all_jobs(self, wait_period=2.0) -> None:
+    def join_all_jobs(self, wait_period: float = 2.0) -> None:
         """
         Wait until self.jobs is empty for at least `wait_period` seconds.
 

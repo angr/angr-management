@@ -109,7 +109,7 @@ class CodeView(FunctionView):
         clear_prototype: bool = True,
         focus: bool = False,
         focus_addr=None,
-        flavor="pseudocode",
+        flavor: str = "pseudocode",
         reset_cache: bool = False,
         regen_clinic: bool = True,
     ) -> None:

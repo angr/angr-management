@@ -60,7 +60,7 @@ class VaRec(BasePlugin):
         view.codegen.am_event()
 
     @staticmethod
-    def randstr(n=8):
+    def randstr(n: int = 8):
         return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
 
     def infer_variable_names(self) -> None:

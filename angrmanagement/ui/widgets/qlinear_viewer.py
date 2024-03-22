@@ -320,7 +320,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.objects.clear()
         self._offset = None
 
-    def prepare_objects(self, offset, start_line=0) -> None:
+    def prepare_objects(self, offset, start_line: int = 0) -> None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.

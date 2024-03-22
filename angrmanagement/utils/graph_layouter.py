@@ -285,10 +285,10 @@ class GraphLayouter:
         node_sizes,
         node_compare_key=None,
         node_sorter=None,
-        x_margin=10,
-        y_margin=5,
-        row_margin=16,
-        col_margin=16,
+        x_margin: int = 10,
+        y_margin: int = 5,
+        row_margin: int = 16,
+        col_margin: int = 16,
     ):
         self.graph = graph
         self._node_sizes = node_sizes

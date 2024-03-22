@@ -12,7 +12,7 @@ class AIL2ARM32(BasePlugin):
     Assemble expressions into assembly.
     """
 
-    def __init__(self, workspace, sp_adjust=0x30) -> None:
+    def __init__(self, workspace, sp_adjust: int = 0x30) -> None:
         super().__init__(workspace)
         self.sp_adjust = sp_adjust
         self.registers_in_use = []
@@ -49,7 +49,7 @@ class AIL2ARM32(BasePlugin):
             opcode += cond
         return opcode
 
-    def bp_offset_to_sp_offset(self, offset_from_bp, function_addr, expr_addr, adjust=0):
+    def bp_offset_to_sp_offset(self, offset_from_bp, function_addr, expr_addr, adjust: int = 0):
         if function_addr is None or expr_addr is None:
             raise Exception("function_addr and expr_addr must be specified")
         sp = self.workspace.main_instance.project.arch.sp_offset

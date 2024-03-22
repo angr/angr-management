@@ -26,7 +26,7 @@ except ImportError:
     log.error("You don't have slacrs module installed locally, CoveragePlugin going to have a bad time.")
 
 
-def generate_light_gradients(color, number, lightness=20):
+def generate_light_gradients(color, number, lightness: int = 20):
     """
     return a List of QColors, where the colors are ordered in terms of
     lightness (last is given as color) the rest (total of number) are
