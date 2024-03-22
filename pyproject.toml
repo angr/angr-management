@@ -9,6 +9,7 @@ target-version = ['py38']
 [tool.ruff]
 line-length = 120
 target-version = 'py38'
+exclude = ["angrmanagement/vendor/*"]
 
 [tool.ruff.lint]
 select =  [
