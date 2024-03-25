@@ -10,7 +10,9 @@ from .view import InstanceView
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.data.trace import Trace
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QTraceTableModel(QAbstractTableModel):
@@ -21,17 +23,17 @@ class QTraceTableModel(QAbstractTableModel):
     Headers = ["Source"]
     COL_SOURCE = 0
 
-    def __init__(self, instance):
+    def __init__(self, instance: Instance) -> None:
         super().__init__()
         self.instance = instance
         self.instance.current_trace.am_subscribe(self._on_traces_updated)
         self.instance.traces.am_subscribe(self._on_traces_updated)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self.instance.current_trace.am_unsubscribe(self._on_traces_updated)
         self.instance.traces.am_unsubscribe(self._on_traces_updated)
 
-    def _on_traces_updated(self, **kwargs):  # pylint:disable=unused-argument
+    def _on_traces_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
         self.beginResetModel()
         self.endResetModel()
 
@@ -74,7 +76,7 @@ class QTraceTableWidget(QTableView):
     Trace table widget.
     """
 
-    def __init__(self, instance, parent=None):
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent=parent)
         self.instance = instance
 
@@ -98,11 +100,11 @@ class QTraceTableWidget(QTableView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.model.shutdown()
         super().closeEvent(event)
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event) -> None:
         selected_rows = {i.row() for i in self.selectedIndexes()}
         traces = [self.instance.traces[r] for r in selected_rows]
         if len(traces):
@@ -110,7 +112,7 @@ class QTraceTableWidget(QTableView):
             if len(traces) == 1 and not self.workspace(traces[0]):
                 menu.addAction("Use as current trace", lambda: self.workspace.set_current_trace(traces[0]))
 
-            def remove_selected_traces():
+            def remove_selected_traces() -> None:
                 for t in traces:
                     self.workspace.remove_trace(t)
 
@@ -123,7 +125,7 @@ class TracesView(InstanceView):
     Traces table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("traces", workspace, default_docking_position, instance)
 
         self.base_caption = "Traces"
@@ -131,14 +133,14 @@ class TracesView(InstanceView):
         self._init_widgets()
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     @staticmethod
     def minimumSizeHint():
         return QSize(200, 200)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         self._tbl_widget = QTraceTableWidget(self.instance, self)

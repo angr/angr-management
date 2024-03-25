@@ -24,6 +24,9 @@ from .qsearch_table import QSearchTable
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class SearchView(InstanceView):
     """
@@ -31,7 +34,9 @@ class SearchView(InstanceView):
     Has handlers for switching between search types and executing the search.
     """
 
-    def __init__(self, plugin, workspace, instance, default_docking_position, *args, **kwargs):
+    def __init__(
+        self, plugin, workspace: Workspace, instance: Instance, default_docking_position: str, *args, **kwargs
+    ) -> None:
         super().__init__("search", workspace, default_docking_position, instance, *args, **kwargs)
 
         self.base_caption = "Search"
@@ -47,7 +52,7 @@ class SearchView(InstanceView):
         self._init_widgets()
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     def sizeHint(self):
@@ -61,13 +66,13 @@ class SearchView(InstanceView):
     # Event handlers
     #
 
-    def _on_search_click(self):
+    def _on_search_click(self) -> None:
         self._selected_type = self._type_list.currentText()
         pattern = self._filter_string.text()
         self._value_table.filter_string = pattern
         self.reload()
 
-    def _on_string_selected(self, s: MemoryData):
+    def _on_string_selected(self, s: MemoryData) -> None:
         """
         A string reference is selected.
 
@@ -87,7 +92,7 @@ class SearchView(InstanceView):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._search_code_box = QCheckBox("Search code", parent=self)
         self._search_code_box.setChecked(False)
         self._search_code_box.stateChanged.connect(self._on_search_code_changed)
@@ -133,8 +138,8 @@ class SearchView(InstanceView):
 
         self.setLayout(layout)
 
-    def _on_search_code_changed(self, state):
+    def _on_search_code_changed(self, state) -> None:
         self.should_search_code = state == 2
 
-    def _on_constant_selected(self):
+    def _on_constant_selected(self) -> None:
         self._filter_string.setText(self.sender().data())

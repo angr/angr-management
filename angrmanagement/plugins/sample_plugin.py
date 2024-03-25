@@ -9,10 +9,11 @@ if TYPE_CHECKING:
     from angr.sim_manager import SimulationManager
 
     from angrmanagement.ui.widgets.qblock import QBlock
+    from angrmanagement.ui.workspace import Workspace
 
 
 class SamplePlugin(BasePlugin):
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         workspace.main_instance.register_container("bookmarks", list, List[int], "Bookmarked addresses")
@@ -22,7 +23,7 @@ class SamplePlugin(BasePlugin):
     def build_context_menu_functions(self, funcs):  # pylint: disable=unused-argument
         yield ("owo", [("uwu", lambda: None), ("o_O", lambda: None)])
 
-    def step_callback(self, simgr: SimulationManager):
+    def step_callback(self, simgr: SimulationManager) -> None:
         print("Active States: %s" % simgr)
 
     def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:

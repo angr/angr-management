@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from PySide6.QtWidgets import QGridLayout, QWidget
 
 
-def add_to_grid(lyt: QGridLayout, cols: int, widgets: Iterable[QWidget]):
+def add_to_grid(lyt: QGridLayout, cols: int, widgets: Iterable[QWidget]) -> None:
     """
     Adds widgets to a grid layout given a desired column count.
     """

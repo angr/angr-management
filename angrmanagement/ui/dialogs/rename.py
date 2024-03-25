@@ -8,7 +8,7 @@ class NameLineEdit(QLineEdit):
     Simple line edit with simple identifier validation.
     """
 
-    def __init__(self, textchanged_callback, parent=None):
+    def __init__(self, textchanged_callback, parent=None) -> None:
         super().__init__(parent)
 
         self.textChanged.connect(textchanged_callback)
@@ -21,7 +21,7 @@ class NameLineEdit(QLineEdit):
         return None
 
     @staticmethod
-    def _is_valid_node_name(name):
+    def _is_valid_node_name(name: str):
         return name and " " not in name.strip()
 
 
@@ -34,7 +34,7 @@ class RenameDialog(QDialog):
     property will remain `None`.
     """
 
-    def __init__(self, window_title: str = "Rename", initial_text: str = "", parent=None):
+    def __init__(self, window_title: str = "Rename", initial_text: str = "", parent=None) -> None:
         super().__init__(parent)
         self._initial_text: str = initial_text
         self._name_box: NameLineEdit = None
@@ -50,7 +50,7 @@ class RenameDialog(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         name_label = QLabel(self)
         name_label.setText("New name")
         name_box = NameLineEdit(self._on_name_changed, self)
@@ -79,7 +79,7 @@ class RenameDialog(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text):  # pylint:disable=unused-argument
+    def _on_name_changed(self, new_text) -> None:  # pylint:disable=unused-argument
         if self._name_box is None:
             # initialization is not done yet
             return
@@ -97,7 +97,7 @@ class RenameDialog(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         node_name = self._name_box.name
         if node_name is not None:
             self.result = node_name

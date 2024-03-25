@@ -18,7 +18,7 @@ class NewViewMenu(Menu):
     Sub-menu to construct new Views
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&New", parent=main_window)
 
         self.entries.extend(
@@ -45,7 +45,7 @@ class ToolbarMenuEntry(MenuEntry):
     Menu item to control toolbar visibility.
     """
 
-    def __init__(self, toolbar_cls: type[Toolbar], main_window: MainWindow):
+    def __init__(self, toolbar_cls: type[Toolbar], main_window: MainWindow) -> None:
         tm = main_window.toolbar_manager
         super().__init__(tm.get_name_for_toolbar_class(toolbar_cls), self.on_toggle, checkable=True)
         self.main_window = main_window
@@ -56,10 +56,10 @@ class ToolbarMenuEntry(MenuEntry):
         qtb = self.main_window.toolbar_manager.active.get(self.toolbar_cls, None)
         return qtb is not None and qtb.qtoolbar().isVisible()
 
-    def on_toggle(self):
+    def on_toggle(self) -> None:
         self.main_window.toolbar_manager.set_toolbar_visible_by_class(self.toolbar_cls, not self.is_visibile)
 
-    def update_checked(self):
+    def update_checked(self) -> None:
         self.checked = self.is_visibile
 
 
@@ -68,7 +68,7 @@ class ToolbarMenu(Menu):
     Sub-menu to control toolbar visibility.
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&Toolbars", parent=main_window)
         tm = main_window.toolbar_manager
         self.entries.extend([MenuEntry("Show all", tm.show_all), MenuEntry("Hide all", tm.hide_all), MenuSeparator()])
@@ -76,7 +76,7 @@ class ToolbarMenu(Menu):
             self.entries.append(ToolbarMenuEntry(tb_cls, main_window))
         self.qmenu().aboutToShow.connect(self.update_checked_entries)
 
-    def update_checked_entries(self):
+    def update_checked_entries(self) -> None:
         for e in self.entries:
             if isinstance(e, ToolbarMenuEntry):
                 e.update_checked()
@@ -87,7 +87,7 @@ class ViewMenu(Menu):
     Main View menu
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&View", parent=main_window)
 
         self.entries.extend(

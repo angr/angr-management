@@ -22,7 +22,7 @@ class PaletteModel(QAbstractItemModel):
     Data provider for item palette.
     """
 
-    def __init__(self, workspace: Workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__()
         self.workspace: Workspace = workspace
         self._available_items: list[Any] = self.get_items()
@@ -35,7 +35,7 @@ class PaletteModel(QAbstractItemModel):
     def rowCount(self, _):
         return len(self._filtered_items)
 
-    def columnCount(self, _):  # pylint:disable=no-self-use
+    def columnCount(self, _) -> int:  # pylint:disable=no-self-use
         return 1
 
     def index(self, row, col, _):
@@ -138,7 +138,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
 
     icon_width = 25
 
-    def __init__(self, display_icons: bool = True):
+    def __init__(self, display_icons: bool = True) -> None:
         super().__init__()
         self._display_icons = display_icons
 
@@ -168,7 +168,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
         td.setHtml(text_out)
         return td
 
-    def paint(self, painter, option, index):
+    def paint(self, painter, option, index) -> None:
         if index.column() == 0:
             if option.state & QStyle.State_Selected:
                 b = QBrush(option.palette.highlight())
@@ -221,7 +221,7 @@ class PaletteDialog(QDialog):
     Dialog for selecting an item from a palette.
     """
 
-    def __init__(self, model, delegate=None, parent=None):
+    def __init__(self, model, delegate=None, parent=None) -> None:
         super().__init__(parent)
         self._model = model
         self._delegate = delegate or PaletteItemDelegate()
@@ -240,7 +240,7 @@ class PaletteDialog(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._layout: QVBoxLayout = QVBoxLayout()
 
         self._query: QLineEdit = QLineEdit(self)
@@ -257,7 +257,7 @@ class PaletteDialog(QDialog):
         self.setLayout(self._layout)
         self._set_filter_text("")
 
-    def _set_filter_text(self, text):
+    def _set_filter_text(self, text: str) -> None:
         self._model.set_filter_text(text)
         self._view.setCurrentIndex(self._model.index(0, 0, None))
 
@@ -270,7 +270,7 @@ class PaletteDialog(QDialog):
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
         if key in {Qt.Key_Up, Qt.Key_Down}:
             self._view.keyPressEvent(event)
@@ -279,7 +279,7 @@ class PaletteDialog(QDialog):
         else:
             super().keyPressEvent(event)
 
-    def accept(self):
+    def accept(self) -> None:
         self.selected_item = self._get_selected()
         super().accept()
 
@@ -289,7 +289,7 @@ class CommandPaletteDialog(PaletteDialog):
     Dialog for selecting commands.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(CommandPaletteModel(workspace), PaletteItemDelegate(display_icons=False), parent)
         self.setWindowTitle("Command Palette")
 
@@ -299,6 +299,6 @@ class GotoPaletteDialog(PaletteDialog):
     Dialog for selecting navigation targets.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(GotoPaletteModel(workspace), parent=parent)
         self.setWindowTitle("Goto Anything")

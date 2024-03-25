@@ -22,7 +22,7 @@ class GlobalInfo:
     events: list[ExecuteCodeEvent] = []
 
     @classmethod
-    def add_event_during_test(cls, event: ExecuteCodeEvent):
+    def add_event_during_test(cls, event: ExecuteCodeEvent) -> None:
         """
         Add an ExecuteCode event to the event queue during tests. Events in the queue will be picked up by a manually
         crafted event loop and executed one by one (see tests/common.py).

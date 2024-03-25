@@ -47,12 +47,12 @@ class BasicCommand(Command):
     Basic command to invoke a callable.
     """
 
-    def __init__(self, name: str, caption: str, action: Callable):
+    def __init__(self, name: str, caption: str, action: Callable) -> None:
         self._name = name
         self._caption = caption
         self._action: Callable = action
 
-    def run(self):
+    def run(self) -> None:
         self._action()
 
 
@@ -61,7 +61,9 @@ class ViewCommand(Command):
     Commands to invoke a callable on a view.
     """
 
-    def __init__(self, name: str, caption: str, action: Callable, view_class: type[BaseView], workspace: Workspace):
+    def __init__(
+        self, name: str, caption: str, action: Callable, view_class: type[BaseView], workspace: Workspace
+    ) -> None:
         self._name = name
         self._caption = caption
         self._action: Callable = action

@@ -10,7 +10,7 @@ class EdgeSort:
 
 
 class Edge:
-    def __init__(self, src, dst, sort=EdgeSort.DIRECT_JUMP):
+    def __init__(self, src, dst, sort=EdgeSort.DIRECT_JUMP) -> None:
         self.src = src
         self.dst = dst
 
@@ -24,13 +24,13 @@ class Edge:
         self.coordinates = []
         self.sort = sort
 
-    def add_point(self, col, row, index):
+    def add_point(self, col, row, index) -> None:
         self.points.append((col, row, index))
 
-    def add_move(self, move):
+    def add_move(self, move) -> None:
         self.moves.append(move)
 
-    def add_coordinate(self, x, y):
+    def add_coordinate(self, x, y) -> None:
         if len(self.coordinates) >= 2:
             coord_a, coord_b = self.coordinates[-2], self.coordinates[-1]
             if coord_b[0] == coord_a[0] == x:
@@ -60,5 +60,5 @@ class Edge:
 
         return 1  # NO_MOVE
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Edge between %s and %s, %d coordinates>" % (self.src, self.dst, len(self.coordinates))

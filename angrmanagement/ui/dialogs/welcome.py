@@ -27,12 +27,12 @@ class WelcomeDialog(QDialog):
     Welcome dialog.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Welcome")
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.setStyleSheet("QPushButton { text-align:left; }")
 
         # Banner with angr-management version string
@@ -97,10 +97,10 @@ class WelcomeDialog(QDialog):
         outer_layout.addLayout(main_layout)
         self.setLayout(outer_layout)
 
-    def _load_recent_file(self, path):
+    def _load_recent_file(self, path) -> None:
         GlobalInfo.main_window.load_file(path)
         self.close()
 
-    def _open_file(self):
+    def _open_file(self) -> None:
         GlobalInfo.main_window.open_file_button()
         self.close()

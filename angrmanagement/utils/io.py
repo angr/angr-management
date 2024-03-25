@@ -11,7 +11,7 @@ from angrmanagement.config import Conf
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 
 
-def isurl(uri):
+def isurl(uri) -> bool:
     try:
         result = urllib.parse.urlparse(uri)
         if result.scheme in ("http", "https"):
@@ -22,7 +22,7 @@ def isurl(uri):
     return False
 
 
-def download_url(url, parent=None, to_file=True, file_path=None, use_proxies=True):
+def download_url(url, parent=None, to_file: bool = True, file_path=None, use_proxies: bool = True):
     if not isurl(url):
         raise TypeError("The given URL %s is not a valid URL.", url)
 

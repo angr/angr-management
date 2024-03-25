@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QConstraintViewer(QFrame):
@@ -10,7 +15,7 @@ class QConstraintViewer(QFrame):
 
     COLUMNS = ["Constraint", "Cardinality", "Depth", "# Variables"]
 
-    def __init__(self, state, parent, workspace):
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
 
         self._state = state
@@ -24,7 +29,7 @@ class QConstraintViewer(QFrame):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         if self._state.am_none:
             return
 
@@ -41,7 +46,7 @@ class QConstraintViewer(QFrame):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         if self._state.am_none:
             return
 
@@ -59,7 +64,7 @@ class QConstraintViewer(QFrame):
 
         self.setLayout(layout)
 
-    def _watch_state(self, **kwargs):  # pylint: disable=unused-argument
+    def _watch_state(self, **kwargs) -> None:  # pylint: disable=unused-argument
         if self.table is None:
             self._init_widgets()
         self.reload()

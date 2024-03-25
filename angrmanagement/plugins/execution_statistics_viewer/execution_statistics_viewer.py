@@ -11,6 +11,7 @@ from angrmanagement.ui.widgets.qinst_annotation import QActiveCount, QPassthroug
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views import DisassemblyView, SymexecView
+    from angrmanagement.ui.workspace import Workspace
 
 
 class ExecutionStatisticsViewer(BasePlugin):
@@ -20,7 +21,7 @@ class ExecutionStatisticsViewer(BasePlugin):
     fetch_qblock_annotations function.
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         self.passthrough_counts = defaultdict(int)
         self.addr_to_active_states = defaultdict(list)
@@ -41,7 +42,7 @@ class ExecutionStatisticsViewer(BasePlugin):
     def symexec_view(self) -> SymexecView:
         return self.workspace.view_manager.first_view_in_category("symexec")
 
-    def count_passthrough(self, simgr):
+    def count_passthrough(self, simgr) -> None:
         """Prior to stepping the active states, increment the passthrough count on the basic block(s) that will be
         executed next."""
         if self.bb_addrs is None:
@@ -51,13 +52,13 @@ class ExecutionStatisticsViewer(BasePlugin):
                 if i_addr in self.bb_addrs:
                     self.passthrough_counts[i_addr] += 1
 
-    def step_callback(self, simgr):
+    def step_callback(self, simgr) -> None:
         """Called after stepping the simgr"""
         self.count_passthrough(simgr)
         self.count_active_states(simgr)
         gui_thread_schedule(self._refresh_gui)
 
-    def count_active_states(self, simgr):
+    def count_active_states(self, simgr) -> None:
         """Count the number of states at each instruction in the program. Do some special work to figure out how many
         states are under each call and syscall instruction."""
         self.addr_to_active_states = defaultdict(list)
@@ -74,7 +75,7 @@ class ExecutionStatisticsViewer(BasePlugin):
             if s.history.jumpkind.startswith("Ijk_Sys"):
                 self.addr_to_active_states[s.history.jump_source].append(s)
 
-    def _on_simgr_selected(self, *args, src=None, **kwargs):  # pylint: disable=unused-argument
+    def _on_simgr_selected(self, *args, src=None, **kwargs) -> None:  # pylint: disable=unused-argument
         """Listener for when a new simgr is selected in the symexec view"""
         if src in ["clicked", "from above"]:
             # The "from above" event is emitted when you create a new simgr via right click menu in disasm view
@@ -85,7 +86,7 @@ class ExecutionStatisticsViewer(BasePlugin):
                 self.count_active_states(self.current_simgr)
             self._refresh_gui()
 
-    def update_active_states_label(self):
+    def update_active_states_label(self) -> None:
         if not self.current_simgr.am_none:
             self.active_states_label.setText(f"Active states: {len(self.current_simgr.active)}")
 
@@ -112,11 +113,11 @@ class ExecutionStatisticsViewer(BasePlugin):
                 items.append(QPassthroughCount(qinsn.addr, passthrough_count))
         return items
 
-    def _refresh_gui(self):
+    def _refresh_gui(self) -> None:
         self.update_active_states_label()
         self.disasm_view.refresh()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         statusbar_layout = self.disasm_view._statusbar.layout()
         label = QLabel("Active states: 0")
         label.setStyleSheet("QLabel {color: green}")

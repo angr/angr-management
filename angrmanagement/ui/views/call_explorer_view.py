@@ -15,6 +15,9 @@ from .view import InstanceView
 if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 try:
     from bintrace import TraceEvent
 except ImportError:
@@ -47,7 +50,7 @@ class CallTreeItem(QStandardItem):
     Item in call tree representing a function.
     """
 
-    def __init__(self, function, event):
+    def __init__(self, function, event) -> None:
         name = hex(function) if isinstance(function, int) else function.name
         super().__init__(name)
         self.function: int | Function = function
@@ -61,7 +64,7 @@ class CallExplorerView(InstanceView):
     Call Explorer view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("call_explorer", workspace, default_docking_position, instance)
 
         self._last_updated_func: int | Function | None = None
@@ -84,7 +87,7 @@ class CallExplorerView(InstanceView):
     def minimumSizeHint():
         return QSize(200, 200)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
         vlayout.setSpacing(0)
         vlayout.setContentsMargins(0, 0, 0, 0)
@@ -110,11 +113,11 @@ class CallExplorerView(InstanceView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self._dbg_watcher.shutdown()
         super().closeEvent(event)
 
-    def _on_item_clicked(self, index):
+    def _on_item_clicked(self, index) -> None:
         """
         Highlights the corresponding call site.
         """
@@ -130,7 +133,7 @@ class CallExplorerView(InstanceView):
 
         self._inhibit_update = original_inhibit
 
-    def _on_item_double_clicked(self, index):
+    def _on_item_double_clicked(self, index) -> None:
         """
         Navigates into the call.
         """
@@ -140,7 +143,7 @@ class CallExplorerView(InstanceView):
         dbg = self.instance.debugger_mgr.debugger
         dbg.replay_to_event(dbg._btrace.get_next_exec_event(item.event, vcpu=dbg._trace_dbg.vcpu))
 
-    def _on_item_expanded(self, index):
+    def _on_item_expanded(self, index) -> None:
         """
         Descend into call tree for this node.
         """
@@ -155,7 +158,7 @@ class CallExplorerView(InstanceView):
             expanding_item.expandable = len(called) > 0
             expanding_item.populated = True
 
-    def _on_debugger_state_updated(self):
+    def _on_debugger_state_updated(self) -> None:
         """
         Update current call state.
         """
@@ -183,5 +186,5 @@ class CallExplorerView(InstanceView):
         else:
             self._reset_function_label()
 
-    def _reset_function_label(self):
+    def _reset_function_label(self) -> None:
         self._top_level_function_level.setText("Current function: Unknown")

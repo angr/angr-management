@@ -29,7 +29,7 @@ class BintraceTrace(Trace):
     Bintrace execution trace.
     """
 
-    def __init__(self, trace: bintrace.Trace):
+    def __init__(self, trace: bintrace.Trace) -> None:
         assert BintraceTrace.trace_backend_enabled()
         self.trace: bintrace.Trace = trace
 

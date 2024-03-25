@@ -14,10 +14,10 @@ class LibraryDocs:
     Implements the manager of library docs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.func_docs = []
 
-    def load_func_docs(self, path):
+    def load_func_docs(self, path) -> None:
         if not os.path.isabs(path):
             path = os.path.join(app_root(), path) if is_pyinstaller() else os.path.join(app_root(), "..", path)
         path = os.path.normpath(path)
@@ -33,7 +33,7 @@ class LibraryDocs:
 
         self.func_docs = docs
 
-    def get_docstring_for_func_name(self, func_name):
+    def get_docstring_for_func_name(self, func_name: str):
         for library in self.func_docs:
             for func_dict in library:
                 if "name" not in func_dict:

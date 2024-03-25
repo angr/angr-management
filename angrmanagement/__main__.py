@@ -17,7 +17,7 @@ if sys.platform.startswith("darwin"):
     from Foundation import NSBundle  # pylint: disable=import-error
 
 
-def shut_up(*args, **kwargs):  # pylint:disable=unused-argument
+def shut_up(*args, **kwargs) -> None:  # pylint:disable=unused-argument
     return
 
 
@@ -27,7 +27,7 @@ warnings.simplefilter = shut_up
 name: str = "angr management"
 
 
-def set_app_user_model_id():
+def set_app_user_model_id() -> None:
     # Explicitly call SetCurrentProcessExplicitAppUserModelID() so the taskbar icon is displayed correctly.
 
     if sys.platform == "win32":
@@ -37,12 +37,12 @@ def set_app_user_model_id():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
-def set_windows_event_loop_policy():
+def set_windows_event_loop_policy() -> None:
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def start_management(filepath=None, use_daemon=None, profiling=False):
+def start_management(filepath=None, use_daemon=None, profiling: bool = False) -> None:
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
@@ -62,13 +62,13 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
         _progress: float = 0.0
         _progress_message: str = ""
 
-        def setProgress(self, progress: float, progress_message: str | None = None):
+        def setProgress(self, progress: float, progress_message: str | None = None) -> None:
             self._progress = progress
             if self._progress_message is not None:
                 self._progress_message = progress_message
             self.repaint()
 
-        def drawContents(self, painter):
+        def drawContents(self, painter) -> None:
             super().drawContents(painter)
             contentsRect = self.contentsRect()
 
@@ -162,7 +162,7 @@ def start_management(filepath=None, use_daemon=None, profiling=False):
     app.exec_()
 
 
-def main():
+def main() -> None:
     import argparse
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)

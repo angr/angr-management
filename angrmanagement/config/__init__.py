@@ -31,7 +31,7 @@ else:
     Conf = ConfigurationManager()
 
 
-def save_config():
+def save_config() -> None:
     if config_path is None:
         return
     Conf.save_file(config_path)

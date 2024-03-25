@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class QFunctionComboBox(QComboBox):
-    def __init__(self, show_all_functions=False, selection_callback=None, parent=None):
+    def __init__(self, show_all_functions: bool = False, selection_callback=None, parent=None) -> None:
         super().__init__(parent)
 
         self._show_all_functions = show_all_functions
@@ -28,7 +28,7 @@ class QFunctionComboBox(QComboBox):
         return self._function_manager
 
     @functions.setter
-    def functions(self, v):
+    def functions(self, v) -> None:
         if v is not self._function_manager:
             self._function_manager = v
             self.reload()
@@ -37,7 +37,7 @@ class QFunctionComboBox(QComboBox):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         if self._function_manager is None:
             return
 
@@ -49,7 +49,7 @@ class QFunctionComboBox(QComboBox):
         for function in self._function_manager.values():
             self.addItem(self._repr_function(function), function)
 
-    def select_function(self, function):
+    def select_function(self, function) -> None:
         idx = self.findData(function)
         if idx >= 0:
             self.setCurrentIndex(idx)
@@ -58,7 +58,7 @@ class QFunctionComboBox(QComboBox):
     # Event handlers
     #
 
-    def _on_current_index_changed(self):
+    def _on_current_index_changed(self) -> None:
         idx = self.currentIndex()
         if idx == -1:
             return

@@ -15,7 +15,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
     Dialog that allows the user to search for a DepNode based on its value, architecture name, or instruction address.
     """
 
-    def __init__(self, parent: QtWidgets.QWidget, data_dep_graph):
+    def __init__(self, parent: QtWidgets.QWidget, data_dep_graph) -> None:
         super().__init__(parent)
         self.setWindowTitle("Data Dependency Node Search")
         self._data_dep_graph = data_dep_graph
@@ -46,13 +46,13 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         else:
             return None
 
-    def _on_close_click(self):
+    def _on_close_click(self) -> None:
         curr_search_node = self._safe_node_retrieval()
         if curr_search_node:
             curr_search_node.selected = False
         self.accept()
 
-    def _on_search_click(self):
+    def _on_search_click(self) -> None:
         """
         Iterate through matching nodes
         """
@@ -109,7 +109,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._data_dep_graph.zoom(restore=True)
         self._data_dep_graph.refresh()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._error_lbl.hide()
         self._error_lbl.setStyleSheet(self._error_lbl.styleSheet() + "color: red;")
 

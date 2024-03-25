@@ -10,7 +10,7 @@ class JumpTo(QDialog):
     Dialog to jump to an address.
     """
 
-    def __init__(self, disasm_view, parent=None):
+    def __init__(self, disasm_view, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
@@ -34,7 +34,7 @@ class JumpTo(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # address label
 
         address_label = QLabel(self)
@@ -66,7 +66,7 @@ class JumpTo(QDialog):
     # Event handlers
     #
 
-    def _on_address_changed(self, new_text):  # pylint: disable=unused-argument
+    def _on_address_changed(self, new_text) -> None:  # pylint: disable=unused-argument
         if self._address_box.target is None:
             # the address is invalid
 
@@ -81,7 +81,7 @@ class JumpTo(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         addr = self._address_box.target
         if addr is not None:
             r = self._disasm_view.jump_to(addr)

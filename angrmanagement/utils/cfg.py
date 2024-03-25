@@ -38,7 +38,7 @@ def _get_branch_instr(disassembly, node):
     return instr
 
 
-def categorize_edges(disassembly, edges):
+def categorize_edges(disassembly, edges) -> None:
     """
     Categorize each edge.
 

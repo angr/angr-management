@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from angr.analyses.decompiler import Clinic
     from angr.knowledge_plugins import Function
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.logic.disassembly import InfoDock
 
 
@@ -31,7 +32,7 @@ _l = logging.getLogger(__name__)
 
 
 class QLinearDisassemblyView(QSaveableGraphicsView):
-    def __init__(self, area, parent=None):
+    def __init__(self, area, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.area: QLinearDisassembly = area
@@ -44,7 +45,7 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         self.area.wheelEvent(event)
         super().wheelEvent(event)
 
@@ -63,7 +64,7 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
 
-    def __init__(self, instance, disasm_view, parent=None):
+    def __init__(self, instance: Instance, disasm_view, parent=None) -> None:
         QDisassemblyBaseControl.__init__(self, instance, disasm_view, QAbstractScrollArea)
         QAbstractScrollArea.__init__(self, parent=parent)
 
@@ -98,7 +99,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._init_widgets()
         self.initialize()
 
-    def reload(self, old_infodock: InfoDock | None = None):
+    def reload(self, old_infodock: InfoDock | None = None) -> None:
         curr_offset = self._offset
         self.initialize()
         self._offset = None  # force a re-generation of objects
@@ -114,7 +115,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         return self._offset
 
     @offset.setter
-    def offset(self, v):
+    def offset(self, v) -> None:
         self._offset = v
 
     @property
@@ -139,7 +140,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     # Events
     #
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         old_height = event.oldSize().height()
         new_height = event.size().height()
         self._viewer._scene.setSceneRect(QRectF(0, 0, event.size().width(), new_height))
@@ -153,7 +154,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         super().resizeEvent(event)
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         """
         :param QWheelEvent event:
         :return:
@@ -172,14 +173,14 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         event.accept()
         self.viewport().update()
 
-    def changeEvent(self, event: QEvent):
+    def changeEvent(self, event: QEvent) -> None:
         """
         Redraw on color scheme update.
         """
         if event.type() == QEvent.PaletteChange:
             self.reload()
 
-    def _on_vertical_scroll_bar_triggered(self, action):
+    def _on_vertical_scroll_bar_triggered(self, action) -> None:
         action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
 
         if action == QAbstractSlider.SliderSingleStepAdd:
@@ -210,15 +211,15 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     # Public methods
     #
 
-    def redraw(self):
+    def redraw(self) -> None:
         if self._viewer is not None:
             self._viewer.redraw()
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._update_size()
         self.redraw()
 
-    def initialize(self):
+    def initialize(self) -> None:
         if self.cfb.am_none:
             return
 
@@ -243,7 +244,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self.refresh()
 
-    def goto_function(self, func):
+    def goto_function(self, func) -> None:
         if func.addr not in self._block_addr_map:
             _l.error("Unable to find entry block for function %s", func)
         view_height = self.viewport().height()
@@ -251,7 +252,14 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         _l.debug("Going to function at 0x%x by scrolling to %s", func.addr, desired_center_y)
         self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
 
-    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False):
+    def show_instruction(
+        self,
+        insn_addr,
+        insn_pos=None,
+        centering: bool = False,
+        use_block_pos: bool = False,
+        use_animation: bool = False,
+    ) -> None:
         """
 
         :param insn_addr:
@@ -269,7 +277,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self.navigate_to_addr(insn_addr)
 
-    def navigate_to_addr(self, addr):
+    def navigate_to_addr(self, addr: int) -> None:
         if not self._addr_to_region_offset:
             return
         try:
@@ -281,7 +289,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         offset_into_region = addr - floor_region_addr
         self.navigate_to(floor_region_offset + offset_into_region)
 
-    def navigate_to(self, offset):
+    def navigate_to(self, offset: int) -> None:
         self.verticalScrollBar().setValue(offset * self._line_height)
         self.prepare_objects(offset, start_line=0)
 
@@ -289,7 +297,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._viewer = QLinearDisassemblyView(self)
 
         layout = QHBoxLayout()
@@ -298,7 +306,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self.setLayout(layout)
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         # ask all objects to update their sizes
         for obj in self.objects:
             obj.clear_cache()
@@ -309,11 +317,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         offset = 0 if self.offset is None else self.offset
         self.verticalScrollBar().setValue(offset * self._line_height)
 
-    def clear_objects(self):
+    def clear_objects(self) -> None:
         self.objects.clear()
         self._offset = None
 
-    def prepare_objects(self, offset, start_line=0):
+    def prepare_objects(self, offset: int, start_line: int = 0) -> None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.
@@ -510,14 +518,14 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         except StopIteration:
             return 0
 
-    def _region_from_offset(self, offset):
+    def _region_from_offset(self, offset: int):
         try:
             off = next(self._offset_to_region.irange(maximum=offset, reverse=True))
             return off, self._offset_to_region[off]
         except StopIteration:
             return None, None
 
-    def _addr_from_offset(self, mr, base_offset, offset):
+    def _addr_from_offset(self, mr, base_offset, offset: int):
         return mr.addr + (offset - base_offset)
 
     def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:

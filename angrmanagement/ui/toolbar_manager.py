@@ -17,7 +17,7 @@ class ToolbarManager:
     Manages toolbars shown on the main window.
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: MainWindow) -> None:
         self._main_window: MainWindow = main_window
         self.active: Mapping[type[Toolbar], Toolbar] = {}
         self.all_toolbars = [FileToolbar, DebugToolbar, FeatureMapToolbar]
@@ -26,7 +26,7 @@ class ToolbarManager:
     def get_name_for_toolbar_class(toolbar_cls: type[Toolbar]) -> str:
         return {FileToolbar: "File", DebugToolbar: "Debug", FeatureMapToolbar: "Feature Map"}[toolbar_cls]
 
-    def show_toolbar_by_class(self, cls: type[Toolbar]):
+    def show_toolbar_by_class(self, cls: type[Toolbar]) -> None:
         if cls not in self.active:
             tb = cls(self._main_window)
             self.active[cls] = tb
@@ -38,7 +38,7 @@ class ToolbarManager:
         else:
             self.active[cls].qtoolbar().show()
 
-    def hide_toolbar_by_class(self, cls: type[Toolbar]):
+    def hide_toolbar_by_class(self, cls: type[Toolbar]) -> None:
         if cls in self.active:
             tb = self.active.pop(cls)
             qtb = tb.qtoolbar()
@@ -48,16 +48,16 @@ class ToolbarManager:
                 self._main_window.removeToolBar(qtb)
             tb.shutdown()
 
-    def set_toolbar_visible_by_class(self, cls: type[Toolbar], visible: bool):
+    def set_toolbar_visible_by_class(self, cls: type[Toolbar], visible: bool) -> None:
         if visible:
             self.show_toolbar_by_class(cls)
         else:
             self.hide_toolbar_by_class(cls)
 
-    def show_all(self):
+    def show_all(self) -> None:
         for cls in self.all_toolbars:
             self.show_toolbar_by_class(cls)
 
-    def hide_all(self):
+    def hide_all(self) -> None:
         for cls in self.all_toolbars:
             self.hide_toolbar_by_class(cls)

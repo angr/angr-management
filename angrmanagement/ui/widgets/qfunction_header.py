@@ -15,9 +15,13 @@ from .qgraph_object import QCachedGraphicsItem
 if TYPE_CHECKING:
     from angr.sim_type import SimTypeFunction
 
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QFunctionHeader(QCachedGraphicsItem):
-    def __init__(self, addr, name, prototype, args, config, disasm_view, workspace, infodock, parent=None):
+    def __init__(
+        self, addr: int, name: str, prototype, args, config, disasm_view, workspace: Workspace, infodock, parent=None
+    ) -> None:
         super().__init__(parent=parent)
 
         self.workspace = workspace
@@ -43,10 +47,10 @@ class QFunctionHeader(QCachedGraphicsItem):
 
         self._init_widgets()
 
-    def refresh(self):
+    def refresh(self) -> None:
         pass
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         if self.infodock.is_label_selected(self.addr):
@@ -59,7 +63,7 @@ class QFunctionHeader(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             self.infodock.select_label(self.addr)
         elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
@@ -71,7 +75,7 @@ class QFunctionHeader(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         if self.args is not None:
             self._arg_str_list = []
             for arg in self.args:
@@ -143,7 +147,7 @@ class QFunctionHeader(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         if self._function_name_item is not None:

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class DependsOn(QDialog):
-    def __init__(self, addr: int, operand, instr=None, func: Function | None = None, parent=None):
+    def __init__(self, addr: int, operand, instr=None, func: Function | None = None, parent=None) -> None:
         super().__init__(parent)
 
         self._addr = addr
@@ -53,7 +53,7 @@ class DependsOn(QDialog):
 
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # the instruction
         instr_lbl = QLabel("Instruction")
         instr_box = QLineEdit("TODO")
@@ -159,11 +159,11 @@ class DependsOn(QDialog):
     # Events
     #
 
-    def _targetatoms_hide_all(self):
+    def _targetatoms_hide_all(self) -> None:
         self._arg_widget.setHidden(True)
         self._reg_widget.setHidden(True)
 
-    def _on_targetatoms_radiobutton_clicked(self):
+    def _on_targetatoms_radiobutton_clicked(self) -> None:
         self._targetatoms_hide_all()
         if self._arg_radiobox.isChecked():
             self._arg_widget.setHidden(False)
@@ -194,7 +194,7 @@ class DependsOn(QDialog):
 
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.location = None
         self.arg = None
         self.reg = None

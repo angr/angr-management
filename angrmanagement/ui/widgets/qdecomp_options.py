@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
 
 
@@ -27,7 +28,7 @@ class QDecompilationOption(QTreeWidgetItem):
     The UI entry for a single decompliation option. Get status with item.state.
     """
 
-    def __init__(self, parent, option, type_: int, enabled=True):
+    def __init__(self, parent, option, type_: int, enabled: bool = True) -> None:
         super().__init__(parent)
         self.option = option
         self.type = type_
@@ -78,7 +79,7 @@ class QDecompilationOptions(QWidget):
     reload(force=True) to reset values to their defaults whenever the current project changes.
     """
 
-    def __init__(self, code_view, instance):
+    def __init__(self, code_view, instance: Instance) -> None:
         super().__init__()
 
         self.dirty = True
@@ -102,7 +103,7 @@ class QDecompilationOptions(QWidget):
 
         self.reload(True)
 
-    def reload(self, force=False):
+    def reload(self, force: bool = False) -> None:
         if force or self._options is None:
             self._options = self.get_default_options()
 
@@ -118,11 +119,11 @@ class QDecompilationOptions(QWidget):
         self._reload_options(force)
         self._set_visibility(self._search_box.text())
 
-    def _on_item_changed(self, item, _column):
+    def _on_item_changed(self, item, _column) -> None:
         if getattr(item.option, "clears_cache", True):
             self.dirty = True
 
-    def _on_apply_pressed(self):
+    def _on_apply_pressed(self) -> None:
         if self.dirty:
             self.dirty = False
             # clear the cached version
@@ -175,7 +176,7 @@ class QDecompilationOptions(QWidget):
     def get_all_peephole_opts(self):  # pylint: disable=no-self-use
         return MULTI_STMT_OPTS + STMT_OPTS + EXPR_OPTS
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # search box
         self._search_box = QLineEdit()
         self._search_box.textChanged.connect(self._on_search_box_text_changed)
@@ -196,7 +197,7 @@ class QDecompilationOptions(QWidget):
 
         self.setLayout(layout)
 
-    def _reload_options(self, reset_values=False):
+    def _reload_options(self, reset_values: bool = False) -> None:
         vals_options = dict(self.option_and_values)
         vals_peephole = self.selected_peephole_opts
         vals_passes = self.selected_passes
@@ -241,7 +242,7 @@ class QDecompilationOptions(QWidget):
         # expand all
         self._treewidget.expandAll()
 
-    def _set_visibility(self, filter_by: str | None = None):
+    def _set_visibility(self, filter_by: str | None = None) -> None:
         for w in self._qoptions:
             w.setHidden(
                 bool(filter_by) and not (filter_by in w.option.NAME.lower() or filter_by in w.option.category.lower())
@@ -256,5 +257,5 @@ class QDecompilationOptions(QWidget):
                 and not (filter_by in w.option.NAME.lower() or filter_by in w.option.DESCRIPTION.lower())
             )
 
-    def _on_search_box_text_changed(self, text: str):
+    def _on_search_box_text_changed(self, text: str) -> None:
         self._set_visibility(filter_by=text)

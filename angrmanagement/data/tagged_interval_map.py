@@ -10,7 +10,7 @@ class TaggedIntervalMap:
     Catalogs features of intervals.
     """
 
-    def __init__(self, nbits: int = 0):
+    def __init__(self, nbits: int = 0) -> None:
         """
         :param nbits: Number of binning bits. Higher values reduce detail. 0 for no binning.
         """

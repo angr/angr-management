@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QVBoxLayout
 
 from angrmanagement.ui.widgets.qfunction_table import QFunctionTable
 
 from .view import InstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
 class FunctionsView(InstanceView):
@@ -12,7 +18,7 @@ class FunctionsView(InstanceView):
     View displaying functions in the project.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("functions", workspace, default_docking_position, instance)
 
         self.base_caption = "Functions"
@@ -34,14 +40,14 @@ class FunctionsView(InstanceView):
     # Public methods
     #
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._function_table.refresh()
 
-    def reload(self):
+    def reload(self) -> None:
         if not self.instance.cfg.am_none:
             self._function_table.function_manager = self.instance.kb.functions
 
-    def subscribe_func_select(self, callback):
+    def subscribe_func_select(self, callback) -> None:
         """
         Appends the provided function to the list of callbacks to be called when a function is selected in the
         functions table. The callback's only parameter is the `angr.knowledge_plugins.functions.function.Function`
@@ -53,7 +59,7 @@ class FunctionsView(InstanceView):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._function_table = QFunctionTable(self, self.instance, selection_callback=self._on_function_selected)
 
         vlayout = QVBoxLayout()
@@ -63,7 +69,7 @@ class FunctionsView(InstanceView):
 
         self.setLayout(vlayout)
 
-    def _on_function_selected(self, func):
+    def _on_function_selected(self, func) -> None:
         """
         A new function is on selection right now. Update the disassembly view that is currently at front.
 

@@ -16,7 +16,7 @@ class QIconLabel(QWidget):
 
     clicked = Signal()
 
-    def __init__(self, icon: QIcon, text: str = ""):
+    def __init__(self, icon: QIcon, text: str = "") -> None:
         super().__init__()
         lyt = QHBoxLayout()
         lyt.setContentsMargins(0, 0, 0, 0)
@@ -31,12 +31,12 @@ class QIconLabel(QWidget):
         self.setLayout(lyt)
         self._update_visibility()
 
-    def mouseReleaseEvent(self, _):
+    def mouseReleaseEvent(self, _) -> None:
         self.clicked.emit()
 
-    def setText(self, text):
+    def setText(self, text: str) -> None:
         self._text_label.setText(text)
         self._update_visibility()
 
-    def _update_visibility(self):
+    def _update_visibility(self) -> None:
         self._text_label.setVisible(self._text_label.text() != "")

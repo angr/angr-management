@@ -19,7 +19,7 @@ class SimgrViewerAbstractTreeItem(QTreeWidgetItem):
 
 
 class StashTreeItem(SimgrViewerAbstractTreeItem):
-    def __init__(self, stash_name, simgr_viewer):
+    def __init__(self, stash_name: str, simgr_viewer) -> None:
         self.simgr_viewer = simgr_viewer
         self.stash_name = stash_name
         super().__init__(simgr_viewer)
@@ -34,7 +34,7 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
     def states(self):
         return self.simgr_viewer.simgr.stashes[self.stash_name]
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.takeChildren()
         for state in self.simgr_viewer.simgr.stashes[self.stash_name]:
             if self.stash_name == "errored" and getattr(state, "state", None):
@@ -42,7 +42,7 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
             self.addChild(StateTreeItem(state, self.simgr_viewer))
         self.setText(0, "%s (%d)" % (self.stash_name, len(self.states)))
 
-    def handle_context_menu_event(self, event):
+    def handle_context_menu_event(self, event) -> None:
         menu = QMenu()
         menu.addAction("Copy states", self.copy_states)
         menu.addAction("Cut states", self.cut_states)
@@ -56,30 +56,30 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
             menu.addAction("Move states to here", self.move_states)
         menu.exec_(QCursor.pos())
 
-    def copy_states(self):
+    def copy_states(self) -> None:
         self.simgr_viewer.state_clipboard = [s.state for s in self]
         self.refresh()
 
-    def cut_states(self):
+    def cut_states(self) -> None:
         self.simgr_viewer.state_clipboard = [s.state for s in self]
         self.simgr_viewer.simgr.drop(stash=self.stash_name, filter_func=lambda state: state in self.states)
         self.refresh()
 
-    def delete_stash(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete_stash(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.simgr._stashes.pop(self.stash_name)
         self.simgr_viewer.refresh()
 
-    def paste_states(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def paste_states(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.paste_from_clipboard(self.stash_name)
         self.refresh()
 
-    def move_states(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def move_states(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.move_to_stash(self.stash_name)
         self.refresh()
 
 
 class StateTreeItem(SimgrViewerAbstractTreeItem):
-    def __init__(self, state, simgr_viewer):
+    def __init__(self, state, simgr_viewer) -> None:
         self.state = state
         self.simgr_viewer: QSimulationManagerViewer = simgr_viewer
         super().__init__([str(state)])
@@ -89,7 +89,7 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
     def stash_name(self):
         return self.parent().stash_name
 
-    def handle_context_menu_event(self, event):
+    def handle_context_menu_event(self, event) -> None:
         menu = QMenu()
         self.add_menu_action(menu, "Copy state", self.copy_states)
         self.add_menu_action(menu, "Cut state", self.cut_states)
@@ -98,29 +98,29 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
             self.add_menu_action(menu, "Paste state", self.paste_states)
         menu.exec_(QCursor.pos())
 
-    def add_menu_action(self, menu, string, action):
+    def add_menu_action(self, menu, string: str, action) -> None:
         plural = ""
         if len(self.simgr_viewer.selectedItems()) > 1:
             plural = "s"
         menu.addAction(string + plural, action)
 
-    def copy_states(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def copy_states(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.copy_selected_to_clipboard()
 
-    def cut_states(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def cut_states(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.cut_selected_to_clipboard()
 
-    def delete_states(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def delete_states(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.delete_selected_states()
 
-    def paste_states(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def paste_states(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         self.simgr_viewer.paste_from_clipboard(self.stash_name)
 
 
 class QSimulationManagerViewer(QTreeWidget):
     state_clipboard: list[SimState]
 
-    def __init__(self, simgr, parent=None):
+    def __init__(self, simgr, parent=None) -> None:
         super().__init__(parent)
 
         self.setColumnCount(1)
@@ -140,24 +140,24 @@ class QSimulationManagerViewer(QTreeWidget):
             stash_to_states[state_tree_item.stash_name].append(state_tree_item.state)
         return stash_to_states
 
-    def copy_selected_to_clipboard(self):
+    def copy_selected_to_clipboard(self) -> None:
         self.state_clipboard = [item.state.copy() for item in self.selectedItems()]
 
-    def cut_selected_to_clipboard(self):
+    def cut_selected_to_clipboard(self) -> None:
         self.copy_selected_to_clipboard()
         self.delete_selected_states()
 
-    def delete_selected_states(self):
+    def delete_selected_states(self) -> None:
         stash_to_states = self._stash_to_selected_states()
         for stash_name, states in stash_to_states.items():
             self.simgr.drop(stash=stash_name, filter_func=lambda state, state_set=states: state in state_set)
             self.get_stash_tree_item(stash_name).refresh()
 
-    def paste_from_clipboard(self, stash_name):
+    def paste_from_clipboard(self, stash_name: str) -> None:
         self.simgr.populate(stash_name, self.state_clipboard)
         self.get_stash_tree_item(stash_name).refresh()
 
-    def move_to_stash(self, stash_name):
+    def move_to_stash(self, stash_name: str):
         lambda_str = ""
         lambda_func = None
         while True:
@@ -176,7 +176,7 @@ class QSimulationManagerViewer(QTreeWidget):
             break
         self.simgr.move(from_stash="active", to_stash=stash_name, filter_func=lambda_func)
 
-    def contextMenuEvent(self, event: QContextMenuEvent):
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
         if item is not None:
             item.handle_context_menu_event(event)
@@ -185,7 +185,7 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.addAction("Create new stash", self._create_new_stash)
             menu.exec_(QCursor.pos())
 
-    def _create_new_stash(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def _create_new_stash(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
 
         if not accepted or stash_name.strip() == "":
@@ -202,7 +202,7 @@ class QSimulationManagerViewer(QTreeWidget):
         self.simgr._stashes[stash_name] = []
         self.refresh()
 
-    def refresh(self, **kwargs):
+    def refresh(self, **kwargs) -> None:
         if kwargs.get("src", "") != "simgr_viewer":
             self._init_widgets()
 
@@ -212,7 +212,7 @@ class QSimulationManagerViewer(QTreeWidget):
             return None
         return item.data(0, 1)
 
-    def select_state(self, state):
+    def select_state(self, state) -> None:
         if state is None:
             self.setCurrentItem(None)
         else:
@@ -227,10 +227,10 @@ class QSimulationManagerViewer(QTreeWidget):
                     continue
                 break
 
-    def get_stash_tree_item(self, stash_name):
+    def get_stash_tree_item(self, stash_name: str):
         return self.stash_tree_items[stash_name]
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # save expanded state
         expended_stash = {}
         selected_state = set()

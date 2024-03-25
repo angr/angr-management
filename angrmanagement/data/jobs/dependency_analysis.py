@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Generator
 
-from angr import KnowledgeBase
+from angr import KnowledgeBase, Project
 from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg
@@ -42,7 +42,7 @@ class DependencyAnalysisJob(Job):
     Implements a job for dependency analysis.
     """
 
-    def __init__(self, func_addr=None, func_arg_idx=None):
+    def __init__(self, func_addr=None, func_arg_idx=None) -> None:
         super().__init__("DependencyAnalysis")
 
         self.func_addr: int | None = func_addr
@@ -74,7 +74,7 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def _run(self, inst: Instance):
+    def _run(self, inst: Instance) -> None:
         self._progress_callback(0.0)
         self._perform(inst)
         self._progress_callback(100.0)
@@ -169,10 +169,10 @@ class DependencyAnalysisJob(Job):
 
     @staticmethod
     def _dependencies(
-        subject,
+        subject: str,
         sink_atoms: list[tuple[Atom, SimType]],
         kb,
-        project,
+        project: Project,
         max_depth: int,
         excluded_funtions: set[int],
         observation_points: set[tuple],
@@ -234,7 +234,7 @@ class DependencyAnalysisJob(Job):
             yield idx, len(starts), rda
 
     @staticmethod
-    def _get_new_kb_with_cfgs_and_functions(project, kb):
+    def _get_new_kb_with_cfgs_and_functions(project: Project, kb):
         new_kb = KnowledgeBase(project)
 
         new_kb.cfgs = kb.cfgs.copy()
@@ -246,7 +246,7 @@ class DependencyAnalysisJob(Job):
         return new_kb
 
     @staticmethod
-    def _display_import_error():
+    def _display_import_error() -> None:
         QMessageBox.critical(
             None,
             "Import error",
@@ -254,7 +254,7 @@ class DependencyAnalysisJob(Job):
         )
 
     @staticmethod
-    def _display_closures(inst, sink_atom: Atom, sink_addr: int, closures):
+    def _display_closures(inst, sink_atom: Atom, sink_addr: int, closures) -> None:
         view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return

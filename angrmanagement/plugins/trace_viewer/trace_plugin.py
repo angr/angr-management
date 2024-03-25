@@ -20,10 +20,11 @@ from .trace_statistics import TraceStatistics
 
 if TYPE_CHECKING:
     from angrmanagement.data.object_container import ObjectContainer
+    from angrmanagement.ui.workspace import Workspace
 
 
 class TraceViewer(BasePlugin):
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.workspace.main_instance.register_container(
@@ -39,7 +40,7 @@ class TraceViewer(BasePlugin):
 
         self._viewers = []
 
-    def teardown(self):
+    def teardown(self) -> None:
         # I don't really know a better way to do this. tbh allowing arbitrary widget additions is probably intractable
         for trace_viewer in self._viewers:
             trace_viewer.hide()
@@ -60,7 +61,7 @@ class TraceViewer(BasePlugin):
     # Event handlers
     #
 
-    def _on_trace_updated(self):
+    def _on_trace_updated(self) -> None:
         # redraw disassembly view
         view = self.workspace.view_manager.first_view_in_category("disassembly")
         if view is not None:
@@ -110,21 +111,21 @@ class TraceViewer(BasePlugin):
     GRAPH_TRACE_LEGEND_WIDTH = 30
     GRAPH_TRACE_LEGEND_SPACING = 20
 
-    def instrument_disassembly_view(self, dview):
+    def instrument_disassembly_view(self, dview) -> None:
         trace_viewer = QTraceViewer(self.workspace, dview, parent=dview)
         self._viewers.append(trace_viewer)
 
         dview.layout().addWidget(trace_viewer)
         trace_viewer.hide()
 
-    def color_block(self, addr):
+    def color_block(self, addr: int):
         if not self.multi_trace.am_none:
             if isinstance(self.multi_trace.am_obj, MultiTrace) and not self.multi_trace.is_active_tab:
                 return None
             return self.multi_trace.get_hit_miss_color(addr)
         return None
 
-    def handle_click_block(self, qblock, event):
+    def handle_click_block(self, qblock, event) -> bool:
         btn = event.button()
 
         if (
@@ -141,7 +142,7 @@ class TraceViewer(BasePlugin):
 
         return False
 
-    def draw_insn(self, qinsn, painter):
+    def draw_insn(self, qinsn, painter) -> None:
         # legend
         if (
             not self.multi_trace.am_none
@@ -159,7 +160,7 @@ class TraceViewer(BasePlugin):
                 painter.drawRect(legend_x, 0, w, qinsn.height)
                 legend_x += w
 
-    def _gen_strata(self, addr):
+    def _gen_strata(self, addr: int):
         if not self.trace.am_none:
             # count is cached in trace.
             count = self.trace.get_count(addr)
@@ -197,7 +198,7 @@ class TraceViewer(BasePlugin):
 
     FUNC_COLUMNS = ("Coverage",)
 
-    def extract_func_column(self, func, idx):
+    def extract_func_column(self, func, idx: int):
         assert idx == 0
         if self.multi_trace.am_none:
             cov = 0
@@ -226,7 +227,7 @@ class TraceViewer(BasePlugin):
     RESET_AFL_BITMAP = 4
     OPEN_TRACES_FROM_CHECRS = 5
 
-    def handle_click_menu(self, idx):
+    def handle_click_menu(self, idx: int) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -243,20 +244,20 @@ class TraceViewer(BasePlugin):
 
         mapping.get(idx)()
 
-    def add_trace(self, trace_path=None, base_addr=None):
+    def add_trace(self, trace_path=None, base_addr=None) -> None:
         trace, base_addr = self._open_trace(trace_path, base_addr)
         if trace is None or base_addr is None:
             return
 
         self._add_trace(trace, base_addr)
 
-    def reset_trace(self):
+    def reset_trace(self) -> None:
         self.trace.am_obj = None
         self.trace.am_event()
         self.multi_trace.am_obj = None
         self.multi_trace.am_event()
 
-    def open_bitmap_multi_trace(self, trace_path=None, base_addr=None):
+    def open_bitmap_multi_trace(self, trace_path=None, base_addr=None) -> None:
         r = self._open_bitmap_multi_trace(trace_path, base_addr)
         if r is None:
             return
@@ -264,7 +265,7 @@ class TraceViewer(BasePlugin):
         self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr)
         self.multi_trace.am_event()
 
-    def open_inverted_bitmap_multi_trace(self, trace_path=None, base_addr=None):
+    def open_inverted_bitmap_multi_trace(self, trace_path=None, base_addr=None) -> None:
         r = self._open_bitmap_multi_trace(trace_path, base_addr)
         if r is None:
             return
@@ -272,7 +273,7 @@ class TraceViewer(BasePlugin):
         self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr, bits_inverted=True)
         self.multi_trace.am_event()
 
-    def reset_bitmap(self):
+    def reset_bitmap(self) -> None:
         self.multi_trace.am_obj = None
         self.multi_trace.am_event()
 
@@ -398,7 +399,7 @@ class TraceViewer(BasePlugin):
 
         return trace, base_addr
 
-    def _add_trace(self, trace, base_addr):
+    def _add_trace(self, trace, base_addr) -> None:
         if self.multi_trace.am_obj is None:
             self.multi_trace.am_obj = MultiTrace(self.workspace)
         self.trace.am_obj = self.multi_trace.am_obj.add_trace(trace, base_addr)

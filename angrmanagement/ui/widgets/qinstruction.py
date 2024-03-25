@@ -15,6 +15,8 @@ from .qoperand import QOperand
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
+
 
 class QInstruction(QCachedGraphicsItem):
     GRAPH_ADDR_SPACING = 20
@@ -27,7 +29,9 @@ class QInstruction(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
 
-    def __init__(self, instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
+    def __init__(
+        self, instance: Instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None
+    ) -> None:
         super().__init__(parent=parent)
 
         # initialization
@@ -61,7 +65,7 @@ class QInstruction(QCachedGraphicsItem):
     def contextMenuEvent(self, event: PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
         pass
 
-    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         self.infodock.unselect_all_instructions()
         self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
         self.disasm_view._insn_addr_on_context_menu = self.addr
@@ -69,7 +73,7 @@ class QInstruction(QCachedGraphicsItem):
         self.disasm_view.popup_patch_dialog()
         event.accept()
 
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.disasm_view.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
@@ -121,12 +125,12 @@ class QInstruction(QCachedGraphicsItem):
 
         return self.infodock.is_instruction_selected(self.addr)
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         super().clear_cache()
         for obj in self._operands:
             obj.clear_cache()
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.load_comment()
         self._init_comments_or_string()
 
@@ -141,13 +145,13 @@ class QInstruction(QCachedGraphicsItem):
             return self._operands[operand_idx]
         return None
 
-    def load_comment(self):
+    def load_comment(self) -> None:
         if self.instance.kb is None:
             self._comment = None
         else:
             self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # background color
@@ -164,7 +168,7 @@ class QInstruction(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.load_comment()
         self._operands.clear()
 
@@ -228,7 +232,7 @@ class QInstruction(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _init_comments_or_string(self):
+    def _init_comments_or_string(self) -> None:
         # remove existing comments or strings
         if self._comment_items:
             for comm in self._comment_items:
@@ -255,7 +259,7 @@ class QInstruction(QCachedGraphicsItem):
             self._string_item.setFont(self._config.disasm_font)
             self._string_item.setBrush(self._config.disasm_view_string_color)
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         # address

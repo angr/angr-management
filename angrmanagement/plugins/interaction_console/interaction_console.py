@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from typing import TYPE_CHECKING
 
 import archr
 from PySide6.QtCore import Qt
@@ -14,13 +15,16 @@ from angrmanagement.ui.views.interaction_view import (
 )
 from angrmanagement.ui.views.view import InstanceView
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class ConsoleView(InstanceView):
     """
     ConsoleView
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__("interaction console", workspace, "center", workspace.main_instance)
 
         self.base_caption = "Interaction Console"
@@ -48,7 +52,7 @@ class ConsoleView(InstanceView):
 
         self.setLayout(main_layout)
 
-    def connect(self):
+    def connect(self) -> None:
         self.disconnect()
 
         img_name = self.workspace.main_instance.img_name
@@ -78,7 +82,7 @@ class ConsoleView(InstanceView):
             ]
         )
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         if self.target:
             self.terminal.stop()
             self.target.__exit__()
@@ -107,10 +111,10 @@ class ConsoleView(InstanceView):
 
             self.conversations = conversations
 
-    def _save_interaction(self, conversation):
+    def _save_interaction(self, conversation) -> None:
         target_port = self.target.tcp_ports[0]
 
-        def direction(srcport, dstport):
+        def direction(srcport, dstport) -> str:
             if srcport == target_port:
                 return "out"
             if dstport == target_port:
@@ -136,13 +140,13 @@ class InteractionConsole(BasePlugin):
     InteractionConsole Plugin
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.console_view = ConsoleView(self.workspace)
         self.workspace.default_tabs += [self.console_view]
         self.workspace.add_view(self.console_view)
 
-    def teardown(self):
+    def teardown(self) -> None:
         if self.console_view.target:
             self.console_view.target.__exit__()

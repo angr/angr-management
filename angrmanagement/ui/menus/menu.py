@@ -17,13 +17,13 @@ class MenuEntry:
         caption,
         action,
         shortcut=None,
-        checkable=False,
-        checked=False,
-        enabled=True,
+        checkable: bool = False,
+        checked: bool = False,
+        enabled: bool = True,
         key=None,
         role: QAction.MenuRole = QAction.MenuRole.NoRole,
         icon: QIcon | None = None,
-    ):
+    ) -> None:
         self.caption = caption
         self.action = action
         self.shortcut = shortcut
@@ -36,17 +36,17 @@ class MenuEntry:
         self._qaction = None
         self._role = role
 
-    def set_qaction(self, qaction: QAction):
+    def set_qaction(self, qaction: QAction) -> None:
         self._qaction = qaction
         self._enable(self.enabled)
 
-    def enable(self):
+    def enable(self) -> None:
         self._enable(True)
 
-    def disable(self):
+    def disable(self) -> None:
         self._enable(False)
 
-    def _enable(self, b: bool):
+    def _enable(self, b: bool) -> None:
         self.enabled = b
         if self._qaction is not None:
             self._qaction.setEnabled(b)
@@ -58,18 +58,18 @@ class MenuEntry:
         return self._qaction.isChecked()
 
     @checked.setter
-    def checked(self, checked: bool):
+    def checked(self, checked: bool) -> None:
         if self._qaction is not None:
             self._qaction.setChecked(checked)
 
 
 class MenuSeparator:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
 
 class Menu:
-    def __init__(self, caption, children=(), parent=None):
+    def __init__(self, caption, children=(), parent=None) -> None:
         self.parent = parent
         self.caption = caption
 
@@ -86,7 +86,7 @@ class Menu:
             self._keyed_entries = {ent.key: ent for ent in self.entries if isinstance(ent, MenuEntry)}
         return self._keyed_entries.get(key, None)
 
-    def qmenu(self, extra_entries=None, cached=True):
+    def qmenu(self, extra_entries=None, cached: bool = True):
         if extra_entries is None:
             extra_entries = []
 
@@ -162,14 +162,14 @@ class Menu:
         else:
             raise TypeError("Unsupported type", type(entry))
 
-    def add(self, action, index=None):
+    def add(self, action, index=None) -> None:
         if index is None:
             index = len(self.entries)
         self.entries.insert(index, action)
         if self._qmenu is not None:
             self.translate_element(self._qmenu, action, index)
 
-    def remove(self, action):
+    def remove(self, action) -> None:
         self.entries.remove(action)
         if self._qmenu is not None and isinstance(action, MenuEntry):
             self._qmenu.removeAction(action._qaction)

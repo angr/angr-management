@@ -5,10 +5,14 @@ import logging
 from datetime import datetime
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
+from typing import TYPE_CHECKING
 
 from angr.utils.mp import Initializer
 
 from angrmanagement.config import Conf
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class LogTimeStamp:
@@ -16,7 +20,7 @@ class LogTimeStamp:
     A Log timestamp with formatting
     """
 
-    def __init__(self, unix_timestamp: int):
+    def __init__(self, unix_timestamp: int) -> None:
         """
         :param unix_time: The unix time the timestamp represents
         """
@@ -45,7 +49,7 @@ class LogRecord:
         "content",
     )
 
-    def __init__(self, level, unix_timestamp, source, content):
+    def __init__(self, level, unix_timestamp, source, content) -> None:
         self.timestamp = LogTimeStamp(unix_timestamp)
         self.level = level
         self.source = source
@@ -57,7 +61,7 @@ class LogDumpHandler(logging.Handler):
     Dumps log messages.
     """
 
-    def __init__(self, instance, level=logging.NOTSET):
+    def __init__(self, instance: Instance, level=logging.NOTSET) -> None:
         super().__init__(level=level)
         self.instance = instance
 
@@ -74,7 +78,7 @@ class AMQueueHandler(QueueHandler):
     """
 
 
-def install_queue_handler(queue: Queue):
+def install_queue_handler(queue: Queue) -> None:
     """
     Install a queue handler using the given queue
     This function should work for both fork and spawn modes of multiprocessing

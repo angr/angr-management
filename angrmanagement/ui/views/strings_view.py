@@ -15,9 +15,12 @@ from .view import InstanceView
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg.memory_data import MemoryData
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class StringsView(InstanceView):
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("strings", workspace, default_docking_position, instance)
 
         self.base_caption = "Strings"
@@ -33,7 +36,7 @@ class StringsView(InstanceView):
     def sizeHint(self):
         return QSize(400, 800)
 
-    def reload(self):
+    def reload(self) -> None:
         if self.instance.kb is None:
             return
         self._function_list.functions = self.instance.kb.functions
@@ -41,14 +44,14 @@ class StringsView(InstanceView):
         self._string_table.xrefs = self.instance.project.kb.xrefs
         self._string_table.function = self._selected_function
 
-    def select_function(self, function):
+    def select_function(self, function) -> None:
         self._function_list.select_function(function)
 
     #
     # Event handlers
     #
 
-    def _on_function_selected(self, function):
+    def _on_function_selected(self, function) -> None:
         if isinstance(function, str) and function == "all":
             # all functions
             self._selected_function = None
@@ -58,7 +61,7 @@ class StringsView(InstanceView):
 
         self.reload()
 
-    def _on_string_selected(self, s: MemoryData):
+    def _on_string_selected(self, s: MemoryData) -> None:
         """
         A string reference is selected.
 
@@ -75,7 +78,7 @@ class StringsView(InstanceView):
             disasm_view.select_label(s.addr)
             self.workspace.view_manager.raise_view(disasm_view)
 
-    def on_filter_change(self, **kwargs):  # pylint: disable=unused-argument
+    def on_filter_change(self, **kwargs) -> None:  # pylint: disable=unused-argument
         pattern = self._filter_string.text()
         regex = self._regex_checkbox.isChecked()
         if regex:
@@ -89,7 +92,7 @@ class StringsView(InstanceView):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._function_list = QFunctionComboBox(
             show_all_functions=True, selection_callback=self._on_function_selected, parent=self
         )

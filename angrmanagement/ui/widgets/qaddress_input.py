@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from PySide6.QtWidgets import QLineEdit
 
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+
 
 class QAddressInput(QLineEdit):
-    def __init__(self, textchanged_callback: Callable | None, instance, parent=None, default: str | None = None):
+    def __init__(
+        self, textchanged_callback: Callable | None, instance: Instance, parent=None, default: str | None = None
+    ) -> None:
         super().__init__(parent)
 
         self.instance = instance
@@ -29,7 +34,7 @@ class QAddressInput(QLineEdit):
         text = self.text()
         return self._convert_to_addr(text)
 
-    def _is_valid_addr_or_label(self, input):
+    def _is_valid_addr_or_label(self, input) -> bool:
         r = self._convert_to_addr(input)
         return r is not None
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pyqodeng.core.api import CodeEdit
 from pyqodeng.core.modes import AutoIndentMode, CaretLineHighlighterMode, PygmentsSyntaxHighlighter
 from PySide6.QtGui import QTextOption
@@ -15,13 +17,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class HookDialog(QDialog):
     """
     Provide templetes of hook function.
     """
 
-    def __init__(self, workspace, addr=None, parent=None):
+    def __init__(self, workspace: Workspace, addr: int | None = None, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
@@ -42,7 +47,7 @@ class HookDialog(QDialog):
     # Private methods
     #
 
-    def _add_templates(self, addr):
+    def _add_templates(self, addr: int) -> None:
         self.templates[
             "base"
         ] = f"""\
@@ -83,15 +88,15 @@ def enable_unicorn(state):
     state.options.add("UNICORN_TRACK_STACK_POINTERS")
 """
 
-    def update_function(self, template):
+    def update_function(self, template) -> None:
         self._function_box.setPlainText(template, mime_type="text/x-python", encoding="utf-8")
 
-    def selected(self):
+    def selected(self) -> None:
         btn = self.sender()
         if btn.isChecked():
             self.update_function(btn.template)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QGridLayout()
         row = 0
 
@@ -148,7 +153,7 @@ def enable_unicorn(state):
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.button(QDialogButtonBox.Ok).setText("Append to Console")
 
-        def do_ok():
+        def do_ok() -> None:
             code = function_box.toPlainText()
             self.workspace.append_code_to_console(code)
             self.close()

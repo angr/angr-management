@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QAbstractItemView, QFileDialog, QHeaderView, QMenu
 
 
 class QFileSystemTable(QTableWidget):
-    def __init__(self, items, parent):
+    def __init__(self, items, parent) -> None:
         super().__init__(parent)
 
         header_labels = ["Mount Point", "Host Path"]
@@ -21,7 +21,7 @@ class QFileSystemTable(QTableWidget):
             for i, it in enumerate(item):
                 self.setItem(idx, i, QTableWidgetItem(it))
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event) -> None:
         sr = self.currentRow()
 
         menu = QMenu("", self)
@@ -41,13 +41,13 @@ class QFileSystemTable(QTableWidget):
 
         menu.exec_(event.globalPos())
 
-    def _action_new_row(self):
+    def _action_new_row(self) -> None:
         row = self.rowCount()
         self.insertRow(row)
         self.setItem(row, 0, QTableWidgetItem("Edit Me"))
         self.setItem(row, 1, QTableWidgetItem(""))
 
-    def _action_select_file(self):
+    def _action_select_file(self) -> None:
         file_path, succ = QFileDialog.getOpenFileName(
             self,
             "Open a real file",
@@ -57,12 +57,12 @@ class QFileSystemTable(QTableWidget):
         if succ:
             self.setItem(self.currentRow(), 1, QTableWidgetItem(file_path))
 
-    def _action_select_dir(self):
+    def _action_select_dir(self) -> None:
         dir_path = QFileDialog.getExistingDirectory(self, "Select a directory")
         if dir_path:
             self.setItem(self.currentRow(), 1, QTableWidgetItem(dir_path))
 
-    def _action_delete(self):
+    def _action_delete(self) -> None:
         self.removeRow(self.currentRow())
 
     def get_result(self):

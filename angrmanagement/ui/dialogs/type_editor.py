@@ -26,7 +26,15 @@ class CTypeEditor(QDialog):
                                 if the dialog was cancelled.
     """
 
-    def __init__(self, parent, arch, base_text="", multiline=False, allow_multiple=False, predefined_types=None):
+    def __init__(
+        self,
+        parent,
+        arch,
+        base_text: str = "",
+        multiline: bool = False,
+        allow_multiple: bool = False,
+        predefined_types=None,
+    ) -> None:
         super().__init__(parent)
 
         self._allow_multiple = allow_multiple
@@ -42,7 +50,7 @@ class CTypeEditor(QDialog):
 
         self.result = []
 
-    def _init_widgets(self, base_text, multiline):
+    def _init_widgets(self, base_text, multiline) -> None:
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self._on_ok_pressed)
@@ -76,17 +84,17 @@ class CTypeEditor(QDialog):
 
         self.setLayout(layout)
 
-    def _on_ok_pressed(self):
+    def _on_ok_pressed(self) -> None:
         if not self.result:
             return
 
         self.close()
 
-    def _on_cancel_pressed(self):
+    def _on_cancel_pressed(self) -> None:
         self.result = []
         self.close()
 
-    def _evaluate(self):
+    def _evaluate(self) -> None:
         text = self.text()
 
         result = None
@@ -116,7 +124,7 @@ class CTypeEditor(QDialog):
             self.result = result
 
 
-def edit_field(ty, field, predefined_types=None):
+def edit_field(ty, field, predefined_types=None) -> bool:
     if isinstance(ty, sim_type.SimStruct):
         fields = ty.fields
     elif isinstance(ty, sim_type.SimUnion):

@@ -6,6 +6,7 @@ import random
 import re
 import string
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 import requests
 from PySide6.QtGui import Qt
@@ -15,13 +16,16 @@ from sortedcontainers import SortedDict
 from angrmanagement.config import Conf
 from angrmanagement.plugins.base_plugin import BasePlugin
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class VaRec(BasePlugin):
     """
     The plugin for supporting the VaRec plugin (private for now until it is released to the public).
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.transitions: set[tuple[int, int]] = set()
@@ -34,7 +38,7 @@ class VaRec(BasePlugin):
     ]
     INFER_VARIABLE_NAMES = 0
 
-    def handle_click_menu(self, idx):
+    def handle_click_menu(self, idx: int) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -48,7 +52,7 @@ class VaRec(BasePlugin):
         mapping.get(idx)()
 
     @staticmethod
-    def _restore_stage(view):
+    def _restore_stage(view) -> None:
         # shrug
         for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
             m = re.match(r"@@(\S+)@@(\S+)@@", v.name)
@@ -60,10 +64,10 @@ class VaRec(BasePlugin):
         view.codegen.am_event()
 
     @staticmethod
-    def randstr(n=8):
+    def randstr(n: int = 8):
         return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
 
-    def infer_variable_names(self):
+    def infer_variable_names(self) -> None:
         view = self.workspace._get_or_create_pseudocode_view()
         if view.codegen.am_none:
             QMessageBox.critical(

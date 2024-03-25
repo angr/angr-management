@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from angrmanagement.logic import GlobalInfo
 
 from .menu import Menu, MenuEntry
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class FunctionContextMenu(Menu):
-    def __init__(self, workspace, parent):
+    def __init__(self, workspace: Workspace, parent) -> None:
         super().__init__("Function", parent=parent)
         self.workspace = workspace
 

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from .qast_viewer import QASTViewer
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +133,7 @@ class QRegisterViewer(QFrame):
     ARCH_REGISTERS["ARMEL"] = ARCH_REGISTERS["ARM"]
     ARCH_REGISTERS["ARMHF"] = ARCH_REGISTERS["ARM"]
 
-    def __init__(self, state, parent, workspace):
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
 
         self._state = state
@@ -150,7 +154,7 @@ class QRegisterViewer(QFrame):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         for reg_name, reg_ctrl in self._registers.items():
             if self._state.am_none:
                 reg_ctrl.ast = None
@@ -161,7 +165,7 @@ class QRegisterViewer(QFrame):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         if self._state.am_none:
             return
 
@@ -214,7 +218,7 @@ class QRegisterViewer(QFrame):
         base_layout.addWidget(area)
         self.setLayout(base_layout)
 
-    def _watch_state(self):
+    def _watch_state(self) -> None:
         if not self._registers:
             self._init_widgets()
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QPainter, QPen
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QScrollArea, QVBoxLayout, QWidget
@@ -8,11 +10,14 @@ from angrmanagement.config import Conf
 
 from .qast_viewer import QASTViewer
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 
 class AddressPiece:
     __slots__ = ["address"]
 
-    def __init__(self, address):
+    def __init__(self, address) -> None:
         self.address = address
 
 
@@ -21,7 +26,7 @@ class NewLinePiece:
 
 
 class QMemoryView(QWidget):
-    def __init__(self, state, workspace, parent=None):
+    def __init__(self, state, workspace: Workspace, parent=None) -> None:
         super().__init__(parent)
         self.workspace = workspace
 
@@ -39,7 +44,7 @@ class QMemoryView(QWidget):
         return self._address
 
     @address.setter
-    def address(self, v):
+    def address(self, v) -> None:
         if v != self._address:
             self._address = v
             self._reload_objects()
@@ -83,7 +88,7 @@ class QMemoryView(QWidget):
             else:
                 raise TypeError("paintEvent(): Unsupported object type %s." % obj_type)
 
-    def _reload_objects(self):
+    def _reload_objects(self) -> None:
         """
         Reload addresses and text pieces to be displayed.
 
@@ -114,7 +119,7 @@ class QMemoryView(QWidget):
 
 
 class QMemoryViewer(QFrame):
-    def __init__(self, state, parent, workspace):
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
         self.workspace = workspace
 
@@ -134,7 +139,7 @@ class QMemoryViewer(QFrame):
         return self._addr
 
     @addr.setter
-    def addr(self, v):
+    def addr(self, v) -> None:
         if self._addr != v:
             self._addr = v
 
@@ -151,7 +156,7 @@ class QMemoryViewer(QFrame):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         if self.state.am_none:
             return
 
@@ -164,7 +169,7 @@ class QMemoryViewer(QFrame):
     # Event handlers
     #
 
-    def _on_address_entered(self):
+    def _on_address_entered(self) -> None:
         address_str = self._txt_addr.text()
 
         try:
@@ -178,7 +183,7 @@ class QMemoryViewer(QFrame):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QVBoxLayout()
 
         # address
@@ -210,12 +215,12 @@ class QMemoryViewer(QFrame):
 
         self.setLayout(layout)
 
-    def _refresh_memory_view(self):
+    def _refresh_memory_view(self) -> None:
         self._view.cols = 16
         self._view.rows = 10
         self._view.address = self.addr
 
         self._view.repaint()
 
-    def _watch_state(self, **kwargs):
+    def _watch_state(self, **kwargs) -> None:
         self.reload()

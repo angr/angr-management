@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from angr.analyses.disassembly import ConstantOperand, MemoryOperand, RegisterOperand, Value
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -9,6 +10,9 @@ from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 from angrmanagement.logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +24,7 @@ class QOperand(QCachedGraphicsItem):
 
     def __init__(
         self,
-        instance,
+        instance: Instance,
         func_addr,
         disasm_view,
         disasm,
@@ -28,12 +32,12 @@ class QOperand(QCachedGraphicsItem):
         insn,
         operand,
         operand_index,
-        is_branch_target,
-        is_indirect_branch,
+        is_branch_target: bool,
+        is_indirect_branch: bool,
         branch_targets,
         config,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent=parent)
 
         self.instance = instance
@@ -125,7 +129,7 @@ class QOperand(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             selected = self.infodock.toggle_operand_selection(
                 self.insn.addr,
@@ -140,7 +144,7 @@ class QOperand(QCachedGraphicsItem):
         else:
             super().mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         button = event.button()
         if button == Qt.LeftButton:
             if self._branch_target is not None:
@@ -158,11 +162,11 @@ class QOperand(QCachedGraphicsItem):
     # Public methods
     #
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._init_widgets()
         self.recalculate_size()
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         # Background
         if self.selected:
             painter.setPen(self._config.disasm_view_operand_select_color)
@@ -219,7 +223,7 @@ class QOperand(QCachedGraphicsItem):
 
         return list(branch_targets)[:n]
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         if self.is_branch_target:
             # a branch instruction
 
@@ -383,7 +387,7 @@ class QOperand(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         # label

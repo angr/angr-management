@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import networkx
 from PySide6.QtCore import QSize
@@ -9,11 +10,14 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout
 from .qstate_block import QStateBlock
 from .qsymexec_graph import QSymExecGraph
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 log = logging.getLogger(__name__)
 
 
 class QPathTree(QFrame):
-    def __init__(self, simgr, state, symexec_view, workspace, parent=None):
+    def __init__(self, simgr, state, symexec_view, workspace: Workspace, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.symexec_view = symexec_view
@@ -32,7 +36,7 @@ class QPathTree(QFrame):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         if self.simgr.am_none:
             return
 
@@ -47,7 +51,7 @@ class QPathTree(QFrame):
     # Initialization
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         graph = QSymExecGraph(self.state, self.workspace, self.symexec_view, parent=self)
 
         self._graph = graph
@@ -138,5 +142,5 @@ class QPathTree(QFrame):
 
         return g
 
-    def _watch_simgr(self, **kwargs):
+    def _watch_simgr(self, **kwargs) -> None:
         self.reload()

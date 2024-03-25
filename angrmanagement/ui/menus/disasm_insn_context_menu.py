@@ -19,7 +19,7 @@ class DisasmInsnContextMenu(Menu):
     and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
 
-    def __init__(self, disasm_view: DisassemblyView):
+    def __init__(self, disasm_view: DisassemblyView) -> None:
         super().__init__("", parent=disasm_view)
 
         self.insn_addr = None
@@ -55,38 +55,38 @@ class DisasmInsnContextMenu(Menu):
     def _disasm_view(self) -> DisassemblyView:
         return self.parent
 
-    def _popup_newstate_dialog(self):
+    def _popup_newstate_dialog(self) -> None:
         self._disasm_view.popup_newstate_dialog(async_=True)
 
-    def _popup_dependson_dialog(self):
+    def _popup_dependson_dialog(self) -> None:
         self._disasm_view.popup_dependson_dialog(use_operand=True)
 
-    def _toggle_instruction_selection(self):
+    def _toggle_instruction_selection(self) -> None:
         self._disasm_view.infodock.toggle_instruction_selection(self.insn_addr)
 
-    def _avoid_in_execution(self):
+    def _avoid_in_execution(self) -> None:
         self._disasm_view.avoid_addr_in_exec(self.insn_addr)
         self._disasm_view.refresh()
 
-    def _find_in_execution(self):
+    def _find_in_execution(self) -> None:
         self._disasm_view.find_addr_in_exec(self.insn_addr)
         self._disasm_view.refresh()
 
-    def _toggle_breakpoint(self):
+    def _toggle_breakpoint(self) -> None:
         self._disasm_view.instance.breakpoint_mgr.toggle_exec_breakpoint(self.insn_addr)
         self._disasm_view.refresh()
 
-    def _add_hook(self):
+    def _add_hook(self) -> None:
         self._disasm_view.popup_hook_dialog(async_=True)
 
-    def _view_docs(self):
+    def _view_docs(self) -> None:
         if self._disasm_view is None:
             return
         addr = self._disasm_view._address_in_selection()
         if addr is not None:
             self._disasm_view.popup_func_doc_dialog(addr)
 
-    def _popup_xrefs(self):
+    def _popup_xrefs(self) -> None:
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
             return
         r = self._disasm_view._flow_graph.get_selected_operand_info()
@@ -94,19 +94,21 @@ class DisasmInsnContextMenu(Menu):
             _, ins_addr, operand = r
             self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand, async_=True)
 
-    def _popup_patch_dialog(self):
+    def _popup_patch_dialog(self) -> None:
         self._disasm_view.popup_patch_dialog()
 
     #
     # Public Methods
     #
 
-    def add_menu_entry(self, text, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first=True):
+    def add_menu_entry(
+        self, text: str, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first: bool = True
+    ) -> None:
         if add_separator_first:
             self.entries.append(MenuSeparator())
         self.entries.append(MenuEntry(text, partial(callback, self)))
 
-    def remove_menu_entry(self, text, remove_preceding_separator=True):
+    def remove_menu_entry(self, text: str, remove_preceding_separator: bool = True) -> None:
         for idx, m in enumerate(self.entries):
             if not isinstance(m, MenuEntry):
                 continue

@@ -13,6 +13,7 @@ from .view import InstanceView
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
 
@@ -27,12 +28,12 @@ class QBreakpointTableModel(QAbstractTableModel):
     COL_SIZE = 2
     COL_COMMENT = 3
 
-    def __init__(self, breakpoint_mgr: BreakpointManager):
+    def __init__(self, breakpoint_mgr: BreakpointManager) -> None:
         super().__init__()
         self.breakpoint_mgr = breakpoint_mgr
         self.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
 
-    def _on_breakpoints_updated(self, **kwargs):  # pylint:disable=unused-argument
+    def _on_breakpoints_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
         self.beginResetModel()
         self.endResetModel()
 
@@ -83,7 +84,7 @@ class QBreakpointTableWidget(QTableView):
     Breakpoint table widget.
     """
 
-    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: Workspace):
+    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: Workspace) -> None:
         super().__init__()
         self.workspace = workspace
         self.breakpoint_mgr = breakpoint_mgr
@@ -110,11 +111,11 @@ class QBreakpointTableWidget(QTableView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.model.shutdown()
         super().closeEvent(event)
 
-    def contextMenuEvent(self, event):
+    def contextMenuEvent(self, event) -> None:
         selected_rows = {i.row() for i in self.selectedIndexes()}
         breakpoints = [self.breakpoint_mgr.breakpoints[r] for r in selected_rows]
         menu = QMenu("", self)
@@ -129,18 +130,18 @@ class QBreakpointTableWidget(QTableView):
         menu.addAction("New breakpoint", self.new_breakpoint)
         menu.exec_(event.globalPos())
 
-    def _on_cell_double_click(self, index):
+    def _on_cell_double_click(self, index) -> None:
         self.edit_breakpoint(self.breakpoint_mgr.breakpoints[index.row()])
 
-    def new_breakpoint(self):
+    def new_breakpoint(self) -> None:
         bp = Breakpoint(BreakpointType.Execute, 0)
         if BreakpointDialog(bp, self.workspace, self).exec_():
             self.breakpoint_mgr.add_breakpoint(bp)
 
-    def edit_breakpoint(self, breakpoint_: Breakpoint):
+    def edit_breakpoint(self, breakpoint_: Breakpoint) -> None:
         BreakpointDialog(breakpoint_, self.workspace, self).exec_()
 
-    def remove_breakpoints(self, breakpoints: Sequence[Breakpoint]):
+    def remove_breakpoints(self, breakpoints: Sequence[Breakpoint]) -> None:
         for b in breakpoints:
             self.breakpoint_mgr.remove_breakpoint(b)
 
@@ -150,21 +151,21 @@ class BreakpointsView(InstanceView):
     Breakpoints table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("breakpoints", workspace, default_docking_position, instance)
         self.base_caption = "Breakpoints"
         self._tbl_widget: QBreakpointTableWidget | None = None
         self._init_widgets()
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     @staticmethod
     def minimumSizeHint():
         return QSize(200, 200)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
         self._tbl_widget = QBreakpointTableWidget(self.instance.breakpoint_mgr, self.workspace)
         vlayout.addWidget(self._tbl_widget)

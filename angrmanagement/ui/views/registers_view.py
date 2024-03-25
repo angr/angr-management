@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     import PySide6
     from archinfo import Register
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
+
 
 class QRegisterTableModel(QAbstractTableModel):
     """
@@ -26,7 +29,7 @@ class QRegisterTableModel(QAbstractTableModel):
     COL_REGISTER = 0
     COL_VALUE = 1
 
-    def __init__(self, log_widget: QRegisterTableWidget = None):
+    def __init__(self, log_widget: QRegisterTableWidget = None) -> None:
         super().__init__()
         self._log_widget = log_widget
         self.state: angr.SimState = None
@@ -79,7 +82,7 @@ class QRegisterTableModel(QAbstractTableModel):
         different = self.state.solver.eval(self.state.regs.get(reg.name) != self._last_state.regs.get(reg.name))
         return different
 
-    def update_state(self, state):
+    def update_state(self, state) -> None:
         self._last_state = self.state.copy() if self.state else None
         self.state = None if state is None else state
 
@@ -89,7 +92,7 @@ class QRegisterTableWidget(QTableView):
     Register table widget.
     """
 
-    def __init__(self, register_view):
+    def __init__(self, register_view) -> None:
         super().__init__()
         self.register_view = register_view
 
@@ -120,11 +123,11 @@ class QRegisterTableWidget(QTableView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self._dbg_watcher.shutdown()
         super().closeEvent(event)
 
-    def _on_debugger_state_updated(self):
+    def _on_debugger_state_updated(self) -> None:
         dbg = self._dbg_manager.debugger
         self.model.update_state(None if dbg.am_none else dbg.simstate)
         self.model.layoutChanged.emit()
@@ -135,7 +138,7 @@ class RegistersView(InstanceView):
     Register table view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
         super().__init__("registers", workspace, default_docking_position, instance)
 
         self.base_caption = "Registers"
@@ -147,14 +150,14 @@ class RegistersView(InstanceView):
         self.height_hint = 0
         self.updateGeometry()
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     @staticmethod
     def minimumSizeHint():
         return QSize(200, 200)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
         vlayout.setContentsMargins(0, 0, 0, 0)
         self._tbl_widget = QRegisterTableWidget(self)

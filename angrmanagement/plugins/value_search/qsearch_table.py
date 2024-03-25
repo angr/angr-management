@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from angr.analyses.cfg.cfg_fast import MemoryData
     from PySide6.QtGui import QKeyEvent
 
+    from angrmanagement.data.instance import Instance
+
     from .search_view import SearchView
 
 
@@ -37,7 +39,7 @@ class QSearchModel(QAbstractTableModel):
     ADDRESS_COL = 0
     VALUE_COL = 1
 
-    def __init__(self, cfg, values=None):
+    def __init__(self, cfg, values=None) -> None:
         super().__init__()
 
         self._cfg = cfg
@@ -48,10 +50,10 @@ class QSearchModel(QAbstractTableModel):
         return self._values if self._values else []
 
     @values.setter
-    def values(self, values):
+    def values(self, values) -> None:
         self._values = values
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.rowCount()
 
     def rowCount(self, parent=None) -> int:  # pylint: disable=unused-argument
@@ -120,7 +122,7 @@ class QSearchTable(QTableView):
     The value search table widget.
     """
 
-    def __init__(self, instance, parent, selection_callback=None):
+    def __init__(self, instance: Instance, parent, selection_callback=None) -> None:
         super().__init__(parent)
         self._parent: SearchView = parent
 
@@ -158,7 +160,7 @@ class QSearchTable(QTableView):
         return self._filter
 
     @filter_string.setter
-    def filter_string(self, v):
+    def filter_string(self, v) -> None:
         self._filter = v
         found_values, beastr = self._parent.plugin.on_search_trigger(
             self._filter, self._parent._selected_type, self._parent.alignment, self._parent.should_search_code
@@ -172,7 +174,7 @@ class QSearchTable(QTableView):
     # Public methods
     #
 
-    def fast_resize(self):
+    def fast_resize(self) -> None:
         self.setVisible(False)
         self.resizeColumnsToContents()
         self.setVisible(True)
@@ -181,7 +183,7 @@ class QSearchTable(QTableView):
     # Event handlers
     #
 
-    def _on_string_selected(self, model_index):
+    def _on_string_selected(self, model_index) -> None:
         model_index = self._proxy.mapToSource(model_index)
         selected_index = model_index.row()
         if self._model is None:

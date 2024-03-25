@@ -38,7 +38,7 @@ class SingleInstance:
     own singleton instances.
     """
 
-    def __init__(self, flavor_id="", lockfile=""):
+    def __init__(self, flavor_id: str = "", lockfile: str = "") -> None:
         self.initialized = False
         if lockfile:
             self.lockfile = lockfile
@@ -75,7 +75,7 @@ class SingleInstance:
                 raise SingleInstanceException from ex
         self.initialized = True
 
-    def __del__(self):
+    def __del__(self) -> None:
         if not self.initialized:
             return
         try:
@@ -96,7 +96,7 @@ class SingleInstance:
             sys.exit(-1)
 
 
-def f(initializer: Initializer, name):
+def f(initializer: Initializer, name: str) -> None:
     initializer.initialize()
     tmp = logger.level
     logger.setLevel(logging.CRITICAL)  # we do not want to see the warning
@@ -108,12 +108,12 @@ def f(initializer: Initializer, name):
 
 
 class testSingleton(unittest.TestCase):
-    def test_1(self):
+    def test_1(self) -> None:
         me = SingleInstance(flavor_id="test-1")
         del me  # now the lock should be removed
         assert True
 
-    def test_2(self):
+    def test_2(self) -> None:
         p = Process(
             target=f,
             args=(
@@ -126,7 +126,7 @@ class testSingleton(unittest.TestCase):
         # the called function should succeed
         assert p.exitcode == 0, "%s != 0" % p.exitcode
 
-    def test_3(self):
+    def test_3(self) -> None:
         me = SingleInstance(flavor_id="test-3")  # noqa -- me should still kept
         p = Process(
             target=f,
@@ -155,7 +155,7 @@ class testSingleton(unittest.TestCase):
         # instance running
         assert p.exitcode != 0, "%s != 0 (3rd execution)" % p.exitcode
 
-    def test_4(self):
+    def test_4(self) -> None:
         lockfile = "/tmp/foo.lock"
         me = SingleInstance(lockfile=lockfile)
         assert me.lockfile == lockfile

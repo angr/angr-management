@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views import DisassemblyView
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qoperand import QOperand
@@ -23,7 +24,7 @@ class QDisassemblyBaseControl:
     The base control class of QLinearViewer and QDisassemblyGraph. Implements or declares common shorthands and methods.
     """
 
-    def __init__(self, instance, disasm_view, base_cls):
+    def __init__(self, instance: Instance, disasm_view, base_cls) -> None:
         self.instance = instance
         self.disasm_view: DisassemblyView = disasm_view
         self._base_cls = base_cls
@@ -46,7 +47,14 @@ class QDisassemblyBaseControl:
     def reload(self):
         raise NotImplementedError
 
-    def show_instruction(self, insn_addr, insn_pos=None, centering=False, use_block_pos=False, use_animation=False):
+    def show_instruction(
+        self,
+        insn_addr,
+        insn_pos=None,
+        centering: bool = False,
+        use_block_pos: bool = False,
+        use_animation: bool = False,
+    ):
         raise NotImplementedError
 
     #
@@ -66,7 +74,7 @@ class QDisassemblyBaseControl:
 
         return None
 
-    def set_disassembly_level(self, level: DisassemblyLevel):
+    def set_disassembly_level(self, level: DisassemblyLevel) -> None:
         self._disassembly_level = level
         self.reload()
 
@@ -74,7 +82,7 @@ class QDisassemblyBaseControl:
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
 
         if key == Qt.Key_N:

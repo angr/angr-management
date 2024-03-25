@@ -24,6 +24,8 @@ from .log import LogRecord, initialize
 from .object_container import ObjectContainer
 
 if TYPE_CHECKING:
+    from angrmanagement.data.jobs.job import Job
+
     from .jobs import VariableRecoveryJob
 
 
@@ -40,7 +42,7 @@ class Instance:
     cfb: angr.analyses.cfg.CFBlanket | ObjectContainer
     log: list[LogRecord] | ObjectContainer
 
-    def __init__(self):
+    def __init__(self) -> None:
         # pylint:disable=import-outside-toplevel
         # delayed import
         from angrmanagement.ui.views.interaction_view import (
@@ -136,7 +138,7 @@ class Instance:
         except KeyError:
             return super().__getattribute__(k)
 
-    def __setattr__(self, k, v):
+    def __setattr__(self, k, v) -> None:
         if k in self.extra_containers:
             self.extra_containers[k].am_obj = v
         else:
@@ -150,7 +152,7 @@ class Instance:
         return self._insn_backcolor_callback
 
     @insn_backcolor_callback.setter
-    def insn_backcolor_callback(self, v):
+    def insn_backcolor_callback(self, v) -> None:
         self._insn_backcolor_callback = v
 
     @property
@@ -158,7 +160,7 @@ class Instance:
         return self._label_rename_callback
 
     @label_rename_callback.setter
-    def label_rename_callback(self, v):
+    def label_rename_callback(self, v) -> None:
         self._label_rename_callback = v
 
     @property
@@ -166,14 +168,14 @@ class Instance:
         return self._set_comment_callback
 
     @set_comment_callback.setter
-    def set_comment_callback(self, v):
+    def set_comment_callback(self, v) -> None:
         self._set_comment_callback = v
 
     #
     # Public methods
     #
 
-    def register_container(self, name, default_val_func, ty, description, logging_permitted: bool = True):
+    def register_container(self, name: str, default_val_func, ty, description: str, logging_permitted: bool = True):
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:
@@ -185,7 +187,7 @@ class Instance:
                 default_val_func(), description, logging_permitted=logging_permitted
             )
 
-    def initialize(self, initialized=False):
+    def initialize(self, initialized: bool = False) -> None:
         if self.project.am_none:
             return
 
@@ -194,14 +196,14 @@ class Instance:
         if not initialized and self.pseudocode_variable_kb is None:
             self.initialize_pseudocode_variable_kb()
 
-    def initialize_pseudocode_variable_kb(self):
+    def initialize_pseudocode_variable_kb(self) -> None:
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
 
-    def add_job(self, job):
+    def add_job(self, job: Job) -> None:
         self.jobs.append(job)
         self._jobs_queue.put(job)
 
-    def get_instruction_text_at(self, addr):
+    def get_instruction_text_at(self, addr: int):
         """
         Get the text representation of an instruction at `addr`.
 
@@ -230,7 +232,7 @@ class Instance:
                     return insn_piece.render()[0]
         return None
 
-    def interrupt_current_job(self):
+    def interrupt_current_job(self) -> None:
         """Notify the current running job that the user requested an interrupt. The job may ignore it."""
         # Due to thread scheduling, current_job reference *must* first be saved on the stack. Accessing self.current_job
         # multiple times will lead to a race condition.
@@ -238,7 +240,7 @@ class Instance:
         if current_job:
             current_job.keyboard_interrupt()
 
-    def join_all_jobs(self, wait_period=2.0):
+    def join_all_jobs(self, wait_period: float = 2.0) -> None:
         """
         Wait until self.jobs is empty for at least `wait_period` seconds.
 
@@ -252,10 +254,10 @@ class Instance:
                 last_has_job = time.time()
                 time.sleep(0.05)
 
-    def delete_hook(self, addr):
+    def delete_hook(self, addr: int) -> None:
         self.project.unhook(addr)
 
-    def add_breakpoint(self, obj: str | int, type_: str | None = None, size: int | None = None):
+    def add_breakpoint(self, obj: str | int, type_: str | None = None, size: int | None = None) -> None:
         """
         Convenience function to add a breakpoint.
 
@@ -301,7 +303,7 @@ class Instance:
         bp = Breakpoint(bp_type_map[type_], addr, size)
         self.breakpoint_mgr.add_breakpoint(bp)
 
-    def set_comment(self, addr, comment_text):
+    def set_comment(self, addr: int, comment_text) -> None:
         kb = self.project.kb
         exists = addr in kb.comments
 
@@ -325,10 +327,10 @@ class Instance:
 
     # TODO: Worker thread and UI callbacks should be moved to a separate class
 
-    def _start_worker(self):
+    def _start_worker(self) -> None:
         self.worker_thread = start_daemon_thread(self._worker, "angr-management Worker Thread")
 
-    def _worker(self):
+    def _worker(self) -> None:
         while True:
             if self._jobs_queue.empty():
                 callback_worker_progress_empty()
@@ -356,10 +358,10 @@ class Instance:
                 callback_job_complete(self, job, result)
 
     # pylint:disable=no-self-use
-    def _set_status(self, status_text):
+    def _set_status(self, status_text) -> None:
         GlobalInfo.main_window.status = status_text
 
-    def _reset_containers(self):
+    def _reset_containers(self) -> None:
         for name in self.extra_containers:
             self.extra_containers[name].am_obj = self._container_defaults[name][0]()
             self.extra_containers[name].am_event()
@@ -370,23 +372,23 @@ class Instance:
         self.breakpoint_mgr.clear()
 
 
-def callback_worker_progress_empty():
+def callback_worker_progress_empty() -> None:
     gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
 
 
-def callback_worker_blocking_job():
+def callback_worker_blocking_job() -> None:
     if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
         gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
 
 
-def callback_worker_new_job():
+def callback_worker_new_job() -> None:
     gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
 
 
-def callback_worker_blocking_job_2():
+def callback_worker_blocking_job_2() -> None:
     if GlobalInfo.main_window.isVisible():
         gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
 
-def callback_job_complete(instance, job, result):
+def callback_job_complete(instance: Instance, job: Job, result) -> None:
     gui_thread_schedule_async(job.finish, args=(instance, result))

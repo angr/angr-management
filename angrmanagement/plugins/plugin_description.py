@@ -11,7 +11,7 @@ class PluginDescription:
     Describes an angr management plugin. Can be generated from plugin.toml.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Metadata
         self.plugin_metadata_version: int = None
 

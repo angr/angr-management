@@ -7,7 +7,7 @@ class JumpHistory:
     or CodeView.jump_history. Maintains a list of addresses through which the user can navigate forwards and backwards.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._history = []
         self._pos = -1
 
@@ -26,10 +26,10 @@ class JumpHistory:
         else:
             return None
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._history)
 
-    def jump_to(self, addr):
+    def jump_to(self, addr: int) -> None:
         if self._pos != len(self._history) - 1:
             self.trim()
 
@@ -37,13 +37,13 @@ class JumpHistory:
             self._history.append(addr)
             self._pos = len(self._history) - 1
 
-    def record_address(self, addr):
+    def record_address(self, addr: int) -> None:
         if 0 <= self._pos < len(self._history):
             self._history[self._pos] = addr
         else:
             self.jump_to(addr)
 
-    def trim(self):
+    def trim(self) -> None:
         self._history = self._history[: self._pos + 1]
 
     def backtrack(self):

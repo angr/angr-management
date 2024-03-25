@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFileDialog
@@ -16,6 +17,9 @@ from .diff_view import DiffDisassemblyView
 from .function_diff import BFSFunctionDiff, FunctionDiff
 from .settings_dialog import SettingsDialog
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +33,7 @@ class PreciseDiffPlugin(BasePlugin):
     RELOAD_BINARY_CMD_EVT = 2
     MENU_BUTTONS = ("Precise Diffing settings...", "Load binary for Precise Diffing...", "Refresh loaded diff binary")
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         self.diff_instance: Instance | None = None
         self.current_revised_view: DisassemblyView | None = None
@@ -51,7 +55,7 @@ class PreciseDiffPlugin(BasePlugin):
     # UI Callback Handlers
     #
 
-    def handle_click_menu(self, idx):
+    def handle_click_menu(self, idx: int) -> None:
         if idx == self.DIFF_SETTINGS_CMD_EVT:
             dialog = SettingsDialog(self)
             dialog.exec()
@@ -69,7 +73,7 @@ class PreciseDiffPlugin(BasePlugin):
         elif idx == self.RELOAD_BINARY_CMD_EVT and self.loaded_binary is not None:
             self.load_revised_binary_from_file(self.loaded_binary)
 
-    def color_insn(self, addr, selected, disasm_view):
+    def color_insn(self, addr: int, selected, disasm_view):
         if disasm_view != self.current_revised_view:
             return None
 
@@ -93,7 +97,7 @@ class PreciseDiffPlugin(BasePlugin):
 
         return diff_map[diff_value]
 
-    def color_graph_diff(self, og_disasm: DisassemblyView, new_disasm: DisassemblyView):
+    def color_graph_diff(self, og_disasm: DisassemblyView, new_disasm: DisassemblyView) -> None:
         try:
             base_func = og_disasm.function.am_obj
             rev_func = new_disasm.function.am_obj
@@ -115,7 +119,7 @@ class PreciseDiffPlugin(BasePlugin):
         )
         new_disasm.redraw_current_graph()
 
-    def _destroy_recompiled_view(self):
+    def _destroy_recompiled_view(self) -> None:
         if self.current_revised_view:
             self.workspace.remove_view(self.current_revised_view)
             del self.current_revised_view
@@ -123,7 +127,7 @@ class PreciseDiffPlugin(BasePlugin):
         if self.diff_instance:
             del self.diff_instance
 
-    def _create_instance_from_binary(self, file_path: Path):
+    def _create_instance_from_binary(self, file_path: Path) -> None:
         self.diff_instance.recompilation_plugin = self
         self.diff_instance.workspace = self.workspace
 
@@ -131,11 +135,11 @@ class PreciseDiffPlugin(BasePlugin):
         self.loaded_binary = file_path
         self.diff_instance.add_job(job)
 
-    def _create_instance_from_binary_done(self):
+    def _create_instance_from_binary_done(self) -> None:
         job = CFGGenerationJob(on_finish=self._generate_binary_cfg_done)
         self.diff_instance.add_job(job)
 
-    def _generate_binary_cfg_done(self):
+    def _generate_binary_cfg_done(self) -> None:
         self.revised_binary_loaded()
 
     def _create_revised_disassembly_view(self):
@@ -146,11 +150,11 @@ class PreciseDiffPlugin(BasePlugin):
         self.workspace.add_view(self.current_revised_view)
         return self.current_revised_view
 
-    def jump_to_in_revised_view(self, func):
+    def jump_to_in_revised_view(self, func) -> None:
         self.current_revised_view.display_function(func)
         self.current_revised_view.jump_to(func.addr)
 
-    def syncronize_with_original_disassembly_view(self):
+    def syncronize_with_original_disassembly_view(self) -> None:
         og_view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
         if not og_view:
             return
@@ -179,12 +183,12 @@ class PreciseDiffPlugin(BasePlugin):
         self.jump_to_in_revised_view(revised_func)
         self.color_graph_diff(og_view, self.current_revised_view)
 
-    def load_revised_binary_from_file(self, file_path: Path):
+    def load_revised_binary_from_file(self, file_path: Path) -> None:
         self._destroy_recompiled_view()
         self.diff_instance = Instance()
         self._create_instance_from_binary(file_path)
 
-    def revised_binary_loaded(self):
+    def revised_binary_loaded(self) -> None:
         self._create_revised_disassembly_view()
         self.syncronize_with_original_disassembly_view()
         self.workspace.view_manager.raise_view(self.current_revised_view)

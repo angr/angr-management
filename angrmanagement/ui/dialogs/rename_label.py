@@ -8,7 +8,7 @@ class LabelNameBox(QLineEdit):
     A QLineEdit that sanitizes label names.
     """
 
-    def __init__(self, textchanged_callback, parent=None):
+    def __init__(self, textchanged_callback, parent=None) -> None:
         super().__init__(parent)
 
         self.textChanged.connect(textchanged_callback)
@@ -29,7 +29,7 @@ class RenameLabel(QDialog):
     Dialog to rename labels.
     """
 
-    def __init__(self, disasm_view, label_addr, full_refresh=False, parent=None):
+    def __init__(self, disasm_view, label_addr, full_refresh: bool = False, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
@@ -54,7 +54,7 @@ class RenameLabel(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # name label
 
         name_label = QLabel(self)
@@ -98,7 +98,7 @@ class RenameLabel(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text):  # pylint: disable=unused-argument
+    def _on_name_changed(self, new_text) -> None:  # pylint: disable=unused-argument
         if self._name_box is None:
             # initialization is not done yet
             return
@@ -117,7 +117,7 @@ class RenameLabel(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         label = self._name_box.label
         if label is not None:
             self._disasm_view.rename_label(

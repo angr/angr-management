@@ -14,7 +14,7 @@ def _make_config_entry_value(init_value, type_):
 
         changed = Signal(type_)
 
-        def __init__(self, value):
+        def __init__(self, value) -> None:
             QObject.__init__(self)
             if not hasattr(self, "am_subscribers"):
                 EventSentinel.__init__(self)
@@ -23,7 +23,7 @@ def _make_config_entry_value(init_value, type_):
         def get(self):
             return self._value
 
-        def set(self, value):
+        def set(self, value) -> None:
             """
             Set the value, if it changes, trigger events
             """
@@ -42,7 +42,7 @@ class ConfigurationEntry:
 
     __slots__ = ("name", "type_", "_value", "default_value")
 
-    def __init__(self, name, type_, value, default_value=None):
+    def __init__(self, name: str, type_, value, default_value=None) -> None:
         self.name = name
         self.type_ = type_
         self._value = _make_config_entry_value(value, self.type_)
@@ -70,8 +70,8 @@ class ConfigurationEntry:
     def changed(self) -> Signal:
         return self._value.changed
 
-    def subscribe(self, listener):
+    def subscribe(self, listener) -> None:
         self._value.am_subscribe(listener)
 
-    def unsubscribe(self, listener):
+    def unsubscribe(self, listener) -> None:
         self._value.am_unsubscribe(listener)
