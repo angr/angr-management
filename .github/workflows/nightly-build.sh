@@ -43,7 +43,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     mkdir /tmp/angr-management-zip
     ZIP_PATH=$(pwd)/upload/angr-management-macOS-$(uname -m).zip
     pushd dist
-    zip -r $ZIP_PATH *.app
+    zip -ry $ZIP_PATH *.app
     popd
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
