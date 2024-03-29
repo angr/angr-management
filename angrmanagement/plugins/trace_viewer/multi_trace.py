@@ -1,8 +1,14 @@
+from __future__ import annotations
+
 import math
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QColor
 
 from .trace_statistics import TraceStatistics
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class MultiTrace:
@@ -16,7 +22,7 @@ class MultiTrace:
         QColor(0xFD, 0xD4, 0x9E, 0x60),
     ]
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         self.workspace = workspace
         self._traces_summary = []
         self._traces = {}
@@ -30,7 +36,7 @@ class MultiTrace:
         self._traces_summary.extend(traceStats.mapped_trace)
         return traceStats
 
-    def get_hit_miss_color(self, addr):
+    def get_hit_miss_color(self, addr: int):
         if addr in self.addr_color_map:
             return self.addr_color_map[addr]
         else:
@@ -47,7 +53,7 @@ class MultiTrace:
             self._calc_function_info(func)
         return self.function_info[func.addr]["coverage"]
 
-    def get_any_trace(self, addr):
+    def get_any_trace(self, addr: int):
         for trace in self._traces.values():
             if addr in trace["trace"]:
                 return trace["trace"]
@@ -70,10 +76,10 @@ class MultiTrace:
             return None
         return self._traces[trace_id]
 
-    def clear_heatmap(self):
+    def clear_heatmap(self) -> None:
         self._make_addr_map([])
 
-    def reload_heatmap(self, targets):
+    def reload_heatmap(self, targets) -> None:
         addrs_of_interest = []
         for trace_id in targets:
             if trace_id not in self._traces:
@@ -83,7 +89,7 @@ class MultiTrace:
             addrs_of_interest.extend(addr_list)
         self._make_addr_map(addrs_of_interest)
 
-    def _make_addr_map(self, addrs_of_interest):
+    def _make_addr_map(self, addrs_of_interest) -> None:
         # TODO: Probably exists a more efficient way to generate this mapping
         self.addr_color_map.clear()
         hit_map = {}
@@ -110,7 +116,7 @@ class MultiTrace:
                 self.addr_color_map[addr] = color
             total += len(addrs)
 
-    def _calc_function_info(self, func):
+    def _calc_function_info(self, func) -> None:
         blocks = list(func.block_addrs)
         hit_count = 0
 

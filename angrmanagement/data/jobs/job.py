@@ -1,9 +1,10 @@
 # pylint:disable=global-statement
+from __future__ import annotations
+
 import ctypes
 import datetime
 import logging
 import time
-from typing import Optional
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -15,7 +16,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-def _load_autoreload():
+def _load_autoreload() -> None:
     """
     Load the autoreload extension module. Delay the import and initialization to reduce angr management's startup time.
     """
@@ -37,10 +38,10 @@ class Job:
     The base class of all Jobs in angr management.
     """
 
-    def __init__(self, name, on_finish=None, blocking=False):
+    def __init__(self, name: str, on_finish=None, blocking: bool = False) -> None:
         self.name = name
         self.progress_percentage = 0.0
-        self.last_text: Optional[str] = None
+        self.last_text: str | None = None
         self.start_at: float = 0.0
         self.last_gui_updated_at: float = 0.0
         self.blocking = blocking
@@ -75,14 +76,14 @@ class Job:
     def _run(self, inst):
         raise NotImplementedError
 
-    def finish(self, inst, result):  # pylint: disable=unused-argument
+    def finish(self, inst, result) -> None:  # pylint: disable=unused-argument
         inst.jobs = inst.jobs[1:]
 
         gui_thread_schedule_async(self._finish_progress)
         if self._on_finish:
             gui_thread_schedule_async(self._on_finish)
 
-    def keyboard_interrupt(self):
+    def keyboard_interrupt(self) -> None:
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
         # lol. lmao even.
         if GlobalInfo.main_window.workspace.main_instance.current_job == self:
@@ -92,7 +93,7 @@ class Job:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
                 log.error("Failed to interrupt thread")
 
-    def _progress_callback(self, percentage, text=None):
+    def _progress_callback(self, percentage, text: str | None = None) -> None:
         delta = percentage - self.progress_percentage
 
         if (delta > 0.02 or self.last_text != text) and time.time() - self.last_gui_updated_at >= 0.1:
@@ -100,11 +101,11 @@ class Job:
             self.progress_percentage = percentage
             gui_thread_schedule_async(self._set_progress, args=(text,))
 
-    def _set_progress(self, text=None):
+    def _set_progress(self, text: str | None = None) -> None:
         status = self.name
         if text:
             status += ": " + text
         GlobalInfo.main_window.progress(status, self.progress_percentage)
 
-    def _finish_progress(self):
+    def _finish_progress(self) -> None:
         pass

@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import multiprocessing
 import platform
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 if TYPE_CHECKING:
     import angr
+
+    from angrmanagement.data.instance import Instance
 
 
 def extract_first_paragraph_from_docstring(desc: str) -> str:
@@ -36,22 +40,22 @@ class AnalysesConfiguration:
     Configuration for a sequence of analyses.
     """
 
-    def __init__(self, analyses: Sequence["AnalysisConfiguration"], instance):
+    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance: Instance) -> None:
         self.instance = instance
         self.analyses: Sequence[AnalysisConfiguration] = analyses
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.analyses)
 
     def __iter__(self):
         return iter(self.analyses)
 
-    def __getitem__(self, key: Union[int, str]):
+    def __getitem__(self, key: int | str):
         if isinstance(key, int):
             return self.analyses[key]
         return self.by_name(key)
 
-    def by_name(self, name: str) -> "AnalysisConfiguration":
+    def by_name(self, name: str) -> AnalysisConfiguration:
         for a in self.analyses:
             if a.name == name:
                 return a
@@ -63,7 +67,7 @@ class AnalysisConfiguration:
     Configuration for an analysis.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance: Instance) -> None:
         self.instance = instance
         self.project: angr.Project = self.instance.project.am_obj
         self.enabled: bool = False
@@ -83,7 +87,7 @@ class AnalysisConfiguration:
         self.update_dict(o)
         return o
 
-    def update_dict(self, out: Mapping[str, Any]):
+    def update_dict(self, out: Mapping[str, Any]) -> None:
         """
         Update dictionary `out` with configuration for this option.
         """
@@ -98,12 +102,12 @@ class AnalysisOption:
     Configurable option for an analysis.
     """
 
-    def __init__(self, name: str, display_name: str, tooltip: str):
+    def __init__(self, name: str, display_name: str, tooltip: str) -> None:
         self.name: str = name
         self.display_name: str = display_name
         self.tooltip: str = tooltip
 
-    def update_dict(self, out: Mapping[str, Any]):
+    def update_dict(self, out: Mapping[str, Any]) -> None:
         """
         Update dictionary `out` with configuration for this option.
         """
@@ -114,12 +118,12 @@ class PrimitiveAnalysisOption(AnalysisOption):
     Configurable option for an analysis, with a fundamental type (e.g. bool)
     """
 
-    def __init__(self, name: str, description: str, default: Any, tooltip: str):
+    def __init__(self, name: str, description: str, default: Any, tooltip: str) -> None:
         super().__init__(name, description, tooltip)
         self.default: Any = default
         self.value: Any = default
 
-    def update_dict(self, out: Mapping[str, Any]):
+    def update_dict(self, out: Mapping[str, Any]) -> None:
         """
         Update `out` dictionary with configuration for this option.
         """
@@ -131,7 +135,7 @@ class BoolAnalysisOption(PrimitiveAnalysisOption):
     Boolean option for an analysis.
     """
 
-    def __init__(self, name: str, description: str, default: bool = False, tooltip: str = ""):
+    def __init__(self, name: str, description: str, default: bool = False, tooltip: str = "") -> None:
         super().__init__(name, description, default, tooltip)
 
 
@@ -143,7 +147,9 @@ class StringAnalysisOption(PrimitiveAnalysisOption):
     :ivar enabled:  Is this option enabled by the user or not.
     """
 
-    def __init__(self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False):
+    def __init__(
+        self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False
+    ) -> None:
         self.optional = optional
         self.enabled = not self.optional
         super().__init__(name, description, default, tooltip)
@@ -160,9 +166,9 @@ class IntAnalysisOption(PrimitiveAnalysisOption):
         description: str,
         default: int = 0,
         tooltip: str = "",
-        minimum: Optional[int] = None,
-        maximum: Optional[int] = None,
-    ):
+        minimum: int | None = None,
+        maximum: int | None = None,
+    ) -> None:
         super().__init__(name, description, default, tooltip)
         self.minimum_value = minimum
         self.maximum_value = maximum
@@ -173,7 +179,9 @@ class ChoiceAnalysisOption(PrimitiveAnalysisOption):
     A multi-value choice.
     """
 
-    def __init__(self, name: str, description: str, choices: Mapping[Any, str], default: Any, tooltip: str = ""):
+    def __init__(
+        self, name: str, description: str, choices: Mapping[Any, str], default: Any, tooltip: str = ""
+    ) -> None:
         super().__init__(name, description, default, tooltip)
         self.choices = choices
 
@@ -193,7 +201,7 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
     Configuration for CFGFast analysis.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "cfg"
         self.display_name = "Control-Flow Graph Recovery"
@@ -243,7 +251,7 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
     Configuration for Flirt analysis.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "flirt"
         self.display_name = "Function Signature Matching"
@@ -256,7 +264,7 @@ class CodeTaggingConfiguration(AnalysisConfiguration):
     Configuration for Code Tagging.
     """
 
-    def __init__(self, instance):
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "code_tagging"
         self.display_name = "Tag Functions Based on Syntactic Features"
@@ -272,7 +280,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     SMALL_BINARY_SIZE = 65536
     MEDIUM_BINARY_SIZE = 400000
 
-    def __init__(self, instance):
+    def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
         self.name = "varec"
         self.display_name = "Recover Variables on All Functions"

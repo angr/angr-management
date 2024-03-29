@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 import enum
 import logging
 import sys
 from threading import Thread
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QInputDialog, QLineEdit
 
-from .view import BaseView
+from .view import InstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 try:
     import nclib
@@ -28,16 +34,16 @@ _l = logging.getLogger(name=__name__)
 
 # not a namedtuple so it can be mutable. I think this is not a terrible idea.
 class SavedInteraction:
-    def __init__(self, name, protocol, log):
+    def __init__(self, name: str, protocol, log) -> None:
         self.name = name
         self.protocol = protocol
         self.log = log
 
 
 class ProtocolInteractor:
-    def __init__(self, view, sock):
+    def __init__(self, view, sock) -> None:
         self.view: InteractionView = view
-        self.sock: Optional[nclib.Netcat] = sock
+        self.sock: nclib.Netcat | None = sock
 
     def consume_data(self, data):
         # try to decode it
@@ -67,19 +73,19 @@ class InteractionState(enum.Enum):
     VIEWING = 4
 
 
-class InteractionView(BaseView):
-    def __init__(self, workspace, instance, *args, **kwargs):
-        super().__init__("interaction", workspace, instance, *args, **kwargs)
+class InteractionView(InstanceView):
+    def __init__(self, workspace: Workspace, instance: Instance) -> None:
+        super().__init__("interaction", workspace, "bottom", instance)
         self.base_caption = "Interaction"
         self.current_log = (
             []
         )  # for now each entry is a dict. each entry has {"dir": "in"/"out", "data": bytes} and then whatever
         # "in" here means it's input to the program
         self.log_controls = []
-        self.sock: Optional[nclib.Netcat] = None
+        self.sock: nclib.Netcat | None = None
 
         self._state = None
-        self._last_img_name: Optional[str] = None
+        self._last_img_name: str | None = None
 
         self.widget_button_start = None
         self.widget_button_stop = None
@@ -93,8 +99,8 @@ class InteractionView(BaseView):
         self.widget_group_save = None
         self.widget_group_load = None
 
-        self.running_protocol: Optional[ProtocolInteractor] = None
-        self.chosen_protocol: Optional[type] = None
+        self.running_protocol: ProtocolInteractor | None = None
+        self.chosen_protocol: type | None = None
 
         self._init_widgets()
         self._state_transition(InteractionState.BEGINNING)
@@ -114,21 +120,21 @@ class InteractionView(BaseView):
     # log_add/clear will be called by the base class. it's the subclass' responsibility to call input_show and
     # input_hide depending on whether or not the protocol is accepting input
 
-    def log_add(self, model):
+    def log_add(self, model) -> None:
         self.current_log.append(model)
         control = self.running_protocol.render_log_entry(model)
         control.setParent(self.widget_area_log)
         self.widget_area_log.layout().insertWidget(len(self.log_controls), control)
         self.log_controls.append(control)
 
-    def log_clear(self):
+    def log_clear(self) -> None:
         for control in self.log_controls:
             self.widget_area_log.layout().removeWidget(control)
             control.deleteLater()
         self.log_controls = []
         self.current_log = []
 
-    def input_show(self):
+    def input_show(self) -> None:
         if self.running_protocol is None:
             self.input_hide()
             return
@@ -142,7 +148,7 @@ class InteractionView(BaseView):
         self.widget_area_log.layout().insertWidget(len(self.log_controls), new_widget)
         self.widget_input = new_widget
 
-    def input_hide(self):
+    def input_hide(self) -> None:
         if self.widget_input is None:
             return
         self.widget_area_log.layout().removeWidget(self.widget_input)
@@ -151,25 +157,25 @@ class InteractionView(BaseView):
 
     # events from the thread
 
-    def _handler_start(self):
+    def _handler_start(self) -> None:
         self.running_protocol.consume_start()
 
-    def _handler_data(self, data):
+    def _handler_data(self, data) -> None:
         self.running_protocol.consume_data(data)
 
-    def _handler_eof(self):
+    def _handler_eof(self) -> None:
         self.running_protocol.consume_eof()
         self._state_transition(InteractionState.STOPPED)
 
     # data model events
 
-    def _handler_update_interactions(self, **kwargs):
+    def _handler_update_interactions(self, **kwargs) -> None:
         while self.widget_combobox_load.count():
             self.widget_combobox_load.removeItem(0)
         for interaction in self.instance.interactions:
             self.widget_combobox_load.addItem(interaction.name)
 
-    def _handler_update_protocols(self, **kwargs):
+    def _handler_update_protocols(self, **kwargs) -> None:
         while self.widget_combobox_protocol.count():
             self.widget_combobox_protocol.removeItem(0)
         for protocol in self.instance.interaction_protocols:
@@ -215,13 +221,13 @@ class InteractionView(BaseView):
 
     # buttons
 
-    def _save_interaction(self):
+    def _save_interaction(self) -> None:
         self.instance.interactions.am_obj.append(
             SavedInteraction(self.widget_text_savename.text(), self.chosen_protocol, self.current_log)
         )
         self.instance.interactions.am_event()
 
-    def _load_interaction(self):
+    def _load_interaction(self) -> None:
         if self.widget_combobox_load.currentIndex() == -1:
             return
         thing = self.instance.interactions[self.widget_combobox_load.currentIndex()]
@@ -231,11 +237,11 @@ class InteractionView(BaseView):
         for model in thing.log:
             self.log_add(model)
 
-    def _abort_interaction(self):
+    def _abort_interaction(self) -> None:
         self.running_protocol.sock.close()
         self._state_transition(InteractionState.STOPPED)
 
-    def _start_interaction(self):
+    def _start_interaction(self) -> None:
         required = {
             "archr: git clone https://github.com/angr/archr && cd archr && pip install -e .": archr,
             "keystone: pip install --no-binary keystone-engine keystone-engine": keystone,
@@ -277,7 +283,7 @@ class InteractionView(BaseView):
         self._state_transition(InteractionState.RUNNING)
         Thread(target=self._socket_thread, args=(img_name,), daemon=True).start()
 
-    def _socket_thread(self, img_name):
+    def _socket_thread(self, img_name: str) -> None:
         with archr.targets.DockerImageTarget(img_name).build().start() as target, target.flight_context() as flight:
             sock = flight.default_channel
             sock._raise_timeout = True
@@ -302,7 +308,7 @@ class InteractionView(BaseView):
             else:
                 _l.debug("Connection closed by client")
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.setLayout(QtWidgets.QHBoxLayout(self))
 
         leftBox = QtWidgets.QWidget(self)
@@ -396,11 +402,11 @@ class InteractionView(BaseView):
 
 # Subclass QPlainTextEdit
 class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
-    def __init__(self, parent, callback):
+    def __init__(self, parent, callback) -> None:
         super().__init__(parent)
         self._callback = callback
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         if event.key() == QtCore.Qt.Key_Return and event.modifiers() != QtCore.Qt.ShiftModifier:
             self._callback()
             return
@@ -408,17 +414,17 @@ class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
 
 
 class PlainTextProtocol(ProtocolInteractor):
-    def consume_start(self):
+    def consume_start(self) -> None:
         # set whatever state related to the beginning of the protocol
         # here, we mark that we can accept user input
         self.view.input_show()
 
-    def consume_data(self, data):
+    def consume_data(self, data) -> None:
         # process the consumption of data coming off the wire
         # should deserialize it into whatever form you want and then add it to the log
         self.view.log_add({"dir": "out", "data": data})
 
-    def consume_eof(self):
+    def consume_eof(self) -> None:
         # tweak anything you care about on eof
         pass
 
@@ -437,7 +443,7 @@ class PlainTextProtocol(ProtocolInteractor):
         txt.setText(model["data"].decode("latin-1"))
         return txt
 
-    def _send_callback(self):
+    def _send_callback(self) -> None:
         data_bytes = self.view.widget_input.toPlainText().encode("latin-1")
         self.sock.send(data_bytes)
         self.view.log_add({"dir": "in", "data": data_bytes})
@@ -454,7 +460,7 @@ class BackslashTextProtocol(PlainTextProtocol):
         txt.setText(data)
         return txt
 
-    def _send_callback(self):
+    def _send_callback(self) -> None:
         data_bytes = self.view.widget_input.toPlainText()
         try:
             data_bytes = data_bytes.encode("latin-1").decode("unicode_escape").encode("latin-1")

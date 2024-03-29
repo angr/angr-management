@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -26,18 +28,18 @@ class BreakpointDialog(QDialog):
     TODO: decouple breakpoints from workspace.instance (main_instance)
     """
 
-    def __init__(self, breakpoint_: Breakpoint, workspace: "Workspace", parent=None):
+    def __init__(self, breakpoint_: Breakpoint, workspace: Workspace, parent=None) -> None:
         super().__init__(parent)
         self.breakpoint = breakpoint_
         self.workspace = workspace
         self.setWindowTitle("Edit Breakpoint")
         self.main_layout: QVBoxLayout = QVBoxLayout()
-        self._type_radio_group: Optional[QButtonGroup] = None
-        self._address_box: Optional[QAddressInput] = None
-        self._size_box: Optional[QLineEdit] = None
-        self._comment_box: Optional[QLineEdit] = None
-        self._status_label: Optional[QLabel] = None
-        self._ok_button: Optional[QPushButton] = None
+        self._type_radio_group: QButtonGroup | None = None
+        self._address_box: QAddressInput | None = None
+        self._size_box: QLineEdit | None = None
+        self._comment_box: QLineEdit | None = None
+        self._status_label: QLabel | None = None
+        self._ok_button: QPushButton | None = None
         self._init_widgets()
         self.setLayout(self.main_layout)
         self._validate()
@@ -46,7 +48,7 @@ class BreakpointDialog(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QGridLayout()
         self.main_layout.addLayout(layout)
         self._status_label = QLabel(self)
@@ -93,7 +95,7 @@ class BreakpointDialog(QDialog):
         self._ok_button.setEnabled(False)
         self.main_layout.addWidget(buttons)
 
-    def _set_valid(self, valid: bool):
+    def _set_valid(self, valid: bool) -> None:
         if not valid:
             self._status_label.setText("Invalid")
             self._status_label.setProperty("class", "status_invalid")
@@ -116,16 +118,16 @@ class BreakpointDialog(QDialog):
     # Event handlers
     #
 
-    def _validate(self):
+    def _validate(self) -> None:
         self._set_valid(bool(self._address_box.target is not None and self._get_size()))
 
-    def _on_address_changed(self, new_text):  # pylint: disable=unused-argument
+    def _on_address_changed(self, new_text) -> None:  # pylint: disable=unused-argument
         self._validate()
 
-    def _on_size_changed(self, new_text):  # pylint: disable=unused-argument
+    def _on_size_changed(self, new_text) -> None:  # pylint: disable=unused-argument
         self._validate()
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         self.breakpoint.type = BreakpointType(self._type_radio_group.checkedId())
         self.breakpoint.addr = self._address_box.target
         self.breakpoint.size = self._get_size()

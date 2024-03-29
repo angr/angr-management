@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, Signal
@@ -21,7 +23,7 @@ class OperandDescriptor:
         "variable_ident",
     )
 
-    def __init__(self, text, num_value, func_addr=None, variable_ident=None):
+    def __init__(self, text: str, num_value, func_addr=None, variable_ident=None) -> None:
         self.text = text
         self.num_value = num_value
         self.func_addr = func_addr
@@ -36,7 +38,7 @@ class InfoDock(QObject):
 
     qblock_code_obj_selection_changed = Signal()
 
-    def __init__(self, disasm_view):
+    def __init__(self, disasm_view) -> None:
         super().__init__()
         self.disasm_view = disasm_view
 
@@ -59,19 +61,19 @@ class InfoDock(QObject):
         return self.highlight_mode == OperandHighlightMode.SAME_IDENT
 
     @smart_highlighting.setter
-    def smart_highlighting(self, v):
+    def smart_highlighting(self, v) -> None:
         if v:
             self.highlight_mode = OperandHighlightMode.SAME_IDENT
         else:
             self.highlight_mode = OperandHighlightMode.SAME_TEXT
 
-    def initialize(self):
+    def initialize(self) -> None:
         self.selected_blocks.clear()
         self.selected_insns.clear()
         self.selected_operands.clear()
         self.hovered_block.am_obj = None
 
-    def copy(self) -> "InfoDock":
+    def copy(self) -> InfoDock:
         r = InfoDock(self.disasm_view)
         r.variable_manager = self.variable_manager
         r.highlight_mode = self.highlight_mode
@@ -83,41 +85,41 @@ class InfoDock(QObject):
         r.selected_labels.am_obj = set(self.selected_labels.am_obj)
         return r
 
-    def hover_edge(self, src_addr, dst_addr):
+    def hover_edge(self, src_addr, dst_addr) -> None:
         self.hovered_edge.am_obj = src_addr, dst_addr
         self.hovered_edge.am_event()
 
-    def unhover_edge(self, src_addr, dst_addr):
+    def unhover_edge(self, src_addr, dst_addr) -> None:
         if self.hovered_edge.am_obj == (src_addr, dst_addr):
             self.hovered_edge.am_obj = None
             self.hovered_edge.am_event()
 
-    def hover_block(self, block_addr):
+    def hover_block(self, block_addr) -> None:
         self.hovered_block.am_obj = block_addr
         self.hovered_block.am_event()
 
-    def unhover_block(self, block_addr):
+    def unhover_block(self, block_addr) -> None:
         if self.hovered_block.am_obj == block_addr:
             self.hovered_block.am_obj = None
             self.hovered_block.am_event()
 
-    def clear_hovered_block(self):
+    def clear_hovered_block(self) -> None:
         self.hovered_block.am_obj = None
         self.hovered_block.am_event()
 
-    def select_block(self, block_addr):
+    def select_block(self, block_addr) -> None:
         self.selected_blocks.clear()  # selecting one block at a time
         self.selected_blocks.add(block_addr)
         self.selected_blocks.am_event()
         self._update_published_view_state()
 
-    def unselect_block(self, block_addr):
+    def unselect_block(self, block_addr) -> None:
         if block_addr in self.selected_blocks:
             self.selected_blocks.remove(block_addr)
             self.selected_blocks.am_event()
         self._update_published_view_state()
 
-    def select_instruction(self, insn_addr, unique=True, insn_pos=None, use_animation=True):
+    def select_instruction(self, insn_addr, unique: bool = True, insn_pos=None, use_animation: bool = True) -> None:
         self.disasm_view.set_synchronized_cursor_address(insn_addr)
 
         self.unselect_all_labels()
@@ -133,19 +135,21 @@ class InfoDock(QObject):
 
         self._update_published_view_state()
 
-    def unselect_instruction(self, insn_addr):
+    def unselect_instruction(self, insn_addr) -> None:
         if insn_addr in self.selected_insns:
             self.selected_insns.remove(insn_addr)
             self.selected_insns.am_event()
         self._update_published_view_state()
 
-    def unselect_all_instructions(self):
+    def unselect_all_instructions(self) -> None:
         if self.selected_insns:
             self.selected_insns.clear()
             self.selected_insns.am_event()
         self._update_published_view_state()
 
-    def select_operand(self, ins_addr: int, operand_index: int, operand: OperandDescriptor, unique: bool = False):
+    def select_operand(
+        self, ins_addr: int, operand_index: int, operand: OperandDescriptor, unique: bool = False
+    ) -> None:
         """
         Mark an operand as selected.
 
@@ -163,17 +167,17 @@ class InfoDock(QObject):
             self.selected_operands[tpl] = operand
             self.selected_operands.am_event()
 
-    def unselect_operand(self, insn_addr, operand_idx):
+    def unselect_operand(self, insn_addr, operand_idx) -> None:
         if (insn_addr, operand_idx) in self.selected_operands:
             self.selected_operands.pop((insn_addr, operand_idx))
             self.selected_operands.am_event()
 
-    def unselect_all_operands(self):
+    def unselect_all_operands(self) -> None:
         if self.selected_operands:
             self.selected_operands.clear()
             self.selected_operands.am_event()
 
-    def select_label(self, label_addr):
+    def select_label(self, label_addr) -> None:
         self.disasm_view.set_synchronized_cursor_address(label_addr)
 
         # only one label can be selected at a time
@@ -199,18 +203,18 @@ class InfoDock(QObject):
         else:
             self.select_label(addr)
 
-    def unselect_label(self, label_addr):
+    def unselect_label(self, label_addr) -> None:
         if label_addr in self.selected_labels:
             self.selected_labels.remove(label_addr)
             self.selected_labels.am_event()
         self._update_published_view_state()
 
-    def unselect_all_labels(self):
+    def unselect_all_labels(self) -> None:
         self.selected_labels.clear()
         self.selected_labels.am_event()
         self._update_published_view_state()
 
-    def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique=False):
+    def toggle_instruction_selection(self, insn_addr, insn_pos=None, unique: bool = False) -> None:
         """
         Toggle the selection state of an instruction in the disassembly view.
 
@@ -223,7 +227,7 @@ class InfoDock(QObject):
         else:
             self.select_instruction(insn_addr, unique=unique, insn_pos=insn_pos)
 
-    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique=False):
+    def toggle_operand_selection(self, insn_addr, operand_idx, operand, insn_pos=None, unique: bool = False) -> bool:
         """
         Toggle the selection state of an operand of an instruction in the disassembly view.
 
@@ -242,7 +246,7 @@ class InfoDock(QObject):
             self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
             return True
 
-    def select_variable(self, unified_variable: "SimVariable", unique: bool = True):
+    def select_variable(self, unified_variable: SimVariable, unique: bool = True) -> None:
         self.unselect_all_labels()
         self.unselect_all_instructions()
         self.unselect_all_operands()
@@ -253,18 +257,17 @@ class InfoDock(QObject):
             self.selected_variables.add(unified_variable)
             self.selected_variables.am_event()
 
-    def unselect_variable(self, unified_variable: "SimVariable"):
+    def unselect_variable(self, unified_variable: SimVariable) -> None:
         if unified_variable in self.selected_variables:
             self.selected_variables.remove(unified_variable)
             self.selected_variables.am_event()
 
-    def toggle_variable_selection(self, unified_variable: "SimVariable", unique: bool = True):
-        if len(self.selected_variables) > 1:
+    def toggle_variable_selection(self, unified_variable: SimVariable, unique: bool = True) -> bool:
+        if len(self.selected_variables) > 1 and unique:
             # multiple variables are selected
-            if unique:
-                # clear existing selections and select this one
-                self.select_variable(unified_variable, unique=True)
-                return True
+            # clear existing selections and select this one
+            self.select_variable(unified_variable, unique=True)
+            return True
 
         if unified_variable in self.selected_variables:
             self.unselect_variable(unified_variable)
@@ -273,7 +276,7 @@ class InfoDock(QObject):
             self.select_variable(unified_variable, unique=unique)
             return True
 
-    def clear_selection(self):
+    def clear_selection(self) -> None:
         self.selected_blocks.clear()
         self.selected_blocks.am_event()
 
@@ -294,10 +297,10 @@ class InfoDock(QObject):
     def is_block_hovered(self, block_addr):
         return block_addr == self.hovered_block.am_obj
 
-    def is_block_selected(self, block_addr):
+    def is_block_selected(self, block_addr) -> bool:
         return block_addr in self.selected_blocks
 
-    def is_instruction_selected(self, ins_addr):
+    def is_instruction_selected(self, ins_addr) -> bool:
         """
         Check if an instruction at @ins_addr is currently selected or not.
 
@@ -307,7 +310,7 @@ class InfoDock(QObject):
         """
         return ins_addr in self.selected_insns
 
-    def is_operand_selected(self, ins_addr, operand_index):
+    def is_operand_selected(self, ins_addr, operand_index) -> bool:
         """
         Check if an operand at @ins_addr and @operand_index is currently selected or not.
 
@@ -317,7 +320,7 @@ class InfoDock(QObject):
         """
         return (ins_addr, operand_index) in self.selected_operands
 
-    def is_label_selected(self, label_addr):
+    def is_label_selected(self, label_addr) -> bool:
         return label_addr in self.selected_labels
 
     def is_variable_selected(self, unique_variable_ident: str) -> bool:
@@ -330,13 +333,16 @@ class InfoDock(QObject):
         if self.highlight_mode == OperandHighlightMode.SAME_TEXT or selected.variable is None:
             # when there is no related variable, we highlight as long as they have the same text
             return operand.text == selected.text
-        elif self.highlight_mode == OperandHighlightMode.SAME_IDENT:
-            if selected.variable is not None and operand.variable is not None:
-                return selected.variable.ident == operand.variable.ident
+        elif (
+            self.highlight_mode == OperandHighlightMode.SAME_IDENT
+            and selected.variable is not None
+            and operand.variable is not None
+        ):
+            return selected.variable.ident == operand.variable.ident
 
         return False
 
-    def select_qblock_code_obj(self, obj):
+    def select_qblock_code_obj(self, obj) -> None:
         """
         For QBlockCodeObj, we simply track selected state for now and handle
         matching in object handlers
@@ -344,6 +350,6 @@ class InfoDock(QObject):
         self.selected_qblock_code_obj = obj
         self.qblock_code_obj_selection_changed.emit()
 
-    def _update_published_view_state(self):
+    def _update_published_view_state(self) -> None:
         self.disasm_view.published_view_state.cursors = self.selected_insns.union(self.selected_labels)
         self.disasm_view.notify_view_state_updated()

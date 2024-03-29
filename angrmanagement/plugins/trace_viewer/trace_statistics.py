@@ -1,13 +1,18 @@
 # pylint:disable=missing-class-docstring
+from __future__ import annotations
+
 import logging
 import os
 import random
 from bisect import bisect_left
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any
 
 from angr.errors import SimEngineError
 from PySide6.QtGui import QColor
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(name=__name__)
 
@@ -19,7 +24,7 @@ class TraceFunc:
         "func",
     )
 
-    def __init__(self, bbl_addr=None, func_name=None, func=None):
+    def __init__(self, bbl_addr=None, func_name: str | None = None, func=None) -> None:
         self.bbl_addr = bbl_addr
         self.func_name = func_name
         self.func = func
@@ -31,7 +36,7 @@ class ObjectAndBase:
         "base_addr",
     )
 
-    def __init__(self, obj_name: str, base_addr: int):
+    def __init__(self, obj_name: str, base_addr: int) -> None:
         self.obj_name = obj_name
         self.base_addr = base_addr
 
@@ -48,22 +53,22 @@ class TraceStatistics:
     BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")
 
-    def __init__(self, workspace, trace, baddr):
+    def __init__(self, workspace: Workspace, trace, baddr) -> None:
         self.workspace = workspace
-        self.trace: Dict[str, Any] = trace
+        self.trace: dict[str, Any] = trace
         self.bbl_addrs = trace["bb_addrs"]
         self.syscalls = trace["syscalls"]
         self.id = trace["id"]
         self.created_at = trace["created_at"]
         self.input_id = trace["input_id"]
         self.complete = trace["complete"]
-        self.mapping: Optional[List[ObjectAndBase]] = None
+        self.mapping: list[ObjectAndBase] | None = None
         if "map" in trace:
-            map_dict: Dict[str, int] = trace["map"]
+            map_dict: dict[str, int] = trace["map"]
             self.mapping = [ObjectAndBase(name, base_addr) for name, base_addr in map_dict.items()]
             self.mapping = sorted(self.mapping, key=lambda o: o.base_addr)  # sort it based on base addresses
-        self.trace_func: List[TraceFunc] = []
-        self.func_addr_in_trace: Set[int] = set()
+        self.trace_func: list[TraceFunc] = []
+        self.func_addr_in_trace: set[int] = set()
         self._func_color = {}
         self.count = None
         self._mark_color = {}
@@ -78,11 +83,11 @@ class TraceStatistics:
             self.project_baddr = self.project.loader.main_object.mapped_base
         self.runtime_baddr = baddr  # this will not be used if self.mapping is available
 
-        self._cached_object_project_base_addrs: Dict[str, int] = {}
+        self._cached_object_project_base_addrs: dict[str, int] = {}
 
         self._statistics(self.bbl_addrs)
 
-    def find_object_base_in_project(self, object_name: str) -> Optional[int]:
+    def find_object_base_in_project(self, object_name: str) -> int | None:
         """
         Find the base address of an object in angr project. Returns None if the project is not mapped. Results are
         cached in self._cached_object_project_base_addrs.
@@ -115,7 +120,7 @@ class TraceStatistics:
         self._cached_object_project_base_addrs[object_name] = base_addr
         return base_addr
 
-    def get_func_color(self, func_name):
+    def get_func_color(self, func_name: str):
         if func_name in self._func_color:
             return self._func_color[func_name]
         else:
@@ -123,10 +128,10 @@ class TraceStatistics:
             self._func_color[func_name] = color
         return color
 
-    def set_mark_color(self, p, color):
+    def set_mark_color(self, p, color) -> None:
         self._mark_color[p] = color
 
-    def get_mark_color(self, addr, i):
+    def get_mark_color(self, addr: int, i):
         try:
             mark_index = self._get_position(addr, i)
             mark_color = self._mark_color[mark_index]
@@ -135,7 +140,7 @@ class TraceStatistics:
             return self.BBL_EMPTY_COLOR
         return mark_color
 
-    def get_positions(self, addr):
+    def get_positions(self, addr: int):
         return self._positions[addr]
 
     def get_count(self, ins):
@@ -150,7 +155,7 @@ class TraceStatistics:
     def get_func_from_position(self, position):
         return self.trace_func[position].func
 
-    def _apply_trace_offset(self, addr) -> Optional[int]:
+    def _apply_trace_offset(self, addr: int) -> int | None:
         if self.mapping is not None and self.mapping:
             # find the base address that this address belongs to
             idx = bisect_left(self.mapping, addr)
@@ -182,7 +187,7 @@ class TraceStatistics:
             # this object is probably created before an angr project is created. just give up.
             return None
 
-    def _statistics(self, trace_addrs):
+    def _statistics(self, trace_addrs) -> None:
         """
         :param trace: basic block address list
         """
@@ -230,7 +235,7 @@ class TraceStatistics:
         print("Trace is loaded.")
         self.count = len(self.trace_func)
 
-    def _get_bbl(self, addr):
+    def _get_bbl(self, addr: int):
         try:
             return self.workspace.main_instance.project.factory.block(addr)
         except SimEngineError:
@@ -249,5 +254,5 @@ class TraceStatistics:
         b = random.randint(0, 255)
         return QColor(r, g, b)
 
-    def _get_position(self, addr, i):
+    def _get_position(self, addr: int, i):
         return self._positions[addr][i]

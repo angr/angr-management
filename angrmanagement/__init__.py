@@ -1,4 +1,6 @@
-__version__ = "9.2.94.dev0"
+from __future__ import annotations
+
+__version__ = "9.2.97.dev0"
 
 
 try:

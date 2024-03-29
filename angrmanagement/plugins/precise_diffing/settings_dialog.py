@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -20,7 +22,7 @@ class SettingsDialog(QDialog):
     A settings dialog for the Precise Diff plugin
     """
 
-    def __init__(self, diff_plugin, parent=None):
+    def __init__(self, diff_plugin, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Precise Diff Settings")
         self.diff_plugin = diff_plugin
@@ -31,7 +33,7 @@ class SettingsDialog(QDialog):
         self.updates = False
         self.show()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         upper_layout = QVBoxLayout()
 
         #
@@ -168,7 +170,7 @@ class SettingsDialog(QDialog):
         self._main_layout.addLayout(upper_layout)
         self._main_layout.addLayout(buttons_layout)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         # algorithms
         if self._bfs_diff_btn.isChecked():
             self.diff_plugin.diff_algo_class = BFSFunctionDiff
@@ -191,5 +193,5 @@ class SettingsDialog(QDialog):
         self.updates = True
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.close()

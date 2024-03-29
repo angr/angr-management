@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import sys
@@ -27,7 +29,7 @@ class CSS:
     global_css = ObjectContainer("", "Global CSS")
 
     @staticmethod
-    def rebuild():
+    def rebuild() -> None:
         base_css_path = os.path.join(THEME_LOCATION, "base.css")
         try:
             with open(base_css_path, encoding="utf-8") as f:
@@ -53,7 +55,7 @@ class CSS:
         CSS.global_css.am_event()
 
 
-def refresh_theme():
+def refresh_theme() -> None:
     app = QApplication.instance()
 
     # determine the default application style according to the OS

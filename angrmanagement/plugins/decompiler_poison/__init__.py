@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict
 
 import ailment
@@ -14,18 +16,18 @@ class PoisonKnowledge(KnowledgeBasePlugin):
     See PoisonPlugin. This is the storage mechanism in the knowledgebase.
     """
 
-    def __init__(self, kb):
+    def __init__(self, kb) -> None:
         self.kb = kb
         self.global_poison = set()
         self.local_poison = defaultdict(set)
 
-    def is_poisoned_local(self, func, addr):
+    def is_poisoned_local(self, func, addr: int) -> bool:
         return addr in self.local_poison[func]
 
-    def is_poisoned_global(self, addr):
+    def is_poisoned_global(self, addr: int) -> bool:
         return addr in self.global_poison
 
-    def is_poisoned(self, func, addr):
+    def is_poisoned(self, func, addr: int):
         return self.is_poisoned_local(func, addr) or self.is_poisoned_global(addr)
 
     def copy(self):
@@ -46,17 +48,17 @@ class PoisonPass(OptimizationPass):
     NAME = "Poison Pass"
     DESCRIPTION = __doc__.strip()
 
-    def __init__(self, func, **kwargs):
+    def __init__(self, func, **kwargs) -> None:
         super().__init__(func, **kwargs)
         self.analyze()
 
-    def is_poisoned(self, addr):
+    def is_poisoned(self, addr: int):
         return self.project.kb.decompiler_poison.is_poisoned(self._func.addr, addr)
 
     def _check(self):
         return True, None
 
-    def _analyze(self, cache=None):
+    def _analyze(self, cache=None) -> None:
         poisoned = []
 
         for block in list(self._graph.nodes()):
@@ -111,10 +113,10 @@ class PoisonPlugin(BasePlugin):
             pass
 
     @property
-    def knowledge(self) -> "PoisonKnowledge":
+    def knowledge(self) -> PoisonKnowledge:
         return self.workspace.main_instance.kb.decompiler_poison
 
-    def set_poison_local(self, func, callee, value):
+    def set_poison_local(self, func, callee, value) -> None:
         if value:
             self.knowledge.local_poison[func].add(callee)
         else:
@@ -122,7 +124,7 @@ class PoisonPlugin(BasePlugin):
         if isinstance(self.workspace.view_manager.current_tab, CodeView):
             self.workspace.view_manager.current_tab.decompile()
 
-    def set_poison_global(self, callee, value):
+    def set_poison_global(self, callee, value) -> None:
         if value:
             self.knowledge.global_poison.add(callee)
         else:
@@ -135,7 +137,7 @@ class PoisonPlugin(BasePlugin):
         return ",".join(hex(a) for a in a_set)
 
     @staticmethod
-    def _string_to_poison(a_string):
+    def _string_to_poison(a_string: str):
         return {int(a, 16) for a in a_string.split(",")}
 
     def angrdb_store_entries(self):
@@ -146,7 +148,7 @@ class PoisonPlugin(BasePlugin):
             if poison:
                 yield ("local_poison_" + hex(func), self._poison_to_string(poison))
 
-    def angrdb_load_entry(self, key: str, value: str):
+    def angrdb_load_entry(self, key: str, value: str) -> None:
         if key == "global_poison":
             self.workspace.main_instance.kb.decompiler_poison.global_poison = self._string_to_poison(value)
         elif key.startswith("local_poison_"):

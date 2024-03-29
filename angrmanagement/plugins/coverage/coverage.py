@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 import math
 import threading
 import time
+from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QColor
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
@@ -16,6 +19,9 @@ from angrmanagement.utils.io import download_url
 
 from .parse_trace import trace_to_bb_addrs
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 log = logging.getLogger(__name__)
 
 try:
@@ -24,7 +30,7 @@ except ImportError:
     log.error("You don't have slacrs module installed locally, CoveragePlugin going to have a bad time.")
 
 
-def generate_light_gradients(color, number, lightness=20):
+def generate_light_gradients(color, number: int, lightness: int = 20):
     """
     return a List of QColors, where the colors are ordered in terms of
     lightness (last is given as color) the rest (total of number) are
@@ -47,7 +53,7 @@ class CoveragePlugin(BasePlugin):
     Implements the fuzzing coverage view.
     """
 
-    def __init__(self, workspace):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
         self.workspace = workspace
@@ -85,7 +91,7 @@ class CoveragePlugin(BasePlugin):
     START_SHOWING_COVERAGE = 0
     STOP_SHOWING_COVERAGE = 1
 
-    def handle_click_menu(self, idx):
+    def handle_click_menu(self, idx: int) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
             return
 
@@ -96,13 +102,13 @@ class CoveragePlugin(BasePlugin):
 
         mapping.get(idx)()
 
-    def start(self):
+    def start(self) -> None:
         self.running = True
         self.slacrs_thread = threading.Thread(target=self.listen_for_events, daemon=True)
         self.slacrs_thread.start()
         gui_thread_schedule(self._refresh_gui)
 
-    def stop(self):
+    def stop(self) -> None:
         self.running = False
         gui_thread_schedule(self._refresh_gui)
         if self.workspace._main_window is not None:
@@ -118,7 +124,7 @@ class CoveragePlugin(BasePlugin):
 
         return covered_bbls, len(func_bbls)
 
-    def color_block(self, addr):
+    def color_block(self, addr: int):
         if not self.running:
             return None
         with self.coverage_lock:
@@ -147,7 +153,7 @@ class CoveragePlugin(BasePlugin):
 
     FUNC_COLUMNS = ("Fuzzing Coverage",)
 
-    def extract_func_column(self, func, idx):
+    def extract_func_column(self, func, idx: int):
         assert idx == 0
         if not self.running:
             return 0, "0%"
@@ -160,16 +166,16 @@ class CoveragePlugin(BasePlugin):
 
         return fraction_covered, f"{int(round(fraction_covered*100,0))}%"
 
-    def _refresh_gui(self):
+    def _refresh_gui(self) -> None:
         self.workspace.refresh()
 
-    def reset_coverage(self):
+    def reset_coverage(self) -> None:
         with self.coverage_lock:
             self.seen_traces = set()
             self.bbl_coverage = set()
             self.bbl_coverage_hash = 0
 
-    def update_coverage_from_list(self, trace_addrs):
+    def update_coverage_from_list(self, trace_addrs) -> None:
         log.info("Processing %d from the trace", len(trace_addrs))
         with self.coverage_lock:
             for addr in trace_addrs:
@@ -180,7 +186,7 @@ class CoveragePlugin(BasePlugin):
             self.bbl_coverage_hash = new_hash
             gui_thread_schedule(self._refresh_gui)
 
-    def update_coverage(self):
+    def update_coverage(self) -> None:
         self.set_status("Retrieving fuzzing coverage information...", 0.0)
         session = self.slacrs_instance.session()
         if session:
@@ -195,7 +201,7 @@ class CoveragePlugin(BasePlugin):
                 self.update_one_coverage(trace)
         self.set_status("Fuzzing coverage updated", 100.0)
 
-    def update_one_coverage(self, trace):
+    def update_one_coverage(self, trace) -> None:
         with self.coverage_lock:
             if trace.id in self.seen_traces:
                 log.info("Already seen trace %s, skipping", trace.id)
@@ -226,7 +232,7 @@ class CoveragePlugin(BasePlugin):
             self.seen_traces.add(trace.id)
         log.info("Done processing trace %s.", trace.id)
 
-    def listen_for_events(self):
+    def listen_for_events(self) -> None:
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         while not self.connector and self.running:
             self.connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
@@ -268,6 +274,6 @@ class CoveragePlugin(BasePlugin):
                 session.close()
             self.set_status("Fuzzing coverage updated", 100.0)
 
-    def set_status(self, status: str, percentage: float):
+    def set_status(self, status: str, percentage: float) -> None:
         if self.workspace._main_window is not None:
             gui_thread_schedule_async(self.workspace._main_window.progress, (status, percentage))

@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import base64
 import binascii
 import urllib.parse
-from typing import Dict, Optional, Type
 
 
 class UrlActionBase:
@@ -9,7 +10,7 @@ class UrlActionBase:
     The base class for URL actions.
     """
 
-    def __init__(self, target_id: str = None):
+    def __init__(self, target_id: str = None) -> None:
         self.target_id = target_id
 
     def act(self, daemon_conn=None):
@@ -54,12 +55,12 @@ class UrlActionOpen(UrlActionBase):
     Implements the open action.
     """
 
-    def __init__(self, bin_path, target_id=None, headless=False):
+    def __init__(self, bin_path, target_id=None, headless: bool = False) -> None:
         super().__init__(target_id=target_id)
         self.bin_path = bin_path
         self.headless = headless
 
-    def act(self, daemon_conn=None):
+    def act(self, daemon_conn=None) -> None:
         if self.bin_path is not None:
             daemon_conn.root.open(self.bin_path)
         else:
@@ -79,12 +80,12 @@ class UrlActionJumpTo(UrlActionBase):
     Implements the jump-to action.
     """
 
-    def __init__(self, addr=None, symbol=None, target_id=None):
+    def __init__(self, addr: int | None = None, symbol=None, target_id=None) -> None:
         super().__init__(target_id=target_id)
         self.addr = addr
         self.symbol = symbol
 
-    def act(self, daemon_conn=None):
+    def act(self, daemon_conn=None) -> None:
         daemon_conn.root.jumpto(self.addr, self.symbol, self.target_id)
 
     @classmethod
@@ -103,12 +104,12 @@ class UrlActionCommentAt(UrlActionBase):
     Implements the comment-at action.
     """
 
-    def __init__(self, addr, comment, target_id=None):
+    def __init__(self, addr: int, comment: str, target_id=None) -> None:
         super().__init__(target_id)
         self.addr = addr
         self.comment = comment
 
-    def act(self, daemon_conn=None):
+    def act(self, daemon_conn=None) -> None:
         if self.addr is None or self.comment is None:
             return
         daemon_conn.root.commentat(self.addr, self.comment, self.target_id)
@@ -133,7 +134,7 @@ class UrlActionBinaryAware(UrlActionBase):
     The base class of all binary-aware URL actions.
     """
 
-    def __init__(self, target_id=None, action=None, kwargs=None):
+    def __init__(self, target_id=None, action=None, kwargs=None) -> None:
         super().__init__(target_id)
         self.action = action
         self.kwargs = kwargs
@@ -143,12 +144,12 @@ class UrlActionBinaryAware(UrlActionBase):
         if not self.action:
             raise TypeError("You must provide action.")
 
-    def act(self, daemon_conn=None):
+    def act(self, daemon_conn=None) -> None:
         daemon_conn.root.custom_binary_aware_action(self.target_id, self.action, self.kwargs)
 
     @classmethod
     def _from_params(cls, params):
-        target_id: Optional[str] = cls._one_param(params, "target_id")
+        target_id: str | None = cls._one_param(params, "target_id")
         action = cls._one_param(params, "action")
         kwargs = {}
         for k, v in params.items():
@@ -160,14 +161,14 @@ class UrlActionBinaryAware(UrlActionBase):
         return cls(target_id=target_id, action=action, kwargs=kwargs)
 
 
-_ACT2CLS: Dict[str, Type[UrlActionBase]] = {
+_ACT2CLS: dict[str, type[UrlActionBase]] = {
     "open": UrlActionOpen,
     "jumpto": UrlActionJumpTo,
     "commentat": UrlActionCommentAt,
 }
 
 
-def handle_url(url, act=True):
+def handle_url(url, act: bool = True):
     o = urllib.parse.urlparse(url)
     params = urllib.parse.parse_qs(o.query)
 
@@ -177,5 +178,5 @@ def handle_url(url, act=True):
     return action
 
 
-def register_url_action(action: str, action_handler: Type[UrlActionBase]):
+def register_url_action(action: str, action_handler: type[UrlActionBase]) -> None:
     _ACT2CLS[action] = action_handler

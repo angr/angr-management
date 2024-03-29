@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import ailment
 
 from angrmanagement.plugins import BasePlugin
 
 from .asm_output import AsmOutput
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class AIL2ARM32(BasePlugin):
@@ -10,7 +17,7 @@ class AIL2ARM32(BasePlugin):
     Assemble expressions into assembly.
     """
 
-    def __init__(self, workspace, sp_adjust=0x30):
+    def __init__(self, workspace: Workspace, sp_adjust: int = 0x30) -> None:
         super().__init__(workspace)
         self.sp_adjust = sp_adjust
         self.registers_in_use = []
@@ -24,12 +31,12 @@ class AIL2ARM32(BasePlugin):
         self.registers_in_use.append(reg)
         return reg
 
-    def return_register(self, reg):
+    def return_register(self, reg) -> None:
         self.registers_in_use.remove(reg)
         self.free_registers.append(reg)
 
     @staticmethod
-    def opcode_variant(opcode, size=None, signed=None, cond=None):
+    def opcode_variant(opcode, size: int | None = None, signed=None, cond=None):
         if size is not None:
             if size == 4:
                 pass
@@ -47,7 +54,7 @@ class AIL2ARM32(BasePlugin):
             opcode += cond
         return opcode
 
-    def bp_offset_to_sp_offset(self, offset_from_bp, function_addr, expr_addr, adjust=0):
+    def bp_offset_to_sp_offset(self, offset_from_bp, function_addr, expr_addr, adjust: int = 0):
         if function_addr is None or expr_addr is None:
             raise Exception("function_addr and expr_addr must be specified")
         sp = self.workspace.main_instance.project.arch.sp_offset
@@ -225,5 +232,5 @@ class AIL2ARM32(BasePlugin):
         else:
             raise Exception("Unsupported expression")
 
-    def display_output(self, s: str):
+    def display_output(self, s: str) -> None:
         AsmOutput(s, parent=self.workspace.main_window).exec_()

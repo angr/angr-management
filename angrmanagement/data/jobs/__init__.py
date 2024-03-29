@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .cfg_generation import CFGGenerationJob
 from .code_tagging import CodeTaggingJob
 from .ddg_generation import DDGGenerationJob

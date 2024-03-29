@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 import time
 from threading import Lock
-from typing import TYPE_CHECKING, List, Mapping, Optional
+from typing import TYPE_CHECKING, Mapping
 
 import cle
 from angr.block import Block
@@ -27,11 +29,13 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 if TYPE_CHECKING:
     from angr.analyses.cfg.cfb import MemoryRegion
 
+    from angrmanagement.data.instance import Instance
+
 
 log = logging.getLogger(name=__name__)
 
 
-def _get_tags_for_item(item) -> Optional[int]:
+def _get_tags_for_item(item) -> int | None:
     """
     Generate bit mask based for the type of item provided, or None if it could not be mapped.
     """
@@ -47,7 +51,7 @@ def _get_tags_for_item(item) -> Optional[int]:
     return 1 << b
 
 
-def _get_feature_tag_colors() -> List[QColor]:
+def _get_feature_tag_colors() -> list[QColor]:
     """
     Generate list of colors corresponding to each tag bit.
     """
@@ -63,7 +67,7 @@ class FeatureMapPalette:
     Generates QBrushes based on feature tag bit mask.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._feature_colors = _get_feature_tag_colors()
         self._brush_cache = {}
 
@@ -79,7 +83,7 @@ class FeatureMapPalette:
     def _get_brush_for_tags(self, tags: int) -> QBrush:
         return QBrush(self._blend_colors(self._get_colors_for_tags(tags)))
 
-    def _get_colors_for_tags(self, tags: int) -> List[QColor]:
+    def _get_colors_for_tags(self, tags: int) -> list[QColor]:
         return [self._feature_colors[i] for i in range(len(self._feature_colors)) if tags & (1 << i)]
 
     @staticmethod
@@ -103,7 +107,7 @@ class FeatureMapItem(QGraphicsItem):
     ZVALUE_HOVER = 1
     ZVALUE_CURSOR = 2
 
-    def __init__(self, instance, *args, **kwargs):
+    def __init__(self, instance: Instance, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.instance = instance
 
@@ -126,37 +130,37 @@ class FeatureMapItem(QGraphicsItem):
         self._region_to_width: Mapping[MemoryRegion, float] = {}
         self._position_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
 
-        self._cursor_addrs: List[int] = []
-        self._cursor_items: List[QGraphicsItem] = []
-        self._hover_region: Optional[MemoryRegion] = None
-        self._hover_region_item: Optional[QGraphicsItem] = None
+        self._cursor_addrs: list[int] = []
+        self._cursor_items: list[QGraphicsItem] = []
+        self._hover_region: MemoryRegion | None = None
+        self._hover_region_item: QGraphicsItem | None = None
 
         self._feature_palette: FeatureMapPalette
         self._refresh_palette()
 
-        self._nbits_per_lod: List[int] = [13, 12, 8, 6, 4, 0]
-        self._cfb_feature_maps: List[TaggedIntervalMap]
+        self._nbits_per_lod: list[int] = [13, 12, 8, 6, 4, 0]
+        self._cfb_feature_maps: list[TaggedIntervalMap]
         self._cfb_feature_maps_lock: Lock = Lock()
         self._clear_cfb_feature_maps()
 
         self._register_events()
         self.reload()
 
-    def _register_events(self):
+    def _register_events(self) -> None:
         self.instance.cfb.am_subscribe(self._on_cfb_event)
 
-    def reload(self):
+    def reload(self) -> None:
         self._clear_hover_region()
         with self._cfb_feature_maps_lock:
             self._build_cfb_feature_maps()
         self.refresh()
 
-    def set_cursor_addrs(self, cursor_addrs):
+    def set_cursor_addrs(self, cursor_addrs) -> None:
         self._cursor_addrs = cursor_addrs
         self._create_cursor_items()
         self.update()
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._layout_regions()
         self._create_hover_item()
         self._create_cursor_items()
@@ -165,7 +169,7 @@ class FeatureMapItem(QGraphicsItem):
         self._last_refresh_timestamp = time.time()
         self._refresh_pending = False
 
-    def _refresh_palette(self):
+    def _refresh_palette(self) -> None:
         self._feature_palette = FeatureMapPalette()
 
     @property
@@ -173,7 +177,7 @@ class FeatureMapItem(QGraphicsItem):
         return self._width
 
     @width.setter
-    def width(self, value: int):
+    def width(self, value: int) -> None:
         self.prepareGeometryChange()
         self._width = value
 
@@ -182,14 +186,14 @@ class FeatureMapItem(QGraphicsItem):
         return self._height
 
     @height.setter
-    def height(self, value: int):
+    def height(self, value: int) -> None:
         self.prepareGeometryChange()
         self._height = value
 
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self._width, self._height)
 
-    def _on_cfb_event(self, **kwargs):
+    def _on_cfb_event(self, **kwargs) -> None:
         if "object_added" in kwargs:  # Called by task thread
             addr, item = kwargs["object_added"]
             tags = _get_tags_for_item(item)
@@ -208,10 +212,10 @@ class FeatureMapItem(QGraphicsItem):
         elif not kwargs:
             self.reload()
 
-    def _clear_cfb_feature_maps(self):
+    def _clear_cfb_feature_maps(self) -> None:
         self._cfb_feature_maps = [TaggedIntervalMap(nbits) for nbits in self._nbits_per_lod]
 
-    def _build_cfb_feature_maps(self):
+    def _build_cfb_feature_maps(self) -> None:
         if self.instance.cfb.am_none:
             return
 
@@ -251,7 +255,7 @@ class FeatureMapItem(QGraphicsItem):
                 time_end - time_start,
             )
 
-    def _find_first_overlapping_region(self, mr: "MemoryRegion") -> Optional["MemoryRegion"]:
+    def _find_first_overlapping_region(self, mr: MemoryRegion) -> MemoryRegion | None:
         """
         Find the first region in self._addr_to_region that `mr` overlaps, if any.
         """
@@ -264,7 +268,7 @@ class FeatureMapItem(QGraphicsItem):
                 return e_mr
         return None
 
-    def _layout_regions(self):
+    def _layout_regions(self) -> None:
         """
         Calculate displayed memory region positions and sizes.
         """
@@ -308,10 +312,10 @@ class FeatureMapItem(QGraphicsItem):
             position += self._region_to_width[mr]
 
     @staticmethod
-    def _should_show_region_to_scale(mr: "MemoryRegion"):
+    def _should_show_region_to_scale(mr: MemoryRegion) -> bool:
         return not isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject))
 
-    def _get_region_at_addr(self, addr: int) -> Optional["MemoryRegion"]:
+    def _get_region_at_addr(self, addr: int) -> MemoryRegion | None:
         start_idx = max(0, self._addr_to_region.bisect_left(addr) - 1)
         for mr_addr in self._addr_to_region.islice(start_idx):
             mr = self._addr_to_region[mr_addr]
@@ -322,7 +326,7 @@ class FeatureMapItem(QGraphicsItem):
             return mr
         return None
 
-    def _get_position_at_addr(self, addr: int) -> Optional[float]:
+    def _get_position_at_addr(self, addr: int) -> float | None:
         mr = self._get_region_at_addr(addr)
         if mr is None or mr.size == 0:
             return None
@@ -332,14 +336,14 @@ class FeatureMapItem(QGraphicsItem):
         assert offset >= 0
         return mr_pos + mr_width * offset / mr.size
 
-    def _floor_position_to_nearest_region(self, pos: float) -> Optional["MemoryRegion"]:
+    def _floor_position_to_nearest_region(self, pos: float) -> MemoryRegion | None:
         try:
             pos = next(self._position_to_region.irange(maximum=pos, reverse=True))
             return self._position_to_region[pos]
         except StopIteration:
             return None
 
-    def _get_addr_at_position(self, pos: float) -> Optional[int]:
+    def _get_addr_at_position(self, pos: float) -> int | None:
         mr = self._floor_position_to_nearest_region(pos)
         if mr is None:
             return None
@@ -349,12 +353,12 @@ class FeatureMapItem(QGraphicsItem):
             return mr.addr
         return mr.addr + int(pos / width * mr.size)
 
-    def _get_region_display_rect(self, mr: "MemoryRegion") -> QRectF:
+    def _get_region_display_rect(self, mr: MemoryRegion) -> QRectF:
         x = self._region_to_position[mr]
         width = self._region_to_width[mr]
         return QRectF(x, 0, width, self._height)
 
-    def paint(self, painter, option, _):
+    def paint(self, painter, option, _) -> None:
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(Qt.green if log.level == logging.DEBUG else Conf.feature_map_unknown_color)
         painter.drawRect(option.exposedRect)
@@ -467,7 +471,7 @@ class FeatureMapItem(QGraphicsItem):
             log.debug("Drawing delimiter at %f", x)
             painter.drawLine(x, 0, x, self._height)
 
-    def _create_cursor_items(self, **_):
+    def _create_cursor_items(self, **_) -> None:
         self._remove_cursor_items()
 
         line_width = 3
@@ -509,47 +513,47 @@ class FeatureMapItem(QGraphicsItem):
             item.setX(pos - half_width)
             self._cursor_items.append(item)
 
-    def _remove_cursor_items(self):
+    def _remove_cursor_items(self) -> None:
         scene = self.scene()
         for item in self._cursor_items:
             scene.removeItem(item)
         self._cursor_items.clear()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.select_at_position(event.pos().x())
             self._pressed = True
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._pressed = False
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         x = event.pos().x()
         if self._pressed:
             self.select_at_position(x)
         self._handle_hover_at_position(x)
 
-    def select_at_position(self, pos: float):
+    def select_at_position(self, pos: float) -> None:
         addr = self._get_addr_at_position(pos)
         if addr is not None:
             self.addr.am_obj = addr
             self.addr.am_event()
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self, event) -> None:
         self._handle_hover_at_position(event.pos().x())
 
-    def hoverMoveEvent(self, event):
+    def hoverMoveEvent(self, event) -> None:
         self._handle_hover_at_position(event.pos().x())
 
-    def hoverLeaveEvent(self, _):
+    def hoverLeaveEvent(self, _) -> None:
         self._clear_hover_region()
 
-    def _clear_hover_region(self):
+    def _clear_hover_region(self) -> None:
         self._remove_hover_item()
         self._hover_region = None
 
-    def _handle_hover_at_position(self, pos: float):
+    def _handle_hover_at_position(self, pos: float) -> None:
         hovered_region = self._floor_position_to_nearest_region(pos)
 
         if hovered_region is None:
@@ -577,7 +581,7 @@ class FeatureMapItem(QGraphicsItem):
             self._hover_region = hovered_region
             self._create_hover_item()
 
-    def _create_hover_item(self):
+    def _create_hover_item(self) -> None:
         self._remove_hover_item()
         hovered_region = self._hover_region
         if hovered_region is None:
@@ -595,7 +599,7 @@ class FeatureMapItem(QGraphicsItem):
         self._hover_region_item = item
         log.debug("Created hover item")
 
-    def _remove_hover_item(self):
+    def _remove_hover_item(self) -> None:
         if self._hover_region_item:
             self.scene().removeItem(self._hover_region_item)
             self._hover_region_item = None
@@ -607,7 +611,7 @@ class QFeatureMapView(QGraphicsView):
     Main view for feature map scene.
     """
 
-    def __init__(self, instance, parent=None):
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -636,7 +640,7 @@ class QFeatureMapView(QGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(10, 10)
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         """
         Handle wheel events to scale and translate the feature map.
         """
@@ -657,7 +661,7 @@ class QFeatureMapView(QGraphicsView):
         self._update_feature_map_item_size()
         return super().resizeEvent(event)
 
-    def adjust_viewport_scale(self, scale: Optional[float] = None, point: Optional[QPoint] = None):
+    def adjust_viewport_scale(self, scale: float | None = None, point: QPoint | None = None) -> None:
         """
         Adjust viewport scale factor.
         """
@@ -676,7 +680,7 @@ class QFeatureMapView(QGraphicsView):
         self._update_feature_map_item_size()
         self.translate(self.mapToScene(point).x() - point_rel * self._feature_map_item.width, 0)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         """
         Handle key events.
         """
@@ -695,7 +699,7 @@ class QFeatureMapView(QGraphicsView):
                 return
         super().keyPressEvent(event)
 
-    def changeEvent(self, event: QEvent):
+    def changeEvent(self, event: QEvent) -> None:
         """
         Redraw on color scheme update.
         """
@@ -704,7 +708,7 @@ class QFeatureMapView(QGraphicsView):
             self._feature_map_item._refresh_palette()
             self._feature_map_item.refresh()
 
-    def _update_feature_map_item_size(self):
+    def _update_feature_map_item_size(self) -> None:
         """
         Resize feature map.
         """
@@ -754,7 +758,7 @@ class QFeatureMap(QWidget):
     Byte-level map of the memory space.
     """
 
-    def __init__(self, instance, parent=None):
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
         self._init_widgets()
@@ -771,7 +775,7 @@ class QFeatureMap(QWidget):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.view = QFeatureMapView(self.instance, self)
         self.view.setContentsMargins(0, 0, 0, 0)
         layout = QHBoxLayout()
@@ -781,5 +785,5 @@ class QFeatureMap(QWidget):
         self.setLayout(layout)
         self.addr = self.view._feature_map_item.addr
 
-    def set_cursor_addrs(self, cursor_addrs):
+    def set_cursor_addrs(self, cursor_addrs) -> None:
         self.view._feature_map_item.set_cursor_addrs(cursor_addrs)

@@ -1,14 +1,21 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 
 class QVariable(QCachedGraphicsItem):
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
-    def __init__(self, instance, disasm_view, variable, config, infodock, parent=None):
+    def __init__(self, instance: Instance, disasm_view, variable, config, infodock, parent=None) -> None:
         super().__init__(parent=parent)
 
         # initialization
@@ -35,14 +42,14 @@ class QVariable(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         # Background
         if self.selected:
             painter.setPen(self._config.disasm_view_operand_select_color)
             painter.setBrush(self._config.disasm_view_operand_select_color)
             painter.drawRect(0, 0, self.width, self.height)
 
-    def refresh(self):
+    def refresh(self) -> None:
         super().refresh()
 
         if self._variable_ident_item is not None:
@@ -54,7 +61,7 @@ class QVariable(QCachedGraphicsItem):
     # Events
     #
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             self.infodock.toggle_variable_selection(
                 self.variable,
@@ -67,7 +74,7 @@ class QVariable(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # variable name
         self._variable_name = "" if not self.variable.name else self.variable.name
         self._variable_name_item = QGraphicsSimpleTextItem(self._variable_name, self)
@@ -89,7 +96,7 @@ class QVariable(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         # variable name

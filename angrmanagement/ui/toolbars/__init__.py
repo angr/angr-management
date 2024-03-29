@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .debug_toolbar import DebugToolbar
 from .feature_map_toolbar import FeatureMapToolbar
 from .file_toolbar import FileToolbar

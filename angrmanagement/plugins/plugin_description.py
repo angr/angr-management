@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 import tomlkit
@@ -9,7 +11,7 @@ class PluginDescription:
     Describes an angr management plugin. Can be generated from plugin.toml.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Metadata
         self.plugin_metadata_version: int = None
 
@@ -19,10 +21,10 @@ class PluginDescription:
         self.version: str = ""
         self.description: str = ""
         self.long_description: str = ""
-        self.platforms: List[str] = []
+        self.platforms: list[str] = []
         self.min_angr_vesion: str = ""
         self.author = ""
-        self.entrypoints: List[str] = []
+        self.entrypoints: list[str] = []
         self.require_workspace: bool = True
         self.has_url_actions: bool = False
 
@@ -30,7 +32,7 @@ class PluginDescription:
         self.plugin_file_path: str = ""
 
     @classmethod
-    def load_single_plugin(cls, data: Table) -> "PluginDescription":
+    def load_single_plugin(cls, data: Table) -> PluginDescription:
         desc = PluginDescription()
 
         desc.name = data.get("name", None)
@@ -66,15 +68,18 @@ class PluginDescription:
         return desc
 
     @classmethod
-    def from_toml(cls, file_path: str) -> List["PluginDescription"]:
+    def from_toml(cls, file_path: str) -> list[PluginDescription]:
         with open(file_path, encoding="utf-8") as f:
             data = tomlkit.load(f)
 
         # load metadata
         outer_desc = PluginDescription()
-        if "meta" in data and "plugin_metadata_version" in data["meta"]:
-            if isinstance(data["meta"]["plugin_metadata_version"], Integer):
-                outer_desc.plugin_metadata_version = data["meta"]["plugin_metadata_version"].unwrap()
+        if (
+            "meta" in data
+            and "plugin_metadata_version" in data["meta"]
+            and isinstance(data["meta"]["plugin_metadata_version"], Integer)
+        ):
+            outer_desc.plugin_metadata_version = data["meta"]["plugin_metadata_version"].unwrap()
 
         if outer_desc.plugin_metadata_version is None:
             raise TypeError("Cannot find plugin_metadata_version")

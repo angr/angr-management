@@ -1,4 +1,6 @@
 # pylint:disable=no-self-use
+from __future__ import annotations
+
 from PySide6.QtCore import QMargins, QRect, QSize, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QDockWidget, QFrame, QHBoxLayout, QStyle, QStyleOptionToolBar, QWidget
@@ -9,11 +11,11 @@ class ToolBarHandle(QWidget):
     Paints a tool bar handle.
     """
 
-    def __init__(self, *vargs, **kwargs):
+    def __init__(self, *vargs, **kwargs) -> None:
         super().__init__(*vargs, **kwargs)
         self.orientation = False
 
-    def paintEvent(self, _):
+    def paintEvent(self, _) -> None:
         painter = QPainter(self)
         painter.setBrush(self.palette().window())
         r = QRect(0, 0, self.width(), self.height()).marginsAdded(QMargins(1, 1, 1, 1))
@@ -37,11 +39,11 @@ class CustomToolBar(QFrame):
     Widget to contain the tool bar handle and main widget.
     """
 
-    def __init__(self, widget, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, widget) -> None:
+        super().__init__()
         self.setWidget(widget)
 
-    def setWidget(self, widget):
+    def setWidget(self, widget) -> None:
         layout = QHBoxLayout()
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -59,13 +61,13 @@ class ToolBarDockWidget(QDockWidget):
     Custom tool bar using QDockWidget for better resize handling than QToolBar for large widgets.
     """
 
-    def __init__(self, widget, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, widget, title, parent) -> None:
+        super().__init__(title, parent)
         self.toolbar = CustomToolBar(widget)
         self.setWidget(self.toolbar)
         self.setTitleBarWidget(self.toolbar.handle)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         horizontal = self.width() > self.height()
         if horizontal:

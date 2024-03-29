@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from angr.sim_type import SimStruct, SimTypeBottom, SimUnion, TypeRef
@@ -20,7 +22,7 @@ class QCTypeDef(QWidget):
     A widget to display a C SimType.
     """
 
-    def __init__(self, parent, ty: TypeRef, all_types: "TypesStore"):
+    def __init__(self, parent, ty: TypeRef, all_types: TypesStore) -> None:
         super().__init__(parent)
 
         self.type = ty
@@ -73,16 +75,16 @@ class QCTypeDef(QWidget):
     def sizeHint(self):
         return QSize(self.minimumWidth(), self.minimumHeight())
 
-    def leaveEvent(self, event):  # pylint: disable=unused-argument
+    def leaveEvent(self, event) -> None:  # pylint: disable=unused-argument
         self.highlight = None
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         old_highlight = self.highlight
         self.highlight = min(max((event.pos().y() - 5) // LINE_HEIGHT, 0), len(self.lines) - 1)
         if old_highlight != self.highlight:
             self.repaint()
 
-    def paintEvent(self, event):  # pylint: disable=unused-argument
+    def paintEvent(self, event) -> None:  # pylint: disable=unused-argument
         painter = QPainter(self)
 
         if self.highlight is not None:
@@ -95,7 +97,7 @@ class QCTypeDef(QWidget):
             painter.drawText(0, y, line)
             y += 20
 
-    def mouseDoubleClickEvent(self, event):  # pylint: disable=unused-argument
+    def mouseDoubleClickEvent(self, event) -> None:  # pylint: disable=unused-argument
         if self.highlight is None:
             return
 

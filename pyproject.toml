@@ -5,10 +5,12 @@ build-backend = "setuptools.build_meta"
 [tool.black]
 line-length = 120
 target-version = ['py38']
+extend-exclude = "angrmanagement/vendor/"
 
 [tool.ruff]
 line-length = 120
 target-version = 'py38'
+exclude = ["angrmanagement/vendor/"]
 
 [tool.ruff.lint]
 select =  [
@@ -34,8 +36,7 @@ select =  [
 ]
 
 ignore = [
-    # Ignore SIM checks that don't yet support autofixing
-    "SIM102",
-    "SIM114",
-    "SIM115",
 ]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]

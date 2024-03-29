@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from .server import daemon_conn, daemon_exists, run_daemon_process, start_daemon
 from .url_handler import handle_url
 
 
-def monkeypatch_rpyc():
+def monkeypatch_rpyc() -> None:
     # The AsyncResult in rpyc has a bug that causes a race condition when clients are cascaded. this monkeypatch fixes
     # the bug.
     from rpyc.core.async_ import AsyncResult, AsyncResultTimeout

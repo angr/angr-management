@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont, QStandardItem, QStandardItemModel
@@ -8,10 +10,13 @@ from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 
-from .view import BaseView
+from .view import InstanceView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
+
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 try:
     from bintrace import TraceEvent
@@ -27,7 +32,7 @@ class CallTreeModel(QStandardItemModel):
     Headers = ["Function"]
 
     def hasChildren(self, index):
-        item: Optional[CallTreeItem] = self.itemFromIndex(index)
+        item: CallTreeItem | None = self.itemFromIndex(index)
         if isinstance(item, CallTreeItem):
             return item.expandable
         return super().hasChildren(index)
@@ -45,28 +50,28 @@ class CallTreeItem(QStandardItem):
     Item in call tree representing a function.
     """
 
-    def __init__(self, function, event):
+    def __init__(self, function, event) -> None:
         name = hex(function) if isinstance(function, int) else function.name
         super().__init__(name)
-        self.function: Union[int, Function] = function
+        self.function: int | Function = function
         self.event: TraceEvent = event
         self.populated: bool = False
         self.expandable: bool = True
 
 
-class CallExplorerView(BaseView):
+class CallExplorerView(InstanceView):
     """
     Call Explorer view.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("call_explorer", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+        super().__init__("call_explorer", workspace, default_docking_position, instance)
 
-        self._last_updated_func: Optional[Union[int, Function]] = None
+        self._last_updated_func: int | Function | None = None
         self._inhibit_update: bool = False
 
         self.base_caption = "Call Explorer"
-        self._tree: Optional[QTreeWidget] = None
+        self._tree: QTreeWidget | None = None
         self._init_widgets()
         self.reload()
 
@@ -79,10 +84,10 @@ class CallExplorerView(BaseView):
         self._on_debugger_state_updated()
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint:disable=unused-argument
+    def minimumSizeHint():
         return QSize(200, 200)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
         vlayout.setSpacing(0)
         vlayout.setContentsMargins(0, 0, 0, 0)
@@ -108,11 +113,11 @@ class CallExplorerView(BaseView):
     # Events
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self._dbg_watcher.shutdown()
         super().closeEvent(event)
 
-    def _on_item_clicked(self, index):
+    def _on_item_clicked(self, index) -> None:
         """
         Highlights the corresponding call site.
         """
@@ -128,7 +133,7 @@ class CallExplorerView(BaseView):
 
         self._inhibit_update = original_inhibit
 
-    def _on_item_double_clicked(self, index):
+    def _on_item_double_clicked(self, index) -> None:
         """
         Navigates into the call.
         """
@@ -138,7 +143,7 @@ class CallExplorerView(BaseView):
         dbg = self.instance.debugger_mgr.debugger
         dbg.replay_to_event(dbg._btrace.get_next_exec_event(item.event, vcpu=dbg._trace_dbg.vcpu))
 
-    def _on_item_expanded(self, index):
+    def _on_item_expanded(self, index) -> None:
         """
         Descend into call tree for this node.
         """
@@ -153,7 +158,7 @@ class CallExplorerView(BaseView):
             expanding_item.expandable = len(called) > 0
             expanding_item.populated = True
 
-    def _on_debugger_state_updated(self):
+    def _on_debugger_state_updated(self) -> None:
         """
         Update current call state.
         """
@@ -181,5 +186,5 @@ class CallExplorerView(BaseView):
         else:
             self._reset_function_label()
 
-    def _reset_function_label(self):
+    def _reset_function_label(self) -> None:
         self._top_level_function_level.setText("Current function: Unknown")

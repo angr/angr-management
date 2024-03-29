@@ -1,17 +1,25 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QVBoxLayout
 
 from angrmanagement.ui.widgets.qpatch_table import QPatchTable
 
-from .view import BaseView
+from .view import InstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
-class PatchesView(BaseView):
+class PatchesView(InstanceView):
     """
     View showing all patches.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("patches", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+        super().__init__("patches", workspace, default_docking_position, instance)
 
         self.base_caption = "Patches"
         self._patch_table: QPatchTable
@@ -21,14 +29,14 @@ class PatchesView(BaseView):
         # Reload upon creation
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         self._patch_table.reload()
 
     #
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._patch_table = QPatchTable(self.instance, self)
 
         layout = QVBoxLayout()

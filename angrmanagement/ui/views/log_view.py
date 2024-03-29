@@ -1,22 +1,26 @@
-import logging
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
 from angrmanagement.ui.widgets.qlog_widget import QLogWidget
 
-from .view import BaseView
+from .view import InstanceView
 
-_l = logging.getLogger(name=__name__)
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 
-class LogView(BaseView):
+class LogView(InstanceView):
     """
     Log view displays logging output.
     """
 
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("log", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+        super().__init__("log", workspace, default_docking_position, instance)
 
         self.base_caption = "Log"
         self._log_widget: QLogWidget = None
@@ -24,18 +28,18 @@ class LogView(BaseView):
         self._init_widgets()
         self.reload()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self._log_widget.close()
         super().closeEvent(event)
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     @staticmethod
-    def minimumSizeHint(*args, **kwargs):  # pylint: disable=unused-argument
+    def minimumSizeHint():
         return QSize(0, 50)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._log_widget = QLogWidget(self)
 
         hlayout = QHBoxLayout()

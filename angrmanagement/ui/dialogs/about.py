@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from PySide6.QtCore import Qt
@@ -13,7 +15,7 @@ class LoadAboutDialog(QDialog):
     Dialog that shows application version, credits, etc.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
         self.setWindowTitle("About")
@@ -22,7 +24,7 @@ class LoadAboutDialog(QDialog):
         self.setWindowIcon(QIcon(angr_icon_location))
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # icon
         icon_label = QLabel(self)
         icon_location = os.path.join(IMG_LOCATION, "angr-ds.png")

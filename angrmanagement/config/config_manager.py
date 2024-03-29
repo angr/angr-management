@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import contextlib
-import enum
 import logging
 import os
 import re
-from typing import Any, Callable, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable
 
 import tomlkit
 import tomlkit.exceptions
@@ -15,6 +16,9 @@ from angrmanagement.utils.env import app_root
 
 from .config_entry import ConfigurationEntry as CE
 
+if TYPE_CHECKING:
+    import enum
+
 _l = logging.getLogger(__name__)
 color_re = re.compile("[0-9a-fA-F]+")
 
@@ -24,11 +28,11 @@ class UninterpretedCE(CE):
     A config entry which has not been parsed because no type was available for it.
     """
 
-    def __init__(self, name, value, default_value=None):
+    def __init__(self, name: str, value, default_value=None) -> None:
         super().__init__(name, UninterpretedCE, value, default_value=default_value)
 
 
-def tomltype2pytype(v, ty: Optional[Type]) -> Any:
+def tomltype2pytype(v, ty: type | None) -> Any:
     if ty is str:
         if not isinstance(v, tomlkit.items.String):
             raise TypeError
@@ -44,7 +48,7 @@ def tomltype2pytype(v, ty: Optional[Type]) -> Any:
     return str(v) if isinstance(v, tomlkit.items.String) else v.unwrap()
 
 
-def color_parser(config_option, value) -> Optional[QColor]:
+def color_parser(config_option, value) -> QColor | None:
     if not isinstance(value, str) or not color_re.match(value) or len(value) not in (3, 6, 8, 12):
         _l.error("Failed to parse value %r as rgb color for option %s", value, config_option)
         return None
@@ -60,7 +64,7 @@ def color_serializer(config_option, value: QColor) -> str:
     return f"{value.alpha():02x}{value.red():02x}{value.green():02x}{value.blue():02x}"
 
 
-def font_parser(config_option, value) -> Optional[QFont]:
+def font_parser(config_option, value) -> QFont | None:
     if not isinstance(value, str) or "px " not in value:
         _l.error("Failed to parse value %r as font for option %s", value, config_option)
         return None
@@ -85,7 +89,7 @@ def font_serializer(config_option, value: QFont) -> str:
 
 def enum_parser_serializer_generator(
     the_enum: enum.Enum, default
-) -> Tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
+) -> tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
     def parser(config_option: str, value: str) -> enum.Enum:
         try:
             return the_enum[value]
@@ -313,7 +317,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         "_code_font_ascent",
     )
 
-    def __init__(self, entries=None):
+    def __init__(self, entries=None) -> None:
         self._disasm_font = self._disasm_font_metrics = self._disasm_font_height = None
         self._disasm_font_width = self._disasm_font_ascent = None
         self._symexec_font = self._symexec_font_metrics = self._symexec_font_height = None
@@ -327,7 +331,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         else:
             self._entries = entries
 
-    def load_initial_entries(self, reset: bool = True):
+    def load_initial_entries(self, reset: bool = True) -> None:
         """
         Load configuration entries into self._entries.
 
@@ -342,7 +346,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
                     self._entries[entry.name] = entry.copy()
 
     @staticmethod
-    def _manage_font_cache(real_font, font, metrics, height, width, ascent):
+    def _manage_font_cache(real_font, font, metrics, height, width: int, ascent):
         if real_font == font:
             return font, metrics, height, width, ascent
 
@@ -352,7 +356,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         ascent = metrics.ascent()
         return real_font, metrics, height, width, ascent
 
-    def _disasm_manage_font_cache(self):
+    def _disasm_manage_font_cache(self) -> None:
         (
             self._disasm_font,
             self._disasm_font_metrics,
@@ -368,7 +372,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
             self._disasm_font_ascent,
         )
 
-    def _symexec_manage_font_cache(self):
+    def _symexec_manage_font_cache(self) -> None:
         (
             self._symexec_font,
             self._symexec_font_metrics,
@@ -384,7 +388,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
             self._symexec_font_ascent,
         )
 
-    def _code_manage_font_cache(self):
+    def _code_manage_font_cache(self) -> None:
         (
             self._code_font,
             self._code_font_metrics,
@@ -464,15 +468,15 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         self._code_manage_font_cache()
         return self._code_font_ascent
 
-    def init_font_config(self):
+    def init_font_config(self) -> None:
         if self.ui_default_font is None:
             self.ui_default_font = QApplication.font("QMenu")
         if self.tabular_view_font is None:
             self.tabular_view_font = QApplication.font("QMenu")
 
-    recent_files: List[str]
+    recent_files: list[str]
 
-    def recent_file(self, file_path: str):
+    def recent_file(self, file_path: str) -> None:
         with contextlib.suppress(ValueError):
             self.recent_files.remove(file_path)
         self.recent_files = self.recent_files[:9]
@@ -487,7 +491,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         raise AttributeError(item)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key, value) -> None:
         if key in self.__slots__ or key in type(self).__dict__:
             super().__setattr__(key, value)
             return
@@ -564,7 +568,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         return v
 
-    def reinterpet(self):
+    def reinterpet(self) -> None:
         """
         Walks the ENTRIES list, trying to update self's entries with respect to anything that may have been added to
         the global list. Tries to fix up UninterpretedCEs. Should be called e.g. after loading plugins.
@@ -585,7 +589,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         with open(path, encoding="utf-8") as f:
             return cls.parse(f, ignore_unknown_entries=ignore_unknown_entries)
 
-    def save(self, f):
+    def save(self, f) -> None:
         out = {}
         for k, v in self._entries.items():
             v = v.value
@@ -595,7 +599,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         tomlkit.dump(out, f)
 
-    def save_file(self, path: str):
+    def save_file(self, path: str) -> None:
         with open(path, "w", encoding="utf-8") as f:
             self.save(f)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from angrmanagement.logic import GlobalInfo
 
 from .job import Job
@@ -8,12 +10,12 @@ class DecompileFunctionJob(Job):
     The job for running the decompiler analysis. You can trigger this by pressing f5 in a function.
     """
 
-    def __init__(self, function, on_finish=None, blocking=False, **kwargs):
+    def __init__(self, function, on_finish=None, blocking: bool = False, **kwargs) -> None:
         self.kwargs = kwargs
         self.function = function
         super().__init__(name="Decompiling", on_finish=on_finish, blocking=blocking)
 
-    def _run(self, inst):
+    def _run(self, inst) -> None:
         decompiler = inst.project.analyses.Decompiler(
             self.function,
             flavor="pseudocode",

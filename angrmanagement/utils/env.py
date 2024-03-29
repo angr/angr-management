@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import os
 import sys
-from typing import List, Union
 
 
 def is_pyinstaller() -> bool:
@@ -12,7 +13,7 @@ def is_pyinstaller() -> bool:
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-def app_path(pythonw=None, as_list=False) -> Union[str, List[str]]:
+def app_path(pythonw=None, as_list: bool = False) -> str | list[str]:
     """
     Return the path of the application.
 

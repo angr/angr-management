@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6 import QtWidgets
 
@@ -13,14 +15,14 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
     Dialog that allows the user to search for a DepNode based on its value, architecture name, or instruction address.
     """
 
-    def __init__(self, parent: QtWidgets.QWidget, data_dep_graph):
+    def __init__(self, parent: QtWidgets.QWidget, data_dep_graph) -> None:
         super().__init__(parent)
         self.setWindowTitle("Data Dependency Node Search")
         self._data_dep_graph = data_dep_graph
         self._curr_value_text = ""
         self._curr_addr_text = ""
         self._curr_name_text = ""
-        self._rel_nodes: List[QDataDepGraphBlock] = []
+        self._rel_nodes: list[QDataDepGraphBlock] = []
         self._curr_search_idx = -1
 
         self._name_line_edit = QtWidgets.QLineEdit(self)
@@ -38,24 +40,24 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._search_btn.clicked.connect(self._on_search_click)
         self._close_btn.clicked.connect(self._on_close_click)
 
-    def _safe_node_retrieval(self) -> Optional["QDataDepGraphBlock"]:
+    def _safe_node_retrieval(self) -> QDataDepGraphBlock | None:
         if self._rel_nodes and 0 <= self._curr_search_idx < len(self._rel_nodes):
             return self._rel_nodes[self._curr_search_idx]
         else:
             return None
 
-    def _on_close_click(self):
+    def _on_close_click(self) -> None:
         curr_search_node = self._safe_node_retrieval()
         if curr_search_node:
             curr_search_node.selected = False
         self.accept()
 
-    def _on_search_click(self):
+    def _on_search_click(self) -> None:
         """
         Iterate through matching nodes
         """
 
-        def _node_predicate(node: "BaseDepNode"):
+        def _node_predicate(node: BaseDepNode):
             nonlocal val_as_int
             nonlocal addr_as_int
 
@@ -107,7 +109,7 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         self._data_dep_graph.zoom(restore=True)
         self._data_dep_graph.refresh()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._error_lbl.hide()
         self._error_lbl.setStyleSheet(self._error_lbl.styleSheet() + "color: red;")
 

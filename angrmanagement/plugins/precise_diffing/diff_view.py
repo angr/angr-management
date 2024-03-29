@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
@@ -9,7 +9,7 @@ class DiffDisassemblyView(DisassemblyView):
     it will almost certainly have different addresses
     """
 
-    def on_synchronized_cursor_address_changed(self):
+    def on_synchronized_cursor_address_changed(self) -> None:
         assert not self._processing_synchronized_cursor_update
         self._processing_synchronized_cursor_update = True
         try:
@@ -18,5 +18,5 @@ class DiffDisassemblyView(DisassemblyView):
         finally:
             self._processing_synchronized_cursor_update = False
 
-    def set_synchronized_cursor_address(self, address: Optional[int]):
+    def set_synchronized_cursor_address(self, address: int | None) -> None:
         pass

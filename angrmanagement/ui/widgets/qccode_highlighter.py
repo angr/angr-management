@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING
 
@@ -34,7 +36,15 @@ def create_char_format(color: QColor, weight: QFont.Weight, style: QFont.Style) 
     return f
 
 
-def reset_formats():
+def reset_formats() -> None:
+    bg = QTextCharFormat()
+    bg.setBackground(Conf.palette_base)
+    FORMATS["background"] = bg
+
+    fg = QTextCharFormat()
+    fg.setForeground(Conf.palette_text)
+    FORMATS["normal"] = fg
+
     FORMATS["keyword"] = create_char_format(
         Conf.pseudocode_keyword_color, Conf.pseudocode_keyword_weight, Conf.pseudocode_keyword_style
     )
@@ -75,9 +85,13 @@ def _format_node(obj):
     if isinstance(obj, SimType):
         return FORMATS["type"]
     elif isinstance(obj, CFunctionCall):
-        if obj.callee_func is not None:
-            if obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall:
-                return FORMATS["library_function"]
+        if (
+            obj.callee_func is not None
+            and obj.callee_func.is_simprocedure
+            or obj.callee_func.is_plt
+            or obj.callee_func.is_syscall
+        ):
+            return FORMATS["library_function"]
         return FORMATS["function"]
     elif isinstance(obj, CFunction):
         return FORMATS["function"]
@@ -170,13 +184,13 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bwhile\b", "keyword"),
     ]
 
-    def __init__(self, parent, color_scheme=None):
+    def __init__(self, parent, color_scheme=None) -> None:
         super().__init__(parent, color_scheme=color_scheme)
 
         self.doc: QCodeDocument = parent
         self.comment_status = False
 
-    def highlight_block(self, text, block):
+    def highlight_block(self, text: str, block) -> None:
         # this code makes the assumption that this function is only ever called on lines in sequence in order
         # it might also fuck up if it ever calls it starting in the middle...
         if block.previous() is None:

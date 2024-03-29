@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from angr.sim_type import ALL_TYPES, SimStruct, SimUnion, TypeRef
@@ -7,22 +9,23 @@ from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.ui.dialogs.type_editor import CTypeEditor
 from angrmanagement.ui.widgets.qtypedef import QCTypeDef
 
-from .view import BaseView
+from .view import FunctionView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.types import TypesStore
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
-class TypesView(BaseView):
+
+class TypesView(FunctionView):
     """
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
     """
 
-    FUNCTION_SPECIFIC_VIEW = True
-
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("types", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+        super().__init__("types", workspace, default_docking_position, instance)
 
         self.base_caption = "Types"
 
@@ -41,16 +44,7 @@ class TypesView(BaseView):
     #
 
     @property
-    def function(self) -> ObjectContainer:
-        return self._function
-
-    @function.setter
-    def function(self, v):
-        self._function.am_obj = v
-        self._function.am_event()
-
-    @property
-    def current_typestore(self) -> "TypesStore":
+    def current_typestore(self) -> TypesStore:
         if self._function.am_none:
             return self.instance.kb.types
         var_manager: VariableManagerInternal = self.instance.pseudocode_variable_kb.variables[self._function.addr]
@@ -60,7 +54,7 @@ class TypesView(BaseView):
     # Other methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         outer_layout = QVBoxLayout()
         scroll_area = QScrollArea()
         scroll_contents = QWidget()
@@ -94,7 +88,7 @@ class TypesView(BaseView):
         # TODO: Support dark mode
         # scroll_contents.setStyleSheet("background-color: white;")
 
-    def reload(self):
+    def reload(self) -> None:
         for child in list(self._layout.parent().children()):
             if type(child) is QCTypeDef:
                 self._layout.takeAt(0)
@@ -114,7 +108,7 @@ class TypesView(BaseView):
             widget = QCTypeDef(self._layout.parent(), ty, types_store)
             self._layout.insertWidget(self._layout.count() - 1, widget)
 
-    def _on_new_type(self):
+    def _on_new_type(self) -> None:
         dialog = CTypeEditor(
             None,
             self.instance.project.arch,
@@ -147,5 +141,5 @@ class TypesView(BaseView):
         # reload
         self.reload()
 
-    def _on_persistent_types_clicked(self):
+    def _on_persistent_types_clicked(self) -> None:
         self.function = None

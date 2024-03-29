@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins.variables.variable_access import VariableAccess
 from angr.knowledge_plugins.xrefs.xref import XRef, XRefType
@@ -19,7 +21,7 @@ class XRefMode:
 class QXRefModel(QAbstractTableModel):
     HEADER = []
 
-    def __init__(self, addr, instance, view):
+    def __init__(self, addr: int, instance: Instance, view) -> None:
         super().__init__()
 
         self.addr = addr
@@ -27,14 +29,14 @@ class QXRefModel(QAbstractTableModel):
         self.view = view
 
     @property
-    def xrefs(self) -> List[VariableAccess]:
+    def xrefs(self) -> list[VariableAccess]:
         return self.view.items
 
     @xrefs.setter
-    def xrefs(self, v):
+    def xrefs(self, v) -> None:
         self.view.items = v
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.xrefs)
 
     def rowCount(self, parent=None):
@@ -71,7 +73,7 @@ class QXRefModel(QAbstractTableModel):
 
         return None
 
-    def sort(self, column, order):
+    def sort(self, column, order) -> None:
         self.layoutAboutToBeChanged.emit()
 
         self.xrefs = sorted(
@@ -81,7 +83,7 @@ class QXRefModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    def _get_column_text(self, xref, idx):
+    def _get_column_text(self, xref, idx: int):
         if idx < len(self.HEADER):
             data = self._get_column_data(xref, idx)
             if isinstance(data, int):
@@ -92,7 +94,7 @@ class QXRefModel(QAbstractTableModel):
     # Abstract methods
     #
 
-    def _get_column_data(self, xref, idx):
+    def _get_column_data(self, xref, idx: int):
         raise NotImplementedError
 
 
@@ -106,7 +108,7 @@ class QXRefVariableModel(QXRefModel):
     PC_COL = 4
     TEXT_COL = 5
 
-    def _get_column_data(self, ref, idx):
+    def _get_column_data(self, ref, idx: int):
         """
 
         :param VariableAccess ref:
@@ -134,7 +136,7 @@ class QXRefVariableModel(QXRefModel):
             return f"{addr:#x} ({self.instance.kb.functions[node.function_address].name})"
         return hex(addr)
 
-    def _direction(self, _r):
+    def _direction(self, _r) -> str:
         """
 
         :param VariableAccess _r:
@@ -193,7 +195,7 @@ class QXRefAddressModel(QXRefModel):
     PC_COL = 2
     TEXT_COL = 3
 
-    def _get_column_data(self, ref, idx):
+    def _get_column_data(self, ref, idx: int):
         """
 
         :param XRef ref:
@@ -219,7 +221,7 @@ class QXRefAddressModel(QXRefModel):
             return f"{addr:#x} ({self.instance.kb.functions[node.function_address].name})"
         return hex(addr)
 
-    def _direction(self, _r):
+    def _direction(self, _r) -> str:
         """
 
         :param XRef _r:
@@ -255,15 +257,15 @@ class QXRefAddressModel(QXRefModel):
 class QXRefViewer(QTableView):
     def __init__(
         self,
-        addr=None,
+        addr: int | None = None,
         variable_manager=None,
         variable=None,
         xrefs_manager=None,
         dst_addr=None,
-        instance: "Instance" = None,
+        instance: Instance = None,
         xref_dialog=None,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent)
 
         self.verticalHeader().setVisible(False)
@@ -318,7 +320,7 @@ class QXRefViewer(QTableView):
 
         self.doubleClicked.connect(self._on_item_doubleclicked)
 
-    def _reload(self):
+    def _reload(self) -> None:
         if self.mode == XRefMode.Variable:
             self.items = self._variable_manager.get_variable_accesses(self._variable, same_name=True)
             self.items = sorted(self.items, key=lambda item: item.location.ins_addr)
@@ -357,7 +359,7 @@ class QXRefViewer(QTableView):
     # Signal handlers
     #
 
-    def _on_item_doubleclicked(self, model_index):
+    def _on_item_doubleclicked(self, model_index) -> None:
         row = model_index.row()
         xref_dialog = self._xref_dialog
         if xref_dialog is None:
