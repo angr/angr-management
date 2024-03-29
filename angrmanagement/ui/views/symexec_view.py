@@ -17,9 +17,8 @@ if TYPE_CHECKING:
 
 
 class SymexecView(InstanceView):
-    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("symexec", workspace, default_docking_position, instance)
-        assert not isinstance(self.instance, str)
+    def __init__(self, workspace: Workspace, instance: Instance) -> None:
+        super().__init__("symexec", workspace, "right", instance)
 
         self.base_caption = "Symbolic Execution"
 
