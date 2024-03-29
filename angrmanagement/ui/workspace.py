@@ -993,6 +993,6 @@ class Workspace:
         if view is None:
             view = self.view_manager.first_view_in_category(category)
         if view is None:
-            view = view_type(self, self._main_instance, position)
+            view = view_type(self, position, self._main_instance)
             self.add_view(view)
         return view
