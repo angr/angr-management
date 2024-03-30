@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: angr-managmenet
+          path: angr-management
       - uses: actions/checkout@v4
         with:
           repository: angr/binaries
@@ -36,8 +36,8 @@ jobs:
         shell: cmd
       - run: |
           call %USERPROFILE%\venv\Scripts\activate
-          pip install ./angr-management[testing]
-        name: Install angr
+          pip install .\angr-management[testing]
+        name: Install angr-management
         shell: cmd
       - run: |
           call %USERPROFILE%\venv\Scripts\activate

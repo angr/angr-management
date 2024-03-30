@@ -35,7 +35,7 @@ jobs:
       - run: |
           source $HOME/venv/bin/activate
           pip install ./angr-management[testing]
-        name: Install angr
+        name: Install angr-management
       - run: |
           source $HOME/venv/bin/activate
           pytest -n auto angr-management
