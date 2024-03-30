@@ -87,6 +87,8 @@ def start_main_window_and_event_loop(event):
 
 
 class AngrManagementTestCase(unittest.TestCase):
+    """A base class for angr management test cases that starts the main window and event loop."""
+
     event: threading.Event
     main: MainWindow
 
@@ -100,6 +102,7 @@ class AngrManagementTestCase(unittest.TestCase):
 
 
 class ProjectOpenTestCase(AngrManagementTestCase):
+    """A base class for angr management test cases that opens a project."""
 
     def setUp(self):
         super().setUp()

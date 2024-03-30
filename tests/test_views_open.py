@@ -28,6 +28,8 @@ from angrmanagement.ui.views import (
 
 
 class TestViewsOpen(AngrManagementTestCase):
+    """Tests that all views open, without first opening a project."""
+
     def test_breakpoints_view(self):
         gui_thread_schedule(self.main.workspace.show_view, ("breakpoints", BreakpointsView))
 
@@ -90,4 +92,4 @@ class TestViewsOpen(AngrManagementTestCase):
 
 
 class TestViewsOpenWithProject(ProjectOpenTestCase, TestViewsOpen):
-    pass
+    """Tests that all views open, after opening a project."""
