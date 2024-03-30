@@ -31,7 +31,7 @@ jobs:
           pip install git+https://github.com/angr/cle.git
           pip install git+https://github.com/angr/claripy.git
           pip install git+https://github.com/angr/ailment.git
-          pip install -no-build-isolation git+https://github.com/angr/angr.git
+          pip install --no-build-isolation git+https://github.com/angr/angr.git
         name: Install dependencies
         shell: cmd
       - run: |
