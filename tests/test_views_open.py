@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from common import AngrManagementTestCase
+from common import AngrManagementTestCase, ProjectOpenTestCase
 
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.views import (
@@ -87,3 +87,7 @@ class TestViewsOpen(AngrManagementTestCase):
 
     def test_types_view(self):
         gui_thread_schedule(self.main.workspace.show_view, ("types", TypesView))
+
+
+class TestViewsOpenWithProject(ProjectOpenTestCase, TestViewsOpen):
+    pass

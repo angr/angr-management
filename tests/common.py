@@ -5,6 +5,7 @@ import threading
 import time
 import unittest
 
+import angr
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 
@@ -96,3 +97,14 @@ class AngrManagementTestCase(unittest.TestCase):
     def tearDown(self) -> None:
         self.event.set()
         del self.main
+
+
+class ProjectOpenTestCase(AngrManagementTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.main.workspace.main_instance.project.am_obj = angr.Project(
+            os.path.join(test_location, "x86_64", "true"), auto_load_libs=False
+        )
+        self.main.workspace.main_instance.project.am_event()
+        self.main.workspace.main_instance.join_all_jobs()
