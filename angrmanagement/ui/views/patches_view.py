@@ -18,7 +18,7 @@ class PatchesView(InstanceView):
     View showing all patches.
     """
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("patches", workspace, default_docking_position, instance)
 
         self.base_caption = "Patches"

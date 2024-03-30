@@ -125,7 +125,7 @@ class TracesView(InstanceView):
     Traces table view.
     """
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("traces", workspace, default_docking_position, instance)
 
         self.base_caption = "Traces"

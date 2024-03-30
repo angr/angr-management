@@ -1325,7 +1325,7 @@ class HexView(SynchronizedInstanceView):
 
     _widgets_initialized: bool = False
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("hex", workspace, default_docking_position, instance)
         self.base_caption: str = "Hex"
         self.smart_highlighting_enabled: bool = True
