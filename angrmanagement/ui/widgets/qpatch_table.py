@@ -83,10 +83,14 @@ class QPatchTable(QTableWidget):
         self._reloading = True
         self.clearContents()
 
-        self.items = [
-            QPatchTableItem(item, self._get_bytes(self.instance.project, item.addr, len(item)))
-            for item in self.instance.project.kb.patches.values()
-        ]
+        self.items = (
+            [
+                QPatchTableItem(item, self._get_bytes(self.instance.project, item.addr, len(item)))
+                for item in self.instance.project.kb.patches.values()
+            ]
+            if not self.instance.project.am_none
+            else []
+        )
         items_count = len(self.items)
         self.setRowCount(items_count)
 

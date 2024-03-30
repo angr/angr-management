@@ -38,15 +38,7 @@ class DataDepView(InstanceView):
 
         self.base_caption = "Data Dependency"
 
-        # Get all instructions in the program
         self._instructions: dict[int, CsInsn] = {}
-        inst = self.instance
-        for _, func in inst.kb.functions.items():
-            for block in func.blocks:
-                disass = block.disassembly
-                for ins in disass.insns:
-                    self._instructions[ins.address] = ins
-
         self._end_state: SimState | None = None
         self._start_addr: int | None = None
         self._end_addr: int | None = None
@@ -158,8 +150,15 @@ class DataDepView(InstanceView):
             self._graph_widget.refresh()
 
     def reload(self) -> None:
-        if self._graph_widget is None:
+        if self.instance.am_none or self._graph_widget is None:
             return
+
+        # Get all instructions in the program
+        for _, func in self.instance.kb.functions.items():
+            for block in func.blocks:
+                disass = block.disassembly
+                for ins in disass.insns:
+                    self._instructions[ins.address] = ins
 
         # Re-Generate the graph
         if not self._data_dep:

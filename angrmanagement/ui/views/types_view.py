@@ -95,6 +95,10 @@ class TypesView(FunctionView):
                 self._layout.removeWidget(child)
                 child.deleteLater()
 
+        if self.instance.project.am_none:
+            self._caption_label.setText("Types View")
+            return
+
         # update the display
         if self.function.am_none:
             self._caption_label.setText("Persistent (global) variable types")
