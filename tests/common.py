@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 import threading
 import time
+import unittest
 
+import angr
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication
 
@@ -82,3 +84,30 @@ def start_main_window_and_event_loop(event):
         time.sleep(0.1)
 
     return container["app"], container["main"]
+
+
+class AngrManagementTestCase(unittest.TestCase):
+    """A base class for angr management test cases that starts the main window and event loop."""
+
+    event: threading.Event
+    main: MainWindow
+
+    def setUp(self):
+        self.event = threading.Event()
+        _, self.main = start_main_window_and_event_loop(self.event)
+
+    def tearDown(self) -> None:
+        self.event.set()
+        del self.main
+
+
+class ProjectOpenTestCase(AngrManagementTestCase):
+    """A base class for angr management test cases that opens a project."""
+
+    def setUp(self):
+        super().setUp()
+        self.main.workspace.main_instance.project.am_obj = angr.Project(
+            os.path.join(test_location, "x86_64", "true"), auto_load_libs=False
+        )
+        self.main.workspace.main_instance.project.am_event()
+        self.main.workspace.main_instance.join_all_jobs()

@@ -24,7 +24,7 @@ class TypesView(FunctionView):
     The view that lets you modify project.kb.types. Creates a QTypeDef for each type.
     """
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("types", workspace, default_docking_position, instance)
 
         self.base_caption = "Types"
@@ -94,6 +94,10 @@ class TypesView(FunctionView):
                 self._layout.takeAt(0)
                 self._layout.removeWidget(child)
                 child.deleteLater()
+
+        if self.instance.project.am_none:
+            self._caption_label.setText("Types View")
+            return
 
         # update the display
         if self.function.am_none:

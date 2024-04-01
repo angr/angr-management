@@ -64,7 +64,7 @@ class CallExplorerView(InstanceView):
     Call Explorer view.
     """
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("call_explorer", workspace, default_docking_position, instance)
 
         self._last_updated_func: int | Function | None = None

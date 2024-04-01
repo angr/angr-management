@@ -26,7 +26,7 @@ class DependencyView(InstanceView):
     Creates view for dependency analysis.
     """
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("dependencies", workspace, default_docking_position, instance)
 
         self.base_caption = "Dependencies"

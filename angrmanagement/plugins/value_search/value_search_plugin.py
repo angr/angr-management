@@ -43,7 +43,7 @@ class ValueSearch(BasePlugin):
         self._destroy_search_view()
 
     def _create_search_view(self) -> None:
-        self.search_view = SearchView(self, self.workspace, self.workspace.main_instance, "center")
+        self.search_view = SearchView(self, self.workspace, "center", self.workspace.main_instance)
         self.workspace.add_view(self.search_view)
 
     def _destroy_search_view(self) -> None:

@@ -107,16 +107,16 @@ class Workspace:
         self.current_screen = ObjectContainer(None, name="current_screen")
 
         self.default_tabs = [
-            DisassemblyView(self, self._main_instance, "center"),
-            HexView(self, self._main_instance, "center"),
-            CodeView(self, self._main_instance, "center"),
-            FunctionsView(self, self._main_instance, "left"),
+            DisassemblyView(self, "center", self._main_instance),
+            HexView(self, "center", self._main_instance),
+            CodeView(self, "center", self._main_instance),
+            FunctionsView(self, "left", self._main_instance),
         ]
         if Conf.has_operation_mango:
-            self.default_tabs.append(DependencyView(self, self._main_instance, "center"))
+            self.default_tabs.append(DependencyView(self, "center", self._main_instance))
         minimized_tabs = [
-            ConsoleView(self, self._main_instance, "bottom"),
-            LogView(self, self._main_instance, "bottom"),
+            ConsoleView(self, "bottom", self._main_instance),
+            LogView(self, "bottom", self._main_instance),
         ]
         self.default_tabs += minimized_tabs
 
@@ -342,7 +342,7 @@ class Workspace:
         disassembly_view = self.view_manager.first_view_in_category("disassembly")
         current_addr = disassembly_view.jump_history.current if disassembly_view is not None else None
 
-        view = DisassemblyView(self, self._main_instance, "center")
+        view = DisassemblyView(self, "center", self._main_instance)
         self.add_view(view)
         self.raise_view(view)
         view._linear_viewer.initialize()  # FIXME: Don't access protected member
@@ -829,7 +829,7 @@ class Workspace:
         self.show_view("log", LogView, position="bottom")
 
     def create_and_show_hex_view(self):
-        view = HexView(self, self._main_instance, "center")
+        view = HexView(self, "center", self._main_instance)
         self.add_view(view)
         return view
 

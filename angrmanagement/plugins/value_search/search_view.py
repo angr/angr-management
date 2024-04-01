@@ -35,7 +35,7 @@ class SearchView(InstanceView):
     """
 
     def __init__(
-        self, plugin, workspace: Workspace, instance: Instance, default_docking_position: str, *args, **kwargs
+        self, plugin, workspace: Workspace, default_docking_position: str, instance: Instance, *args, **kwargs
     ) -> None:
         super().__init__("search", workspace, default_docking_position, instance, *args, **kwargs)
 
