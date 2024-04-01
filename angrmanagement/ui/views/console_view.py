@@ -21,7 +21,7 @@ class ConsoleView(InstanceView):
     Console view providing IPython interactive session.
     """
 
-    def __init__(self, workspace: Workspace, instance: Instance, default_docking_position: str) -> None:
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("console", workspace, default_docking_position, instance)
 
         self.base_caption = "Console"

@@ -74,8 +74,8 @@ class InteractionState(enum.Enum):
 
 
 class InteractionView(InstanceView):
-    def __init__(self, workspace: Workspace, instance: Instance) -> None:
-        super().__init__("interaction", workspace, "bottom", instance)
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
+        super().__init__("interaction", workspace, default_docking_position, instance)
         self.base_caption = "Interaction"
         self.current_log = (
             []
