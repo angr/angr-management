@@ -143,7 +143,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.revised_binary_loaded()
 
     def _create_revised_disassembly_view(self):
-        new_disass = DiffDisassemblyView(self.workspace, self.diff_instance, "center")
+        new_disass = DiffDisassemblyView(self.workspace, "center", self.diff_instance)
         new_disass.category = "diff"
         new_disass.base_caption = "Precise Diff"
         self.current_revised_view = new_disass

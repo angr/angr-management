@@ -342,7 +342,7 @@ class Workspace:
         disassembly_view = self.view_manager.first_view_in_category("disassembly")
         current_addr = disassembly_view.jump_history.current if disassembly_view is not None else None
 
-        view = DisassemblyView(self, self._main_instance, "center")
+        view = DisassemblyView(self, "center", self._main_instance)
         self.add_view(view)
         self.raise_view(view)
         view._linear_viewer.initialize()  # FIXME: Don't access protected member
@@ -829,7 +829,7 @@ class Workspace:
         self.show_view("log", LogView, position="bottom")
 
     def create_and_show_hex_view(self):
-        view = HexView(self, self._main_instance, "center")
+        view = HexView(self, "center",self._main_instance)
         self.add_view(view)
         return view
 
