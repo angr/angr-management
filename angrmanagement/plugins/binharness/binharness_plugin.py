@@ -1,8 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.workspace import Workspace
 
 from .bhinstance import BhInstance
 from .run_target_dialog import RunTargetDialog
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
 class BinharnessPlugin(BasePlugin):

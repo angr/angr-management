@@ -1,10 +1,15 @@
-import logging
+from __future__ import annotations
 
-from binharness import IO
+import logging
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QSize, QTimer
 from PySide6.QtWidgets import QTextEdit, QVBoxLayout
 
 from angrmanagement.ui.views import BaseView
+
+if TYPE_CHECKING:
+    from binharness import IO
 
 log = logging.getLogger(name=__name__)
 log.setLevel(logging.DEBUG)

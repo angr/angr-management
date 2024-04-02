@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import json
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import binharness
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 log = logging.getLogger(name=__name__)
 log.setLevel(logging.DEBUG)
@@ -12,10 +17,8 @@ class FuzzerExecutor(binharness.InjectableExecutor):
     process: binharness.Process
     base_addr: int = 0xAAAAAAAA0000
 
-    def __init__(self):
-        super().__init__(
-            Path("/Users/kevin/OrbStack/ubuntu/home/kevin/workspace/trivial-fuzzer/target/release/trivial-fuzzer")
-        )
+    def __init__(self, fuzzer_binary: Path):
+        super().__init__(fuzzer_binary)
 
     def _run_target(self, target: binharness.Target) -> binharness.Process:
         """Run a target in an environment."""

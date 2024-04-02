@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import logging
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QListView, QPushButton, QVBoxLayout
 
-from .view import BaseView
+from angrmanagement.ui.views import BaseView
 
 log = logging.getLogger(name=__name__)
 
@@ -11,7 +13,7 @@ log = logging.getLogger(name=__name__)
 class BinharnessView(BaseView):
     environments_list: QListView
 
-    def __init__(self, workspace, instance, default_docking_position):
+    def __init__(self, workspace, default_docking_position, instance):
         super().__init__("log", workspace, instance, default_docking_position)
         self.base_caption = "Binharness"
         self._init_widgets()

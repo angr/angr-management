@@ -1,32 +1,32 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, List, Tuple
+from typing import TYPE_CHECKING
 
-import angr
 import paramiko
 from binharness import AgentConnection, Environment, LocalEnvironment, Target
 from binharness.bootstrap.ssh import bootstrap_ssh_environment_with_client
-from binharness.bootstrap.subprocess import SubprocessAgent
+
+if TYPE_CHECKING:
+    import angr
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
 class BhInstance:
-    agent_connections: List[AgentConnection]
-    environments: List[Tuple[str, Environment]]
+    agent_connections: list[AgentConnection]
+    environments: list[tuple[str, Environment]]
     local_environment: Environment
-    targets: DefaultDict[Environment, List[Target]]
+    targets: defaultdict[Environment, list[Target]]
 
     def __init__(self):
         self.agent_connections = []
-        # self.agent_connections.append(SubprocessAgent("/Users/kevin/workspace/binharness/target/debug/bh_agent_server"))
         self.local_environment = LocalEnvironment()
-        # self.local_environment = self.agent_connections[0].get_environment(0)
         self.environments = [
             ("Local", self.local_environment),
-            # ("Local (Agent)", self.agent_connections[0].get_environment(0)),
         ]
         self.add_ssh_agent_connection("198.19.249.74", username="kevin")
         self.targets = defaultdict(list)
@@ -42,6 +42,7 @@ class BhInstance:
         )
         self.targets[self.local_environment].append(target)
         log.debug("Binharness loaded local target")
+        return target
 
     def add_ssh_agent_connection(self, host: str, port: int = 60162, username: str = "root") -> AgentConnection:
         # Try to connect to the remote host directly. If that fails, use ssh bootstrap
@@ -59,8 +60,6 @@ class BhInstance:
             )
         self.agent_connections.append(agent_connection)
         self.environments.extend(
-            [
-                (f"SSH {i}", agent_connection.get_environment(i))
-                for i in agent_connection.get_environment_ids()
-            ]
+            [(f"SSH {i}", agent_connection.get_environment(i)) for i in agent_connection.get_environment_ids()]
         )
+        return agent_connection

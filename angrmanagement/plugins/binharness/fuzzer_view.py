@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, QTimer
 from PySide6.QtGui import QStandardItem, QStandardItemModel
@@ -15,11 +18,11 @@ from PySide6.QtWidgets import (
 from sortedcontainers import SortedDict
 
 from angrmanagement.plugins.trace_viewer.afl_qemu_bitmap import AFLQemuBitmap
-from angrmanagement.ui.views import BaseView
 from angrmanagement.ui.views.hex_view import HexGraphicsView
+from angrmanagement.ui.views.view import InstanceView
 
-from .fuzzer import FuzzerExecutor
-from .stream_view import StreamWidget
+if TYPE_CHECKING:
+    from .fuzzer import FuzzerExecutor
 
 log = logging.getLogger(name=__name__)
 
@@ -158,15 +161,15 @@ class EventsWidget(QWidget):
                 self.table.add_row_from_dict(self.events[event])
 
 
-class FuzzerView(BaseView):
+class FuzzerView(InstanceView):
     """
     Log view displays logging output.
     """
 
     executor: FuzzerExecutor
 
-    def __init__(self, workspace, instance, default_docking_position, executor: FuzzerExecutor):
-        super().__init__("fuzzer", workspace, instance, default_docking_position)
+    def __init__(self, workspace, default_docking_position, instance, executor: FuzzerExecutor):
+        super().__init__("fuzzer", workspace, default_docking_position, instance)
 
         self.base_caption = "Fuzzer"
         self.executor = executor

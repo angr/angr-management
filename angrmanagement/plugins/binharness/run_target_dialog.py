@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import binharness
 from PySide6.QtCore import Qt
@@ -7,15 +11,25 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from angrmanagement.config import IMG_LOCATION
-from angrmanagement.ui.workspace import Workspace
 
-from .bhinstance import BhInstance
 from .fuzzer import FuzzerExecutor
 from .fuzzer_view import FuzzerView
 from .stream_view import StreamView
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
+    from .bhinstance import BhInstance
+
 log = logging.getLogger(name=__name__)
 log.setLevel(logging.DEBUG)
+
+
+def get_fuzzer_binary(fuzzer_name: str) -> Path:
+    stripped = fuzzer_name.split("(")[1].split(")")[0]
+    return Path(
+        f"/Users/kevin/OrbStack/ubuntu/home/kevin/workspace/trivial-fuzzer/target/release/trivial-fuzzer-{stripped}"
+    )
 
 
 class RunTargetDialog(QDialog):
@@ -52,7 +66,14 @@ class RunTargetDialog(QDialog):
         # Select Executor
         self.executor_combobox = QComboBox()
         self.executor_combobox.addItems(["None"])
-        self.executor_combobox.addItems(["Fuzzer"])
+        self.executor_combobox.addItems(["Fuzzer (aarch64)"])
+        self.executor_combobox.addItems(["Fuzzer (armeb)"])
+        self.executor_combobox.addItems(["Fuzzer (arm)"])
+        self.executor_combobox.addItems(["Fuzzer (i386)"])
+        self.executor_combobox.addItems(["Fuzzer (mips)"])
+        self.executor_combobox.addItems(["Fuzzer (mipsel)"])
+        self.executor_combobox.addItems(["Fuzzer (ppc)"])
+        self.executor_combobox.addItems(["Fuzzer (x86_64)"])
 
         # Run Button
         run_button = QPushButton("Run")
@@ -87,10 +108,11 @@ class RunTargetDialog(QDialog):
             target = source_target
 
         if self.executor_combobox.currentText() == "None":
-            executor = binharness.PtyExecutor()  # TODO: make configurable, transport if needed, etc
-        if self.executor_combobox.currentText() == "Fuzzer":
+            # executor = binharness.PtyExecutor()  # TODO: make configurable, transport if needed, etc
+            executor = binharness.NullExecutor()
+        if self.executor_combobox.currentText().startswith("Fuzzer"):
             log.debug("Using experimental fuzzer")
-            executor = FuzzerExecutor()
+            executor = FuzzerExecutor(get_fuzzer_binary(self.executor_combobox.currentText()))
             log.debug("Installing fuzzer")
             executor.install(target.environment)
             log.debug("Fuzzer installed")
@@ -103,8 +125,8 @@ class RunTargetDialog(QDialog):
             stdout_view = StreamView(self.workspace, self.workspace.main_instance, "bottom", p_so, "stdout")
             log.debug("Adding stdout view")
             self.workspace.add_view(stdout_view)
-        if self.executor_combobox.currentText() == "Fuzzer":
-            fuzzer_view = FuzzerView(self.workspace, self.workspace.main_instance, "center", executor)
+        if self.executor_combobox.currentText().startswith("Fuzzer"):
+            fuzzer_view = FuzzerView(self.workspace, "center", self.workspace.main_instance, executor)
             self.workspace.add_view(fuzzer_view)
 
         # Make stdout/stderr available to user
