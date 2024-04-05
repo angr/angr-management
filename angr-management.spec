@@ -90,6 +90,7 @@ a = Analysis(
         "PySide6.support.deprecated",
         "PySide6.QtWebEngineWidgets",
         "binsync.interface_overrides.angr",
+        "binharness",
     ],
     hookspath=[],
     hooksconfig={},

@@ -21,7 +21,7 @@ from .symexec_view import SymexecView
 from .trace_map_view import TraceMapView
 from .traces_view import TracesView
 from .types_view import TypesView
-from .view import BaseView
+from .view import BaseView, InstanceView
 
 __all__ = [
     "BreakpointsView",
@@ -46,4 +46,5 @@ __all__ = [
     "TracesView",
     "TypesView",
     "BaseView",
+    "InstanceView",
 ]
