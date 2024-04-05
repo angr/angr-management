@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize, QTimer
 from PySide6.QtWidgets import QTextEdit, QVBoxLayout
 
-from angrmanagement.ui.views import BaseView
+from angrmanagement.ui.views import InstanceView
 
 if TYPE_CHECKING:
     from binharness import IO
@@ -15,6 +15,8 @@ log = logging.getLogger(name=__name__)
 
 
 class StreamWidget(QTextEdit):
+    """StreamWidget displays a stream of bytes as text."""
+
     def __init__(self, stream: IO[bytes]):
         super().__init__()
         self.stream = stream
@@ -34,14 +36,16 @@ class StreamWidget(QTextEdit):
             self.setText(self.buffer.decode("utf-8"))
 
 
-class StreamView(BaseView):
+class StreamView(InstanceView):
+    """StreamView displays a stream of bytes as text."""
+
     _stream: IO[bytes]
     _buffer: str
 
     _text_edit: QTextEdit
 
     def __init__(self, workspace, instance, default_docking_position, stream: IO[bytes], caption: str):
-        super().__init__("log", workspace, instance, default_docking_position)
+        super().__init__("log", workspace, default_docking_position, instance)
 
         self.base_caption = caption
 

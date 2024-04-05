@@ -23,7 +23,7 @@ log = logging.getLogger(name=__name__)
 
 class RunTargetDialog(QDialog):
     """
-    Dialog that shows application version, credits, etc.
+    Dialog that allows the user to run a target with a specific environment and executor.
     """
 
     bh_instance: BhInstance
@@ -40,10 +40,7 @@ class RunTargetDialog(QDialog):
 
         self.bh_instance = bh_instance
         self.workspace = workspace
-        try:
-            self._init_widgets()
-        except Exception as e:
-            log.exception(e)
+        self._init_widgets()
 
     def _init_widgets(self):
         # Select Environment

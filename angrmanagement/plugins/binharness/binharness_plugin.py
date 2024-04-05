@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class BinharnessPlugin(BasePlugin):
+    """BinHarness plugin for angr management."""
+
     MENU_BUTTONS = [
         "Binharness: Run",
     ]

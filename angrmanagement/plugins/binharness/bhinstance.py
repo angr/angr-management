@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 
 class BhInstance:
+    """BhInstance holds the state of binharness associated with a single instance."""
+
     agent_connections: list[AgentConnection]
     environments: list[tuple[str, Environment]]
     local_environment: Environment
