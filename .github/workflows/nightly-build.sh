@@ -31,7 +31,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 fi
 
 # Install angr-mangement
-pip install -e .[pyinstaller]
+pip install -e .[pyinstaller,binharness]
 
 # Bundle!
 pyinstaller angr-management.spec
