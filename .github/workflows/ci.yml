@@ -12,3 +12,5 @@ jobs:
     uses: angr/ci-settings/.github/workflows/angr-ci.yml@master
   windows:
     uses: ./.github/workflows/windows.yml
+  macos:
+    uses: ./.github/workflows/macos.yml
