@@ -152,6 +152,7 @@ class CodeView(FunctionView):
                 options=self._options.option_and_values,
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
+                inline_functions=self._options.selected_inlines,
                 vars_must_struct=self.vars_must_struct,
                 on_finish=decomp_ready,
                 blocking=True,
