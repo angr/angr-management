@@ -70,11 +70,13 @@ class QDecompilationOption(QTreeWidgetItem):
         else:
             return bool(self.checkState(0) == Qt.CheckState.Checked)
 
+
 class FunctionInlineOption:
     def __init__(self, func):
         self.NAME = func.name
         self.function = func
         self.DESCRIPTION = f"Inline the {self.NAME} function during decompilation."
+
 
 class QDecompilationOptions(QWidget):
     """
@@ -104,7 +106,7 @@ class QDecompilationOptions(QWidget):
         self._qoptions = []
         self._qoptipasses = []
         self._qpeephole_opts = []
-        self._qinlines = [ ]
+        self._qinlines = []
 
         self._init_widgets()
 
@@ -264,10 +266,7 @@ class QDecompilationOptions(QWidget):
                     continue
                 enabled = False if reset_values else function in vals_inlines
                 w = QDecompilationOption(
-                    inlining_category,
-                    FunctionInlineOption(function),
-                    OptionType.INLINED_FUNCTION,
-                    enabled=enabled
+                    inlining_category, FunctionInlineOption(function), OptionType.INLINED_FUNCTION, enabled=enabled
                 )
                 self._qinlines.append(w)
 
@@ -275,8 +274,7 @@ class QDecompilationOptions(QWidget):
             reachable_functions = set(self._code_view.function.functions_reachable())
             for w in self._qinlines:
                 w.setHidden(
-                    w.option.function == self._code_view.function or
-                    w.option.function not in reachable_functions
+                    w.option.function == self._code_view.function or w.option.function not in reachable_functions
                 )
 
         # expand all
