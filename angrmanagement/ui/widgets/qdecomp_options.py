@@ -216,12 +216,13 @@ class QDecompilationOptions(QWidget):
         vals_options = dict(self.option_and_values)
         vals_peephole = self.selected_peephole_opts
         vals_passes = self.selected_passes
-        vals_inlines = self.selected_inlines
+        vals_inlines = set(self.selected_inlines)
 
         self._treewidget.clear()
         self._qoptions.clear()
         self._qoptipasses.clear()
         self._qpeephole_opts.clear()
+        self._qinlines.clear()
 
         categories = {}
 
@@ -258,17 +259,25 @@ class QDecompilationOptions(QWidget):
         inlining_category = QTreeWidgetItem(self._treewidget, ["Inlined Functions"])
         categories["inlining_opts"] = inlining_category
         if not self._instance.project.am_none:
-            for func in self._instance.project.kb.functions.values():
-                if func.is_plt or func.is_simprocedure:
+            for function in self._instance.project.kb.functions.values():
+                if function.is_plt or function.is_simprocedure:
                     continue
-                enabled = False if reset_values else func in vals_inlines
+                enabled = False if reset_values else function in vals_inlines
                 w = QDecompilationOption(
                     inlining_category,
-                    FunctionInlineOption(func),
+                    FunctionInlineOption(function),
                     OptionType.INLINED_FUNCTION,
                     enabled=enabled
                 )
                 self._qinlines.append(w)
+
+        if not self._code_view.function.am_none:
+            reachable_functions = set(self._code_view.function.functions_reachable())
+            for w in self._qinlines:
+                w.setHidden(
+                    w.option.function == self._code_view.function or
+                    w.option.function not in reachable_functions
+                )
 
         # expand all
         self._treewidget.expandAll()

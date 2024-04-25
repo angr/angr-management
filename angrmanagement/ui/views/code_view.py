@@ -341,6 +341,7 @@ class CodeView(FunctionView):
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self._function.am_obj
 
+        self._options.reload()
         console_view = self.workspace.view_manager.first_view_in_category("console")
         if console_view is not None:
             console_view.set_current_function(self._function.am_obj)
