@@ -254,9 +254,9 @@ class QFunctionTableModel(QAbstractTableModel):
         if demangled_name and keyword in demangled_name.lower():
             return True
         if isinstance(func.addr, int):
-            if keyword in "%x" % func.addr:
+            if keyword in f"{func.addr:x}":
                 return True
-            if keyword in "%#x" % func.addr:
+            if keyword in f"{func.addr:#x}":
                 return True
         if keyword in ",".join(func.tags).lower():
             return True

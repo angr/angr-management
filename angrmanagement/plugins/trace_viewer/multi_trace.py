@@ -65,14 +65,14 @@ class MultiTrace:
 
     def get_input_id_for_trace_id(self, trace_id):
         if trace_id not in self._traces:
-            self.workspace.log("ERROR - trace id %s not present in multitrace" % trace_id)
+            self.workspace.log(f"ERROR - trace id {trace_id} not present in multitrace")
             return None
         trace = self._traces[trace_id]
         return trace.input_id
 
     def get_trace_with_id(self, trace_id):
         if trace_id not in self._traces:
-            self.workspace.log("ERROR - trace id %s not present in multitrace" % trace_id)
+            self.workspace.log(f"ERROR - trace id {trace_id} not present in multitrace")
             return None
         return self._traces[trace_id]
 
@@ -83,7 +83,7 @@ class MultiTrace:
         addrs_of_interest = []
         for trace_id in targets:
             if trace_id not in self._traces:
-                self.workspace.log("%s not found in traces" % trace_id)
+                self.workspace.log(f"{trace_id} not found in traces")
                 continue
             addr_list = self._traces[trace_id].mapped_trace
             addrs_of_interest.extend(addr_list)

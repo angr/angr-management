@@ -75,7 +75,7 @@ class Toolbar:
         try:
             act = self._cached_actions[element]
         except KeyError as ex:
-            raise ValueError("Element %s not found" % element) from ex
+            raise ValueError(f"Element {element} not found") from ex
 
         self.actions.remove(element)
         if self._cached is not None:

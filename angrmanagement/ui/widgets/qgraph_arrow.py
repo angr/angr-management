@@ -79,7 +79,7 @@ class QGraphArrow(QGraphicsItem):
                 QPointF(coord.x() - 6, coord.y()),
             ]
         else:
-            raise NotImplementedError("Direction %s is not supported yet." % direction)
+            raise NotImplementedError(f"Direction {direction} is not supported yet.")
 
     def _should_highlight(self) -> bool:
         return False

@@ -188,7 +188,7 @@ class DependencyAnalysisJob(Job):
         if isinstance(subject, Function):
             sink = subject
         else:
-            raise TypeError("Unsupported type of subject %s." % type(subject))
+            raise TypeError(f"Unsupported type of subject {type(subject)}.")
 
         # peek into the callgraph and discover all functions reaching the sink within N layers of calls, which is
         # determined by the depth parameter

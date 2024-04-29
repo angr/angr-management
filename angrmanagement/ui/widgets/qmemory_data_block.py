@@ -83,7 +83,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     #
 
     def _init_widgets(self) -> None:
-        self._addr_text = "%08x" % self.addr
+        self._addr_text = f"{self.addr:08x}"
         self._bytes = []
         if self.memory_data.content:
             cnt = self.memory_data.content
@@ -159,7 +159,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         unknown_char_color = Conf.disasm_view_unknown_character_color
 
         # address
-        addr_text = "%08x" % addr
+        addr_text = f"{addr:08x}"
         addr_item = QGraphicsSimpleTextItem(addr_text, self)
         addr_item.setBrush(Conf.disasm_view_node_address_color)
         addr_item.setFont(Conf.disasm_font)
@@ -169,7 +169,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         for idx, byt in enumerate(all_bytes):
             if isinstance(byt, int):
                 color = printable_byte_color if is_printable(byt) else unprintable_byte_color
-                o = QGraphicsSimpleTextItem("%02x" % byt, self)
+                o = QGraphicsSimpleTextItem(f"{byt:02x}", self)
                 o.setFont(Conf.disasm_font)
                 o.setBrush(color)
             else:  # str, usually because it is an unknown byte, in which case the str is "??"

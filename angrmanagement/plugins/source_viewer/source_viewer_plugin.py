@@ -123,7 +123,7 @@ class SourceCodeViewer(CodeEdit):
         if address_list:
             jump_menu = menu.addMenu("Jump to")
             for addr in address_list:
-                jump_menu.addAction("0x%x" % addr, lambda addr=addr: self.jump_to(addr))
+                jump_menu.addAction(f"0x{addr:x}", lambda addr=addr: self.jump_to(addr))
         menu.exec_(QCursor.pos())
 
     def remove_marker_fn(self, line) -> None:
@@ -264,7 +264,7 @@ class SourceViewer(InstanceView):
                 symexec_view.find_addr_in_exec(addr)
             else:
                 symexec_view.avoid_addr_in_exec(addr)
-        return "\n".join([("0x%x" % i) for i in address_list])
+        return "\n".join([(f"0x{i:x}") for i in address_list])
 
     def remove_point(self, fn, line) -> None:
         symexec_view = self.symexec_view

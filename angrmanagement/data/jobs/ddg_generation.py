@@ -19,4 +19,4 @@ class DDGGenerationJob(Job):
         inst.ddgs[self._addr] = result
 
     def __repr__(self) -> str:
-        return "Generating VSA_DDG for function at %#x" % self._addr
+        return f"Generating VSA_DDG for function at {self._addr:#x}"

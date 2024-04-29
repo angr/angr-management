@@ -130,10 +130,10 @@ def edit_field(ty, field, predefined_types=None) -> bool:
     elif isinstance(ty, sim_type.SimUnion):
         fields = ty.members
     else:
-        raise TypeError("Can't edit a field of a %s" % type(ty))
+        raise TypeError(f"Can't edit a field of a {type(ty)}")
 
     if type(fields) is not OrderedDict:
-        raise TypeError("Struct or union's fields are of type %s - that's bad" % type(fields))
+        raise TypeError(f"Struct or union's fields are of type {type(fields)} - that's bad")
     fields_list = list(fields.items())
 
     if isinstance(field, int):
@@ -146,7 +146,7 @@ def edit_field(ty, field, predefined_types=None) -> bool:
         except IndexError:
             raise KeyError(field) from None
     else:
-        raise TypeError("Field specifier is a %s - that's bad" % type(field))
+        raise TypeError(f"Field specifier is a {type(field)} - that's bad")
 
     name, subty = fields_list[fieldno]
     text = subty.c_repr(name=name)
@@ -157,7 +157,7 @@ def edit_field(ty, field, predefined_types=None) -> bool:
     name2, subty = dialog.result[0]
     if name2 is not None:
         if name != name2 and name2 in fields:
-            QMessageBox.warning(None, "Duplicate field name", "The name %s is already used" % name2)
+            QMessageBox.warning(None, "Duplicate field name", f"The name {name2} is already used")
         else:
             name = name2
     fields_list[fieldno] = (name, subty)
@@ -167,6 +167,6 @@ def edit_field(ty, field, predefined_types=None) -> bool:
     elif isinstance(ty, sim_type.SimUnion):
         ty.members = OrderedDict(fields_list)
     else:
-        raise TypeError("Can't edit a field of a %s" % type(ty))
+        raise TypeError(f"Can't edit a field of a {type(ty)}")
 
     return True

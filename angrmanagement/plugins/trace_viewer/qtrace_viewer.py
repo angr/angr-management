@@ -171,8 +171,8 @@ class QTraceViewer(QWidget):
         input_id = current_trace_stats.input_id
 
         inputSeed = self.multi_trace.am_obj.get_input_seed_for_id(input_id)
-        msgText = "%s" % inputSeed
-        msgDetails = "Input for [%s]" % current_trace_stats.id
+        msgText = f"{inputSeed}"
+        msgDetails = f"Input for [{current_trace_stats.id}]"
         msgbox = QMessageBox()
         msgbox.setWindowTitle("Seed Input")
         msgbox.setDetailedText(msgDetails)
@@ -246,7 +246,7 @@ class QTraceViewer(QWidget):
         for row, traceID in enumerate(trace_ids):
             inputID = self.multi_trace.am_obj.get_input_id_for_trace_id(traceID)
             if inputID is None:
-                self.workspace.log("No inputID found for trace %s" % traceID)
+                self.workspace.log(f"No inputID found for trace {traceID}")
             view.setItem(row, 0, QTableWidgetItem(traceID))
             view.setItem(row, 1, QTableWidgetItem(inputID))
 

@@ -173,7 +173,7 @@ class QInstruction(QCachedGraphicsItem):
         self._operands.clear()
 
         # address
-        self._addr = "%08x" % self.insn.addr
+        self._addr = f"{self.insn.addr:08x}"
         self._addr_item = QGraphicsSimpleTextItem(self)
         self._addr_item.setBrush(QBrush(self._config.disasm_view_node_address_color))
         self._addr_item.setFont(self._config.disasm_font)

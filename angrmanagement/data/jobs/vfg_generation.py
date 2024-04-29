@@ -16,4 +16,4 @@ class VFGGenerationJob(Job):
         inst.vfgs[self._addr] = result
 
     def __repr__(self) -> str:
-        return "Generating VFG for function at %#x" % self._addr
+        return f"Generating VFG for function at {self._addr:#x}"

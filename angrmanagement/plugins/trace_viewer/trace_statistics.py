@@ -45,7 +45,7 @@ class ObjectAndBase:
             return self.base_addr < other.base_addr
         elif isinstance(other, int):
             return self.base_addr < other
-        raise TypeError("Unsupported type %s" % type(other))
+        raise TypeError(f"Unsupported type {type(other)}")
 
 
 class TraceStatistics:

@@ -184,8 +184,8 @@ class DependsOn(QDialog):
                 QMessageBox(self).critical(
                     self,
                     "Invalid argument index",
-                    'The given function argument index "%s" is unsupported. Only integers are allowed.'
-                    % self._arg_box.text(),
+                    f'The given function argument index "{self._arg_box.text()}" is unsupported.',
+                    "Only integers are allowed.",
                     buttons=QMessageBox.Ok,
                 )
                 return

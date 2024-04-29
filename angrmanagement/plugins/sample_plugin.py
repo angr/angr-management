@@ -24,7 +24,7 @@ class SamplePlugin(BasePlugin):
         yield ("owo", [("uwu", lambda: None), ("o_O", lambda: None)])
 
     def step_callback(self, simgr: SimulationManager) -> None:
-        print("Active States: %s" % simgr)
+        print(f"Active States: {simgr}")
 
     def build_qblock_annotations(self, qblock: QBlock) -> Iterator[QInstructionAnnotation]:
         return [QPassthroughCount(qblock.addr, "entry")]
