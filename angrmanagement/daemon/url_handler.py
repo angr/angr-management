@@ -29,7 +29,7 @@ class UrlActionBase:
         action = action[0]
 
         if action not in _ACT2CLS:
-            raise KeyError("Unsupported action %s." % action)
+            raise KeyError(f"Unsupported action {action}.")
         return _ACT2CLS[action]._from_params(params)
 
     @staticmethod

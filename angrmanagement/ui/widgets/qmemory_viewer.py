@@ -74,7 +74,7 @@ class QMemoryView(QWidget):
                 y += Conf.symexec_font_height + LINE_MARGIN
             elif obj_type is AddressPiece:
                 # address
-                addr_str = "%08x" % obj.address
+                addr_str = f"{obj.address:08x}"
                 painter.drawText(x, y + Conf.symexec_font_ascent, addr_str)
                 x += Conf.symexec_font_width * len(addr_str)
                 x += 7
@@ -86,7 +86,7 @@ class QMemoryView(QWidget):
 
                 x += obj.width + 2
             else:
-                raise TypeError("paintEvent(): Unsupported object type %s." % obj_type)
+                raise TypeError(f"paintEvent(): Unsupported object type {obj_type}.")
 
     def _reload_objects(self) -> None:
         """

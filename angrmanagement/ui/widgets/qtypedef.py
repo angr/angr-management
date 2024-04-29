@@ -60,7 +60,7 @@ class QCTypeDef(QWidget):
                 else:
                     prefix = f"{type_size // self.type._arch.byte_width:08x}"
             else:
-                raise TypeError("I don't know why a %s renders with more than one line" % type(self.type.type))
+                raise TypeError(f"I don't know why a {type(self.type.type)} renders with more than one line")
 
             self.lines[i] = f"{prefix}  {line}"
 

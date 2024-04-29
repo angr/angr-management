@@ -63,7 +63,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
         # definition
         self._definition_str = ""
         atom = self.definition.atom if self.definition is not None else self.atom
-        addr_str = "unknown address" if self.addr is None else "%#x" % self.addr
+        addr_str = "unknown address" if self.addr is None else f"{self.addr:#x}"
         if isinstance(atom, Register):
             # convert it to a register name
             arch = self._instance.project.arch

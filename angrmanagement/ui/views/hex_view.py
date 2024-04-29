@@ -968,7 +968,7 @@ class HexGraphicsObject(QGraphicsObject):
             pt.setY(pt.y() + self.row_height - self.row_padding)
 
             # Paint address
-            addr_text = "%08x" % row_addr
+            addr_text = f"{row_addr:08x}"
             pt.setX(self.addr_offset)
             painter.setPen(Conf.disasm_view_node_address_color)
             painter.drawText(pt, addr_text)
@@ -986,7 +986,7 @@ class HexGraphicsObject(QGraphicsObject):
                         color = Conf.disasm_view_printable_byte_color
                     else:
                         color = Conf.disasm_view_unprintable_byte_color
-                    byte_text = "%02x" % val
+                    byte_text = f"{val:02x}"
                 else:
                     byte_text = val * 2 if isinstance(val, str) and len(val) == 1 else "??"
                     color = Conf.disasm_view_unknown_byte_color
@@ -1795,7 +1795,7 @@ class HexView(SynchronizedInstanceView):
             plural = "s" if bytes_selected != 1 else ""
             s = f"Address: [{minaddr:08x}, {maxaddr:08x}], {bytes_selected} byte{plural} selected"
         else:
-            s = "Address: %08x" % self.inner_widget.hex.cursor
+            s = f"Address: {self.inner_widget.hex.cursor:08x}"
         self._status_lbl.setText(s)
 
     def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -> None:

@@ -40,7 +40,7 @@ class QDecompilationOption(QTreeWidgetItem):
             self.setText(0, option.NAME)
             self.setToolTip(0, option.DESCRIPTION)
         else:
-            raise NotImplementedError("Unsupported option type %s." % self.type_)
+            raise NotImplementedError(f"Unsupported option type {self.type_}.")
 
         # should make a dropdown option
         if hasattr(self.option, "value_type") and self.option.value_type != bool and self.option.candidate_values:

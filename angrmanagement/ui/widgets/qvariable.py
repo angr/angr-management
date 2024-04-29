@@ -89,7 +89,7 @@ class QVariable(QCachedGraphicsItem):
         self._variable_ident_item.setVisible(self.disasm_view.show_variable_identifier)
 
         # variable offset
-        self._variable_offset = "%#x" % self.variable.offset
+        self._variable_offset = f"{self.variable.offset:#x}"
         self._variable_offset_item = QGraphicsSimpleTextItem(self._variable_offset, self)
         self._variable_offset_item.setFont(self._config.disasm_font)
         self._variable_offset_item.setBrush(self._config.disasm_view_variable_offset_color)

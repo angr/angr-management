@@ -206,7 +206,7 @@ class QOperand(QCachedGraphicsItem):
         # try to render it
         rendered = operand.render()[0]
         for t in branch_targets:
-            if rendered in ("%x" % t, "%#x" % t):
+            if rendered in (f"{t:x}", f"{t:#x}"):
                 return t
             if t == rendered:
                 return t
@@ -254,7 +254,7 @@ class QOperand(QCachedGraphicsItem):
                             txt = self.disasm.kb.labels[t]
                         if txt is None:
                             # use the hex text
-                            txt = "%#08x" % t
+                            txt = f"{t:#08x}"
                         targets.append(txt)
                     self._branch_targets_text = "[ " + ", ".join(targets) + " ]"
                 else:
@@ -290,7 +290,7 @@ class QOperand(QCachedGraphicsItem):
 
                     if variable is not None:
                         self.variable = variable
-                        self._variable_ident = "<%s>" % variable.ident
+                        self._variable_ident = f"<{variable.ident}>"
                         if offset is None:
                             offset = 0
 

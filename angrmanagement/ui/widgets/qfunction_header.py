@@ -84,7 +84,7 @@ class QFunctionHeader(QCachedGraphicsItem):
                 else:
                     self._arg_str_list.append(str(arg))
 
-            self._args_str = "Args: (%s)" % (", ".join(self._arg_str_list))
+            self._args_str = "Args: ({})".format(", ".join(self._arg_str_list))
         else:
             self._args_str = ""
 

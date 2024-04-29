@@ -55,7 +55,7 @@ class QStateBlock(QGraphicsItem):
             self._label_str = str(self.state.regs._ip)
         else:
             addr = self.state.regs._ip._model_concrete.value
-            self._label_str = "%#x" % addr
+            self._label_str = f"{addr:#x}"
         self._label_str = "State " + self._label_str
 
         self.addr = addr
@@ -77,7 +77,7 @@ class QStateBlock(QGraphicsItem):
                     self._function_str = f"{the_func.addr:#x}{offset:+x}"
                 else:
                     self._function_str = f"{the_func.name}{offset:+x}"
-        self._function_str = "Function: %s" % self._function_str
+        self._function_str = f"Function: {self._function_str}"
 
     def mousePressEvent(self, event) -> None:  # pylint: disable=no-self-use
         super().mousePressEvent(event)

@@ -99,7 +99,7 @@ class QSimulationManagers(QFrame):
                 return None  # deduplicate
 
         item = QTreeWidgetItem(qtreelist)
-        item.setText(0, "%#x" % addr)
+        item.setText(0, f"{addr:#x}")
         item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
         item.setData(0, Qt.CheckStateRole, Qt.Checked)
         return item

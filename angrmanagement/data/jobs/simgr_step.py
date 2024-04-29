@@ -31,9 +31,9 @@ class SimgrStepJob(Job):
 
     def __repr__(self) -> str:
         if self._until_branch:
-            return "Stepping %r until branch" % self._simgr
+            return f"Stepping {self._simgr!r} until branch"
         else:
-            return "Stepping %r" % self._simgr
+            return f"Stepping {self._simgr!r}"
 
     @classmethod
     def create(cls, simgr, **kwargs):

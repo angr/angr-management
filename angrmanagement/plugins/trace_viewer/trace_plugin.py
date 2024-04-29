@@ -205,7 +205,7 @@ class TraceViewer(BasePlugin):
             rend = ""
         else:
             cov = self.multi_trace.get_coverage(func)
-            rend = "%.2f%%" % cov
+            rend = f"{cov:.2f}%"
 
         return cov, rend
 

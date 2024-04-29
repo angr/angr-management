@@ -964,7 +964,7 @@ class Workspace:
         self.plugins.handle_project_initialization()
 
     def _handle_job_exception(self, job: Job, e: Exception) -> None:
-        self.log('Exception while running job "%s":' % job.name)
+        self.log(f'Exception while running job "{job.name}":')
         self.log(e)
         self.log("Type %debug to debug it")
 

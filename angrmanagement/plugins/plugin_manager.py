@@ -102,7 +102,7 @@ class PluginManager:
     def verify_plugin_class(self, plugin_cls: type[BasePlugin]):
         if type(plugin_cls) is not type or not issubclass(plugin_cls, BasePlugin):
             raise TypeError("Cannot load a plugin which is not a BasePlugin subclass")
-        if hasattr(plugin_cls, "_%s__i_hold_this_abstraction_token" % plugin_cls.__name__):
+        if hasattr(plugin_cls, f"_{plugin_cls.__name__}__i_hold_this_abstraction_token"):
             raise TypeError("Cannot load an abstract plugin")
         if plugin_cls.REQUIRE_WORKSPACE and self.workspace is None:
             raise RuntimeError("Cannot load plugin %s in headless mode.")
@@ -292,7 +292,7 @@ class PluginManager:
         self.workspace.log(f"Plugin {plugin.get_display_name()} errored during {func.__name__}")
         self.workspace.log(exc)
         if sensitive:
-            self.workspace.log("Deactivating %s for error during sensitive operation" % plugin.get_display_name())
+            self.workspace.log(f"Deactivating {plugin.get_display_name()} for error during sensitive operation")
             self.deactivate_plugin(plugin)
 
     def color_insn(self, addr: int, selected, disasm_view) -> QColor | None:

@@ -42,7 +42,7 @@ def app_path(pythonw=None, as_list: bool = False) -> str | list[str]:
             return [python_path, "-m", "angrmanagement"]
         else:
             if " " in python_path:
-                python_path = '"%s"' % python_path
+                python_path = f'"{python_path}"'
             app_path = python_path + " -m angrmanagement"
             return app_path
 

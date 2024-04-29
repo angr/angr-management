@@ -39,16 +39,16 @@ def get_label_text(addr: int, kb, function=None):
     if function is not None and addr == function.addr:
         s = []
         if function.name:
-            s.append("%s:" % function.name)
+            s.append(f"{function.name}:")
         else:
-            s.append("sub_%x:" % function.addr)
+            s.append(f"sub_{function.addr:x}:")
         if function.is_simprocedure:
             s.append("[SimProcedure]")
         if function.is_plt:
             s.append("[PLT]")
         return "\n".join(s)
     else:
-        return "loc_%#x:" % addr
+        return f"loc_{addr:#x}:"
 
 
 def get_block_objects(disasm, nodes, func_addr):
@@ -136,7 +136,7 @@ def address_to_text(addr: int, kb):
     if addr in kb.labels:
         return kb.labels[addr]
 
-    return "loc_%#x" % addr
+    return f"loc_{addr:#x}"
 
 
 def get_out_branches_for_insn(out_branch_dict, ins_addr):
@@ -224,7 +224,7 @@ def filter_string_for_display(s):
     for ch in s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t"):
         char = ord(ch)
         if not is_printable(char):
-            ch = "\\x%0.2x" % char
+            ch = f"\\x{char:0.2x}"
         output += ch
     return output
 

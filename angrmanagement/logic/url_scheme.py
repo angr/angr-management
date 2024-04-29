@@ -24,7 +24,7 @@ class AngrUrlScheme:
         elif sys.platform.startswith("linux"):
             self._register_url_scheme_linux()
         else:
-            raise NotImplementedError("We currently do not support registering angr URL scheme on %s." % sys.platform)
+            raise NotImplementedError(f"We currently do not support registering angr URL scheme on {sys.platform}.")
 
     def unregister_url_scheme(self):
         if sys.platform.startswith("win"):
@@ -32,7 +32,7 @@ class AngrUrlScheme:
         elif sys.platform.startswith("linux"):
             self._unregister_url_scheme_linux()
         else:
-            raise NotImplementedError("We currently do not support unregistering angr URL scheme on %s." % sys.platform)
+            raise NotImplementedError(f"We currently do not support unregistering angr URL scheme on {sys.platform}.")
 
     def is_url_scheme_registered(self):
         if sys.platform.startswith("win"):
@@ -132,7 +132,7 @@ Type=Application
         # register the scheme
         retcode = subprocess.call(cmd_0)
         if retcode != 0:
-            raise ValueError('Failed to setup the URL scheme. Command "%s" failed.' % " ".join(cmd_0))
+            raise ValueError('Failed to setup the URL scheme. Command "{}" failed.'.format(" ".join(cmd_0)))
 
     def _unregister_url_scheme_linux(self) -> None:
         angr_desktop_path = self._angr_desktop_path()

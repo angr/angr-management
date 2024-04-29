@@ -54,7 +54,7 @@ class QUnknownBlock(QCachedGraphicsItem):
 
     def _init_widgets(self) -> None:
         # Address
-        self._addr_text = "%08x" % self.addr
+        self._addr_text = f"{self.addr:08x}"
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
         self._addr_item.setBrush(Conf.disasm_view_node_address_color)
         self._addr_item.setFont(Conf.disasm_font)
@@ -64,7 +64,7 @@ class QUnknownBlock(QCachedGraphicsItem):
         if self.bytes:
             line = ""
             for i, b in enumerate(self.bytes):
-                line += "%02x " % b
+                line += f"{b:02x} "
                 if i > 0 and (i + 1) % 16 == 0:
                     o = QGraphicsSimpleTextItem(line, self)
                     o.setFont(Conf.disasm_font)

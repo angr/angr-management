@@ -45,7 +45,7 @@ class SingleInstance:
         else:
             basename = (
                 os.path.splitext(os.path.abspath(__file__))[0].replace("/", "-").replace(":", "").replace("\\", "-")
-                + "-%s" % flavor_id
+                + f"-{flavor_id}"
                 + ".lock"
             )
             self.lockfile = os.path.normpath(tempfile.gettempdir() + "/" + basename)
@@ -92,7 +92,7 @@ class SingleInstance:
             if logger:
                 logger.debug(e)
             else:
-                print("Unloggable error: %s" % e)
+                print(f"Unloggable error: {e}")
             sys.exit(-1)
 
 
@@ -124,7 +124,7 @@ class testSingleton(unittest.TestCase):
         p.start()
         p.join()
         # the called function should succeed
-        assert p.exitcode == 0, "%s != 0" % p.exitcode
+        assert p.exitcode == 0, f"{p.exitcode} != 0"
 
     def test_3(self) -> None:
         me = SingleInstance(flavor_id="test-3")  # noqa -- me should still kept
@@ -139,7 +139,7 @@ class testSingleton(unittest.TestCase):
         p.join()
         # the called function should fail because we already have another
         # instance running
-        assert p.exitcode != 0, "%s != 0 (2nd execution)" % p.exitcode
+        assert p.exitcode != 0, f"{p.exitcode} != 0 (2nd execution)"
         # note, we return -1 but this translates to 255 meanwhile we'll
         # consider that anything different from 0 is good
         p = Process(
@@ -153,7 +153,7 @@ class testSingleton(unittest.TestCase):
         p.join()
         # the called function should fail because we already have another
         # instance running
-        assert p.exitcode != 0, "%s != 0 (3rd execution)" % p.exitcode
+        assert p.exitcode != 0, f"{p.exitcode} != 0 (3rd execution)"
 
     def test_4(self) -> None:
         lockfile = "/tmp/foo.lock"

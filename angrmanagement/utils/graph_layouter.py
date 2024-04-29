@@ -183,7 +183,7 @@ class EdgeRouter:
         elif sort == "horizontal":
             d = self.horizontal_edges
         else:
-            raise ValueError('_assign_edge_to(): Unsupported edge sort "%s".' % sort)
+            raise ValueError(f'_assign_edge_to(): Unsupported edge sort "{sort}".')
 
         if sort == "vertical":
             if index is None:

@@ -493,7 +493,7 @@ class QIROpTextObj(QIROpObj):
 
     def create_subobjs(self, obj: Any) -> None:
         if isinstance(obj, int):
-            self.add_text("%#x" % obj)
+            self.add_text(f"{obj:#x}")
         else:
             self.add_text(str(obj))
 
@@ -565,7 +565,7 @@ class VexIRRegWrapper:
 
     def __init__(self, offset: RegisterOffset, reg_name: str | None = None) -> None:
         self.offset = offset
-        self.reg_name = reg_name or ("offset=%s" % self.offset)
+        self.reg_name = reg_name or (f"offset={self.offset}")
 
     def __str__(self) -> str:
         return self.reg_name
@@ -764,7 +764,7 @@ class QBlockCode(QCachedGraphicsItem):
     ) -> None:
         super().__init__(parent=parent)
         self.addr = addr
-        self._addr_str = "%08x" % self.addr
+        self._addr_str = f"{self.addr:08x}"
         self._addr_item: QGraphicsSimpleTextItem = None
         self.obj = obj
         self._width = 0
