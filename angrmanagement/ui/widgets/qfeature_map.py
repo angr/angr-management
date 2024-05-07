@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Mapping
 from threading import Lock
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 import cle
 from angr.block import Block

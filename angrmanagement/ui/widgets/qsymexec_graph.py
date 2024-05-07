@@ -138,7 +138,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
             pen.setWidth(1.5)
             painter.setPen(pen)
 
-            for from_, to_ in zip(edge_coords, edge_coords[1:]):
+            for from_, to_ in zip(edge_coords, edge_coords[1:], strict=False):
                 start_point = QPointF(*from_)
                 end_point = QPointF(*to_)
                 # optimization: don't draw edges that are outside of the current scope

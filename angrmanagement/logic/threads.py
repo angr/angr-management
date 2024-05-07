@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import contextlib
 import threading
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from PySide6.QtCore import QCoreApplication, QEvent
 

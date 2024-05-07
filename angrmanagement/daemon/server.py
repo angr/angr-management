@@ -5,7 +5,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 import rpyc
 from rpyc.utils.server import ThreadedServer

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 import tomlkit
 from tomlkit.items import AoT, Integer, String, Table
 
@@ -48,7 +46,7 @@ class PluginDescription:
             raise TypeError('"shortname" cannot be empty')
 
         desc.entrypoints = data.get("entrypoints", "")
-        if not isinstance(desc.entrypoints, List) or not all(
+        if not isinstance(desc.entrypoints, list) or not all(
             isinstance(entrypoint, String) for entrypoint in desc.entrypoints
         ):
             raise TypeError('"entrypoints" must be a List of String instances')

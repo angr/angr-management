@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable
+from collections.abc import Callable, Generator, Iterable
+from typing import TYPE_CHECKING, Any
 
 _l = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import Sequence
 
 from .object_container import ObjectContainer
 

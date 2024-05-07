@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from threading import Thread
-from typing import Any, Callable
+from typing import Any
 
 
 def start_daemon_thread(target: Callable[..., Any], name: str, args: tuple[Any] = None) -> Thread:

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import functools
 from collections import defaultdict
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
 from bidict import bidict

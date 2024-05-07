@@ -4,7 +4,8 @@ import logging
 import os
 import time
 import traceback
-from typing import TYPE_CHECKING, Callable, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort

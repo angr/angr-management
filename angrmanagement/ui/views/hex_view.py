@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import functools
 import logging
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Union
 
 import angr
 import PySide6
@@ -48,7 +49,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-RowCol = Tuple[int, int]
+RowCol = tuple[int, int]
 HexByteValue = Union[int, str]
 HexAddress = int
 HexDataBuffer = Union[bytes, bytearray]

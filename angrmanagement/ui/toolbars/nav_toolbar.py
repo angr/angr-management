@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QAction, QIcon, QMouseEvent
