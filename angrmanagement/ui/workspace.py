@@ -961,7 +961,9 @@ class Workspace:
         if self.main_instance.project.am_none:
             return
 
-        gui_thread_schedule_async(self.run_analysis)
+        # trigger more analyses if we don't have at least one CFG available
+        if not self.main_instance.kb.cfgs.cfgs:
+            gui_thread_schedule_async(self.run_analysis)
 
         self.plugins.handle_project_initialization()
 
