@@ -5,13 +5,16 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
 from angrmanagement.logic.singleton import SingleInstance, SingleInstanceException
 from angrmanagement.utils.env import app_path
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 DEFAULT_PORT = 64000
 

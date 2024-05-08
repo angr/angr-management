@@ -102,7 +102,7 @@ class DependencyView(InstanceView):
             hook = self.instance.project.hooked_by(node.codeloc.block_addr)
             if isinstance(
                 hook,
-                (SIM_PROCEDURES["stubs"]["UnresolvableJumpTarget"], SIM_PROCEDURES["stubs"]["UnresolvableCallTarget"]),
+                SIM_PROCEDURES["stubs"]["UnresolvableJumpTarget"] | SIM_PROCEDURES["stubs"]["UnresolvableCallTarget"],
             ):
                 return None
 

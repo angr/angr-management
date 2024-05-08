@@ -123,7 +123,7 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(under_cursor, CConstant):
             self._selected_node = under_cursor
             mnu.addActions(self.constant_actions)
-        if isinstance(under_cursor, (CBinaryOp, CUnaryOp)):
+        if isinstance(under_cursor, CBinaryOp | CUnaryOp):
             # operator in selection
             self._selected_node = under_cursor
             mnu.addActions(self.operator_actions)
@@ -135,7 +135,7 @@ class QCCodeEdit(api.CodeEdit):
             # function call in selection
             self._selected_node = under_cursor
             mnu.addActions(self.call_actions)
-        if isinstance(under_cursor, (CVariable, CIndexedVariable, CVariableField, CStructField)):
+        if isinstance(under_cursor, CVariable | CIndexedVariable | CVariableField | CStructField):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
@@ -296,7 +296,7 @@ class QCCodeEdit(api.CodeEdit):
     # pylint: disable=unused-argument
     def rename_node(self, *args, node=None) -> None:  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField, SimType)):
+        if not isinstance(n, CVariable | CFunction | CFunctionCall | CStructField | SimType):
             return
         if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
             # unsupported right now..
@@ -306,11 +306,11 @@ class QCCodeEdit(api.CodeEdit):
 
     def xref_node(self, *args, node=None) -> None:  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
+        if not isinstance(n, CVariable | CFunction | CFunctionCall):
             return
 
         disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
-        if isinstance(n, (CFunction, CFunctionCall)):
+        if isinstance(n, CFunction | CFunctionCall):
             addr = n.addr if isinstance(n, CFunction) else n.callee_func.addr
             dialog = XRefDialog(
                 addr=addr,
@@ -335,7 +335,7 @@ class QCCodeEdit(api.CodeEdit):
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
-        if not isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
+        if not isinstance(node, CVariable | CFunction | CFunctionCall | CStructField):
             return
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
@@ -521,7 +521,7 @@ class QCCodeEdit(api.CodeEdit):
 
         node = self._selected_node
         # figure out where we are
-        if not isinstance(node, (CVariable, CIndexedVariable, CVariableField, CStructField)):
+        if not isinstance(node, CVariable | CIndexedVariable | CVariableField | CStructField):
             return
 
         doc: QCodeDocument = self.document()

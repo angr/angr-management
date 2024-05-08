@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize
@@ -11,6 +10,8 @@ from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.ui.icons import icon
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     import angr
     import PySide6.QtGui
 

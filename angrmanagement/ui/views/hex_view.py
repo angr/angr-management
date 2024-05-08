@@ -4,7 +4,7 @@ import functools
 import logging
 from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import angr
 import PySide6
@@ -50,9 +50,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 RowCol = tuple[int, int]
-HexByteValue = Union[int, str]
+HexByteValue = int | str
 HexAddress = int
-HexDataBuffer = Union[bytes, bytearray]
+HexDataBuffer = bytes | bytearray
 HexDataProvider = Callable[[HexAddress], HexByteValue]
 
 

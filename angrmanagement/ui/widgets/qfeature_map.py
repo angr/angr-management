@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Mapping
 from threading import Lock
 from typing import TYPE_CHECKING
 
@@ -28,6 +27,8 @@ from angrmanagement.data.tagged_interval_map import TaggedIntervalMap
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from angr.analyses.cfg.cfb import MemoryRegion
 
     from angrmanagement.data.instance import Instance
@@ -314,7 +315,7 @@ class FeatureMapItem(QGraphicsItem):
 
     @staticmethod
     def _should_show_region_to_scale(mr: MemoryRegion) -> bool:
-        return not isinstance(mr.object, (cle.ExternObject, cle.TLSObject, cle.KernelObject))
+        return not isinstance(mr.object, cle.ExternObject | cle.TLSObject | cle.KernelObject)
 
     def _get_region_at_addr(self, addr: int) -> MemoryRegion | None:
         start_idx = max(0, self._addr_to_region.bisect_left(addr) - 1)

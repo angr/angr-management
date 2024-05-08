@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import contextlib
 import threading
-from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from PySide6.QtCore import QCoreApplication, QEvent
 
 from . import GlobalInfo
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 T = TypeVar("T")
 

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.ui.views import BaseView
     from angrmanagement.ui.workspace import Workspace
 

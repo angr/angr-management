@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -9,6 +8,8 @@ from angrmanagement.config import Conf
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 

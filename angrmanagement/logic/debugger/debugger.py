@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from angrmanagement.data.object_container import EventSentinel, ObjectContainer
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 

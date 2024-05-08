@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from sortedcontainers import SortedDict
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class TaggedIntervalMap:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
@@ -35,6 +34,8 @@ from angrmanagement.data.analysis_options import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from angrmanagement.ui.workspace import Workspace
 
 

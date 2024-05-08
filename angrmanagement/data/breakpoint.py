@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from .object_container import ObjectContainer
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class BreakpointType(Enum):

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
@@ -12,6 +11,8 @@ from angrmanagement.ui.dialogs import BreakpointDialog
 from .view import InstanceView
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     import PySide6
 
     from angrmanagement.data.instance import Instance

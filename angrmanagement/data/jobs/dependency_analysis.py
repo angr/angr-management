@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Generator
 from typing import TYPE_CHECKING
 
 from angr import KnowledgeBase, Project
@@ -29,6 +28,8 @@ except ImportError:
     argument_resolver = None
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from angr.analyses.reaching_definitions import ReachingDefinitionsAnalysis
     from angr.knowledge_plugins.key_definitions.atoms import Atom
 

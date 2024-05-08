@@ -147,7 +147,7 @@ class QCodeDocument(QTextDocument):
             if starts is None:
                 return []
 
-        elif isinstance(node, (CClosingObject, CFunction, SimType)):
+        elif isinstance(node, CClosingObject | CFunction | SimType):
             starts = self._codegen.map_ast_to_pos.get(node, None)
 
             if starts is None:

@@ -154,7 +154,7 @@ class UrlActionBinaryAware(UrlActionBase):
         kwargs = {}
         for k, v in params.items():
             if k not in {"target_id", "action"}:
-                if isinstance(v, (list, tuple)):
+                if isinstance(v, list | tuple):
                     kwargs[k] = v[0]
                 else:
                     kwargs[k] = v

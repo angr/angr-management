@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import networkx
 from angr.utils.graph import GraphUtils
 
 from .edge import Edge, EdgeSort
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class EdgeRouter:

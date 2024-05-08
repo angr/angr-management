@@ -111,7 +111,7 @@ def _format_node(obj):
         # the color here. But if you do, follow the format of the
         # rest.
         return None
-    elif isinstance(obj, (CClosingObject, CStatement, CConstant, CExpression)):
+    elif isinstance(obj, CClosingObject | CStatement | CConstant | CExpression):
         return None
     else:
         return None

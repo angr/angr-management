@@ -4,7 +4,6 @@ import contextlib
 import logging
 import os
 import re
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 import tomlkit
@@ -19,6 +18,7 @@ from .config_entry import ConfigurationEntry as CE
 
 if TYPE_CHECKING:
     import enum
+    from collections.abc import Callable
 
 _l = logging.getLogger(__name__)
 color_re = re.compile("[0-9a-fA-F]+")

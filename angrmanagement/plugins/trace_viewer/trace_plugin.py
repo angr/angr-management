@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -28,10 +28,10 @@ class TraceViewer(BasePlugin):
         super().__init__(workspace)
 
         self.workspace.main_instance.register_container(
-            "trace", lambda: None, Optional[TraceStatistics], "The current trace"
+            "trace", lambda: None, TraceStatistics | None, "The current trace"
         )
         self.workspace.main_instance.register_container(
-            "multi_trace", lambda: None, Optional[MultiTrace], "The current set of multiple traces"
+            "multi_trace", lambda: None, MultiTrace | None, "The current set of multiple traces"
         )
 
         # Register event callbacks
