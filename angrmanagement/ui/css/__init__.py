@@ -60,7 +60,7 @@ def refresh_theme() -> None:
 
     # determine the default application style according to the OS
     if sys.platform == "win32" and Conf.theme_name == "Light":
-        app_style = None
+        app_style = "windowsvista"
     else:
         app_style = "Fusion"
 
