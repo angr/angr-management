@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QAction, QIcon, QMouseEvent
@@ -12,6 +12,8 @@ from angrmanagement.config import IMG_LOCATION
 from .toolbar import Toolbar
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.logic.disassembly import JumpHistory
 
 

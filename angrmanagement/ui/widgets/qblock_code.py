@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 import ailment
 
@@ -20,6 +20,8 @@ from angrmanagement.utils import string_at_addr
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from archinfo import RegisterOffset, TmpVar
 
     from angrmanagement.data.instance import Instance

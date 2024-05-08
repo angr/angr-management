@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator, List
+from typing import TYPE_CHECKING
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation, QPassthroughCount
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from angr.sim_manager import SimulationManager
 
     from angrmanagement.ui.widgets.qblock import QBlock
@@ -16,7 +18,7 @@ class SamplePlugin(BasePlugin):
     def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
-        workspace.main_instance.register_container("bookmarks", list, List[int], "Bookmarked addresses")
+        workspace.main_instance.register_container("bookmarks", list, list[int], "Bookmarked addresses")
 
     MENU_BUTTONS = ("Add Bookmark",)
 

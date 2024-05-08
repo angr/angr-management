@@ -4,7 +4,7 @@ import logging
 import os
 import time
 import traceback
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
@@ -74,6 +74,8 @@ from .views import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.main_window import MainWindow
 
@@ -948,7 +950,7 @@ class Workspace:
         )
 
     def show_function_info(self, function: str | int | Function) -> None:
-        if isinstance(function, (str, int)):
+        if isinstance(function, str | int):
             function = self.main_instance.project.kb.functions[function]
         FunctionDialog(function).exec_()
 

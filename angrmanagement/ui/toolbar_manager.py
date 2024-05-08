@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDockWidget
@@ -8,6 +8,8 @@ from PySide6.QtWidgets import QDockWidget
 from angrmanagement.ui.toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from angrmanagement.ui.main_window import MainWindow
     from angrmanagement.ui.toolbars.toolbar import Toolbar
 

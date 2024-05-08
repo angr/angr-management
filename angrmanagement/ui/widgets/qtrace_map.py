@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPen, QPolygonF
@@ -20,6 +20,8 @@ from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from angrmanagement.data.instance import Instance
 
 

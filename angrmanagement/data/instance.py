@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 from queue import Queue
-from typing import TYPE_CHECKING, Callable, List, Optional, Type
+from typing import TYPE_CHECKING
 
 import angr
 from angr.analyses.disassembly import Instruction
@@ -24,6 +24,8 @@ from .log import LogRecord, initialize
 from .object_container import ObjectContainer
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.data.jobs.job import Job
 
     from .jobs import VariableRecoveryJob
@@ -69,23 +71,23 @@ class Instance:
         # where this binary is now - if it's loaded from a URL, then binary_path will be its temporary location on the
         # local machine
         self.binary_path = None
-        self.register_container("project", lambda: None, Optional[angr.Project], "The current angr project")
-        self.register_container("simgrs", list, List[angr.SimulationManager], "Global simulation managers list")
-        self.register_container("states", list, List[angr.SimState], "Global states list")
+        self.register_container("project", lambda: None, angr.Project | None, "The current angr project")
+        self.register_container("simgrs", list, list[angr.SimulationManager], "Global simulation managers list")
+        self.register_container("states", list, list[angr.SimState], "Global states list")
         self.register_container("patches", lambda: None, None, "Global patches update notifier")  # dummy
-        self.register_container("cfg", lambda: None, Optional[angr.knowledge_plugins.cfg.CFGModel], "The current CFG")
-        self.register_container("cfb", lambda: None, Optional[angr.analyses.cfg.CFBlanket], "The current CFBlanket")
-        self.register_container("interactions", list, List[SavedInteraction], "Saved program interactions")
+        self.register_container("cfg", lambda: None, angr.knowledge_plugins.cfg.CFGModel | None, "The current CFG")
+        self.register_container("cfb", lambda: None, angr.analyses.cfg.CFBlanket | None, "The current CFBlanket")
+        self.register_container("interactions", list, list[SavedInteraction], "Saved program interactions")
         # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
         self.register_container(
             "interaction_protocols",
             lambda: [PlainTextProtocol, BackslashTextProtocol],
-            List[Type[ProtocolInteractor]],
+            list[type[ProtocolInteractor]],
             "Available interaction protocols",
         )
-        self.register_container("log", list, List[LogRecord], "Saved log messages", logging_permitted=False)
-        self.register_container("current_trace", lambda: None, Type[Trace], "Currently selected trace")
-        self.register_container("traces", list, List[Trace], "Global traces list")
+        self.register_container("log", list, list[LogRecord], "Saved log messages", logging_permitted=False)
+        self.register_container("current_trace", lambda: None, type[Trace], "Currently selected trace")
+        self.register_container("traces", list, list[Trace], "Global traces list")
 
         self.register_container("active_view_state", lambda: None, "ViewState", "Currently focused view state")
 

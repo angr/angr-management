@@ -3,9 +3,11 @@ from __future__ import annotations
 import multiprocessing
 import platform
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     import angr
 
     from angrmanagement.data.instance import Instance

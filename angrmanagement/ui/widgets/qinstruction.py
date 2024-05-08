@@ -275,7 +275,7 @@ class QInstruction(QCachedGraphicsItem):
         x += self._mnemonic_item.boundingRect().width() + self.GRAPH_MNEMONIC_SPACING
 
         # operands and commas
-        for operand, comma in zip(self._operands, self._commas):
+        for operand, comma in zip(self._operands, self._commas, strict=False):
             operand.setPos(x, y)
             x += operand.boundingRect().width()
             comma.setPos(x, y)

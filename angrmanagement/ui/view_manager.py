@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from collections import defaultdict
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
 from bidict import bidict
@@ -11,6 +11,8 @@ from PySide6.QtWidgets import QSizePolicy
 from angrmanagement.ui.views.view import InstanceView
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from angrmanagement.ui.workspace import Workspace
 
     from .views.view import BaseView

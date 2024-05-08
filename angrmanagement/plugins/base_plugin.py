@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable
+from typing import TYPE_CHECKING, Any
 
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable
+
     from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass
     from angr.sim_manager import SimulationManager
     from PySide6.QtGui import QColor, QIcon, QPainter
