@@ -131,7 +131,7 @@ class CodeView(FunctionView):
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
-        def decomp_ready(*args, **kwargs) -> None:
+        def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
             available = self.instance.kb.structured_code.available_flavors(self._function.addr)
             self._update_available_views(available)
@@ -145,7 +145,7 @@ class CodeView(FunctionView):
                 else:
                     self.jump_history.record_address(self._function.am_obj.addr)
 
-        def decomp(*args, **kwargs) -> None:
+        def decomp(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             job = DecompileFunctionJob(
                 self._function.am_obj,
                 cfg=self.instance.cfg,
@@ -187,8 +187,8 @@ class CodeView(FunctionView):
     #
 
     def _on_new_addr(
-        self, already_moved: bool = False, focus: bool = False, **kwargs
-    ) -> None:  # pylint: disable=unused-argument
+        self, already_moved: bool = False, focus: bool = False, **kwargs  # pylint:disable=unused-argument
+    ) -> None:
         if already_moved:
             return
 

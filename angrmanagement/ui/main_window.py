@@ -959,7 +959,7 @@ class MainWindow(QMainWindow):
         job._on_finish = partial(self._on_load_database_finished, job)
         self.workspace.main_instance.add_job(job)
 
-    def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:
+    def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         proj = job.project
 
         if proj is None:

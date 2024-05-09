@@ -193,7 +193,7 @@ class Workspace:
             # ask the current view to display this function
             current_view.function = func
 
-    def on_function_tagged(self, *args, **kwargs) -> None:
+    def on_function_tagged(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         # reload disassembly view
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             view = self.view_manager.first_view_in_category("disassembly")
@@ -286,14 +286,14 @@ class Workspace:
             if view is not None:
                 view.clear()
 
-    def _on_flirt_signature_recognized(self, *args, **kwargs) -> None:
+    def _on_flirt_signature_recognized(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         self.main_instance.add_job(
             PrototypeFindingJob(
                 on_finish=self._on_prototype_found,
             )
         )
 
-    def _on_prototype_found(self, *args, **kwargs) -> None:
+    def _on_prototype_found(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         if self.main_instance._analysis_configuration["code_tagging"].enabled:
             self.main_instance.add_job(
                 CodeTaggingJob(
@@ -685,7 +685,7 @@ class Workspace:
         _l.info("Opening trace %s", path)
         trace = BintraceTrace.load_trace(path)
 
-        def on_complete(*args, **kwargs) -> None:
+        def on_complete(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             if not self.main_instance.project.am_none:
                 self.main_instance.traces.append(trace)
                 self.main_instance.traces.am_event(trace_added=trace)
