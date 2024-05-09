@@ -959,7 +959,7 @@ class MainWindow(QMainWindow):
         job._on_finish = partial(self._on_load_database_finished, job)
         self.workspace.main_instance.add_job(job)
 
-    def _on_load_database_finished(self, job: LoadAngrDBJob) -> None:
+    def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:
         proj = job.project
 
         if proj is None:
@@ -984,7 +984,7 @@ class MainWindow(QMainWindow):
 
         # trigger callbacks
         self.workspace.reload()
-        self.workspace.main_instance.on_cfg_generated()
+        self.workspace.on_cfg_generated(self.workspace.main_instance, (cfg, cfb))
         self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
     def _save_database(self, file_path) -> bool:

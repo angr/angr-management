@@ -131,7 +131,7 @@ class CodeView(FunctionView):
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
-        def decomp_ready() -> None:
+        def decomp_ready(*args, **kwargs) -> None:
             # this code is _partially_ duplicated from _on_new_function. be careful!
             available = self.instance.kb.structured_code.available_flavors(self._function.addr)
             self._update_available_views(available)
@@ -145,7 +145,7 @@ class CodeView(FunctionView):
                 else:
                     self.jump_history.record_address(self._function.am_obj.addr)
 
-        def decomp() -> None:
+        def decomp(*args, **kwargs) -> None:
             job = DecompileFunctionJob(
                 self._function.am_obj,
                 cfg=self.instance.cfg,

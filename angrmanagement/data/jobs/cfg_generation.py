@@ -61,15 +61,10 @@ class CFGGenerationJob(Job):
         # Build the real one
         cfb = inst.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
 
-        return cfg, cfb
+        return cfg.model, cfb
 
     def finish(self, inst, result) -> None:
         try:
-            cfg, cfb = result
-            inst.cfb = cfb
-            inst.cfg = cfg.model
-            inst.cfb.am_event()
-            inst.cfg.am_event()
             super().finish(inst, result)
         except Exception:  # pylint:disable=broad-exception-caught
             _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)

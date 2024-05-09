@@ -193,7 +193,7 @@ class Workspace:
             # ask the current view to display this function
             current_view.function = func
 
-    def on_function_tagged(self) -> None:
+    def on_function_tagged(self, *args, **kwargs) -> None:
         # reload disassembly view
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             view = self.view_manager.first_view_in_category("disassembly")
@@ -248,7 +248,13 @@ class Workspace:
             if cfg_job not in self.main_instance.jobs:
                 break
 
-    def on_cfg_generated(self) -> None:
+    def on_cfg_generated(self, instance, cfg_result) -> None:  # pylint:disable=unused-argument
+        cfg, cfb = cfg_result
+        self.main_instance.cfb = cfb
+        self.main_instance.cfg = cfg
+        self.main_instance.cfb.am_event()
+        self.main_instance.cfg.am_event()
+
         if self.main_instance._analysis_configuration["flirt"].enabled:
             self.main_instance.add_job(
                 FlirtSignatureRecognitionJob(
@@ -256,7 +262,7 @@ class Workspace:
                 )
             )
 
-        if self.main_instance.cfg is not None:
+        if not self.main_instance.cfg.am_none:
             if not self._first_cfg_generation_callback_completed:
                 self._first_cfg_generation_callback_completed = True
                 the_func = self.main_instance.kb.functions.function(name="main")
@@ -280,14 +286,14 @@ class Workspace:
             if view is not None:
                 view.clear()
 
-    def _on_flirt_signature_recognized(self) -> None:
+    def _on_flirt_signature_recognized(self, *args, **kwargs) -> None:
         self.main_instance.add_job(
             PrototypeFindingJob(
                 on_finish=self._on_prototype_found,
             )
         )
 
-    def _on_prototype_found(self) -> None:
+    def _on_prototype_found(self, *args, **kwargs) -> None:
         if self.main_instance._analysis_configuration["code_tagging"].enabled:
             self.main_instance.add_job(
                 CodeTaggingJob(
@@ -679,7 +685,7 @@ class Workspace:
         _l.info("Opening trace %s", path)
         trace = BintraceTrace.load_trace(path)
 
-        def on_complete() -> None:
+        def on_complete(*args, **kwargs) -> None:
             if not self.main_instance.project.am_none:
                 self.main_instance.traces.append(trace)
                 self.main_instance.traces.am_event(trace_added=trace)
