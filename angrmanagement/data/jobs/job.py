@@ -81,7 +81,7 @@ class Job:
 
         gui_thread_schedule_async(self._finish_progress)
         if self._on_finish:
-            gui_thread_schedule_async(self._on_finish)
+            gui_thread_schedule_async(self._on_finish, (inst, result))
 
     def keyboard_interrupt(self) -> None:
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
