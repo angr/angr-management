@@ -56,6 +56,10 @@ class FunctionDiff:
         self._insn_mnem_check = 3
 
     @property
+    def differs(self):
+        return bool(self.rev_change_set or self.rev_add_set or self.rev_del_set)
+
+    @property
     def prefer_symbols(self):
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
 

@@ -109,6 +109,7 @@ class PreciseDiffPlugin(BasePlugin):
         rev_funcs = self.diff_instance.kb.functions
         rev_proj = self.diff_instance.project
 
+        hash_diff_pairs = []
         for func in base_funcs.values():
             if func.is_plt or func.is_syscall:
                 continue
@@ -123,7 +124,35 @@ class PreciseDiffPlugin(BasePlugin):
             rev_f_hash = hashlib.md5(rev_proj.loader.memory.load(rev_func.addr, rev_func.size)).hexdigest()
 
             if base_f_hash != rev_f_hash:
-                self._differing_funcs.add(func)
+                hash_diff_pairs.append((func, rev_func))
+
+        for base_func, rev_func in hash_diff_pairs:
+            if (base_func.size != rev_func.size) or self._funcs_differ(base_func, rev_func):
+                self._differing_funcs.add(base_func)
+
+    def _funcs_differ(self, base_func, rev_func) -> bool:
+        """
+        We need to grab the disassembly view for each function (which may require focusing) and then compare them
+        in the diffing algorithm that is more intensive than just comparing hashes.
+        """
+        base_disass = self.workspace.view_manager.first_view_in_category("disassembly")
+        rev_disass = self.current_revised_view
+        base_disass.function = base_func
+        rev_disass.function = rev_func
+
+        self.diff_algo = self.diff_algo_class(
+            base_func,
+            rev_func,
+            disas_base=base_disass.disasm,
+            disas_rev=rev_disass.disasm,
+            view_base=base_disass,
+            view_rev=rev_disass,
+            resolve_strings=self.resolve_strings,
+            prefer_symbols=self.prefer_symbols,
+            resolve_insn_addrs=self.resolve_insns,
+        )
+
+        return self.diff_algo.differs
 
     def _color_map(self, diff_value):
         diff_map = {
