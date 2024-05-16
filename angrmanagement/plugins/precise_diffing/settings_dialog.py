@@ -115,10 +115,10 @@ class SettingsDialog(QDialog):
             """
         )
         self._prefer_insns.setChecked(self.diff_plugin.resolve_insns)
-        self._ignore_globals = QCheckBox("Ignore Globals")
+        self._ignore_globals = QCheckBox("Ignore Unnamed Globals")
         self._ignore_globals.setToolTip(
             """
-            When enabled, ignores all global values when showing psuedocode diffs.
+            When enabled, ignores all unnamed global values when showing psuedocode diffs.
             """
         )
         self._ignore_globals.setChecked(self.diff_plugin.ignore_globals)
