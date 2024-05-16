@@ -228,14 +228,8 @@ class PreciseDiffPlugin(BasePlugin):
                 color = self.decomp_del_color
                 view = og_code
 
-            # did_change = (prev_line.startswith("-") and line.startswith("+")) or (prev_line.startswith("+") and line.startswith("-"))
-            # if new_idx > 0 and old_idx > 0 and did_change:
-            #     color = self.decomp_chg_color
-
             if view is not None and idx > -1:
                 self.color_lines(view, idx, len(real_line), color)
-
-        # import ipdb; ipdb.set_trace()
 
     @staticmethod
     def color_lines(view: CodeView, start: int, length: int, color: QColor):
