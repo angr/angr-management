@@ -210,7 +210,6 @@ class PreciseDiffPlugin(BasePlugin):
         diff_lines = list(difflib.ndiff(base_lines, rev_lines))
         # diff_lines = list(difflib.unified_diff(base_lines, rev_lines, lineterm=""))
 
-        prev_line = ""
         new_idx = 0
         old_idx = 0
         for line in diff_lines:
@@ -224,7 +223,7 @@ class PreciseDiffPlugin(BasePlugin):
                 color = self.decomp_add_color
                 view = new_code
             elif line.startswith("-"):
-                idx = base_func.find(real_line, new_idx)
+                idx = base_func.find(real_line, old_idx)
                 old_idx = idx + len(real_line)
                 color = self.decomp_del_color
                 view = og_code
@@ -235,7 +234,6 @@ class PreciseDiffPlugin(BasePlugin):
 
             if view is not None and idx > -1:
                 self.color_lines(view, idx, len(real_line), color)
-            prev_line = line
 
         # import ipdb; ipdb.set_trace()
 
