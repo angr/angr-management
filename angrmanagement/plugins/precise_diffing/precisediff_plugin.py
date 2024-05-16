@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import re
 import difflib
 import hashlib
 import logging
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -203,8 +203,8 @@ class PreciseDiffPlugin(BasePlugin):
             base_func = og_code.codegen.text
             rev_func = new_code.codegen.text
             if self.ignore_globals:
-                base_func = re.sub(r"g_[a-fA-F0-9]+", lambda m: '_'*len(m.group(0)), base_func)
-                rev_func = re.sub(r"g_[a-fA-F0-9]+", lambda m: '_'*len(m.group(0)), rev_func)
+                base_func = re.sub(r"g_[a-fA-F0-9]+", lambda m: "_" * len(m.group(0)), base_func)
+                rev_func = re.sub(r"g_[a-fA-F0-9]+", lambda m: "_" * len(m.group(0)), rev_func)
         except (AttributeError, ValueError):
             return
 
