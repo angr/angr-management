@@ -3,6 +3,7 @@ from __future__ import annotations
 import difflib
 import hashlib
 import logging
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -74,9 +75,16 @@ class PreciseDiffPlugin(BasePlugin):
                 self.syncronize_with_original_disassembly_view()
 
         elif idx == self.LOAD_BINARY_CMD_EVT:
-            filepath, _ = QFileDialog.getOpenFileName(caption="Load Recompiled Object")
+            params = {}
+            # if a project is loaded, we use the base directory of the project
+            if (
+                not self.workspace.main_instance.project.am_none
+                and self.workspace.main_instance.project.loader.main_object is not None
+                and isinstance(self.workspace.main_instance.project.loader.main_object.binary, str)
+            ):
+                params["dir"] = os.path.dirname(self.workspace.main_instance.project.loader.main_object.binary)
+            filepath, _ = QFileDialog.getOpenFileName(caption="Load Recompiled Object", **params)
             if not filepath:
-                logger.warning("Binary selection cancelled.")
                 return
 
             self.load_revised_binary_from_file(Path(filepath))
