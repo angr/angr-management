@@ -139,7 +139,9 @@ class PreciseDiffPlugin(BasePlugin):
         job = CFGGenerationJob(on_finish=self._generate_binary_cfg_done)
         self.diff_instance.add_job(job)
 
-    def _generate_binary_cfg_done(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+    def _generate_binary_cfg_done(self, inst, cfg_info, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+        cfg_model, cf_blanket = cfg_info
+        self.diff_instance.cfg = cfg_model
         self.revised_binary_loaded()
 
     def _create_revised_disassembly_view(self):
