@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import difflib
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,9 +14,12 @@ from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs.cfg_generation import CFGGenerationJob
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.views import DisassemblyView
+from angrmanagement.ui.views import DisassemblyView, CodeView
 
-from .diff_view import DiffDisassemblyView
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextCursor, QTextCharFormat, QColor
+
+from .diff_view import DiffDisassemblyView, DiffCodeView
 from .function_diff import BFSFunctionDiff, FunctionDiff
 from .settings_dialog import SettingsDialog
 
@@ -38,6 +43,7 @@ class PreciseDiffPlugin(BasePlugin):
         super().__init__(workspace)
         self.diff_instance: Instance | None = None
         self.current_revised_view: DisassemblyView | None = None
+        self.current_revised_code: CodeView | None = None
 
         self.loaded_binary: Path | None = None
         self.diff_algo: FunctionDiff | None = None
@@ -48,10 +54,16 @@ class PreciseDiffPlugin(BasePlugin):
         self.use_addrs = False
         self.diff_algo_class = BFSFunctionDiff
         self.add_color = QColor(0xDDFFDD)
+        self.decomp_add_color = QColor(141, 237, 141, int(0.5 * 255))
         self.del_color = QColor(0xFF7F7F)
+        self.decomp_del_color = QColor(237, 141, 141, int(0.5 * 255))
         self.chg_color = QColor(0xF4ECC2)
+        self.decomp_chg_color = QColor(247, 247, 138, int(0.5 * 255))
 
         self._differing_funcs = set()
+
+        self._old_disass_keypress = None
+        self._old_code_keypress = None
 
     #
     # UI Callback Handlers
@@ -155,6 +167,72 @@ class PreciseDiffPlugin(BasePlugin):
         )
         new_disasm.redraw_current_graph()
 
+    def color_pseudocode_diff(self, *args) -> None:
+        og_code = self.workspace._get_or_create_view("pseudocode", CodeView)
+        new_code = self.workspace._get_or_create_view("pseudocode_diff", DiffCodeView)
+        try:
+            base_func = og_code.codegen.text
+            rev_func = new_code.codegen.text
+        except (AttributeError, ValueError):
+            return
+
+        if base_func is None or rev_func is None:
+            return
+
+        base_lines = base_func.splitlines()
+        rev_lines = rev_func.splitlines()
+        diff_lines = list(difflib.ndiff(base_lines, rev_lines))
+        #diff_lines = list(difflib.unified_diff(base_lines, rev_lines, lineterm=""))
+
+        prev_line = ""
+        new_idx = 0
+        old_idx = 0
+        for line in diff_lines:
+            real_line = line[2:]
+            idx = None
+            view = None
+            color = None
+            if line.startswith("+"):
+                idx = rev_func.find(real_line, new_idx)
+                new_idx = idx + len(real_line)
+                color = self.decomp_add_color
+                view = new_code
+            elif line.startswith("-"):
+                idx = base_func.find(real_line, new_idx)
+                old_idx = idx + len(real_line)
+                color = self.decomp_del_color
+                view = og_code
+
+            # did_change = (prev_line.startswith("-") and line.startswith("+")) or (prev_line.startswith("+") and line.startswith("-"))
+            # if new_idx > 0 and old_idx > 0 and did_change:
+            #     color = self.decomp_chg_color
+
+            if view is not None and idx > -1:
+                self.color_lines(view, idx-1, len(real_line), color)
+            prev_line = line
+
+
+
+        #import ipdb; ipdb.set_trace()
+
+
+    @staticmethod
+    def color_lines(view: CodeView, start: int, length: int, color: QColor):
+        from PySide6.QtCore import Qt
+        # Create a QTextCursor from the QTextEdit
+        cursor = QTextCursor(view.document)
+
+        # Move the cursor to the start position and select the text range
+        cursor.setPosition(start)
+        cursor.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, length)
+
+        # Create a QTextCharFormat and set the background color
+        char_format = QTextCharFormat()
+        char_format.setBackground(color)
+
+        # Apply the char format to the selected text
+        cursor.setCharFormat(char_format)
+
     def _destroy_revised_view(self) -> None:
         if self.current_revised_view:
             self.workspace.remove_view(self.current_revised_view)
@@ -182,12 +260,20 @@ class PreciseDiffPlugin(BasePlugin):
         self.revised_binary_loaded()
 
     def _create_revised_disassembly_view(self):
-        new_disass = DiffDisassemblyView(self.workspace, "center", self.diff_instance)
+        new_disass = DiffDisassemblyView(self.workspace, "right", self.diff_instance)
         new_disass.category = "diff"
         new_disass.base_caption = "Precise Diff"
         self.current_revised_view = new_disass
         self.workspace.add_view(self.current_revised_view)
         return self.current_revised_view
+
+    def _create_revised_code_view(self):
+        new_psuedocode = DiffCodeView(self.workspace, "right", self.diff_instance, self.color_pseudocode_diff)
+        new_psuedocode.category = "pseudocode_diff"
+        new_psuedocode.base_caption = "Precise Diff Pseudocode"
+        self.current_revised_code = new_psuedocode
+        self.workspace.add_view(self.current_revised_code)
+        return self.current_revised_code
 
     def jump_to_in_revised_view(self, func) -> None:
         self.current_revised_view.display_function(func)
@@ -221,6 +307,27 @@ class PreciseDiffPlugin(BasePlugin):
 
         self.jump_to_in_revised_view(revised_func)
         self.color_graph_diff(og_view, self.current_revised_view)
+        if not self._old_disass_keypress:
+            self._old_disass_keypress = og_view.keyPressEvent
+            og_view.keyPressEvent = self.stub_disass_keypress
+
+            og_psuedo = self.workspace._get_or_create_view("pseudocode", CodeView)
+            self._old_code_keypress = og_psuedo.keyPressEvent
+            og_psuedo.keyPressEvent = self.stub_code_keypress
+
+
+    def stub_disass_keypress(self, event):
+        self._old_disass_keypress(event)
+        if event.key() == Qt.Key_Tab:
+            self.current_revised_view.keyPressEvent(event)
+            #import ipdb; ipdb.set_trace()
+            self.color_pseudocode_diff(self.workspace._get_or_create_view("pseudocode", CodeView),
+                                       self.current_revised_code)
+
+    def stub_code_keypress(self, event):
+        if event.key() == Qt.Key_Tab:
+            self.current_revised_code.keyPressEvent(event)
+        self._old_code_keypress(event)
 
     def load_revised_binary_from_file(self, file_path: Path) -> None:
         self._destroy_revised_view()
@@ -229,6 +336,7 @@ class PreciseDiffPlugin(BasePlugin):
 
     def revised_binary_loaded(self) -> None:
         self._create_revised_disassembly_view()
+        self._create_revised_code_view()
         self.syncronize_with_original_disassembly_view()
         self.workspace.view_manager.raise_view(self.current_revised_view)
 

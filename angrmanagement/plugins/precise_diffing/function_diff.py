@@ -55,6 +55,7 @@ class FunctionDiff:
         self._resolve_insn_addrs = resolve_insn_addrs
         self._insn_mnem_check = 3
 
+
     @property
     def prefer_symbols(self):
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
@@ -242,6 +243,7 @@ class BFSFunctionDiff(FunctionDiff):
         self.base_insns = self._linear_asm_from_function(func_base, disas=self.disas_base, as_dict=True)
         self.rev_insns = self._linear_asm_from_function(func_rev, disas=self.disas_rev, as_dict=True)
         self.compute_function_diff()
+
 
     @staticmethod
     def supergraph_block_to_insns(function, super_block):
