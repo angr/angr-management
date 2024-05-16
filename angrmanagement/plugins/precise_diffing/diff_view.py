@@ -37,6 +37,9 @@ class DiffDisassemblyView(DisassemblyView):
 
 
 class DiffCodeView(CodeView):
+    """
+    A view for Psuedocode of a function being Diffed.
+    """
 
     def __init__(self, workspace, category, diff_instance, after_ready):
         super().__init__(workspace, category, diff_instance)

@@ -193,7 +193,7 @@ class PreciseDiffPlugin(BasePlugin):
         )
         new_disasm.redraw_current_graph()
 
-    def color_pseudocode_diff(self, *args) -> None:
+    def color_pseudocode_diff(self, *args) -> None:  # pylint:disable=unused-argument
         og_code = self.workspace._get_or_create_view("pseudocode", CodeView)
         new_code = self.workspace._get_or_create_view("pseudocode_diff", DiffCodeView)
         try:
@@ -269,7 +269,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.diff_instance.add_job(job)
 
     def _generate_binary_cfg_done(self, inst, cfg_info, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        cfg_model, cf_blanket = cfg_info
+        cfg_model, _ = cfg_info
         self.diff_instance.cfg = cfg_model
         self.revised_binary_loaded()
 
