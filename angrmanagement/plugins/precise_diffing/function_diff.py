@@ -5,7 +5,8 @@ import re
 from typing import TYPE_CHECKING
 
 import networkx as nx
-from angr.analyses.disassembly import Disassembly, Instruction, MemoryOperand
+from angr.analyses.disassembly import ConstantOperand, Disassembly, Instruction, MemoryOperand
+from angr.errors import SimEngineError
 
 from angrmanagement.utils import string_at_addr
 
@@ -37,6 +38,7 @@ class FunctionDiff:
         disas_rev: Disassembly = None,
         prefer_symbols: bool = True,
         resolve_strings: bool = True,
+        resolve_insn_addrs: bool = True,
         **kwargs,
     ) -> None:
         self.func_base = func_base
@@ -50,10 +52,20 @@ class FunctionDiff:
 
         self._prefer_symbols = prefer_symbols
         self._resolve_strings = resolve_strings
+        self._resolve_insn_addrs = resolve_insn_addrs
+        self._insn_mnem_check = 3
 
     @property
     def prefer_symbols(self):
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
+
+    @staticmethod
+    def is_executable_address(address, proj):
+        for section in proj.loader.main_object.sections:
+            if section.is_executable and section.min_addr <= address <= section.max_addr:
+                return True
+
+        return False
 
     def _linear_asm_from_function(
         self, func: Function, disas: Disassembly = None, as_dict: bool = False
@@ -76,17 +88,30 @@ class FunctionDiff:
             if base_insn.mnemonic.render() == rev_insn.mnemonic.render() and len(base_insn.operands) == len(
                 rev_insn.operands
             ):
-                if not self._resolve_strings:
+                if not self._resolve_strings and not self._resolve_insn_addrs:
                     return FunctionDiff.OBJ_CHANGED
 
                 # attempt to resolve strings that act as symbols
-                base_mem_ops = [op for op in base_insn.operands if isinstance(op, MemoryOperand)]
+                base_mem_ops = [op for op in base_insn.operands if isinstance(op, MemoryOperand | ConstantOperand)]
                 if base_mem_ops:
-                    rev_mem_ops = [op for op in rev_insn.operands if isinstance(op, MemoryOperand)]
+                    rev_mem_ops = [op for op in rev_insn.operands if isinstance(op, MemoryOperand | ConstantOperand)]
                     if len(rev_mem_ops) == len(base_mem_ops) == 1:
+                        base_mem_op = base_mem_ops[0]
+                        rev_mem_op = rev_mem_ops[0]
+
                         try:
-                            base_mem_op_addr = list(base_mem_ops[0].values)[0].val
-                            rev_mem_op_addr = list(rev_mem_ops[0].values)[0].val
+                            if isinstance(base_mem_op, MemoryOperand):
+                                base_mem_op_addr = list(base_mem_op.values)[0].val
+                            else:
+                                base_mem_op_addr = base_mem_op.children[0].val
+                        except (IndexError, KeyError, ValueError, AttributeError):
+                            return FunctionDiff.OBJ_CHANGED
+
+                        try:
+                            if isinstance(rev_mem_op, MemoryOperand):
+                                rev_mem_op_addr = list(rev_mem_op.values)[0].val
+                            else:
+                                rev_mem_op_addr = rev_mem_op.children[0].val
                         except (IndexError, KeyError, ValueError, AttributeError):
                             return FunctionDiff.OBJ_CHANGED
 
@@ -97,11 +122,29 @@ class FunctionDiff:
                             self.func_rev.project.kb.cfgs.get_most_accurate(), rev_mem_op_addr, self.func_rev.project
                         )
 
-                        if base_str == rev_str:
+                        if base_str is not None and base_str == rev_str:
                             base_insn_str = re.sub(r"\[.*\]", base_str, base_insn.render()[0])
                             rev_insn_str = re.sub(r"\[.*\]", base_str, rev_insn.render()[0])
 
                             if base_insn_str == rev_insn_str:
+                                return FunctionDiff.OBJ_UNMODIFIED
+                        elif self._resolve_insn_addrs and (
+                            self.is_executable_address(base_mem_op_addr, self.func_base.project)
+                            and self.is_executable_address(rev_mem_op_addr, self.func_rev.project)
+                        ):
+                            try:
+                                base_blk = self.func_base.get_block(base_mem_op_addr)
+                            except SimEngineError:
+                                return FunctionDiff.OBJ_CHANGED
+
+                            try:
+                                rev_blk = self.func_rev.get_block(rev_mem_op_addr)
+                            except SimEngineError:
+                                return FunctionDiff.OBJ_CHANGED
+
+                            base_mnem = [ins.mnemonic for ins in base_blk.disassembly.insns][: self._insn_mnem_check]
+                            rev_mnem = [ins.mnemonic for ins in rev_blk.disassembly.insns][: self._insn_mnem_check]
+                            if base_mnem == rev_mnem:
                                 return FunctionDiff.OBJ_UNMODIFIED
 
                 return FunctionDiff.OBJ_CHANGED

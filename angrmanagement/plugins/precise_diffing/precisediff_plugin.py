@@ -43,6 +43,7 @@ class PreciseDiffPlugin(BasePlugin):
 
         self.prefer_symbols = True
         self.resolve_strings = True
+        self.resolve_insns = True
         self.use_addrs = False
         self.diff_algo_class = BFSFunctionDiff
         self.add_color = QColor(0xDDFFDD)
@@ -116,6 +117,7 @@ class PreciseDiffPlugin(BasePlugin):
             view_rev=new_disasm,
             resolve_strings=self.resolve_strings,
             prefer_symbols=self.prefer_symbols,
+            resolve_insn_addrs=self.resolve_insns,
         )
         new_disasm.redraw_current_graph()
 

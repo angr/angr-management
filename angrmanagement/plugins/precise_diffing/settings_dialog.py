@@ -106,8 +106,18 @@ class SettingsDialog(QDialog):
             """
         )
         self._prefer_strings.setChecked(self.diff_plugin.resolve_strings)
+        self._prefer_insns = QCheckBox("Prioritize Instructions", self)
+        self._prefer_insns.setToolTip(
+            """
+            Some instructions that use addresses, such as jumps, may show different addresses
+            in the new binary. With this option enabled, two instructions that use an address that both point
+            to the same first few instructions are marked as the same.
+            """
+        )
+        self._prefer_insns.setChecked(self.diff_plugin.resolve_insns)
         ins_layout.addWidget(self._prefer_symbols)
         ins_layout.addWidget(self._prefer_strings)
+        ins_layout.addWidget(self._prefer_insns)
         ins_group.setLayout(ins_layout)
 
         upper_layout.addWidget(ins_group)
@@ -181,6 +191,7 @@ class SettingsDialog(QDialog):
         # instruction options
         self.diff_plugin.prefer_symbols = self._prefer_symbols.isChecked()
         self.diff_plugin.resolve_strings = self._prefer_strings.isChecked()
+        self.diff_plugin.resolve_insns = self._prefer_insns.isChecked()
 
         # colors
         try:

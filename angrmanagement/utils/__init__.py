@@ -172,6 +172,8 @@ def string_at_addr(cfg, addr: int, project: Project, max_size: int = 50):
         return None
 
     if mem_data.sort == "string":
+        if mem_data.content is None:
+            return None
         str_content = mem_data.content.decode("utf-8")
     elif mem_data.sort == "pointer-array":
         ptr = fast_memory_load_pointer(project, mem_data.address)
@@ -183,6 +185,8 @@ def string_at_addr(cfg, addr: int, project: Project, max_size: int = 50):
         if next_level.sort != "string":
             return None
 
+        if next_level.content is None:
+            return None
         str_content = next_level.content.decode("utf-8")
     else:
         return None
