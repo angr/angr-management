@@ -208,12 +208,8 @@ class PreciseDiffPlugin(BasePlugin):
             #     color = self.decomp_chg_color
 
             if view is not None and idx > -1:
-                self.color_lines(view, idx-1, len(real_line), color)
+                self.color_lines(view, idx, len(real_line), color)
             prev_line = line
-
-
-
-        #import ipdb; ipdb.set_trace()
 
 
     @staticmethod
@@ -320,7 +316,6 @@ class PreciseDiffPlugin(BasePlugin):
         self._old_disass_keypress(event)
         if event.key() == Qt.Key_Tab:
             self.current_revised_view.keyPressEvent(event)
-            #import ipdb; ipdb.set_trace()
             self.color_pseudocode_diff(self.workspace._get_or_create_view("pseudocode", CodeView),
                                        self.current_revised_code)
 

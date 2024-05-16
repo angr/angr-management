@@ -47,6 +47,11 @@ class DiffCodeView(CodeView):
         super()._on_codegen_changes(already_regenerated, event, **kwargs)
         self.after_ready()
 
+    def _on_new_function( self, *args, **kwargs ) -> None:
+        super()._on_new_function(*args, **kwargs)
+        self.after_ready()
+
+
     def decompile(
             self,
             clear_prototype: bool = True,
