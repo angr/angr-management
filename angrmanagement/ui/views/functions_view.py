@@ -40,6 +40,12 @@ class FunctionsView(InstanceView):
     # Public methods
     #
 
+    def reset_cache_and_refresh(self) -> None:
+        # XXX: yes this is bad, however, the cache is not being updated properly and is documented
+        # in https://github.com/angr/angr-management/pull/1023. Until that is fixed, this is what we got.
+        self._function_table._table_view._model._data_cache = {}
+        self.refresh()
+
     def refresh(self) -> None:
         self._function_table.refresh()
 
