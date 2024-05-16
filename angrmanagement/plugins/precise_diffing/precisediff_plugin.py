@@ -345,7 +345,7 @@ class PreciseDiffPlugin(BasePlugin):
 
     def stub_disass_keypress(self, event):
         self._old_disass_keypress(event)
-        if event.key() == Qt.Key_Tab:
+        if event.key() in {Qt.Key_Tab, Qt.Key_F5}:
             self.current_revised_view.keyPressEvent(event)
             self.color_pseudocode_diff(
                 self.workspace._get_or_create_view("pseudocode", CodeView), self.current_revised_code
