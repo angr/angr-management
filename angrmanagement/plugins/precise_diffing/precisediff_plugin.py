@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -50,7 +51,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.del_color = QColor(0xFF7F7F)
         self.chg_color = QColor(0xF4ECC2)
 
-        self.seen_insns = set()
+        self._differing_funcs = set()
 
     #
     # UI Callback Handlers
@@ -84,9 +85,36 @@ class PreciseDiffPlugin(BasePlugin):
         diff_value = self.diff_algo.addr_diff_value(addr)
         return self._color_map(diff_value)
 
+    def color_func(self, func) -> QColor | None:
+        return self.chg_color if func in self._differing_funcs else None
+
     #
     # View Construction
     #
+
+    def _compute_differing_funcs(self):
+        self._differing_funcs = set()
+        base_funcs = self.workspace.main_instance.kb.functions
+        base_proj = self.workspace.main_instance.project
+
+        rev_funcs = self.diff_instance.kb.functions
+        rev_proj = self.diff_instance.project
+
+        for func in base_funcs.values():
+            if func.is_plt or func.is_syscall:
+                continue
+
+            func_key = func.addr if self.use_addrs else func.name
+            if func_key not in rev_funcs:
+                # TODO: do add/del highlighting
+                continue
+
+            rev_func = rev_funcs[func_key]
+            base_f_hash = hashlib.md5(base_proj.loader.memory.load(func.addr, func.size)).hexdigest()
+            rev_f_hash = hashlib.md5(rev_proj.loader.memory.load(rev_func.addr, rev_func.size)).hexdigest()
+
+            if base_f_hash != rev_f_hash:
+                self._differing_funcs.add(func)
 
     def _color_map(self, diff_value):
         diff_map = {
@@ -97,6 +125,12 @@ class PreciseDiffPlugin(BasePlugin):
         }
 
         return diff_map[diff_value]
+
+    def color_functions_table(self):
+        self._compute_differing_funcs()
+        base_func_view = self.workspace.view_manager.first_view_in_category("functions")
+        if base_func_view is not None:
+            base_func_view.reset_cache_and_refresh()
 
     def color_graph_diff(self, og_disasm: DisassemblyView, new_disasm: DisassemblyView) -> None:
         try:
@@ -121,11 +155,12 @@ class PreciseDiffPlugin(BasePlugin):
         )
         new_disasm.redraw_current_graph()
 
-    def _destroy_recompiled_view(self) -> None:
+    def _destroy_revised_view(self) -> None:
         if self.current_revised_view:
             self.workspace.remove_view(self.current_revised_view)
             del self.current_revised_view
 
+        self._differing_funcs = set()
         if self.diff_instance:
             del self.diff_instance
 
@@ -188,7 +223,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.color_graph_diff(og_view, self.current_revised_view)
 
     def load_revised_binary_from_file(self, file_path: Path) -> None:
-        self._destroy_recompiled_view()
+        self._destroy_revised_view()
         self.diff_instance = Instance()
         self._create_instance_from_binary(file_path)
 
@@ -199,3 +234,4 @@ class PreciseDiffPlugin(BasePlugin):
 
         original_disass_view = self.diff_instance.workspace._get_or_create_view("disassembly", DisassemblyView)
         self.current_revised_view.sync_with_state_object(original_disass_view.sync_state)
+        self.color_functions_table()

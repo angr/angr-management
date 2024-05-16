@@ -9,7 +9,7 @@ import qtawesome as qta
 from angr.analyses.code_tagging import CodeTags
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
-from PySide6.QtGui import QAction, QBrush, QColor, QCursor
+from PySide6.QtGui import QAction, QBrush, QCursor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -222,9 +222,6 @@ class QFunctionTableModel(QAbstractTableModel):
                     return str(func.binary.guid)
                 return str(func.binary)
         return ""
-
-    def _get_function_backcolor(self, func) -> QColor:
-        return self._backcolor_callback(func)
 
     TAG_STRS = {
         CodeTags.HAS_XOR: "Xor",
