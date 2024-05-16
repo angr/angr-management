@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
-from angrmanagement.ui.views.disassembly_view import DisassemblyView
 from angrmanagement.ui.views.code_view import CodeView
+from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 
 class DiffDisassemblyView(DisassemblyView):
@@ -23,7 +23,6 @@ class DiffDisassemblyView(DisassemblyView):
     def set_synchronized_cursor_address(self, address: int | None) -> None:
         pass
 
-
     def decompile_current_function(self) -> None:
         if self.function.am_obj is not None:
             try:
@@ -36,8 +35,8 @@ class DiffDisassemblyView(DisassemblyView):
             view.function.am_obj = self.function.am_obj
             view.function.am_event(focus=True, focus_addr=curr_ins)
 
-class DiffCodeView(CodeView):
 
+class DiffCodeView(CodeView):
 
     def __init__(self, workspace, category, diff_instance, after_ready):
         super().__init__(workspace, category, diff_instance)
@@ -53,13 +52,13 @@ class DiffCodeView(CodeView):
 
 
     def decompile(
-            self,
-            clear_prototype: bool = True,
-            focus: bool = False,
-            focus_addr=None,
-            flavor: str = "pseudocode",
-            reset_cache: bool = False,
-            regen_clinic: bool = True,
+        self,
+        clear_prototype: bool = True,
+        focus: bool = False,
+        focus_addr=None,
+        flavor: str = "pseudocode",
+        reset_cache: bool = False,
+        regen_clinic: bool = True,
     ) -> None:
         if self._function.am_none:
             return

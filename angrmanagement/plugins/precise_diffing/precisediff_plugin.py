@@ -1,25 +1,22 @@
 from __future__ import annotations
 
+import difflib
 import hashlib
 import logging
-import difflib
-
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs.cfg_generation import CFGGenerationJob
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.views import DisassemblyView, CodeView
+from angrmanagement.ui.views import CodeView, DisassemblyView
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QTextCursor, QTextCharFormat, QColor
-
-from .diff_view import DiffDisassemblyView, DiffCodeView
+from .diff_view import DiffCodeView, DiffDisassemblyView
 from .function_diff import BFSFunctionDiff, FunctionDiff
 from .settings_dialog import SettingsDialog
 
@@ -182,7 +179,7 @@ class PreciseDiffPlugin(BasePlugin):
         base_lines = base_func.splitlines()
         rev_lines = rev_func.splitlines()
         diff_lines = list(difflib.ndiff(base_lines, rev_lines))
-        #diff_lines = list(difflib.unified_diff(base_lines, rev_lines, lineterm=""))
+        # diff_lines = list(difflib.unified_diff(base_lines, rev_lines, lineterm=""))
 
         prev_line = ""
         new_idx = 0
@@ -212,9 +209,10 @@ class PreciseDiffPlugin(BasePlugin):
             prev_line = line
 
 
+        # import ipdb; ipdb.set_trace()
+
     @staticmethod
     def color_lines(view: CodeView, start: int, length: int, color: QColor):
-        from PySide6.QtCore import Qt
         # Create a QTextCursor from the QTextEdit
         cursor = QTextCursor(view.document)
 
@@ -310,7 +308,6 @@ class PreciseDiffPlugin(BasePlugin):
             og_psuedo = self.workspace._get_or_create_view("pseudocode", CodeView)
             self._old_code_keypress = og_psuedo.keyPressEvent
             og_psuedo.keyPressEvent = self.stub_code_keypress
-
 
     def stub_disass_keypress(self, event):
         self._old_disass_keypress(event)
