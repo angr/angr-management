@@ -277,6 +277,9 @@ class CodeView(FunctionView):
                 # update self
                 self.codegen.am_obj = new_codegen
                 update_var_types = True
+            elif event == "retype_function":
+                self.decompile(clear_prototype=False, reset_cache=True)
+                update_var_types = True
 
             if not update_var_types:
                 # regenerate text in the end

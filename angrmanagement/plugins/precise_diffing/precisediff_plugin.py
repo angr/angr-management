@@ -4,6 +4,7 @@ import difflib
 import hashlib
 import logging
 import os
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -50,6 +51,7 @@ class PreciseDiffPlugin(BasePlugin):
         self.resolve_strings = True
         self.resolve_insns = True
         self.use_addrs = False
+        self.ignore_globals = True
         self.diff_algo_class = BFSFunctionDiff
         self.add_color = QColor(0xDDFFDD)
         self.decomp_add_color = QColor(141, 237, 141, int(0.5 * 255))
@@ -73,6 +75,7 @@ class PreciseDiffPlugin(BasePlugin):
             dialog.exec()
             if dialog.updates and self.loaded_binary:
                 self.syncronize_with_original_disassembly_view()
+            self.ignore_globals = dialog._ignore_globals.isChecked()
 
         elif idx == self.LOAD_BINARY_CMD_EVT:
             params = {}
@@ -207,6 +210,9 @@ class PreciseDiffPlugin(BasePlugin):
         try:
             base_func = og_code.codegen.text
             rev_func = new_code.codegen.text
+            if self.ignore_globals:
+                base_func = re.sub(r"g_[a-fA-F0-9]+", lambda m: "_" * len(m.group(0)), base_func)
+                rev_func = re.sub(r"g_[a-fA-F0-9]+", lambda m: "_" * len(m.group(0)), rev_func)
         except (AttributeError, ValueError):
             return
 
