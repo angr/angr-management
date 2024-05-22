@@ -1,6 +1,9 @@
 #!/bin/bash
 set -ex
 
+# Optional tag to install from. Default is master.
+TAG=${1:-master}
+
 python -m venv .venv
 if [[ "$OSTYPE" == "msys" ]]; then
     source .venv/Scripts/activate
@@ -20,14 +23,14 @@ fi
 python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
 
 pip install git+https://github.com/eliben/pyelftools.git
-pip install git+https://github.com/angr/archinfo.git
-pip install git+https://github.com/angr/pyvex.git
-pip install git+https://github.com/angr/cle.git#egg=cle[ar,minidump,uefi,xbe]
-pip install git+https://github.com/angr/claripy.git
-pip install git+https://github.com/angr/ailment.git
-pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]
+pip install git+https://github.com/angr/archinfo.git@$TAG
+pip install git+https://github.com/angr/pyvex.git@$TAG
+pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe]
+pip install git+https://github.com/angr/claripy.git@$TAG
+pip install git+https://github.com/angr/ailment.git@$TAG
+pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install git+https://github.com/angr/archr.git#egg=archr
+    pip install git+https://github.com/angr/archr.git@$TAG
 fi
 
 # Install angr-mangement
