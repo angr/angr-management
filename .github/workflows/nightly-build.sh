@@ -28,9 +28,9 @@ pip install git+https://github.com/angr/pyvex.git@$TAG
 pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe]
 pip install git+https://github.com/angr/claripy.git@$TAG
 pip install git+https://github.com/angr/ailment.git@$TAG
-pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]@$TAG
+pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install git+https://github.com/angr/archr.git#egg=archr@$TAG
+    pip install git+https://github.com/angr/archr.git@$TAG
 fi
 
 # Install angr-mangement
