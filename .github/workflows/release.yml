@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: false
+        default: 'master'
+        type: string
+
+jobs:
+  build:
+    uses: ./.github/workflows/pyinstaller-build.yml
+    with:
+      version: ${{ github.event.inputs.version }}
+  deploy:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Make release
+        run: >
+          gh release create nightly \
+            --repo angr/angr-management \
+            --title "angr management ${{ github.event.inputs.version }}" \
+            --notes "$RELEASE_NOTES" \
+            --target $GITHUB_SHA \
+            $(find . -type f)
+        env:
+          RELEASE_NOTES: >
+            Mac users: Make sure to select the build that matches your CPU
+            archetecture. Both are currently not signed, so you will need to
+            right-click and select "Open" the first time you run them.
+
+          GH_TOKEN: ${{ github.token }}
+
