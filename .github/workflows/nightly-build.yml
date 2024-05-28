@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/pyinstaller-build.yml
+    with:
+      version: 'master'
   deploy:
     name: Deploy release
     needs:
@@ -22,8 +24,6 @@ jobs:
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
-      - name: Run find
-        run: find .
       - name: Delete old nightly
         run: gh release -R angr/angr-management delete nightly --cleanup-tag --yes
         env:

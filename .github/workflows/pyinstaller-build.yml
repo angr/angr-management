@@ -2,6 +2,12 @@ name: Pyinstaller build
 
 on:
   workflow_call:
+    inputs:
+      version:
+        description: 'Release version'
+        required: false
+        type: string
+        default: 'master'
 
 jobs:
   build:
@@ -17,7 +23,7 @@ jobs:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
@@ -37,7 +43,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
       - run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          bash .github\workflows\nightly-build.sh
+          bash .github\workflows\nightly-build.sh ${{ inputs.version }}
         shell: cmd
         if: startsWith(matrix.os, 'windows')
       - run: bash .github/workflows/nightly-build.sh
