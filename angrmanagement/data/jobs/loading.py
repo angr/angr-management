@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import angr
 import archinfo
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs import LoadBinary
+from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog
 
 from .job import Job
 
@@ -44,7 +45,7 @@ class LoadTargetJob(Job):
             apb = archr.arsenal.angrProjectBow(t, dsb)
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
             self._progress_callback(50)
-            load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
+            load_options, _ = gui_thread_schedule(LoadBinary.run, (partial_ld,))
             if load_options is None:
                 return
 
@@ -69,20 +70,94 @@ class LoadBinaryJob(Job):
     def _run(self, inst) -> None:
         self._progress_callback(5)
 
+        retry = True
+        partial_ld = None
+        main_opts = {"ignore_missing_arch": True}
+        while partial_ld is None and retry:
+            retry, partial_ld, main_opts = self._load_binary_as_partial_loader(main_opts)
+        if main_opts:
+            if "ignore_missing_arch" in main_opts:
+                del main_opts["ignore_missing_arch"]
+
+        self._progress_callback(50)
+        new_load_options, simos = gui_thread_schedule(
+            LoadBinary.run,
+            (partial_ld,),
+            kwargs={
+                "suggested_backend": partial_ld.main_object.__class__,
+                "suggested_os_name": partial_ld.main_object.os,
+                "suggested_main_opts": main_opts,
+                "suggested_original_backend": (
+                    None if partial_ld.original_main_object is None else partial_ld.original_main_object.__class__
+                ),
+                "suggested_main_filename": (
+                    None if partial_ld.original_main_object is None else partial_ld.original_main_object.unpacked_name
+                ),
+            },
+        )
+        if new_load_options is None:
+            return
+
+        engine = None
+        if hasattr(new_load_options["arch"], "pcode_arch"):
+            engine = angr.engines.UberEnginePcode
+
+        self.load_options.update(new_load_options)
+
+        proj = angr.Project(self.fname, load_options=self.load_options, engine=engine, simos=simos)
+        self._progress_callback(95)
+
+        def callback() -> None:
+            inst._reset_containers()
+            inst.project.am_obj = proj
+            inst.project.am_event()
+
+        gui_thread_schedule(callback, ())
+
+    def _load_binary_as_partial_loader(self, main_opts: dict[str, Any]) -> tuple[bool, Any, dict[str, Any]]:
         load_as_blob = False
         load_with_libraries = True
-
         partial_ld = None
+
+        def _load_user_passphrase(backend_cls) -> bytes | None:
+            dialog = SetEncryptionKeyDialog(
+                prompt_msg=f"The encryption key does not work or does not exist for "
+                f"the CLE backend {backend_cls.__name__}."
+            )
+            dialog.exec_()
+            return dialog.result
+
         try:
             # Try automatic loading
             partial_ld = cle.Loader(
-                self.fname, perform_relocations=False, load_debug_info=False, main_opts={"ignore_missing_arch": True}
+                self.fname,
+                perform_relocations=False,
+                load_debug_info=False,
+                main_opts=main_opts,
             )
         except archinfo.arch.ArchNotFound:
             _l.warning("Could not identify binary architecture.")
             partial_ld = None
             load_as_blob = True
-        except cle.CLECompatibilityError:
+        except cle.CLEInvalidEncryptionError as ex:
+            # it needs a password, but the default password does not work
+            if ex.backend is not None and ex.enckey_argname is not None:
+                # load a new password
+                enc_key: bytes | None = gui_thread_schedule(_load_user_passphrase, (ex.backend,))
+                if enc_key:
+                    # Update main opts
+                    main_opts[ex.enckey_argname] = enc_key
+                    return True, None, main_opts
+
+            _l.warning(
+                "Failed to load binary with user-specified encryption key or the encryption key is missing. "
+                "Attempted to use backend %s (and failed). "
+                "Loading it as a blob instead.",
+                ex.backend,
+            )
+            # go load it as a blob
+            load_as_blob = True
+        except (cle.CLEInvalidFileFormatError, cle.CLECompatibilityError):
             # Continue loading as blob
             load_as_blob = True
         except cle.CLEError:
@@ -110,30 +185,9 @@ class LoadBinaryJob(Job):
             except cle.CLECompatibilityError:
                 # Failed to load executable, even as blob!
                 gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
-                return
+                return False, None, main_opts
 
-        self._progress_callback(50)
-        new_load_options, simos = gui_thread_schedule(
-            LoadBinary.run, (partial_ld, partial_ld.main_object.__class__, partial_ld.main_object.os)
-        )
-        if new_load_options is None:
-            return
-
-        engine = None
-        if hasattr(new_load_options["arch"], "pcode_arch"):
-            engine = angr.engines.UberEnginePcode
-
-        self.load_options.update(new_load_options)
-
-        proj = angr.Project(self.fname, load_options=self.load_options, engine=engine, simos=simos)
-        self._progress_callback(95)
-
-        def callback() -> None:
-            inst._reset_containers()
-            inst.project.am_obj = proj
-            inst.project.am_event()
-
-        gui_thread_schedule(callback, ())
+        return False, partial_ld, main_opts
 
 
 class LoadAngrDBJob(Job):

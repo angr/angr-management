@@ -67,17 +67,25 @@ class LoadBinary(QDialog):
         partial_ld,
         suggested_backend: cle.Backend | None = None,
         suggested_os_name: str | None = None,
+        suggested_main_opts: dict | None = None,
+        suggested_original_backend: cle.Backend | None = None,
+        suggested_main_filename: str | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
 
         # initialization
-        self.file_path = partial_ld.main_object.binary
+        self.file_path: str | None = (
+            partial_ld.main_object.binary if suggested_main_filename is None else suggested_main_filename
+        )
         self.md5 = None
         self.sha256 = None
         self.option_widgets = {}
         self.suggested_backend = suggested_backend
         self.suggested_os_name = suggested_os_name
+        self.suggested_main_opts = suggested_main_opts or {}
+        self.suggested_original_backend = suggested_original_backend
+        self.suggested_main_filename = suggested_main_filename
         self.available_backends: dict[str, cle.Backend] = cle.ALL_BACKENDS
         self.available_simos = {}
         self.arch = partial_ld.main_object.arch
@@ -121,7 +129,7 @@ class LoadBinary(QDialog):
 
     @property
     def filename(self):
-        return os.path.basename(self.file_path)
+        return os.path.basename(self.file_path) if self.file_path else ""
 
     #
     # Private methods
@@ -184,7 +192,10 @@ class LoadBinary(QDialog):
         filename_caption.setText("File name:")
 
         filename = QLabel(self)
-        filename.setText(self.filename)
+        if self.filename:
+            filename.setText(self.filename)
+        else:
+            filename.setText("<Unknown>")
 
         layout.addWidget(filename_caption, 0, 0, Qt.AlignRight)
         layout.addWidget(filename, 0, 1)
@@ -233,8 +244,35 @@ class LoadBinary(QDialog):
 
     def _init_load_options_tab(self, tab):
         #
+        # Outer backend selection
+        #
+
+        outer_backend_layout = QHBoxLayout()
+        outer_backend_caption = QLabel()
+        outer_backend_caption.setText("Outer backend:")
+        outer_backend_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        outer_backend_layout.addWidget(outer_backend_caption)
+
+        outer_backend_dropdown = QComboBox()
+        suggested_outer_backend_name = None
+        outer_backend_dropdown.addItem("<None>")
+        for backend_name, backend in self.available_backends.items():
+            if getattr(backend, "is_outer", False) is True:
+                outer_backend_dropdown.addItem(backend_name)
+                if backend is self.suggested_original_backend:
+                    suggested_outer_backend_name = backend_name
+        if suggested_outer_backend_name is not None:
+            outer_backend_dropdown.setCurrentText(suggested_outer_backend_name)
+        else:
+            outer_backend_dropdown.setCurrentText("<None>")
+        outer_backend_layout.addWidget(outer_backend_dropdown)
+
+        self.option_widgets["outer_backend"] = outer_backend_dropdown
+
+        #
         # Backend selection
         #
+
         backend_layout = QHBoxLayout()
         backend_caption = QLabel()
         backend_caption.setText("Backend:")
@@ -244,9 +282,10 @@ class LoadBinary(QDialog):
         backend_dropdown = QComboBox()
         suggested_backend_name = None
         for backend_name, backend in self.available_backends.items():
-            backend_dropdown.addItem(backend_name)
-            if backend is self.suggested_backend:
-                suggested_backend_name = backend_name
+            if getattr(backend, "is_outer", False) is False:
+                backend_dropdown.addItem(backend_name)
+                if backend is self.suggested_backend:
+                    suggested_backend_name = backend_name
         if suggested_backend_name is not None:
             backend_dropdown.setCurrentText(suggested_backend_name)
         backend_layout.addWidget(backend_dropdown)
@@ -368,6 +407,7 @@ class LoadBinary(QDialog):
         self.option_widgets["load_debug_info"] = load_debug_info
 
         layout = QVBoxLayout()
+        layout.addLayout(outer_backend_layout)
         layout.addLayout(backend_layout)
         layout.addLayout(os_layout)
         layout.addLayout(blob_layout)
@@ -465,6 +505,14 @@ class LoadBinary(QDialog):
         self.load_options["auto_load_libs"] = self.option_widgets["auto_load_libs"].isChecked()
         self.load_options["load_debug_info"] = self.option_widgets["load_debug_info"].isChecked()
 
+        outer_backend_dropdown: QComboBox = self.option_widgets["outer_backend"]
+        outer_backend: str | None = outer_backend_dropdown.currentText()
+        if outer_backend == "<None>":
+            outer_backend = None
+        elif not outer_backend or outer_backend not in self.available_backends:
+            QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
+            return
+
         backend_dropdown: QComboBox = self.option_widgets["backend"]
         backend: str = backend_dropdown.currentText()
         if not backend or backend not in self.available_backends:
@@ -490,7 +538,7 @@ class LoadBinary(QDialog):
             arch = archinfo.ArchPcode(arch.id)
         self.load_options["arch"] = arch
 
-        self.load_options["main_opts"] = {
+        main_opts = {
             "backend": backend,
         }
 
@@ -502,7 +550,7 @@ class LoadBinary(QDialog):
             except ValueError:
                 QMessageBox.critical(None, "Incorrect base address", "Please input a valid base address.")
                 return
-            self.load_options["main_opts"]["base_addr"] = base_addr
+            main_opts["base_addr"] = base_addr
 
         if self._entry_addr_checkbox.isChecked():
             try:
@@ -510,12 +558,22 @@ class LoadBinary(QDialog):
             except ValueError:
                 QMessageBox.critical(None, "Incorrect entry point address", "Please input a valid entry point address.")
                 return
-            self.load_options["main_opts"]["entry_point"] = entry_addr
+            main_opts["entry_point"] = entry_addr
 
         if force_load_libs:
             self.load_options["force_load_libs"] = force_load_libs
         if skip_libs:
             self.load_options["skip_libs"] = skip_libs
+
+        if outer_backend is not None:
+            self.load_options["main_opts"] = {
+                "backend": outer_backend,
+            } | self.suggested_main_opts
+            self.load_options["lib_opts"] = {
+                self.suggested_main_filename: main_opts,
+            }
+        else:
+            self.load_options["main_opts"] = main_opts | self.suggested_main_opts
 
         self.close()
 
@@ -524,21 +582,27 @@ class LoadBinary(QDialog):
 
     @staticmethod
     def run(
-        partial_ld, suggested_backend=None, suggested_os_name: str | None = None
-    ) -> tuple[dict | None, dict | None, dict | None]:
+        partial_ld,
+        suggested_backend=None,
+        suggested_os_name: str | None = None,
+        suggested_main_opts: dict | None = None,
+        **kwargs,
+    ) -> tuple[dict | None, dict | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,
                 suggested_backend=suggested_backend,
                 suggested_os_name=suggested_os_name,
+                suggested_main_opts=suggested_main_opts,
                 parent=GlobalInfo.main_window,
+                **kwargs,
             )
             dialog.setModal(True)
             dialog.exec_()
             return dialog.load_options, dialog.simos
         except LoadBinaryError:
             pass
-        return None, None, None
+        return None, None
 
     @staticmethod
     def binary_arch_detect_failed(filename: str, archinfo_msg: str) -> None:
