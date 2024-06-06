@@ -37,6 +37,7 @@ class LoadAboutDialog(QDialog):
         version_text = QLabel(version_text_tup)
         version_text.setFont(QFont("Consolas", weight=QFont.Bold))
         version_text.setAlignment(Qt.AlignCenter)
+        version_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
         credits_text = QLabel('<a href="http://angr.io/">Credits</a>')
         credits_text.setFont(QFont("Consolas", weight=QFont.Bold))
         credits_text.setTextFormat(Qt.RichText)
