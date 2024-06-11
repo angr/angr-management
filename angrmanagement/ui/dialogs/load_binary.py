@@ -569,9 +569,10 @@ class LoadBinary(QDialog):
             self.load_options["main_opts"] = {
                 "backend": outer_backend,
             } | self.suggested_main_opts
-            self.load_options["lib_opts"] = {
-                self.suggested_main_filename: main_opts,
-            }
+            if self.suggested_main_filename is not None:
+                self.load_options["lib_opts"] = {
+                    self.suggested_main_filename: main_opts,
+                }
         else:
             self.load_options["main_opts"] = main_opts | self.suggested_main_opts
 
