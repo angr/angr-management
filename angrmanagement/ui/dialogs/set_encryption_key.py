@@ -6,13 +6,13 @@ from enum import IntEnum
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
-    QVBoxLayout,
-    QGroupBox,
     QRadioButton,
+    QVBoxLayout,
 )
 
 
