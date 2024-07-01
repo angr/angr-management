@@ -43,7 +43,11 @@ class QDecompilationOption(QTreeWidgetItem):
             raise NotImplementedError(f"Unsupported option type {self.type_}.")
 
         # should make a dropdown option
-        if hasattr(self.option, "value_type") and self.option.value_type != bool and self.option.candidate_values:
+        if (
+            hasattr(self.option, "value_type")
+            and not isinstance(self.option.value_type, bool)
+            and self.option.candidate_values
+        ):
             self._combo_box = QComboBox()
             self._combo_box.addItems(
                 [self.option.default_value]
