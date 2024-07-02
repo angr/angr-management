@@ -973,10 +973,20 @@ class Workspace:
 
         self.plugins.handle_project_initialization()
 
-    def _handle_job_exception(self, job: Job, e: Exception) -> None:
+    def _handle_job_exception(self, job: Job, ex: Exception) -> None:
+
+        def _display_messagebox() -> None:
+            msg = "".join(traceback.format_exception(ex))
+            QMessageBox.critical(
+                self.main_window,
+                f"Error during job {job.name}",
+                f"An exception occurred when running {job.name}:\n\n{msg}",
+            )
+
         self.log(f'Exception while running job "{job.name}":')
-        self.log(e)
+        self.log(ex)
         self.log("Type %debug to debug it")
+        gui_thread_schedule_async(_display_messagebox)
 
     def _update_simgr_debuggers(self, **kwargs) -> None:  # pylint:disable=unused-argument
         sim_dbg = None
