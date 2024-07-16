@@ -245,7 +245,7 @@ class QSimulationManagers(QFrame):
 
     def _on_step_clicked(self) -> None:
         if not self.simgr.am_none:
-            self.instance.add_job(
+            self.instance.job_manager.add_job(
                 SimgrStepJob.create(
                     self.simgr.am_obj, until_branch=False, step_callback=self.workspace.plugins.step_callback
                 )
@@ -253,7 +253,7 @@ class QSimulationManagers(QFrame):
 
     def _on_step_until_branch_clicked(self) -> None:
         if not self.simgr.am_none:
-            self.instance.add_job(
+            self.instance.job_manager.add_job(
                 SimgrStepJob.create(
                     self.simgr.am_obj, until_branch=True, step_callback=self.workspace.plugins.step_callback
                 )
@@ -269,7 +269,7 @@ class QSimulationManagers(QFrame):
                 gui_thread_schedule(lambda: self.simgr.am_event(src="post_step"))
                 return simgr
 
-            self.instance.add_job(
+            self.instance.job_manager.add_job(
                 SimgrExploreJob.create(
                     self.simgr, avoid=self.avoid_addrs, find=self.find_addrs, step_callback=_step_callback
                 )

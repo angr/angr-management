@@ -287,7 +287,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._stopwatch_label)
 
         self._interrupt_job_button = QIconLabel(qta.icon("fa5s.times-circle", color=Conf.palette_buttontext))
-        self._interrupt_job_button.clicked.connect(self.interrupt_current_job)
+        self._interrupt_job_button.clicked.connect(
+            lambda: self.workspace.main_instance.job_manager.interrupt_current_job
+        )
         self._interrupt_job_button.hide()
         layout.addWidget(self._interrupt_job_button)
 
@@ -316,7 +318,7 @@ class MainWindow(QMainWindow):
         def on_cancel() -> None:
             if self.workspace is None:
                 return
-            for job in self.workspace.main_instance.jobs:
+            for job in self.workspace.main_instance.job_manager.jobs:
                 if job.blocking:
                     job.keyboard_interrupt()
                     break
@@ -388,9 +390,6 @@ class MainWindow(QMainWindow):
     # Shortcuts
     #
 
-    def interrupt_current_job(self) -> None:
-        self.workspace.main_instance.interrupt_current_job()
-
     def _init_shortcuts(self) -> None:
         """
         Initialize shortcuts
@@ -402,7 +401,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence(f"Alt+{i}"), self, lambda idx=i: self._raise_view(idx - 1))
         QShortcut(QKeySequence("Alt+0"), self, lambda: self._raise_view(9))
 
-        QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
+        QShortcut(QKeySequence("Ctrl+I"), self, self.workspace.main_instance.job_manager.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
         self._raise_view(0)
@@ -681,7 +680,7 @@ class MainWindow(QMainWindow):
         if img_name is None:
             return
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
-        self.workspace.main_instance.add_job(LoadTargetJob(target))
+        self.workspace.main_instance.job_manager.add_job(LoadTargetJob(target))
         self.workspace.main_instance.img_name = img_name
 
     def load_trace_file(self, file_path) -> None:
@@ -730,7 +729,7 @@ class MainWindow(QMainWindow):
                     self._load_database(file_path)
                 else:
                     self._recent_file(file_path)
-                    self.workspace.main_instance.add_job(LoadBinaryJob(file_path))
+                    self.workspace.main_instance.job_manager.add_job(LoadBinaryJob(file_path))
             else:
                 QMessageBox.critical(
                     self,
@@ -855,7 +854,7 @@ class MainWindow(QMainWindow):
         if self.workspace is None or self.workspace.main_instance is None:
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
-        self.workspace.main_instance.add_job(dep_analysis_job)
+        self.workspace.main_instance.job_manager.add_job(dep_analysis_job)
 
     def run_analysis(self) -> None:
         if self.workspace:
@@ -957,7 +956,7 @@ class MainWindow(QMainWindow):
 
         job = LoadAngrDBJob(file_path, ["global", "pseudocode_variable_kb"], other_kbs=other_kbs, extra_info=extra_info)
         job._on_finish = partial(self._on_load_database_finished, job)
-        self.workspace.main_instance.add_job(job)
+        self.workspace.main_instance.job_manager.add_job(job)
 
     def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         proj = job.project
