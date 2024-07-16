@@ -12,6 +12,7 @@ from cle import SymbolType
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.data.trace import Trace
+from angrmanagement.errors import ContainerAlreadyRegisteredError
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
 from angrmanagement.logic.jobmanager import JobManager
 
@@ -155,7 +156,7 @@ class Instance:
         self._label_rename_callback = v
 
     @property
-    def set_comment_callback(self):
+    def set_comment_callback(self) -> Callable[[int, str], None] | None:
         return self._set_comment_callback
 
     @set_comment_callback.setter
@@ -170,7 +171,9 @@ class Instance:
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:
-                raise Exception(f"Container {name} already registered with different type: {ty} != {cur_ty}")
+                raise ContainerAlreadyRegisteredError(
+                    f"Container {name} already registered with different type: {ty} != {cur_ty}"
+                )
 
         else:
             self._container_defaults[name] = (default_val_func, ty)
@@ -283,17 +286,17 @@ class Instance:
             kb.comments[addr] = comment_text
 
         # TODO: can this be removed?
-        if self.set_comment_callback:
-            self.set_comment_callback(addr=addr, comment_text=comment_text)
+        if self.set_comment_callback is not None:
+            self.set_comment_callback(addr, comment_text)
 
     #
     # Private methods
     #
 
     def _reset_containers(self) -> None:
-        for name in self.extra_containers:
-            self.extra_containers[name].am_obj = self._container_defaults[name][0]()
-            self.extra_containers[name].am_event()
+        for name, container in self.extra_containers.items():
+            container.am_obj = self._container_defaults[name][0]()
+            container.am_event()
 
         for dbg in list(self.debugger_list_mgr.debugger_list):
             self.debugger_list_mgr.remove_debugger(dbg)

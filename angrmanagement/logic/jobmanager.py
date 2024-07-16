@@ -21,6 +21,8 @@ log = logging.getLogger(__name__)
 
 
 class JobManager:
+    """JobManager is responsible for managing jobs and running them in a separate thread."""
+
     instance: Instance
 
     jobs: list[Job]
