@@ -218,7 +218,7 @@ class Workspace:
             cfg_args = {}
 
         cfg_job = CFGGenerationJob(on_finish=self.on_cfg_generated, **cfg_args)
-        self.main_instance.add_job(cfg_job)
+        self.main_instance.job_manager.add_job(cfg_job)
         start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(cfg_job,))
 
     def _refresh_cfg(self, cfg_job) -> None:
@@ -245,7 +245,7 @@ class Workspace:
                     reloaded = True
 
             time.sleep(0.3)
-            if cfg_job not in self.main_instance.jobs:
+            if cfg_job not in self.main_instance.job_manager.jobs:
                 break
 
     def on_cfg_generated(self, instance, cfg_result) -> None:  # pylint:disable=unused-argument
@@ -256,7 +256,7 @@ class Workspace:
         self.main_instance.cfg.am_event()
 
         if self.main_instance._analysis_configuration["flirt"].enabled:
-            self.main_instance.add_job(
+            self.main_instance.job_manager.add_job(
                 FlirtSignatureRecognitionJob(
                     on_finish=self._on_flirt_signature_recognized,
                 )
@@ -287,7 +287,7 @@ class Workspace:
                 view.clear()
 
     def _on_flirt_signature_recognized(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        self.main_instance.add_job(
+        self.main_instance.job_manager.add_job(
             PrototypeFindingJob(
                 on_finish=self._on_prototype_found,
             )
@@ -295,7 +295,7 @@ class Workspace:
 
     def _on_prototype_found(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         if self.main_instance._analysis_configuration["code_tagging"].enabled:
-            self.main_instance.add_job(
+            self.main_instance.job_manager.add_job(
                 CodeTaggingJob(
                     on_finish=self.on_function_tagged,
                 )
@@ -314,7 +314,7 @@ class Workspace:
             disassembly_view = self.view_manager.first_view_in_category("disassembly")
             if disassembly_view is not None and not disassembly_view.function.am_none:
                 self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.main_instance.add_job(self.main_instance.variable_recovery_job)
+            self.main_instance.job_manager.add_job(self.main_instance.variable_recovery_job)
 
     def _on_patch_event(self, **kwargs) -> None:
         if self.main_instance.cfg.am_none:
@@ -729,7 +729,7 @@ class Workspace:
         self.main_instance.binary_path = thing
         self.main_instance.original_binary_path = thing
         job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
-        self.main_instance.add_job(job)
+        self.main_instance.job_manager.add_job(job)
 
     def interact_program(self, img_name: str, view=None) -> None:
         if view is None or view.category != "interaction":

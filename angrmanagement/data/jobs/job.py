@@ -77,7 +77,7 @@ class Job:
         raise NotImplementedError
 
     def finish(self, inst, result) -> None:  # pylint: disable=unused-argument
-        inst.jobs = inst.jobs[1:]
+        inst.job_manager.jobs = inst.job_manager.jobs[1:]
 
         gui_thread_schedule_async(self._finish_progress)
         if self._on_finish:

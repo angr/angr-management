@@ -24,7 +24,7 @@ class TestWorkflow(unittest.TestCase):
         proj = angr.Project(os.path.join(test_location, "x86_64", "true"), auto_load_libs=False)
         main.workspace.main_instance.project.am_obj = proj
         main.workspace.main_instance.project.am_event()
-        main.workspace.main_instance.join_all_jobs()
+        main.workspace.main_instance.job_manager.join_all_jobs()
 
 
 if __name__ == "__main__":
