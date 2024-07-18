@@ -11,7 +11,7 @@ from angrmanagement.config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
-    from traitlets import Instance
+    from angrmanagement.data.instance import Instance
 
 
 class QBlockLabel(QCachedGraphicsItem):

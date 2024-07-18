@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING
 from .job import Job
 
 if TYPE_CHECKING:
-    from traitlets import Instance
-
+    from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
 
 

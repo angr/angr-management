@@ -10,8 +10,7 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 from .job import Job
 
 if TYPE_CHECKING:
-    from traitlets import Instance
-
+    from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
 
 _l = logging.getLogger(name=__name__)
