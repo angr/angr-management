@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.key_definitions.atoms import Atom
 
     from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 log = logging.getLogger(name=__name__)
@@ -76,17 +77,17 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def _run(self, inst: Instance) -> None:
-        self._progress_callback(0.0)
-        self._perform(inst)
-        self._progress_callback(100.0)
+    def _run(self, ctx: JobContext, inst: Instance) -> None:
+        ctx.set_progress(0.0)
+        self._perform(ctx, inst)
+        ctx.set_progress(100.0)
 
-    def _perform(self, inst: Instance):
+    def _perform(self, ctx: JobContext, inst: Instance):
         if not argument_resolver:
             gui_thread_schedule_async(self._display_import_error)
             return
 
-        self._progress_callback(10.0, text="Extracting sink and atom")
+        ctx.set_progress(10.0, "Extracting sink and atom")
         sink, atom = self._get_sink_and_atom(inst)
         if sink is None:
             # invalid sink setup
@@ -100,7 +101,7 @@ class DependencyAnalysisJob(Job):
 
         for depth in range(min_depth, max_depth):
             base_progress: float = 30.0 + (depth - min_depth) * progress_chunk
-            self._progress_callback(base_progress, text="Calculating reaching definitions... depth %d." % depth)
+            ctx.set_progress(base_progress, text="Calculating reaching definitions... depth %d." % depth)
             # generate RDA observation points
             observation_points = set()
             for pred in inst.cfg.am_obj.get_predecessors(inst.cfg.am_obj.get_any_node(self.func_addr)):
@@ -112,7 +113,7 @@ class DependencyAnalysisJob(Job):
             for idx, total, dep in self._dependencies(
                 sink, [(atom, SimType())], inst.project.kb, inst.project, depth, excluded_functions, observation_points
             ):
-                self._progress_callback(
+                ctx.set_progress(
                     base_progress + idx / total * progress_chunk,
                     text="Computing transitive closures: %d/%d - depth %d" % (idx + 1, total, depth),
                 )

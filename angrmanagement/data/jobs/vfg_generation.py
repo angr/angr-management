@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .job import Job
+
+if TYPE_CHECKING:
+    from traitlets import Instance
+
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class VFGGenerationJob(Job):
@@ -8,7 +15,7 @@ class VFGGenerationJob(Job):
         super().__init__("VFG generation")
         self._addr = addr
 
-    def _run(self, inst):
+    def _run(self, ctx: JobContext, inst: Instance):
         return inst.project.analyses.VFG(function_start=self._addr)
 
     def finish(self, inst, result) -> None:
