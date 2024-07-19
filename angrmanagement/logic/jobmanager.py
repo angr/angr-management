@@ -123,21 +123,26 @@ class JobManager:
 
     # Worker callbacks
 
-    def callback_worker_progress_empty(self) -> None:
+    @staticmethod
+    def callback_worker_progress_empty() -> None:
         gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
 
-    def callback_worker_blocking_job(self) -> None:
+    @staticmethod
+    def callback_worker_blocking_job() -> None:
         if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
             gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
 
-    def callback_worker_new_job(self) -> None:
+    @staticmethod
+    def callback_worker_new_job() -> None:
         gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
 
-    def callback_worker_blocking_job_2(self) -> None:
+    @staticmethod
+    def callback_worker_blocking_job_2() -> None:
         if GlobalInfo.main_window.isVisible():
             gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
-    def callback_worker_job_complete(self, instance: Instance, job: Job, result) -> None:
+    @staticmethod
+    def callback_worker_job_complete(instance: Instance, job: Job, result) -> None:
         gui_thread_schedule_async(job.finish, args=(instance, result))
 
     # Job callbacks
