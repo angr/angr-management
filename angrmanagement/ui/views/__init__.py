@@ -23,7 +23,8 @@ from .trace_map_view import TraceMapView
 from .traces_view import TracesView
 from .types_view import TypesView
 from .view import BaseView, InstanceView
- #importing jobs view 
+
+# importing jobs view
 
 __all__ = [
     "BreakpointsView",
@@ -49,5 +50,5 @@ __all__ = [
     "TypesView",
     "BaseView",
     "InstanceView",
-    "jobsView" #imported job view
+    "jobsView",  # imported job view
 ]
