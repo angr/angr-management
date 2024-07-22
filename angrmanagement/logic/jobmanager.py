@@ -1,23 +1,26 @@
 from __future__ import annotations
 
+import ctypes
+import itertools
 import logging
 import sys
 import time
 from queue import Queue
+from threading import Thread
 from typing import TYPE_CHECKING
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
-from angrmanagement.utils.daemon_thread import start_daemon_thread
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from threading import Thread
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.data.jobs.job import Job
 
+
 log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 
 class JobContext:
@@ -36,17 +39,83 @@ class JobContext:
         self._job_manager.callback_job_set_progress(self._job, percentage, text)
 
 
+class Worker(Thread):
+    """Worker is a thread that runs jobs in the background."""
+
+    job_manager: JobManager
+    id_: int
+
+    current_job: Job | None
+
+    def __init__(self, job_manager: JobManager, id_: int):
+        super().__init__(name=f"angr-management Worker Thread {id_}", daemon=True)
+        self.job_manager = job_manager
+        self.id_ = id_
+        self.current_job = None
+
+    def run(self) -> None:
+        while True:
+            if self.job_manager.jobs_queue.empty():
+                gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
+
+            if (
+                any(job.blocking for job in self.job_manager.jobs)
+                and GlobalInfo.main_window is not None
+                and GlobalInfo.main_window.workspace
+            ):
+                gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
+
+            job = self.job_manager.jobs_queue.get()
+            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
+
+            if any(job.blocking for job in self.job_manager.jobs) and GlobalInfo.main_window.isVisible():
+                gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
+
+            try:
+                self.current_job = job
+                ctx = JobContext(self.job_manager, job)
+                ctx.set_progress(0)
+
+                log.info('Job "%s" started', job.name)
+                self.start_at = time.time()
+                result = job.run(ctx, self.job_manager.instance)
+                now = time.time()
+                duration = now - self.start_at
+                log.info('Job "%s" completed after %.2f seconds', self.name, duration)
+
+                self.current_job = None
+            except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
+                sys.last_traceback = e.__traceback__
+                self.current_job = None
+                log.exception('Exception while running job "%s":', job.name)
+                if self.job_manager.job_worker_exception_callback is not None:
+                    self.job_manager.job_worker_exception_callback(job, e)
+            else:
+                self.job_manager.jobs.remove(job)
+                gui_thread_schedule_async(job.finish, args=(self.job_manager.instance, result))
+
+    def keyboard_interrupt(self) -> None:
+        """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
+        # lol. lmao even.
+        if GlobalInfo.main_window.workspace.main_instance.current_job == self:
+            tid = GlobalInfo.main_window.workspace.main_instance.worker_thread.ident
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(KeyboardInterrupt))
+            if res != 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
+                log.error("Failed to interrupt thread")
+
+
 class JobManager:
     """JobManager is responsible for managing jobs and running them in a separate thread."""
 
     instance: Instance
 
     jobs: list[Job]
-    _jobs_queue: Queue[Job]
-    current_job: Job | None
-    worker_thread: Thread | None
+    jobs_queue: Queue[Job]
+    worker_thread: Worker | None
 
     job_worker_exception_callback: Callable[[Job, BaseException], None] | None
+    _job_id_counter: itertools.count
 
     _gui_last_updated_at: float
     _last_text: str | None
@@ -55,10 +124,10 @@ class JobManager:
         self.instance = instance
 
         self.jobs = []
-        self._jobs_queue = Queue()
-        self.current_job = None
+        self.jobs_queue = Queue()
         self.worker_thread = None
         self.job_worker_exception_callback = None
+        self._job_id_counter = itertools.count()
         self._gui_last_updated_at = 0.0
         self._last_text = None
 
@@ -66,15 +135,16 @@ class JobManager:
 
     def add_job(self, job: Job) -> None:
         self.jobs.append(job)
-        self._jobs_queue.put(job)
+        self.jobs_queue.put(job)
 
     def interrupt_current_job(self) -> None:
         """Notify the current running job that the user requested an interrupt. The job may ignore it."""
         # Due to thread scheduling, current_job reference *must* first be saved on the stack. Accessing self.current_job
         # multiple times will lead to a race condition.
-        current_job = self.current_job
-        if current_job:
-            current_job.keyboard_interrupt()
+        if self.worker_thread is not None:
+            current_job = self.worker_thread.current_job
+            if current_job:
+                self.worker_thread.keyboard_interrupt()
 
     def join_all_jobs(self, wait_period: float = 2.0) -> None:
         """
@@ -91,59 +161,8 @@ class JobManager:
                 time.sleep(0.05)
 
     def _start_worker(self) -> None:
-        self.worker_thread = start_daemon_thread(self._worker, "angr-management Worker Thread")
-
-    def _worker(self) -> None:
-        while True:
-            if self._jobs_queue.empty():
-                self.callback_worker_progress_empty()
-
-            if any(job.blocking for job in self.jobs):
-                self.callback_worker_blocking_job()
-
-            job = self._jobs_queue.get()
-            self.callback_worker_new_job()
-
-            if any(job.blocking for job in self.jobs):
-                self.callback_worker_blocking_job_2()
-
-            try:
-                self.current_job = job
-                ctx = JobContext(self, job)
-                result = job.run(ctx, self.instance)
-                self.current_job = None
-            except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
-                sys.last_traceback = e.__traceback__
-                self.current_job = None
-                log.exception('Exception while running job "%s":', job.name)
-                if self.job_worker_exception_callback is not None:
-                    self.job_worker_exception_callback(job, e)
-            else:
-                self.callback_worker_job_complete(self.instance, job, result)
-
-    # Worker callbacks
-
-    @staticmethod
-    def callback_worker_progress_empty() -> None:
-        gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
-
-    @staticmethod
-    def callback_worker_blocking_job() -> None:
-        if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
-            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
-
-    @staticmethod
-    def callback_worker_new_job() -> None:
-        gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
-
-    @staticmethod
-    def callback_worker_blocking_job_2() -> None:
-        if GlobalInfo.main_window.isVisible():
-            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
-
-    @staticmethod
-    def callback_worker_job_complete(instance: Instance, job: Job, result) -> None:
-        gui_thread_schedule_async(job.finish, args=(instance, result))
+        self.worker_thread = Worker(self, next(self._job_id_counter))
+        self.worker_thread.start()
 
     # Job callbacks
 
