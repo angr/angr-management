@@ -23,6 +23,9 @@ except ImportError:
 if TYPE_CHECKING:
     from angr.knowledge_base import KnowledgeBase
 
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
+
 
 _l = logging.getLogger(__name__)
 
@@ -36,21 +39,21 @@ class LoadTargetJob(Job):
         super().__init__("Loading target", on_finish=on_finish)
         self.target = target
 
-    def _run(self, inst) -> None:
-        self._progress_callback(5)
+    def _run(self, ctx: JobContext, inst: Instance) -> None:
+        ctx.set_progress(5)
         with self.target.build().start() as t:
-            self._progress_callback(10)
+            ctx.set_progress(10)
             dsb = archr.arsenal.DataScoutBow(t)
             apb = archr.arsenal.angrProjectBow(t, dsb)
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
-            self._progress_callback(50)
+            ctx.set_progress(50)
             load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
             if load_options is None:
                 return
 
             # Create the project, load it, then record the image name on success
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
-            self._progress_callback(95)
+            ctx.set_progress(95)
             inst._reset_containers()
             inst.project = proj
             inst.project.am_event()
@@ -66,8 +69,8 @@ class LoadBinaryJob(Job):
         self.load_options = load_options or {}
         self.fname = fname
 
-    def _run(self, inst) -> None:
-        self._progress_callback(5)
+    def _run(self, ctx: JobContext, inst: Instance) -> None:
+        ctx.set_progress(5)
 
         load_as_blob = False
         load_with_libraries = True
@@ -112,7 +115,7 @@ class LoadBinaryJob(Job):
                 gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
                 return
 
-        self._progress_callback(50)
+        ctx.set_progress(50)
         new_load_options, simos = gui_thread_schedule(
             LoadBinary.run, (partial_ld, partial_ld.main_object.__class__, partial_ld.main_object.os)
         )
@@ -126,7 +129,7 @@ class LoadBinaryJob(Job):
         self.load_options.update(new_load_options)
 
         proj = angr.Project(self.fname, load_options=self.load_options, engine=engine, simos=simos)
-        self._progress_callback(95)
+        ctx.set_progress(95)
 
         def callback() -> None:
             inst._reset_containers()
@@ -158,8 +161,8 @@ class LoadAngrDBJob(Job):
 
         self.project = None
 
-    def _run(self, inst) -> None:
-        self._progress_callback(5)
+    def _run(self, ctx: JobContext, inst: Instance) -> None:
+        ctx.set_progress(5)
 
         angrdb = AngrDB()
         try:
@@ -183,4 +186,4 @@ class LoadAngrDBJob(Job):
 
         self.project = proj
 
-        self._progress_callback(100)
+        ctx.set_progress(100)

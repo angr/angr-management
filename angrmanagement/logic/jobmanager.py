@@ -20,6 +20,22 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class JobContext:
+    """JobContext is a context object that is passed to each job to allow it to
+    report progress and other information back to the JobManager.
+    """
+
+    _job_manager: JobManager
+    _job: Job
+
+    def __init__(self, job_manager: JobManager, job: Job):
+        self._job_manager = job_manager
+        self._job = job
+
+    def set_progress(self, percentage: float, text: str | None = None) -> None:
+        self._job_manager.callback_job_set_progress(self._job, percentage, text)
+
+
 class JobManager:
     """JobManager is responsible for managing jobs and running them in a separate thread."""
 
@@ -28,9 +44,12 @@ class JobManager:
     jobs: list[Job]
     _jobs_queue: Queue[Job]
     current_job: Job | None
-    worker_thread: Thread
+    worker_thread: Thread | None
 
     job_worker_exception_callback: Callable[[Job, BaseException], None] | None
+
+    _gui_last_updated_at: float
+    _last_text: str | None
 
     def __init__(self, instance: Instance):
         self.instance = instance
@@ -40,6 +59,8 @@ class JobManager:
         self.current_job = None
         self.worker_thread = None
         self.job_worker_exception_callback = None
+        self._gui_last_updated_at = 0.0
+        self._last_text = None
 
         self._start_worker()
 
@@ -75,20 +96,21 @@ class JobManager:
     def _worker(self) -> None:
         while True:
             if self._jobs_queue.empty():
-                callback_worker_progress_empty()
+                self.callback_worker_progress_empty()
 
             if any(job.blocking for job in self.jobs):
-                callback_worker_blocking_job()
+                self.callback_worker_blocking_job()
 
             job = self._jobs_queue.get()
-            callback_worker_new_job()
+            self.callback_worker_new_job()
 
             if any(job.blocking for job in self.jobs):
-                callback_worker_blocking_job_2()
+                self.callback_worker_blocking_job_2()
 
             try:
                 self.current_job = job
-                result = job.run(self.instance)
+                ctx = JobContext(self, job)
+                result = job.run(ctx, self.instance)
                 self.current_job = None
             except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
                 sys.last_traceback = e.__traceback__
@@ -97,30 +119,41 @@ class JobManager:
                 if self.job_worker_exception_callback is not None:
                     self.job_worker_exception_callback(job, e)
             else:
-                callback_job_complete(self.instance, job, result)
+                self.callback_worker_job_complete(self.instance, job, result)
 
-    # pylint:disable=no-self-use
-    def _set_status(self, status_text) -> None:
-        GlobalInfo.main_window.status = status_text
+    # Worker callbacks
 
+    @staticmethod
+    def callback_worker_progress_empty() -> None:
+        gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
 
-def callback_worker_progress_empty() -> None:
-    gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
+    @staticmethod
+    def callback_worker_blocking_job() -> None:
+        if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
+            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
 
+    @staticmethod
+    def callback_worker_new_job() -> None:
+        gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
 
-def callback_worker_blocking_job() -> None:
-    if GlobalInfo.main_window is not None and GlobalInfo.main_window.workspace:
-        gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
+    @staticmethod
+    def callback_worker_blocking_job_2() -> None:
+        if GlobalInfo.main_window.isVisible():
+            gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
+    @staticmethod
+    def callback_worker_job_complete(instance: Instance, job: Job, result) -> None:
+        gui_thread_schedule_async(job.finish, args=(instance, result))
 
-def callback_worker_new_job() -> None:
-    gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
+    # Job callbacks
 
+    def callback_job_set_progress(self, job: Job, percentage: float, text: str | None) -> None:
+        delta = percentage - job.progress_percentage
 
-def callback_worker_blocking_job_2() -> None:
-    if GlobalInfo.main_window.isVisible():
-        gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
+        if (delta > 0.02 or self._last_text != text) and time.time() - self._gui_last_updated_at >= 0.1:
+            self._gui_last_updated_at = time.time()
+            job.progress_percentage = percentage
+            status_text = f"{job.name}: {text}" if text else job.name
+            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=(status_text, percentage))
 
-
-def callback_job_complete(instance: Instance, job: Job, result) -> None:
-    gui_thread_schedule_async(job.finish, args=(instance, result))
+    # Private methods

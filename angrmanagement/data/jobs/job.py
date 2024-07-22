@@ -5,9 +5,14 @@ import ctypes
 import datetime
 import logging
 import time
+from typing import TYPE_CHECKING
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 m = ...
 
@@ -63,23 +68,22 @@ class Job:
     def time_elapsed(self) -> str:
         return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
 
-    def run(self, inst):
+    def run(self, ctx: JobContext, inst: Instance):
         log.info('Job "%s" started', self.name)
-        self._progress_callback(0)
+        ctx.set_progress(0)
         self.start_at = time.time()
-        r = self._run(inst)
+        r = self._run(ctx, inst)
         now = time.time()
         duration = now - self.start_at
         log.info('Job "%s" completed after %.2f seconds', self.name, duration)
         return r
 
-    def _run(self, inst):
+    def _run(self, ctx: JobContext, inst: Instance):
         raise NotImplementedError
 
     def finish(self, inst, result) -> None:  # pylint: disable=unused-argument
         inst.job_manager.jobs = inst.job_manager.jobs[1:]
 
-        gui_thread_schedule_async(self._finish_progress)
         if self._on_finish:
             gui_thread_schedule_async(self._on_finish, (inst, result))
 
@@ -92,20 +96,3 @@ class Job:
             if res != 1:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
                 log.error("Failed to interrupt thread")
-
-    def _progress_callback(self, percentage, text: str | None = None) -> None:
-        delta = percentage - self.progress_percentage
-
-        if (delta > 0.02 or self.last_text != text) and time.time() - self.last_gui_updated_at >= 0.1:
-            self.last_gui_updated_at = time.time()
-            self.progress_percentage = percentage
-            gui_thread_schedule_async(self._set_progress, args=(text,))
-
-    def _set_progress(self, text: str | None = None) -> None:
-        status = self.name
-        if text:
-            status += ": " + text
-        GlobalInfo.main_window.progress(status, self.progress_percentage)
-
-    def _finish_progress(self) -> None:
-        pass

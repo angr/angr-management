@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .job import Job
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class SimgrExploreJob(Job):
@@ -14,7 +20,7 @@ class SimgrExploreJob(Job):
         self._until_callback = until_callback
         self._interrupted = False
 
-    def _run(self, inst):
+    def _run(self, ctx: JobContext, inst: Instance):
         """Run the job. Runs in the worker thread."""
 
         def until_callback(*args, **kwargs):

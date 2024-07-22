@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import networkx
 
 from .job import Job
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class DDGGenerationJob(Job):
@@ -10,7 +16,7 @@ class DDGGenerationJob(Job):
         super().__init__("DDG generation")
         self._addr = addr
 
-    def _run(self, inst):
+    def _run(self, ctx: JobContext, inst: Instance):
         ddg = inst.project.analyses.VSA_DDG(vfg=inst.vfgs[self._addr], start_addr=self._addr)
         return ddg, networkx.relabel_nodes(ddg.graph, lambda n: n.insn_addr)
 
