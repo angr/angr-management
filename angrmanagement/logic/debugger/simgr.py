@@ -97,4 +97,4 @@ class SimulationDebugger(Debugger):
     def halt(self) -> None:
         for job in self.instance.jobs:
             if isinstance(job, SimgrExploreJob):
-                job.keyboard_interrupt()
+                job.cancel()

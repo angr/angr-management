@@ -62,6 +62,7 @@ class Instance:
         self._jobs_queue = Queue()
         self.current_job = None
         self.worker_thread = None
+        self.workspace = None
 
         self.extra_containers = {}
         self._container_defaults = {}
@@ -204,6 +205,9 @@ class Instance:
     def add_job(self, job: Job) -> None:
         self.jobs.append(job)
         self._jobs_queue.put(job)
+        #Adding jobs to jobsView through callback
+        if self.workspace is not None:
+            callback_job_added_jobsView(self.workspace, job)
 
     def get_instruction_text_at(self, addr: int):
         """
@@ -240,7 +244,7 @@ class Instance:
         # multiple times will lead to a race condition.
         current_job = self.current_job
         if current_job:
-            current_job.keyboard_interrupt()
+            current_job.cancel()
 
     def join_all_jobs(self, wait_period: float = 2.0) -> None:
         """
@@ -345,20 +349,32 @@ class Instance:
 
             if any(job.blocking for job in self.jobs):
                 callback_worker_blocking_job_2()
-
-            try:
-                self.current_job = job
-                result = job.run(self)
-                self.current_job = None
-            except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
-                sys.last_traceback = e.__traceback__
-                self.current_job = None
-                _l.exception('Exception while running job "%s":', job.name)
-                if self.job_worker_exception_callback is not None:
-                    self.job_worker_exception_callback(job, e)
+            
+            #If job has cancelled attribute and it is True for cancelled, then skip it
+            if hasattr(job, "cancelled") and job.cancelled:
+                pass
             else:
-                callback_job_complete(self, job, result)
-
+                try:
+                    self.current_job = job
+                    #If the workspace is not none then modify the jobs view
+                    if self.workspace is not None:
+                        callback_worker_new_job_jobsView(self.workspace, self.current_job)
+                        result = job.run(self)
+                        callback_job_complete_jobsView(self.workspace, self.current_job)
+                        self.current_job = None
+                    else:
+                        result = job.run(self)
+                        self.current_job = None
+                except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
+                    sys.last_traceback = e.__traceback__
+                    self.current_job = None
+                    _l.exception('Exception while running job "%s":', job.name)
+                    if self.job_worker_exception_callback is not None:
+                        self.job_worker_exception_callback(job, e)
+                else:
+                    callback_job_complete(self, job, result)
+                    if self.workspace is not None:
+                        callback_job_complete_jobsView(self.workspace, job)
     # pylint:disable=no-self-use
     def _set_status(self, status_text) -> None:
         GlobalInfo.main_window.status = status_text
@@ -373,6 +389,16 @@ class Instance:
 
         self.breakpoint_mgr.clear()
 
+#This callback adds jobs dynamically to the jobsView upon addition of a new job
+def callback_job_added_jobsView(workspace, new_job: Job) -> None:
+    jobs_view = workspace.view_manager.first_view_in_category("jobs")
+    gui_thread_schedule_async(jobs_view.q_jobs.add_new_job, args=[new_job])
+
+#This callback modifies the jobsView table to change the progress of a job visually
+def callback_worker_progress_jobsView(workspace, the_job: Job) -> None:
+    jobs_view = workspace.view_manager.first_view_in_category("jobs")
+    gui_thread_schedule_async(jobs_view.q_jobs.change_job_progress, args=[the_job])
+
 
 def callback_worker_progress_empty() -> None:
     gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
@@ -386,6 +412,11 @@ def callback_worker_blocking_job() -> None:
 def callback_worker_new_job() -> None:
     gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
 
+#This callback changes the jobsView table to have the table modified with modifying the job status as running
+def callback_worker_new_job_jobsView(workspace, the_job: Job) -> None:
+    jobs_view = workspace.view_manager.first_view_in_category("jobs")
+    gui_thread_schedule_async(jobs_view.q_jobs.change_job_running, args=(the_job,))
+
 
 def callback_worker_blocking_job_2() -> None:
     if GlobalInfo.main_window.isVisible():
@@ -394,3 +425,8 @@ def callback_worker_blocking_job_2() -> None:
 
 def callback_job_complete(instance: Instance, job: Job, result) -> None:
     gui_thread_schedule_async(job.finish, args=(instance, result))
+
+#This callback changes the jobsView table to have the table modified with the job complete
+def callback_job_complete_jobsView(workspace, job: Job):
+    jobs_view = workspace.view_manager.first_view_in_category("jobs")
+    gui_thread_schedule_async(jobs_view.q_jobs.change_job_finish, args=[job])

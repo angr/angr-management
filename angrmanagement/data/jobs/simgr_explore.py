@@ -30,7 +30,7 @@ class SimgrExploreJob(Job):
     def __repr__(self) -> str:
         return f"Exploring {self._simgr!r}"
 
-    def keyboard_interrupt(self) -> None:
+    def cancel(self) -> None:
         """Called from GUI thread. Worker thread will check self._interrupted periodically and exit the job early if
         needed."""
         self._interrupted = True

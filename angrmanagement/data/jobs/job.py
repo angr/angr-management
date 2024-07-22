@@ -45,6 +45,7 @@ class Job:
         self.start_at: float = 0.0
         self.last_gui_updated_at: float = 0.0
         self.blocking = blocking
+        self.instance = None
 
         # callbacks
         self._on_finish = on_finish
@@ -64,6 +65,7 @@ class Job:
         return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
 
     def run(self, inst):
+        self.instance = inst
         log.info('Job "%s" started', self.name)
         self._progress_callback(0)
         self.start_at = time.time()
@@ -83,7 +85,7 @@ class Job:
         if self._on_finish:
             gui_thread_schedule_async(self._on_finish, (inst, result))
 
-    def keyboard_interrupt(self) -> None:
+    def cancel(self) -> None:
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
         # lol. lmao even.
         if GlobalInfo.main_window.workspace.main_instance.current_job == self:
@@ -93,13 +95,17 @@ class Job:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
                 log.error("Failed to interrupt thread")
 
-    def _progress_callback(self, percentage, text: str | None = None) -> None:
+    def _progress_callback(self, percentage, text: str | None = None, inst = None) -> None:
         delta = percentage - self.progress_percentage
 
         if (delta > 0.02 or self.last_text != text) and time.time() - self.last_gui_updated_at >= 0.1:
             self.last_gui_updated_at = time.time()
             self.progress_percentage = percentage
             gui_thread_schedule_async(self._set_progress, args=(text,))
+
+            #Dynamically update jobs view progress with instance
+            if (self.instance is not None and hasattr(self.instance, "callback_worker_progress_jobsView")):
+                self.instance.callback_worker_progress_jobsView(self.instance.workspace, self.instance.current_job)
 
     def _set_progress(self, text: str | None = None) -> None:
         status = self.name
