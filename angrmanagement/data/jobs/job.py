@@ -77,9 +77,6 @@ class Job:
 
     def run(self, ctx: JobContext, inst: Instance):
         """Run the job. This method is called in a worker thread."""
-        return self._run(ctx, inst)
-
-    def _run(self, ctx: JobContext, inst: Instance):
         raise NotImplementedError
 
     def finish(self, inst: Instance, result: Any) -> None:

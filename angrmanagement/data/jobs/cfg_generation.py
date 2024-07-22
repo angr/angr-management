@@ -46,7 +46,7 @@ class CFGGenerationJob(Job):
         self._cfb = None
         self.instance = None
 
-    def _run(self, ctx: JobContext, inst: Instance):
+    def run(self, ctx: JobContext, inst: Instance):
         self.instance = inst
         exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery

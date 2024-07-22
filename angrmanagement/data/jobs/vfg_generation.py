@@ -14,7 +14,7 @@ class VFGGenerationJob(Job):
         super().__init__("VFG generation")
         self._addr = addr
 
-    def _run(self, ctx: JobContext, inst: Instance):
+    def run(self, _: JobContext, inst: Instance):
         return inst.project.analyses.VFG(function_start=self._addr)
 
     def finish(self, inst, result) -> None:

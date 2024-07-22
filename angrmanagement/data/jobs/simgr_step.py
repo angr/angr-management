@@ -17,7 +17,7 @@ class SimgrStepJob(Job):
         self._until_branch = until_branch
         self._step_callback = step_callback
 
-    def _run(self, ctx: JobContext, inst: Instance):
+    def run(self, _: JobContext, inst: Instance):
         if self._until_branch:
             orig_len = len(self._simgr.active)
             if orig_len > 0:
