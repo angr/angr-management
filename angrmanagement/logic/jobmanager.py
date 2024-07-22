@@ -77,11 +77,11 @@ class Worker(Thread):
                 ctx.set_progress(0)
 
                 log.info('Job "%s" started', job.name)
-                self.start_at = time.time()
+                job.start_at = time.time()
                 result = job.run(ctx, self.job_manager.instance)
                 now = time.time()
-                duration = now - self.start_at
-                log.info('Job "%s" completed after %.2f seconds', self.name, duration)
+                duration = now - job.start_at
+                log.info('Job "%s" completed after %.2f seconds', job.name, duration)
 
                 self.current_job = None
             except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
