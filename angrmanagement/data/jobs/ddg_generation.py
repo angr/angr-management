@@ -16,7 +16,7 @@ class DDGGenerationJob(Job):
         super().__init__("DDG generation")
         self._addr = addr
 
-    def _run(self, ctx: JobContext, inst: Instance):
+    def run(self, _: JobContext, inst: Instance):
         ddg = inst.project.analyses.VSA_DDG(vfg=inst.vfgs[self._addr], start_addr=self._addr)
         return ddg, networkx.relabel_nodes(ddg.graph, lambda n: n.insn_addr)
 

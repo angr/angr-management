@@ -59,7 +59,7 @@ class VariableRecoveryJob(Job):
         callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
         self.ccc.prioritize_functions({func_addr} | callees)
 
-    def _run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         self.instance = inst
         self.started = True
 

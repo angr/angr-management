@@ -77,7 +77,7 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def _run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         ctx.set_progress(0.0)
         self._perform(ctx, inst)
         ctx.set_progress(100.0)

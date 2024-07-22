@@ -39,7 +39,7 @@ class LoadTargetJob(Job):
         super().__init__("Loading target", on_finish=on_finish)
         self.target = target
 
-    def _run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         ctx.set_progress(5)
         with self.target.build().start() as t:
             ctx.set_progress(10)
@@ -69,7 +69,7 @@ class LoadBinaryJob(Job):
         self.load_options = load_options or {}
         self.fname = fname
 
-    def _run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         ctx.set_progress(5)
 
         load_as_blob = False
@@ -161,7 +161,7 @@ class LoadAngrDBJob(Job):
 
         self.project = None
 
-    def _run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         ctx.set_progress(5)
 
         angrdb = AngrDB()

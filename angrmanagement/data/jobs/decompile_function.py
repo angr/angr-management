@@ -21,7 +21,7 @@ class DecompileFunctionJob(Job):
         self.function = function
         super().__init__(name="Decompiling", on_finish=on_finish, blocking=blocking)
 
-    def _run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         decompiler = inst.project.analyses.Decompiler(
             self.function,
             flavor="pseudocode",
