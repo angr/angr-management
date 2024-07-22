@@ -9,6 +9,7 @@ from .job import Job
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 _l = logging.getLogger(name=__name__)
 
@@ -21,7 +22,7 @@ class FlirtSignatureRecognitionJob(Job):
     def __init__(self, on_finish=None) -> None:
         super().__init__(name="Applying FLIRT signatures", on_finish=on_finish)
 
-    def _run(self, inst: Instance) -> None:
+    def run(self, _: JobContext, inst: Instance) -> None:
         if inst.project.arch.name.lower() in angr.flirt.FLIRT_SIGNATURES_BY_ARCH:
             inst.project.analyses.Flirt()
         else:

@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import logging
-import sys
-import time
-from queue import Queue
 from typing import TYPE_CHECKING
 
 import angr
@@ -15,18 +12,15 @@ from cle import SymbolType
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.data.trace import Trace
-from angrmanagement.logic import GlobalInfo
+from angrmanagement.errors import ContainerAlreadyRegisteredError
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
-from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
-from angrmanagement.utils.daemon_thread import start_daemon_thread
+from angrmanagement.logic.jobmanager import JobManager
 
 from .log import LogRecord, initialize
 from .object_container import ObjectContainer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    from angrmanagement.data.jobs.job import Job
 
     from .jobs import VariableRecoveryJob
 
@@ -44,6 +38,8 @@ class Instance:
     cfb: angr.analyses.cfg.CFBlanket | ObjectContainer
     log: list[LogRecord] | ObjectContainer
 
+    job_manager: JobManager
+
     def __init__(self) -> None:
         # pylint:disable=import-outside-toplevel
         # delayed import
@@ -53,6 +49,8 @@ class Instance:
             ProtocolInteractor,
             SavedInteraction,
         )
+
+        self.job_manager = JobManager(self)
 
         self._live = False
         self.variable_recovery_job: VariableRecoveryJob | None = None
@@ -103,7 +101,6 @@ class Instance:
         self._label_rename_callback: Callable[[int, str], None] | None = None  # (addr, new_name)
         self._set_comment_callback: Callable[[int, str], None] | None = None  # (addr, comment_text)
         self.handle_comment_changed_callback: Callable[[int, str, bool, bool, bool], None] | None = None
-        self.job_worker_exception_callback: Callable[[Exception], None] | None = None
 
         # Setup logging
         initialize(self)
@@ -112,8 +109,6 @@ class Instance:
         self.variable_recovery_args = None
         self._disassembly = {}
         self.pseudocode_variable_kb = None
-
-        self._start_worker()
 
         self.database_path = None
 
@@ -167,7 +162,7 @@ class Instance:
         self._label_rename_callback = v
 
     @property
-    def set_comment_callback(self):
+    def set_comment_callback(self) -> Callable[[int, str], None] | None:
         return self._set_comment_callback
 
     @set_comment_callback.setter
@@ -182,7 +177,9 @@ class Instance:
         if name in self.extra_containers:
             cur_ty = self._container_defaults[name][1]
             if ty != cur_ty:
-                raise Exception(f"Container {name} already registered with different type: {ty} != {cur_ty}")
+                raise ContainerAlreadyRegisteredError(
+                    f"Container {name} already registered with different type: {ty} != {cur_ty}"
+                )
 
         else:
             self._container_defaults[name] = (default_val_func, ty)
@@ -324,8 +321,8 @@ class Instance:
             kb.comments[addr] = comment_text
 
         # TODO: can this be removed?
-        if self.set_comment_callback:
-            self.set_comment_callback(addr=addr, comment_text=comment_text)
+        if self.set_comment_callback is not None:
+            self.set_comment_callback(addr, comment_text)
 
     #
     # Private methods
@@ -380,9 +377,9 @@ class Instance:
         GlobalInfo.main_window.status = status_text
 
     def _reset_containers(self) -> None:
-        for name in self.extra_containers:
-            self.extra_containers[name].am_obj = self._container_defaults[name][0]()
-            self.extra_containers[name].am_event()
+        for name, container in self.extra_containers.items():
+            container.am_obj = self._container_defaults[name][0]()
+            container.am_event()
 
         for dbg in list(self.debugger_list_mgr.debugger_list):
             self.debugger_list_mgr.remove_debugger(dbg)

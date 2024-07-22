@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import functools
 import logging
-import time
+from typing import TYPE_CHECKING
 
 from angrmanagement.data.analysis_options import CFGForceScanMode
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import Job
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 _l = logging.getLogger(name=__name__)
 
@@ -39,10 +44,9 @@ class CFGGenerationJob(Job):
             self.cfg_args["force_complete_scan"] = scanning_mode == CFGForceScanMode.CompleteScan
 
         self._cfb = None
-        self._last_progress_callback_triggered = None
         self.instance = None
 
-    def _run(self, inst):
+    def run(self, ctx: JobContext, inst: Instance):
         self.instance = inst
         exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
@@ -52,7 +56,7 @@ class CFGGenerationJob(Job):
         self._cfb = temp_cfb
 
         cfg = inst.project.analyses.CFG(
-            progress_callback=self._progress_callback,
+            progress_callback=functools.partial(self._progress_callback, ctx),
             low_priority=True,
             cfb=temp_cfb,
             **self.cfg_args,
@@ -76,12 +80,8 @@ class CFGGenerationJob(Job):
     # Private methods
     #
 
-    def _progress_callback(self, percentage, text: str | None = None, cfg=None) -> None:
-        t = time.time()
-        if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
-            return
-        self._last_progress_callback_triggered = t
-        super()._progress_callback(percentage, text=text)
+    def _progress_callback(self, ctx: JobContext, percentage, text: str | None = None, cfg=None) -> None:
+        ctx.set_progress(percentage, text)
 
         if cfg is not None:
             # Peek into the CFG

@@ -25,7 +25,7 @@ python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
 pip install git+https://github.com/eliben/pyelftools.git
 pip install git+https://github.com/angr/archinfo.git@$TAG
 pip install git+https://github.com/angr/pyvex.git@$TAG
-pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe]
+pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe,pdb]
 pip install git+https://github.com/angr/claripy.git@$TAG
 pip install git+https://github.com/angr/ailment.git@$TAG
 pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]

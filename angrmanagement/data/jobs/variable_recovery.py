@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from typing import TYPE_CHECKING
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -9,6 +8,7 @@ from .job import Job
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class VariableRecoveryJob(Job):
@@ -59,7 +59,7 @@ class VariableRecoveryJob(Job):
         callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
         self.ccc.prioritize_functions({func_addr} | callees)
 
-    def _run(self, inst: Instance) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         self.instance = inst
         self.started = True
 
@@ -77,7 +77,7 @@ class VariableRecoveryJob(Job):
             recover_variables=True,
             low_priority=True,
             cfg=inst.cfg.am_obj,
-            progress_callback=self._progress_callback,
+            progress_callback=ctx.set_progress,
             cc_callback=cc_callback,
             analyze_callsites=True,
             max_function_blocks=300,
@@ -92,14 +92,6 @@ class VariableRecoveryJob(Job):
 
     def _cc_callback(self, func_addr: int) -> None:
         gui_thread_schedule_async(self.on_variable_recovered, args=(func_addr,))
-
-    def _progress_callback(self, percentage, text: str | None = None) -> None:
-        t = time.time()
-        if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
-            return
-        self._last_progress_callback_triggered = t
-
-        super()._progress_callback(percentage, text=text)
 
     def finish(self, inst, result) -> None:
         self.ccc = None  # essentially disabling self.prioritize_function()

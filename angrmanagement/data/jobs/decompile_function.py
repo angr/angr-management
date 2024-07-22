@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from angrmanagement.logic import GlobalInfo
 
 from .job import Job
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class DecompileFunctionJob(Job):
@@ -15,13 +21,13 @@ class DecompileFunctionJob(Job):
         self.function = function
         super().__init__(name="Decompiling", on_finish=on_finish, blocking=blocking)
 
-    def _run(self, inst) -> None:
+    def run(self, ctx: JobContext, inst: Instance) -> None:
         decompiler = inst.project.analyses.Decompiler(
             self.function,
             flavor="pseudocode",
             variable_kb=inst.pseudocode_variable_kb,
             **self.kwargs,
-            progress_callback=self._progress_callback,
+            progress_callback=ctx.set_progress,
         )
         # cache the result
         inst.kb.structured_code[(self.function.addr, "pseudocode")] = decompiler.cache

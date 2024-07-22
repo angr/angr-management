@@ -125,7 +125,7 @@ class ValueSearch(BasePlugin):
         elif type_ == "double":
             f_val = float(value)
             value = self._double_to_bytes(f_val)
-        elif type == "char":
+        elif type_ == "char":
             value = value.encode()
         else:
             value = value.encode().decode("unicode_escape").encode("latin-1")
