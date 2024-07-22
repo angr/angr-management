@@ -47,13 +47,15 @@ class Job:
     last_text: str | None
     start_at: float
     blocking: bool
-    _on_finish: Callable[[Instance, Any], None]
+    _on_finish: Callable[[Instance, Any], None] | None
 
-    def __init__(self, name: str, on_finish=None, blocking: bool = False) -> None:
+    def __init__(
+        self, name: str, on_finish: Callable[[Instance, Any], None] | None = None, blocking: bool = False
+    ) -> None:
         self.name = name
         self.progress_percentage = 0.0
-        self.last_text: str | None = None
-        self.start_at: float = 0.0
+        self.last_text = None
+        self.start_at = 0.0
         self.blocking = blocking
 
         # callbacks
@@ -80,7 +82,7 @@ class Job:
     def _run(self, ctx: JobContext, inst: Instance):
         raise NotImplementedError
 
-    def finish(self, inst, result) -> None:
+    def finish(self, inst: Instance, result: Any) -> None:
         """Runs after the job has finished in the GUI thread."""
         if self._on_finish is not None:
             self._on_finish(inst, result)
