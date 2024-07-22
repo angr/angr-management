@@ -98,3 +98,4 @@ class SimulationDebugger(Debugger):
         for job in self.workspace.job_manager.jobs:
             if isinstance(job, SimgrExploreJob):
                 self.workspace.job_manager.cancel_job(job)
+

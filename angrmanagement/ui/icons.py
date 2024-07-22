@@ -19,6 +19,7 @@ NAME_TO_QTAWESOME_NAME = {
     "file-open": "mdi.folder-open",
     "functions-view": "mdi.function",
     "hex-view": "mdi.hexadecimal",
+    "jobs-view": "fa5s.hammer",
     "log-view": "mdi.message-bulleted",
     "patches-view": "mdi.sticker-outline",
     "plugins": "mdi.puzzle-edit",

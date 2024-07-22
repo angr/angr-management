@@ -10,6 +10,7 @@ from .disassembly_view import DisassemblyView
 from .functions_view import FunctionsView
 from .hex_view import HexView
 from .interaction_view import InteractionView
+from .jobs import jobsView
 from .log_view import LogView
 from .patches_view import PatchesView
 from .proximity_view import ProximityView
@@ -22,6 +23,7 @@ from .trace_map_view import TraceMapView
 from .traces_view import TracesView
 from .types_view import TypesView
 from .view import BaseView, InstanceView
+ #importing jobs view 
 
 __all__ = [
     "BreakpointsView",
@@ -47,4 +49,5 @@ __all__ = [
     "TypesView",
     "BaseView",
     "InstanceView",
+    "jobsView" #imported job view
 ]

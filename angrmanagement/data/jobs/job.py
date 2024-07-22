@@ -57,6 +57,7 @@ class Job:
         self.last_text = None
         self.start_at = 0.0
         self.blocking = blocking
+        self.instance = None
 
         # callbacks
         self._on_finish = on_finish
@@ -83,3 +84,4 @@ class Job:
         """Runs after the job has finished in the GUI thread."""
         if self._on_finish is not None:
             self._on_finish(inst, result)
+
