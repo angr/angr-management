@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import threading
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from PySide6.QtCore import QCoreApplication, QEvent
 
@@ -14,29 +14,35 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class ExecuteCodeEvent(QEvent):
+class ExecuteCodeEvent(QEvent, Generic[T]):
     """ExecuteCodeEvent represents a custom event that executes a callable on the GUI thread."""
 
-    def __init__(self, callable, args=None, kwargs=None) -> None:
+    func: Callable[..., T]
+    args: tuple[Any, ...] | None
+    kwargs: dict[str, Any] | None
+    event: threading.Event
+    result: T | None
+    exception: Exception | None
+    async_: bool
+
+    def __init__(
+        self,
+        func: Callable[..., T],
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+        async_: bool = False,
+    ) -> None:
         super().__init__(QEvent.Type.User)
-        self.callable = callable
+        self.func = func
         self.args = args
         self.kwargs = kwargs
         self.event = threading.Event()
         self.result = None
         self.exception = None
+        self.async_ = async_
 
-    def execute(self):
-        if self.kwargs is None:
-            if self.args is None:
-                return self.callable()
-            else:
-                return self.callable(*self.args)
-        else:
-            if self.args is None:
-                return self.callable(**self.kwargs)
-            else:
-                return self.callable(*self.args, **self.kwargs)
+    def execute(self) -> T:
+        return self.func(*(self.args or ()), **(self.kwargs or {}))
 
 
 def is_gui_thread() -> bool:
@@ -97,7 +103,7 @@ def gui_thread_schedule_async(
         func(*(args or ()), **(kwargs or {}))
         return
 
-    event = ExecuteCodeEvent(func, args=args, kwargs=kwargs)
+    event = ExecuteCodeEvent(func, args=args, kwargs=kwargs, async_=True)
 
     if GlobalInfo.is_test:
         GlobalInfo.add_event_during_test(event)

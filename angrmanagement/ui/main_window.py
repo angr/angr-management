@@ -37,6 +37,7 @@ from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
+from angrmanagement.logic.threads import ExecuteCodeEvent
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
@@ -616,13 +617,13 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def event(self, event):
-        if event.type() == QEvent.User:
-            # our event callback
-
+        if event.type() == QEvent.User and isinstance(event, ExecuteCodeEvent):
             try:
                 event.result = event.execute()
             except Exception as ex:  # pylint:disable=broad-except
                 event.exception = ex
+                if event.async_:
+                    _l.exception("Exception occurred in an async job:")
             event.event.set()
 
             return True
