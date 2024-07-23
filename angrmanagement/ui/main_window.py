@@ -30,7 +30,6 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import IMG_LOCATION, Conf, save_config
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
-from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadTargetJob
 from angrmanagement.data.library_docs import LibraryDocs
@@ -372,7 +371,7 @@ class MainWindow(QMainWindow):
         self.dock_manager.setAutoHideConfigFlags(QtAds.CDockManager.DefaultAutoHideConfig)
         self.dock_manager.createSideTabBarWidgets()
         self.setCentralWidget(self.dock_manager)
-        wk = Workspace(self, Instance())
+        wk = Workspace(self)
         self.workspace = wk
 
         def set_caption(**kwargs) -> None:  # pylint: disable=unused-argument
