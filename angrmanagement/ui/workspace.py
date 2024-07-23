@@ -316,6 +316,7 @@ class Workspace:
                 # disable multiprocessing on angr CI
                 options["workers"] = 0
             self.main_instance.variable_recovery_job = VariableRecoveryJob(
+                self.main_instance,
                 **self.main_instance._analysis_configuration["varec"].to_dict(),
                 on_variable_recovered=self.on_variable_recovered,
             )
