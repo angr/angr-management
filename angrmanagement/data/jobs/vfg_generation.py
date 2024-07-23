@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class VFGGenerationJob(Job):
+    """A job that runs the VFG analysis for a function at a given address."""
+
     def __init__(self, addr: int) -> None:
         super().__init__("VFG generation", on_finish=self._finish)
         self._addr = addr

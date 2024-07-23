@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class DDGGenerationJob(Job):
+    """A job that runs the VSA_DDG analysis for a function at a given address."""
+
     def __init__(self, addr: int) -> None:
         super().__init__("DDG generation", on_finish=self._finish)
         self._addr = addr
