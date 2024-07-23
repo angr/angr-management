@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import angr.flirt
 
-from .job import Job
+from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -14,19 +14,19 @@ if TYPE_CHECKING:
 _l = logging.getLogger(name=__name__)
 
 
-class FlirtSignatureRecognitionJob(Job):
+class FlirtSignatureRecognitionJob(InstanceJob):
     """
     Describes a job for using FLIRT signatures to recognize and match library functions embedded in a binary.
     """
 
-    def __init__(self, on_finish=None) -> None:
-        super().__init__(name="Applying FLIRT signatures", on_finish=on_finish)
+    def __init__(self, instance: Instance, on_finish=None) -> None:
+        super().__init__("Applying FLIRT signatures", instance, on_finish=on_finish)
 
-    def run(self, _: JobContext, inst: Instance) -> None:
-        if inst.project.arch.name.lower() in angr.flirt.FLIRT_SIGNATURES_BY_ARCH:
-            inst.project.analyses.Flirt()
+    def run(self, _: JobContext) -> None:
+        if self.instance.project.arch.name.lower() in angr.flirt.FLIRT_SIGNATURES_BY_ARCH:
+            self.instance.project.analyses.Flirt()
         else:
-            _l.warning("No FLIRT signatures exist for architecture %s.", inst.project.arch.name)
+            _l.warning("No FLIRT signatures exist for architecture %s.", self.instance.project.arch.name)
 
     def __repr__(self) -> str:
         return "FlirtSignatureRecognitionJob"

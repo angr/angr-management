@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QMessageBox
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs import LoadBinary
 
-from .job import Job
+from .job import InstanceJob
 
 try:
     import archr
@@ -30,16 +30,16 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 
-class LoadTargetJob(Job):
+class LoadTargetJob(InstanceJob):
     """
     Job to load archr target and angr project.
     """
 
-    def __init__(self, target, on_finish=None) -> None:
-        super().__init__("Loading target", on_finish=on_finish)
+    def __init__(self, instance: Instance, target, on_finish=None) -> None:
+        super().__init__("Loading target", instance, on_finish=on_finish)
         self.target = target
 
-    def run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext) -> None:
         ctx.set_progress(5)
         with self.target.build().start() as t:
             ctx.set_progress(10)
@@ -54,22 +54,22 @@ class LoadTargetJob(Job):
             # Create the project, load it, then record the image name on success
             proj = apb.fire(use_sim_procedures=True, load_options=load_options)
             ctx.set_progress(95)
-            inst._reset_containers()
-            inst.project = proj
-            inst.project.am_event()
+            self.instance._reset_containers()
+            self.instance.project = proj
+            self.instance.project.am_event()
 
 
-class LoadBinaryJob(Job):
+class LoadBinaryJob(InstanceJob):
     """
     Job to display binary load dialog and create angr project.
     """
 
-    def __init__(self, fname, load_options=None, on_finish=None) -> None:
-        super().__init__("Loading file", on_finish=on_finish)
+    def __init__(self, instance: Instance, fname, load_options=None, on_finish=None) -> None:
+        super().__init__("Loading file", instance, on_finish=on_finish)
         self.load_options = load_options or {}
         self.fname = fname
 
-    def run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext) -> None:
         ctx.set_progress(5)
 
         load_as_blob = False
@@ -132,27 +132,28 @@ class LoadBinaryJob(Job):
         ctx.set_progress(95)
 
         def callback() -> None:
-            inst._reset_containers()
-            inst.project.am_obj = proj
-            inst.project.am_event()
+            self.instance._reset_containers()
+            self.instance.project.am_obj = proj
+            self.instance.project.am_event()
 
         gui_thread_schedule(callback, ())
 
 
-class LoadAngrDBJob(Job):
+class LoadAngrDBJob(InstanceJob):
     """
     Load an angr database file and return a new angr project.
     """
 
     def __init__(
         self,
+        instance: Instance,
         file_path: str,
         kb_names: list[str],
         other_kbs: dict[str, KnowledgeBase] | None = None,
         extra_info: dict | None = None,
         on_finish=None,
     ) -> None:
-        super().__init__("Loading angr database", on_finish=on_finish)
+        super().__init__("Loading angr database", instance, on_finish=on_finish)
         self.file_path = file_path
         self.kb_names = kb_names
         self.other_kbs = other_kbs
@@ -161,7 +162,7 @@ class LoadAngrDBJob(Job):
 
         self.project = None
 
-    def run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext) -> None:
         ctx.set_progress(5)
 
         angrdb = AngrDB()

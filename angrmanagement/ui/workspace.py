@@ -76,6 +76,7 @@ from .views import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from typing import Any
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.main_window import MainWindow
@@ -198,7 +199,7 @@ class Workspace:
             # ask the current view to display this function
             current_view.function = func
 
-    def on_function_tagged(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+    def on_function_tagged(self, _: Any) -> None:
         # reload disassembly view
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             view = self.view_manager.first_view_in_category("disassembly")
@@ -222,7 +223,7 @@ class Workspace:
         if cfg_args is None:
             cfg_args = {}
 
-        cfg_job = CFGGenerationJob(on_finish=self.on_cfg_generated, **cfg_args)
+        cfg_job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **cfg_args)
         self.job_manager.add_job(cfg_job)
         start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(cfg_job,))
 
@@ -253,7 +254,7 @@ class Workspace:
             if cfg_job not in self.job_manager.jobs:
                 break
 
-    def on_cfg_generated(self, instance, cfg_result) -> None:  # pylint:disable=unused-argument
+    def on_cfg_generated(self, cfg_result) -> None:
         cfg, cfb = cfg_result
         self.main_instance.cfb = cfb
         self.main_instance.cfg = cfg
@@ -263,6 +264,7 @@ class Workspace:
         if self.main_instance._analysis_configuration["flirt"].enabled:
             self.job_manager.add_job(
                 FlirtSignatureRecognitionJob(
+                    self.main_instance,
                     on_finish=self._on_flirt_signature_recognized,
                 )
             )
@@ -291,17 +293,19 @@ class Workspace:
             if view is not None:
                 view.clear()
 
-    def _on_flirt_signature_recognized(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+    def _on_flirt_signature_recognized(self, _: Any) -> None:
         self.job_manager.add_job(
             PrototypeFindingJob(
+                self.main_instance,
                 on_finish=self._on_prototype_found,
             )
         )
 
-    def _on_prototype_found(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+    def _on_prototype_found(self, _: Any) -> None:
         if self.main_instance._analysis_configuration["code_tagging"].enabled:
             self.job_manager.add_job(
                 CodeTaggingJob(
+                    self.main_instance,
                     on_finish=self.on_function_tagged,
                 )
             )
@@ -312,7 +316,7 @@ class Workspace:
                 # disable multiprocessing on angr CI
                 options["workers"] = 0
             self.main_instance.variable_recovery_job = VariableRecoveryJob(
-                **self.main_instance._analysis_configuration["varec"].to_dict(),
+                self.main_instance ** self.main_instance._analysis_configuration["varec"].to_dict(),
                 on_variable_recovered=self.on_variable_recovered,
             )
             # prioritize the current function in display
@@ -733,7 +737,7 @@ class Workspace:
 
         self.main_instance.binary_path = thing
         self.main_instance.original_binary_path = thing
-        job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
+        job = LoadBinaryJob(self.main_instance, thing, load_options=load_options, on_finish=on_complete)
         self.job_manager.add_job(job)
 
     def interact_program(self, img_name: str, view=None) -> None:
