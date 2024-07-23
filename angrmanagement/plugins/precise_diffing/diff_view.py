@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
 from angrmanagement.ui.views.code_view import CodeView
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
@@ -93,7 +91,7 @@ class DiffCodeView(CodeView):
                     self.jump_history.record_address(self._function.am_obj.addr)
                 self.after_ready()
 
-        def decomp(_: Any) -> None:
+        def decomp(*_) -> None:
             job = DecompileFunctionJob(
                 self.instance,
                 self._function.am_obj,

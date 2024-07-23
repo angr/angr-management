@@ -145,7 +145,7 @@ class CodeView(FunctionView):
                 else:
                     self.jump_history.record_address(self._function.am_obj.addr)
 
-        def decomp(_: Any) -> None:
+        def decomp(*_) -> None:
             job = DecompileFunctionJob(
                 self.instance,
                 self._function.am_obj,

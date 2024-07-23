@@ -737,7 +737,7 @@ class Workspace:
 
         self.main_instance.binary_path = thing
         self.main_instance.original_binary_path = thing
-        job = LoadBinaryJob(thing, load_options=load_options, on_finish=on_complete)
+        job = LoadBinaryJob(self.main_instance, thing, load_options=load_options, on_finish=on_complete)
         self.job_manager.add_job(job)
 
     def interact_program(self, img_name: str, view=None) -> None:
