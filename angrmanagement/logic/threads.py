@@ -213,14 +213,8 @@ def gui_thread_schedule(
     :raises: Any exception raised by the callable.
     :returns: The result of the callable, or None if the callable timed out.
     """
-    if kwargs is None:
-        kwargs = {}
-
     if is_gui_thread():
-        if args is None:
-            return callable(**kwargs)
-        else:
-            return callable(*args, **kwargs)
+        return callable(*(args or ()), **(kwargs or {}))
 
     event = ExecuteCodeEvent(callable, args=args, kwargs=kwargs)
 
@@ -254,16 +248,7 @@ def gui_thread_schedule_async(
     :returns: None
     """
     if is_gui_thread():
-        if kwargs is None:
-            if args is None:
-                callable()
-            else:
-                callable(*args)
-        else:
-            if args is None:
-                callable(**kwargs)
-            else:
-                callable(*args, **kwargs)
+        callable(*(args or ()), **(kwargs or {}))
         return
 
     event = ExecuteCodeEvent(callable, args=args, kwargs=kwargs)
