@@ -320,7 +320,7 @@ class MainWindow(QMainWindow):
                 return
             for job in self.workspace.main_instance.job_manager.jobs:
                 if job.blocking:
-                    job.keyboard_interrupt()
+                    self.workspace.main_instance.job_manager.interrupt_current_job()
                     break
 
         self._progress_dialog.canceled.connect(on_cancel)
