@@ -66,7 +66,7 @@ class TestRenameFunctions(unittest.TestCase):
         binpath = os.path.join(test_location, "x86_64", "fauxware")
         main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
         main.workspace.main_instance.project.am_event()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
 
         func = main.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
@@ -76,7 +76,7 @@ class TestRenameFunctions(unittest.TestCase):
         disasm_view.display_disasm_graph()
         gui_thread_schedule(disasm_view.display_function, args=(func,))
         disasm_view.decompile_current_function()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
 
         # run the jobless method in the GUI thread
         gui_thread_schedule(self._test_rename_a_function_in_disasm_and_pseudocode_views)
@@ -109,7 +109,7 @@ class TestRenameFunctions(unittest.TestCase):
         binpath = os.path.join(test_location, "x86_64", "fauxware")
         main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
         main.workspace.main_instance.project.am_event()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
 
         func = main.workspace.main_instance.project.kb.functions["main"]
         self.assertIsNotNone(func)
@@ -119,7 +119,7 @@ class TestRenameFunctions(unittest.TestCase):
         disasm_view.display_disasm_graph()
         gui_thread_schedule(disasm_view.display_function, args=(func,))
         disasm_view.decompile_current_function()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
 
         # run the jobless method in the GUI thread
         gui_thread_schedule(self._test_rename_a_callee_in_pseudocode_view)

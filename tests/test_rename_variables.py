@@ -29,7 +29,7 @@ class TestRenameVariables(unittest.TestCase):
         proj = angr.Project(binpath, auto_load_libs=False)
         self.main.workspace.main_instance.project.am_obj = proj
         self.main.workspace.main_instance.project.am_event()
-        self.main.workspace.main_instance.job_manager.join_all_jobs()
+        self.main.workspace.job_manager.join_all_jobs()
 
         self.func = proj.kb.functions["doit"]
         self.assertIsNotNone(self.func)
@@ -39,7 +39,7 @@ class TestRenameVariables(unittest.TestCase):
         disasm_view.display_disasm_graph()
         gui_thread_schedule(disasm_view.display_function, args=(self.func,))
         disasm_view.decompile_current_function()
-        self.main.workspace.main_instance.job_manager.join_all_jobs()
+        self.main.workspace.job_manager.join_all_jobs()
         self.code_view: CodeView = self.main.workspace.view_manager.first_view_in_category("pseudocode")
 
     def tearDown(self) -> None:

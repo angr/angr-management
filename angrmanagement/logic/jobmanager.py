@@ -15,8 +15,8 @@ from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedul
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from angrmanagement.data.instance import Instance
     from angrmanagement.data.jobs.job import Job
+    from angrmanagement.ui.workspace import Workspace
 
 
 log = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class Worker(Thread):
 
                 log.info('Job "%s" started', job.name)
                 job.start_at = time.time()
-                result = job.run(ctx, self.job_manager.instance)
+                result = job.run(ctx, self.job_manager.workspace.main_instance)
                 now = time.time()
                 duration = now - job.start_at
                 log.info('Job "%s" completed after %.2f seconds', job.name, duration)
@@ -92,7 +92,7 @@ class Worker(Thread):
                     self.job_manager.job_worker_exception_callback(job, e)
             else:
                 self.job_manager.jobs.remove(job)
-                gui_thread_schedule_async(job.finish, args=(self.job_manager.instance, result))
+                gui_thread_schedule_async(job.finish, args=(self.job_manager.workspace.main_instance, result))
 
     def keyboard_interrupt(self) -> None:
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
@@ -108,7 +108,7 @@ class Worker(Thread):
 class JobManager:
     """JobManager is responsible for managing jobs and running them in a separate thread."""
 
-    instance: Instance
+    workspace: Workspace
 
     jobs: list[Job]
     jobs_queue: Queue[Job]
@@ -120,8 +120,8 @@ class JobManager:
     _gui_last_updated_at: float
     _last_text: str | None
 
-    def __init__(self, instance: Instance):
-        self.instance = instance
+    def __init__(self, workspace: Workspace):
+        self.workspace = workspace
 
         self.jobs = []
         self.jobs_queue = Queue()

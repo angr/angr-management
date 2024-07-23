@@ -84,7 +84,7 @@ class SimulationDebugger(Debugger):
 
     @property
     def _num_active_explore_jobs(self) -> int:
-        return functools.reduce(lambda s, j: s + isinstance(j, SimgrExploreJob), self.instance.job_manager.jobs, 0)
+        return functools.reduce(lambda s, j: s + isinstance(j, SimgrExploreJob), self.workspace.job_manager.jobs, 0)
 
     @property
     def is_halted(self) -> bool:
@@ -95,6 +95,6 @@ class SimulationDebugger(Debugger):
         return not self.is_halted
 
     def halt(self) -> None:
-        for job in self.instance.job_manager.jobs:
+        for job in self.workspace.job_manager.jobs:
             if isinstance(job, SimgrExploreJob):
-                self.workspace.main_instance.job_manager.cancel_job(job)
+                self.workspace.job_manager.cancel_job(job)
