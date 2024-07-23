@@ -110,4 +110,4 @@ class ProjectOpenTestCase(AngrManagementTestCase):
             os.path.join(test_location, "x86_64", "true"), auto_load_libs=False
         )
         self.main.workspace.main_instance.project.am_event()
-        self.main.workspace.main_instance.job_manager.join_all_jobs()
+        self.main.workspace.job_manager.join_all_jobs()

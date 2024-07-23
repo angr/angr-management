@@ -28,7 +28,7 @@ class TestHumanActivities(unittest.TestCase):
         binpath = os.path.join(test_location, "x86_64", "fauxware")
         main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
         main.workspace.main_instance.project.am_event()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
         self.project = binpath
         # import ipdb; ipdb.set_trace()
         self.project_md5 = main.workspace.main_instance.project.loader.main_object.md5.hex()
@@ -48,7 +48,7 @@ class TestHumanActivities(unittest.TestCase):
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
         pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
@@ -89,7 +89,7 @@ class TestHumanActivities(unittest.TestCase):
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
         disasm_view.decompile_current_function()
-        main.workspace.main_instance.job_manager.join_all_jobs()
+        main.workspace.job_manager.join_all_jobs()
         pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find an arbitrary node for a variable
