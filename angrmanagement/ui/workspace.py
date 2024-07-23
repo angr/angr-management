@@ -24,7 +24,7 @@ from angrmanagement.data.analysis_options import (
     VariableRecoveryConfiguration,
 )
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
-from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
     CFGGenerationJob,
     CodeTaggingJob,
@@ -78,7 +78,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.main_window import MainWindow
 
 
@@ -93,11 +92,8 @@ class Workspace:
 
     job_manager: JobManager
 
-    def __init__(self, main_window: MainWindow, instance: Instance) -> None:
+    def __init__(self, main_window: MainWindow) -> None:
         self.main_window: MainWindow = main_window
-        self._main_instance = instance
-        instance.workspace = self
-
         self.job_manager = JobManager(self)
 
         self.command_manager: CommandManager = CommandManager()
@@ -106,11 +102,13 @@ class Workspace:
         self.variable_recovery_job: VariableRecoveryJob | None = None
         self._first_cfg_generation_callback_completed: bool = False
 
+        self._main_instance = Instance()
+
         # Configure callbacks on main_instance
-        instance.project.am_subscribe(self._instance_project_initalization)
-        instance.simgrs.am_subscribe(self._update_simgr_debuggers)
-        instance.handle_comment_changed_callback = self.plugins.handle_comment_changed
-        instance.job_worker_exception_callback = self._handle_job_exception
+        self.main_instance.project.am_subscribe(self._instance_project_initalization)
+        self.main_instance.simgrs.am_subscribe(self._update_simgr_debuggers)
+        self.main_instance.handle_comment_changed_callback = self.plugins.handle_comment_changed
+        self.main_instance.job_worker_exception_callback = self._handle_job_exception
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 
@@ -143,7 +141,7 @@ class Workspace:
 
         DisassemblyView.register_commands(self)
 
-        instance.patches.am_subscribe(self._on_patch_event)
+        self.main_instance.patches.am_subscribe(self._on_patch_event)
 
     #
     # Properties
