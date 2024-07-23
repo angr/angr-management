@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .job import Job
 
@@ -11,14 +11,13 @@ if TYPE_CHECKING:
 
 class VFGGenerationJob(Job):
     def __init__(self, addr: int) -> None:
-        super().__init__("VFG generation")
+        super().__init__("VFG generation", on_finish=self._finish)
         self._addr = addr
 
     def run(self, _: JobContext, inst: Instance):
         return inst.project.analyses.VFG(function_start=self._addr)
 
-    def finish(self, inst, result) -> None:
-        super().finish(inst, result)
+    def _finish(self, inst: Instance, result: Any) -> None:
         inst.vfgs[self._addr] = result
 
     def __repr__(self) -> str:

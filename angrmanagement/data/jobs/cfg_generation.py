@@ -67,12 +67,6 @@ class CFGGenerationJob(Job):
 
         return cfg.model, cfb
 
-    def finish(self, inst, result) -> None:
-        try:
-            super().finish(inst, result)
-        except Exception:  # pylint:disable=broad-exception-caught
-            _l.error("Exception occurred in CFGGenerationJob.finish().", exc_info=True)
-
     def __repr__(self) -> str:
         return "Generating CFG"
 

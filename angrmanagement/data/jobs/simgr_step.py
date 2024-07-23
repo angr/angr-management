@@ -10,10 +10,9 @@ if TYPE_CHECKING:
 
 
 class SimgrStepJob(Job):
-    def __init__(self, simgr, callback=None, until_branch: bool = False, step_callback=None) -> None:
+    def __init__(self, simgr, until_branch: bool = False, step_callback=None) -> None:
         super().__init__("Simulation manager stepping")
         self._simgr = simgr
-        self._callback = callback
         self._until_branch = until_branch
         self._step_callback = step_callback
 
@@ -29,11 +28,6 @@ class SimgrStepJob(Job):
             self._simgr.prune()
 
         return self._simgr
-
-    def finish(self, inst, result) -> None:
-        super().finish(inst, result)
-        if self._callback is not None:
-            self._callback(result)
 
     def __repr__(self) -> str:
         if self._until_branch:

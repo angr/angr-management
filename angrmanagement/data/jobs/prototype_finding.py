@@ -22,8 +22,5 @@ class PrototypeFindingJob(Job):
             percentage = i / func_count * 100
             ctx.set_progress(percentage)
 
-    def finish(self, inst, result) -> None:
-        super().finish(inst, result)
-
     def __repr__(self) -> str:
         return "PrototypeFindingJob"
