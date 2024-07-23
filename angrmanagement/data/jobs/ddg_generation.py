@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import networkx
 
@@ -12,16 +12,17 @@ if TYPE_CHECKING:
 
 
 class DDGGenerationJob(Job):
+    """A job that runs the VSA_DDG analysis for a function at a given address."""
+
     def __init__(self, addr: int) -> None:
-        super().__init__("DDG generation")
+        super().__init__("DDG generation", on_finish=self._finish)
         self._addr = addr
 
     def run(self, _: JobContext, inst: Instance):
         ddg = inst.project.analyses.VSA_DDG(vfg=inst.vfgs[self._addr], start_addr=self._addr)
         return ddg, networkx.relabel_nodes(ddg.graph, lambda n: n.insn_addr)
 
-    def finish(self, inst, result) -> None:
-        super().finish(inst, result)
+    def _finish(self, inst: Instance, result: Any) -> None:
         inst.ddgs[self._addr] = result
 
     def __repr__(self) -> str:

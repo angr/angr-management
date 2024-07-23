@@ -10,10 +10,11 @@ if TYPE_CHECKING:
 
 
 class SimgrStepJob(Job):
-    def __init__(self, simgr, callback=None, until_branch: bool = False, step_callback=None) -> None:
-        super().__init__("Simulation manager stepping")
+    """A job that runs the step method of the simulation manager."""
+
+    def __init__(self, simgr, until_branch: bool = False, step_callback=None, on_finish=None) -> None:
+        super().__init__("Simulation manager stepping", on_finish=on_finish)
         self._simgr = simgr
-        self._callback = callback
         self._until_branch = until_branch
         self._step_callback = step_callback
 
@@ -30,11 +31,6 @@ class SimgrStepJob(Job):
 
         return self._simgr
 
-    def finish(self, inst, result) -> None:
-        super().finish(inst, result)
-        if self._callback is not None:
-            self._callback(result)
-
     def __repr__(self) -> str:
         if self._until_branch:
             return f"Stepping {self._simgr!r} until branch"
@@ -46,4 +42,4 @@ class SimgrStepJob(Job):
         def callback(result) -> None:
             simgr.am_event(src="job_done", job="step", result=result)
 
-        return cls(simgr, callback=callback, **kwargs)
+        return cls(simgr, on_finish=callback, **kwargs)

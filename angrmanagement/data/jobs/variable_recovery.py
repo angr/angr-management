@@ -90,12 +90,10 @@ class VariableRecoveryJob(Job):
         )
         self.ccc.work()
 
+        self.ccc = None
+
     def _cc_callback(self, func_addr: int) -> None:
         gui_thread_schedule_async(self.on_variable_recovered, args=(func_addr,))
-
-    def finish(self, inst, result) -> None:
-        self.ccc = None  # essentially disabling self.prioritize_function()
-        super().finish(inst, result)
 
     def __repr__(self) -> str:
         return "<Variable Recovery Job>"
