@@ -6,7 +6,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QTextCharFormat, QTextCursor
@@ -274,15 +274,15 @@ class PreciseDiffPlugin(BasePlugin):
         self.diff_instance.recompilation_plugin = self
         self.diff_instance.workspace = self.workspace
 
-        job = LoadBinaryJob(file_path, on_finish=self._create_instance_from_binary_done)
+        job = LoadBinaryJob(self.workspace.main_instance, file_path, on_finish=self._create_instance_from_binary_done)
         self.loaded_binary = file_path
         self.workspace.job_manager.add_job(job)
 
-    def _create_instance_from_binary_done(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        job = CFGGenerationJob(on_finish=self._generate_binary_cfg_done)
+    def _create_instance_from_binary_done(self, _: Any) -> None:
+        job = CFGGenerationJob(self.workspace.main_instance, on_finish=self._generate_binary_cfg_done)
         self.workspace.job_manager.add_job(job)
 
-    def _generate_binary_cfg_done(self, inst, cfg_info, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+    def _generate_binary_cfg_done(self, cfg_info: Any) -> None:
         cfg_model, _ = cfg_info
         self.diff_instance.cfg = cfg_model
         self.revised_binary_loaded()

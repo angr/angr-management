@@ -78,7 +78,7 @@ class Worker(Thread):
 
                 log.info('Job "%s" started', job.name)
                 job.start_at = time.time()
-                result = job.run(ctx, self.job_manager.workspace.main_instance)
+                result = job.run(ctx)
                 now = time.time()
                 duration = now - job.start_at
                 log.info('Job "%s" completed after %.2f seconds', job.name, duration)
@@ -92,7 +92,7 @@ class Worker(Thread):
                     self.job_manager.job_worker_exception_callback(job, e)
             else:
                 self.job_manager.jobs.remove(job)
-                gui_thread_schedule_async(job.finish, args=(self.job_manager.workspace.main_instance, result))
+                gui_thread_schedule_async(job.finish, args=(result,))
 
     def keyboard_interrupt(self) -> None:
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""

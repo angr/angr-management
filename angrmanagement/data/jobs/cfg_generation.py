@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from angrmanagement.data.analysis_options import CFGForceScanMode
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
-from .job import Job
+from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 _l = logging.getLogger(name=__name__)
 
 
-class CFGGenerationJob(Job):
+class CFGGenerationJob(InstanceJob):
     """
     Job for generating the Control Flow Graph.
     """
@@ -25,8 +25,8 @@ class CFGGenerationJob(Job):
         "normalize": True,  # this is what people naturally expect
     }
 
-    def __init__(self, on_finish=None, **kwargs) -> None:
-        super().__init__(name="CFG generation", on_finish=on_finish)
+    def __init__(self, instance: Instance, on_finish=None, **kwargs) -> None:
+        super().__init__("CFG generation", instance, on_finish=on_finish)
 
         # TODO: sanitize arguments
 
@@ -44,18 +44,16 @@ class CFGGenerationJob(Job):
             self.cfg_args["force_complete_scan"] = scanning_mode == CFGForceScanMode.CompleteScan
 
         self._cfb = None
-        self.instance = None
 
-    def run(self, ctx: JobContext, inst: Instance):
-        self.instance = inst
+    def run(self, ctx: JobContext):
         exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
-        temp_cfb = inst.project.analyses.CFB(
+        temp_cfb = self.instance.project.analyses.CFB(
             exclude_region_types=exclude_region_types, on_object_added=self._on_cfb_object_added
         )
         self._cfb = temp_cfb
 
-        cfg = inst.project.analyses.CFG(
+        cfg = self.instance.project.analyses.CFG(
             progress_callback=functools.partial(self._progress_callback, ctx),
             low_priority=True,
             cfb=temp_cfb,
@@ -63,7 +61,7 @@ class CFGGenerationJob(Job):
         )
         self._cfb = None
         # Build the real one
-        cfb = inst.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
+        cfb = self.instance.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
 
         return cfg.model, cfb
 

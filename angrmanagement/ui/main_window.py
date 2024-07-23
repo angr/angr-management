@@ -678,7 +678,7 @@ class MainWindow(QMainWindow):
         if img_name is None:
             return
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
-        self.workspace.job_manager.add_job(LoadTargetJob(target))
+        self.workspace.job_manager.add_job(LoadTargetJob(self.workspace.main_instance, target))
         self.workspace.main_instance.img_name = img_name
 
     def load_trace_file(self, file_path) -> None:
@@ -727,7 +727,7 @@ class MainWindow(QMainWindow):
                     self._load_database(file_path)
                 else:
                     self._recent_file(file_path)
-                    self.workspace.job_manager.add_job(LoadBinaryJob(file_path))
+                    self.workspace.job_manager.add_job(LoadBinaryJob(self.workspace.main_instance, file_path))
             else:
                 QMessageBox.critical(
                     self,
@@ -851,7 +851,9 @@ class MainWindow(QMainWindow):
     def run_dependency_analysis(self, func_addr: int | None = None, func_arg_idx: int | None = None) -> None:
         if self.workspace is None or self.workspace.main_instance is None:
             return
-        dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
+        dep_analysis_job = DependencyAnalysisJob(
+            self.workspace.main_instance, func_addr=func_addr, func_arg_idx=func_arg_idx
+        )
         self.workspace.job_manager.add_job(dep_analysis_job)
 
     def run_analysis(self) -> None:
@@ -952,7 +954,14 @@ class MainWindow(QMainWindow):
         other_kbs = {}
         extra_info = {}
 
-        job = LoadAngrDBJob(file_path, ["global", "pseudocode_variable_kb"], other_kbs=other_kbs, extra_info=extra_info)
+        job = LoadAngrDBJob(
+            self.workspace.main_instance,
+            file_path,
+            ["global", "pseudocode_variable_kb"],
+            other_kbs=other_kbs,
+            extra_info=extra_info,
+        )
+        # TODO: make the job return what the callback wants
         job._on_finish = partial(self._on_load_database_finished, job)
         self.workspace.job_manager.add_job(job)
 

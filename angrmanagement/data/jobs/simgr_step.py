@@ -2,23 +2,25 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .job import Job
+from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
 
 
-class SimgrStepJob(Job):
+class SimgrStepJob(InstanceJob):
     """A job that runs the step method of the simulation manager."""
 
-    def __init__(self, simgr, until_branch: bool = False, step_callback=None, on_finish=None) -> None:
-        super().__init__("Simulation manager stepping", on_finish=on_finish)
+    def __init__(
+        self, instance: Instance, simgr, until_branch: bool = False, step_callback=None, on_finish=None
+    ) -> None:
+        super().__init__("Simulation manager stepping", instance, on_finish=on_finish)
         self._simgr = simgr
         self._until_branch = until_branch
         self._step_callback = step_callback
 
-    def run(self, _: JobContext, inst: Instance):
+    def run(self, _: JobContext):
         if self._until_branch:
             orig_len = len(self._simgr.active)
             if orig_len > 0:
@@ -38,8 +40,8 @@ class SimgrStepJob(Job):
             return f"Stepping {self._simgr!r}"
 
     @classmethod
-    def create(cls, simgr, **kwargs):
+    def create(cls, instance: Instance, simgr, **kwargs):
         def callback(result) -> None:
             simgr.am_event(src="job_done", job="step", result=result)
 
-        return cls(simgr, on_finish=callback, **kwargs)
+        return cls(simgr, instance, on_finish=callback, **kwargs)

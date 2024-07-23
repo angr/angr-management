@@ -4,20 +4,21 @@ from typing import TYPE_CHECKING
 
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
-from .job import Job
+from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
 
 
-class VariableRecoveryJob(Job):
+class VariableRecoveryJob(InstanceJob):
     """
     Identify variables and recover calling convention for a specific, or all function if no function is specified.
     """
 
     def __init__(
         self,
+        instance: Instance,
         on_finish=None,
         on_variable_recovered=None,
         workers: int | None = None,
@@ -25,13 +26,12 @@ class VariableRecoveryJob(Job):
         auto_start: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__(name="Variable Recovery", on_finish=on_finish)
+        super().__init__("Variable Recovery", instance, on_finish=on_finish)
 
         self.variable_recovery_args = kwargs
         self.on_variable_recovered = on_variable_recovered
         self.workers = workers
         self.ccc = None
-        self.instance: Instance | None = None
         self.started = False
         self.auto_start = auto_start
         self.func_addr = func_addr
@@ -59,8 +59,7 @@ class VariableRecoveryJob(Job):
         callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
         self.ccc.prioritize_functions({func_addr} | callees)
 
-    def run(self, ctx: JobContext, inst: Instance) -> None:
-        self.instance = inst
+    def run(self, ctx: JobContext) -> None:
         self.started = True
 
         cc_callback = self._cc_callback if self.on_variable_recovered is not None else None
@@ -73,10 +72,10 @@ class VariableRecoveryJob(Job):
                     callees = set(self.instance.kb.functions.callgraph.successors(func_addr))
                     func_addrs_to_prioritize |= {func_addr} | callees
 
-        self.ccc = inst.project.analyses.CompleteCallingConventions(
+        self.ccc = self.instance.project.analyses.CompleteCallingConventions(
             recover_variables=True,
             low_priority=True,
-            cfg=inst.cfg.am_obj,
+            cfg=self.instance.cfg.am_obj,
             progress_callback=ctx.set_progress,
             cc_callback=cc_callback,
             analyze_callsites=True,
