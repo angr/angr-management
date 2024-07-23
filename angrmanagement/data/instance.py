@@ -282,7 +282,7 @@ class Instance:
 
         # TODO: can this be removed?
         if self.set_comment_callback is not None:
-            self.set_comment_callback(addr, comment_text)
+            self.set_comment_callback(addr, comment_text)  # pylint:disable=not-callable
 
     #
     # Private methods
