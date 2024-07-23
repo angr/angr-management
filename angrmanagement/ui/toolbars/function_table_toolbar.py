@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from PySide6.QtGui import QIcon
@@ -8,7 +10,7 @@ from .toolbar import Toolbar, ToolbarAction
 
 
 class FunctionTableToolbar(Toolbar):
-    def __init__(self, function_table):
+    def __init__(self, function_table) -> None:
         super().__init__(function_table, "Function table options")
 
         # TODO: An icon would be great
@@ -24,7 +26,7 @@ class FunctionTableToolbar(Toolbar):
             self._alignment_action,
         ]
 
-    def toggle_show_alignment_functions(self):
+    def toggle_show_alignment_functions(self) -> None:
         self.window.toggle_show_alignment_functions()
 
         if self._cached_actions and self._alignment_action in self._cached_actions:

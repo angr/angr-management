@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from angr.knowledge_plugins.key_definitions.constants import OP_AFTER, OP_BEFORE
 from PySide6.QtWidgets import (
@@ -21,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class DependsOn(QDialog):
-    def __init__(self, addr: int, operand, instr=None, func: Optional["Function"] = None, parent=None):
+    def __init__(self, addr: int, operand, instr=None, func: Function | None = None, parent=None) -> None:
         super().__init__(parent)
 
         self._addr = addr
@@ -30,9 +32,9 @@ class DependsOn(QDialog):
         self._function = func
 
         # output
-        self.location: Optional[int] = None
-        self.arg: Optional[Any] = None
-        self.reg: Optional[Any] = None
+        self.location: int | None = None
+        self.arg: Any | None = None
+        self.reg: Any | None = None
 
         # UI widgets
         self._instr_layout: QHBoxLayout = None
@@ -51,7 +53,7 @@ class DependsOn(QDialog):
 
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # the instruction
         instr_lbl = QLabel("Instruction")
         instr_box = QLineEdit("TODO")
@@ -157,11 +159,11 @@ class DependsOn(QDialog):
     # Events
     #
 
-    def _targetatoms_hide_all(self):
+    def _targetatoms_hide_all(self) -> None:
         self._arg_widget.setHidden(True)
         self._reg_widget.setHidden(True)
 
-    def _on_targetatoms_radiobutton_clicked(self):
+    def _on_targetatoms_radiobutton_clicked(self) -> None:
         self._targetatoms_hide_all()
         if self._arg_radiobox.isChecked():
             self._arg_widget.setHidden(False)
@@ -182,8 +184,8 @@ class DependsOn(QDialog):
                 QMessageBox(self).critical(
                     self,
                     "Invalid argument index",
-                    'The given function argument index "%s" is unsupported. Only integers are allowed.'
-                    % self._arg_box.text(),
+                    f'The given function argument index "{self._arg_box.text()}" is unsupported.',
+                    "Only integers are allowed.",
                     buttons=QMessageBox.Ok,
                 )
                 return
@@ -192,7 +194,7 @@ class DependsOn(QDialog):
 
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.location = None
         self.arg = None
         self.reg = None

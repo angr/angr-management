@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections import OrderedDict
-from typing import Optional
 
 import pycparser.plyparser
 from angr import sim_type
@@ -25,7 +26,15 @@ class CTypeEditor(QDialog):
                                 if the dialog was cancelled.
     """
 
-    def __init__(self, parent, arch, base_text="", multiline=False, allow_multiple=False, predefined_types=None):
+    def __init__(
+        self,
+        parent,
+        arch,
+        base_text: str = "",
+        multiline: bool = False,
+        allow_multiple: bool = False,
+        predefined_types=None,
+    ) -> None:
         super().__init__(parent)
 
         self._allow_multiple = allow_multiple
@@ -33,7 +42,7 @@ class CTypeEditor(QDialog):
         self._predefined_types = predefined_types
 
         self.text = lambda: ""
-        self._ok_button: Optional[QPushButton]
+        self._ok_button: QPushButton | None
         self._init_widgets(base_text, multiline)
 
         self.setWindowTitle("Type editor")
@@ -41,7 +50,7 @@ class CTypeEditor(QDialog):
 
         self.result = []
 
-    def _init_widgets(self, base_text, multiline):
+    def _init_widgets(self, base_text, multiline) -> None:
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self._on_ok_pressed)
@@ -75,17 +84,17 @@ class CTypeEditor(QDialog):
 
         self.setLayout(layout)
 
-    def _on_ok_pressed(self):
+    def _on_ok_pressed(self) -> None:
         if not self.result:
             return
 
         self.close()
 
-    def _on_cancel_pressed(self):
+    def _on_cancel_pressed(self) -> None:
         self.result = []
         self.close()
 
-    def _evaluate(self):
+    def _evaluate(self) -> None:
         text = self.text()
 
         result = None
@@ -115,16 +124,16 @@ class CTypeEditor(QDialog):
             self.result = result
 
 
-def edit_field(ty, field, predefined_types=None):
+def edit_field(ty, field, predefined_types=None) -> bool:
     if isinstance(ty, sim_type.SimStruct):
         fields = ty.fields
     elif isinstance(ty, sim_type.SimUnion):
         fields = ty.members
     else:
-        raise TypeError("Can't edit a field of a %s" % type(ty))
+        raise TypeError(f"Can't edit a field of a {type(ty)}")
 
     if type(fields) is not OrderedDict:
-        raise TypeError("Struct or union's fields are of type %s - that's bad" % type(fields))
+        raise TypeError(f"Struct or union's fields are of type {type(fields)} - that's bad")
     fields_list = list(fields.items())
 
     if isinstance(field, int):
@@ -137,7 +146,7 @@ def edit_field(ty, field, predefined_types=None):
         except IndexError:
             raise KeyError(field) from None
     else:
-        raise TypeError("Field specifier is a %s - that's bad" % type(field))
+        raise TypeError(f"Field specifier is a {type(field)} - that's bad")
 
     name, subty = fields_list[fieldno]
     text = subty.c_repr(name=name)
@@ -148,7 +157,7 @@ def edit_field(ty, field, predefined_types=None):
     name2, subty = dialog.result[0]
     if name2 is not None:
         if name != name2 and name2 in fields:
-            QMessageBox.warning(None, "Duplicate field name", "The name %s is already used" % name2)
+            QMessageBox.warning(None, "Duplicate field name", f"The name {name2} is already used")
         else:
             name = name2
     fields_list[fieldno] = (name, subty)
@@ -158,6 +167,6 @@ def edit_field(ty, field, predefined_types=None):
     elif isinstance(ty, sim_type.SimUnion):
         ty.members = OrderedDict(fields_list)
     else:
-        raise TypeError("Can't edit a field of a %s" % type(ty))
+        raise TypeError(f"Can't edit a field of a {type(ty)}")
 
     return True

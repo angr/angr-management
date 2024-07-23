@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 
 ADJECTIVES = [
@@ -2410,7 +2412,7 @@ ANIMALS = [
 
 class NameGenerator:
     @staticmethod
-    def random_name():
+    def random_name() -> str:
         global ADJECTIVES, ANIMALS
 
         return f"{random.choice(ADJECTIVES)} {random.choice(ANIMALS)}"

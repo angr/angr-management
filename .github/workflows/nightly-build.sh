@@ -1,6 +1,9 @@
 #!/bin/bash
 set -ex
 
+# Optional tag to install from. Default is master.
+TAG=${1:-master}
+
 python -m venv .venv
 if [[ "$OSTYPE" == "msys" ]]; then
     source .venv/Scripts/activate
@@ -8,23 +11,30 @@ else
     source .venv/bin/activate
 fi
 
+if [[ "$OSTYPE" == "darwin"* && "$(uname -m)" == "arm64" ]]; then
+    EXTRA_ANGR_INSTALL_ARGS="--no-binary capstone"
+else
+    EXTRA_ANGR_INSTALL_ARGS=""
+fi
+
+
 # Install dependencies
 
 python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
 
 pip install git+https://github.com/eliben/pyelftools.git
-pip install git+https://github.com/angr/archinfo.git
-pip install git+https://github.com/angr/pyvex.git
-pip install git+https://github.com/angr/cle.git#egg=cle[ar,minidump,uefi,xbe]
-pip install git+https://github.com/angr/claripy.git
-pip install git+https://github.com/angr/ailment.git
-pip install --no-build-isolation git+https://github.com/angr/angr.git#egg=angr[pcode]
+pip install git+https://github.com/angr/archinfo.git@$TAG
+pip install git+https://github.com/angr/pyvex.git@$TAG
+pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe,pdb]
+pip install git+https://github.com/angr/claripy.git@$TAG
+pip install git+https://github.com/angr/ailment.git@$TAG
+pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install git+https://github.com/angr/archr.git#egg=archr
+    pip install git+https://github.com/angr/archr.git@$TAG
 fi
 
 # Install angr-mangement
-pip install -e .[pyinstaller]
+pip install -e .[pyinstaller,binharness]
 
 # Bundle!
 pyinstaller angr-management.spec
@@ -33,9 +43,11 @@ mkdir upload
 
 # Prepare onedirs
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    mkdir /tmp/angr-management-dmg
-    cp -r dist/*.app /tmp/angr-management-dmg
-    hdiutil create upload/angr-management-macOS.dmg -volname "angr-management nightly" -srcfolder /tmp/angr-management-dmg
+    mkdir /tmp/angr-management-zip
+    ZIP_PATH=$(pwd)/upload/angr-management-macOS-$(uname -m).zip
+    pushd dist
+    zip -ry $ZIP_PATH *.app
+    popd
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     tar -C dist -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import difflib
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractItemModel, QMargins, QModelIndex, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QTextDocument
@@ -20,20 +22,20 @@ class PaletteModel(QAbstractItemModel):
     Data provider for item palette.
     """
 
-    def __init__(self, workspace: "Workspace"):
+    def __init__(self, workspace: Workspace) -> None:
         super().__init__()
         self.workspace: Workspace = workspace
-        self._available_items: List[Any] = self.get_items()
-        self._item_to_caption: Dict[Any, str] = {
+        self._available_items: list[Any] = self.get_items()
+        self._item_to_caption: dict[Any, str] = {
             item: self.get_caption_for_item(item) for item in self._available_items
         }
-        self._filtered_items: List[Any] = self._available_items
+        self._filtered_items: list[Any] = self._available_items
         self._filter_text: str = ""
 
     def rowCount(self, _):
         return len(self._filtered_items)
 
-    def columnCount(self, _):  # pylint:disable=no-self-use
+    def columnCount(self, _) -> int:  # pylint:disable=no-self-use
         return 1
 
     def index(self, row, col, _):
@@ -60,20 +62,20 @@ class PaletteModel(QAbstractItemModel):
             self._filtered_items = [item for _, _, item in process.extract(query, self._item_to_caption, limit=50)]
         self.endResetModel()
 
-    def get_items(self) -> List[Any]:  # pylint:disable=no-self-use
+    def get_items(self) -> list[Any]:  # pylint:disable=no-self-use
         return []
 
     def get_caption_for_item(self, item: Any) -> str:  # pylint:disable=no-self-use,unused-argument
         return ""
 
-    def get_subcaption_for_item(self, item: Any) -> Optional[str]:  # pylint:disable=no-self-use,unused-argument
+    def get_subcaption_for_item(self, item: Any) -> str | None:  # pylint:disable=no-self-use,unused-argument
         return None
 
-    def get_annotation_for_item(self, item: Any) -> Optional[str]:  # pylint:disable=no-self-use,unused-argument
+    def get_annotation_for_item(self, item: Any) -> str | None:  # pylint:disable=no-self-use,unused-argument
         return None
 
     # pylint:disable=no-self-use,unused-argument
-    def get_icon_color_and_text_for_item(self, item: Any) -> Tuple[Optional[QColor], str]:
+    def get_icon_color_and_text_for_item(self, item: Any) -> tuple[QColor | None, str]:
         return (None, "")
 
 
@@ -82,13 +84,13 @@ class CommandPaletteModel(PaletteModel):
     Data provider for command palette.
     """
 
-    def get_items(self) -> List["Command"]:
+    def get_items(self) -> list[Command]:
         return sorted(
             [cmd for cmd in self.workspace.command_manager.get_commands() if cmd.is_visible],
             key=lambda cmd: cmd.caption,
         )
 
-    def get_caption_for_item(self, item: "Command") -> str:
+    def get_caption_for_item(self, item: Command) -> str:
         return item.caption
 
 
@@ -97,7 +99,7 @@ class GotoPaletteModel(PaletteModel):
     Data provider for goto palette.
     """
 
-    def get_items(self) -> List["Function"]:
+    def get_items(self) -> list[Function]:
         items = []
 
         instance = self.workspace.main_instance
@@ -107,7 +109,7 @@ class GotoPaletteModel(PaletteModel):
 
         return items
 
-    def get_icon_color_and_text_for_item(self, item: "Function") -> Tuple[Optional[QColor], str]:
+    def get_icon_color_and_text_for_item(self, item: Function) -> tuple[QColor | None, str]:
         if item.is_syscall:
             color = Conf.function_table_syscall_color
         elif item.is_plt:
@@ -120,10 +122,10 @@ class GotoPaletteModel(PaletteModel):
             color = Qt.gray
         return (color, "f")
 
-    def get_caption_for_item(self, item: "Function") -> str:
+    def get_caption_for_item(self, item: Function) -> str:
         return item.name
 
-    def get_annotation_for_item(self, item: "Function") -> str:
+    def get_annotation_for_item(self, item: Function) -> str:
         return f"{item.addr:x}"
 
 
@@ -136,7 +138,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
 
     icon_width = 25
 
-    def __init__(self, display_icons: bool = True):
+    def __init__(self, display_icons: bool = True) -> None:
         super().__init__()
         self._display_icons = display_icons
 
@@ -166,7 +168,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
         td.setHtml(text_out)
         return td
 
-    def paint(self, painter, option, index):
+    def paint(self, painter, option, index) -> None:
         if index.column() == 0:
             if option.state & QStyle.State_Selected:
                 b = QBrush(option.palette.highlight())
@@ -219,14 +221,17 @@ class PaletteDialog(QDialog):
     Dialog for selecting an item from a palette.
     """
 
-    def __init__(self, model, delegate=None, parent=None):
+    def __init__(self, model, delegate=None, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Palette")
         self._model = model
         self._delegate = delegate or PaletteItemDelegate()
         self._init_widgets()
 
         self.selected_item = None
+
+        self.setWindowTitle("Palette")
+        self.setMinimumSize(self.sizeHint())
+        self.adjustSize()
 
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(500, 400)
@@ -235,7 +240,7 @@ class PaletteDialog(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self._layout: QVBoxLayout = QVBoxLayout()
 
         self._query: QLineEdit = QLineEdit(self)
@@ -252,7 +257,7 @@ class PaletteDialog(QDialog):
         self.setLayout(self._layout)
         self._set_filter_text("")
 
-    def _set_filter_text(self, text):
+    def _set_filter_text(self, text: str) -> None:
         self._model.set_filter_text(text)
         self._view.setCurrentIndex(self._model.index(0, 0, None))
 
@@ -265,7 +270,7 @@ class PaletteDialog(QDialog):
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
         if key in {Qt.Key_Up, Qt.Key_Down}:
             self._view.keyPressEvent(event)
@@ -274,7 +279,7 @@ class PaletteDialog(QDialog):
         else:
             super().keyPressEvent(event)
 
-    def accept(self):
+    def accept(self) -> None:
         self.selected_item = self._get_selected()
         super().accept()
 
@@ -284,7 +289,7 @@ class CommandPaletteDialog(PaletteDialog):
     Dialog for selecting commands.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(CommandPaletteModel(workspace), PaletteItemDelegate(display_icons=False), parent)
         self.setWindowTitle("Command Palette")
 
@@ -294,6 +299,6 @@ class GotoPaletteDialog(PaletteDialog):
     Dialog for selecting navigation targets.
     """
 
-    def __init__(self, workspace, parent=None):
+    def __init__(self, workspace: Workspace, parent=None) -> None:
         super().__init__(GotoPaletteModel(workspace), parent=parent)
         self.setWindowTitle("Goto Anything")

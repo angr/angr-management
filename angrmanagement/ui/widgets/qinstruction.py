@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.analyses.disassembly import Value
 from PySide6.QtCore import QRectF, Qt
@@ -13,6 +15,8 @@ from .qoperand import QOperand
 if TYPE_CHECKING:
     import PySide6
 
+    from angrmanagement.data.instance import Instance
+
 
 class QInstruction(QCachedGraphicsItem):
     GRAPH_ADDR_SPACING = 20
@@ -25,7 +29,9 @@ class QInstruction(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     COMMENT_PREFIX = "// "
 
-    def __init__(self, instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None):
+    def __init__(
+        self, instance: Instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None
+    ) -> None:
         super().__init__(parent=parent)
 
         # initialization
@@ -44,22 +50,22 @@ class QInstruction(QCachedGraphicsItem):
         self._mnemonic = None
         self._addr_item: QGraphicsSimpleTextItem = None
         self._mnemonic_item: QGraphicsSimpleTextItem = None
-        self._operands: List[QOperand] = []
-        self._commas: List[QGraphicsSimpleTextItem] = []
+        self._operands: list[QOperand] = []
+        self._commas: list[QGraphicsSimpleTextItem] = []
         self._string = None
-        self._string_item: Optional[QGraphicsSimpleTextItem] = None
+        self._string_item: QGraphicsSimpleTextItem | None = None
         self._comment = None
-        self._comment_items: Optional[List[QGraphicsSimpleTextItem]] = None  # one comment per line
+        self._comment_items: list[QGraphicsSimpleTextItem] | None = None  # one comment per line
         self._legend = None
         self._width = 0
         self._height = 0
 
         self._init_widgets()
 
-    def contextMenuEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneContextMenuEvent") -> None:
+    def contextMenuEvent(self, event: PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
         pass
 
-    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         self.infodock.unselect_all_instructions()
         self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
         self.disasm_view._insn_addr_on_context_menu = self.addr
@@ -67,7 +73,7 @@ class QInstruction(QCachedGraphicsItem):
         self.disasm_view.popup_patch_dialog()
         event.accept()
 
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.disasm_view.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
@@ -119,12 +125,12 @@ class QInstruction(QCachedGraphicsItem):
 
         return self.infodock.is_instruction_selected(self.addr)
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         super().clear_cache()
         for obj in self._operands:
             obj.clear_cache()
 
-    def refresh(self):
+    def refresh(self) -> None:
         self.load_comment()
         self._init_comments_or_string()
 
@@ -139,13 +145,13 @@ class QInstruction(QCachedGraphicsItem):
             return self._operands[operand_idx]
         return None
 
-    def load_comment(self):
+    def load_comment(self) -> None:
         if self.instance.kb is None:
             self._comment = None
         else:
             self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         # background color
@@ -162,12 +168,12 @@ class QInstruction(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.load_comment()
         self._operands.clear()
 
         # address
-        self._addr = "%08x" % self.insn.addr
+        self._addr = f"{self.insn.addr:08x}"
         self._addr_item = QGraphicsSimpleTextItem(self)
         self._addr_item.setBrush(QBrush(self._config.disasm_view_node_address_color))
         self._addr_item.setFont(self._config.disasm_font)
@@ -226,7 +232,7 @@ class QInstruction(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _init_comments_or_string(self):
+    def _init_comments_or_string(self) -> None:
         # remove existing comments or strings
         if self._comment_items:
             for comm in self._comment_items:
@@ -253,7 +259,7 @@ class QInstruction(QCachedGraphicsItem):
             self._string_item.setFont(self._config.disasm_font)
             self._string_item.setBrush(self._config.disasm_view_string_color)
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         # address
@@ -269,7 +275,7 @@ class QInstruction(QCachedGraphicsItem):
         x += self._mnemonic_item.boundingRect().width() + self.GRAPH_MNEMONIC_SPACING
 
         # operands and commas
-        for operand, comma in zip(self._operands, self._commas):
+        for operand, comma in zip(self._operands, self._commas, strict=False):
             operand.setPos(x, y)
             x += operand.boundingRect().width()
             comma.setPos(x, y)

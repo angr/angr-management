@@ -1,15 +1,20 @@
 # pylint:disable=import-outside-toplevel,unused-argument
+from __future__ import annotations
+
 import subprocess
 import sys
 import threading
 import time
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
 from angrmanagement.logic.singleton import SingleInstance, SingleInstanceException
 from angrmanagement.utils.env import app_path
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 DEFAULT_PORT = 64000
 
@@ -31,22 +36,21 @@ class ManagementService(rpyc.Service):
             conn = TargetIDtoCONN[target_id]
         else:
             raise Exception(
-                "The specified target {} is not open in angr management. We have the following ones: {}.".format(
-                    target_id, str(TargetIDtoCONN)
-                )
+                f"The specified target {target_id} is not open in angr management. "
+                f"We have the following ones: {str(TargetIDtoCONN)}."
             )
         return conn
 
-    def on_connect(self, conn):
+    def on_connect(self, conn) -> None:
         self._conn = conn
         CONNECTIONS[conn] = None
 
-    def on_disconnect(self, conn):
+    def on_disconnect(self, conn) -> None:
         self._conn = None
         if conn in CONNECTIONS:
             del CONNECTIONS[conn]
 
-    def exposed_open(self, bin_path):
+    def exposed_open(self, bin_path) -> None:
         if bin_path is None:
             return
 
@@ -64,26 +68,26 @@ class ManagementService(rpyc.Service):
             apppath + ["-d", bin_path], shell=shell, stdin=None, stdout=None, stderr=None, close_fds=True, **flags
         )
 
-    def exposed_jumpto(self, addr, symbol, target_id: str):
+    def exposed_jumpto(self, addr: int, symbol, target_id: str) -> None:
         conn = self._get_conn(target_id)
         conn.root.jumpto(addr, symbol)
 
-    def exposed_register_binary(self, bin_path, target_id: str):
+    def exposed_register_binary(self, bin_path, target_id: str) -> None:
         TargetIDtoCONN[target_id] = self._conn
 
-    def exposed_commentat(self, addr, comment, target_id: str):
+    def exposed_commentat(self, addr: int, comment: str, target_id: str) -> None:
         conn = self._get_conn(target_id)
         conn.root.commentat(addr, comment)
 
-    def exposed_exit(self):
+    def exposed_exit(self) -> None:
         pass
 
-    def exposed_custom_binary_aware_action(self, target_id: str, action, kwargs):
+    def exposed_custom_binary_aware_action(self, target_id: str, action, kwargs) -> None:
         conn = self._get_conn(target_id)
         conn.root.custom_binary_aware_action(action, kwargs)
 
 
-def monitor_thread(server):
+def monitor_thread(server) -> None:
     """
     Monitors connection status, and kills the server (which is, the daemon process) after the last active connection is
     gone for 5 minutes.
@@ -111,7 +115,7 @@ def monitor_thread(server):
         time.sleep(1)
 
 
-def start_daemon(port=DEFAULT_PORT):
+def start_daemon(port: int = DEFAULT_PORT) -> None:
     try:
         from angrmanagement.logic import GlobalInfo
 
@@ -131,7 +135,7 @@ def start_daemon(port=DEFAULT_PORT):
     server.start()
 
 
-def daemon_exists():
+def daemon_exists() -> bool:
     try:
         inst = SingleInstance()
     except SingleInstanceException:
@@ -140,7 +144,7 @@ def daemon_exists():
     return False
 
 
-def run_daemon_process():
+def run_daemon_process() -> None:
     """
     Start a new Python process to run daemon.
 
@@ -156,14 +160,9 @@ def run_daemon_process():
     subprocess.Popen(apppath + ["-D"], stdin=None, stdout=None, stderr=None, close_fds=True, **flags)
 
 
-def daemon_conn(port=DEFAULT_PORT, service=None):
-    kwargs = {}
-    if service is not None:
-        kwargs["service"] = service
-    kwargs["config"] = {"allow_public_attrs": True}
-    conn = rpyc.connect("localhost", port, **kwargs)
-    return conn
+def daemon_conn(port: int = DEFAULT_PORT, service=rpyc.VoidService):
+    return rpyc.connect("localhost", port, service=service, config={"allow_public_attrs": True})
 
 
-def register_server_exposed_method(method_name: str, method: Callable):
+def register_server_exposed_method(method_name: str, method: Callable) -> None:
     setattr(ManagementService, f"exposed_{method_name}", method)

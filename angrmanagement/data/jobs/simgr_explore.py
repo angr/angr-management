@@ -1,18 +1,27 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .job import Job
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class SimgrExploreJob(Job):
-    def __init__(self, simgr, find=None, avoid=None, step_callback=None, until_callback=None, callback=None):
-        super().__init__("Simulation manager exploring")
+    """A job that runs the explore method of a simulation manager."""
+
+    def __init__(self, simgr, find=None, avoid=None, step_callback=None, until_callback=None, on_finish=None) -> None:
+        super().__init__("Simulation manager exploring", on_finish=on_finish)
         self._simgr = simgr
         self._find = find
         self._avoid = avoid
-        self._callback = callback
         self._step_callback = step_callback
         self._until_callback = until_callback
         self._interrupted = False
 
-    def _run(self, inst):
+    def run(self, _: JobContext, inst: Instance):
         """Run the job. Runs in the worker thread."""
 
         def until_callback(*args, **kwargs):
@@ -21,21 +30,17 @@ class SimgrExploreJob(Job):
         self._simgr.explore(find=self._find, avoid=self._avoid, step_func=self._step_callback, until=until_callback)
         return self._simgr
 
-    def finish(self, inst, result):
-        super().finish(inst, result)
-        self._callback(result)
+    def __repr__(self) -> str:
+        return f"Exploring {self._simgr!r}"
 
-    def __repr__(self):
-        return "Exploring %r" % self._simgr
-
-    def keyboard_interrupt(self):
+    def keyboard_interrupt(self) -> None:
         """Called from GUI thread. Worker thread will check self._interrupted periodically and exit the job early if
         needed."""
         self._interrupted = True
 
     @classmethod
     def create(cls, simgr, **kwargs):
-        def callback(result):
+        def callback(result) -> None:
             simgr.am_event(src="job_done", job="explore", result=result)
 
-        return cls(simgr, callback=callback, **kwargs)
+        return cls(simgr, on_finish=callback, **kwargs)

@@ -1,4 +1,5 @@
 # Copied and adapted from tendo
+from __future__ import annotations
 
 import logging
 import os
@@ -21,7 +22,6 @@ class SingleInstanceException(BaseException):
 
 
 class SingleInstance:
-
     """Class that can be instantiated only once per machine.
 
     If you want to prevent your script from running in parallel just instantiate SingleInstance() class. If is there
@@ -38,14 +38,14 @@ class SingleInstance:
     own singleton instances.
     """
 
-    def __init__(self, flavor_id="", lockfile=""):
+    def __init__(self, flavor_id: str = "", lockfile: str = "") -> None:
         self.initialized = False
         if lockfile:
             self.lockfile = lockfile
         else:
             basename = (
                 os.path.splitext(os.path.abspath(__file__))[0].replace("/", "-").replace(":", "").replace("\\", "-")
-                + "-%s" % flavor_id
+                + f"-{flavor_id}"
                 + ".lock"
             )
             self.lockfile = os.path.normpath(tempfile.gettempdir() + "/" + basename)
@@ -66,7 +66,7 @@ class SingleInstance:
                 print(e.errno)
                 raise
         else:  # non Windows
-            self.fp = open(self.lockfile, "w")
+            self.fp = open(self.lockfile, "w")  # noqa: SIM115
             self.fp.flush()
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -75,7 +75,7 @@ class SingleInstance:
                 raise SingleInstanceException from ex
         self.initialized = True
 
-    def __del__(self):
+    def __del__(self) -> None:
         if not self.initialized:
             return
         try:
@@ -92,11 +92,11 @@ class SingleInstance:
             if logger:
                 logger.debug(e)
             else:
-                print("Unloggable error: %s" % e)
+                print(f"Unloggable error: {e}")
             sys.exit(-1)
 
 
-def f(initializer: Initializer, name):
+def f(initializer: Initializer, name: str) -> None:
     initializer.initialize()
     tmp = logger.level
     logger.setLevel(logging.CRITICAL)  # we do not want to see the warning
@@ -108,12 +108,12 @@ def f(initializer: Initializer, name):
 
 
 class testSingleton(unittest.TestCase):
-    def test_1(self):
+    def test_1(self) -> None:
         me = SingleInstance(flavor_id="test-1")
         del me  # now the lock should be removed
         assert True
 
-    def test_2(self):
+    def test_2(self) -> None:
         p = Process(
             target=f,
             args=(
@@ -124,9 +124,9 @@ class testSingleton(unittest.TestCase):
         p.start()
         p.join()
         # the called function should succeed
-        assert p.exitcode == 0, "%s != 0" % p.exitcode
+        assert p.exitcode == 0, f"{p.exitcode} != 0"
 
-    def test_3(self):
+    def test_3(self) -> None:
         me = SingleInstance(flavor_id="test-3")  # noqa -- me should still kept
         p = Process(
             target=f,
@@ -139,7 +139,7 @@ class testSingleton(unittest.TestCase):
         p.join()
         # the called function should fail because we already have another
         # instance running
-        assert p.exitcode != 0, "%s != 0 (2nd execution)" % p.exitcode
+        assert p.exitcode != 0, f"{p.exitcode} != 0 (2nd execution)"
         # note, we return -1 but this translates to 255 meanwhile we'll
         # consider that anything different from 0 is good
         p = Process(
@@ -153,9 +153,9 @@ class testSingleton(unittest.TestCase):
         p.join()
         # the called function should fail because we already have another
         # instance running
-        assert p.exitcode != 0, "%s != 0 (3rd execution)" % p.exitcode
+        assert p.exitcode != 0, f"{p.exitcode} != 0 (3rd execution)"
 
-    def test_4(self):
+    def test_4(self) -> None:
         lockfile = "/tmp/foo.lock"
         me = SingleInstance(lockfile=lockfile)
         assert me.lockfile == lockfile

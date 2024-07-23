@@ -1,12 +1,25 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Set, Union
+from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator, CVariable
+from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
-from PySide6.QtWidgets import QComboBox, QDockWidget, QFrame, QHBoxLayout, QMainWindow, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDockWidget,
+    QFrame,
+    QHBoxLayout,
+    QMainWindow,
+    QTextEdit,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from angrmanagement.config import Conf
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
@@ -19,43 +32,42 @@ from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
 from .disassembly_view import DisassemblyView
-from .view import BaseView
+from .view import FunctionView
 
 if TYPE_CHECKING:
-    from angr.knowledge_plugins.functions.function import Function
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
 
-class CodeView(BaseView):
+class CodeView(FunctionView):
     """
     A view to display pseudocode or source code. You should control this view by manipulating and observing its four
     ObjectContainers: .addr, .current_node, .codegen, and .function.
     """
 
-    FUNCTION_SPECIFIC_VIEW = True
-
-    def __init__(self, workspace, instance, default_docking_position, *args, **kwargs):
-        super().__init__("pseudocode", workspace, instance, default_docking_position, *args, **kwargs)
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
+        super().__init__("pseudocode", workspace, default_docking_position, instance)
 
         self.base_caption = "Pseudocode"
 
-        self._function: Union[ObjectContainer, Function] = ObjectContainer(None, "The function to decompile")
+        self._function: ObjectContainer | Function = ObjectContainer(None, "The function to decompile")
         self.current_node = ObjectContainer(None, "Current selected C-code node")
-        self.addr: Union[ObjectContainer, int] = ObjectContainer(0, "Current cursor address")
-        self.codegen: Union[ObjectContainer, CStructuredCodeGenerator] = ObjectContainer(
+        self.addr: ObjectContainer | int = ObjectContainer(0, "Current cursor address")
+        self.codegen: ObjectContainer | CStructuredCodeGenerator = ObjectContainer(
             None, "The currently-displayed codegen object"
         )
 
-        self._last_function: Optional[Function] = None
-        self._textedit: Optional[QCCodeEdit] = None
-        self._doc: Optional[QCodeDocument] = None
-        self._options: Optional[QDecompilationOptions] = None
+        self._last_function: Function | None = None
+        self._textedit: QCCodeEdit | None = None
+        self._doc: QCodeDocument | None = None
+        self._options: QDecompilationOptions | None = None
         self.jump_history: JumpHistory = JumpHistory()
-        self._nav_toolbar: Optional[NavToolbar] = None
-        self._view_selector: Optional[QComboBox] = None
+        self._nav_toolbar: NavToolbar | None = None
+        self._view_selector: QComboBox | None = None
 
-        self.vars_must_struct: Set[str] = set()
+        self.vars_must_struct: set[str] = set()
 
         self._init_widgets()
 
@@ -67,7 +79,7 @@ class CodeView(BaseView):
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
 
-    def _focus_core(self, focus: bool, focus_addr: int):
+    def _focus_core(self, focus: bool, focus_addr: int) -> None:
         if focus:
             self.focus()
         if focus_addr is not None:
@@ -86,21 +98,11 @@ class CodeView(BaseView):
     def document(self):
         return self._doc
 
-    @property
-    def function(self) -> ObjectContainer:
-        return self._function
-
-    @function.setter
-    def function(self, v):
-        if v is not self._function.am_obj:
-            self._function.am_obj = v
-            self._function.am_event(focus=True)
-
     #
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         if self.instance.project.am_none:
             return
         self._options.reload(force=True)
@@ -109,12 +111,12 @@ class CodeView(BaseView):
     def decompile(
         self,
         clear_prototype: bool = True,
-        focus=False,
+        focus: bool = False,
         focus_addr=None,
-        flavor="pseudocode",
+        flavor: str = "pseudocode",
         reset_cache: bool = False,
         regen_clinic: bool = True,
-    ):
+    ) -> None:
         if self._function.am_none:
             return
 
@@ -129,7 +131,7 @@ class CodeView(BaseView):
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
-        def decomp_ready():
+        def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
             available = self.instance.kb.structured_code.available_flavors(self._function.addr)
             self._update_available_views(available)
@@ -143,7 +145,7 @@ class CodeView(BaseView):
                 else:
                     self.jump_history.record_address(self._function.am_obj.addr)
 
-        def decomp():
+        def decomp(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             job = DecompileFunctionJob(
                 self._function.am_obj,
                 cfg=self.instance.cfg,
@@ -155,7 +157,7 @@ class CodeView(BaseView):
                 blocking=True,
                 regen_clinic=regen_clinic,
             )
-            self.instance.add_job(job)
+            self.workspace.job_manager.add_job(job)
 
         if self._function.ran_cca is False:
             # run calling convention analysis for this function
@@ -165,11 +167,11 @@ class CodeView(BaseView):
                 options = {}
             options["workers"] = 0
             varrec_job = VariableRecoveryJob(**options, on_finish=decomp, func_addr=self._function.addr)
-            self.instance.add_job(varrec_job)
+            self.workspace.job_manager.add_job(varrec_job)
         else:
             decomp()
 
-    def highlight_chunks(self, chunks):
+    def highlight_chunks(self, chunks) -> None:
         extra_selections = []
         for start, end in chunks:
             sel = QTextEdit.ExtraSelection()
@@ -184,7 +186,9 @@ class CodeView(BaseView):
     # Event callbacks
     #
 
-    def _on_new_addr(self, already_moved=False, focus=False, **kwargs):  # pylint: disable=unused-argument
+    def _on_new_addr(
+        self, already_moved: bool = False, focus: bool = False, **kwargs  # pylint:disable=unused-argument
+    ) -> None:
         if already_moved:
             return
 
@@ -214,12 +218,12 @@ class CodeView(BaseView):
                         "There is a block which is in the current function but find_closest_node_pos failed on it"
                     )
 
-    def _on_new_node(self, **kwargs):  # pylint: disable=unused-argument
+    def _on_new_node(self, **kwargs) -> None:  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
         self.addr.am_event(already_moved=True)
 
     # pylint: disable=unused-argument
-    def _on_codegen_changes(self, already_regenerated=False, event: Optional[str] = None, **kwargs):
+    def _on_codegen_changes(self, already_regenerated: bool = False, event: str | None = None, **kwargs) -> None:
         """
         The callback function that triggers an update of the codegen.
 
@@ -235,8 +239,8 @@ class CodeView(BaseView):
         if self.codegen.am_none:
             return
 
-        old_lineno: Optional[int] = None
-        old_node: Optional[Any] = None
+        old_lineno: int | None = None
+        old_node: Any | None = None
         old_font = None
         if self._last_function is self._function.am_obj and self._doc is not None:
             # we are re-rendering the current function (e.g., triggered by a node renaming). the cursor should stay at
@@ -255,6 +259,7 @@ class CodeView(BaseView):
             # do not regenerate text
             pass
         else:
+            update_var_types = False
             if event == "retype_variable":
                 dec = self.instance.project.analyses.Decompiler(
                     self._function.am_obj, variable_kb=self.instance.pseudocode_variable_kb, decompile=False
@@ -262,6 +267,7 @@ class CodeView(BaseView):
                 dec_cache = self.instance.kb.structured_code[(self._function.addr, "pseudocode")]
                 new_codegen = dec.reflow_variable_types(
                     dec_cache.type_constraints,
+                    dec_cache.func_typevar,
                     dec_cache.var_to_typevar or {},
                     dec_cache.codegen,
                 )
@@ -270,9 +276,18 @@ class CodeView(BaseView):
 
                 # update self
                 self.codegen.am_obj = new_codegen
+                update_var_types = True
+            elif event == "retype_function":
+                self.decompile(clear_prototype=False, reset_cache=True)
+                update_var_types = True
 
-            # regenerate text in the end
-            self.codegen.regenerate_text()
+            if not update_var_types:
+                # regenerate text in the end
+                self.codegen.regenerate_text()
+            else:
+                # trigger a full analysis
+                self.codegen.cleanup()
+                self.codegen._analyze()
 
         self._options.dirty = False
         if self._doc is None:
@@ -302,7 +317,9 @@ class CodeView(BaseView):
         else:
             self._options.hide()
 
-    def _on_new_function(self, focus=False, focus_addr=None, flavor=None, **kwargs):  # pylint: disable=unused-argument
+    def _on_new_function(
+        self, focus: bool = False, focus_addr=None, flavor=None, **kwargs
+    ) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
             flavor = "pseudocode" if self.codegen.am_none else self.codegen.flavor
@@ -330,7 +347,7 @@ class CodeView(BaseView):
         if console_view is not None:
             console_view.set_current_function(self._function.am_obj)
 
-    def _on_cursor_position_changed(self):
+    def _on_cursor_position_changed(self) -> None:
         if self._doc is None:
             return
 
@@ -348,7 +365,12 @@ class CodeView(BaseView):
         self.current_node.am_obj = selected_node
         self.current_node.am_event()
 
-    def _on_mouse_doubleclicked(self):
+    def _navigate_to_function(self, from_addr: int, to_func: Function) -> None:
+        self.jump_history.record_address(from_addr)
+        self.jump_history.jump_to(to_func.addr)
+        self.workspace.decompile_function(to_func, view=self)
+
+    def _on_mouse_doubleclicked(self) -> None:
         if self._doc is None:
             return
 
@@ -359,40 +381,42 @@ class CodeView(BaseView):
             if isinstance(selected_node, CFunctionCall):
                 # decompile this new function
                 if selected_node.callee_func is not None:
-                    self.jump_history.record_address(selected_node.tags["ins_addr"])
-                    self.jump_history.jump_to(selected_node.callee_func.addr)
-                    self.workspace.decompile_function(selected_node.callee_func, view=self)
+                    self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
             elif isinstance(selected_node, CConstant):
                 # jump to highlighted constants
                 if selected_node.reference_values is not None and selected_node.value is not None:
+                    for v in selected_node.reference_values.values():
+                        if isinstance(v, Function):
+                            self._navigate_to_function(selected_node.tags["ins_addr"], v)
+                            return
                     self.workspace.jump_to(selected_node.value)
             elif isinstance(selected_node, CVariable):
                 var = selected_node.variable
                 if var and isinstance(var, SimMemoryVariable):
                     self.workspace.jump_to(var.addr)
 
-    def jump_to(self, addr: int, src_ins_addr=None):  # pylint:disable=unused-argument
+    def jump_to(self, addr: int, src_ins_addr=None) -> None:  # pylint:disable=unused-argument
         self.addr.am_obj = addr
         self.addr.am_event()
 
-    def jump_back(self):
+    def jump_back(self) -> None:
         addr = self.jump_history.backtrack()
         if addr is None:
             self.close()
         else:
             self.jump_to(addr)
 
-    def popup_jumpto_dialog(self):
+    def popup_jumpto_dialog(self) -> None:
         view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
         JumpTo(view, parent=self).exec_()
         view.decompile_current_function()
 
-    def jump_forward(self):
+    def jump_forward(self) -> None:
         addr = self.jump_history.forwardstep()
         if addr is not None:
             self.jump_to(addr)
 
-    def jump_to_history_position(self, pos: int):
+    def jump_to_history_position(self, pos: int) -> None:
         addr = self.jump_history.step_position(pos)
         if addr is not None:
             self.jump_to(addr)
@@ -421,13 +445,13 @@ class CodeView(BaseView):
 
         return super().keyPressEvent(event)
 
-    def _update_available_views(self, available):
+    def _update_available_views(self, available) -> None:
         for _ in range(self._view_selector.count()):
             self._view_selector.removeItem(0)
         self._view_selector.addItems(available)
         self._view_selector.setVisible(len(available) >= 2)
 
-    def _on_view_selector_changed(self, index):
+    def _on_view_selector_changed(self, index) -> None:
         if not self._function.am_none:
             key = (self._function.addr, self._view_selector.itemText(index))
             self.codegen.am_obj = self.instance.kb.structured_code[key].codegen
@@ -437,7 +461,7 @@ class CodeView(BaseView):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         window = QMainWindow()
         window.setWindowFlags(Qt.Widget)
 
@@ -445,15 +469,15 @@ class CodeView(BaseView):
         self._textedit = QCCodeEdit(self)
         self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self._textedit.setLineWrapMode(QCCodeEdit.NoWrap)
-        textedit_dock = QDockWidget("Code", self._textedit)
-        window.setCentralWidget(textedit_dock)
-        textedit_dock.setWidget(self._textedit)
+        self._textedit.background = Conf.palette_base
+        window.setCentralWidget(self._textedit)
 
-        # decompilation
+        # decompilation options
         self._options = QDecompilationOptions(self, self.instance)
         options_dock = QDockWidget("Decompilation Options", self._options)
         window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
+        options_dock.setVisible(False)
 
         # status bar
         status_bar = QFrame()
@@ -466,6 +490,9 @@ class CodeView(BaseView):
         status_layout = QHBoxLayout()
         status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
+        options_toggle_btn = QToolButton()
+        options_toggle_btn.setDefaultAction(options_dock.toggleViewAction())
+        status_layout.addWidget(options_toggle_btn)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(3)

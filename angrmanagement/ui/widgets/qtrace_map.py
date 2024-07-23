@@ -1,4 +1,6 @@
-from typing import Optional, Sequence
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPen, QPolygonF
@@ -17,6 +19,11 @@ from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from angrmanagement.data.instance import Instance
+
 
 class TraceMapItem(QGraphicsItem):
     """
@@ -27,8 +34,8 @@ class TraceMapItem(QGraphicsItem):
     ZVALUE_ADDR = 2
     ZVALUE_HOVER = 3
 
-    def __init__(self, instance, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, instance: Instance) -> None:
+        super().__init__()
         self.instance = instance
 
         self._width: int = 1
@@ -37,7 +44,7 @@ class TraceMapItem(QGraphicsItem):
         self._addr: int = 0
         self._indicator_items: Sequence[QGraphicsItem] = []
 
-        self._hover_addr: Optional[int] = None
+        self._hover_addr: int | None = None
         self._hover_items: Sequence[QGraphicsItem] = []
 
         self._checkpoints = []
@@ -49,16 +56,16 @@ class TraceMapItem(QGraphicsItem):
         self.setAcceptHoverEvents(True)
         self._register_events()
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._gen_current_indicator()
         self._gen_checkpoint_indicators()
         self._gen_hover_indicator()
 
-    def _register_events(self):
+    def _register_events(self) -> None:
         self._dbg_watcher = DebuggerWatcher(self.on_debugger_state_updated, self.instance.debugger_mgr.debugger)
         self.on_debugger_state_updated()
 
-    def on_debugger_state_updated(self):
+    def on_debugger_state_updated(self) -> None:
         self._addr = 0
         self._total_size = 0
         self._checkpoints = []
@@ -79,7 +86,7 @@ class TraceMapItem(QGraphicsItem):
     def width(self) -> int:
         return self._width
 
-    def set_width(self, width: int):
+    def set_width(self, width: int) -> None:
         """
         Set the desired width of the trace map in scene units.
         """
@@ -90,14 +97,14 @@ class TraceMapItem(QGraphicsItem):
     def height(self) -> int:
         return self._height
 
-    def set_height(self, height: int):
+    def set_height(self, height: int) -> None:
         """
         Set the desired height of the trace map in scene units.
         """
         self.prepareGeometryChange()
         self._height = height
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         """
         Paint the trace map.
         """
@@ -109,7 +116,7 @@ class TraceMapItem(QGraphicsItem):
         """
         return QRectF(0, 0, self._width, self._height)
 
-    def _get_pos_from_addr(self, addr: int) -> Optional[int]:
+    def _get_pos_from_addr(self, addr: int) -> int | None:
         """
         Get scene X coordinate from address, or None if it could not be mapped.
         """
@@ -117,7 +124,7 @@ class TraceMapItem(QGraphicsItem):
             return None
         return int(addr / self._total_size * self._width)
 
-    def _get_addr_from_pos(self, pos: int) -> Optional[int]:
+    def _get_addr_from_pos(self, pos: int) -> int | None:
         """
         Get address from scene X coordinate, or None if it could not be mapped.
         """
@@ -134,7 +141,9 @@ class TraceMapItem(QGraphicsItem):
         width = size / self._total_size * self._width
         return QRectF(x, 0, width, self._height)
 
-    def _create_line_indicator(self, addr, item_map, color=Qt.yellow, show_frontier=False, z=None, z_frontier=None):
+    def _create_line_indicator(
+        self, addr: int, item_map, color=Qt.yellow, show_frontier: bool = False, z=None, z_frontier=None
+    ) -> None:
         """
         Generate a cursor at a given address.
         """
@@ -217,7 +226,7 @@ class TraceMapItem(QGraphicsItem):
                 i.setZValue(z)
             item_map.append(i)
 
-    def _gen_checkpoint_indicators(self):
+    def _gen_checkpoint_indicators(self) -> None:
         """
         Create checkpoint indicators.
         """
@@ -231,7 +240,7 @@ class TraceMapItem(QGraphicsItem):
         for checkpoint_addr in self._checkpoints:
             self._create_line_indicator(checkpoint_addr, self._checkpoint_items, color=color, z=self.ZVALUE_CHECKPOINT)
 
-    def _gen_current_indicator(self, **kwargs):  # pylint: disable=unused-argument
+    def _gen_current_indicator(self) -> None:  # pylint: disable=unused-argument
         """
         Create current address indicator.
         """
@@ -242,7 +251,7 @@ class TraceMapItem(QGraphicsItem):
 
         self._create_line_indicator(self._addr, self._indicator_items, show_frontier=True, z=self.ZVALUE_ADDR)
 
-    def _gen_hover_indicator(self):
+    def _gen_hover_indicator(self) -> None:
         """
         Create the hovered address indicator.
         """
@@ -254,7 +263,7 @@ class TraceMapItem(QGraphicsItem):
         if self._hover_addr is not None:
             self._create_line_indicator(self._hover_addr, self._hover_items, color=Qt.gray, z=self.ZVALUE_HOVER)
 
-    def _remove_hover_indicators(self):
+    def _remove_hover_indicators(self) -> None:
         """
         Remove active hover items, if set.
         """
@@ -262,18 +271,18 @@ class TraceMapItem(QGraphicsItem):
             self._hover_addr = None
             self._gen_hover_indicator()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             pos = event.pos()
             offset = pos.x()
             self.select_offset(offset)
             self._pressed = True
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             self._pressed = False
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if self._pressed:
             pos = event.pos()
             offset = pos.x()
@@ -281,7 +290,7 @@ class TraceMapItem(QGraphicsItem):
         else:
             super().mouseMoveEvent(event)
 
-    def on_mouse_move_event_from_view(self, point: QPointF):
+    def on_mouse_move_event_from_view(self, point: QPointF) -> None:
         """
         Add hover items.
         """
@@ -289,10 +298,10 @@ class TraceMapItem(QGraphicsItem):
         self._hover_addr = self._get_addr_from_pos(point.x())
         self._gen_hover_indicator()
 
-    def hoverLeaveEvent(self, event):  # pylint: disable=unused-argument
+    def hoverLeaveEvent(self, event) -> None:  # pylint: disable=unused-argument
         self._remove_hover_indicators()
 
-    def select_offset(self, offset):
+    def select_offset(self, offset: int) -> None:
         """
         Update listeners with new desired location.
         """
@@ -313,7 +322,7 @@ class QTraceMapView(QGraphicsView):
     and vertical orientations.
     """
 
-    def __init__(self, instance, parent=None):
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -333,7 +342,7 @@ class QTraceMapView(QGraphicsView):
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.update_size()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         """
         Handle mouse move events.
 
@@ -345,7 +354,7 @@ class QTraceMapView(QGraphicsView):
         self.fm.on_mouse_move_event_from_view(item_pt)
         super().mouseMoveEvent(event)
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         """
         Handle wheel events to scale and translate the trace map.
         """
@@ -357,13 +366,13 @@ class QTraceMapView(QGraphicsView):
             self.translate(100 * (-1 if event.angleDelta().y() < 0 else 1), 0)
             super().wheelEvent(event)
 
-    def resizeEvent(self, event):  # pylint: disable=unused-argument
+    def resizeEvent(self, event) -> None:  # pylint: disable=unused-argument
         """
         Handle view resize events, updating the trace map size accordingly.
         """
         self.update_size()
 
-    def adjust_viewport_scale(self, scale: Optional[float] = None, point: Optional[QPoint] = None):
+    def adjust_viewport_scale(self, scale: float | None = None, point: QPoint | None = None) -> None:
         """
         Adjust viewport scale factor.
         """
@@ -379,7 +388,7 @@ class QTraceMapView(QGraphicsView):
         self.update_size()
         self.translate(int(self.mapToScene(point).x() - point_rel * self.fm.width), 0)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         """
         Handle key events.
         """
@@ -398,7 +407,7 @@ class QTraceMapView(QGraphicsView):
                 return
         super().keyPressEvent(event)
 
-    def changeEvent(self, event: QEvent):
+    def changeEvent(self, event: QEvent) -> None:
         """
         Redraw on color scheme update.
         """
@@ -406,7 +415,7 @@ class QTraceMapView(QGraphicsView):
             self.setBackgroundBrush(Conf.palette_base)
             self.fm.refresh()
 
-    def update_size(self):
+    def update_size(self) -> None:
         """
         Resize map.
         """
@@ -443,7 +452,7 @@ class QTraceMap(QWidget):
     Map of the current trace, with debugger playback position and checkpoint indicators.
     """
 
-    def __init__(self, instance, parent=None):
+    def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
         self.view: QTraceMapView = None
@@ -459,7 +468,7 @@ class QTraceMap(QWidget):
     # Public methods
     #
 
-    def refresh(self):
+    def refresh(self) -> None:
         if self.view is not None:
             self.view.fm.refresh()
 
@@ -467,7 +476,7 @@ class QTraceMap(QWidget):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.view = QTraceMapView(self.instance, self)
         layout = QHBoxLayout()
         layout.addWidget(self.view)

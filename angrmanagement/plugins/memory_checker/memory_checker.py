@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr import options
 from angr.state_plugins.heap import SimHeapPTMalloc
@@ -10,16 +12,18 @@ if TYPE_CHECKING:
     from angr.sim_state import SimState
     from angr.state_plugins.sim_action import SimAction
 
+    from angrmanagement.ui.workspace import Workspace
+
 
 class MemoryChecker(BasePlugin):
     AllowList = ["free", "malloc", "__libc_start_main"]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, workspace: Workspace) -> None:
+        super().__init__(workspace)
         self.states = self.workspace.main_instance.states
         self.states.am_subscribe(self.install_state_plugin)
 
-    def install_state_plugin(self, **kwargs):
+    def install_state_plugin(self, **kwargs) -> None:
         if kwargs.get("src", None) != "new":
             return
         state: SimState = kwargs.get("state")
@@ -31,7 +35,7 @@ class MemoryChecker(BasePlugin):
         return state.solver.eval(ptr)
 
     @staticmethod
-    def check_address_is_free(state: "SimState", ptr_list: "List[SimAction]"):
+    def check_address_is_free(state: SimState, ptr_list: list[SimAction]) -> bool:
         ptr_dict = SortedDict([(MemoryChecker.eval_ptr(state, x.addr.ast), x) for x in ptr_list])
         len_list = len(ptr_dict)
         for chunk in state.heap.free_chunks():
@@ -51,11 +55,11 @@ class MemoryChecker(BasePlugin):
         return False
 
     @staticmethod
-    def check_use_after_free(state: "SimState"):
+    def check_use_after_free(state: SimState):
         # heap: SimHeapPTMalloc = state.heap
         # heap.print_heap_state()
 
-        actions: List[SimAction] = state.history.actions.hardcopy
+        actions: list[SimAction] = state.history.actions.hardcopy
         last_bbl_addr = actions[-1].bbl_addr
         address_list = []
         for act in reversed(actions):
@@ -67,5 +71,5 @@ class MemoryChecker(BasePlugin):
                 address_list.append(act)
         return MemoryChecker.check_address_is_free(state, address_list)
 
-    def step_callback(self, simgr):
+    def step_callback(self, simgr) -> None:
         simgr.move("active", "use_after_free", self.check_use_after_free)

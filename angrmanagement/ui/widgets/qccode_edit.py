@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ailment.expression import BinaryOp, Load, Op, UnaryOp
 from ailment.statement import Assignment, Store
@@ -42,7 +44,7 @@ class ColorSchemeIDA(api.ColorScheme):
     An IDA-like color scheme.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("default")
         for k, v in FORMATS.items():
             if k in COLOR_SCHEME_KEYS:
@@ -56,7 +58,7 @@ class QCCodeEdit(api.CodeEdit):
     view. You will typically interact with this class as code_view.textedit.
     """
 
-    def __init__(self, code_view):
+    def __init__(self, code_view) -> None:
         super().__init__(create_default_actions=True)
 
         self._code_view: CodeView = code_view
@@ -121,7 +123,7 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(under_cursor, CConstant):
             self._selected_node = under_cursor
             mnu.addActions(self.constant_actions)
-        if isinstance(under_cursor, (CBinaryOp, CUnaryOp)):
+        if isinstance(under_cursor, CBinaryOp | CUnaryOp):
             # operator in selection
             self._selected_node = under_cursor
             mnu.addActions(self.operator_actions)
@@ -133,7 +135,7 @@ class QCCodeEdit(api.CodeEdit):
             # function call in selection
             self._selected_node = under_cursor
             mnu.addActions(self.call_actions)
-        if isinstance(under_cursor, (CVariable, CIndexedVariable, CVariableField, CStructField)):
+        if isinstance(under_cursor, CVariable | CIndexedVariable | CVariableField | CStructField):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
@@ -177,7 +179,7 @@ class QCCodeEdit(api.CodeEdit):
 
         return super().event(event)
 
-    def get_closest_insaddr(self, node, expr=None) -> Optional[int]:
+    def get_closest_insaddr(self, node, expr=None) -> int | None:
         addr = (getattr(node, "tags", None) or {}).get("ins_addr", None)
         if addr is None:
             if expr:
@@ -276,13 +278,13 @@ class QCCodeEdit(api.CodeEdit):
         self.setTextInteractionFlags(saved_mode)
         return result
 
-    def paintEvent(self, e):
+    def paintEvent(self, e) -> None:
         saved_mode = self.textInteractionFlags()
         self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
         super().paintEvent(e)
         self.setTextInteractionFlags(saved_mode)
 
-    def setDocument(self, document):
+    def setDocument(self, document) -> None:
         super().setDocument(document)
 
         self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
@@ -292,9 +294,9 @@ class QCCodeEdit(api.CodeEdit):
     # Actions
     #
     # pylint: disable=unused-argument
-    def rename_node(self, *args, node=None):  # pylint: disable=unused-argument
+    def rename_node(self, *args, node=None) -> None:  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall, CStructField, SimType)):
+        if not isinstance(n, CVariable | CFunction | CFunctionCall | CStructField | SimType):
             return
         if isinstance(n, CVariable) and isinstance(n.variable, SimTemporaryVariable):
             # unsupported right now..
@@ -302,13 +304,13 @@ class QCCodeEdit(api.CodeEdit):
         dialog = RenameNode(code_view=self._code_view, node=n, func=self._code_view.function)
         dialog.exec_()
 
-    def xref_node(self, *args, node=None):  # pylint: disable=unused-argument
+    def xref_node(self, *args, node=None) -> None:  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, (CVariable, CFunction, CFunctionCall)):
+        if not isinstance(n, CVariable | CFunction | CFunctionCall):
             return
 
         disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
-        if isinstance(n, (CFunction, CFunctionCall)):
+        if isinstance(n, CFunction | CFunctionCall):
             addr = n.addr if isinstance(n, CFunction) else n.callee_func.addr
             dialog = XRefDialog(
                 addr=addr,
@@ -330,10 +332,10 @@ class QCCodeEdit(api.CodeEdit):
             )
         dialog.show()
 
-    def retype_node(self, *args, node=None, node_type=None):  # pylint: disable=unused-argument
+    def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
-        if not isinstance(node, (CVariable, CFunction, CFunctionCall, CStructField)):
+        if not isinstance(node, CVariable | CFunction | CFunctionCall | CStructField):
             return
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
@@ -343,6 +345,11 @@ class QCCodeEdit(api.CodeEdit):
 
         new_node_type = dialog.new_type
         if new_node_type is not None and self._code_view is not None and node is not None:
+            if isinstance(node, CFunction):
+                self._code_view.function.prototype = new_node_type.with_arch(self.instance.project.arch)
+                self._code_view.codegen.am_event(event="retype_function", node=node)
+                return
+
             # need workspace for altering callbacks of changes
             variable_kb = self._code_view.codegen._variable_kb
             # specify the type
@@ -356,7 +363,7 @@ class QCCodeEdit(api.CodeEdit):
 
             self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
-    def comment(self, expr=False, node=None):
+    def comment(self, expr: bool = False, node=None) -> None:
         addr = self.get_closest_insaddr(node, expr=expr)
         if addr is None:
             return
@@ -385,7 +392,7 @@ class QCCodeEdit(api.CodeEdit):
 
             self._code_view.codegen.am_event()
 
-    def toggle_struct(self):
+    def toggle_struct(self) -> None:
         node = self._selected_node
         if not isinstance(node, CVariable):
             return
@@ -398,32 +405,42 @@ class QCCodeEdit(api.CodeEdit):
             # decompile again
             self._code_view.decompile()
 
-    def collapse_expr(self):
+    def collapse_expr(self) -> None:
         if hasattr(self._selected_node, "collapsed"):
             self._selected_node.collapsed = True
             self._code_view.codegen.am_event()
 
-    def expand_expr(self):
+    def expand_expr(self) -> None:
         if hasattr(self._selected_node, "collapsed"):
             self._selected_node.collapsed = False
             self._code_view.codegen.am_event()
 
-    def hex_constant(self):
+    def hex_constant(self) -> None:
         if hasattr(self._selected_node, "fmt_hex"):
             self._selected_node.fmt_hex ^= True
             self._code_view.codegen.am_event()
 
-    def char_constant(self):
+    def char_constant(self) -> None:
         if hasattr(self._selected_node, "fmt_char"):
             self._selected_node.fmt_char ^= True
             self._code_view.codegen.am_event()
 
-    def neg_constant(self):
+    def neg_constant(self) -> None:
         if hasattr(self._selected_node, "fmt_neg"):
             self._selected_node.fmt_neg ^= True
             self._code_view.codegen.am_event()
 
-    def convert_to_ite_expr(self):
+    def float_constant(self) -> None:
+        if hasattr(self._selected_node, "fmt_float"):
+            self._selected_node.fmt_float ^= True
+            self._code_view.codegen.am_event()
+
+    def double_constant(self) -> None:
+        if hasattr(self._selected_node, "fmt_double"):
+            self._selected_node.fmt_double ^= True
+            self._code_view.codegen.am_event()
+
+    def convert_to_ite_expr(self) -> None:
         node = self._selected_node
         if not isinstance(node, CExpression):
             return
@@ -442,7 +459,7 @@ class QCCodeEdit(api.CodeEdit):
         cache.ite_exprs.add((addr, ailexpr))
         self._code_view.decompile(clear_prototype=False, regen_clinic=False)
 
-    def swap_binop_operands(self):
+    def swap_binop_operands(self) -> None:
         node = self._selected_node
         if not isinstance(node, CBinaryOp):
             return
@@ -489,7 +506,7 @@ class QCCodeEdit(api.CodeEdit):
             cache.binop_operators[op_desc] = negated_op
         self._code_view.decompile(clear_prototype=False, regen_clinic=False)
 
-    def expr2armasm(self):
+    def expr2armasm(self) -> None:
         def _assemble(expr, expr_addr) -> str:
             return converter.assemble(expr, self._code_view.function.addr, expr_addr)
 
@@ -509,7 +526,7 @@ class QCCodeEdit(api.CodeEdit):
 
         node = self._selected_node
         # figure out where we are
-        if not isinstance(node, (CVariable, CIndexedVariable, CVariableField, CStructField)):
+        if not isinstance(node, CVariable | CIndexedVariable | CVariableField | CStructField):
             return
 
         doc: QCodeDocument = self.document()
@@ -569,7 +586,7 @@ class QCCodeEdit(api.CodeEdit):
         sep.setSeparator(True)
         return sep
 
-    def _initialize_context_menus(self):
+    def _initialize_context_menus(self) -> None:
         base_actions = [
             self._separator(),
             self.action_copy,
@@ -582,7 +599,7 @@ class QCCodeEdit(api.CodeEdit):
         self.action_xref = QAction("Xrefs...", self)
         self.action_xref.triggered.connect(self.xref_node)
         self.action_xref.setShortcut(QKeySequence("X"))
-        self.action_retype_node = QAction("Retype variable", self)
+        self.action_retype_node = QAction("Specify a new type", self)
         self.action_retype_node.triggered.connect(self.retype_node)
         self.action_retype_node.setShortcut(QKeySequence("Y"))
         self.action_toggle_struct = QAction("Toggle &struct/array")
@@ -600,6 +617,10 @@ class QCCodeEdit(api.CodeEdit):
         self.action_char = QAction("Toggle char", self)
         self.action_char.triggered.connect(self.char_constant)
         self.action_char.setShortcut(QKeySequence("R"))
+        self.action_float = QAction("Toggle float", self)
+        self.action_float.triggered.connect(self.float_constant)
+        self.action_double = QAction("Toggle double", self)
+        self.action_double.triggered.connect(self.double_constant)
         self.action_to_ite_expr = QAction("Create a ternary expression")
         self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
         self.action_swap_binop_operands = QAction("Swap operands")
@@ -623,12 +644,14 @@ class QCCodeEdit(api.CodeEdit):
             self.action_xref,
         ]
 
-        self.function_name_actions = [self.action_rename_node, self.action_xref]
+        self.function_name_actions = [self.action_rename_node, self.action_xref, self.action_retype_node]
 
         self.constant_actions = [
             self.action_hex,
             self.action_neg,
             self.action_char,
+            self.action_float,
+            self.action_double,
         ]
 
         self.call_actions = [self.action_rename_node, self.action_xref]

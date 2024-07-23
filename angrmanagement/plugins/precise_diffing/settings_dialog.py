@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -20,7 +22,7 @@ class SettingsDialog(QDialog):
     A settings dialog for the Precise Diff plugin
     """
 
-    def __init__(self, diff_plugin, parent=None):
+    def __init__(self, diff_plugin, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Precise Diff Settings")
         self.diff_plugin = diff_plugin
@@ -31,7 +33,7 @@ class SettingsDialog(QDialog):
         self.updates = False
         self.show()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         upper_layout = QVBoxLayout()
 
         #
@@ -56,6 +58,14 @@ class SettingsDialog(QDialog):
             and checking for the same index in the new binary.
             """
         )
+        self._use_addrs = QCheckBox("Use addresses for alignment")
+        self._use_addrs.setToolTip(
+            """
+            When enabled, the diffing algorithm will attempt to diff functions at the same addresses across
+            both binaries. When disabled we attempt to use symbols.
+            """
+        )
+        self._use_addrs.setChecked(self.diff_plugin.use_addrs)
 
         if self.diff_plugin.diff_algo_class == BFSFunctionDiff:
             self._bfs_diff_btn.setChecked(True)
@@ -66,6 +76,7 @@ class SettingsDialog(QDialog):
 
         algo_group_layout.addWidget(self._bfs_diff_btn)
         algo_group_layout.addWidget(self._linear_diff_btn)
+        algo_group_layout.addWidget(self._use_addrs)
         algo_group.setLayout(algo_group_layout)
 
         upper_layout.addWidget(algo_group)
@@ -95,8 +106,27 @@ class SettingsDialog(QDialog):
             """
         )
         self._prefer_strings.setChecked(self.diff_plugin.resolve_strings)
+        self._prefer_insns = QCheckBox("Prioritize Instructions", self)
+        self._prefer_insns.setToolTip(
+            """
+            Some instructions that use addresses, such as jumps, may show different addresses
+            in the new binary. With this option enabled, two instructions that use an address that both point
+            to the same first few instructions are marked as the same.
+            """
+        )
+        self._prefer_insns.setChecked(self.diff_plugin.resolve_insns)
+        self._ignore_globals = QCheckBox("Ignore Unnamed Globals")
+        self._ignore_globals.setToolTip(
+            """
+            When enabled, ignores all unnamed global values when showing psuedocode diffs.
+            """
+        )
+        self._ignore_globals.setChecked(self.diff_plugin.ignore_globals)
+
         ins_layout.addWidget(self._prefer_symbols)
         ins_layout.addWidget(self._prefer_strings)
+        ins_layout.addWidget(self._prefer_insns)
+        ins_layout.addWidget(self._ignore_globals)
         ins_group.setLayout(ins_layout)
 
         upper_layout.addWidget(ins_group)
@@ -159,16 +189,18 @@ class SettingsDialog(QDialog):
         self._main_layout.addLayout(upper_layout)
         self._main_layout.addLayout(buttons_layout)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         # algorithms
         if self._bfs_diff_btn.isChecked():
             self.diff_plugin.diff_algo_class = BFSFunctionDiff
         else:
             self.diff_plugin.diff_algo_class = LinearFunctionDiff
+        self.diff_plugin.use_addrs = self._use_addrs.isChecked()
 
         # instruction options
         self.diff_plugin.prefer_symbols = self._prefer_symbols.isChecked()
         self.diff_plugin.resolve_strings = self._prefer_strings.isChecked()
+        self.diff_plugin.resolve_insns = self._prefer_insns.isChecked()
 
         # colors
         try:
@@ -181,5 +213,5 @@ class SettingsDialog(QDialog):
         self.updates = True
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.close()

@@ -1,6 +1,10 @@
-from typing import TYPE_CHECKING, Callable, Optional, Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.ui.views import BaseView
     from angrmanagement.ui.workspace import Workspace
 
@@ -10,8 +14,8 @@ class Command:
     Command to be run.
     """
 
-    _name: Optional[str] = None
-    _caption: Optional[str] = None
+    _name: str | None = None
+    _caption: str | None = None
 
     @property
     def name(self) -> str:
@@ -45,12 +49,12 @@ class BasicCommand(Command):
     Basic command to invoke a callable.
     """
 
-    def __init__(self, name: str, caption: str, action: Callable):
+    def __init__(self, name: str, caption: str, action: Callable) -> None:
         self._name = name
         self._caption = caption
         self._action: Callable = action
 
-    def run(self):
+    def run(self) -> None:
         self._action()
 
 
@@ -59,11 +63,13 @@ class ViewCommand(Command):
     Commands to invoke a callable on a view.
     """
 
-    def __init__(self, name: str, caption: str, action: Callable, view_class: Type["BaseView"], workspace: "Workspace"):
+    def __init__(
+        self, name: str, caption: str, action: Callable, view_class: type[BaseView], workspace: Workspace
+    ) -> None:
         self._name = name
         self._caption = caption
         self._action: Callable = action
-        self._view_class: Type[BaseView] = view_class
+        self._view_class: type[BaseView] = view_class
         self._workspace: Workspace = workspace
 
     @property

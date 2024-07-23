@@ -1,7 +1,9 @@
-import logging
-from typing import TYPE_CHECKING, Generator, List, Optional, Set, Tuple
+from __future__ import annotations
 
-from angr import KnowledgeBase
+import logging
+from typing import TYPE_CHECKING
+
+from angr import KnowledgeBase, Project
 from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg
@@ -26,10 +28,13 @@ except ImportError:
     argument_resolver = None
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from angr.analyses.reaching_definitions import ReachingDefinitionsAnalysis
     from angr.knowledge_plugins.key_definitions.atoms import Atom
 
     from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 log = logging.getLogger(name=__name__)
@@ -40,13 +45,13 @@ class DependencyAnalysisJob(Job):
     Implements a job for dependency analysis.
     """
 
-    def __init__(self, func_addr=None, func_arg_idx=None):
+    def __init__(self, func_addr=None, func_arg_idx=None) -> None:
         super().__init__("DependencyAnalysis")
 
-        self.func_addr: Optional[int] = func_addr
-        self.func_arg_idx: Optional[int] = func_arg_idx
+        self.func_addr: int | None = func_addr
+        self.func_arg_idx: int | None = func_arg_idx
 
-    def _get_sink_and_atom(self, inst: "Instance"):
+    def _get_sink_and_atom(self, inst: Instance):
         if self.func_addr is not None:
             sinks = [func for func in inst.kb.functions.values() if func.addr == self.func_addr]
             if not sinks:
@@ -72,31 +77,31 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def _run(self, inst: "Instance"):
-        self._progress_callback(0.0)
-        self._perform(inst)
-        self._progress_callback(100.0)
+    def run(self, ctx: JobContext, inst: Instance) -> None:
+        ctx.set_progress(0.0)
+        self._perform(ctx, inst)
+        ctx.set_progress(100.0)
 
-    def _perform(self, inst: "Instance"):
+    def _perform(self, ctx: JobContext, inst: Instance):
         if not argument_resolver:
             gui_thread_schedule_async(self._display_import_error)
             return
 
-        self._progress_callback(10.0, text="Extracting sink and atom")
+        ctx.set_progress(10.0, "Extracting sink and atom")
         sink, atom = self._get_sink_and_atom(inst)
         if sink is None:
             # invalid sink setup
             return None
 
         closures = {}
-        excluded_functions: Set[int] = set()
+        excluded_functions: set[int] = set()
         min_depth = 1
         max_depth = 8
         progress_chunk = 70.0 / (max_depth - min_depth)
 
         for depth in range(min_depth, max_depth):
             base_progress: float = 30.0 + (depth - min_depth) * progress_chunk
-            self._progress_callback(base_progress, text="Calculating reaching definitions... depth %d." % depth)
+            ctx.set_progress(base_progress, text="Calculating reaching definitions... depth %d." % depth)
             # generate RDA observation points
             observation_points = set()
             for pred in inst.cfg.am_obj.get_predecessors(inst.cfg.am_obj.get_any_node(self.func_addr)):
@@ -108,7 +113,7 @@ class DependencyAnalysisJob(Job):
             for idx, total, dep in self._dependencies(
                 sink, [(atom, SimType())], inst.project.kb, inst.project, depth, excluded_functions, observation_points
             ):
-                self._progress_callback(
+                ctx.set_progress(
                     base_progress + idx / total * progress_chunk,
                     text="Computing transitive closures: %d/%d - depth %d" % (idx + 1, total, depth),
                 )
@@ -167,14 +172,14 @@ class DependencyAnalysisJob(Job):
 
     @staticmethod
     def _dependencies(
-        subject,
-        sink_atoms: List[Tuple["Atom", SimType]],
+        subject: str,
+        sink_atoms: list[tuple[Atom, SimType]],
         kb,
-        project,
+        project: Project,
         max_depth: int,
-        excluded_funtions: Set[int],
-        observation_points: Set[Tuple],
-    ) -> Generator[Tuple[int, int, "ReachingDefinitionsAnalysis"], None, None]:
+        excluded_funtions: set[int],
+        observation_points: set[tuple],
+    ) -> Generator[tuple[int, int, ReachingDefinitionsAnalysis], None, None]:
         Handler = handler_factory(
             [
                 StdioHandlers,
@@ -186,19 +191,19 @@ class DependencyAnalysisJob(Job):
         if isinstance(subject, Function):
             sink = subject
         else:
-            raise TypeError("Unsupported type of subject %s." % type(subject))
+            raise TypeError(f"Unsupported type of subject {type(subject)}.")
 
         # peek into the callgraph and discover all functions reaching the sink within N layers of calls, which is
         # determined by the depth parameter
-        queue: List[Tuple[CallTrace, int]] = [(CallTrace(sink.addr), 0)]
-        starts: Set[CallTrace] = set()
-        encountered: Set[int] = set(excluded_funtions)
+        queue: list[tuple[CallTrace, int]] = [(CallTrace(sink.addr), 0)]
+        starts: set[CallTrace] = set()
+        encountered: set[int] = set(excluded_funtions)
         while queue:
             trace, curr_depth = queue.pop(0)
             if trace.current_function_address() in starts:
                 continue
             caller_func_addr = trace.current_function_address()
-            callers: Set[int] = set(kb.functions.callgraph.predecessors(caller_func_addr))
+            callers: set[int] = set(kb.functions.callgraph.predecessors(caller_func_addr))
             # remove the functions that we already came across - essentially bypassing recursive function calls
             callers = {addr for addr in callers if addr not in encountered}
             caller_depth = curr_depth + 1
@@ -232,7 +237,7 @@ class DependencyAnalysisJob(Job):
             yield idx, len(starts), rda
 
     @staticmethod
-    def _get_new_kb_with_cfgs_and_functions(project, kb):
+    def _get_new_kb_with_cfgs_and_functions(project: Project, kb):
         new_kb = KnowledgeBase(project)
 
         new_kb.cfgs = kb.cfgs.copy()
@@ -244,7 +249,7 @@ class DependencyAnalysisJob(Job):
         return new_kb
 
     @staticmethod
-    def _display_import_error():
+    def _display_import_error() -> None:
         QMessageBox.critical(
             None,
             "Import error",
@@ -252,7 +257,7 @@ class DependencyAnalysisJob(Job):
         )
 
     @staticmethod
-    def _display_closures(inst, sink_atom: "Atom", sink_addr: int, closures):
+    def _display_closures(inst, sink_atom: Atom, sink_addr: int, closures) -> None:
         view = GlobalInfo.main_window.workspace.view_manager.first_view_in_category("dependencies")
         if view is None:
             return

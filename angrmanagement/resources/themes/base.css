@@ -132,6 +132,9 @@ ads--CDockWidgetTab {
     border-color: palette(light);
     padding: 4px 5px;
     margin-right: 1px;
+
+    qproperty-iconSize: 20px 20px;
+    padding-left: 0;
 }
 
 ads--CDockWidgetTab[activeTab="true"] {
@@ -205,3 +208,147 @@ QScrollArea#dockWidgetScrollArea {
 QTableView {
     border: none;
 }
+
+/*****************************************************************************
+ *
+ * Styling of auto hide functionality
+ *
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ * CAutoHideTab
+ *****************************************************************************/
+ads--CAutoHideTab {
+    background: palette(mid);
+    border-style: solid;
+    border-width: 0;
+    border: none;
+    margin-left: 0px;
+    margin-right: 0px;
+    min-height: 20px;
+    padding: 4px 5px;
+    qproperty-iconSize: 20px 20px;/* this is optional in case you would like to change icon size*/
+    text-align: center;
+}
+
+ads--CAutoHideTab[activeTab="true"] {
+    border-color: palette(highlight);
+    background: palette(window);
+}
+
+ads--CAutoHideTab QLabel {
+    color: palette(text);
+}
+
+ads--CAutoHideTab[activeTab="true"] QLabel {
+    color: palette(text);
+}
+
+ads--CAutoHideTab:hover
+{
+    background-color: palette(midlight);
+}
+
+/*****************************************************************************
+ * CAutoHideSideBar
+ *****************************************************************************/
+ads--CAutoHideSideBar{
+    background: palette(mid);
+    border: none;
+    qproperty-spacing: 0;
+}
+
+#sideTabsContainerWidget {
+    background: transparent;
+}
+
+/*****************************************************************************
+ * CAutoHideDockContainer
+ *****************************************************************************/
+ads--CAutoHideDockContainer {
+    background: palette(window);
+}
+
+ads--CAutoHideDockContainer ads--CDockAreaTitleBar {
+    background: palette(highlight);
+    padding: 0px;
+    border: none;
+}
+
+/*
+ * This is required because the ads--CDockAreaWidget[focused="true"] will
+ * overwrite the ads--CAutoHideDockContainer ads--CDockAreaTitleBar rule
+ */
+ads--CAutoHideDockContainer ads--CDockAreaWidget[focused="true"] ads--CDockAreaTitleBar {
+    background: palette(highlight);
+    padding: 0px;
+    border: none;
+}
+
+#autoHideTitleLabel {
+    padding-left: 4px;
+    color: palette(highlighted-text);
+}
+
+/*****************************************************************************
+ * CAutoHideDockContainer titlebar buttons
+ *****************************************************************************/
+#dockAreaAutoHideButton {
+    qproperty-icon: url("$theme/images/drawing-pin.svg");
+    qproperty-iconSize: 15px;
+}
+
+ads--CAutoHideDockContainer #dockAreaAutoHideButton {
+    qproperty-icon: url("$theme/images/drawing-pin.svg");
+    qproperty-iconSize: 15px;
+}
+
+ads--CAutoHideDockContainer #dockAreaMinimizeButton {
+    qproperty-icon: url("$theme/images/minimize-button.svg");
+    qproperty-iconSize: 15px;
+}
+
+ads--CAutoHideDockContainer #dockAreaCloseButton{
+    qproperty-icon: url("$theme/images/close.svg");
+    qproperty-iconSize: 15px;
+}
+
+ads--CAutoHideDockContainer ads--CTitleBarButton:hover {
+    background: palette(highlight);
+    border: 0;
+}
+
+ads--CAutoHideDockContainer ads--CTitleBarButton:pressed {
+    background: palette(highlight);
+    border: 0;
+}
+
+/*****************************************************************************
+ * CAutoHideDockContainer Titlebar and Buttons
+ *****************************************************************************/
+
+
+/*****************************************************************************
+ * CResizeHandle
+ *****************************************************************************/
+ads--CResizeHandle {
+    background: palette(window);
+}
+
+ads--CAutoHideDockContainer[sideBarLocation="0"] ads--CResizeHandle {
+    border-top: 1px solid palette(dark);
+}
+
+ads--CAutoHideDockContainer[sideBarLocation="1"] ads--CResizeHandle {
+    border-left: 1px solid palette(dark);
+}
+
+ads--CAutoHideDockContainer[sideBarLocation="2"] ads--CResizeHandle {
+    border-right: 1px solid palette(dark);
+}
+
+ads--CAutoHideDockContainer[sideBarLocation="3"] ads--CResizeHandle {
+    border-top: 1px solid palette(dark);
+}
+

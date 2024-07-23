@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import math
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QBrush, QColor, QKeyEvent, QPainterPath, QPainterPathStroker, QPen
@@ -25,7 +27,7 @@ EDGE_STYLES = {EdgeSort.DIRECT_JUMP: Qt.SolidLine, EdgeSort.EXCEPTION_EDGE: Qt.D
 
 
 class QGraphArrow(QGraphicsItem):
-    def __init__(self, edge, arrow_location="end", arrow_direction="down", parent=None):
+    def __init__(self, edge, arrow_location: str = "end", arrow_direction: str = "down", parent=None) -> None:
         super().__init__(parent)
 
         self.edge = edge
@@ -77,7 +79,7 @@ class QGraphArrow(QGraphicsItem):
                 QPointF(coord.x() - 6, coord.y()),
             ]
         else:
-            raise NotImplementedError("Direction %s is not supported yet." % direction)
+            raise NotImplementedError(f"Direction {direction} is not supported yet.")
 
     def _should_highlight(self) -> bool:
         return False
@@ -85,7 +87,7 @@ class QGraphArrow(QGraphicsItem):
     def create_point(self, stuff):
         return QPointF(*stuff) - self._start
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_highlight = self._should_highlight()
 
@@ -119,18 +121,18 @@ class QGraphArrow(QGraphicsItem):
     # Event handlers
     #
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self, event) -> None:
         pass
 
-    def hoverLeaveEvent(self, event):
+    def hoverLeaveEvent(self, event) -> None:
         pass
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         pass
 
 
 class QDisasmGraphArrow(QGraphArrow):
-    def __init__(self, edge, disasm_view, infodock, parent=None):
+    def __init__(self, edge, disasm_view, infodock, parent=None) -> None:
         super().__init__(edge, arrow_direction="down", parent=parent)
         self.disasm_view = disasm_view
         self.infodock = infodock
@@ -146,13 +148,13 @@ class QDisasmGraphArrow(QGraphArrow):
     # Event handlers
     #
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self, event) -> None:
         self.infodock.hover_edge(self.edge.src.addr, self.edge.dst.addr)
 
-    def hoverLeaveEvent(self, event):
+    def hoverLeaveEvent(self, event) -> None:
         self.infodock.unhover_edge(self.edge.src.addr, self.edge.dst.addr)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             # go to the source
             self.disasm_view.jump_to(self.edge.src.addr, src_ins_addr=self.edge.dst.addr, use_animation=True)
@@ -165,7 +167,9 @@ class QDisasmGraphArrow(QGraphArrow):
 
 
 class QGraphArrowBezier(QGraphArrow):
-    def __init__(self, edge, arrow_location="end", arrow_direction="down", radius=18, parent=None):
+    def __init__(
+        self, edge, arrow_location: str = "end", arrow_direction: str = "down", radius: int = 18, parent=None
+    ) -> None:
         self._radius = radius
         super().__init__(edge, arrow_location=arrow_location, arrow_direction=arrow_direction, parent=parent)
 
@@ -208,7 +212,7 @@ class QGraphArrowBezier(QGraphArrow):
 
 
 class QDepGraphArrow(QGraphArrowBezier):
-    def __init__(self, dep_view: "DependencyView", *args, **kwargs):
+    def __init__(self, dep_view: DependencyView, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._dep_view = dep_view
 
@@ -219,7 +223,7 @@ class QDepGraphArrow(QGraphArrowBezier):
 
 
 class QProximityGraphArrow(QGraphArrow):
-    def __init__(self, proximity_view: "ProximityView", *args, **kwargs):
+    def __init__(self, proximity_view: ProximityView, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._proximity_view = proximity_view
 
@@ -234,7 +238,7 @@ class QProximityGraphArrow(QGraphArrow):
 class QDataDepGraphArrow(QGraphArrow):
     """Used to represent an edge between two QDataDepGraphBlocks"""
 
-    def __init__(self, data_dep_view: "DataDepView", *args, **kwargs):
+    def __init__(self, data_dep_view: DataDepView, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.setFlags(QGraphicsItem.ItemIsFocusable)
         self._data_dep_view = data_dep_view
@@ -248,14 +252,14 @@ class QDataDepGraphArrow(QGraphArrow):
             or self.edge.src in self._data_dep_view.traced_descendants
         )
 
-    def hoverEnterEvent(self, event):
+    def hoverEnterEvent(self, event) -> None:
         self.is_hovered = True
         self.update()  # Must trigger repaint to highlight
         self.setFocus(Qt.MouseFocusReason)
         self.grabKeyboard()
         self._data_dep_view.graph_widget.handle_preview_request(self, event.modifiers() & Qt.ControlModifier)
 
-    def hoverLeaveEvent(self, event):
+    def hoverLeaveEvent(self, event) -> None:
         self.is_hovered = False
         self.update()  # Must trigger repaint to unhighlight
         self.ungrabKeyboard()
@@ -274,7 +278,7 @@ class QDataDepGraphArrow(QGraphArrow):
         else:
             super().keyPressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         """
         A double click on an arrow should center the data-dep view on the arrow's destination or source node
         If the control modifier is held, then the jump will be made to the destination. Otherwise, the source.
@@ -290,7 +294,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
 
     dash_len = 5.0
 
-    def _calculate_dash_pattern(self) -> List[float]:
+    def _calculate_dash_pattern(self) -> list[float]:
         """
         Builds dash pattern list dynamically, ensuring the correct number of dashes and spacing per each distance that
         must be covered
@@ -312,7 +316,7 @@ class QDataDepGraphAncestorLine(QDataDepGraphArrow):
         pattern.append(0.0)
         return pattern
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         should_highlight = self._should_highlight()
 
         pen = QPen(QColor(0, 254, 254), 2, self.style) if should_highlight else QPen(self.color, 2, self.style)

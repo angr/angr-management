@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CFunctionCall, CStructField, CVariable
 from angr.sim_type import NamedTypeMixin, SimType, SimTypePointer, TypeRef
@@ -26,7 +28,7 @@ class NodeNameBox(QLineEdit):
     QLineEdit that validates node names.
     """
 
-    def __init__(self, textchanged_callback, parent=None):
+    def __init__(self, textchanged_callback, parent=None) -> None:
         super().__init__(parent)
 
         self.textChanged.connect(textchanged_callback)
@@ -39,7 +41,7 @@ class NodeNameBox(QLineEdit):
         return None
 
     @staticmethod
-    def _is_valid_node_name(name):
+    def _is_valid_node_name(name: str):
         stripped = name.strip()
         return stripped and " " not in stripped
 
@@ -51,11 +53,11 @@ class RenameNode(QDialog):
 
     def __init__(
         self,
-        code_view: Optional["CodeView"] = None,
-        node: Optional[CConstruct] = None,
+        code_view: CodeView | None = None,
+        node: CConstruct | None = None,
         parent=None,
-        func: Optional["Function"] = None,
-    ):
+        func: Function | None = None,
+    ) -> None:
         super().__init__(parent)
 
         # initialization
@@ -63,7 +65,7 @@ class RenameNode(QDialog):
 
         self._code_view = code_view
         self._node = node
-        self._func: Optional[Function] = func
+        self._func: Function | None = func
 
         self._name_box: NodeNameBox = None
         self._status_label = None
@@ -92,7 +94,7 @@ class RenameNode(QDialog):
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # name label
 
         name_label = QLabel(self)
@@ -149,7 +151,7 @@ class RenameNode(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text):  # pylint:disable=unused-argument
+    def _on_name_changed(self, new_text) -> None:  # pylint:disable=unused-argument
         if self._name_box is None:
             # initialization is not done yet
             return
@@ -167,7 +169,7 @@ class RenameNode(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         node_name = self._name_box.name
         if node_name is not None and self._code_view is not None and self._node is not None:
             # need workspace for altering callbacks of changes

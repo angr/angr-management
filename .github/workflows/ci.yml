@@ -10,3 +10,7 @@ on:
 jobs:
   ci:
     uses: angr/ci-settings/.github/workflows/angr-ci.yml@master
+  pyinstaller:
+    uses: ./.github/workflows/pyinstaller-build.yml
+  windows:
+    uses: ./.github/workflows/windows.yml

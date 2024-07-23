@@ -1,17 +1,25 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDockWidget, QHBoxLayout, QMainWindow
 
-from angrmanagement.data.instance import ObjectContainer
+from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.ui.widgets.qpathtree import QPathTree
 from angrmanagement.ui.widgets.qsimulation_managers import QSimulationManagers
 from angrmanagement.ui.widgets.state_inspector import StateInspector
 
-from .view import BaseView
+from .view import InstanceView
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
 
 
-class SymexecView(BaseView):
-    def __init__(self, workspace, instance, *args, **kwargs):
-        super().__init__("symexec", workspace, instance, *args, **kwargs)
+class SymexecView(InstanceView):
+    def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
+        super().__init__("symexec", workspace, default_docking_position, instance)
+        assert not isinstance(self.instance, str)
 
         self.base_caption = "Symbolic Execution"
 
@@ -41,17 +49,17 @@ class SymexecView(BaseView):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         pass
 
-    def select_simgr(self, simgr):
+    def select_simgr(self, simgr) -> None:
         self.current_simgr.am_obj = simgr
         self.current_simgr.am_event(src="from above")
 
-    def select_states(self, states):
+    def select_states(self, states) -> None:
         self._simgrs.select_states(states)
 
-    def view_state(self, state):
+    def view_state(self, state) -> None:
         self._state_viewer.state = state
 
         # push namespace into the console
@@ -63,23 +71,23 @@ class SymexecView(BaseView):
                 }
             )
 
-    def avoid_addr_in_exec(self, addr):
+    def avoid_addr_in_exec(self, addr: int) -> None:
         self._simgrs.add_avoid_address(addr)
 
-    def find_addr_in_exec(self, addr):
+    def find_addr_in_exec(self, addr: int) -> None:
         self._simgrs.add_find_address(addr)
 
-    def remove_avoid_addr_in_exec(self, addr):
+    def remove_avoid_addr_in_exec(self, addr: int) -> None:
         self._simgrs.remove_avoid_address(addr)
 
-    def remove_find_addr_in_exec(self, addr):
+    def remove_find_addr_in_exec(self, addr: int) -> None:
         self._simgrs.remove_find_address(addr)
 
-    def redraw_graph(self):
+    def redraw_graph(self) -> None:
         if self.graph is not None:
             self.graph.viewport().update()
 
-    def switch_to_disassembly_view(self):
+    def switch_to_disassembly_view(self) -> None:
         if self._selected_state_block:
             addr = self._selected_state_block.state.addr
             self._switch_to_disassembly_view(addr)
@@ -88,7 +96,7 @@ class SymexecView(BaseView):
     # Events
     #
 
-    def closeEvent(self, _):
+    def closeEvent(self, _) -> None:
         """
         Close children before exiting
         """
@@ -98,7 +106,7 @@ class SymexecView(BaseView):
     # Initialization
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         main = QMainWindow()
         main.setWindowFlags(Qt.Widget)
 
@@ -135,7 +143,7 @@ class SymexecView(BaseView):
     # Private methods
     #
 
-    def _switch_to_disassembly_view(self, addr):
+    def _switch_to_disassembly_view(self, addr: int) -> None:
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
         else:

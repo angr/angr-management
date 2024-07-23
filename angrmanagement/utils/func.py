@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.sim_type import SimType, SimTypePointer
 
@@ -6,7 +8,7 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
 
 
-def type2str(ty: Optional[SimType]) -> str:
+def type2str(ty: SimType | None) -> str:
     """
     Convert a SimType instance to a string that can be displayed.
 
@@ -23,7 +25,7 @@ def type2str(ty: Optional[SimType]) -> str:
     return repr(ty)
 
 
-def function_prototype_str(func: "Function") -> str:
+def function_prototype_str(func: Function) -> str:
     if func.prototype is None:
         return func.name
 

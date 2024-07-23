@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins.key_definitions.atoms import Atom, MemoryLocation, Register, SpOffset
 from PySide6.QtCore import QRectF, Qt
@@ -24,12 +26,12 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
     def __init__(
         self,
-        is_selected,
-        dep_view: "DependencyView",
-        definition: "Definition" = None,
+        is_selected: bool,
+        dep_view: DependencyView,
+        definition: Definition = None,
         atom: Atom = None,
         addr: int = None,
-    ):
+    ) -> None:
         super().__init__()
 
         self._dep_view = dep_view
@@ -45,8 +47,8 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self._instruction_item: QGraphicsSimpleTextItem = None
         self._function_str: str = None
         self._function_item: QGraphicsSimpleTextItem = None
-        self._text: Optional[str] = None
-        self._text_item: Optional[QGraphicsSimpleTextItem] = None
+        self._text: str | None = None
+        self._text_item: QGraphicsSimpleTextItem | None = None
 
         self.definition = definition
         self.atom = atom
@@ -57,11 +59,11 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         self.setAcceptHoverEvents(True)
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # definition
         self._definition_str = ""
         atom = self.definition.atom if self.definition is not None else self.atom
-        addr_str = "unknown address" if self.addr is None else "%#x" % self.addr
+        addr_str = "unknown address" if self.addr is None else f"{self.addr:#x}"
         if isinstance(atom, Register):
             # convert it to a register name
             arch = self._instance.project.arch
@@ -138,17 +140,17 @@ class QDepGraphBlock(QCachedGraphicsItem):
         # y += self._instruction_item.boundingRect().height()
         # x = self.HORIZONTAL_PADDING
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._update_size()
 
     #
     # Event handlers
     #
 
-    def mousePressEvent(self, event):  # pylint: disable=no-self-use
+    def mousePressEvent(self, event) -> None:  # pylint: disable=no-self-use
         super().mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse release event')
         if event.button() == Qt.LeftButton:
             self.selected = not self.selected
@@ -157,7 +159,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         super().mouseReleaseEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse double click event')
         if event.button() == Qt.LeftButton:
             self._workspace.viz(self.addr)
@@ -165,13 +167,13 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):
+    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent) -> None:
         self._dep_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(self, event: "PySide6.QtWidgets.QGraphicsSceneHoverEvent"):
+    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent) -> None:
         self._dep_view.hover_leave_block()
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         """
         Paint a state block on the scene.
 
@@ -198,7 +200,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
     # Private methods
     #
 
-    def _update_size(self):
+    def _update_size(self) -> None:
         width_candidates = [
             # definition string
             self._definition_item.boundingRect().width(),

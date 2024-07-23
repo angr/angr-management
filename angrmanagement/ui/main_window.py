@@ -1,12 +1,13 @@
 # pylint:disable=no-self-use
+from __future__ import annotations
+
 import datetime
 import logging
 import os
 import pickle
-import sys
 import time
 from functools import partial
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import angr
 import angr.flirt
@@ -46,6 +47,7 @@ from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
 from .dialogs.preferences import Preferences
+from .dialogs.welcome import WelcomeDialog
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.file_menu import FileMenu
 from .menus.help_menu import HelpMenu
@@ -75,11 +77,11 @@ class DockShortcutEventFilter(QObject):
     Filter to support shortcuts on floating dock windows that overlap main window registered menu action shortcuts.
     """
 
-    def __init__(self, main_window: "MainWindow"):
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__()
         self._main_window: MainWindow = main_window
 
-    def eventFilter(self, qobject, event):
+    def eventFilter(self, qobject, event) -> bool:
         if event.type() == QEvent.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
             self._main_window.show_command_palette(qobject)
             return True
@@ -95,14 +97,14 @@ class ShiftShiftEventFilter(QObject):
     activation_count: int = 2
     timeout_secs: float = 1
 
-    def __init__(self, main_window: "MainWindow"):
+    def __init__(self, main_window: MainWindow) -> None:
         super().__init__()
         self._main_window: MainWindow = main_window
         self._press_count: int = 0
         self._last_press_time: float = 0
         self._did_process_qwindow_event: bool = False
 
-    def eventFilter(self, qobject, event):
+    def eventFilter(self, qobject, event) -> bool:
         # Key Event propagation will begin at QWindow and continue down the widget tree. Use KeyEvent on QWindow to
         # distinguish unique key presses, then intercept KeyEvent at first QWidget the event is propagated to.
 
@@ -137,7 +139,9 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
 
-    def __init__(self, app: Optional["QApplication"] = None, parent=None, show=True, use_daemon=False):
+    def __init__(
+        self, app: QApplication | None = None, parent=None, show: bool = True, use_daemon: bool = False
+    ) -> None:
         super().__init__(parent)
         self.initialized = False
 
@@ -151,7 +155,7 @@ class MainWindow(QMainWindow):
         # initialization
         self.setMinimumSize(QSize(400, 400))
 
-        self.app: Optional[QApplication] = app
+        self.app: QApplication | None = app
         self.workspace: Workspace = None
         self.dock_manager: QtAds.CDockManager
         self._dock_shortcut_event_filter = DockShortcutEventFilter(self)
@@ -202,7 +206,12 @@ class MainWindow(QMainWindow):
             self.windowHandle().screenChanged.connect(self.on_screen_changed)
             self.show()
 
-    def sizeHint(self, *args, **kwargs):  # pylint: disable=unused-argument,no-self-use
+    def show_welcome_dialog(self) -> None:
+        dlg = WelcomeDialog(self)
+        dlg.setModal(True)
+        dlg.show()
+
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(1200, 800)
 
     #
@@ -214,7 +223,7 @@ class MainWindow(QMainWindow):
         return self.getWindowTitle()
 
     @caption.setter
-    def caption(self, v):
+    def caption(self, v) -> None:
         self.setWindowTitle(v)
 
     #
@@ -227,10 +236,9 @@ class MainWindow(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open a binary",
-            Conf.last_used_directory,
+            self._get_recent_dir(),
             "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
         )
-        Conf.last_used_directory = os.path.dirname(file_path)
         return file_path
 
     def _pick_image_dialog(self):
@@ -242,22 +250,22 @@ class MainWindow(QMainWindow):
             return None  # User canceled
         return prompt.textValue()
 
-    def open_load_plugins_dialog(self):
+    def open_load_plugins_dialog(self) -> None:
         dlg = LoadPlugins(self.workspace.plugins)
         dlg.setModal(True)
         dlg.exec_()
 
-    def open_newstate_dialog(self):
+    def open_newstate_dialog(self) -> None:
         if self.workspace.main_instance.project.am_none:
             QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
             return
         new_state_dialog = NewState(self.workspace, self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
-    def open_doc_link(self):
+    def open_doc_link(self) -> None:
         QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
 
-    def open_about_dialog(self):
+    def open_about_dialog(self) -> None:
         dlg = LoadAboutDialog()
         dlg.exec_()
 
@@ -265,7 +273,7 @@ class MainWindow(QMainWindow):
     # Widgets
     #
 
-    def _init_statusbar(self):
+    def _init_statusbar(self) -> None:
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addStretch()
@@ -279,7 +287,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._stopwatch_label)
 
         self._interrupt_job_button = QIconLabel(qta.icon("fa5s.times-circle", color=Conf.palette_buttontext))
-        self._interrupt_job_button.clicked.connect(self.interrupt_current_job)
+        self._interrupt_job_button.clicked.connect(lambda: self.workspace.job_manager.interrupt_current_job)
         self._interrupt_job_button.hide()
         layout.addWidget(self._interrupt_job_button)
 
@@ -305,18 +313,18 @@ class MainWindow(QMainWindow):
         self._progress_dialog.setModal(True)
         self._progress_dialog.setMinimumDuration(2**31 - 1)
 
-        def on_cancel():
+        def on_cancel() -> None:
             if self.workspace is None:
                 return
-            for job in self.workspace.main_instance.jobs:
+            for job in self.workspace.job_manager.jobs:
                 if job.blocking:
-                    job.keyboard_interrupt()
+                    self.workspace.job_manager.interrupt_current_job()
                     break
 
         self._progress_dialog.canceled.connect(on_cancel)
         self._progress_dialog.close()
 
-    def _init_toolbars(self):
+    def _init_toolbars(self) -> None:
         for cls in (FileToolbar, DebugToolbar, FeatureMapToolbar):
             self.toolbar_manager.show_toolbar_by_class(cls)
 
@@ -324,7 +332,7 @@ class MainWindow(QMainWindow):
     # Menus
     #
 
-    def _init_menus(self):
+    def _init_menus(self) -> None:
         self._file_menu = FileMenu(self)
         self._analyze_menu = AnalyzeMenu(self)
         self._view_menu = ViewMenu(self)
@@ -333,11 +341,6 @@ class MainWindow(QMainWindow):
 
         for path in Conf.recent_files:
             self._file_menu.add_recent(path)
-
-        # TODO: Eventually fix menu bars to have native support on MacOS
-        # if on a Mac, don't use the native menu bar (bug mitigation from QT)
-        if sys.platform == "darwin":
-            self.menuBar().setNativeMenuBar(False)
 
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
@@ -349,7 +352,7 @@ class MainWindow(QMainWindow):
     # Workspace
     #
 
-    def _init_workspace(self):
+    def _init_workspace(self) -> None:
         """
         Initialize workspace
 
@@ -365,11 +368,13 @@ class MainWindow(QMainWindow):
         )
         self.dock_manager = QtAds.CDockManager(self)
         self.dock_manager.setStyleSheet("")  # Clear stylesheet overrides
+        self.dock_manager.setAutoHideConfigFlags(QtAds.CDockManager.DefaultAutoHideConfig)
+        self.dock_manager.createSideTabBarWidgets()
         self.setCentralWidget(self.dock_manager)
         wk = Workspace(self, Instance())
         self.workspace = wk
 
-        def set_caption(**kwargs):  # pylint: disable=unused-argument
+        def set_caption(**kwargs) -> None:  # pylint: disable=unused-argument
             if self.workspace.main_instance.project.am_none:
                 self.caption = ""
             elif self.workspace.main_instance.project.filename is None:
@@ -383,10 +388,7 @@ class MainWindow(QMainWindow):
     # Shortcuts
     #
 
-    def interrupt_current_job(self):
-        self.workspace.main_instance.interrupt_current_job()
-
-    def _init_shortcuts(self):
+    def _init_shortcuts(self) -> None:
         """
         Initialize shortcuts
 
@@ -397,7 +399,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence(f"Alt+{i}"), self, lambda idx=i: self._raise_view(idx - 1))
         QShortcut(QKeySequence("Alt+0"), self, lambda: self._raise_view(9))
 
-        QShortcut(QKeySequence("Ctrl+I"), self, self.interrupt_current_job)
+        QShortcut(QKeySequence("Ctrl+I"), self, self.workspace.job_manager.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
         self._raise_view(0)
@@ -411,7 +413,7 @@ class MainWindow(QMainWindow):
         # Run
         QShortcut(QKeySequence(Qt.Key_F9), self, self.workspace.continue_forward)
 
-    def init_shortcuts_on_dock(self, dock_widget):
+    def init_shortcuts_on_dock(self, dock_widget) -> None:
         """
         Installs an event filter on the dock widget to support floating dock global shortcuts (e.g. command palette).
         """
@@ -421,14 +423,14 @@ class MainWindow(QMainWindow):
     # Plugins
     #
 
-    def _init_plugins(self):
+    def _init_plugins(self) -> None:
         self.workspace.plugins.discover_and_initialize_plugins()
 
     #
     # FLIRT Signatures
     #
 
-    def _init_flirt_signatures(self):
+    def _init_flirt_signatures(self) -> None:
         if Conf.flirt_signatures_root:
             # if it's a relative path, it's relative to the angr-management package
             if os.path.isabs(Conf.flirt_signatures_root):
@@ -448,7 +450,7 @@ class MainWindow(QMainWindow):
     # Library docs
     #
 
-    def _init_library_docs(self):
+    def _init_library_docs(self) -> None:
         GlobalInfo.library_docs = LibraryDocs()
         if Conf.library_docs_root:
             GlobalInfo.library_docs.load_func_docs(Conf.library_docs_root)
@@ -457,7 +459,7 @@ class MainWindow(QMainWindow):
     # Daemon
     #
 
-    def _run_daemon(self, use_daemon=None):
+    def _run_daemon(self, use_daemon=None) -> None:
         if use_daemon is None:
             # Load it from the configuration file
             use_daemon = Conf.use_daemon
@@ -491,7 +493,7 @@ class MainWindow(QMainWindow):
     # URL scheme handler setup
     #
 
-    def _init_url_scheme_handler(self):
+    def _init_url_scheme_handler(self) -> None:
         if "CI" in os.environ:
             return
 
@@ -530,7 +532,7 @@ class MainWindow(QMainWindow):
     # Commands
     #
 
-    def _register_commands(self):
+    def _register_commands(self) -> None:
         """
         Register basic window commands.
         """
@@ -583,7 +585,7 @@ class MainWindow(QMainWindow):
     # Event
     #
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         # Ask if the user wants to save things
         if (
             self.workspace.main_instance is not None
@@ -627,7 +629,7 @@ class MainWindow(QMainWindow):
 
         return super().event(event)
 
-    def on_screen_changed(self, screen):
+    def on_screen_changed(self, screen) -> None:
         """
         When changing from one screen to another, ask disassembly views to refresh in case the DPI is changed.
         """
@@ -638,16 +640,16 @@ class MainWindow(QMainWindow):
     # Actions
     #
 
-    def reload(self):
+    def reload(self) -> None:
         self.workspace.reload()
 
-    def open_file_button(self):
+    def open_file_button(self) -> None:
         file_path = self.open_mainfile_dialog()
         if not file_path:
             return
         self.load_file(file_path)
 
-    def open_trace_file_button(self):
+    def open_trace_file_button(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open a trace file",
@@ -659,7 +661,7 @@ class MainWindow(QMainWindow):
             return
         self.load_trace_file(file_path)
 
-    def open_docker_button(self):
+    def open_docker_button(self) -> None:
         required = {
             "archr: git clone https://github.com/angr/archr && cd archr && pip install -e .": archr,
             "keystone: pip install --no-binary keystone-engine keystone-engine": keystone,
@@ -676,10 +678,10 @@ class MainWindow(QMainWindow):
         if img_name is None:
             return
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
-        self.workspace.main_instance.add_job(LoadTargetJob(target))
+        self.workspace.job_manager.add_job(LoadTargetJob(target))
         self.workspace.main_instance.img_name = img_name
 
-    def load_trace_file(self, file_path):
+    def load_trace_file(self, file_path) -> None:
         if isurl(file_path):
             QMessageBox.critical(
                 self,
@@ -711,7 +713,7 @@ class MainWindow(QMainWindow):
                     f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
 
-    def load_file(self, file_path):
+    def load_file(self, file_path) -> None:
         if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
@@ -725,7 +727,7 @@ class MainWindow(QMainWindow):
                     self._load_database(file_path)
                 else:
                     self._recent_file(file_path)
-                    self.workspace.main_instance.add_job(LoadBinaryJob(file_path))
+                    self.workspace.job_manager.add_job(LoadBinaryJob(file_path))
             else:
                 QMessageBox.critical(
                     self,
@@ -763,7 +765,7 @@ class MainWindow(QMainWindow):
                     self.workspace.main_instance.original_binary_path = file_path
                     self.load_file(target_path)
 
-    def load_database(self):
+    def load_database(self) -> None:
         # Open File window
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -810,7 +812,7 @@ class MainWindow(QMainWindow):
 
         return self._save_database(file_path)
 
-    def save_patched_binary_as(self):
+    def save_patched_binary_as(self) -> None:
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return
 
@@ -827,54 +829,54 @@ class MainWindow(QMainWindow):
             with open(file_path, "wb") as f:
                 f.write(b)
 
-    def load_trace(self):
+    def load_trace(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(self, "Load trace", ".", "bintrace (*.trace)")
         if not file_path:
             return
         self.workspace.load_trace_from_path(file_path)
 
-    def preferences(self):
+    def preferences(self) -> None:
         pref = Preferences(self.workspace, parent=self)
         pref.exec_()
 
-    def quit(self):
+    def quit(self) -> None:
         self.close()
 
-    def run_variable_recovery(self):
+    def run_variable_recovery(self) -> None:
         self.workspace._get_or_create_view("disassembly", DisassemblyView).variable_recovery_flavor = "accurate"
 
-    def run_induction_variable_analysis(self):
+    def run_induction_variable_analysis(self) -> None:
         self.workspace._get_or_create_view("disassembly", DisassemblyView).run_induction_variable_analysis()
 
-    def run_dependency_analysis(self, func_addr: Optional[int] = None, func_arg_idx: Optional[int] = None):
+    def run_dependency_analysis(self, func_addr: int | None = None, func_arg_idx: int | None = None) -> None:
         if self.workspace is None or self.workspace.main_instance is None:
             return
         dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
-        self.workspace.main_instance.add_job(dep_analysis_job)
+        self.workspace.job_manager.add_job(dep_analysis_job)
 
-    def run_analysis(self):
+    def run_analysis(self) -> None:
         if self.workspace:
             self.workspace.run_analysis()
 
-    def decompile_current_function(self):
+    def decompile_current_function(self) -> None:
         if self.workspace is not None:
             self.workspace.decompile_current_function()
 
-    def view_proximity_for_current_function(self):
+    def view_proximity_for_current_function(self) -> None:
         if self.workspace is not None:
             self.workspace.view_proximity_for_current_function()
 
-    def interact(self):
+    def interact(self) -> None:
         self.workspace.interact_program(self.workspace.main_instance.img_name)
 
-    def show_command_palette(self, parent=None):
+    def show_command_palette(self, parent=None) -> None:
         dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))
         dlg.setModal(True)
         dlg.exec_()
         if dlg.selected_item:
             dlg.selected_item.run()
 
-    def show_goto_palette(self, parent=None):
+    def show_goto_palette(self, parent=None) -> None:
         dlg = GotoPaletteDialog(self.workspace, parent=(parent or self))
         dlg.setModal(True)
         dlg.exec_()
@@ -885,7 +887,7 @@ class MainWindow(QMainWindow):
     # Other public methods
     #
 
-    def progress(self, status: str, progress: float, reset_stopwatch: bool = False):
+    def progress(self, status: str, progress: float, reset_stopwatch: bool = False) -> None:
         self._progress_message = status
         self._progress_percentage = progress
 
@@ -896,7 +898,7 @@ class MainWindow(QMainWindow):
 
         self._refresh_progress_progress_message()
 
-    def _refresh_progress_progress_message(self):
+    def _refresh_progress_progress_message(self) -> None:
         self._status_label.setText(self._progress_message)
         self._status_label.show()
         self._progress_label.setText(f"{self._progress_percentage:.1f}%")
@@ -911,10 +913,10 @@ class MainWindow(QMainWindow):
         self._progress_dialog.setLabelText(self._progress_message)
         self._progress_dialog.setValue(round(self._progress_percentage))
 
-    def _on_progress_update_timer_timeout(self):
+    def _on_progress_update_timer_timeout(self) -> None:
         self._refresh_progress_progress_message()
 
-    def progress_done(self):
+    def progress_done(self) -> None:
         self._progress_update_timer.stop()
         self._stopwatch_label.hide()
         self._status_label.setText("")
@@ -924,7 +926,7 @@ class MainWindow(QMainWindow):
         self._interrupt_job_button.hide()
         self._progress_dialog.hide()
 
-    def bring_to_front(self):
+    def bring_to_front(self) -> None:
         self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
         self.activateWindow()
         self.raise_()
@@ -933,21 +935,28 @@ class MainWindow(QMainWindow):
     # Private methods
     #
 
-    def _recent_file(self, file_path):
+    def _recent_file(self, file_path) -> None:
         file_path = os.path.abspath(file_path)
         self._file_menu.add_recent(file_path)
         Conf.recent_file(file_path)
         save_config()
 
-    def _load_database(self, file_path: str):
+    def _get_recent_dir(self) -> str:
+        if Conf.recent_files:
+            recent_dir = os.path.dirname(Conf.recent_files[-1])
+            if os.path.isdir(recent_dir):
+                return recent_dir
+        return ""
+
+    def _load_database(self, file_path: str) -> None:
         other_kbs = {}
         extra_info = {}
 
         job = LoadAngrDBJob(file_path, ["global", "pseudocode_variable_kb"], other_kbs=other_kbs, extra_info=extra_info)
         job._on_finish = partial(self._on_load_database_finished, job)
-        self.workspace.main_instance.add_job(job)
+        self.workspace.job_manager.add_job(job)
 
-    def _on_load_database_finished(self, job: LoadAngrDBJob):
+    def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         proj = job.project
 
         if proj is None:
@@ -972,10 +981,10 @@ class MainWindow(QMainWindow):
 
         # trigger callbacks
         self.workspace.reload()
-        self.workspace.main_instance.on_cfg_generated()
+        self.workspace.on_cfg_generated(self.workspace.main_instance, (cfg, cfb))
         self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
-    def _save_database(self, file_path):
+    def _save_database(self, file_path) -> bool:
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return False
 
@@ -995,7 +1004,7 @@ class MainWindow(QMainWindow):
         self.workspace.main_instance.database_path = file_path
         return True
 
-    def _raise_view(self, idx: int):
+    def _raise_view(self, idx: int) -> None:
         """
         Raise idx'th view in the dock manager
         """

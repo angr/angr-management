@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 import networkx
 from PySide6.QtCore import QSize
@@ -7,11 +10,14 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout
 from .qstate_block import QStateBlock
 from .qsymexec_graph import QSymExecGraph
 
+if TYPE_CHECKING:
+    from angrmanagement.ui.workspace import Workspace
+
 log = logging.getLogger(__name__)
 
 
 class QPathTree(QFrame):
-    def __init__(self, simgr, state, symexec_view, workspace, parent=None):
+    def __init__(self, simgr, state, symexec_view, workspace: Workspace, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.symexec_view = symexec_view
@@ -30,7 +36,7 @@ class QPathTree(QFrame):
     # Public methods
     #
 
-    def reload(self):
+    def reload(self) -> None:
         if self.simgr.am_none:
             return
 
@@ -45,7 +51,7 @@ class QPathTree(QFrame):
     # Initialization
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         graph = QSymExecGraph(self.state, self.workspace, self.symexec_view, parent=self)
 
         self._graph = graph
@@ -73,11 +79,13 @@ class QPathTree(QFrame):
         seen = set()
         while len(work) > 0:
             path = work.pop()
-            # print(path.path_id)
-            if not hierarchy.history_contains(path.history) or len(hierarchy.history_successors(path.history)) == 0:
-                if path.path_id not in seen:
-                    yield path
-                    seen.add(path.path_id)
+            if (
+                not hierarchy.history_contains(path.history)
+                or len(hierarchy.history_successors(path.history)) == 0
+                and path.path_id not in seen
+            ):
+                yield path
+                seen.add(path.path_id)
             # get parents
             if hierarchy.history_contains(path.history):
                 parents = hierarchy.history_predecessors(path.history)
@@ -108,8 +116,7 @@ class QPathTree(QFrame):
                         yield (parent_history, bot_history)
                         work.add(parent_history)
                         break
-                    else:
-                        working_history = parent_history
+                    working_history = parent_history
                 except KeyError:
                     # the parent history is not found in the path mapping
                     log.error("Parent history %s is not found", parent_history)
@@ -135,5 +142,5 @@ class QPathTree(QFrame):
 
         return g
 
-    def _watch_simgr(self, **kwargs):
+    def _watch_simgr(self, **kwargs) -> None:
         self.reload()

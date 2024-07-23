@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import binascii
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QContextMenuEvent, QCursor
@@ -9,13 +11,15 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins.patches import Patch
     from PySide6.QtGui import QCloseEvent
 
+    from angrmanagement.data.instance import Instance
+
 
 class QPatchTableItem:
     """
     Item in the patch table describing a patch.
     """
 
-    def __init__(self, patch, old_bytes):
+    def __init__(self, patch, old_bytes) -> None:
         self.patch = patch
         self.old_bytes = old_bytes
 
@@ -43,7 +47,7 @@ class QPatchTable(QTableWidget):
 
     HEADER = ["Address", "Size", "Old Bytes", "New Bytes", "Comment"]
 
-    def __init__(self, instance, parent):
+    def __init__(self, instance: Instance, parent) -> None:
         super().__init__(parent)
 
         self.setColumnCount(len(self.HEADER))
@@ -59,7 +63,7 @@ class QPatchTable(QTableWidget):
         self.cellChanged.connect(self._on_cell_changed)
         self.reload()
 
-    def _on_cell_changed(self, row: int, column: int):
+    def _on_cell_changed(self, row: int, column: int) -> None:
         """
         Handle item change events, specifically to support editing comments.
         """
@@ -75,14 +79,18 @@ class QPatchTable(QTableWidget):
         else:
             return None
 
-    def reload(self):
+    def reload(self) -> None:
         self._reloading = True
         self.clearContents()
 
-        self.items = [
-            QPatchTableItem(item, self._get_bytes(self.instance.project, item.addr, len(item)))
-            for item in self.instance.project.kb.patches.values()
-        ]
+        self.items = (
+            [
+                QPatchTableItem(item, self._get_bytes(self.instance.project, item.addr, len(item)))
+                for item in self.instance.project.kb.patches.values()
+            ]
+            if not self.instance.project.am_none
+            else []
+        )
         items_count = len(self.items)
         self.setRowCount(items_count)
 
@@ -92,24 +100,24 @@ class QPatchTable(QTableWidget):
 
         self._reloading = False
 
-    def _watch_patches(self, **kwargs):  # pylint: disable=unused-argument
+    def _watch_patches(self, **kwargs) -> None:  # pylint: disable=unused-argument
         if not self.instance.patches.am_none:
             self.reload()
 
     @staticmethod
-    def _get_bytes(proj, addr, size):
+    def _get_bytes(proj, addr: int, size: int):
         try:
             return proj.loader.memory.load(addr, size)
         except KeyError:
             return None
 
-    def get_selected_patches(self) -> Set["Patch"]:
+    def get_selected_patches(self) -> set[Patch]:
         """
         Get the set of selected patches.
         """
         return {self.items[idx.row()].patch for idx in self.selectedIndexes()}
 
-    def revert_selected_patches(self):
+    def revert_selected_patches(self) -> None:
         """
         Revert any selected patches.
         """
@@ -128,7 +136,7 @@ class QPatchTable(QTableWidget):
                 self.instance.patches.remove_patch(patch.addr)
             self.instance.patches.am_event(removed=selected_patches)
 
-    def contextMenuEvent(self, event: QContextMenuEvent):  # pylint: disable=unused-argument
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:  # pylint: disable=unused-argument
         """
         Display view context menu.
         """
@@ -140,5 +148,5 @@ class QPatchTable(QTableWidget):
             mnu.addAction(act)
         mnu.exec_(QCursor.pos())
 
-    def closeEvent(self, event: "QCloseEvent") -> None:  # pylint:disable=unused-argument
+    def closeEvent(self, event: QCloseEvent) -> None:  # pylint:disable=unused-argument
         self.instance.patches.am_unsubscribe(self._watch_patches)

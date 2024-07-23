@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, Qt
@@ -21,12 +23,12 @@ class QMiniMapViewportBox(QGraphicsItem):
 
     PEN_WIDTH: float = 2
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self) -> None:
+        super().__init__()
         self._scene_rect: QRectF = QRectF()
         self._viewport_rect: QRectF = QRectF()
 
-    def set_scene_rect(self, rect: QRectF):
+    def set_scene_rect(self, rect: QRectF) -> None:
         """
         Define the dimensions of the total minimap scene, to render the outer border.
         """
@@ -34,14 +36,14 @@ class QMiniMapViewportBox(QGraphicsItem):
         self._scene_rect = rect
         self.update()
 
-    def set_viewport_rect(self, rect: QRectF):
+    def set_viewport_rect(self, rect: QRectF) -> None:
         """
         Define the offset and dimensions of the displayed viewport indicator in the minimap scene.
         """
         self._viewport_rect = rect
         self.update()
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         """
         Draw the minimap outline and viewport box.
         """
@@ -70,13 +72,13 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
     For performance, the scene is cached in a QImage and only updated when update_scene_drawing is called.
     """
 
-    def __init__(self, target_view: QGraphicsView, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, target_view: QGraphicsView) -> None:
+        super().__init__()
         self._view: QGraphicsView = target_view
         self._minimap_scene_rect: QRectF = QRectF()
         self._scene_img: QImage = QImage()
 
-    def set_scene_rect(self, rect: QRectF):
+    def set_scene_rect(self, rect: QRectF) -> None:
         """
         Define the dimensions of the total minimap scene.
         """
@@ -85,7 +87,7 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
         self.update_scene_drawing()
         self.update()
 
-    def update_scene_drawing(self):
+    def update_scene_drawing(self) -> None:
         """
         Render the target scene in an image to be used for minimap painting.
         """
@@ -106,7 +108,7 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
         self._view.set_extra_render_pass(False)
         self.update()
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         """
         Paint the minimized scene image.
         """
@@ -122,8 +124,8 @@ class QMiniMapView(QGraphicsView):
     support viewport control.
     """
 
-    def __init__(self, target_view: "QBaseGraphicsView", *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, target_view: QBaseGraphicsView, parent=None) -> None:
+        super().__init__(parent=parent)
         self._target_view: QBaseGraphicsView = target_view
         self._is_mouse_pressed: bool = False
         self._scale: float = 1.0
@@ -137,7 +139,7 @@ class QMiniMapView(QGraphicsView):
         self._target_view.visible_scene_rect_changed.connect(self.on_target_viewport_visible_scene_rect_changed)
         self.setFrameStyle(QFrame.NoFrame)
 
-    def on_target_viewport_visible_scene_rect_changed(self, visible: QRectF):
+    def on_target_viewport_visible_scene_rect_changed(self, visible: QRectF) -> None:
         scene = self._target_view.scene()
         if scene is None:
             return
@@ -158,7 +160,7 @@ class QMiniMapView(QGraphicsView):
         self._minimap_target_viewport_box.set_viewport_rect(minimap_vp_rect)
         self._minimap_target_viewport_box.update()
 
-    def reload_target_scene(self):
+    def reload_target_scene(self) -> None:
         """
         Reload scene from target view, scaling the minimap view to properly fit the scene into view while preserving
         scene aspect ratio.
@@ -206,7 +208,7 @@ class QMiniMapView(QGraphicsView):
         y = y / self._scale + scene_rect.y()
         return QPointF(x, y)
 
-    def mousePressEvent(self, event: QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """
         Handle mouse press, moving the target view port to cursor position in target scene.
         """
@@ -216,7 +218,7 @@ class QMiniMapView(QGraphicsView):
             self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(event.pos()))
             event.accept()
 
-    def mouseMoveEvent(self, event: QMouseEvent):
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
         """
         Handle mouse move, moving the target view port to cursor position in target scene when mouse is pressed.
         """
@@ -224,7 +226,7 @@ class QMiniMapView(QGraphicsView):
             self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(event.pos()))
             event.accept()
 
-    def mouseReleaseEvent(self, event: QMouseEvent):
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """
         Handle mouse release, ending viewport drag.
         """
@@ -233,7 +235,7 @@ class QMiniMapView(QGraphicsView):
             event.accept()
         self._is_mouse_pressed = False
 
-    def wheelEvent(self, event: QWheelEvent):
+    def wheelEvent(self, event: QWheelEvent) -> None:
         """
         Forward the wheel event to target view to handle zoom events.
         """
@@ -243,7 +245,7 @@ class QMiniMapView(QGraphicsView):
 
         self._target_view.wheelEvent(event)
 
-    def changeEvent(self, event: QEvent):
+    def changeEvent(self, event: QEvent) -> None:
         """
         Redraw on color scheme update.
         """

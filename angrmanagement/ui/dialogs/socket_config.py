@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import base64
 import socket
+from typing import TYPE_CHECKING
 
 import claripy
 from angr.storage.file import SimPacketsStream
@@ -18,6 +21,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
+
 _socket_families_wanted = ["AF_INET", "AF_INET6", "AF_UNIX", "AF_CAN", "AF_PACKET", "AF_RDS"]
 
 socket_family = {s: getattr(socket, s) for s in _socket_families_wanted if s in dir(socket)}
@@ -29,14 +35,14 @@ class SocketItem:  # pylint: disable=no-self-use, unused-argument
     Socket Item for SocketModel
     """
 
-    def __init__(self, ident=None, parent=None, node_type=None):
+    def __init__(self, ident=None, parent=None, node_type=None) -> None:
         self.parentItem = parent
         self.children = []
         self.ident = ident
         self.recv_pkg = None
         self.node_type = node_type
 
-    def appendChild(self, item):
+    def appendChild(self, item) -> None:
         self.children.append(item)
 
     def child(self, row):
@@ -45,7 +51,7 @@ class SocketItem:  # pylint: disable=no-self-use, unused-argument
     def childCount(self):
         return len(self.children)
 
-    def columnCount(self):
+    def columnCount(self) -> int:
         return 1
 
     def data(self, column):
@@ -57,7 +63,7 @@ class SocketItem:  # pylint: disable=no-self-use, unused-argument
         else:
             return None
 
-    def setData(self, column, data):
+    def setData(self, column, data) -> bool:
         if column == 0:
             if self.node_type in ("Socket", "Accepted"):
                 self.ident = data
@@ -81,7 +87,7 @@ class SimPackagePersistentEditor(QStyledItemDelegate):
     """
 
     # pylint: disable=no-self-use, unused-argument
-    def __init__(self, parent=None, instance=None):
+    def __init__(self, parent=None, instance: Instance | None = None) -> None:
         super().__init__(parent)
         self.instance = instance
 
@@ -89,15 +95,15 @@ class SimPackagePersistentEditor(QStyledItemDelegate):
         editor = QTextEdit(widget)
         return editor
 
-    def setEditorData(self, editor, index):
+    def setEditorData(self, editor, index) -> None:
         value = index.model().data(index, role=Qt.DisplayRole)
         if value:
             editor.setText(str(value))
 
-    def setModelData(self, editor, model, index):
+    def setModelData(self, editor, model, index) -> None:
         model.setData(index, editor.toPlainText(), role=Qt.DisplayRole)
 
-    def updateEditorGeometry(self, editor, option, index):
+    def updateEditorGeometry(self, editor, option, index) -> None:
         editor.setGeometry(option.rect)
 
 
@@ -107,7 +113,7 @@ class SocketModel(QAbstractItemModel):
     """
 
     # pylint: disable=no-self-use, unused-argument
-    def __init__(self, data=None, parent=None):
+    def __init__(self, data=None, parent=None) -> None:
         super().__init__(parent)
         self.rootItem = SocketItem()
 
@@ -203,7 +209,7 @@ class SocketModel(QAbstractItemModel):
 
         return self.createIndex(parentItem.row(), 0, parentItem)
 
-    def add_item(self, ident, parent=None, node_type=None):
+    def add_item(self, ident, parent=None, node_type=None) -> None:
         if parent is None:
             parent = QModelIndex()
         self.beginInsertRows(parent, self.rowCount(parent), self.rowCount(parent))
@@ -212,7 +218,7 @@ class SocketModel(QAbstractItemModel):
         parentItem.appendChild(item)
         self.endInsertRows()
 
-    def del_item(self, item):
+    def del_item(self, item) -> None:
         parent = item.parent()
         parentItem = self.rootItem if not parent.isValid() else parent.internalPointer()
         self.beginRemoveRows(parent, item.row(), item.row())
@@ -254,29 +260,29 @@ class SocketView(QTreeView):
     Socket Config Tree View with SocketModel
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setTextElideMode(Qt.ElideNone)
 
-    def _action_accepted_socket(self):
+    def _action_accepted_socket(self) -> None:
         current = self.currentIndex()
         if current.parent().isValid():
             current = current.parent()
         ident = "Accept, " + current.internalPointer().ident + (", %d" % (current.internalPointer().childCount() + 1))
         self.model().add_item(ident, current, "Accepted")
 
-    def _action_add_package(self):
+    def _action_add_package(self) -> None:
         current = self.currentIndex()
         if current.internalPointer().node_type == "Package":
             current = current.parent()
         ident = "Package"
         self.model().add_item(ident, current, "Package")
 
-    def _action_delete(self):
+    def _action_delete(self) -> None:
         current = self.currentIndex()
         self.model().del_item(current)
 
-    def contextMenuEvent(self, event: QContextMenuEvent):
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         menu = QMenu("", self)
         menu.addAction("Add an accepted socket", self._action_accepted_socket)
         menu.addAction("Add a recv packages", self._action_add_package)
@@ -292,7 +298,7 @@ class SocketConfig(QDialog):
     family = list(socket_family.keys())
     typ = list(socket_type.keys())
 
-    def __init__(self, socket_config=None, instance=None, parent=None):
+    def __init__(self, socket_config=None, instance: Instance | None = None, parent=None) -> None:
         super().__init__(parent)
 
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
@@ -306,7 +312,7 @@ class SocketConfig(QDialog):
             self.socket_config = SocketModel()
         self._init_widgets()
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QVBoxLayout()
         self._table = SocketView()
         self._table.setModel(self.socket_config)
@@ -322,7 +328,7 @@ class SocketConfig(QDialog):
         self._socket_nonce.setValidator(QIntValidator(0, 9999, self))
         self._socket_add_button = QPushButton("Add new socket")
 
-        def _add_new_socket():
+        def _add_new_socket() -> None:
             family = self._socket_family.currentIndex() - 1
             typ = self._socket_family.currentIndex() - 1
             nonce = self._socket_nonce.text()
@@ -340,6 +346,6 @@ class SocketConfig(QDialog):
         layout.addLayout(toolbox, 1)
         self.setLayout(layout)
 
-    def closeEvent(self, event):  # pylint: disable=unused-argument
+    def closeEvent(self, event) -> None:  # pylint: disable=unused-argument
         # print(self.socket_config.get_data())
         self.close()

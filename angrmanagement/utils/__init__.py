@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import itertools
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from .block_objects import FunctionHeader, Label, PhiVariable, Variables
 
+if TYPE_CHECKING:
+    from angr import Project
 
-def locate_function(inst, addr):
+
+def locate_function(inst, addr: int):
     """
     Locate the function that contains the address.
 
@@ -26,7 +31,7 @@ def locate_function(inst, addr):
     return None
 
 
-def get_label_text(addr, kb, function=None):
+def get_label_text(addr: int, kb, function=None):
     if addr in kb.labels:
         return kb.labels[addr] + ":"
 
@@ -34,16 +39,16 @@ def get_label_text(addr, kb, function=None):
     if function is not None and addr == function.addr:
         s = []
         if function.name:
-            s.append("%s:" % function.name)
+            s.append(f"{function.name}:")
         else:
-            s.append("sub_%x:" % function.addr)
+            s.append(f"sub_{function.addr:x}:")
         if function.is_simprocedure:
             s.append("[SimProcedure]")
         if function.is_plt:
             s.append("[PLT]")
         return "\n".join(s)
     else:
-        return "loc_%#x:" % addr
+        return f"loc_{addr:#x}:"
 
 
 def get_block_objects(disasm, nodes, func_addr):
@@ -99,7 +104,7 @@ def get_block_objects(disasm, nodes, func_addr):
 
     # initial label, if there is any
     # FIXME: all labels should be generated during CFG recovery, and this step should not be necessary.
-    if lst and not isinstance(lst[0], (FunctionHeader, Label)):
+    if lst and not isinstance(lst[0], FunctionHeader | Label):
         # the first element should be a label
         lst.insert(0, Label(block_addrs[0], get_label_text(block_addrs[0], disasm.kb)))
 
@@ -118,7 +123,7 @@ def get_out_branches(supernode):
     return supernode.out_branches
 
 
-def address_to_text(addr, kb):
+def address_to_text(addr: int, kb):
     """
     Properly convert an address to text for a label.
 
@@ -131,7 +136,7 @@ def address_to_text(addr, kb):
     if addr in kb.labels:
         return kb.labels[addr]
 
-    return "loc_%#x" % addr
+    return f"loc_{addr:#x}"
 
 
 def get_out_branches_for_insn(out_branch_dict, ins_addr):
@@ -153,20 +158,22 @@ def get_out_branches_for_insn(out_branch_dict, ins_addr):
         return next(iter(out_branch_map.values()))
 
 
-def fast_memory_load_pointer(project, addr, size=None):
+def fast_memory_load_pointer(project: Project, addr: int, size: int | None = None):
     try:
         return project.loader.memory.unpack_word(addr, size=size)
     except KeyError:
         return None
 
 
-def string_at_addr(cfg, addr, project, max_size=50):
+def string_at_addr(cfg, addr: int, project: Project, max_size: int = 50):
     try:
         mem_data = cfg.memory_data[addr]
     except KeyError:
         return None
 
     if mem_data.sort == "string":
+        if mem_data.content is None:
+            return None
         str_content = mem_data.content.decode("utf-8")
     elif mem_data.sort == "pointer-array":
         ptr = fast_memory_load_pointer(project, mem_data.address)
@@ -178,6 +185,8 @@ def string_at_addr(cfg, addr, project, max_size=50):
         if next_level.sort != "string":
             return None
 
+        if next_level.content is None:
+            return None
         str_content = next_level.content.decode("utf-8")
     else:
         return None
@@ -191,7 +200,7 @@ def string_at_addr(cfg, addr, project, max_size=50):
         return None
 
 
-def should_display_string_label(cfg, insn_addr, project):
+def should_display_string_label(cfg, insn_addr, project: Project):
     if insn_addr not in cfg.insn_addr_to_memory_data:
         return False
 
@@ -219,12 +228,12 @@ def filter_string_for_display(s):
     for ch in s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t"):
         char = ord(ch)
         if not is_printable(char):
-            ch = "\\x%0.2x" % char
+            ch = f"\\x{char:0.2x}"
         output += ch
     return output
 
 
-def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str]:
+def get_string_for_display(cfg, insn_addr, project: Project, max_size: int = 20) -> str | None:
     str_content = None
 
     try:
@@ -233,7 +242,10 @@ def get_string_for_display(cfg, insn_addr, project, max_size=20) -> Optional[str
         return None
 
     if memory_data.sort == "string":
-        str_content = memory_data.content.decode("utf-8")
+        try:
+            str_content = memory_data.content.decode("utf-8")
+        except UnicodeDecodeError:
+            str_content = "<unicode-decoding-failure>"
     elif memory_data.sort == "pointer-array":
         ptr = fast_memory_load_pointer(project, memory_data.address)
         if ptr in cfg.memory_data:

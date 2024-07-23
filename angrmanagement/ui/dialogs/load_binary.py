@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import binascii
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import archinfo
 import cle
 from angr.calling_conventions import unify_arch_name
+from angr.simos import os_mapping
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -33,6 +36,8 @@ try:
 except ImportError:
     pypcode = None
 
+from angrmanagement.logic import GlobalInfo
+
 
 class LoadBinaryError(Exception):
     """
@@ -45,7 +50,7 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
     A custom tree-view widget item for the architecture selection TreeView.
     """
 
-    def __init__(self, name, arch):
+    def __init__(self, name: str, arch) -> None:
         super().__init__()
         self.name = name
         self.arch = arch
@@ -57,7 +62,13 @@ class LoadBinary(QDialog):
     Dialog displaying loading options for a binary.
     """
 
-    def __init__(self, partial_ld, suggested_backend: Optional[cle.Backend] = None, parent=None):
+    def __init__(
+        self,
+        partial_ld,
+        suggested_backend: cle.Backend | None = None,
+        suggested_os_name: str | None = None,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
 
         # initialization
@@ -66,12 +77,14 @@ class LoadBinary(QDialog):
         self.sha256 = None
         self.option_widgets = {}
         self.suggested_backend = suggested_backend
-        self.available_backends: Dict[str, cle.Backend] = cle.ALL_BACKENDS
+        self.suggested_os_name = suggested_os_name
+        self.available_backends: dict[str, cle.Backend] = cle.ALL_BACKENDS
+        self.available_simos = {}
         self.arch = partial_ld.main_object.arch
         self.available_archs = archinfo.all_arches[::]
         # _try_loading will try its best to fill in the following two properties from partial_ld
-        self._base_addr: Optional[int] = None
-        self._entry_addr: Optional[int] = None
+        self._base_addr: int | None = None
+        self._entry_addr: int | None = None
 
         self._base_addr_checkbox = None
         self._entry_addr_checkbox = None
@@ -82,6 +95,11 @@ class LoadBinary(QDialog):
 
         # return values
         self.load_options = None
+        self.simos = None
+
+        for _, simos in os_mapping.items():
+            self.available_simos[simos.__name__] = simos
+        self.available_simos["Unknown"] = None
 
         self.setWindowTitle("Load a new binary")
 
@@ -109,7 +127,7 @@ class LoadBinary(QDialog):
     # Private methods
     #
 
-    def _try_loading(self, partial_ld):
+    def _try_loading(self, partial_ld) -> None:
         deps = []
         processed_objects = set()
         for ident, obj in partial_ld._satisfied_deps.items():
@@ -129,16 +147,7 @@ class LoadBinary(QDialog):
             dep_list.addItem(dep_item)
 
         if partial_ld.main_object is not None:
-            if isinstance(partial_ld.main_object, cle.MetaELF):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-            elif isinstance(partial_ld.main_object, cle.PE):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-            elif isinstance(partial_ld.main_object, cle.MachO):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-            elif isinstance(partial_ld.main_object, cle.CGC):
+            if isinstance(partial_ld.main_object, cle.MetaELF | cle.PE | cle.MachO | cle.CGC):
                 self._base_addr = partial_ld.main_object.mapped_base
                 self._entry_addr = partial_ld.main_object.entry
             else:
@@ -149,7 +158,7 @@ class LoadBinary(QDialog):
 
             # don't know what to do with other backends...
 
-    def _set_base_addr(self):
+    def _set_base_addr(self) -> None:
         # special handling for blobs
         if isinstance(self.suggested_backend, cle.Blob):
             self._toggle_base_addr_textbox(True)
@@ -165,7 +174,7 @@ class LoadBinary(QDialog):
             if self._base_addr is not None:
                 self.option_widgets["base_addr"].setText(hex(self._base_addr))
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QGridLayout()
         self.main_layout.addLayout(layout)
 
@@ -219,7 +228,7 @@ class LoadBinary(QDialog):
         buttons.rejected.connect(self._on_cancel_clicked)
         self.main_layout.addWidget(buttons)
 
-    def _init_central_tab(self, tab):
+    def _init_central_tab(self, tab) -> None:
         self._init_load_options_tab(tab)
 
     def _init_load_options_tab(self, tab):
@@ -243,6 +252,28 @@ class LoadBinary(QDialog):
         backend_layout.addWidget(backend_dropdown)
 
         self.option_widgets["backend"] = backend_dropdown
+
+        #
+        # OS selection
+        #
+        os_layout = QHBoxLayout()
+        os_caption = QLabel()
+        os_caption.setText("OS:")
+        os_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        os_layout.addWidget(os_caption)
+
+        os_dropdown = QComboBox()
+        for simos_name in self.available_simos:
+            os_dropdown.addItem(simos_name)
+        if "Unknown" in self.available_simos:
+            os_dropdown.setCurrentText("Unknown")
+        if self.suggested_os_name is not None:
+            suggested_os = os_mapping[self.suggested_os_name].__name__
+            if suggested_os in self.available_simos:
+                os_dropdown.setCurrentText(suggested_os)
+        os_layout.addWidget(os_dropdown)
+
+        self.option_widgets["os"] = os_dropdown
 
         #
         # Architecture selection
@@ -336,15 +367,24 @@ class LoadBinary(QDialog):
         load_debug_info.setChecked(True)
         self.option_widgets["load_debug_info"] = load_debug_info
 
-        # auto load libs
+        layout = QVBoxLayout()
+        layout.addLayout(backend_layout)
+        layout.addLayout(os_layout)
+        layout.addLayout(blob_layout)
+        layout.addLayout(arch_layout)
+        layout.addWidget(load_debug_info)
 
+        frame = QFrame(self)
+        frame.setLayout(layout)
+        tab.addTab(frame, "Loading Options")
+
+        # auto load libs
         auto_load_libs = QCheckBox()
         auto_load_libs.setText("Automatically load all libraries (slow, not recommended)")
         auto_load_libs.setChecked(False)
         self.option_widgets["auto_load_libs"] = auto_load_libs
 
         # dependencies list
-
         dep_group = QGroupBox("Dependencies")
         dep_list = QListWidget()
         self.option_widgets["dep_list"] = dep_list
@@ -354,18 +394,14 @@ class LoadBinary(QDialog):
         dep_group.setLayout(sublayout)
 
         layout = QVBoxLayout()
-        layout.addLayout(backend_layout)
-        layout.addLayout(blob_layout)
-        layout.addLayout(arch_layout)
-        layout.addWidget(load_debug_info)
         layout.addWidget(auto_load_libs)
         layout.addWidget(dep_group, stretch=1)
 
         frame = QFrame(self)
         frame.setLayout(layout)
-        tab.addTab(frame, "Loading Options")
+        tab.addTab(frame, "Dependencies")
 
-    def _split_arches(self, all_arches) -> Tuple[Any, List, List]:
+    def _split_arches(self, all_arches) -> tuple[Any, list, list]:
         """
         Split a list of architectures into three categories: The (probably) ideal architecture, recommended
         architectures, and other architectures.
@@ -388,9 +424,7 @@ class LoadBinary(QDialog):
                 if self.arch is not None:
                     if self.arch.name == arch.id:
                         the_arch = arch
-                    elif self.arch.name.lower() in arch.id.lower():
-                        recommended_arches.append(arch)
-                    elif self.arch.name == unify_arch_name(arch.id):
+                    elif self.arch.name.lower() in arch.id.lower() or self.arch.name == unify_arch_name(arch.id):
                         recommended_arches.append(arch)
                     else:
                         other_arches.append(arch)
@@ -399,23 +433,23 @@ class LoadBinary(QDialog):
 
         return the_arch, recommended_arches, other_arches
 
-    def _toggle_base_addr_textbox(self, enabled: bool):
+    def _toggle_base_addr_textbox(self, enabled: bool) -> None:
         self.option_widgets["base_addr"].setEnabled(enabled)
 
-    def _toggle_entry_addr_textbox(self, enabled: bool):
+    def _toggle_entry_addr_textbox(self, enabled: bool) -> None:
         self.option_widgets["entry_addr"].setEnabled(enabled)
 
     #
     # Event handlers
     #
 
-    def _on_base_addr_checkbox_clicked(self):
+    def _on_base_addr_checkbox_clicked(self) -> None:
         self._toggle_base_addr_textbox(self._base_addr_checkbox.isChecked())
 
-    def _on_entry_addr_checkbox_clicked(self):
+    def _on_entry_addr_checkbox_clicked(self) -> None:
         self._toggle_entry_addr_textbox(self._entry_addr_checkbox.isChecked())
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         force_load_libs = []
         skip_libs = set()
 
@@ -437,6 +471,12 @@ class LoadBinary(QDialog):
             QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
             return
 
+        os_dropdown: QComboBox = self.option_widgets["os"]
+        cur_simos_name: str = os_dropdown.currentText()
+        if not cur_simos_name or cur_simos_name not in self.available_simos:
+            QMessageBox.critical(None, "Incorrect OS selection", "Please select a OS before continue.")
+            return
+
         arch_tree: QTreeWidget = self.option_widgets["arch"]
         item = arch_tree.currentItem()
         if not isinstance(item, ArchTreeWidgetItem):
@@ -453,6 +493,8 @@ class LoadBinary(QDialog):
         self.load_options["main_opts"] = {
             "backend": backend,
         }
+
+        self.simos = self.available_simos[cur_simos_name]
 
         if self._base_addr_checkbox.isChecked():
             try:
@@ -477,26 +519,33 @@ class LoadBinary(QDialog):
 
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.close()
 
     @staticmethod
-    def run(partial_ld, suggested_backend=None) -> Tuple[Optional[Dict], Optional[Dict], Optional[Dict]]:
+    def run(
+        partial_ld, suggested_backend=None, suggested_os_name: str | None = None
+    ) -> tuple[dict | None, dict | None, dict | None]:
         try:
-            dialog = LoadBinary(partial_ld, suggested_backend=suggested_backend)
+            dialog = LoadBinary(
+                partial_ld,
+                suggested_backend=suggested_backend,
+                suggested_os_name=suggested_os_name,
+                parent=GlobalInfo.main_window,
+            )
             dialog.setModal(True)
             dialog.exec_()
-            return dialog.load_options
+            return dialog.load_options, dialog.simos
         except LoadBinaryError:
             pass
         return None, None, None
 
     @staticmethod
-    def binary_arch_detect_failed(filename: str, archinfo_msg: str):
+    def binary_arch_detect_failed(filename: str, archinfo_msg: str) -> None:
         # TODO: Normalize the path for Windows
         QMessageBox.warning(None, "Architecture selection failed", f"{archinfo_msg} for binary:\n\n{filename}")
 
     @staticmethod
-    def binary_loading_failed(filename):
+    def binary_loading_failed(filename) -> None:
         # TODO: Normalize the path for Windows
         QMessageBox.critical(None, "Failed to load binary", f"angr failed to load binary {filename}.")

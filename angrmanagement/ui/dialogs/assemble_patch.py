@@ -3,10 +3,10 @@
 # - Show symbols in disassembly text
 # - Support editing existing patches
 # - Handle overlap with existing patches
+from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -37,7 +37,7 @@ class AssemblePatchDialog(QDialog):
     Dialog for making a patch from assembly code.
     """
 
-    def __init__(self, address: int, instance: "Instance", parent=None):
+    def __init__(self, address: int, instance: Instance, parent=None) -> None:
         super().__init__(parent)
 
         self.instance: Instance = instance
@@ -47,22 +47,21 @@ class AssemblePatchDialog(QDialog):
         insn = block.disassembly.insns[0]
 
         self._original_bytes: bytes = block.bytes[: insn.size]
-        self._new_bytes: Optional[bytes] = self._original_bytes
+        self._new_bytes: bytes | None = self._original_bytes
         self._initial_text = insn.mnemonic
         if insn.op_str:
             self._initial_text += " " + insn.op_str
 
         self._init_widgets()
         self.setWindowTitle(f"Assemble Patch at {self._patch_addr:#x}")
-
-    def sizeHint(self):  # pylint:disable=no-self-use
-        return QSize(400, 150)
+        self.setMinimumWidth(500)
+        self.adjustSize()
 
     #
     # Private methods
     #
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         self.main_layout = QVBoxLayout()
         font = QFont(Conf.disasm_font)
 
@@ -120,7 +119,7 @@ class AssemblePatchDialog(QDialog):
             self._pad_checkbox.setEnabled(False)
             self._update_status(status_msg, False)
 
-    def _assemble(self):
+    def _assemble(self) -> None:
         success = False
         status_msg = ""
 
@@ -152,7 +151,7 @@ class AssemblePatchDialog(QDialog):
 
         self._update_status(status_msg, success and len(self._new_bytes) > 0)
 
-    def _update_status(self, status_msg, can_press_ok):
+    def _update_status(self, status_msg, can_press_ok) -> None:
         self._bytes_text.setText(self._new_bytes.hex(" "))
         self._status_label.setText(status_msg)
         self._status_label.setProperty("class", "status_invalid")
@@ -164,13 +163,13 @@ class AssemblePatchDialog(QDialog):
     # Event handlers
     #
 
-    def _on_text_changed(self, new_text):  # pylint: disable=unused-argument
+    def _on_text_changed(self, new_text) -> None:  # pylint: disable=unused-argument
         self._assemble()
 
-    def _on_checkbox_changed(self, state):  # pylint: disable=unused-argument
+    def _on_checkbox_changed(self, state) -> None:  # pylint: disable=unused-argument
         self._assemble()
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         if self._new_bytes != self._original_bytes:
             pm = self.instance.project.kb.patches
 

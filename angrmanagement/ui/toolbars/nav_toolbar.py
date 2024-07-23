@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QAction, QIcon, QMouseEvent
@@ -10,6 +12,8 @@ from angrmanagement.config import IMG_LOCATION
 from .toolbar import Toolbar
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.logic.disassembly import JumpHistory
 
 
@@ -21,7 +25,7 @@ class NavToolButton(QToolButton):
     triggered = Signal()
     triggeredFromMenu = Signal(int)
 
-    def __init__(self, jump_history: "JumpHistory", direction_forward: bool = False, parent=None):
+    def __init__(self, jump_history: JumpHistory, direction_forward: bool = False, parent=None) -> None:
         super().__init__(parent)
         self._dir_fwd = direction_forward
         self._jump_history = jump_history
@@ -39,14 +43,14 @@ class NavToolButton(QToolButton):
         a.triggered.connect(self._on_button_activated)
         self.setDefaultAction(a)
 
-    def _on_button_activated(self):
+    def _on_button_activated(self) -> None:
         self.triggered.emit()
 
-    def _on_menu_action_activated(self, checked):  # pylint:disable=unused-argument
+    def _on_menu_action_activated(self, checked) -> None:  # pylint:disable=unused-argument
         pos = self.sender().data()
         self.triggeredFromMenu.emit(pos)
 
-    def _init_menu(self):
+    def _init_menu(self) -> None:
         self._menu = QMenu()
         pos = self._jump_history.pos
         if pos < 0:
@@ -65,7 +69,7 @@ class NavToolButton(QToolButton):
         self._menu.addActions(actions)
         self.setMenu(self._menu)
 
-    def mousePressEvent(self, e: QMouseEvent):
+    def mousePressEvent(self, e: QMouseEvent) -> None:
         self._init_menu()
         super().mousePressEvent(e)
 
@@ -77,13 +81,13 @@ class NavToolbar(Toolbar):
 
     def __init__(
         self,
-        jump_history: "JumpHistory",
+        jump_history: JumpHistory,
         back_triggered: Callable[[], Any],
         forward_triggered: Callable[[], Any],
         point_triggered: Callable[[int], Any],
         small_icon: bool,
         window,
-    ):
+    ) -> None:
         super().__init__(window, "Navigation")
         self._jump_history = jump_history
         self._back_triggered = back_triggered

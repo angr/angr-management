@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import importlib
 import logging
 import os
 import sys
-from typing import List, Tuple
 
 from .base_plugin import BasePlugin
 from .plugin_description import PluginDescription
@@ -10,7 +11,7 @@ from .plugin_description import PluginDescription
 log = logging.getLogger(__name__)
 
 
-def load_plugin_descriptions_from_dir(path: str) -> List[Tuple[str, PluginDescription]]:
+def load_plugin_descriptions_from_dir(path: str) -> list[tuple[str, PluginDescription]]:
     try:
         dlist = os.listdir(path)
     except OSError:
@@ -24,7 +25,7 @@ def load_plugin_descriptions_from_dir(path: str) -> List[Tuple[str, PluginDescri
     return plugins
 
 
-def load_plugin_description(path: str) -> List[PluginDescription]:
+def load_plugin_description(path: str) -> list[PluginDescription]:
     try:
         flist = os.listdir(path)
     except OSError:
@@ -93,7 +94,7 @@ def load_plugins_from_file(path):
             if basename.count(".") != 0:
                 log.error("package %s cannot be loaded - weird name", path)
                 return []
-    modname = "angrmanagement.plugins.%s" % modbasename
+    modname = f"angrmanagement.plugins.{modbasename}"
 
     # https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
     spec = importlib.util.spec_from_file_location(modname, path, submodule_search_locations=[])
@@ -120,7 +121,7 @@ def load_plugins_from_vars(variables):
         if (
             type(cls) is type
             and issubclass(cls, BasePlugin)
-            and not hasattr(cls, "_%s__i_hold_this_abstraction_token" % cls.__name__)
+            and not hasattr(cls, f"_{cls.__name__}__i_hold_this_abstraction_token")
         ):
             out.append(cls)
     return out

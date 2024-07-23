@@ -1,18 +1,20 @@
+from __future__ import annotations
+
 from angrmanagement.utils.graph import to_supergraph
 
 
-def edge_qualifies(data):
+def edge_qualifies(data) -> bool:
     return data["type"] not in ("call", "return_from_call")
 
 
 class FunctionGraph:
-    def __init__(self, function, exception_edges=True):
+    def __init__(self, function, exception_edges: bool = True) -> None:
         self.function = function
         self.exception_edges = exception_edges
         self.edges = None
         self._supergraph = None
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         self._supergraph = None
         self.edges = None
 

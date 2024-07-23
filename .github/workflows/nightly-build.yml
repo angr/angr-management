@@ -1,160 +1,35 @@
 name: Bundle
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
   schedule:
   - cron: "0 0 * * *"
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy the nightly build"
+        required: false
+        default: "false"
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-20.04
-          - ubuntu-22.04
-          - windows-2022
-          - macos-12
-      fail-fast: false
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-      - run: |
-          sudo apt-get update;
-          sudo apt-get install -y \
-            libfuse2 \
-            libegl1 \
-            libxkbcommon-x11-0 \
-            libxcb-cursor0 \
-            libxcb-icccm4 \
-            libxcb-image0 \
-            libxcb-keysyms1 \
-            libxcb-randr0 \
-            libxcb-render-util0 \
-            libxcb-shape0
-        if: startsWith(matrix.os, 'ubuntu')
-      - run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          bash .github\workflows\nightly-build.sh
-        shell: cmd
-        if: startsWith(matrix.os, 'windows')
-      - run: bash .github/workflows/nightly-build.sh
-        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
-      - uses: actions/upload-artifact@v3
-        with:
-          name: angr-management-${{ matrix.os }}
-          path: |
-            upload/*.tar.gz
-            upload/*.zip
-            upload/*.dmg
-
-  test_ubuntu:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-20.04
-          - ubuntu-22.04
-      fail-fast: false
-    name: Test on ${{ matrix.os }}
-    needs: build
-    runs-on: ${{ matrix.os }}
-    steps:
-      - run: sudo apt-get update && sudo apt-get install -y xvfb x11-utils libegl1
-        name: Install X11 app testing utilities
-      - uses: actions/download-artifact@v3
-        with:
-          name: angr-management-${{ matrix.os }}
-      - run: |
-          set -x
-          . /etc/os-release
-
-          tar -xzf angr-management-ubuntu-$VERSION_ID.tar.gz
-          export binary="./angr-management/angr-management"
-          export QT_DEBUG_PLUGINS=1
-          chmod +x $binary
-          xvfb-run bash -x -c '
-            $binary &
-            sleep 30 && output=$(xwininfo -tree -root)
-            [[ "$output" == *"angr management"* ]] || exit 1
-          '
-
-  test_windows:
-    strategy:
-      matrix:
-        os:
-          - windows-2022
-      fail-fast: false
-    name: Test on ${{ matrix.os }}
-    needs: build
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: angr-management-${{ matrix.os }}
-      - run: |
-          7z x angr-management-win64.zip
-          .\angr-management\angr-management.exe
-          sleep 30
-          [array]$am_windows = Get-Process |
-            Where-Object {$_.MainWindowTitle -ne ""} |
-            Select-Object MainWindowTitle |
-            where {$_ -match 'angr management'}
-          if ($am_windows.Length -ne 1) {
-            echo "Number of open angr management windows" $am_windows.Length
-            exit 1
-          }
-
-  test_macos:
-    strategy:
-      matrix:
-        os:
-          - macos-12
-      fail-fast: false
-    name: Test on ${{ matrix.os }}
-    needs: build
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: angr-management-${{ matrix.os }}
-      - run: |
-          set -x
-          hdiutil attach -mountroot /tmp/am-mount ./angr-management-macOS.dmg
-          open /tmp/am-mount/*/*.app
-          sleep 30
-          windows=$(osascript -e '
-            tell application "System Events" to get (name of every window of processes whose name contains "angr management") as string
-          ')
-          if [ "$windows" == "" ]; then
-            exit 1
-          fi
-
+    uses: ./.github/workflows/pyinstaller-build.yml
+    with:
+      version: 'master'
   deploy:
     name: Deploy release
     needs:
-      - test_ubuntu
-      - test_windows
-      - test_macos
+      - build
     runs-on: ubuntu-22.04
-    if: ${{ github.event_name == 'schedule' }}
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.deploy == 'true'}}
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
-      - name: Run find
-        run: find .
+        uses: actions/download-artifact@v4
       - name: Delete old nightly
         run: gh release -R angr/angr-management delete nightly --cleanup-tag --yes
         env:
           GH_TOKEN: ${{ github.token }}
         continue-on-error: true
-      - name: Make new release
+      - name: Make nightly release
         run: >
           gh release create nightly \
             --repo angr/angr-management \
@@ -168,6 +43,11 @@ jobs:
             This release is an automatically generated pre-release. We do our
             best to make sure everything works, but please be advised that
             features may break or change without notice.
+
+            Mac users: Make sure to select the build that matches your CPU
+            archetecture. Both are currently not signed, so you will need to
+            right-click and select "Open" the first time you run them.
+
           GH_TOKEN: ${{ github.token }}
 
   report:

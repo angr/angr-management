@@ -5,6 +5,9 @@ either the success or failure of a load.
 This file intentionally does not reuse angr.misc.autoimport since it has additional design goals (managing exceptions,
 loading out-of-tree files).
 """
+
+from __future__ import annotations
+
 import logging
 
 from .base_plugin import BasePlugin

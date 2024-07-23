@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 from threading import Thread
-from typing import Any, Callable, Tuple
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
-def start_daemon_thread(target: Callable[..., Any], name: str, args: Tuple[Any] = None) -> Thread:
+def start_daemon_thread(target: Callable[..., Any], name: str, args: tuple[Any] | None = None) -> Thread:
     """
     Start a daemon thread.
     """

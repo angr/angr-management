@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import sys
@@ -27,12 +29,12 @@ class CSS:
     global_css = ObjectContainer("", "Global CSS")
 
     @staticmethod
-    def rebuild():
+    def rebuild() -> None:
         base_css_path = os.path.join(THEME_LOCATION, "base.css")
         try:
             with open(base_css_path, encoding="utf-8") as f:
                 css = f.read()
-        except Exception:  # pylint: disable=braod-except
+        except Exception:  # pylint: disable=broad-except
             log.warning("Failed to load base theme at %s", base_css_path)
             css = ""
 
@@ -53,16 +55,12 @@ class CSS:
         CSS.global_css.am_event()
 
 
-def refresh_theme():
+def refresh_theme() -> None:
     app = QApplication.instance()
 
     # determine the default application style according to the OS
-    if sys.platform == "win32":
-        app_style = None if Conf.theme_name == "Light" else "Fusion"
-    elif sys.platform == "darwin":
-        app_style = None if Conf.theme_name == "Light" else "Fusion"
-    elif sys.platform == "linux":
-        app_style = "Fusion"
+    if sys.platform == "win32" and Conf.theme_name == "Light":
+        app_style = "windowsvista"
     else:
         app_style = "Fusion"
 

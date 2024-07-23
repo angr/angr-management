@@ -1,14 +1,20 @@
+from __future__ import annotations
+
 import itertools
 import re
-from typing import List, Union
+from typing import TYPE_CHECKING
 
 import networkx as nx
-from angr.analyses.disassembly import Disassembly, Instruction, MemoryOperand
-from angr.block import CapstoneInsn
-from angr.knowledge_plugins.functions.function import Function
+from angr.analyses.disassembly import ConstantOperand, Disassembly, Instruction, MemoryOperand
+from angr.errors import SimEngineError
 
-from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils import string_at_addr
+
+if TYPE_CHECKING:
+    from angr.block import CapstoneInsn
+    from angr.knowledge_plugins.functions.function import Function
+
+    from angrmanagement.ui.views import DisassemblyView
 
 
 class FunctionDiff:
@@ -30,10 +36,11 @@ class FunctionDiff:
         func_rev: Function,
         disas_base: Disassembly = None,
         disas_rev: Disassembly = None,
-        prefer_symbols=True,
-        resolve_strings=True,
+        prefer_symbols: bool = True,
+        resolve_strings: bool = True,
+        resolve_insn_addrs: bool = True,
         **kwargs,
-    ):
+    ) -> None:
         self.func_base = func_base
         self.func_rev = func_rev
         self.disas_base = disas_base
@@ -45,12 +52,28 @@ class FunctionDiff:
 
         self._prefer_symbols = prefer_symbols
         self._resolve_strings = resolve_strings
+        self._resolve_insn_addrs = resolve_insn_addrs
+        self._insn_mnem_check = 3
+
+    @property
+    def differs(self):
+        return bool(self.rev_change_set or self.rev_add_set or self.rev_del_set)
 
     @property
     def prefer_symbols(self):
         return self._prefer_symbols and self.disas_base is not None and self.disas_rev is not None
 
-    def _linear_asm_from_function(self, func: Function, disas: Disassembly = None, as_dict=False) -> List[CapstoneInsn]:
+    @staticmethod
+    def is_executable_address(address, proj):
+        for section in proj.loader.main_object.sections:
+            if section.is_executable and section.min_addr <= address <= section.max_addr:
+                return True
+
+        return False
+
+    def _linear_asm_from_function(
+        self, func: Function, disas: Disassembly = None, as_dict: bool = False
+    ) -> list[CapstoneInsn]:
         sorted_blocks = sorted(func.blocks, key=lambda b: b.addr)
         instruction_lists = [block.disassembly.insns for block in sorted_blocks]
         instructions = list(itertools.chain.from_iterable(instruction_lists))
@@ -61,7 +84,7 @@ class FunctionDiff:
 
         return symbolized_instructions if not as_dict else {i.addr: i for i in symbolized_instructions}
 
-    def diff_insn(self, base_insn: Union[CapstoneInsn, Instruction], rev_insn: Union[CapstoneInsn, Instruction]):
+    def diff_insn(self, base_insn: CapstoneInsn | Instruction, rev_insn: CapstoneInsn | Instruction):
         if self._prefer_symbols:
             if base_insn.render() == rev_insn.render():
                 return FunctionDiff.OBJ_UNMODIFIED
@@ -69,18 +92,31 @@ class FunctionDiff:
             if base_insn.mnemonic.render() == rev_insn.mnemonic.render() and len(base_insn.operands) == len(
                 rev_insn.operands
             ):
-                if not self._resolve_strings:
+                if not self._resolve_strings and not self._resolve_insn_addrs:
                     return FunctionDiff.OBJ_CHANGED
 
                 # attempt to resolve strings that act as symbols
-                base_mem_ops = [op for op in base_insn.operands if isinstance(op, MemoryOperand)]
+                base_mem_ops = [op for op in base_insn.operands if isinstance(op, MemoryOperand | ConstantOperand)]
                 if base_mem_ops:
-                    rev_mem_ops = [op for op in rev_insn.operands if isinstance(op, MemoryOperand)]
+                    rev_mem_ops = [op for op in rev_insn.operands if isinstance(op, MemoryOperand | ConstantOperand)]
                     if len(rev_mem_ops) == len(base_mem_ops) == 1:
+                        base_mem_op = base_mem_ops[0]
+                        rev_mem_op = rev_mem_ops[0]
+
                         try:
-                            base_mem_op_addr = list(base_mem_ops[0].values)[0].val
-                            rev_mem_op_addr = list(rev_mem_ops[0].values)[0].val
-                        except (IndexError, KeyError, ValueError):
+                            if isinstance(base_mem_op, MemoryOperand):
+                                base_mem_op_addr = list(base_mem_op.values)[0].val
+                            else:
+                                base_mem_op_addr = base_mem_op.children[0].val
+                        except (IndexError, KeyError, ValueError, AttributeError):
+                            return FunctionDiff.OBJ_CHANGED
+
+                        try:
+                            if isinstance(rev_mem_op, MemoryOperand):
+                                rev_mem_op_addr = list(rev_mem_op.values)[0].val
+                            else:
+                                rev_mem_op_addr = rev_mem_op.children[0].val
+                        except (IndexError, KeyError, ValueError, AttributeError):
                             return FunctionDiff.OBJ_CHANGED
 
                         base_str = string_at_addr(
@@ -90,11 +126,29 @@ class FunctionDiff:
                             self.func_rev.project.kb.cfgs.get_most_accurate(), rev_mem_op_addr, self.func_rev.project
                         )
 
-                        if base_str == rev_str:
+                        if base_str is not None and base_str == rev_str:
                             base_insn_str = re.sub(r"\[.*\]", base_str, base_insn.render()[0])
                             rev_insn_str = re.sub(r"\[.*\]", base_str, rev_insn.render()[0])
 
                             if base_insn_str == rev_insn_str:
+                                return FunctionDiff.OBJ_UNMODIFIED
+                        elif self._resolve_insn_addrs and (
+                            self.is_executable_address(base_mem_op_addr, self.func_base.project)
+                            and self.is_executable_address(rev_mem_op_addr, self.func_rev.project)
+                        ):
+                            try:
+                                base_blk = self.func_base.get_block(base_mem_op_addr)
+                            except SimEngineError:
+                                return FunctionDiff.OBJ_CHANGED
+
+                            try:
+                                rev_blk = self.func_rev.get_block(rev_mem_op_addr)
+                            except SimEngineError:
+                                return FunctionDiff.OBJ_CHANGED
+
+                            base_mnem = [ins.mnemonic for ins in base_blk.disassembly.insns][: self._insn_mnem_check]
+                            rev_mnem = [ins.mnemonic for ins in rev_blk.disassembly.insns][: self._insn_mnem_check]
+                            if base_mnem == rev_mnem:
                                 return FunctionDiff.OBJ_UNMODIFIED
 
                 return FunctionDiff.OBJ_CHANGED
@@ -109,7 +163,7 @@ class FunctionDiff:
 
             return FunctionDiff.OBJ_UNMODIFIED
 
-    def addr_diff_value(self, addr):
+    def addr_diff_value(self, addr: int):
         if addr in self.rev_del_set:
             return self.OBJ_DELETED
         elif addr in self.rev_add_set:
@@ -119,7 +173,7 @@ class FunctionDiff:
         else:
             return self.OBJ_UNMODIFIED
 
-    def compute_function_diff(self):
+    def compute_function_diff(self) -> None:
         pass
 
 
@@ -134,10 +188,10 @@ class LinearFunctionDiff(FunctionDiff):
         func_rev: Function,
         disas_base: Disassembly = None,
         disas_rev: Disassembly = None,
-        prefer_symbols=True,
-        resolve_strings=True,
+        prefer_symbols: bool = True,
+        resolve_strings: bool = True,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
             func_base,
             func_rev,
@@ -151,7 +205,7 @@ class LinearFunctionDiff(FunctionDiff):
         self.rev_insns = self._linear_asm_from_function(func_rev, disas=self.disas_rev)
         self.compute_function_diff()
 
-    def compute_function_diff(self):
+    def compute_function_diff(self) -> None:
         for idx, base_insn in enumerate(self.base_insns):
             if idx >= len(self.rev_insns):
                 break
@@ -185,7 +239,7 @@ class BFSFunctionDiff(FunctionDiff):
         view_base: DisassemblyView = None,
         view_rev: DisassemblyView = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(func_base, func_rev, **kwargs)
         self.base_cfg = view_base._flow_graph.function_graph.supergraph
         self.rev_cfg = view_rev._flow_graph.function_graph.supergraph
@@ -224,7 +278,7 @@ class BFSFunctionDiff(FunctionDiff):
         block_levels = [[start_block]] + block_levels
         return block_levels
 
-    def compute_function_diff(self):
+    def compute_function_diff(self) -> None:
         base_levels = self.bfs_list_block_levels(self.base_cfg)
         rev_levels = self.bfs_list_block_levels(self.rev_cfg)
         diff_map = {}

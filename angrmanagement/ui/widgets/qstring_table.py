@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import re
 from typing import TYPE_CHECKING, Any
 
+from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort
 from PySide6.QtCore import QAbstractTableModel, QSortFilterProxyModel, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
@@ -12,15 +15,18 @@ if TYPE_CHECKING:
     from angr.analyses.cfg.cfg_fast import MemoryData
     from PySide6.QtGui import QKeyEvent
 
+    from angrmanagement.data.instance import Instance
+
 
 class QStringModel(QAbstractTableModel):
-    HEADER = ["Address", "Length", "String"]
+    HEADER = ["Address", "Size (Bytes)", "Length", "String"]
 
     ADDRESS_COL = 0
-    LENGTH_COL = 1
-    STRING_COL = 2
+    SIZE_COL = 1
+    LENGTH_COL = 2
+    STRING_COL = 3
 
-    def __init__(self, cfg, func=None):
+    def __init__(self, cfg, func=None) -> None:
         super().__init__()
 
         self._cfg = cfg
@@ -34,7 +40,7 @@ class QStringModel(QAbstractTableModel):
         return self._cfg
 
     @cfg.setter
-    def cfg(self, v):
+    def cfg(self, v) -> None:
         self.beginResetModel()
         self._cfg = v
         self._values = None
@@ -45,7 +51,7 @@ class QStringModel(QAbstractTableModel):
         return self._xrefs
 
     @xrefs.setter
-    def xrefs(self, v):
+    def xrefs(self, v) -> None:
         self.beginResetModel()
         self._xrefs = v
         self._values = None
@@ -56,7 +62,7 @@ class QStringModel(QAbstractTableModel):
         return self._function
 
     @function.setter
-    def function(self, v):
+    def function(self, v) -> None:
         self.beginResetModel()
         self._function = v
         self._values = None
@@ -67,7 +73,7 @@ class QStringModel(QAbstractTableModel):
         if self.cfg is None:
             return lst
         for v in self.cfg.memory_data.values():
-            if v.sort == "string":
+            if v.sort in {MemoryDataSort.String, MemoryDataSort.UnicodeString}:
                 if self._function is None:
                     lst.append(v)
                 else:
@@ -85,7 +91,7 @@ class QStringModel(QAbstractTableModel):
             self._values = self._get_all_string_memory_data()
         return self._values
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.rowCount()
 
     def rowCount(self, parent=None) -> int:  # pylint: disable=unused-argument
@@ -130,20 +136,26 @@ class QStringModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-    def _get_column_text(self, v: "MemoryData", col: int):
+    def _get_column_text(self, v: MemoryData, col: int):
         if col < len(self.HEADER):
             data = self._get_column_data(v, col)
             if col == self.ADDRESS_COL and isinstance(data, int):
                 return f"{data:x}"
             return data
 
-    def _get_column_data(self, v: "MemoryData", col: int) -> Any:
+    @staticmethod
+    def _get_decoded_string_content(md: MemoryData) -> str:
+        sort_to_encoding = {MemoryDataSort.String: "utf-8", MemoryDataSort.UnicodeString: "utf_16_le"}
+        return md.content.decode(sort_to_encoding[md.sort])
+
+    def _get_column_data(self, v: MemoryData, col: int) -> Any:
         mapping = {
             self.ADDRESS_COL: lambda x: x.addr,
-            self.LENGTH_COL: lambda x: x.size,
-            self.STRING_COL: lambda x: filter_string_for_display(x.content.decode("utf-8"))
-            if x.content is not None
-            else "<ERROR>",
+            self.SIZE_COL: lambda x: x.size,
+            self.LENGTH_COL: lambda x: len(self._get_decoded_string_content(x)) if x.content is not None else "<ERROR>",
+            self.STRING_COL: lambda x: (
+                filter_string_for_display(self._get_decoded_string_content(x)) if x.content is not None else "<ERROR>"
+            ),
         }
 
         if col in mapping:
@@ -152,7 +164,7 @@ class QStringModel(QAbstractTableModel):
 
 
 class QStringTable(QTableView):
-    def __init__(self, instance, parent, selection_callback=None):
+    def __init__(self, instance: Instance, parent, selection_callback=None) -> None:
         super().__init__(parent)
 
         self._instance = instance
@@ -176,7 +188,7 @@ class QStringTable(QTableView):
 
         # let the last column (string) fill table width
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.horizontalHeader().setSectionResizeMode(QStringModel.STRING_COL, QHeaderView.Stretch)
 
         self.doubleClicked.connect(self._on_string_selected)
 
@@ -189,7 +201,7 @@ class QStringTable(QTableView):
         return self._model.cfg
 
     @cfg.setter
-    def cfg(self, v):
+    def cfg(self, v) -> None:
         self._model.cfg = v
         self.fast_resize()
 
@@ -198,7 +210,7 @@ class QStringTable(QTableView):
         return self._model.xrefs
 
     @xrefs.setter
-    def xrefs(self, v):
+    def xrefs(self, v) -> None:
         self._model.xrefs = v
 
     @property
@@ -206,7 +218,7 @@ class QStringTable(QTableView):
         return self._model.function
 
     @function.setter
-    def function(self, v):
+    def function(self, v) -> None:
         self._model.function = v
         self.fast_resize()
 
@@ -215,7 +227,7 @@ class QStringTable(QTableView):
         return self._filter
 
     @filter_string.setter
-    def filter_string(self, v):
+    def filter_string(self, v) -> None:
         self._filter = v
         if isinstance(v, re.Pattern):
             self._proxy.setFilterRegExp(self._filter.pattern)
@@ -227,7 +239,7 @@ class QStringTable(QTableView):
     # Public methods
     #
 
-    def fast_resize(self):
+    def fast_resize(self) -> None:
         self.setVisible(False)
         self.resizeColumnsToContents()
         self.setVisible(True)
@@ -236,7 +248,7 @@ class QStringTable(QTableView):
     # Event handlers
     #
 
-    def _on_string_selected(self, model_index):
+    def _on_string_selected(self, model_index) -> None:
         model_index = self._proxy.mapToSource(model_index)
         selected_index = model_index.row()
         if self._model is None:
@@ -246,7 +258,7 @@ class QStringTable(QTableView):
         if self._selected is not None:
             self._selected(selected_item)
 
-    def keyPressEvent(self, event: "QKeyEvent") -> None:
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key_X:
             # xrefs
             if self._model is None:

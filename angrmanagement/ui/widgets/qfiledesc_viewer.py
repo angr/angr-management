@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import typing
 
@@ -6,6 +8,8 @@ from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QPushButton, QText
 
 if typing.TYPE_CHECKING:
     from angr.sim_state import SimState
+
+    from angrmanagement.ui.workspace import Workspace
 
 
 class QFileDescriptorViewer(QFrame):
@@ -20,7 +24,7 @@ class QFileDescriptorViewer(QFrame):
         2: "stderr",
     }
 
-    def __init__(self, state, parent, workspace):
+    def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
 
         self._state: SimState = state
@@ -32,7 +36,7 @@ class QFileDescriptorViewer(QFrame):
 
         self._state.am_subscribe(self._watch_state)
 
-    def dump_fd(self, fd):
+    def dump_fd(self, fd) -> None:
         # Clean up when nothing is selected
         if fd == -1:
             self._current_fd = None
@@ -44,15 +48,16 @@ class QFileDescriptorViewer(QFrame):
         self._current_fd = fd
         self.textedit.setPlainText(self._state.posix.dumps(fd).decode("ascii", "ignore").replace("\x00", "\\x00"))
 
-    def save_as(self):
+    def save_as(self) -> None:
         if self._state.am_none or self._current_fd is None:
             return
         filename, folder = QFileDialog.getSaveFileName(self, "Save content to ...", "", "Any file (*);")
         if filename and folder:
             save_to = os.path.join(folder, filename)
-            open(save_to, "wb").write(self._state.posix.dumps(self._current_fd))
+            with open(save_to, "wb") as f:
+                f.write(self._state.posix.dumps(self._current_fd))
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         layout = QVBoxLayout()
         self.select_fd = QComboBox(self)
         self.select_fd.currentIndexChanged.connect(self.dump_fd)
@@ -69,7 +74,7 @@ class QFileDescriptorViewer(QFrame):
 
         self.setLayout(layout)
 
-    def _watch_state(self, **kwargs):  # pylint: disable=unused-argument
+    def _watch_state(self, **kwargs) -> None:  # pylint: disable=unused-argument
         if self._state.am_none:
             return
         if self.select_fd is None:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from angrmanagement.ui.widgets.qfeature_map import QFeatureMap
 
 from .toolbar import Toolbar
@@ -10,18 +12,18 @@ class FeatureMapToolbar(Toolbar):
     cursors on the feature map, and allows selection in the feature map to control location of active view.
     """
 
-    def __init__(self, window):
+    def __init__(self, window) -> None:
         super().__init__(window, "Feature Map")
         self._toolbar = None
         self._feature_map = None
         self._is_subscribed = False
 
-    def _subscribe_events(self):
+    def _subscribe_events(self) -> None:
         self.window.workspace.main_instance.active_view_state.am_subscribe(self._on_view_state_updated)
         self._feature_map.addr.am_subscribe(self._on_feature_map_addr_selected)
         self._is_subscribed = True
 
-    def _unsubscribe_events(self):
+    def _unsubscribe_events(self) -> None:
         if self._is_subscribed:
             self.window.workspace.main_instance.active_view_state.am_unsubscribe(self._on_view_state_updated)
             self._feature_map.addr.am_unsubscribe(self._on_feature_map_addr_selected)
@@ -33,17 +35,17 @@ class FeatureMapToolbar(Toolbar):
             self._subscribe_events()
         return self._toolbar
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self._unsubscribe_events()
 
-    def _on_feature_map_addr_selected(self):
+    def _on_feature_map_addr_selected(self) -> None:
         target_view = self.window.workspace.view_manager.most_recently_focused_view
         if hasattr(target_view, "jump_to"):
             addr = self._feature_map.addr.am_obj
             if addr is not None:
                 target_view.jump_to(addr)
 
-    def _on_view_state_updated(self):
+    def _on_view_state_updated(self) -> None:
         vs = self.window.workspace.main_instance.active_view_state
         if vs.am_none:
             return

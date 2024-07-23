@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import logging
 
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QImage, QMouseEvent, QPainter, QVector2D
 from PySide6.QtWidgets import (
     QApplication,
+    QGestureEvent,
     QGraphicsScene,
     QGraphicsSceneMouseEvent,
     QGraphicsView,
+    QPinchGesture,
     QStyleOptionGraphicsItem,
 )
 
@@ -20,7 +24,7 @@ class QBaseGraphicsView(QGraphicsView):
     # Public methods
     #
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._visibile_scene_rect: QRectF = QRectF()
 
@@ -28,7 +32,7 @@ class QBaseGraphicsView(QGraphicsView):
     def visible_scene_rect(self):
         return self._visibile_scene_rect
 
-    def redraw(self):
+    def redraw(self) -> None:
         """
         Redraw the scene. Do not recompute any items in the view.
 
@@ -48,7 +52,7 @@ class QBaseGraphicsView(QGraphicsView):
 
 
 class QSaveableGraphicsView(QBaseGraphicsView):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
         self._is_extra_render_pass: bool = False
 
@@ -56,13 +60,15 @@ class QSaveableGraphicsView(QBaseGraphicsView):
     def is_extra_render_pass(self):
         return self._is_extra_render_pass
 
-    def set_extra_render_pass(self, is_extra_pass: bool):
+    def set_extra_render_pass(self, is_extra_pass: bool) -> None:
         """
         Trigger any post-render callbacks
         """
         self._is_extra_render_pass = is_extra_pass
 
-    def save_image_to(self, path, top_margin=50, bottom_margin=50, left_margin=50, right_margin=50):
+    def save_image_to(
+        self, path, top_margin: int = 50, bottom_margin: int = 50, left_margin: int = 50, right_margin: int = 50
+    ) -> None:
         margins = QMarginsF(left_margin, top_margin, right_margin, bottom_margin)
 
         oldRect = self.scene().sceneRect()
@@ -91,7 +97,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     ZOOM_X = True
     ZOOM_Y = True
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
 
         self._is_dragging = False
@@ -113,15 +119,18 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         # self.setRenderHints(
         # QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
+        self.grabGesture(Qt.PinchGesture)
+        self._gesture_last_scale = 1.0
+
     def _initial_position(self):
         raise NotImplementedError
 
-    def _reset_view(self):
+    def _reset_view(self) -> None:
         self.resetTransform()
         self.centerOn(self._initial_position())
         self.zoom(restore=True)
 
-    def _reset_scene(self):
+    def _reset_scene(self) -> None:
         if self.scene() is None:
             scene = QGraphicsScene(self)
             self.setScene(scene)
@@ -131,7 +140,9 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
     def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(300, 300)
 
-    def zoom(self, out=False, at=None, reset=False, restore=False, factor=1.25):
+    def zoom(
+        self, out: bool = False, at=None, reset: bool = False, restore: bool = False, factor: float = 1.25
+    ) -> None:
         if at is None:
             at = self.scene().sceneRect().center().toPoint()
         lod = QStyleOptionGraphicsItem.levelOfDetailFromTransform(self.transform())
@@ -164,7 +175,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         delta = newPos - oldPos
         self.translate(delta.x(), delta.y())
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
             self.zoom(
                 event.angleDelta().y() < 0,
@@ -182,12 +193,12 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             else:
                 self.verticalScrollBar().wheelEvent(event)
 
-    def _save_last_coords(self, event):
+    def _save_last_coords(self, event) -> None:
         pos = self.mapToScene(event.pos())
         self._last_coords = (pos.x(), pos.y())
         self._last_screen_pos = event.pos()
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         if event.key() == Qt.Key_Equal and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
             self.zoom(out=False)
         elif event.key() == Qt.Key_Minus and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
@@ -197,7 +208,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         else:
             super().keyPressEvent(event)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         # _l.debug('Received press')
         if event.button() == Qt.LeftButton:
             self._is_mouse_pressed = True
@@ -208,7 +219,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         super().mousePressEvent(event)
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         """
 
         :param QMouseEvent event:
@@ -265,7 +276,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         QApplication.sendEvent(self.scene(), mouseEvent)
         return mouseEvent
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         """
 
         :param QMouseEvent event:
@@ -307,3 +318,23 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self._is_dragging = False
 
         super().mouseReleaseEvent(event)
+
+    def event(self, event):
+        if event.type() == QEvent.Gesture and isinstance(event, QGestureEvent):
+            return self._handle_pinch_gesture(event)
+        return super().event(event)
+
+    def _handle_pinch_gesture(self, event: QGestureEvent) -> None:
+        for gesture in event.gestures():
+            if isinstance(gesture, QPinchGesture):
+                if gesture.state() == Qt.GestureState.GestureStarted:
+                    self.pinchGestureStarted()
+                elif gesture.state() == Qt.GestureState.GestureUpdated:
+                    self.pinchGestureUpdated(gesture)
+
+    def pinchGestureStarted(self) -> None:
+        self._gesture_last_scale = 1.0
+
+    def pinchGestureUpdated(self, gesture: QPinchGesture) -> None:
+        newScale = gesture.scaleFactor() / self._gesture_last_scale
+        self.zoom(at=gesture.centerPoint().toPoint(), factor=newScale)

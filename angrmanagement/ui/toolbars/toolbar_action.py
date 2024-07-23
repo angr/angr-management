@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+
 class ToolbarAction:
-    def __init__(self, icon, name, tooltip, triggered, checkable=False, shortcut=None):
+    def __init__(self, icon, name: str, tooltip, triggered, checkable: bool = False, shortcut=None) -> None:
         self.icon = icon
         self.name = name
         self.tooltip = tooltip
@@ -15,5 +18,5 @@ class ToolbarAction:
 
 
 class ToolbarSplitter(ToolbarAction):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(None, None, None, None)

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from angr.analyses.disassembly import ConstantOperand, MemoryOperand, RegisterOperand, Value
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -8,6 +10,9 @@ from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 from angrmanagement.logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
 
 from .qgraph_object import QCachedGraphicsItem
+
+if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +24,7 @@ class QOperand(QCachedGraphicsItem):
 
     def __init__(
         self,
-        instance,
+        instance: Instance,
         func_addr,
         disasm_view,
         disasm,
@@ -27,12 +32,12 @@ class QOperand(QCachedGraphicsItem):
         insn,
         operand,
         operand_index,
-        is_branch_target,
-        is_indirect_branch,
+        is_branch_target: bool,
+        is_indirect_branch: bool,
         branch_targets,
         config,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent=parent)
 
         self.instance = instance
@@ -48,7 +53,7 @@ class QOperand(QCachedGraphicsItem):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
-        self._branch_target: Optional[int] = None
+        self._branch_target: int | None = None
 
         # the variable involved
         self.variable = None
@@ -59,14 +64,14 @@ class QOperand(QCachedGraphicsItem):
 
         # "widgets"
         self._label = None
-        self._label_item: Optional[QGraphicsSimpleTextItem] = None
+        self._label_item: QGraphicsSimpleTextItem | None = None
         self._variable_label = None
-        self._variable_label_item: Optional[QGraphicsSimpleTextItem] = None
+        self._variable_label_item: QGraphicsSimpleTextItem | None = None
         self._variable_ident = None
-        self._variable_ident_item: Optional[QGraphicsSimpleTextItem] = None
+        self._variable_ident_item: QGraphicsSimpleTextItem | None = None
         self._branch_targets = None
         self._branch_targets_text = None
-        self._branch_targets_item: Optional[QGraphicsSimpleTextItem] = None
+        self._branch_targets_item: QGraphicsSimpleTextItem | None = None
         self._is_target_func = None
 
         self._width = None
@@ -124,7 +129,7 @@ class QOperand(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             selected = self.infodock.toggle_operand_selection(
                 self.insn.addr,
@@ -139,7 +144,7 @@ class QOperand(QCachedGraphicsItem):
         else:
             super().mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         button = event.button()
         if button == Qt.LeftButton:
             if self._branch_target is not None:
@@ -157,11 +162,11 @@ class QOperand(QCachedGraphicsItem):
     # Public methods
     #
 
-    def refresh(self):
+    def refresh(self) -> None:
         self._init_widgets()
         self.recalculate_size()
 
-    def paint(self, painter, option, widget):  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         # Background
         if self.selected:
             painter.setPen(self._config.disasm_view_operand_select_color)
@@ -201,7 +206,7 @@ class QOperand(QCachedGraphicsItem):
         # try to render it
         rendered = operand.render()[0]
         for t in branch_targets:
-            if rendered in ("%x" % t, "%#x" % t):
+            if rendered in (f"{t:x}", f"{t:#x}"):
                 return t
             if t == rendered:
                 return t
@@ -218,7 +223,7 @@ class QOperand(QCachedGraphicsItem):
 
         return list(branch_targets)[:n]
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         if self.is_branch_target:
             # a branch instruction
 
@@ -249,7 +254,7 @@ class QOperand(QCachedGraphicsItem):
                             txt = self.disasm.kb.labels[t]
                         if txt is None:
                             # use the hex text
-                            txt = "%#08x" % t
+                            txt = f"{t:#08x}"
                         targets.append(txt)
                     self._branch_targets_text = "[ " + ", ".join(targets) + " ]"
                 else:
@@ -285,7 +290,7 @@ class QOperand(QCachedGraphicsItem):
 
                     if variable is not None:
                         self.variable = variable
-                        self._variable_ident = "<%s>" % variable.ident
+                        self._variable_ident = f"<{variable.ident}>"
                         if offset is None:
                             offset = 0
 
@@ -382,7 +387,7 @@ class QOperand(QCachedGraphicsItem):
 
         self._layout_items_and_update_size()
 
-    def _layout_items_and_update_size(self):
+    def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
 
         # label
@@ -454,9 +459,10 @@ class QOperand(QCachedGraphicsItem):
                 # this is the source operand
                 # which variable is read here?
                 for var, offset in variable_and_offsets:
-                    if arch.registers[reg_name][0] == var.reg:
-                        if self._variable_has_access(var, self.insn.addr, "read"):
-                            return var, offset
+                    if arch.registers[reg_name][0] == var.reg and self._variable_has_access(
+                        var, self.insn.addr, "read"
+                    ):
+                        return var, offset
 
                 log.debug(
                     "Cannot find any source variable for operand %d at instruction %#x.",
@@ -508,8 +514,11 @@ class QOperand(QCachedGraphicsItem):
         if highlight_mode == OperandHighlightMode.SAME_TEXT or self.variable is None:
             # when there is no related variable, we highlight as long as they have the same text
             return other.text == self.text
-        elif highlight_mode == OperandHighlightMode.SAME_IDENT:
-            if self.variable is not None and other.variable_ident is not None:
-                return self.func_addr == other.func_addr and self.variable.ident == other.variable_ident
+        elif (
+            highlight_mode == OperandHighlightMode.SAME_IDENT
+            and self.variable is not None
+            and other.variable_ident is not None
+        ):
+            return self.func_addr == other.func_addr and self.variable.ident == other.variable_ident
 
         return False

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import pathlib
 import subprocess
@@ -22,7 +24,7 @@ class AngrUrlScheme:
         elif sys.platform.startswith("linux"):
             self._register_url_scheme_linux()
         else:
-            raise NotImplementedError("We currently do not support registering angr URL scheme on %s." % sys.platform)
+            raise NotImplementedError(f"We currently do not support registering angr URL scheme on {sys.platform}.")
 
     def unregister_url_scheme(self):
         if sys.platform.startswith("win"):
@@ -30,7 +32,7 @@ class AngrUrlScheme:
         elif sys.platform.startswith("linux"):
             self._unregister_url_scheme_linux()
         else:
-            raise NotImplementedError("We currently do not support unregistering angr URL scheme on %s." % sys.platform)
+            raise NotImplementedError(f"We currently do not support unregistering angr URL scheme on {sys.platform}.")
 
     def is_url_scheme_registered(self):
         if sys.platform.startswith("win"):
@@ -57,7 +59,7 @@ class AngrUrlScheme:
     # Windows
     #
 
-    def _register_url_scheme_windows(self):
+    def _register_url_scheme_windows(self) -> None:
         app_path_ = app_path(pythonw=True)
 
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
@@ -78,7 +80,7 @@ class AngrUrlScheme:
         reg.endGroup()
         reg.endGroup()
 
-    def _unregister_url_scheme_windows(self):
+    def _unregister_url_scheme_windows(self) -> None:
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.NativeFormat)
 
@@ -130,9 +132,9 @@ Type=Application
         # register the scheme
         retcode = subprocess.call(cmd_0)
         if retcode != 0:
-            raise ValueError('Failed to setup the URL scheme. Command "%s" failed.' % " ".join(cmd_0))
+            raise ValueError('Failed to setup the URL scheme. Command "{}" failed.'.format(" ".join(cmd_0)))
 
-    def _unregister_url_scheme_linux(self):
+    def _unregister_url_scheme_linux(self) -> None:
         angr_desktop_path = self._angr_desktop_path()
         if os.path.isfile(angr_desktop_path):
             os.unlink(angr_desktop_path)

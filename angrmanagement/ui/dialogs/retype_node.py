@@ -1,11 +1,16 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import angr
 import pycparser
-from angr.analyses.decompiler.structured_codegen.c import CConstruct, CVariable
+from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CVariable
 from angr.sim_variable import SimVariable
-from PySide6.QtGui import Qt
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QFont, Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
+
+from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
     from angr.sim_type import SimType
@@ -19,15 +24,16 @@ class TypeBox(QLineEdit):
     Implements a line edit widget for inputting types.
     """
 
-    def __init__(self, textchanged_callback, predefined_types=None, parent=None):
+    def __init__(self, textchanged_callback, predefined_types=None, parent=None) -> None:
         super().__init__(parent)
 
-        self._cvariable: Optional[CVariable] = None
+        self._cvariable: CVariable | None = None
         self._predefined_types = predefined_types
 
         self.textChanged.connect(textchanged_callback)
+        self.setFont(QFont(Conf.disasm_font))
 
-    def set_type(self, type_: "SimType", cvariable: CVariable = None):
+    def set_type(self, type_: SimType, cvariable: CVariable = None) -> None:
         self._cvariable = cvariable
         if cvariable is not None and isinstance(cvariable.unified_variable, SimVariable):
             type_str = type_.c_repr(name=cvariable.unified_variable.name)
@@ -51,7 +57,7 @@ class TypeBox(QLineEdit):
             return parsed_type
         return None
 
-    def _is_valid_type_str(self, type_str: str) -> Tuple[bool, Optional["SimType"]]:
+    def _is_valid_type_str(self, type_str: str) -> tuple[bool, SimType | None]:
         """
         We accept two forms of type strings. The user can either specify a full variable declaration, like "char var",
         or only specify a type string, like "char". This method first attempts to parse the string as a variable
@@ -83,13 +89,13 @@ class RetypeNode(QDialog):
 
     def __init__(
         self,
-        instance: "Instance",
-        code_view: Optional["CodeView"] = None,
-        node: Optional[CConstruct] = None,
+        instance: Instance,
+        code_view: CodeView | None = None,
+        node: CConstruct | None = None,
         node_type=None,
         variable=None,
         parent=None,
-    ):
+    ) -> None:
         super().__init__(parent)
 
         # initialization
@@ -114,11 +120,14 @@ class RetypeNode(QDialog):
 
         self.setLayout(self.main_layout)
 
+    def sizeHint(self):  # pylint:disable=no-self-use
+        return QSize(600, 50)
+
     #
     # Private methods
     #
 
-    def _get_predefined_types(self) -> Dict[Any, "SimType"]:
+    def _get_predefined_types(self) -> dict[Any, SimType]:
         # global types
         r = dict(self._instance.kb.types)
         # local types
@@ -129,7 +138,7 @@ class RetypeNode(QDialog):
                 r.update(pseudocode_cache.local_types)
         return r
 
-    def _init_widgets(self):
+    def _init_widgets(self) -> None:
         # Type label
 
         type_label = QLabel(self)
@@ -139,6 +148,8 @@ class RetypeNode(QDialog):
         if self._node is not None:
             if isinstance(self._node, CVariable) and self._node.unified_variable and self._node_type is not None:
                 type_box.set_type(self._node_type, cvariable=self._node)
+            elif isinstance(self._node, CFunction):
+                type_box.setText(self._node.functy.c_repr(name=self._node.demangled_name, full=True, name_parens=False))
 
             type_box.selectAll()
         self._type_box = type_box
@@ -166,7 +177,7 @@ class RetypeNode(QDialog):
     # Event handlers
     #
 
-    def _on_type_changed(self, new_text):  # pylint:disable=unused-argument
+    def _on_type_changed(self, new_text) -> None:  # pylint:disable=unused-argument
         if self._type_box is None:
             # initialization is not done yet
             return
@@ -184,10 +195,10 @@ class RetypeNode(QDialog):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
-    def _on_ok_clicked(self):
+    def _on_ok_clicked(self) -> None:
         self.new_type = self._type_box.sim_type
         self.close()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.new_type = None
         self.close()

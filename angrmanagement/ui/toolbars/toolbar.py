@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
@@ -8,15 +8,15 @@ from .toolbar_action import ToolbarAction, ToolbarSplitter
 
 
 class Toolbar:
-    def __init__(self, window, name):
+    def __init__(self, window, name: str) -> None:
         self.window = window
         self.name = name
 
         self.actions = []
-        self._cached: Optional[QToolBar] = None
+        self._cached: QToolBar | None = None
         self._cached_actions = {}
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Prepare for deletion.
         """
@@ -62,7 +62,7 @@ class Toolbar:
         else:
             raise TypeError("Bad toolbar action", action)
 
-    def add(self, element):
+    def add(self, element) -> None:
         if self._cached is not None:
             act = self._translate_element(self._cached, element)
             if act is not None:
@@ -75,7 +75,7 @@ class Toolbar:
         try:
             act = self._cached_actions[element]
         except KeyError as ex:
-            raise ValueError("Element %s not found" % element) from ex
+            raise ValueError(f"Element {element} not found") from ex
 
         self.actions.remove(element)
         if self._cached is not None:

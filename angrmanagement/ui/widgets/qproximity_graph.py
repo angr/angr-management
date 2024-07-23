@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPointF, Qt
 
@@ -10,6 +12,7 @@ from .qgraph import QZoomableDraggableGraphicsView
 from .qgraph_arrow import QProximityGraphArrow
 
 if TYPE_CHECKING:
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.proximity_view import ProximityView
     from angrmanagement.ui.widgets.qproximitygraph_block import QProximityGraphBlock
     from angrmanagement.utils.edge import Edge
@@ -22,7 +25,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     LEFT_PADDING = 2000
     TOP_PADDING = 2000
 
-    def __init__(self, instance, proximity_view: "ProximityView", parent=None):
+    def __init__(self, instance: Instance, proximity_view: ProximityView, parent=None) -> None:
         super().__init__(parent=parent)
 
         self._instance = instance
@@ -30,32 +33,32 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
 
         self._graph = None
         self.blocks = set()
-        self._edges: List[Edge] = []
-        self._arrows_by_src: Dict[Any, List[QProximityGraphArrow]] = defaultdict(list)
-        self._arrows_by_dst: Dict[Any, List[QProximityGraphArrow]] = defaultdict(list)
-        self._arrows: List[QProximityGraphArrow] = []
+        self._edges: list[Edge] = []
+        self._arrows_by_src: dict[Any, list[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows_by_dst: dict[Any, list[QProximityGraphArrow]] = defaultdict(list)
+        self._arrows: list[QProximityGraphArrow] = []
 
     @property
     def graph(self):
         return self._graph
 
     @graph.setter
-    def graph(self, v):
+    def graph(self, v) -> None:
         if v is not self._graph:
             self._graph = v
             self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         self.request_relayout()
 
-    def refresh(self):
+    def refresh(self) -> None:
         for block in self.blocks:
             block.refresh()
         scene = self.scene()
         if scene is not None:
             scene.update(self.sceneRect())
 
-    def request_relayout(self):
+    def request_relayout(self) -> None:
         self._reset_scene()
         if self.graph is None:
             return
@@ -112,7 +115,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
         ibr = self.scene().itemsBoundingRect()
         return ibr.center()
 
-    def _sort_nodes(self, nodes: List["QProximityGraphBlock"]) -> List["QProximityGraphBlock"]:
+    def _sort_nodes(self, nodes: list[QProximityGraphBlock]) -> list[QProximityGraphBlock]:
         # Sort nodes based on the address of their first ref_at address in each function
         sorted_nodes = sorted(nodes, key=lambda x: next(iter(x._node.ref_at)) if x._node.ref_at else 0)
         return sorted_nodes
@@ -121,7 +124,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
     # Event handlers
     #
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         """
 
         :param QKeyEvent event:
@@ -136,7 +139,7 @@ class QProximityGraph(QZoomableDraggableGraphicsView):
 
         super().keyPressEvent(event)
 
-    def on_block_hovered(self, block):
+    def on_block_hovered(self, block) -> None:
         if block is None:
             return
         scene = self.scene()

@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 import os
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING
 
 from angrmanagement.data.breakpoint import BreakpointType
 from angrmanagement.data.trace import BintraceTrace
@@ -8,6 +10,8 @@ from angrmanagement.data.trace import BintraceTrace
 from .debugger import Debugger
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from angr import SimState
     from angr.knowledge_plugins import Function
 
@@ -30,7 +34,7 @@ class BintraceDebugger(Debugger):
     Trace playback debugger.
     """
 
-    def __init__(self, trace: BintraceTrace, workspace: "Workspace"):
+    def __init__(self, trace: BintraceTrace, workspace: Workspace) -> None:
         super().__init__(workspace)
         assert bintrace is not None
         assert isinstance(trace, BintraceTrace)
@@ -41,18 +45,18 @@ class BintraceDebugger(Debugger):
         )
         self._cached_simstate = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         pc = self.simstate.solver.eval(self.simstate.regs.pc)
         return f"{os.path.basename(self._btrace.path)} @ {pc:x}"
 
-    def _on_state_change(self):
+    def _on_state_change(self) -> None:
         """
         Common handler for state changes.
         """
         self._cached_simstate = None
         self.state_changed.am_event()
 
-    def _sync_breakpoints(self):
+    def _sync_breakpoints(self) -> None:
         """
         Synchronize breakpoints set in Workspace with trace debugger.
         """
@@ -67,7 +71,7 @@ class BintraceDebugger(Debugger):
         }
 
     @property
-    def simstate(self) -> "SimState":
+    def simstate(self) -> SimState:
         if self._cached_simstate is None:
             self._cached_simstate = self._trace_dbg.simstate
         return self._cached_simstate
@@ -80,7 +84,7 @@ class BintraceDebugger(Debugger):
     def can_step_backward(self) -> bool:
         return self._trace_dbg.can_step_backward
 
-    def step_backward(self):
+    def step_backward(self) -> None:
         if self.can_step_backward:
             self._trace_dbg.step_backward()
             self._on_state_change()
@@ -89,7 +93,7 @@ class BintraceDebugger(Debugger):
     def can_step_forward(self) -> bool:
         return self._trace_dbg.can_step_forward
 
-    def step_forward(self, until_addr: Optional[int] = None):
+    def step_forward(self, until_addr: int | None = None) -> None:
         if self.can_step_forward:
             self._trace_dbg.step_forward(until_addr=until_addr)
             self._on_state_change()
@@ -98,7 +102,7 @@ class BintraceDebugger(Debugger):
     def can_continue_backward(self) -> bool:
         return self._trace_dbg.can_continue_backward
 
-    def continue_backward(self):
+    def continue_backward(self) -> None:
         if self.can_continue_backward:
             self._sync_breakpoints()
             self._trace_dbg.continue_backward()
@@ -108,7 +112,7 @@ class BintraceDebugger(Debugger):
     def can_continue_forward(self) -> bool:
         return self._trace_dbg.can_continue_forward
 
-    def continue_forward(self):
+    def continue_forward(self) -> None:
         if self.can_continue_forward:
             self._sync_breakpoints()
             self._trace_dbg.continue_forward()
@@ -126,14 +130,14 @@ class BintraceDebugger(Debugger):
     def can_stop(self) -> bool:
         return True
 
-    def stop(self):
+    def stop(self) -> None:
         pass
 
     @property
     def is_exited(self) -> bool:
         return False
 
-    def replay_to_nth_event(self, n: int):
+    def replay_to_nth_event(self, n: int) -> None:
         """
         Replay to the Nth event, skipping over stop events and ending on the nearest execution event.
         """
@@ -148,7 +152,7 @@ class BintraceDebugger(Debugger):
         if self._trace_dbg.single_step_range is None:
             step_region_addr, step_region_size = None, 1
         else:
-            self._trace_dbg.single_step_range: Tuple[int, int]
+            self._trace_dbg.single_step_range: tuple[int, int]
             step_region_addr, step_region_size = self._trace_dbg.single_step_range
 
         until = t.get_prev_exec_event(until, addr=step_region_addr, size=step_region_size)
@@ -165,7 +169,7 @@ class BintraceDebugger(Debugger):
         else:
             return self.get_function_for_event(self._trace_dbg.state.event)
 
-    def replay_to_event(self, until):
+    def replay_to_event(self, until) -> None:
         self._trace_dbg.state = self._btrace.replay(self._trace_dbg.state, until)
         self._on_state_change()
 
@@ -175,7 +179,7 @@ class BintraceDebugger(Debugger):
     # FIXME: Factor this out of debugger
     #
 
-    def get_function_for_event(self, event: TraceEvent) -> Optional["Function"]:
+    def get_function_for_event(self, event: TraceEvent) -> Function | None:
         """
         Find currently execution function at `event`.
         """
@@ -198,8 +202,8 @@ class BintraceDebugger(Debugger):
             return None
 
     def get_called_functions(
-        self, event: Optional[TraceEvent] = None, only_after_event: bool = False
-    ) -> Sequence[Tuple["Function", TraceEvent]]:
+        self, event: TraceEvent | None = None, only_after_event: bool = False
+    ) -> Sequence[tuple[Function, TraceEvent]]:
         """
         Enumerate 1st order outgoing calls of function at `event`.
         """
@@ -292,10 +296,10 @@ class BintraceDebugger(Debugger):
                 num_nested_calls += 1
 
         all_funcs = self.workspace.main_instance.project.kb.functions
-        return [((all_funcs[addr] if (addr in all_funcs) else addr), e) for (addr, e) in called_addrs]
+        return [((all_funcs.get(addr, addr)), e) for (addr, e) in called_addrs]
 
     def get_called_functions_recursive(
-        self, event: Optional[TraceEvent] = None, max_depth: Optional[int] = None, depth: int = 0
+        self, event: TraceEvent | None = None, max_depth: int | None = None, depth: int = 0
     ):
         if max_depth is not None and max_depth == depth:
             return
