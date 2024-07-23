@@ -276,11 +276,11 @@ class PreciseDiffPlugin(BasePlugin):
 
         job = LoadBinaryJob(file_path, on_finish=self._create_instance_from_binary_done)
         self.loaded_binary = file_path
-        self.diff_instance.job_manager.add_job(job)
+        self.workspace.job_manager.add_job(job)
 
     def _create_instance_from_binary_done(self, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         job = CFGGenerationJob(on_finish=self._generate_binary_cfg_done)
-        self.diff_instance.job_manager.add_job(job)
+        self.workspace.job_manager.add_job(job)
 
     def _generate_binary_cfg_done(self, inst, cfg_info, *args, **kwargs) -> None:  # pylint:disable=unused-argument
         cfg_model, _ = cfg_info

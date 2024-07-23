@@ -14,7 +14,6 @@ from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, Breakp
 from angrmanagement.data.trace import Trace
 from angrmanagement.errors import ContainerAlreadyRegisteredError
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
-from angrmanagement.logic.jobmanager import JobManager
 
 from .log import LogRecord, initialize
 from .object_container import ObjectContainer
@@ -38,8 +37,6 @@ class Instance:
     cfb: angr.analyses.cfg.CFBlanket | ObjectContainer
     log: list[LogRecord] | ObjectContainer
 
-    job_manager: JobManager
-
     def __init__(self) -> None:
         # pylint:disable=import-outside-toplevel
         # delayed import
@@ -49,8 +46,6 @@ class Instance:
             ProtocolInteractor,
             SavedInteraction,
         )
-
-        self.job_manager = JobManager(self)
 
         self._live = False
         self.variable_recovery_job: VariableRecoveryJob | None = None

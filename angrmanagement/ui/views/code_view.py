@@ -157,7 +157,7 @@ class CodeView(FunctionView):
                 blocking=True,
                 regen_clinic=regen_clinic,
             )
-            self.instance.job_manager.add_job(job)
+            self.workspace.job_manager.add_job(job)
 
         if self._function.ran_cca is False:
             # run calling convention analysis for this function
@@ -167,7 +167,7 @@ class CodeView(FunctionView):
                 options = {}
             options["workers"] = 0
             varrec_job = VariableRecoveryJob(**options, on_finish=decomp, func_addr=self._function.addr)
-            self.instance.job_manager.add_job(varrec_job)
+            self.workspace.job_manager.add_job(varrec_job)
         else:
             decomp()
 
