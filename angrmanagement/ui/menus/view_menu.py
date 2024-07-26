@@ -122,7 +122,7 @@ class ViewMenu(Menu):
                 ),
                 MenuSeparator(),
                 MenuEntry("&Hex", main_window.workspace.show_hex_view, icon=icon("hex-view")),
-                MenuEntry("Pro&ximity", main_window.view_proximity_for_current_function),
+                MenuEntry("Pro&ximity", main_window.workspace.view_proximity_for_current_function),
                 MenuEntry("Pseudo&code", main_window.workspace.show_pseudocode_view, icon=icon("pseudocode-view")),
                 MenuEntry("&Strings", main_window.workspace.show_strings_view, icon=icon("strings-view")),
                 MenuEntry("&Patches", main_window.workspace.show_patches_view, icon=icon("patches-view")),

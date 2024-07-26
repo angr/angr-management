@@ -30,14 +30,12 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import IMG_LOCATION, Conf, save_config
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
-from angrmanagement.data.jobs import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadTargetJob
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
-from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
@@ -141,6 +139,30 @@ class MainWindow(QMainWindow):
     The main window of angr management.
     """
 
+    initialized: bool
+    app: QApplication | None
+    workspace: Workspace
+    dock_manager: QtAds.CDockManager
+    toolbar_manager: ToolbarManager
+
+    # Status and Progress
+    _progress_stopwatch_start_time: float
+    _progress_message: str
+    _progress_percentage: float
+    _progress_update_timer: QTimer
+    _status_label: QLabel
+    _stopwatch_label: QIconLabel
+    _interrupt_job_button: QIconLabel
+    _progress_label: QLabel
+    _progress_bar: QProgressBar
+    _progress_dialog: QProgressDialog
+
+    _file_menu: FileMenu
+    _analyze_menu: AnalyzeMenu
+    _view_menu: ViewMenu
+    _help_menu: HelpMenu
+    _plugin_menu: PluginMenu
+
     def __init__(
         self, app: QApplication | None = None, parent=None, show: bool = True, use_daemon: bool = False
     ) -> None:
@@ -157,41 +179,31 @@ class MainWindow(QMainWindow):
         # initialization
         self.setMinimumSize(QSize(400, 400))
 
-        self.app: QApplication | None = app
-        self.workspace: Workspace = None
-        self.dock_manager: QtAds.CDockManager
+        self.app = app
         self._dock_shortcut_event_filter = DockShortcutEventFilter(self)
 
         self._shift_shift_event_filter = ShiftShiftEventFilter(self)
-        if app:
+        if self.app is not None:
             self.app.installEventFilter(self._shift_shift_event_filter)
 
-        self.toolbar_manager: ToolbarManager = ToolbarManager(self)
+        self.toolbar_manager = ToolbarManager(self)
 
-        self._progress_stopwatch_start_time: float = 0.0
-        self._progress_message: str = ""
-        self._progress_percentage: float = 0
-        self._progress_update_timer: QTimer = QTimer()
+        self._progress_stopwatch_start_time = 0.0
+        self._progress_message = ""
+        self._progress_percentage = 0
+        self._progress_update_timer = QTimer()
         self._progress_update_timer.setSingleShot(False)
         self._progress_update_timer.setInterval(1000)
         self._progress_update_timer.timeout.connect(self._on_progress_update_timer_timeout)
 
         self.defaultWindowFlags = None
 
-        # menus
-        self._file_menu = None  # FileMenu
-        self._analyze_menu = None
-        self._view_menu = None
-        self._help_menu = None
-        self._plugin_menu = None
-
-        self._init_statusbar()
         self._init_workspace()
+        self._init_statusbar()
         self._init_toolbars()
         self._init_menus()
-        self._init_plugins()
+        self.workspace.plugins.discover_and_initialize_plugins()
         self._init_library_docs()
-        # self._init_url_scheme_handler()
 
         self._register_commands()
 
@@ -424,13 +436,6 @@ class MainWindow(QMainWindow):
         dock_widget.installEventFilter(self._dock_shortcut_event_filter)
 
     #
-    # Plugins
-    #
-
-    def _init_plugins(self) -> None:
-        self.workspace.plugins.discover_and_initialize_plugins()
-
-    #
     # FLIRT Signatures
     #
 
@@ -544,9 +549,9 @@ class MainWindow(QMainWindow):
             [
                 BasicCommand(action.__name__, caption, action)
                 for caption, action in [
-                    ("Analyze: Decompile", self.decompile_current_function),
-                    ("Analyze: Interact", self.interact),
-                    ("Analyze: Run Analysis...", self.run_analysis),
+                    ("Analyze: Decompile", self.workspace.decompile_current_function),
+                    ("Analyze: Interact", self.workspace.interact_program),
+                    ("Analyze: Run Analysis...", self.workspace.run_analysis),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
                     ("File: Load a new docker target...", self.open_docker_button),
@@ -847,35 +852,6 @@ class MainWindow(QMainWindow):
 
     def quit(self) -> None:
         self.close()
-
-    def run_variable_recovery(self) -> None:
-        self.workspace._get_or_create_view("disassembly", DisassemblyView).variable_recovery_flavor = "accurate"
-
-    def run_induction_variable_analysis(self) -> None:
-        self.workspace._get_or_create_view("disassembly", DisassemblyView).run_induction_variable_analysis()
-
-    def run_dependency_analysis(self, func_addr: int | None = None, func_arg_idx: int | None = None) -> None:
-        if self.workspace is None or self.workspace.main_instance is None:
-            return
-        dep_analysis_job = DependencyAnalysisJob(
-            self.workspace.main_instance, func_addr=func_addr, func_arg_idx=func_arg_idx
-        )
-        self.workspace.job_manager.add_job(dep_analysis_job)
-
-    def run_analysis(self) -> None:
-        if self.workspace:
-            self.workspace.run_analysis()
-
-    def decompile_current_function(self) -> None:
-        if self.workspace is not None:
-            self.workspace.decompile_current_function()
-
-    def view_proximity_for_current_function(self) -> None:
-        if self.workspace is not None:
-            self.workspace.view_proximity_for_current_function()
-
-    def interact(self) -> None:
-        self.workspace.interact_program(self.workspace.main_instance.img_name)
 
     def show_command_palette(self, parent=None) -> None:
         dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))
