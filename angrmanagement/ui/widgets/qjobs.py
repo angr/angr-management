@@ -1,18 +1,10 @@
 from __future__ import annotations
-from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs import job
-from angrmanagement.data.jobs.job import Job
-from angrmanagement.config import IMG_LOCATION
-
-from PySide6.QtGui import QPixmap
-
 import qtawesome as qta
-
-import os
-import time
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QSizePolicy, QHeaderView, QProgressBar, QPushButton, QAbstractItemView
 from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize
 
 
 from typing import TYPE_CHECKING
@@ -22,7 +14,7 @@ class CancelButton(QPushButton):
         This creates a cancel button for each job in the job views, using the job.cancel()
         method or skipping it from the queue
     '''
-    def __init__(self, table: qjobs, new_job: job, workspace):
+    def __init__(self, table: QJobs, new_job: job, workspace):
         super().__init__("Cancel")
         self.workspace = workspace
         
@@ -33,7 +25,7 @@ class CancelButton(QPushButton):
     #On cancel button click, the function will check whether to cancel or skip the job
     def onClick(self, table, the_job):
         #Job is cancelled/interrupted if running
-        if isinstance(the_job.status, RunningWidget):
+        if isinstance(the_job.status, RunningWidget) and the_job in self.workspace.job_manager.jobs:
             self.workspace.job_manager.worker_thread.keyboard_interrupt()
             the_job.cancelled = True
             table.change_job_cancel(the_job)
@@ -51,22 +43,15 @@ class CancelWidget(QWidget):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        #Getting Cancel icon location
-        error_icon_location = os.path.join(IMG_LOCATION, "error-icon.png")
-
-        # Create a label for the image
-        self.image_label = QLabel(self)
-        self.image_label.setContentsMargins(0, 0, 0, 0)
-        pixmap = QPixmap(error_icon_location)
-        scaled_pixmap = pixmap.scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Adjust width and height as needed
-        self.image_label.setPixmap(scaled_pixmap)
-
-        self.text = QLabel(' ' + "Cancelled")
+        #Constructing cancel icon widget
+        self.cancel_widget = qta.IconWidget()
+        cancel_icon = qta.icon('ei.remove-sign', color='red')
+        self.cancel_widget.setIconSize(QSize(45, 26))
+        self.cancel_widget.setIcon(cancel_icon)
     
         # Create a horizontal layout and add the labels
         hbox = QHBoxLayout()
-        hbox.addWidget(self.image_label)
-        hbox.addWidget(self.text)
+        hbox.addWidget(self.cancel_widget)
 
         # Set the layout for the widget
         self.setLayout(hbox)
@@ -80,22 +65,15 @@ class FinishWidget(QWidget):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        #Getting location for checkmark icon
-        check_icon_location = os.path.join(IMG_LOCATION, "circle_green_checkmark.png")
-
-        # Create a label for the image
-        self.image_label = QLabel(self)
-        self.image_label.setContentsMargins(0, 0, 0, 0)
-        pixmap = QPixmap(check_icon_location)
-        scaled_pixmap = pixmap.scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # Adjust width and height as needed
-        self.image_label.setPixmap(scaled_pixmap)
-
-        self.text = QLabel(' ' + "Finished")
+        #Constructing finish icon widget
+        self.finish_widget = qta.IconWidget()
+        finish_icon = qta.icon('fa.check-circle', color='green')
+        self.finish_widget.setIconSize(QSize(45, 30))
+        self.finish_widget.setIcon(finish_icon)
     
         # Create a horizontal layout and add the labels
         hbox = QHBoxLayout()
-        hbox.addWidget(self.image_label)
-        hbox.addWidget(self.text)
+        hbox.addWidget(self.finish_widget)
 
         # Set the layout for the widget
         self.setLayout(hbox)
@@ -109,21 +87,20 @@ class PendingWidget(QWidget):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        #Constructing pending icon widget
         self.pending_widget = qta.IconWidget()
         pending_icon = qta.icon('fa.clock-o', color='black')
+        self.pending_widget.setIconSize(QSize(45, 26))
         self.pending_widget.setIcon(pending_icon)
 
-        self.text = QLabel(' ' + 'Pending')
-        # Create a horizontal layout and add the labels
         hbox = QHBoxLayout()
         hbox.addWidget(self.pending_widget)
-        hbox.addWidget(self.text)
         
         # Set the layout for the widget
         self.setLayout(hbox)
 
 
-class progressWidget(QWidget):
+class ProgressWidget(QWidget):
     '''
         This creates a progress widget to show a job's progress bar with progression
         of its completion
@@ -166,27 +143,23 @@ class RunningWidget(QWidget):
         self.spin_widget = qta.IconWidget()
         animation = qta.Spin(self.spin_widget, autostart=True)
         spin_icon = qta.icon('fa5s.spinner', color='grey', animation=animation)
+        self.spin_widget.setIconSize(QSize(45, 26))
         self.spin_widget.setIcon(spin_icon)
-
-        self.text = QLabel(' ' + 'In Progress')
 
         # Create a horizontal layout and add the labels
         hbox = QHBoxLayout()
         hbox.addWidget(self.spin_widget)
-        hbox.addWidget(self.text)
         
         # Set the layout for the widget
         self.setLayout(hbox)
 
 
 
-class qjobs(QTableWidget):
+class QJobs(QTableWidget):
     '''
         This creates a table widget to display all the jobs and
         their status/progression on running the binaries
     '''
-
-    check_icon_location = os.path.join(IMG_LOCATION, "circle_green_checkmark.png")
 
     def __init__(self, workspace, parent=None):
         super().__init__(0, 4, parent)  # 0 rows and 4 columns
@@ -209,20 +182,27 @@ class qjobs(QTableWidget):
         self.verticalHeader().setDefaultSectionSize(45)
 
         #Set default column widths, different for each column
-        column_widths = [120, 200, 780, 30]
+        #120
+        column_widths = [65, 200, 780, 30]
         for idx, width in enumerate(column_widths):
             self.setColumnWidth(idx, width)
 
-##### PRIVATE METHOD
+    '''
+    PRIVATE METHODS
+    '''
 
-    #This method creates a row for a job in the jobs view table, takes an argument for a job, and an argument for status(Pending by default)
-    def __add_table_row__(self, new_job: job, status): #Status: Any of the status widgets
+    def _add_table_row(self, new_job: job, status): #Status: Any of the status widgets
+        '''
+        This method creates a row for a job in the jobs view table, 
+        takes an argument for a job, and an argument for status(Pending by default)
+        '''
 
         #Assigning the row to the job as an attribute
         new_job.row = self.rowCount()
         self.insertRow(new_job.row)
 
-        #Assigning the status of the job as an attribute and setting the status widget in the table(column 1)
+        #Assigning the status of the job as an attribute and 
+        #setting the status widget in the table(column 1)
         new_job.status = status
         self.setCellWidget(new_job.row, 0, new_job.status)
 
@@ -231,12 +211,14 @@ class qjobs(QTableWidget):
         self.setItem(new_job.row, 1, job_name)
         job_name.setFlags(job_name.flags() & ~Qt.ItemIsEditable)  # Make the item non-editable
 
-        #Assigning the progress bar of the job as an attribute and setting the progress widget in the table(column 3)
-        progressBar = progressWidget()
+        #Assigning the progress bar of the job as an 
+        # attribute and setting the progress widget in the table(column 3)
+        progressBar = ProgressWidget()
         new_job.progress_bar = progressBar
         self.setCellWidget(new_job.row, 2, new_job.progress_bar)
 
-        #Assigning the cancel button of the job as an attribute and setting the cancel button widget in the table(column 4)
+        #Assigning the cancel button of the job as an attribute and 
+        #setting the cancel button widget in the table(column 4)
         new_job.cancel_button = CancelButton(self, new_job, self.workspace)
 
         #Constructing a seperate container to adjust margins of button
@@ -247,70 +229,57 @@ class qjobs(QTableWidget):
 
         self.setCellWidget(new_job.row, 3, button_QWidget)
 
-##### PUBLIC METHODS
+    '''
+    PUBLIC METHODS
+    '''
 
-    #This method adds a new job to the jobs view table, it only takes an argument for a job to add a row for it in the table
     def add_new_job(self, new_job: job):
+        '''
+        This method adds a new job to the jobs view table, 
+        it only takes an argument for a job to add a row for it in the table
+        '''
         pending = PendingWidget()
-        self.__add_table_row__(new_job, pending)
+        self._add_table_row(new_job, pending)
     
-    #This method changes the progress percentage and progress bar of a job, only takes the argument for the job to set all the changes
     def change_job_progress(self, the_job: job):
-
-        #Checks for original/previous widget to replace and remove(progress widget)
-        existing_widget = self.cellWidget(the_job.row, 2)
-        if existing_widget is not None:
-            existing_widget.deleteLater()
-
-        the_job.progress_bar = progressWidget()
+        '''
+        This method changes the progress percentage and progress bar of a job, 
+        only takes the argument for the job to set all the changes
+        '''
 
         the_job.progress_bar.progressBar.setValue(int(the_job.progress_percentage))
         the_job.progress_bar.text.setText(str(int(the_job.progress_percentage)) + "%")
-
         
         self.setCellWidget(the_job.row, 2, the_job.progress_bar)
 
-    #This method changes the status of a job in the jobs view table to cancelled, only takes the job as an argument
     def change_job_cancel(self, the_job: job):
-
-        #Checks for original/previous widget to replace and remove(cancel widget)
-        existing_widget = self.cellWidget(the_job.row, 0)
-        if existing_widget is not None:
-            existing_widget.deleteLater()
+        '''
+        This method changes the status of a job in the jobs view table to cancelled,
+        only takes the job as an argument
+        '''
 
         the_job.status = CancelWidget()
         self.setCellWidget(the_job.row, 0, the_job.status)
 
-    #This method changes the the status of a job in the jobs view table to finished and sets progress to 100, only takes the job as an argument
     def change_job_finish(self, the_job: job):
-
-        #Checks for original/previous widget to replace and remove(status widget)
-        existing_widget = self.cellWidget(the_job.row, 0)
-        if existing_widget is not None:
-            existing_widget.deleteLater()
+        '''
+        This method changes the the status of a job in the jobs view table to 
+        finish and sets progress to 100, only takes the job as an argument
+        '''
 
         the_job.status = FinishWidget()
         self.setCellWidget(the_job.row, 0, the_job.status)
-
-        #Checks for original/previous widget to replace and remove(progress widget)
-        existing_widget = self.cellWidget(the_job.row, 2)
-        if existing_widget is not None:
-            existing_widget.deleteLater()
-
-        the_job.progress_bar = progressWidget()
 
         the_job.progress_bar.progressBar.setValue(100)
         the_job.progress_bar.text.setText("100%")
 
         self.setCellWidget(the_job.row, 2, the_job.progress_bar)
 
-    #This method changes the status of a job in the jobs view table to running, only takes the job as an argument
     def change_job_running(self, the_job: job):
-
-        #Checks for original/previous widget to replace and remove
-        existing_widget = self.cellWidget(the_job.row, 0)
-        if existing_widget is not None:
-            existing_widget.deleteLater()
+        ''' 
+        This method changes the status of a job in the jobs view table to running, 
+        only takes the job as an argument
+        '''
 
         the_job.status = RunningWidget()
         self.setCellWidget(the_job.row, 0, the_job.status)

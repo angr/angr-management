@@ -71,42 +71,30 @@ class Worker(Thread):
             if any(job.blocking for job in self.job_manager.jobs) and GlobalInfo.main_window.isVisible():
                 gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
             
-            #If job has cancelled attribute and it is True for cancelled, then skip it
-            if hasattr(job, "cancelled") and job.cancelled:
+            #If job cancelled, then skip it
+            if job.cancelled:
                 pass
             else:
                 try:
-                    if self.job_manager.workspace.view_manager.first_view_in_category("jobs") is not None:
-                        self.current_job = job
-                        self.job_manager.callback_worker_new_job_jobsView(self.current_job)
-                        ctx = JobContext(self.job_manager, job)
-                        ctx.set_progress(0)
+                    self.current_job = job
+                    self.job_manager.callback_worker_new_job_jobsView(self.current_job)
+                    ctx = JobContext(self.job_manager, job)
+                    ctx.set_progress(0)
 
-                        log.info('Job "%s" started', job.name)
-                        job.start_at = time.time()
-                        result = job.run(ctx, self.job_manager.workspace.main_instance)
-                        if hasattr(self.current_job, "cancelled") and self.current_job.cancelled:
-                            pass
-                        else:
-                            self.job_manager.callback_job_complete_jobsView(self.current_job)
-                        now = time.time()
-                        duration = now - job.start_at
-                        log.info('Job "%s" completed after %.2f seconds', job.name, duration)
+                    log.info('Job "%s" started', job.name)
+                    job.start_at = time.time()
+                    result = job.run(ctx, self.job_manager.workspace.main_instance)
 
-                        self.current_job = None
+                    if self.current_job.cancelled:
+                        pass
                     else:
-                        self.current_job = job
-                        ctx = JobContext(self.job_manager, job)
-                        ctx.set_progress(0)
+                        self.job_manager.callback_job_complete_jobsView(self.current_job)
 
-                        log.info('Job "%s" started', job.name)
-                        job.start_at = time.time()
-                        result = job.run(ctx, self.job_manager.workspace.main_instance)
-                        now = time.time()
-                        duration = now - job.start_at
-                        log.info('Job "%s" completed after %.2f seconds', job.name, duration)
+                    now = time.time()
+                    duration = now - job.start_at
+                    log.info('Job "%s" completed after %.2f seconds', job.name, duration)
 
-                        self.current_job = None
+                    self.current_job = None
                 except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
                     sys.last_traceback = e.__traceback__
                     self.current_job = None
@@ -120,13 +108,13 @@ class Worker(Thread):
     def keyboard_interrupt(self) -> None:
         """Called from the GUI thread when the user presses Ctrl+C or presses a cancel button"""
         # lol. lmao even.
-        if GlobalInfo.main_window.workspace.main_instance.current_job == self:
-            tid = GlobalInfo.main_window.workspace.main_instance.worker_thread.ident
-            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(KeyboardInterrupt))
+        if self.ident is not None:
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_long(self.ident), ctypes.py_object(KeyboardInterrupt)
+            )
             if res != 1:
-                ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), 0)
                 log.error("Failed to interrupt thread")
-
 
 class JobManager:
     """JobManager is responsible for managing jobs and running them in a separate thread."""
@@ -210,24 +198,48 @@ class JobManager:
             if (self.workspace.view_manager.first_view_in_category("jobs") is not None):
                 self.callback_worker_progress_jobsView(job)
 
-    #This callback adds jobs dynamically to the jobsView upon addition of a new job
     def callback_job_added_jobsView(self, new_job: Job) -> None:
-        jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-        gui_thread_schedule_async(jobs_view.q_jobs.add_new_job, args=[new_job])
+        '''
+            This callback adds jobs dynamically to the jobsView 
+            upon addition of a new job
+        '''
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.add_new_job, args=[new_job])
+        else:
+            return
 
-    #This callback modifies the jobsView table to change the progress of a job visually
     def callback_worker_progress_jobsView(self, the_job: Job) -> None:
-        jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-        gui_thread_schedule_async(jobs_view.q_jobs.change_job_progress, args=[the_job])
+        '''
+            This callback modifies the jobsView table to 
+            change the progress of a job visually
+        '''
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.change_job_progress, args=[the_job])
+        else:
+            return
 
-    #This callback changes the jobsView table to have the table modified with modifying the job status as running
     def callback_worker_new_job_jobsView(self, the_job: Job) -> None:
-        jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-        gui_thread_schedule_async(jobs_view.q_jobs.change_job_running, args=(the_job,))
+        '''
+            This callback changes the jobsView table to have the table modified 
+            with modifying the job status as running
+        '''
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.change_job_running, args=(the_job,))
+        else:
+            return
 
-    #This callback changes the jobsView table to have the table modified with the job complete
     def callback_job_complete_jobsView(self, job: Job):
-        jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-        gui_thread_schedule_async(jobs_view.q_jobs.change_job_finish, args=[job])
+        '''
+            This callback changes the jobsView table to have the table modified 
+            with the job complete
+        '''
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.change_job_finish, args=[job])
+        else:
+            return
 
     # Private methods
