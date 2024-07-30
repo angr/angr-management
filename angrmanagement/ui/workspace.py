@@ -61,6 +61,7 @@ from .views import (
     FunctionsView,
     HexView,
     InteractionView,
+    JobsView,
     LogView,
     PatchesView,
     ProximityView,
@@ -123,6 +124,7 @@ class Workspace:
         minimized_tabs = [
             ConsoleView(self, "bottom", self._main_instance),
             LogView(self, "bottom", self._main_instance),
+            JobsView(self, "bottom", self.main_instance),
         ]
         self.default_tabs += minimized_tabs
 

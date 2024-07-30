@@ -71,18 +71,24 @@ class Worker(Thread):
             if any(job.blocking for job in self.job_manager.jobs) and GlobalInfo.main_window.isVisible():
                 gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
+            # If job cancelled, then skip it
+            if job.cancelled:
+                continue
             try:
                 self.current_job = job
+                self.job_manager.callback_worker_new_job(self.current_job)
                 ctx = JobContext(self.job_manager, job)
                 ctx.set_progress(0)
-
                 log.info('Job "%s" started', job.name)
                 job.start_at = time.time()
                 result = job.run(ctx)
+                if self.current_job.cancelled:
+                    pass
+                else:
+                    self.job_manager.callback_job_complete(self.current_job)
                 now = time.time()
                 duration = now - job.start_at
                 log.info('Job "%s" completed after %.2f seconds', job.name, duration)
-
                 self.current_job = None
             except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
                 sys.last_traceback = e.__traceback__
@@ -136,6 +142,8 @@ class JobManager:
 
     def add_job(self, job: Job) -> None:
         self.jobs.append(job)
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            self.callback_job_added(job)
         self.jobs_queue.put(job)
 
     def cancel_job(self, job: Job) -> None:
@@ -181,5 +189,45 @@ class JobManager:
             job.progress_percentage = percentage
             status_text = f"{job.name}: {text}" if text else job.name
             gui_thread_schedule_async(GlobalInfo.main_window.progress, args=(status_text, percentage))
+
+            # Dynamically update jobs view progress with instance
+            if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+                self.callback_worker_progress(job)
+
+    def callback_job_added(self, job: Job) -> None:
+        """
+        This callback adds jobs dynamically to the jobsView
+        upon addition of a new job
+        """
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.add_new_job, args=[job])
+
+    def callback_worker_progress(self, job: Job) -> None:
+        """
+        This callback modifies the jobsView table to
+        change the progress of a job visually
+        """
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.change_job_progress, args=[job])
+
+    def callback_worker_new_job(self, job: Job) -> None:
+        """
+        This callback changes the jobsView table to have the table modified
+        with modifying the job status as running
+        """
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.change_job_running, args=(job,))
+
+    def callback_job_complete(self, job: Job):
+        """
+        This callback changes the jobsView table to have the table modified
+        with the job complete
+        """
+        if self.workspace.view_manager.first_view_in_category("jobs") is not None:
+            jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
+            gui_thread_schedule_async(jobs_view.q_jobs.change_job_finish, args=[job])
 
     # Private methods

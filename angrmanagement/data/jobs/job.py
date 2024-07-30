@@ -47,6 +47,7 @@ class Job:
     last_text: str | None
     start_at: float
     blocking: bool
+    cancelled: bool
     _on_finish: Callable[[Any], None] | None
 
     def __init__(self, name: str, on_finish: Callable[[Any], None] | None = None, blocking: bool = False) -> None:
@@ -55,6 +56,7 @@ class Job:
         self.last_text = None
         self.start_at = 0.0
         self.blocking = blocking
+        self.cancelled = False
 
         # callbacks
         self._on_finish = on_finish
