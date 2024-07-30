@@ -72,7 +72,7 @@ from .views import (
     SymexecView,
     TraceMapView,
     TracesView,
-    TypesView
+    TypesView,
 )
 
 if TYPE_CHECKING:
@@ -124,7 +124,7 @@ class Workspace:
         minimized_tabs = [
             ConsoleView(self, "bottom", self._main_instance),
             LogView(self, "bottom", self._main_instance),
-            JobsView(self, "bottom", self.main_instance)
+            JobsView(self, "bottom", self.main_instance),
         ]
         self.default_tabs += minimized_tabs
 
