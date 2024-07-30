@@ -297,3 +297,4 @@ class Instance:
             self.debugger_list_mgr.remove_debugger(dbg)
 
         self.breakpoint_mgr.clear()
+        
