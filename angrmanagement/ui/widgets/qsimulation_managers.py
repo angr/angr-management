@@ -247,7 +247,10 @@ class QSimulationManagers(QFrame):
         if not self.simgr.am_none:
             self.workspace.job_manager.add_job(
                 SimgrStepJob.create(
-                    self.simgr.am_obj, until_branch=False, step_callback=self.workspace.plugins.step_callback
+                    self.instance,
+                    self.simgr.am_obj,
+                    until_branch=False,
+                    step_callback=self.workspace.plugins.step_callback,
                 )
             )
 
@@ -255,7 +258,10 @@ class QSimulationManagers(QFrame):
         if not self.simgr.am_none:
             self.workspace.job_manager.add_job(
                 SimgrStepJob.create(
-                    self.simgr.am_obj, until_branch=True, step_callback=self.workspace.plugins.step_callback
+                    self.instance,
+                    self.simgr.am_obj,
+                    until_branch=True,
+                    step_callback=self.workspace.plugins.step_callback,
                 )
             )
 
@@ -271,7 +277,11 @@ class QSimulationManagers(QFrame):
 
             self.workspace.job_manager.add_job(
                 SimgrExploreJob.create(
-                    self.simgr, avoid=self.avoid_addrs, find=self.find_addrs, step_callback=_step_callback
+                    self.instance,
+                    self.simgr,
+                    avoid=self.avoid_addrs,
+                    find=self.find_addrs,
+                    step_callback=_step_callback,
                 )
             )
 

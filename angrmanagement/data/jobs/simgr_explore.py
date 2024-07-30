@@ -2,18 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .job import Job
+from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
 
 
-class SimgrExploreJob(Job):
+class SimgrExploreJob(InstanceJob):
     """A job that runs the explore method of a simulation manager."""
 
-    def __init__(self, simgr, find=None, avoid=None, step_callback=None, until_callback=None, on_finish=None) -> None:
-        super().__init__("Simulation manager exploring", on_finish=on_finish)
+    def __init__(
+        self, instance: Instance, simgr, find=None, avoid=None, step_callback=None, until_callback=None, on_finish=None
+    ) -> None:
+        super().__init__("Simulation manager exploring", instance, on_finish=on_finish)
         self._simgr = simgr
         self._find = find
         self._avoid = avoid
@@ -21,7 +23,7 @@ class SimgrExploreJob(Job):
         self._until_callback = until_callback
         self._interrupted = False
 
-    def run(self, _: JobContext, inst: Instance):
+    def run(self, _: JobContext):
         """Run the job. Runs in the worker thread."""
 
         def until_callback(*args, **kwargs):
@@ -39,8 +41,8 @@ class SimgrExploreJob(Job):
         self._interrupted = True
 
     @classmethod
-    def create(cls, simgr, **kwargs):
+    def create(cls, instance: Instance, simgr, **kwargs):
         def callback(result) -> None:
             simgr.am_event(src="job_done", job="explore", result=result)
 
-        return cls(simgr, on_finish=callback, **kwargs)
+        return cls(instance, simgr, on_finish=callback, **kwargs)

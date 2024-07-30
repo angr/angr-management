@@ -2,20 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .job import Job
+from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
 
 
-class PrototypeFindingJob(Job):
-    def __init__(self, on_finish=None) -> None:
-        super().__init__(name="Function prototype finding", on_finish=on_finish)
+class PrototypeFindingJob(InstanceJob):
+    def __init__(self, instance: Instance, on_finish=None) -> None:
+        super().__init__("Function prototype finding", instance, on_finish=on_finish)
 
-    def run(self, ctx: JobContext, inst: Instance) -> None:
-        func_count = len(inst.kb.functions)
-        for i, func in enumerate(inst.kb.functions.values()):
+    def run(self, ctx: JobContext) -> None:
+        func_count = len(self.instance.kb.functions)
+        for i, func in enumerate(self.instance.kb.functions.values()):
             if func.is_simprocedure or func.is_plt:
                 func.find_declaration()
 

@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QMessageBox
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
-from .job import Job
+from .job import InstanceJob
 
 try:
     import argument_resolver
@@ -40,13 +40,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(name=__name__)
 
 
-class DependencyAnalysisJob(Job):
+class DependencyAnalysisJob(InstanceJob):
     """
     Implements a job for dependency analysis.
     """
 
-    def __init__(self, func_addr=None, func_arg_idx=None) -> None:
-        super().__init__("DependencyAnalysis")
+    def __init__(self, instance: Instance, func_addr=None, func_arg_idx=None) -> None:
+        super().__init__("DependencyAnalysis", instance)
 
         self.func_addr: int | None = func_addr
         self.func_arg_idx: int | None = func_arg_idx
@@ -77,9 +77,9 @@ class DependencyAnalysisJob(Job):
 
         return None, None
 
-    def run(self, ctx: JobContext, inst: Instance) -> None:
+    def run(self, ctx: JobContext) -> None:
         ctx.set_progress(0.0)
-        self._perform(ctx, inst)
+        self._perform(ctx, self.instance)
         ctx.set_progress(100.0)
 
     def _perform(self, ctx: JobContext, inst: Instance):

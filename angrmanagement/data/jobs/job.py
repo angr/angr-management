@@ -48,11 +48,9 @@ class Job:
     start_at: float
     blocking: bool
     cancelled : bool
-    _on_finish: Callable[[Instance, Any], None] | None
+    _on_finish: Callable[[Any], None] | None
 
-    def __init__(
-        self, name: str, on_finish: Callable[[Instance, Any], None] | None = None, blocking: bool = False
-    ) -> None:
+    def __init__(self, name: str, on_finish: Callable[[Any], None] | None = None, blocking: bool = False) -> None:
         self.name = name
         self.progress_percentage = 0.0
         self.last_text = None
@@ -77,12 +75,25 @@ class Job:
     def time_elapsed(self) -> str:
         return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
 
-    def run(self, ctx: JobContext, inst: Instance):
+    def run(self, ctx: JobContext):
         """Run the job. This method is called in a worker thread."""
         raise NotImplementedError
 
-    def finish(self, inst: Instance, result: Any) -> None:
+    def finish(self, result: Any) -> None:
         """Runs after the job has finished in the GUI thread."""
         if self._on_finish is not None:
-            self._on_finish(inst, result)
+            self._on_finish(result)
 
+
+class InstanceJob(Job):
+    """
+    A job that operates on an instance.
+    """
+
+    instance: Instance
+
+    def __init__(
+        self, name: str, instance: Instance, on_finish: Callable[[Any], None] | None = None, blocking: bool = False
+    ):
+        super().__init__(name, on_finish, blocking)
+        self.instance = instance

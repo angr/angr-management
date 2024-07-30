@@ -91,8 +91,9 @@ class DiffCodeView(CodeView):
                     self.jump_history.record_address(self._function.am_obj.addr)
                 self.after_ready()
 
-        def decomp(*args, **kwargs) -> None:  # pylint:disable=unused-argument
+        def decomp(*_) -> None:
             job = DecompileFunctionJob(
+                self.instance,
                 self._function.am_obj,
                 cfg=self.instance.cfg,
                 options=self._options.option_and_values,
@@ -112,7 +113,7 @@ class DiffCodeView(CodeView):
             else:
                 options = {}
             options["workers"] = 0
-            varrec_job = VariableRecoveryJob(**options, on_finish=decomp, func_addr=self._function.addr)
+            varrec_job = VariableRecoveryJob(self.instance, **options, on_finish=decomp, func_addr=self._function.addr)
             self.workspace.job_manager.add_job(varrec_job)
         else:
             decomp()

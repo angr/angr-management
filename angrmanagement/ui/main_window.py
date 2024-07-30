@@ -30,13 +30,13 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import IMG_LOCATION, Conf, save_config
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
-from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadTargetJob
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
+from angrmanagement.logic.threads import ExecuteCodeEvent
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
@@ -371,7 +371,7 @@ class MainWindow(QMainWindow):
         self.dock_manager.setAutoHideConfigFlags(QtAds.CDockManager.DefaultAutoHideConfig)
         self.dock_manager.createSideTabBarWidgets()
         self.setCentralWidget(self.dock_manager)
-        wk = Workspace(self, Instance())
+        wk = Workspace(self)
         self.workspace = wk
 
         def set_caption(**kwargs) -> None:  # pylint: disable=unused-argument
@@ -616,13 +616,13 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def event(self, event):
-        if event.type() == QEvent.User:
-            # our event callback
-
+        if event.type() == QEvent.User and isinstance(event, ExecuteCodeEvent):
             try:
                 event.result = event.execute()
             except Exception as ex:  # pylint:disable=broad-except
                 event.exception = ex
+                if event.async_:
+                    _l.exception("Exception occurred in an async job:")
             event.event.set()
 
             return True
@@ -678,7 +678,7 @@ class MainWindow(QMainWindow):
         if img_name is None:
             return
         target = archr.targets.DockerImageTarget(img_name, target_path=None)
-        self.workspace.job_manager.add_job(LoadTargetJob(target))
+        self.workspace.job_manager.add_job(LoadTargetJob(self.workspace.main_instance, target))
         self.workspace.main_instance.img_name = img_name
 
     def load_trace_file(self, file_path) -> None:
@@ -727,7 +727,7 @@ class MainWindow(QMainWindow):
                     self._load_database(file_path)
                 else:
                     self._recent_file(file_path)
-                    self.workspace.job_manager.add_job(LoadBinaryJob(file_path))
+                    self.workspace.job_manager.add_job(LoadBinaryJob(self.workspace.main_instance, file_path))
             else:
                 QMessageBox.critical(
                     self,
@@ -851,7 +851,9 @@ class MainWindow(QMainWindow):
     def run_dependency_analysis(self, func_addr: int | None = None, func_arg_idx: int | None = None) -> None:
         if self.workspace is None or self.workspace.main_instance is None:
             return
-        dep_analysis_job = DependencyAnalysisJob(func_addr=func_addr, func_arg_idx=func_arg_idx)
+        dep_analysis_job = DependencyAnalysisJob(
+            self.workspace.main_instance, func_addr=func_addr, func_arg_idx=func_arg_idx
+        )
         self.workspace.job_manager.add_job(dep_analysis_job)
 
     def run_analysis(self) -> None:
@@ -952,7 +954,14 @@ class MainWindow(QMainWindow):
         other_kbs = {}
         extra_info = {}
 
-        job = LoadAngrDBJob(file_path, ["global", "pseudocode_variable_kb"], other_kbs=other_kbs, extra_info=extra_info)
+        job = LoadAngrDBJob(
+            self.workspace.main_instance,
+            file_path,
+            ["global", "pseudocode_variable_kb"],
+            other_kbs=other_kbs,
+            extra_info=extra_info,
+        )
+        # TODO: make the job return what the callback wants
         job._on_finish = partial(self._on_load_database_finished, job)
         self.workspace.job_manager.add_job(job)
 
@@ -981,7 +990,7 @@ class MainWindow(QMainWindow):
 
         # trigger callbacks
         self.workspace.reload()
-        self.workspace.on_cfg_generated(self.workspace.main_instance, (cfg, cfb))
+        self.workspace.on_cfg_generated((cfg, cfb))
         self.workspace.plugins.angrdb_load_entries(job.extra_info)
 
     def _save_database(self, file_path) -> bool:
