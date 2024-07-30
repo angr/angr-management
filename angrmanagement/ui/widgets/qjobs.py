@@ -1,5 +1,5 @@
 from __future__ import annotations
-from angrmanagement.data.jobs import job
+from angrmanagement.data.jobs.job import Job
 import qtawesome as qta
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QSizePolicy, QHeaderView, QProgressBar, QPushButton, QAbstractItemView
@@ -14,27 +14,27 @@ class CancelButton(QPushButton):
         This creates a cancel button for each job in the job views, using the job.cancel()
         method or skipping it from the queue
     '''
-    def __init__(self, table: QJobs, new_job: job, workspace):
+    def __init__(self, table: QJobs, job: Job, workspace):
         super().__init__("Cancel")
         self.workspace = workspace
         
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        self.clicked.connect(lambda: self.onClick(table, new_job))
+        self.clicked.connect(lambda: self.onClick(table, job))
 
     #On cancel button click, the function will check whether to cancel or skip the job
-    def onClick(self, table, the_job):
+    def onClick(self, table, job):
         #Job is cancelled/interrupted if running
-        if isinstance(the_job.status, RunningWidget) and the_job in self.workspace.job_manager.jobs:
+        if isinstance(job.status, RunningWidget) and job in self.workspace.job_manager.jobs:
             self.workspace.job_manager.worker_thread.keyboard_interrupt()
-            the_job.cancelled = True
-            table.change_job_cancel(the_job)
+            job.cancelled = True
+            table.change_job_cancel(job)
         #Job is skipped if it's pending
-        elif isinstance(the_job.status, PendingWidget):
-            the_job.cancelled = True
-            table.change_job_cancel(the_job)
+        elif isinstance(job.status, PendingWidget):
+            job.cancelled = True
+            table.change_job_cancel(job)
 
-class CancelWidget(QWidget):
+class CancelledWidget(QWidget):
     '''
         This creates a status widget to show a job's status that it is
         cancelled
@@ -56,7 +56,7 @@ class CancelWidget(QWidget):
         # Set the layout for the widget
         self.setLayout(hbox)
 
-class FinishWidget(QWidget):
+class FinishedWidget(QWidget):
     '''
         This creates a status widget to show a job's status that it is
         Finished
@@ -187,99 +187,95 @@ class QJobs(QTableWidget):
         for idx, width in enumerate(column_widths):
             self.setColumnWidth(idx, width)
 
-    '''
-    PRIVATE METHODS
-    '''
+#Private Methods
 
-    def _add_table_row(self, new_job: job, status): #Status: Any of the status widgets
+    def _add_table_row(self, job: Job, status): #Status: Any of the status widgets
         '''
         This method creates a row for a job in the jobs view table, 
         takes an argument for a job, and an argument for status(Pending by default)
         '''
 
         #Assigning the row to the job as an attribute
-        new_job.row = self.rowCount()
-        self.insertRow(new_job.row)
+        job.row = self.rowCount()
+        self.insertRow(job.row)
 
         #Assigning the status of the job as an attribute and 
         #setting the status widget in the table(column 1)
-        new_job.status = status
-        self.setCellWidget(new_job.row, 0, new_job.status)
+        job.status = status
+        self.setCellWidget(job.row, 0, job.status)
 
         #Setting the name of the job as a widget in the table(column 2)
-        job_name = QTableWidgetItem(new_job.name)
-        self.setItem(new_job.row, 1, job_name)
+        job_name = QTableWidgetItem(job.name)
+        self.setItem(job.row, 1, job_name)
         job_name.setFlags(job_name.flags() & ~Qt.ItemIsEditable)  # Make the item non-editable
 
         #Assigning the progress bar of the job as an 
         # attribute and setting the progress widget in the table(column 3)
         progressBar = ProgressWidget()
-        new_job.progress_bar = progressBar
-        self.setCellWidget(new_job.row, 2, new_job.progress_bar)
+        job.progress_bar = progressBar
+        self.setCellWidget(job.row, 2, job.progress_bar)
 
         #Assigning the cancel button of the job as an attribute and 
         #setting the cancel button widget in the table(column 4)
-        new_job.cancel_button = CancelButton(self, new_job, self.workspace)
+        job.cancel_button = CancelButton(self, job, self.workspace)
 
         #Constructing a seperate container to adjust margins of button
         button_QWidget = QWidget()
         hbox = QHBoxLayout(button_QWidget)
         hbox.setContentsMargins(5, 5, 5, 5)
-        hbox.addWidget(new_job.cancel_button)
+        hbox.addWidget(job.cancel_button)
 
-        self.setCellWidget(new_job.row, 3, button_QWidget)
+        self.setCellWidget(job.row, 3, button_QWidget)
 
-    '''
-    PUBLIC METHODS
-    '''
+#Public Methods
 
-    def add_new_job(self, new_job: job):
+    def add_new_job(self, job: Job):
         '''
         This method adds a new job to the jobs view table, 
         it only takes an argument for a job to add a row for it in the table
         '''
         pending = PendingWidget()
-        self._add_table_row(new_job, pending)
+        self._add_table_row(job, pending)
     
-    def change_job_progress(self, the_job: job):
+    def change_job_progress(self, job: Job):
         '''
         This method changes the progress percentage and progress bar of a job, 
         only takes the argument for the job to set all the changes
         '''
 
-        the_job.progress_bar.progressBar.setValue(int(the_job.progress_percentage))
-        the_job.progress_bar.text.setText(str(int(the_job.progress_percentage)) + "%")
+        job.progress_bar.progressBar.setValue(int(job.progress_percentage))
+        job.progress_bar.text.setText(str(int(job.progress_percentage)) + "%")
         
-        self.setCellWidget(the_job.row, 2, the_job.progress_bar)
+        self.setCellWidget(job.row, 2, job.progress_bar)
 
-    def change_job_cancel(self, the_job: job):
+    def change_job_cancel(self, job: Job):
         '''
         This method changes the status of a job in the jobs view table to cancelled,
         only takes the job as an argument
         '''
 
-        the_job.status = CancelWidget()
-        self.setCellWidget(the_job.row, 0, the_job.status)
+        job.status = CancelledWidget()
+        self.setCellWidget(job.row, 0, job.status)
 
-    def change_job_finish(self, the_job: job):
+    def change_job_finish(self, job: Job):
         '''
         This method changes the the status of a job in the jobs view table to 
         finish and sets progress to 100, only takes the job as an argument
         '''
 
-        the_job.status = FinishWidget()
-        self.setCellWidget(the_job.row, 0, the_job.status)
+        job.status = FinishedWidget()
+        self.setCellWidget(job.row, 0, job.status)
 
-        the_job.progress_bar.progressBar.setValue(100)
-        the_job.progress_bar.text.setText("100%")
+        job.progress_bar.progressBar.setValue(100)
+        job.progress_bar.text.setText("100%")
 
-        self.setCellWidget(the_job.row, 2, the_job.progress_bar)
+        self.setCellWidget(job.row, 2, job.progress_bar)
 
-    def change_job_running(self, the_job: job):
+    def change_job_running(self, job: Job):
         ''' 
         This method changes the status of a job in the jobs view table to running, 
         only takes the job as an argument
         '''
 
-        the_job.status = RunningWidget()
-        self.setCellWidget(the_job.row, 0, the_job.status)
+        job.status = RunningWidget()
+        self.setCellWidget(job.row, 0, job.status)

@@ -59,7 +59,6 @@ class Job:
         self.start_at = 0.0
         self.blocking = blocking
         self.cancelled = False
-        self.instance = None
 
         # callbacks
         self._on_finish = on_finish
