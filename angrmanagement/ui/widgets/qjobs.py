@@ -16,7 +16,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from angrmanagement.data.jobs.job import Job
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from angrmanagement.data.jobs.job import Job
 
 
 class CancelButton(QPushButton):
