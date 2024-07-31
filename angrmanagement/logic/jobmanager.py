@@ -205,7 +205,7 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.add_new_job, args=[job])
+            gui_thread_schedule_async(jobs_view.qjobs.add_new_job, args=[job])
 
     def callback_worker_progress(self, job: Job) -> None:
         """
@@ -214,7 +214,7 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.change_job_progress, args=[job])
+            gui_thread_schedule_async(jobs_view.qjobs.change_job_progress, args=[job])
 
     def callback_worker_new_job(self, job: Job) -> None:
         """
@@ -223,7 +223,7 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.change_job_running, args=(job,))
+            gui_thread_schedule_async(jobs_view.qjobs.change_job_running, args=(job,))
 
     def callback_job_complete(self, job: Job):
         """
@@ -232,6 +232,6 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.change_job_finish, args=[job])
+            gui_thread_schedule_async(jobs_view.qjobs.change_job_finish, args=[job])
 
     # Private methods
