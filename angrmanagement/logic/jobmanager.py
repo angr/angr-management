@@ -146,11 +146,15 @@ class JobManager:
             self.callback_job_added(job)
         self.jobs_queue.put(job)
 
-    def cancel_job(self, job: Job) -> None:
+    def cancel_job(self, job: Job) -> bool:
         if job in self.jobs:
             self.jobs.remove(job)
-        if self.worker_thread is not None and self.worker_thread.current_job == job:
-            self.worker_thread.keyboard_interrupt()
+            job.cancelled = True
+            if self.worker_thread is not None and self.worker_thread.current_job == job:
+                self.worker_thread.keyboard_interrupt()
+
+            return True
+        return False
 
     def interrupt_current_job(self) -> None:
         """Notify the current running job that the user requested an interrupt. The job may ignore it."""
@@ -201,7 +205,7 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.add_new_job, args=[job])
+            gui_thread_schedule_async(jobs_view.qjobs.add_new_job, args=[job])
 
     def callback_worker_progress(self, job: Job) -> None:
         """
@@ -210,7 +214,7 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.change_job_progress, args=[job])
+            gui_thread_schedule_async(jobs_view.qjobs.change_job_progress, args=[job])
 
     def callback_worker_new_job(self, job: Job) -> None:
         """
@@ -219,7 +223,7 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.change_job_running, args=(job,))
+            gui_thread_schedule_async(jobs_view.qjobs.change_job_running, args=(job,))
 
     def callback_job_complete(self, job: Job):
         """
@@ -228,6 +232,6 @@ class JobManager:
         """
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             jobs_view = self.workspace.view_manager.first_view_in_category("jobs")
-            gui_thread_schedule_async(jobs_view.q_jobs.change_job_finish, args=[job])
+            gui_thread_schedule_async(jobs_view.qjobs.change_job_finish, args=[job])
 
     # Private methods

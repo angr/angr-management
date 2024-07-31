@@ -15,25 +15,24 @@ if TYPE_CHECKING:
 
 
 class JobsView(InstanceView):
-    """
-    This creates a view for the jobs view which creates a table to display
-    all the jobs being ran or in queue
-    """
+    """JobsView displays all pending, running, and finished jobs in the project."""
+
+    qjobs: QJobs
 
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("jobs", workspace, default_docking_position, instance)
         self.base_caption = "Jobs"
 
         # The QJobs widget is initialized in the view, most functions of jobs table is done through QJobs
-        self.q_jobs = QJobs(workspace)
+        self.qjobs = QJobs(workspace)
         vlayout = QVBoxLayout()
-        vlayout.addWidget(self.q_jobs)
+        vlayout.addWidget(self.qjobs)
         vlayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(vlayout)
         self.reload()
 
     def closeEvent(self, event) -> None:
-        self.q_jobs.close()
+        self.qjobs.close()
         super().closeEvent(event)
 
     def reload(self) -> None:
