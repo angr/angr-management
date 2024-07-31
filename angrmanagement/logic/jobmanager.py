@@ -146,11 +146,15 @@ class JobManager:
             self.callback_job_added(job)
         self.jobs_queue.put(job)
 
-    def cancel_job(self, job: Job) -> None:
+    def cancel_job(self, job: Job) -> bool:
         if job in self.jobs:
             self.jobs.remove(job)
-        if self.worker_thread is not None and self.worker_thread.current_job == job:
-            self.worker_thread.keyboard_interrupt()
+            job.cancelled = True
+            if self.worker_thread is not None and self.worker_thread.current_job == job:
+                self.worker_thread.keyboard_interrupt()
+
+            return True
+        return False
 
     def interrupt_current_job(self) -> None:
         """Notify the current running job that the user requested an interrupt. The job may ignore it."""
