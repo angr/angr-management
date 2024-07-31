@@ -29,7 +29,7 @@ class NavToolButton(QToolButton):
         super().__init__(parent)
         self._dir_fwd = direction_forward
         self._jump_history = jump_history
-        self.setPopupMode(QToolButton.MenuButtonPopup)
+        self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self._init_menu()
 
         if direction_forward:
@@ -98,7 +98,7 @@ class NavToolbar(Toolbar):
     def qtoolbar(self) -> QToolBar:
         tb = QToolBar(self.window)
         if self._small_icon:
-            sm_ico_pm = tb.style().pixelMetric(QStyle.PM_SmallIconSize, None, tb)
+            sm_ico_pm = tb.style().pixelMetric(QStyle.PixelMetric.PM_SmallIconSize, None, tb)
             tb.setIconSize(QSize(sm_ico_pm, sm_ico_pm))
 
         back_btn = NavToolButton(self._jump_history, False, tb)

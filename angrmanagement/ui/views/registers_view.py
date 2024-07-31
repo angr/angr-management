@@ -47,7 +47,7 @@ class QRegisterTableModel(QAbstractTableModel):
     def headerData(
         self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.DisplayRole:
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
@@ -59,10 +59,10 @@ class QRegisterTableModel(QAbstractTableModel):
         row = index.row()
         reg = self._filtered_register_list()[row]
         col = index.column()
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(reg, col)
-        elif role == Qt.ForegroundRole:
-            return QBrush(Qt.red) if self._did_data_change(reg) else None
+        elif role == Qt.ItemDataRole.ForegroundRole:
+            return QBrush(Qt.GlobalColor.red) if self._did_data_change(reg) else None
         else:
             return None
 
@@ -104,8 +104,8 @@ class QRegisterTableWidget(QTableView):
         vheader.setVisible(False)
         vheader.setDefaultSectionSize(20)
 
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self.model: QRegisterTableModel = QRegisterTableModel(self)
         self.setModel(self.model)
@@ -113,7 +113,7 @@ class QRegisterTableWidget(QTableView):
         font = QFont(Conf.disasm_font)
         self.setFont(font)
 
-        hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
         self._dbg_manager = register_view.instance.debugger_mgr
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)

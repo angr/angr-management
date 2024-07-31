@@ -119,7 +119,7 @@ class GotoPaletteModel(PaletteModel):
         elif item.alignment:
             color = Conf.function_table_alignment_color
         else:
-            color = Qt.gray
+            color = Qt.GlobalColor.gray
         return (color, "f")
 
     def get_caption_for_item(self, item: Function) -> str:
@@ -170,7 +170,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
 
     def paint(self, painter, option, index) -> None:
         if index.column() == 0:
-            if option.state & QStyle.State_Selected:
+            if option.state & QStyle.StateFlag.State_Selected:
                 b = QBrush(option.palette.highlight())
                 painter.fillRect(option.rect, b)
 
@@ -183,7 +183,9 @@ class PaletteItemDelegate(QStyledItemDelegate):
             annotation_text = model.get_annotation_for_item(item)
             if annotation_text:
                 painter.drawText(
-                    option.rect.marginsRemoved(QMargins(3, 3, 3, 3)), Qt.AlignRight | Qt.AlignVCenter, annotation_text
+                    option.rect.marginsRemoved(QMargins(3, 3, 3, 3)),
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                    annotation_text,
                 )
 
             painter.save()
@@ -195,8 +197,8 @@ class PaletteItemDelegate(QStyledItemDelegate):
                 if icon_color:
                     painter.fillRect(icon_rect, QBrush(QColor(icon_color)))
                 if icon_text:
-                    painter.setPen(Qt.white)
-                    painter.drawText(icon_rect, Qt.AlignCenter, icon_text)
+                    painter.setPen(Qt.GlobalColor.white)
+                    painter.drawText(icon_rect, Qt.AlignmentFlag.AlignCenter, icon_text)
                 painter.translate(self.icon_width, 0)
 
             td.drawContents(painter)
@@ -272,9 +274,9 @@ class PaletteDialog(QDialog):
 
     def keyPressEvent(self, event) -> None:
         key = event.key()
-        if key in {Qt.Key_Up, Qt.Key_Down}:
+        if key in {Qt.Key.Key_Up, Qt.Key.Key_Down}:
             self._view.keyPressEvent(event)
-        elif key in {Qt.Key_Enter, Qt.Key_Return}:
+        elif key in {Qt.Key.Key_Enter, Qt.Key.Key_Return}:
             self.accept()
         else:
             super().keyPressEvent(event)

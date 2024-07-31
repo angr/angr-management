@@ -143,7 +143,7 @@ class LoadBinary(QDialog):
         dep_list: QListWidget = self.option_widgets["dep_list"]
         for dep in deps:
             dep_item = QListWidgetItem(dep)
-            dep_item.setData(Qt.CheckStateRole, Qt.Unchecked)
+            dep_item.setData(Qt.ItemDataRole.CheckStateRole, Qt.CheckState.Unchecked)
             dep_list.addItem(dep_item)
 
         if partial_ld.main_object is not None:
@@ -186,7 +186,7 @@ class LoadBinary(QDialog):
         filename = QLabel(self)
         filename.setText(self.filename)
 
-        layout.addWidget(filename_caption, 0, 0, Qt.AlignRight)
+        layout.addWidget(filename_caption, 0, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(filename, 0, 1)
 
         # md5
@@ -198,7 +198,7 @@ class LoadBinary(QDialog):
             md5.setText(self.md5)
             md5.setReadOnly(True)
 
-            layout.addWidget(md5_caption, 1, 0, Qt.AlignRight)
+            layout.addWidget(md5_caption, 1, 0, Qt.AlignmentFlag.AlignRight)
             layout.addWidget(md5, 1, 1)
 
         # sha256
@@ -210,7 +210,7 @@ class LoadBinary(QDialog):
             sha256.setText(self.sha256)
             sha256.setReadOnly(True)
 
-            layout.addWidget(sha256_caption, 2, 0, Qt.AlignRight)
+            layout.addWidget(sha256_caption, 2, 0, Qt.AlignmentFlag.AlignRight)
             layout.addWidget(sha256, 2, 1)
 
         # central tab
@@ -456,7 +456,7 @@ class LoadBinary(QDialog):
         dep_list: QListWidget = self.option_widgets["dep_list"]
         for i in range(dep_list.count()):
             item: QListWidgetItem = dep_list.item(i)
-            if item.checkState() == Qt.Checked:
+            if item.checkState() == Qt.CheckState.Checked:
                 force_load_libs.append(item.text())
             else:
                 skip_libs.add(item.text())

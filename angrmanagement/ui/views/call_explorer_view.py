@@ -102,7 +102,7 @@ class CallExplorerView(InstanceView):
         self._tree.setModel(self._model)
         self._tree.setFont(QFont(Conf.disasm_font))
         header = self._tree.header()
-        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self._tree.expanded.connect(self._on_item_expanded)
         self._tree.clicked.connect(self._on_item_clicked)
         self._tree.doubleClicked.connect(self._on_item_double_clicked)

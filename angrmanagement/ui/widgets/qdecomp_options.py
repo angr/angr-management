@@ -60,11 +60,11 @@ class QDecompilationOption(QTreeWidgetItem):
 
         # should make a boolean click option
         else:
-            self.setFlags(self.flags() | Qt.ItemIsUserCheckable)
+            self.setFlags(self.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             if enabled:
-                self.setCheckState(0, Qt.Checked)
+                self.setCheckState(0, Qt.CheckState.Checked)
             else:
-                self.setCheckState(0, Qt.Unchecked)
+                self.setCheckState(0, Qt.CheckState.Unchecked)
 
     @property
     def state(self):

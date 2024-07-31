@@ -23,7 +23,7 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
         self.simgr_viewer = simgr_viewer
         self.stash_name = stash_name
         super().__init__(simgr_viewer)
-        self.setFlags(self.flags() & ~Qt.ItemIsSelectable)
+        self.setFlags(self.flags() & ~Qt.ItemFlag.ItemIsSelectable)
         self.refresh()
 
     def __iter__(self):
@@ -132,7 +132,7 @@ class QSimulationManagerViewer(QTreeWidget):
         self._init_widgets()
 
         self.simgr.am_subscribe(self.refresh)
-        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
 
     def _stash_to_selected_states(self):
         stash_to_states = defaultdict(list)

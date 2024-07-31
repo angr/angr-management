@@ -40,3 +40,13 @@ ignore = [
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
+
+
+[tool.mypy]
+packages = ["angrmanagement", "tests"]
+exclude = [
+    "angrmanagement/vendor/",
+    "/build",
+    "/dist",
+]
+follow_imports = "silent"

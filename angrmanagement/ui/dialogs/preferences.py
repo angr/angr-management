@@ -135,7 +135,7 @@ class ThemeAndColors(Page):
 
         scheme_loader_layout = QHBoxLayout()
         color_scheme_lbl = QLabel("Load Theme:")
-        color_scheme_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        color_scheme_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         scheme_loader_layout.addWidget(color_scheme_lbl)
 
         self._schemes_combo = QComboBox(self)
@@ -210,7 +210,7 @@ class Style(Page):
         # Log format
         log_format_layout = QHBoxLayout()
         log_format_lbl = QLabel("Log datetime Format String:")
-        log_format_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        log_format_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         log_format_layout.addWidget(log_format_lbl)
 
         self.log_format_entry = QComboBox(self)
@@ -270,8 +270,8 @@ class Preferences(QDialog):
     def _init_widgets(self) -> None:
         # contents
         contents = QListWidget()
-        contents.setViewMode(QListView.ListMode)
-        contents.setMovement(QListView.Static)
+        contents.setViewMode(QListView.ViewMode.ListMode)
+        contents.setMovement(QListView.Movement.Static)
         # set the width to match the width of the content
         contents.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
 
@@ -295,7 +295,7 @@ class Preferences(QDialog):
         # buttons
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Close | QDialogButtonBox.StandardButton.Ok)
-        buttons.button(QDialogButtonBox.Ok).setText("Save")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Save")
         buttons.accepted.connect(self._on_ok_clicked)
         buttons.rejected.connect(self.close)
 

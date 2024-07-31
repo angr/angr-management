@@ -75,16 +75,16 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
             # Draw progress bar
             pbar_height = 3
             pbar_width = contentsRect.width() * max(0.0, min(self._progress, 1.0))
-            painter.setPen(Qt.transparent)
-            painter.setBrush(Qt.white)
+            painter.setPen(Qt.GlobalColor.transparent)
+            painter.setBrush(Qt.GlobalColor.white)
             painter.drawRect(QRectF(0, contentsRect.height() - pbar_height, pbar_width, pbar_height))
 
             # Draw version and status text
             pad = 6
             r = contentsRect.marginsRemoved(QMargins(pad, pad, pad, pad + pbar_height))
-            painter.setPen(Qt.white)
-            painter.drawText(r, Qt.AlignTop | Qt.AlignRight, __version__)
-            painter.drawText(r, Qt.AlignBottom | Qt.AlignLeft, self._progress_message)
+            painter.setPen(Qt.GlobalColor.white)
+            painter.drawText(r, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight, __version__)
+            painter.drawText(r, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft, self._progress_message)
 
     # Fix app title on macOS
     if sys.platform.startswith("darwin"):
@@ -109,12 +109,12 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     splashscreen_location = os.path.join(IMG_LOCATION, "angr-splash.png")
     splash_pixmap = QPixmap(splashscreen_location)
     current_screen = QGuiApplication.screenAt(QCursor.pos())
-    splash = SplashScreen(current_screen, splash_pixmap, Qt.WindowStaysOnTopHint)
+    splash = SplashScreen(current_screen, splash_pixmap, Qt.WindowType.WindowStaysOnTopHint)
     splash.setFixedSize(splash_pixmap.size())
 
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
     splash.setWindowIcon(QIcon(icon_location))
-    splash.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+    splash.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint)
     splash.setEnabled(False)
     splash.show()
     for _ in range(5):

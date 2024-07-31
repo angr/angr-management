@@ -33,7 +33,7 @@ class QBlockLabel(QCachedGraphicsItem):
         self._init_widgets()
 
     def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         painter.setFont(self._config.code_font)
 
         # background
@@ -48,7 +48,7 @@ class QBlockLabel(QCachedGraphicsItem):
     #
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.select_label(self.addr)
 
     #

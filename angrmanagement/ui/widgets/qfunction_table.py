@@ -172,7 +172,9 @@ class QFunctionTableModel(QAbstractTableModel):
     def sort(self, column, order) -> None:
         self.layoutAboutToBeChanged.emit()
         self.func_list = sorted(
-            self.func_list, key=lambda f: self._get_column_data(f, column), reverse=order == Qt.DescendingOrder
+            self.func_list,
+            key=lambda f: self._get_column_data(f, column),
+            reverse=order == Qt.SortOrder.DescendingOrder,
         )
         self.layoutChanged.emit()
 
@@ -275,7 +277,7 @@ class QFunctionTableHeaderView(QHeaderView):
     def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
         menu = QMenu("Column Menu", self)
         for idx in range(self.model().columnCount()):
-            column_text = self.model().headerData(idx, Qt.Orientation.Horizontal, Qt.DisplayRole)
+            column_text = self.model().headerData(idx, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
             action = QAction(column_text, self)
             action.setCheckable(True)
             hidden = self.isSectionHidden(idx)
@@ -313,7 +315,7 @@ class QFunctionTableView(QTableView):
         self.setHorizontalHeader(header)
         self.horizontalHeader().setVisible(True)
         self.verticalHeader().setVisible(False)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self.show_alignment_functions = False
@@ -323,9 +325,9 @@ class QFunctionTableView(QTableView):
 
         self.setModel(self._model)
 
-        self.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        self.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
         self.horizontalHeader().setSortIndicatorShown(True)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.horizontalHeader().setStretchLastSection(True)
         self.verticalHeader().setDefaultSectionSize(24)
 
@@ -414,7 +416,7 @@ class QFunctionTableFilterBox(QLineEdit):
         self.installEventFilter(self)
 
     def eventFilter(self, obj, event) -> bool:  # pylint:disable=unused-argument
-        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Escape:
             if self.text():
                 self.setText("")
             else:
@@ -528,7 +530,7 @@ class QFunctionTable(QWidget):
         self._filter_box = QFunctionTableFilterBox(self)
         self._filter_box.setClearButtonEnabled(True)
         self._filter_box.addAction(
-            qta.icon("fa5s.search", color=Conf.palette_placeholdertext), QLineEdit.LeadingPosition
+            qta.icon("fa5s.search", color=Conf.palette_placeholdertext), QLineEdit.ActionPosition.LeadingPosition
         )
         self._filter_box.setPlaceholderText("Filter by name...")
         self._filter_box.textChanged.connect(self._on_filter_box_text_changed)

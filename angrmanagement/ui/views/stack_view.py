@@ -44,7 +44,7 @@ class QStackTableModel(QAbstractTableModel):
     def headerData(
         self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.DisplayRole:
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
@@ -55,7 +55,7 @@ class QStackTableModel(QAbstractTableModel):
             return None
         row = index.row()
         col = index.column()
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(row, col)
         else:
             return None
@@ -90,8 +90,8 @@ class QStackTableWidget(QTableView):
         vheader.setVisible(False)
         vheader.setDefaultSectionSize(20)
 
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self.model: QStackTableModel = QStackTableModel(self)
         self.setModel(self.model)
@@ -99,7 +99,7 @@ class QStackTableWidget(QTableView):
         font = QFont(Conf.disasm_font)
         self.setFont(font)
 
-        hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
         self._dbg_manager = stack_view.instance.debugger_mgr
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtGui import Qt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QPlainTextEdit, QVBoxLayout
 
 
@@ -12,7 +12,7 @@ class AsmOutput(QDialog):
     def __init__(self, s: str, parent=None) -> None:
         super().__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
         self._edit: QPlainTextEdit = None
 

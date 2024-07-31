@@ -9,9 +9,8 @@ from pyqodeng.core.api.utils import drift_color
 from pyqodeng.core.panels import LineNumberPanel, Marker, MarkerPanel
 from pyqodeng.core.widgets import SplittableCodeEditTabWidget
 from PySide6.QtCore import QEvent, Qt
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QPainter, QPen
 from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
-from qtpy import QtCore, QtGui
 
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.views.view import InstanceView
@@ -45,15 +44,15 @@ class VaildLineNumberPanel(LineNumberPanel):
         Panel.paintEvent(self, event)
         if not self.isVisible():
             return
-        painter = QtGui.QPainter(self)
+        painter = QPainter(self)
         # get style options (font, size)
         width = self.width()
         height = self.editor.fontMetrics().height()
         font = self.editor.font()
         bold_font = self.editor.font()
         bold_font.setBold(True)
-        pen = QtGui.QPen(self._line_color_u)
-        pen_selected = QtGui.QPen(self._line_color_s)
+        pen = QPen(self._line_color_u)
+        pen_selected = QPen(self._line_color_s)
         painter.setFont(font)
         # draw every visible blocks
         for top, line, _block in self.editor.visible_blocks:
@@ -63,7 +62,7 @@ class VaildLineNumberPanel(LineNumberPanel):
             else:
                 painter.setPen(pen)
                 painter.setFont(font)
-            painter.drawText(-3, top, width, height, QtCore.Qt.AlignRight, str(line + 1))
+            painter.drawText(-3, top, width, height, Qt.AlignmentFlag.AlignRight, str(line + 1))
 
 
 class SourceCodeViewer(CodeEdit):
@@ -100,12 +99,12 @@ class SourceCodeViewer(CodeEdit):
         self.state_panel.updateState(state_counter)
 
     def add_find(self) -> None:
-        icon = self.style().standardIcon(QStyle.SP_FileDialogContentsView)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView)
         desc = self.viewer.add_point(self.file.path, self.current_line, "find")
         self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
     def add_avoid(self) -> None:
-        icon = self.style().standardIcon(QStyle.SP_BrowserStop)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserStop)
         desc = self.viewer.add_point(self.file.path, self.current_line, "avoid")
         self.breakpoint_panel.add_marker(Marker(self.current_line - 1, icon, desc))
 
@@ -145,10 +144,12 @@ class SourceCodeViewer(CodeEdit):
     def setHighlighter(self) -> None:
         self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
         QPlainTextEdit.setReadOnly(self, True)
-        self.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
+        self.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByKeyboard | Qt.TextInteractionFlag.TextSelectableByMouse
+        )
 
     def event(self, event):
-        if event.type() == QEvent.KeyPress and event.key() in (Qt.Key_Slash, Qt.Key_Question):
+        if event.type() == QEvent.Type.KeyPress and event.key() in (Qt.Key.Key_Slash, Qt.Key.Key_Question):
             event.accept()
             self.comment()
             return True
@@ -167,7 +168,7 @@ class SourceCodeViewer(CodeEdit):
         else:
             text, comment = text
             no_comment = False
-        new_comment, ok = QInputDialog.getText(None, "Comment", "Comment", QLineEdit.Normal, comment)
+        new_comment, ok = QInputDialog.getText(None, "Comment", "Comment", QLineEdit.EchoMode.Normal, comment)
         if not ok:
             return
         cursor.movePosition(cursor.EndOfLine, cursor.MoveAnchor)

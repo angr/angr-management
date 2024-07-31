@@ -62,10 +62,10 @@ class QVariable(QCachedGraphicsItem):
     #
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.toggle_variable_selection(
                 self.variable,
-                unique=QApplication.keyboardModifiers() != Qt.ControlModifier,
+                unique=QApplication.keyboardModifiers() != Qt.KeyboardModifier.ControlModifier,
             )
         else:
             super().mousePressEvent(event)

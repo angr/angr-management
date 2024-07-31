@@ -83,9 +83,9 @@ class LoadPlugins(QDialog):
         for _, desc in self._pm.loaded_plugins.items():
             plugin_item = QPluginListWidgetItem(plugin_desc=desc)
             if self._pm.get_plugin_instance_by_name(desc.shortname) is not None:
-                plugin_item.setCheckState(Qt.Checked)
+                plugin_item.setCheckState(Qt.CheckState.Checked)
             else:
-                plugin_item.setCheckState(Qt.Unchecked)
+                plugin_item.setCheckState(Qt.CheckState.Unchecked)
             self._installed_plugin_list.addItem(plugin_item)
 
     def _init_widgets(self) -> None:
@@ -107,9 +107,9 @@ class LoadPlugins(QDialog):
     #
 
     def _on_ok_clicked(self) -> None:
-        list_items: list[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchWildcard)
+        list_items: list[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchFlag.MatchWildcard)
         for i in list_items:
-            checked = i.checkState() == Qt.Checked
+            checked = i.checkState() == Qt.CheckState.Checked
 
             if checked and self._pm.get_plugin_instance_by_name(i.plugin_desc.shortname) is None:
                 self._pm.activate_plugin_by_name(i.plugin_desc.shortname)
@@ -133,6 +133,6 @@ class LoadPlugins(QDialog):
 
         for plugin in plugins:
             plugin_item = QPluginListWidgetItem(plugin_desc=plugin)
-            plugin_item.setCheckState(Qt.Unchecked)
+            plugin_item.setCheckState(Qt.CheckState.Unchecked)
             self._pm.loaded_plugins[plugin.shortname] = plugin
             self._installed_plugin_list.addItem(plugin_item)

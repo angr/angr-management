@@ -17,7 +17,7 @@ class LoadDockerPrompt(QInputDialog):
         super().__init__(parent)
 
         self.setComboBoxItems(get_docker_images(self))
-        self.setOption(QInputDialog.UsePlainTextEditForTextInput, True)
+        self.setOption(QInputDialog.InputDialogOption.UsePlainTextEditForTextInput, True)
         self.setLabelText("Select a docker target")
         self.setComboBoxEditable(False)
         self.setModal(True)

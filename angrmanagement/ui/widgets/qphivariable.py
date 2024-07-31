@@ -7,6 +7,9 @@ from PySide6.QtCore import QRectF, Qt
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
+    from PySide6.QtGui import QPainter
+    from PySide6.QtWidgets import QStyleOptionGraphicsItem, QWidget
+
     from angrmanagement.data.instance import Instance
 
 
@@ -50,7 +53,9 @@ class QPhiVariable(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(
+        self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None
+    ) -> None:  # pylint: disable=unused-argument
         if self.disasm_view.show_variable_identifier is False:
             # Phi variables are not displayed if variable identifies are hidden
             return
@@ -60,37 +65,37 @@ class QPhiVariable(QCachedGraphicsItem):
         painter.setFont(self._config.disasm_font)
 
         # variable name
-        painter.setPen(Qt.darkGreen)
+        painter.setPen(Qt.GlobalColor.darkGreen)
         painter.drawText(x, self._config.disasm_font_ascent, self._variable_name)
         x += self._variable_name_width
 
         # variable ident
         if self.disasm_view.show_variable_identifier:
             x += self.IDENT_LEFT_PADDING
-            painter.setPen(Qt.blue)
+            painter.setPen(Qt.GlobalColor.blue)
             painter.drawText(x, self._config.disasm_font_ascent, self._variable_ident)
             x += self._variable_ident_width
 
         # The equal sign
-        painter.setPen(Qt.black)
+        painter.setPen(Qt.GlobalColor.black)
         painter.drawText(x, self._config.disasm_font_ascent, " = ")
         x += self._config.disasm_font_width * 3
-        painter.setPen(Qt.darkGreen)
+        painter.setPen(Qt.GlobalColor.darkGreen)
         painter.drawText(x, self._config.disasm_font_ascent, "\u0278(")
         x += self._config.disasm_font_width * 2
 
         for i, (subvar_ident, ident_width) in enumerate(
             zip(self._subvar_idents, self._subvar_ident_widths, strict=False)
         ):
-            painter.setPen(Qt.darkGreen)
+            painter.setPen(Qt.GlobalColor.darkGreen)
             painter.drawText(x, self._config.disasm_font_ascent, subvar_ident)
             x += ident_width
             if i != len(self._subvar_idents) - 1:
-                painter.setPen(Qt.black)
+                painter.setPen(Qt.GlobalColor.black)
                 painter.drawText(x, self._config.disasm_font_ascent, ", ")
                 x += 2 + self._config.disasm_font_width
 
-        painter.setPen(Qt.darkGreen)
+        painter.setPen(Qt.GlobalColor.darkGreen)
         painter.drawText(x, self._config.disasm_font_ascent, ")")
 
     def refresh(self) -> None:

@@ -77,16 +77,21 @@ class QInstruction(QCachedGraphicsItem):
         if self.disasm_view.workspace.plugins.handle_click_insn(self, event):
             # stop handling this event if the event has been handled by a plugin
             event.accept()
-        elif event.button() == Qt.LeftButton and QApplication.keyboardModifiers() in (
-            Qt.NoModifier,
-            Qt.ControlModifier,
+        elif event.button() == Qt.MouseButton.LeftButton and QApplication.keyboardModifiers() in (
+            Qt.KeyboardModifier.NoModifier,
+            Qt.KeyboardModifier.ControlModifier,
         ):
             # toggle selection
             self.infodock.toggle_instruction_selection(
-                self.addr, insn_pos=self.scenePos(), unique=QApplication.keyboardModifiers() != Qt.ControlModifier
+                self.addr,
+                insn_pos=self.scenePos(),
+                unique=QApplication.keyboardModifiers() != Qt.KeyboardModifier.ControlModifier,
             )
             event.accept()
-        elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
+        elif (
+            event.button() == Qt.MouseButton.RightButton
+            and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier
+        ):
             if self.addr not in self.infodock.selected_insns:
                 self.infodock.toggle_instruction_selection(self.addr, insn_pos=self.scenePos(), unique=True)
             self.disasm_view.instruction_context_menu(self.insn, QCursor.pos())
@@ -152,7 +157,7 @@ class QInstruction(QCachedGraphicsItem):
             self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
 
     def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
 
         # background color
         backcolor = self._calc_backcolor()

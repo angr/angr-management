@@ -34,9 +34,9 @@ class ToolbarManager:
             self.active[cls] = tb
             qtb = tb.qtoolbar()
             if isinstance(qtb, QDockWidget):
-                self._main_window.addDockWidget(Qt.TopDockWidgetArea, qtb)
+                self._main_window.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, qtb)
             else:
-                self._main_window.addToolBar(Qt.TopToolBarArea, qtb)
+                self._main_window.addToolBar(Qt.ToolBarArea.TopToolBarArea, qtb)
         else:
             self.active[cls].qtoolbar().show()
 

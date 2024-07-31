@@ -23,11 +23,11 @@ class ToolBarHandle(QWidget):
         opt = QStyleOptionToolBar()
         style = self.style()
         if self.orientation:
-            opt.state = QStyle.State_Horizontal
-        opt.features = QStyleOptionToolBar.Movable
-        opt.toolBarArea = Qt.NoToolBarArea
+            opt.state = QStyle.StateFlag.State_Horizontal
+        opt.features = QStyleOptionToolBar.ToolBarFeature.Movable
+        opt.toolBarArea = Qt.ToolBarArea.NoToolBarArea
         opt.rect = r
-        style.drawPrimitive(QStyle.PE_IndicatorToolBarHandle, opt, painter, self)
+        style.drawPrimitive(QStyle.PrimitiveElement.PE_IndicatorToolBarHandle, opt, painter, self)
         painter.end()
 
     def sizeHint(self):

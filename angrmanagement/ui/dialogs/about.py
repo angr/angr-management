@@ -17,7 +17,7 @@ class LoadAboutDialog(QDialog):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowFlags(Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+        self.setWindowFlags(Qt.WindowType.WindowTitleHint | Qt.WindowType.WindowCloseButtonHint)
         self.setWindowTitle("About")
         # mdiIcon
         angr_icon_location = os.path.join(IMG_LOCATION, "angr.png")
@@ -32,16 +32,16 @@ class LoadAboutDialog(QDialog):
         icon_label.setPixmap(angr_icon)
         # textbox
         angr_text = QLabel("angr")
-        angr_text.setFont(QFont("Consolas", 24, weight=QFont.Bold))
+        angr_text.setFont(QFont("Consolas", 24, weight=QFont.Weight.Bold))
         version_text_tup = "Version: " + angrmanagement.__version__
         version_text = QLabel(version_text_tup)
-        version_text.setFont(QFont("Consolas", weight=QFont.Bold))
-        version_text.setAlignment(Qt.AlignCenter)
-        version_text.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        version_text.setFont(QFont("Consolas", weight=QFont.Weight.Bold))
+        version_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        version_text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         credits_text = QLabel('<a href="http://angr.io/">Credits</a>')
-        credits_text.setFont(QFont("Consolas", weight=QFont.Bold))
-        credits_text.setTextFormat(Qt.RichText)
-        credits_text.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        credits_text.setFont(QFont("Consolas", weight=QFont.Weight.Bold))
+        credits_text.setTextFormat(Qt.TextFormat.RichText)
+        credits_text.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         credits_text.setOpenExternalLinks(True)
 
         structure = QVBoxLayout()

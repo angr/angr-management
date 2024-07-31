@@ -52,8 +52,8 @@ class QPatchTable(QTableWidget):
 
         self.setColumnCount(len(self.HEADER))
         self.setHorizontalHeaderLabels(self.HEADER)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.verticalHeader().setVisible(False)
 
         self.items = []
@@ -124,10 +124,10 @@ class QPatchTable(QTableWidget):
         dlg = QMessageBox()
         dlg.setWindowTitle("Revert patches")
         dlg.setText("Are you sure you want to revert selected patches?")
-        dlg.setIcon(QMessageBox.Question)
-        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-        dlg.setDefaultButton(QMessageBox.Cancel)
-        if dlg.exec_() != QMessageBox.Yes:
+        dlg.setIcon(QMessageBox.Icon.Question)
+        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        dlg.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if dlg.exec_() != QMessageBox.StandardButton.Yes:
             return
 
         selected_patches = self.get_selected_patches()

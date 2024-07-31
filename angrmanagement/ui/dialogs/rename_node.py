@@ -61,7 +61,7 @@ class RenameNode(QDialog):
         super().__init__(parent)
 
         # initialization
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
         self._code_view = code_view
         self._node = node
@@ -143,7 +143,7 @@ class RenameNode(QDialog):
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self._on_ok_clicked)
         buttons.rejected.connect(self.close)
-        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
         self._ok_button.setEnabled(False)
         self.main_layout.addWidget(buttons)
 

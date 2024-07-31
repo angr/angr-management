@@ -11,10 +11,10 @@ class QFileSystemTable(QTableWidget):
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
-        self.setSelectionBehavior(QAbstractItemView.SelectItems)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         header = self.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
         self.setRowCount(len(items))
         for idx, item in enumerate(items):

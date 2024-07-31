@@ -130,13 +130,13 @@ class QOperand(QCachedGraphicsItem):
     #
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             selected = self.infodock.toggle_operand_selection(
                 self.insn.addr,
                 self.operand_index,
                 self.operand_descriptor,
                 insn_pos=self.parentItem().scenePos(),
-                unique=QApplication.keyboardModifiers() != Qt.ControlModifier,
+                unique=QApplication.keyboardModifiers() != Qt.KeyboardModifier.ControlModifier,
             )
             if selected:
                 # select the current instruction, too
@@ -146,7 +146,7 @@ class QOperand(QCachedGraphicsItem):
 
     def mouseDoubleClickEvent(self, event) -> None:
         button = event.button()
-        if button == Qt.LeftButton:
+        if button == Qt.MouseButton.LeftButton:
             if self._branch_target is not None:
                 self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr, use_animation=True)
                 return

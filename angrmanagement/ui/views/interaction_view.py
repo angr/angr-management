@@ -272,7 +272,7 @@ class InteractionView(InstanceView):
                 "Please specify the name of a local Docker image that you will interact with. "
                 'You can run "docker images" in a terminal to see all available Docker '
                 "images on your local machine.",
-                QLineEdit.Normal,
+                QLineEdit.EchoMode.Normal,
                 text="" if not self._last_img_name else self._last_img_name,
             )
             if not ok or not img_name:
@@ -368,7 +368,9 @@ class InteractionView(InstanceView):
         save_text = QtWidgets.QLineEdit(box_save)
         save_text.setText("my_interaction")
         save_text.setPlaceholderText("Interaction Name")
-        save_text.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed))
+        save_text.setSizePolicy(
+            QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Fixed)
+        )
         box_save.layout().addWidget(save_text)
         self.widget_text_savename = save_text
 
@@ -407,7 +409,7 @@ class SmartPlainTextEdit(QtWidgets.QPlainTextEdit):
         self._callback = callback
 
     def keyPressEvent(self, event) -> None:
-        if event.key() == QtCore.Qt.Key_Return and event.modifiers() != QtCore.Qt.ShiftModifier:
+        if event.key() == QtCore.Qt.Key.Key_Return and event.modifiers() != QtCore.Qt.KeyboardModifier.ShiftModifier:
             self._callback()
             return
         super().keyPressEvent(event)

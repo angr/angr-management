@@ -252,7 +252,7 @@ class PreciseDiffPlugin(BasePlugin):
 
         # Move the cursor to the start position and select the text range
         cursor.setPosition(start)
-        cursor.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, length)
+        cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor, length)
 
         # Create a QTextCharFormat and set the background color
         char_format = QTextCharFormat()

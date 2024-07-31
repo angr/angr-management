@@ -178,7 +178,7 @@ class CodeView(FunctionView):
             sel = QTextEdit.ExtraSelection()
             sel.cursor = self._textedit.textCursor()
             sel.cursor.setPosition(start)
-            sel.cursor.setPosition(end, QTextCursor.KeepAnchor)
+            sel.cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
             sel.format.setBackground(Conf.pseudocode_highlight_color)
             extra_selections.append(sel)
         self._textedit.setExtraSelections(extra_selections)
@@ -464,11 +464,13 @@ class CodeView(FunctionView):
 
     def _init_widgets(self) -> None:
         window = QMainWindow()
-        window.setWindowFlags(Qt.Widget)
+        window.setWindowFlags(Qt.WindowType.Widget)
 
         # pseudo code text box
         self._textedit = QCCodeEdit(self)
-        self._textedit.setTextInteractionFlags(Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
+        self._textedit.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByKeyboard | Qt.TextInteractionFlag.TextSelectableByMouse
+        )
         self._textedit.setLineWrapMode(QCCodeEdit.NoWrap)
         self._textedit.background = Conf.palette_base
         window.setCentralWidget(self._textedit)
@@ -476,7 +478,7 @@ class CodeView(FunctionView):
         # decompilation options
         self._options = QDecompilationOptions(self, self.instance)
         options_dock = QDockWidget("Decompilation Options", self._options)
-        window.addDockWidget(Qt.RightDockWidgetArea, options_dock)
+        window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
         options_dock.setVisible(False)
 

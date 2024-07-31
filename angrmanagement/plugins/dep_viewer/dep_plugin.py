@@ -21,7 +21,7 @@ class DependencyViewer(BasePlugin):
         self.transitions: set[tuple[int, int]] = set()
         self.covered_blocks = SortedDict()
 
-        self.sink_color = Qt.yellow
+        self.sink_color = Qt.GlobalColor.yellow
 
     def color_insn(self, addr: int, selected, disasm_view) -> QColor | None:
         if not selected:

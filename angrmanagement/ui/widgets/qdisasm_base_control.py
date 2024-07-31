@@ -85,11 +85,11 @@ class QDisassemblyBaseControl:
     def keyPressEvent(self, event) -> None:
         key = event.key()
 
-        if key == Qt.Key_N:
+        if key == Qt.Key.Key_N:
             # rename a label
             self.disasm_view.popup_rename_label_dialog()
             return
-        elif key == Qt.Key_X:
+        elif key == Qt.Key.Key_X:
             # XRef
             # try to get a selected operand
             r = self.get_selected_operand_info()

@@ -27,7 +27,7 @@ class QColorOption(QWidget):
         dialog = QColorDialog()
         dialog.setCurrentColor(self.color.am_obj)
         dialog.exec()
-        if dialog.result() == QColorDialog.Accepted:
+        if dialog.result() == QColorDialog.DialogCode.Accepted:
             self.set_color(dialog.currentColor())
 
     def _init_widgets(self) -> None:

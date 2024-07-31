@@ -129,9 +129,9 @@ class DataDepView(InstanceView):
         self._data_dep_graph = data_dep.graph
         self.reload()
 
-    def hover_enter_block(self, block: QDataDepGraphBlock, modifiers: QtCore.Qt.KeyboardModifierMask) -> None:
+    def hover_enter_block(self, block: QDataDepGraphBlock, modifiers: QtCore.Qt.KeyboardModifier) -> None:
         # If the user is holding down 'Control' while hovering, should show descendants instead
-        if modifiers & QtCore.Qt.ControlModifier:
+        if modifiers & QtCore.Qt.KeyboardModifier.ControlModifier:
             self._traced_descendants = self._graph_widget.get_descendants(block)
         else:
             self._traced_ancestors = self._graph_widget.get_ancestors(block)
@@ -250,7 +250,7 @@ class DataDepView(InstanceView):
         key = event.key()
         modifiers = event.modifiers()
 
-        if key == QtCore.Qt.Key_F and modifiers & QtCore.Qt.ControlModifier:
+        if key == QtCore.Qt.Key.Key_F and modifiers & QtCore.Qt.KeyboardModifier.ControlModifier:
             # User would like to search
             search_dialog = QDataDepGraphSearch(self, self.graph_widget)
             search_dialog.setModal(False)
@@ -261,7 +261,7 @@ class DataDepView(InstanceView):
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         button = event.button()
 
-        if button == QtCore.Qt.RightButton and event:
+        if button == QtCore.Qt.MouseButton.RightButton and event:
             options_menu = QtWidgets.QMenu("Options", self)
             if self._data_dep_graph is self._data_dep.graph:
                 toggle_text = "Hide temp nodes"

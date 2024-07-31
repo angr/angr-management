@@ -79,7 +79,7 @@ class QXRefModel(QAbstractTableModel):
         self.xrefs = sorted(
             self.xrefs,
             key=lambda x: self._get_column_data(x, column),
-            reverse=order == Qt.DescendingOrder,
+            reverse=order == Qt.SortOrder.DescendingOrder,
         )
         self.layoutChanged.emit()
 
@@ -269,11 +269,11 @@ class QXRefViewer(QTableView):
         super().__init__(parent)
 
         self.verticalHeader().setVisible(False)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.setShowGrid(False)
 
-        self.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         self.verticalHeader().setDefaultSectionSize(24)
 
         self._instance = instance
@@ -312,11 +312,11 @@ class QXRefViewer(QTableView):
             self.setColumnWidth(idx, width)
 
         self.setSortingEnabled(True)
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
         hheader = self.horizontalHeader()
         hheader.setStretchLastSection(True)
-        hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
         self.doubleClicked.connect(self._on_item_doubleclicked)
 

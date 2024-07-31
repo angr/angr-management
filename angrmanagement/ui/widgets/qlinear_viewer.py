@@ -37,13 +37,13 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 
         self.area: QLinearDisassembly = area
         self._scene = QGraphicsScene(0, 0, self.width(), self.height())
-        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.setScene(self._scene)
-        self.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
 
         # Do not use the scrollbars since they are hard-linked to the size of the scene, which is bad for us
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     def wheelEvent(self, event) -> None:
         self.area.wheelEvent(event)
@@ -68,8 +68,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         QDisassemblyBaseControl.__init__(self, instance, disasm_view, QAbstractScrollArea)
         QAbstractScrollArea.__init__(self, parent=parent)
 
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.horizontalScrollBar().setSingleStep(Conf.disasm_font_width)
         self.verticalScrollBar().setSingleStep(16)
 
@@ -177,31 +177,31 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         """
         Redraw on color scheme update.
         """
-        if event.type() == QEvent.PaletteChange:
+        if event.type() == QEvent.Type.PaletteChange:
             self.reload()
 
     def _on_vertical_scroll_bar_triggered(self, action) -> None:
         action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
 
-        if action == QAbstractSlider.SliderSingleStepAdd:
+        if action == QAbstractSlider.SliderAction.SliderSingleStepAdd:
             # scroll down by one line
             self.prepare_objects(self.offset, start_line=self._start_line_in_object + 1)
             self.viewport().update()
-        elif action == QAbstractSlider.SliderSingleStepSub:
+        elif action == QAbstractSlider.SliderAction.SliderSingleStepSub:
             # Scroll up by one line
             self.prepare_objects(self.offset, start_line=self._start_line_in_object - 1)
             self.viewport().update()
-        elif action == QAbstractSlider.SliderPageStepAdd:
+        elif action == QAbstractSlider.SliderAction.SliderPageStepAdd:
             # Scroll down by one page
             lines_per_page = int(self.height() // self._line_height)
             self.prepare_objects(self.offset, start_line=self._start_line_in_object + lines_per_page)
             self.viewport().update()
-        elif action == QAbstractSlider.SliderPageStepSub:
+        elif action == QAbstractSlider.SliderAction.SliderPageStepSub:
             # Scroll up by one page
             lines_per_page = int(self.height() // self._line_height)
             self.prepare_objects(self.offset, start_line=self._start_line_in_object - lines_per_page)
             self.viewport().update()
-        elif action == QAbstractSlider.SliderMove:
+        elif action == QAbstractSlider.SliderAction.SliderMove:
             # Setting a new offset
             new_offset = int(self.verticalScrollBar().value() // self._line_height)
             self.prepare_objects(new_offset)

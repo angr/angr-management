@@ -113,8 +113,10 @@ class FeatureMapItem(QGraphicsItem):
         super().__init__(*args, **kwargs)
         self.instance = instance
 
-        self.setFlag(QGraphicsItem.ItemUsesExtendedStyleOption, True)  # Give me more specific paint update rect info
-        self.setFlag(QGraphicsItem.ItemClipsToShape, True)
+        self.setFlag(
+            QGraphicsItem.GraphicsItemFlag.ItemUsesExtendedStyleOption, True
+        )  # Give me more specific paint update rect info
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
         self.setAcceptHoverEvents(True)
 
         self.addr = ObjectContainer(None, name="The current address of the Feature Map.")
@@ -362,7 +364,7 @@ class FeatureMapItem(QGraphicsItem):
 
     def paint(self, painter, option, _) -> None:
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(Qt.green if log.level == logging.DEBUG else Conf.feature_map_unknown_color)
+        painter.setBrush(Qt.GlobalColor.green if log.level == logging.DEBUG else Conf.feature_map_unknown_color)
         painter.drawRect(option.exposedRect)
 
         if not len(self._position_to_region):
@@ -499,7 +501,7 @@ class FeatureMapItem(QGraphicsItem):
         arrow.append(QPointF(0 - half_line_width, 0))
         arrow.translate(half_width, 0)
 
-        pen = Qt.NoPen
+        pen = Qt.PenStyle.NoPen
         brush = QBrush(Qt.GlobalColor.yellow)
 
         for addr in self._cursor_addrs:
@@ -508,7 +510,7 @@ class FeatureMapItem(QGraphicsItem):
                 continue
 
             item = QGraphicsPolygonItem(arrow, parent=self)
-            item.setCacheMode(QGraphicsItem.ItemCoordinateCache)
+            item.setCacheMode(QGraphicsItem.CacheMode.ItemCoordinateCache)
             item.setPen(pen)
             item.setBrush(brush)
             item.setZValue(self.ZVALUE_CURSOR)

@@ -31,7 +31,7 @@ class QCTypeDef(QWidget):
         self.highlight = None  # which line should be highlighted
         self.all_types = all_types
 
-        self.setAttribute(Qt.WA_Hover)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover)
         self.setMouseTracking(True)
 
         self.refresh()

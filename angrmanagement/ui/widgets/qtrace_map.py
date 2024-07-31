@@ -142,7 +142,7 @@ class TraceMapItem(QGraphicsItem):
         return QRectF(x, 0, width, self._height)
 
     def _create_line_indicator(
-        self, addr: int, item_map, color=Qt.yellow, show_frontier: bool = False, z=None, z_frontier=None
+        self, addr: int, item_map, color=Qt.GlobalColor.yellow, show_frontier: bool = False, z=None, z_frontier=None
     ) -> None:
         """
         Generate a cursor at a given address.
@@ -167,7 +167,7 @@ class TraceMapItem(QGraphicsItem):
             # Draw frontier gradients
             r = QRectF(center - frontier_width, pos_y, frontier_width, height)
             bg = QLinearGradient(r.topLeft(), r.topRight())
-            color = Qt.red
+            color = Qt.GlobalColor.red
             top_color = QColor(color)
             top_color.setAlpha(0)
             bg.setColorAt(0, top_color)
@@ -176,7 +176,7 @@ class TraceMapItem(QGraphicsItem):
             bg.setColorAt(1, bottom_color)
 
             i = QGraphicsRectItem(r, parent=self)
-            i.setPen(Qt.NoPen)
+            i.setPen(Qt.PenStyle.NoPen)
             i.setBrush(bg)
             if z_frontier is not None:
                 i.setZValue(z_frontier)
@@ -184,7 +184,7 @@ class TraceMapItem(QGraphicsItem):
 
             r = QRectF(center, pos_y, frontier_width, height)
             bg = QLinearGradient(r.topLeft(), r.topRight())
-            color = Qt.blue
+            color = Qt.GlobalColor.blue
             top_color = QColor(color)
             bg.setColorAt(0, top_color)
             bottom_color = QColor(color)
@@ -192,7 +192,7 @@ class TraceMapItem(QGraphicsItem):
             bg.setColorAt(1, bottom_color)
 
             i = QGraphicsRectItem(r, parent=self)
-            i.setPen(Qt.NoPen)
+            i.setPen(Qt.PenStyle.NoPen)
             i.setBrush(bg)
             if z_frontier is not None:
                 i.setZValue(z_frontier)
@@ -235,7 +235,7 @@ class TraceMapItem(QGraphicsItem):
             scene.removeItem(item)
         self._checkpoint_items.clear()
 
-        color = QColor(Qt.green)
+        color = QColor(Qt.GlobalColor.green)
 
         for checkpoint_addr in self._checkpoints:
             self._create_line_indicator(checkpoint_addr, self._checkpoint_items, color=color, z=self.ZVALUE_CHECKPOINT)
@@ -261,7 +261,9 @@ class TraceMapItem(QGraphicsItem):
         self._hover_items.clear()
 
         if self._hover_addr is not None:
-            self._create_line_indicator(self._hover_addr, self._hover_items, color=Qt.gray, z=self.ZVALUE_HOVER)
+            self._create_line_indicator(
+                self._hover_addr, self._hover_items, color=Qt.GlobalColor.gray, z=self.ZVALUE_HOVER
+            )
 
     def _remove_hover_indicators(self) -> None:
         """
@@ -272,14 +274,14 @@ class TraceMapItem(QGraphicsItem):
             self._gen_hover_indicator()
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             pos = event.pos()
             offset = pos.x()
             self.select_offset(offset)
             self._pressed = True
 
     def mouseReleaseEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._pressed = False
 
     def mouseMoveEvent(self, event) -> None:
@@ -325,8 +327,8 @@ class QTraceMapView(QGraphicsView):
     def __init__(self, instance: Instance, parent=None) -> None:
         super().__init__(parent)
         self.instance = instance
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setMouseTracking(True)
         self._scene = QGraphicsScene(parent=self)
         self.setScene(self._scene)
@@ -337,9 +339,9 @@ class QTraceMapView(QGraphicsView):
         self._base_width: int = 0
 
         self.setBackgroundBrush(Conf.palette_base)
-        self.setResizeAnchor(QGraphicsView.NoAnchor)
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.update_size()
 
     def mouseMoveEvent(self, event) -> None:
@@ -358,7 +360,7 @@ class QTraceMapView(QGraphicsView):
         """
         Handle wheel events to scale and translate the trace map.
         """
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier:
             self.adjust_viewport_scale(
                 1.25 if event.angleDelta().y() > 0 else 1 / 1.25, QPoint(event.position().x(), event.position().y())
             )
@@ -392,16 +394,16 @@ class QTraceMapView(QGraphicsView):
         """
         Handle key events.
         """
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            if event.key() == Qt.Key_0:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier:
+            if event.key() == Qt.Key.Key_0:
                 self.adjust_viewport_scale()
                 event.accept()
                 return
-            elif event.key() == Qt.Key_Equal:
+            elif event.key() == Qt.Key.Key_Equal:
                 self.adjust_viewport_scale(1.25)
                 event.accept()
                 return
-            elif event.key() == Qt.Key_Minus:
+            elif event.key() == Qt.Key.Key_Minus:
                 self.adjust_viewport_scale(1 / 1.25)
                 event.accept()
                 return
@@ -411,7 +413,7 @@ class QTraceMapView(QGraphicsView):
         """
         Redraw on color scheme update.
         """
-        if event.type() == QEvent.StyleChange:
+        if event.type() == QEvent.Type.StyleChange:
             self.setBackgroundBrush(Conf.palette_base)
             self.fm.refresh()
 

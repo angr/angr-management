@@ -46,7 +46,7 @@ class QTraceTableModel(QAbstractTableModel):
     def headerData(
         self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.DisplayRole:
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
@@ -59,7 +59,7 @@ class QTraceTableModel(QAbstractTableModel):
         if row >= len(self.instance.traces):
             return None
         col = index.column()
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(self.instance.traces[row], col)
         else:
             return None
@@ -88,13 +88,13 @@ class QTraceTableWidget(QTableView):
         vheader.setVisible(False)
         vheader.setDefaultSectionSize(20)
 
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self.model: QTraceTableModel = QTraceTableModel(instance)
         self.setModel(self.model)
 
-        hheader.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
     #
     # Events

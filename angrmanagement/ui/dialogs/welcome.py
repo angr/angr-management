@@ -39,7 +39,7 @@ class WelcomeDialog(QDialog):
         banner_pixmap = QPixmap(os.path.join(IMG_LOCATION, "angr-splash.png"))
         banner_view = QGraphicsView(self)
         banner_view.setContentsMargins(0, 0, 0, 0)
-        banner_view.setFrameStyle(QFrame.NoFrame)
+        banner_view.setFrameStyle(QFrame.Shape.NoFrame)
         banner_view.resize(banner_pixmap.size())
         banner_scene = QGraphicsScene()
         banner_view.setScene(banner_scene)
@@ -47,7 +47,7 @@ class WelcomeDialog(QDialog):
         font = QApplication.font()
         font.setPointSizeF(9.0)
         ti = banner_scene.addSimpleText(__version__, font)
-        ti.setBrush(Qt.white)
+        ti.setBrush(Qt.GlobalColor.white)
         ti.moveBy(pi.boundingRect().width() - ti.boundingRect().width() - 6, 6)
 
         # Recent files

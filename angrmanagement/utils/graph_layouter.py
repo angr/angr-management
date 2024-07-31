@@ -26,11 +26,11 @@ class EdgeRouter:
         self._max_col = max_col
 
         # Mark whether a spot (col, row) is valid or not for putting edges.
-        self._edge_valid = None
+        self._edge_valid = []
         # A map between spots (col, row) and all vertical edges at that spot.
-        self.vertical_edges = None
+        self.vertical_edges = []
         # A map between spots (col, row) and all horizontal edges at that spot.
-        self.horizontal_edges = None
+        self.horizontal_edges = []
 
         self._in_edges = defaultdict(list)
         self._out_edges = defaultdict(list)

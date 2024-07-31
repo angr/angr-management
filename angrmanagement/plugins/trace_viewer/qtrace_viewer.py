@@ -108,8 +108,8 @@ class QTraceViewer(QWidget):
         self.listView = QTableWidget(0, 2)  # row, col
         self.listView.setHorizontalHeaderItem(0, QTableWidgetItem("Trace ID"))
         self.listView.setHorizontalHeaderItem(1, QTableWidgetItem("Input ID"))
-        self.listView.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.listView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.listView.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.listView.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         # self.listView.horizontalHeader().setStretchLastSection(True)
         # self.listView.horizontalHeader().setSectionResizeModel(0, QHeaderView.Stretch)
         self.listView.cellClicked.connect(self._switch_current_trace)
@@ -125,9 +125,9 @@ class QTraceViewer(QWidget):
         self.multiView = QWidget()
         multiLayout = QVBoxLayout()
         self.multiTraceList = QTableWidget(0, 2)  # row, col
-        self.multiTraceList.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.multiTraceList.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.multiTraceList.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.multiTraceList.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
+        self.multiTraceList.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.multiTraceList.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.multiTraceList.setHorizontalHeaderItem(0, QTableWidgetItem("Trace ID"))
         self.multiTraceList.setHorizontalHeaderItem(1, QTableWidgetItem("Input ID"))
         self.selectMultiTrace = QPushButton("Refresh Heatmap")
@@ -148,7 +148,7 @@ class QTraceViewer(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.view)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setAlignment(self.view, Qt.AlignLeft)
+        layout.setAlignment(self.view, Qt.AlignmentFlag.AlignLeft)
 
         self.setLayout(layout)
 
@@ -177,7 +177,7 @@ class QTraceViewer(QWidget):
         msgbox.setWindowTitle("Seed Input")
         msgbox.setDetailedText(msgDetails)
         msgbox.setText(msgText)
-        msgbox.setStandardButtons(QMessageBox.Ok)
+        msgbox.setStandardButtons(QMessageBox.StandardButton.Ok)
         msgbox.exec()
 
     def _switch_current_trace(self, row) -> None:
@@ -367,12 +367,12 @@ class QTraceViewer(QWidget):
     def eventFilter(self, obj, event) -> bool:  # specifically to catch arrow keys #pylint: disable=unused-argument
         # more elegant solution to link w/ self.view's scroll bar keypressevent?
         if event.type() == QEvent.Type.KeyPress:
-            if not event.modifiers() & Qt.ShiftModifier:  # shift + arrowkeys
+            if not event.modifiers() & Qt.KeyboardModifier.ShiftModifier:  # shift + arrowkeys
                 return False
             key = event.key()
-            if key in [Qt.Key_Up, Qt.Key_Left]:
+            if key in [Qt.Key.Key_Up, Qt.Key.Key_Left]:
                 self.jump_prev_insn()
-            elif key in [Qt.Key_Down, Qt.Key_Right]:
+            elif key in [Qt.Key.Key_Down, Qt.Key.Key_Right]:
                 self.jump_next_insn()
             return True
 
@@ -381,7 +381,11 @@ class QTraceViewer(QWidget):
     def mousePressEvent(self, event) -> None:
         button = event.button()
         pos = self._to_logical_pos(event.pos())
-        if button == Qt.LeftButton and self.view.currentIndex() == self.SINGLE_TRACE and self._at_legend(pos):
+        if (
+            button == Qt.MouseButton.LeftButton
+            and self.view.currentIndex() == self.SINGLE_TRACE
+            and self._at_legend(pos)
+        ):
             func = self._get_func_from_y(pos.y())
             bbl_addr = self._get_bbl_from_y(pos.y())
             self._use_precise_position = True
@@ -458,7 +462,7 @@ class QTraceViewer(QWidget):
         return gradient
 
     def _show_legend(self) -> None:
-        pen = QPen(Qt.transparent)
+        pen = QPen(Qt.GlobalColor.transparent)
 
         gradient = self._make_legend_gradient(
             self.LEGEND_X, self.LEGEND_Y, self.LEGEND_X, self.LEGEND_Y + self.legend_height

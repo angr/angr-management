@@ -22,7 +22,7 @@ class FuncDocDialog(QDialog):
         super().__init__(parent)
 
         # initialization
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
         self.instance = instance
         self._addr = addr

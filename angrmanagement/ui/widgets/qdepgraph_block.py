@@ -115,7 +115,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         # definition
         self._definition_item = QGraphicsSimpleTextItem(self._definition_str, self)
-        self._definition_item.setBrush(Qt.darkBlue)
+        self._definition_item.setBrush(Qt.GlobalColor.darkBlue)
         self._definition_item.setFont(Conf.symexec_font)
         self._definition_item.setPos(x, y)
 
@@ -123,7 +123,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
         # instruction
         self._instruction_item = QGraphicsSimpleTextItem(self._instruction_str, self)
-        self._instruction_item.setBrush(Qt.black)
+        self._instruction_item.setBrush(Qt.GlobalColor.black)
         self._instruction_item.setFont(Conf.symexec_font)
         self._instruction_item.setPos(x, y)
 
@@ -134,7 +134,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
             x += 10
             self._text_item = QGraphicsSimpleTextItem(self._text, self)
             self._text_item.setFont(Conf.symexec_font)
-            self._text_item.setBrush(Qt.gray)
+            self._text_item.setBrush(Qt.GlobalColor.gray)
             self._text_item.setPos(x, y)
 
         # y += self._instruction_item.boundingRect().height()
@@ -152,7 +152,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
     def mouseReleaseEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse release event')
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.selected = not self.selected
             self._dep_view.redraw_graph()
             event.accept()
@@ -161,7 +161,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
     def mouseDoubleClickEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse double click event')
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._workspace.viz(self.addr)
             event.accept()
 
