@@ -9,6 +9,7 @@ from queue import Queue
 from threading import Thread
 from typing import TYPE_CHECKING
 
+from angrmanagement.data.jobs.job import JobState
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
 
@@ -72,31 +73,33 @@ class Worker(Thread):
                 gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
 
             # If job cancelled, then skip it
-            if job.cancelled:
+            if job.state == JobState.CANCELLED:
                 continue
             try:
                 self.current_job = job
                 self.job_manager.callback_worker_new_job(self.current_job)
                 ctx = JobContext(self.job_manager, job)
                 ctx.set_progress(0)
+                job.state = JobState.RUNNING
                 log.info('Job "%s" started', job.name)
                 job.start_at = time.time()
                 result = job.run(ctx)
-                if self.current_job.cancelled:
-                    pass
-                else:
+                if job.state != JobState.CANCELLED:
                     self.job_manager.callback_job_complete(self.current_job)
                 now = time.time()
                 duration = now - job.start_at
                 log.info('Job "%s" completed after %.2f seconds', job.name, duration)
-                self.current_job = None
             except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
                 sys.last_traceback = e.__traceback__
                 self.current_job = None
+                if job.state != JobState.CANCELLED:
+                    job.state = JobState.FAILED
                 log.exception('Exception while running job "%s":', job.name)
                 if self.job_manager.job_worker_exception_callback is not None:
                     self.job_manager.job_worker_exception_callback(job, e)
             else:
+                job.state = JobState.FINISHED
+                self.current_job = None
                 self.job_manager.jobs.remove(job)
                 gui_thread_schedule_async(job.finish, args=(result,))
 
@@ -147,9 +150,14 @@ class JobManager:
         self.jobs_queue.put(job)
 
     def cancel_job(self, job: Job) -> bool:
+        """Cancel a job. Returns True if the job was cancelled, False if it was
+        not found or already completed.
+        """
+        if job.state not in (JobState.PENDING, JobState.RUNNING):
+            return False
         if job in self.jobs:
             self.jobs.remove(job)
-            job.cancelled = True
+            job.state = JobState.CANCELLED
             if self.worker_thread is not None and self.worker_thread.current_job == job:
                 self.worker_thread.keyboard_interrupt()
 

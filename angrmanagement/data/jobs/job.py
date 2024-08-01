@@ -1,9 +1,9 @@
-# pylint:disable=global-statement
 from __future__ import annotations
 
 import datetime
 import logging
 import time
+from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
@@ -36,6 +36,18 @@ def _module_reloader() -> ModuleReloader:
     return m
 
 
+class JobState(Enum):
+    """
+    The state of a job.
+    """
+
+    PENDING = 0
+    RUNNING = 1
+    FINISHED = 2
+    CANCELLED = 3
+    FAILED = 4
+
+
 class Job:
     """
     The base class of all Jobs in angr management.
@@ -46,7 +58,7 @@ class Job:
     last_text: str | None
     start_at: float
     blocking: bool
-    cancelled: bool
+    state: JobState = JobState.PENDING
     _on_finish: Callable[[Any], None] | None
 
     def __init__(self, name: str, on_finish: Callable[[Any], None] | None = None, blocking: bool = False) -> None:
