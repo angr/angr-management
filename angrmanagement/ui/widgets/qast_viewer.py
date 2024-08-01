@@ -44,7 +44,7 @@ class QASTViewer(QFrame):
         self._size_label = None
         self._ast_label = None
 
-        self.setFrameShape(QFrame.NoFrame)
+        self.setFrameShape(QFrame.Shape.NoFrame)
         self.setLineWidth(0)
 
         # workspace backref
@@ -149,7 +149,7 @@ class QASTViewer(QFrame):
         if self._display_size:
             size_label = QLabel(self)
             size_label.setProperty("class", "ast_viewer_size")
-            size_label.setAlignment(Qt.AlignRight)
+            size_label.setAlignment(Qt.AlignmentFlag.AlignRight)
             size_label.setMaximumSize(QSize(24, 65536))
             self._size_label = size_label
             layout.addWidget(self._size_label)

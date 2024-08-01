@@ -100,7 +100,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         key = event.key()
 
-        if key == Qt.Key_Tab:
+        if key == Qt.Key.Key_Tab:
             self._symexec_view.switch_to_disassembly_view()
             event.accept()
 

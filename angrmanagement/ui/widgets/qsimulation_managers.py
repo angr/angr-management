@@ -100,8 +100,8 @@ class QSimulationManagers(QFrame):
 
         item = QTreeWidgetItem(qtreelist)
         item.setText(0, f"{addr:#x}")
-        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-        item.setData(0, Qt.CheckStateRole, Qt.Checked)
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+        item.setData(0, Qt.ItemDataRole.CheckStateRole, Qt.CheckState.Checked)
         return item
 
     #
@@ -350,11 +350,11 @@ class QSimulationManagers(QFrame):
         items = []
         for i in range(qlist.topLevelItemCount()):
             item = qlist.topLevelItem(i)
-            if item.checkState(0) == Qt.Checked:
+            if item.checkState(0) == Qt.CheckState.Checked:
                 items.append(item)
                 for j in range(item.childCount()):
                     sub_item = item.child(j)
-                    if sub_item.checkState(0) == Qt.Checked:
+                    if sub_item.checkState(0) == Qt.CheckState.Checked:
                         items.append(sub_item)
         return items
 

@@ -58,7 +58,9 @@ class XRefDialog(QDialog):
 
         self._init_widgets()
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint | Qt.WindowCloseButtonHint)
+        self.setWindowFlags(
+            self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint | Qt.WindowType.WindowCloseButtonHint
+        )
         self.setMinimumSize(self.sizeHint())
         self.adjustSize()
 

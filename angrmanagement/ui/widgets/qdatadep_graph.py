@@ -86,11 +86,11 @@ class QDataDepPreview(QtWidgets.QFrame):
             self._caption.setText(self._DST_JUMP_TEXT)
 
     def _init_widgets(self) -> None:
-        parent_background_color = self.parent().palette().color(QtGui.QPalette.Window)
+        parent_background_color = self.parent().palette().color(QtGui.QPalette.ColorRole.Window)
         self.setStyleSheet(f"background-color: {parent_background_color.name()};")
-        self.setFrameStyle(QtWidgets.QFrame.Raised | QtWidgets.QFrame.Panel)
-        self._layout_manager.addWidget(self.preview_graph, 0, QtCore.Qt.AlignCenter)
-        self._layout_manager.addWidget(self._caption, 1, QtCore.Qt.AlignCenter)
+        self.setFrameStyle(QtWidgets.QFrame.Shadow.Raised | QtWidgets.QFrame.Shape.Panel)
+        self._layout_manager.addWidget(self.preview_graph, 0, QtCore.Qt.AlignmentFlag.AlignCenter)
+        self._layout_manager.addWidget(self._caption, 1, QtCore.Qt.AlignmentFlag.AlignCenter)
 
 
 class QDataDepGraph(QZoomableDraggableGraphicsView):

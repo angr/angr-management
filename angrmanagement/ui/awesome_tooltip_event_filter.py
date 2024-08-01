@@ -59,7 +59,7 @@ class QAwesomeTooltipEventFilter(QObject):
         """
 
         # If this is a tooltip event...
-        if event.type() == QEvent.ToolTipChange:
+        if event.type() == QEvent.Type.ToolTipChange:
             # If the target Qt object containing this tooltip is *NOT* a widget,
             # raise a human-readable exception. While this should *NEVER* be the
             # case, edge cases are edge cases because they sometimes happen.

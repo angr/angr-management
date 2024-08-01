@@ -29,10 +29,10 @@ class EnvTable(QTableWidget):
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
-        self.setSelectionBehavior(QAbstractItemView.SelectItems)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         header = self.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
         self.setRowCount(len(items))
         for idx, item in enumerate(items):
@@ -71,7 +71,7 @@ class EnvConfig(QDialog):
     def __init__(self, env_config=None, instance: Instance | None = None, parent=None) -> None:
         super().__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self._instance = instance
         self._parent = parent
         self.env_config = env_config or []

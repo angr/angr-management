@@ -98,7 +98,7 @@ class ViewManager:
         self.view_to_dock[view] = dw
 
         if view.default_docking_position == "center":
-            policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             policy.setHorizontalStretch(1)
             policy.setVerticalStretch(1)
             area_widget.setSizePolicy(policy)

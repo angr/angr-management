@@ -18,6 +18,8 @@ _l = logging.getLogger(__name__)
 
 
 class QBaseGraphicsView(QGraphicsView):
+    """QBaseGraphicsView is a QGraphicsView that emits a signal when the visible scene rect changes."""
+
     visible_scene_rect_changed = Signal(QRectF)
 
     #
@@ -52,6 +54,8 @@ class QBaseGraphicsView(QGraphicsView):
 
 
 class QSaveableGraphicsView(QBaseGraphicsView):
+    """QSaveableGraphicsView is a QGraphicsView that can save the visible scene to an image file."""
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
         self._is_extra_render_pass: bool = False
@@ -75,11 +79,11 @@ class QSaveableGraphicsView(QBaseGraphicsView):
         minRect = self.scene().itemsBoundingRect()
         imgRect = minRect.marginsAdded(margins)
 
-        image = QImage(imgRect.size().toSize(), QImage.Format_ARGB32)
-        image.fill(Qt.white)
+        image = QImage(imgRect.size().toSize(), QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.white)
         painter = QPainter(image)
 
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
 
         # draw the image
         self.scene().setSceneRect(imgRect)
@@ -94,6 +98,8 @@ class QSaveableGraphicsView(QBaseGraphicsView):
 
 
 class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
+    """QZoomableDraggableGraphicsView is a QGraphicsView that allows zooming and dragging."""
+
     ZOOM_X = True
     ZOOM_Y = True
 
@@ -106,20 +112,17 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self._last_coords = None
         self._last_screen_pos = None
 
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
 
         # scroll bars are useless when the scene is near-infinite
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # the zoom factor, for preserving the zoom
         self.zoom_factor = None
 
-        # self.setRenderHints(
-        # QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
-
-        self.grabGesture(Qt.PinchGesture)
+        self.grabGesture(Qt.GestureType.PinchGesture)
         self._gesture_last_scale = 1.0
 
     def _initial_position(self):
@@ -176,7 +179,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self.translate(delta.x(), delta.y())
 
     def wheelEvent(self, event) -> None:
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier:
             self.zoom(
                 event.angleDelta().y() < 0,
                 QPoint(event.position().x(), event.position().y()),
@@ -187,8 +190,8 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             super().wheelEvent(event)
         else:
             # if it is not an angled zoom (e.g. mouse wheel) parse the shift key specially to mean horizontal movement
-            if event.modifiers() & Qt.ShiftModifier == Qt.ShiftModifier:
-                event.setModifiers(event.modifiers() & ~Qt.ShiftModifier)
+            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier == Qt.KeyboardModifier.ShiftModifier:
+                event.setModifiers(event.modifiers() & ~Qt.KeyboardModifier.ShiftModifier)
                 self.horizontalScrollBar().wheelEvent(event)
             else:
                 self.verticalScrollBar().wheelEvent(event)
@@ -199,18 +202,24 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         self._last_screen_pos = event.pos()
 
     def keyPressEvent(self, event) -> None:
-        if event.key() == Qt.Key_Equal and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
+        if event.key() == Qt.Key.Key_Equal and (
+            event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier
+        ):
             self.zoom(out=False)
-        elif event.key() == Qt.Key_Minus and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
+        elif event.key() == Qt.Key.Key_Minus and (
+            event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier
+        ):
             self.zoom(out=True)
-        elif event.key() == Qt.Key_0 and (event.modifiers() & Qt.ControlModifier == Qt.ControlModifier):
+        elif event.key() == Qt.Key.Key_0 and (
+            event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier
+        ):
             self.zoom(reset=True)
         else:
             super().keyPressEvent(event)
 
     def mousePressEvent(self, event) -> None:
         # _l.debug('Received press')
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._is_mouse_pressed = True
             self._is_dragging = False
 
@@ -233,7 +242,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
                 self._is_dragging = True
                 pos = self.mapToScene(event.pos())
 
-                self.viewport().setCursor(Qt.ClosedHandCursor)
+                self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
 
                 delta = (pos.x() - self._last_coords[0], pos.y() - self._last_coords[1])
                 self.translate(*delta)
@@ -243,11 +252,11 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         super().mouseMoveEvent(event)
 
-    def dispatchMouseEventToScene(self, event):
-        if event.type() == QEvent.MouseButtonPress:
-            newtype = QEvent.GraphicsSceneMousePress
-        elif event.type() == QEvent.MouseButtonRelease:
-            newtype = QEvent.GraphicsSceneMouseRelease
+    def dispatchMouseEventToScene(self, event: QMouseEvent):
+        if event.type() == QEvent.Type.MouseButtonPress:
+            newtype = QEvent.Type.GraphicsSceneMousePress
+        elif event.type() == QEvent.Type.MouseButtonRelease:
+            newtype = QEvent.Type.GraphicsSceneMouseRelease
         else:
             raise ValueError(f"Unknown event type {event.type()}")
 
@@ -283,14 +292,14 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         :return:
         """
 
-        if event.button() == Qt.LeftButton and self._is_dragging:
-            self.viewport().setCursor(Qt.ArrowCursor)
+        if event.button() == Qt.MouseButton.LeftButton and self._is_dragging:
+            self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
             event.accept()
 
         if not event.isAccepted():
             # create a new event and dispatch it to the scene
             pressy = QMouseEvent(
-                QEvent.MouseButtonPress,
+                QEvent.Type.MouseButtonPress,
                 event.pos(),
                 event.globalPos(),
                 event.button(),
@@ -301,7 +310,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             _ = self.dispatchMouseEventToScene(pressy)
 
             releasy = QMouseEvent(
-                QEvent.MouseButtonRelease,
+                QEvent.Type.MouseButtonRelease,
                 event.pos(),
                 event.globalPos(),
                 event.buton(),
@@ -311,7 +320,6 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
             release_event = self.dispatchMouseEventToScene(releasy)
 
             if not release_event.isAccepted():
-                self.on_background_click()
                 release_event.accept()
 
         self._is_mouse_pressed = False
@@ -320,7 +328,7 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
         super().mouseReleaseEvent(event)
 
     def event(self, event):
-        if event.type() == QEvent.Gesture and isinstance(event, QGestureEvent):
+        if event.type() == QEvent.Type.Gesture and isinstance(event, QGestureEvent):
             return self._handle_pinch_gesture(event)
         return super().event(event)
 

@@ -21,14 +21,14 @@ class AnalyzeMenu(Menu):
                 MenuEntry(
                     "&Run Analysis...",
                     main_window.run_analysis,
-                    shortcut=QKeySequence(Qt.Key_F4),
+                    shortcut=QKeySequence(Qt.Key.Key_F4),
                     icon=icon("run-analysis"),
                 ),
                 MenuSeparator(),
                 MenuEntry(
                     "&Decompile",
                     main_window.decompile_current_function,
-                    shortcut=QKeySequence(Qt.Key_F5),
+                    shortcut=QKeySequence(Qt.Key.Key_F5),
                     icon=icon("pseudocode-view"),
                 ),
                 MenuEntry(
@@ -36,6 +36,6 @@ class AnalyzeMenu(Menu):
                     main_window.view_proximity_for_current_function,
                     shortcut=QKeySequence("Ctrl+B"),
                 ),
-                MenuEntry("&Interact", main_window.interact, shortcut=QKeySequence(Qt.Key_F6)),
+                MenuEntry("&Interact", main_window.interact, shortcut=QKeySequence(Qt.Key.Key_F6)),
             ],
         )

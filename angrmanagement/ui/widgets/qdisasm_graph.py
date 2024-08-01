@@ -77,9 +77,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.blocks = []
 
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setFrameStyle(QFrame.NoFrame)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setFrameStyle(QFrame.Shape.NoFrame)
         self.setBackgroundBrush(Conf.disasm_view_background_color)
 
         self._minimap = QMiniMapView(self, parent=self)
@@ -239,9 +239,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     def mousePressEvent(self, event) -> None:
         btn = event.button()
 
-        if btn == Qt.ForwardButton:
+        if btn == Qt.MouseButton.ForwardButton:
             self.disasm_view.jump_forward()
-        elif btn == Qt.BackButton:
+        elif btn == Qt.MouseButton.BackButton:
             self.disasm_view.jump_back()
         else:
             super().mousePressEvent(event)
@@ -250,12 +250,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         """
         Redraw on color scheme update.
         """
-        if event.type() == QEvent.PaletteChange:
+        if event.type() == QEvent.Type.PaletteChange:
             self.setBackgroundBrush(Conf.disasm_view_background_color)
             self.reload()
-
-    def on_background_click(self) -> None:
-        pass
 
     #
     # Layout

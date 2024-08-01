@@ -54,7 +54,7 @@ class BreakpointDialog(QDialog):
         self._status_label = QLabel(self)
 
         row = 0
-        layout.addWidget(QLabel("Break on:", self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Break on:", self), row, 0, Qt.AlignmentFlag.AlignRight)
         self._type_radio_group = QButtonGroup(self)
         self._type_radio_group.addButton(QRadioButton("Execute", self), BreakpointType.Execute.value)
         self._type_radio_group.addButton(QRadioButton("Write", self), BreakpointType.Write.value)
@@ -65,21 +65,21 @@ class BreakpointDialog(QDialog):
 
         self._type_radio_group.button(self.breakpoint.type.value).setChecked(True)
 
-        layout.addWidget(QLabel("Address:", self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Address:", self), row, 0, Qt.AlignmentFlag.AlignRight)
         self._address_box = QAddressInput(
             self._on_address_changed, self.workspace, parent=self, default=f"{self.breakpoint.addr:#x}"
         )
         layout.addWidget(self._address_box, row, 1)
         row += 1
 
-        layout.addWidget(QLabel("Size:", self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Size:", self), row, 0, Qt.AlignmentFlag.AlignRight)
         self._size_box = QLineEdit(self)
         self._size_box.setText(f"{self.breakpoint.size:#x}")
         self._size_box.textChanged.connect(self._on_size_changed)
         layout.addWidget(self._size_box, row, 1)
         row += 1
 
-        layout.addWidget(QLabel("Comment:", self), row, 0, Qt.AlignRight)
+        layout.addWidget(QLabel("Comment:", self), row, 0, Qt.AlignmentFlag.AlignRight)
         self._comment_box = QLineEdit(self)
         self._comment_box.setText(self.breakpoint.comment)
         layout.addWidget(self._comment_box, row, 1)
@@ -91,7 +91,7 @@ class BreakpointDialog(QDialog):
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self._on_ok_clicked)
         buttons.rejected.connect(self.close)
-        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
         self._ok_button.setEnabled(False)
         self.main_layout.addWidget(buttons)
 

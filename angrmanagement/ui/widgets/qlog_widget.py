@@ -74,7 +74,7 @@ class QLogTableModel(QAbstractTableModel):
         return len(self.Headers)
 
     def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if role != Qt.DisplayRole:
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
@@ -89,12 +89,12 @@ class QLogTableModel(QAbstractTableModel):
         log = self.log[row]
         col = index.column()
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(log, col)
-        elif role == Qt.DecorationRole and col == QLogTableModel.COL_ICON:
+        elif role == Qt.ItemDataRole.DecorationRole and col == QLogTableModel.COL_ICON:
             return self._get_column_icon(log)
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignTop | Qt.AlignLeft
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
+            return Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
 
         return None
 
@@ -151,8 +151,8 @@ class QLogWidget(QTableView):
         hheader.setVisible(True)
         hheader.setStretchLastSection(True)
         vheader.setVisible(False)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         vheader.setDefaultSectionSize(20)
         self.setShowGrid(False)
 
@@ -249,7 +249,7 @@ class QLogWidget(QTableView):
             self.scrollToBottom()
 
     def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -> None:
-        if event.matches(QKeySequence.Copy):
+        if event.matches(QKeySequence.StandardKey.Copy):
             self.copy_selected_messages()
         else:
             super().keyPressEvent(event)
@@ -268,6 +268,6 @@ class QLogWidget(QTableView):
     @staticmethod
     def _copy_to_clipboard(content: str) -> None:
         clipboard = QGuiApplication.clipboard()
-        clipboard.setText(content, QClipboard.Clipboard)
+        clipboard.setText(content, QClipboard.Mode.Clipboard)
         if clipboard.supportsSelection():
-            clipboard.setText(content, QClipboard.Selection)
+            clipboard.setText(content, QClipboard.Mode.Selection)

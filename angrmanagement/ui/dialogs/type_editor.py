@@ -46,7 +46,7 @@ class CTypeEditor(QDialog):
         self._init_widgets(base_text, multiline)
 
         self.setWindowTitle("Type editor")
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
         self.result = []
 
@@ -55,7 +55,7 @@ class CTypeEditor(QDialog):
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(self._on_ok_pressed)
         buttons.rejected.connect(self._on_cancel_pressed)
-        self._ok_button = buttons.button(QDialogButtonBox.Ok)
+        self._ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
 
         if multiline:
             editor = QCommentTextBox(

@@ -76,7 +76,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.selected = not self.selected
             self._proximity_view.redraw_graph()
             event.accept()
@@ -85,7 +85,7 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
     def mouseDoubleClickEvent(self, event) -> None:
         # Jump to the reference address of the node
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             if self._node.ref_at:
                 self._workspace.viz(next(iter(self._node.ref_at)))
             event.accept()
@@ -169,7 +169,10 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
         self._text_item.setPos(self.HORIZONTAL_PADDING, self.VERTICAL_PADDING)
 
     def mouseDoubleClickEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton and (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) == Qt.KeyboardModifier.ControlModifier
+        ):
             # ctrl + double click to collapse a function call
             event.accept()
             self._proximity_view.collapse_function(self._node.func)
@@ -284,7 +287,10 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         return object, "Unknown"
 
     def mouseDoubleClickEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton and (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and (event.modifiers() & Qt.KeyboardModifier.ControlModifier) == Qt.KeyboardModifier.ControlModifier
+        ):
             # ctrl + double click to expand a function call
             event.accept()
             self._proximity_view.expand_function(self._node.callee)

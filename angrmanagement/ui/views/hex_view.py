@@ -44,6 +44,9 @@ from angrmanagement.utils import is_printable
 from .view import SynchronizedInstanceView
 
 if TYPE_CHECKING:
+    from PySide6.QtGui import QPainter
+    from PySide6.QtWidgets import QStyleOptionGraphicsItem, QWidget
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
@@ -96,7 +99,7 @@ class BreakpointHighlightRegion(HexHighlightRegion):
     """
 
     def __init__(self, bp: Breakpoint, view: HexView) -> None:
-        super().__init__(Qt.cyan, bp.addr, bp.size)
+        super().__init__(Qt.GlobalColor.cyan, bp.addr, bp.size)
         self.bp: Breakpoint = bp
         self.view: HexView = view
 
@@ -139,7 +142,7 @@ class PatchHighlightRegion(HexHighlightRegion):
     """
 
     def __init__(self, patch: Patch, view: HexView) -> None:
-        super().__init__(Qt.yellow, patch.addr, len(patch))
+        super().__init__(Qt.GlobalColor.yellow, patch.addr, len(patch))
         self.patch: Patch = patch
         self.view: HexView = view
 
@@ -174,10 +177,10 @@ class PatchHighlightRegion(HexHighlightRegion):
         dlg = QMessageBox()
         dlg.setWindowTitle("Revert patch")
         dlg.setText("Are you sure you want to revert this patch?")
-        dlg.setIcon(QMessageBox.Question)
-        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-        dlg.setDefaultButton(QMessageBox.Cancel)
-        if dlg.exec_() != QMessageBox.Yes:
+        dlg.setIcon(QMessageBox.Icon.Question)
+        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        dlg.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if dlg.exec_() != QMessageBox.StandardButton.Yes:
             return
         self.revert()
 
@@ -247,9 +250,11 @@ class HexGraphicsObject(QGraphicsObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setFlag(QGraphicsItem.ItemUsesExtendedStyleOption, True)  # Give me more specific paint update rect info
-        self.setFlag(QGraphicsItem.ItemIsFocusable, True)  # Give me focus/key events
-        self.setFlag(QGraphicsItem.ItemClipsToShape, True)
+        self.setFlag(
+            QGraphicsItem.GraphicsItemFlag.ItemUsesExtendedStyleOption, True
+        )  # Give me more specific paint update rect info
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)  # Give me focus/key events
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
         self.display_offset_addr: HexAddress = 0
         self.display_num_rows: int = 1
         self.display_start_addr: HexAddress = 0
@@ -604,13 +609,13 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Handle mouse press events (e.g. updating selection).
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             addr = self.point_to_addr(event.pos())
             if addr is None:
                 return
             addr, ascii_column = addr
             self.mouse_pressed = True
-            if QApplication.keyboardModifiers() in (Qt.ShiftModifier,):
+            if QApplication.keyboardModifiers() in (Qt.KeyboardModifier.ShiftModifier,):
                 if self.selection_start is None:
                     self.begin_selection()
             else:
@@ -622,7 +627,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Handle mouse double-click events (e.g. update selection)
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             regions = sorted(self.get_highlight_regions_under_cursor(), key=lambda r: self.cursor - r.addr)
             if len(regions) > 0:
                 region = regions[0]
@@ -647,7 +652,7 @@ class HexGraphicsObject(QGraphicsObject):
         """
         Handle mouse release events.
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.mouse_pressed = False
 
     def _set_byte_value(self, value: int) -> None:
@@ -676,17 +681,17 @@ class HexGraphicsObject(QGraphicsObject):
         Handle key press events (e.g. moving cursor around).
         """
         movement_keys = {
-            Qt.Key_Up: -16,
-            Qt.Key_Down: 16,
-            Qt.Key_Right: 1,
-            Qt.Key_Left: -1,
-            Qt.Key_PageUp: 0,
-            Qt.Key_PageDown: 0,
-            Qt.Key_Home: 0,
-            Qt.Key_End: 0,
+            Qt.Key.Key_Up: -16,
+            Qt.Key.Key_Down: 16,
+            Qt.Key.Key_Right: 1,
+            Qt.Key.Key_Left: -1,
+            Qt.Key.Key_PageUp: 0,
+            Qt.Key.Key_PageDown: 0,
+            Qt.Key.Key_Home: 0,
+            Qt.Key.Key_End: 0,
         }
         if event.key() in movement_keys:
-            if QApplication.keyboardModifiers() & Qt.ShiftModifier:
+            if QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier:
                 if self.selection_start is None:
                     self.begin_selection()
             else:
@@ -694,15 +699,15 @@ class HexGraphicsObject(QGraphicsObject):
 
             # FIXME: When holding Ctrl, only scroll the viewport
             preserve_relative_offset = False
-            if event.key() == Qt.Key_PageUp:
+            if event.key() == Qt.Key.Key_PageUp:
                 new_cursor = max(self.start_addr, self.cursor - (self.display_num_rows - 1) * 16)
                 preserve_relative_offset = True
-            elif event.key() == Qt.Key_PageDown:
+            elif event.key() == Qt.Key.Key_PageDown:
                 new_cursor = min(self.end_addr - 1, self.cursor + (self.display_num_rows - 1) * 16)
                 preserve_relative_offset = True
-            elif event.key() == Qt.Key_Home:
+            elif event.key() == Qt.Key.Key_Home:
                 new_cursor = max(self.start_addr, self.cursor & ~0xF)
-            elif event.key() == Qt.Key_End:
+            elif event.key() == Qt.Key.Key_End:
                 new_cursor = min(self.end_addr - 1, (self.cursor & ~0xF) + 0xF)
             else:
                 new_cursor = self.cursor + movement_keys[event.key()]
@@ -711,8 +716,8 @@ class HexGraphicsObject(QGraphicsObject):
                 self.set_cursor(new_cursor, update_viewport=False)
             event.accept()
             return
-        elif QApplication.keyboardModifiers() & Qt.ControlModifier:
-            if event.key() == Qt.Key_Space:
+        elif QApplication.keyboardModifiers() & Qt.KeyboardModifier.ControlModifier:
+            if event.key() == Qt.Key.Key_Space:
                 self.set_cursor(self.cursor, ascii_column=not self.ascii_column_active)
                 event.accept()
                 return
@@ -911,7 +916,9 @@ class HexGraphicsObject(QGraphicsObject):
         painter.drawPath(path)
         painter.drawPath(self.build_selection_path(region.addr, end_addr, True, half_pen_width))
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(
+        self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None
+    ) -> None:  # pylint: disable=unused-argument
         """
         Repaint the item.
         """
@@ -923,7 +930,7 @@ class HexGraphicsObject(QGraphicsObject):
             max_row = self.display_num_rows - 1
 
         # Paint background
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         for row in range(min_row, max_row + 1):
             row_addr = self.row_to_addr(row)
             if row_addr >= self.display_end_addr:
@@ -1024,9 +1031,9 @@ class HexGraphicsObject(QGraphicsObject):
             cursor_height = self.row_padding / 2
 
             def set_pen_brush_for_active_cursor(active: bool) -> None:
-                painter.setPen(Qt.NoPen)
+                painter.setPen(Qt.PenStyle.NoPen)
                 if active:
-                    col = Conf.palette_text if self.cursor_blink_state else Qt.NoBrush
+                    col = Conf.palette_text if self.cursor_blink_state else Qt.BrushStyle.NoBrush
                 else:
                     col = Conf.palette_disabled_text
                 painter.setBrush(col)
@@ -1074,11 +1081,11 @@ class HexGraphicsSubView(QGraphicsView):
         super().__init__(**kwargs)
         self.setMouseTracking(True)
         self.setBackgroundBrush(Conf.palette_base)
-        self.setResizeAnchor(QGraphicsView.NoAnchor)
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
     def wheelEvent(self, event) -> None:
         self.parent().wheelEvent(event)
@@ -1115,12 +1122,12 @@ class HexGraphicsView(QAbstractScrollArea):
         self._scene.addItem(self.hex)
         self._view.setScene(self._scene)
 
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
         self.horizontalScrollBar().actionTriggered.connect(self._on_horizontal_scroll_bar_triggered)
-        self._view.setFrameStyle(QFrame.NoFrame)
-        self.setFrameStyle(QFrame.NoFrame)
+        self._view.setFrameStyle(QFrame.Shape.NoFrame)
+        self.setFrameStyle(QFrame.Shape.NoFrame)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1138,10 +1145,10 @@ class HexGraphicsView(QAbstractScrollArea):
         if addr_range > 0:
             offset = (self.hex.display_start_addr - self.hex.start_addr) >> 4
             scrollbar_value = (offset + 1) / addr_range
-            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         else:
             scrollbar_value = 0
-            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.verticalScrollBar().setValue(int(scrollbar_value * self.scrollbar_range))
 
@@ -1153,9 +1160,9 @@ class HexGraphicsView(QAbstractScrollArea):
         vp_rect = self._view.sceneRect()
         scroll_range = max(0, int(hex_rect.width()) - int(vp_rect.width()))
         if scroll_range == 0:
-            self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         else:
-            self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+            self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
             self.horizontalScrollBar().setRange(0, scroll_range)
             self.horizontalScrollBar().setPageStep(hex_rect.width() / 10)
             self.horizontalScrollBar().setValue(vp_rect.left())
@@ -1184,15 +1191,15 @@ class HexGraphicsView(QAbstractScrollArea):
             return
         self._processing_scroll_event = True
         action = QAbstractSlider.SliderAction(action)
-        if action == QAbstractSlider.SliderSingleStepAdd:
+        if action == QAbstractSlider.SliderAction.SliderSingleStepAdd:
             self.set_display_offset(self.hex.display_offset_addr + 0x10)
-        elif action == QAbstractSlider.SliderSingleStepSub:
+        elif action == QAbstractSlider.SliderAction.SliderSingleStepSub:
             self.set_display_offset(self.hex.display_offset_addr - 0x10)
-        elif action == QAbstractSlider.SliderPageStepAdd:
+        elif action == QAbstractSlider.SliderAction.SliderPageStepAdd:
             self.set_display_offset(self.hex.display_offset_addr + 0x10)
-        elif action == QAbstractSlider.SliderPageStepSub:
+        elif action == QAbstractSlider.SliderAction.SliderPageStepSub:
             self.set_display_offset(self.hex.display_offset_addr - 0x10)
-        elif action == QAbstractSlider.SliderMove:
+        elif action == QAbstractSlider.SliderAction.SliderMove:
             addr_range = self.hex.end_addr - self.hex.start_addr
             if addr_range <= 0:
                 return
@@ -1211,7 +1218,7 @@ class HexGraphicsView(QAbstractScrollArea):
     def _on_horizontal_scroll_bar_triggered(self, action: int) -> None:
         self._processing_scroll_event = True
         action = QAbstractSlider.SliderAction(action)
-        if action == QAbstractSlider.SliderMove:
+        if action == QAbstractSlider.SliderAction.SliderMove:
             vp = self.viewport().geometry()
             vp.moveTo(0, 0)
             vp = self._view.mapToScene(vp).boundingRect()
@@ -1220,7 +1227,7 @@ class HexGraphicsView(QAbstractScrollArea):
         self._processing_scroll_event = False
 
     def wheelEvent(self, event: QWheelEvent) -> None:
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier:
             self.adjust_viewport_scale(1.25 if event.angleDelta().y() > 0 else 1 / 1.25)
         else:
             d = event.angleDelta().y()
@@ -1295,7 +1302,7 @@ class HexGraphicsView(QAbstractScrollArea):
         """
         Redraw on color scheme update.
         """
-        if event.type() == QEvent.PaletteChange:
+        if event.type() == QEvent.Type.PaletteChange:
             self._view.setBackgroundBrush(Conf.palette_base)
             self.update()
 
@@ -1303,16 +1310,16 @@ class HexGraphicsView(QAbstractScrollArea):
         """
         Handle key events.
         """
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
-            if event.key() == Qt.Key_0:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier:
+            if event.key() == Qt.Key.Key_0:
                 self.adjust_viewport_scale()
                 event.accept()
                 return
-            elif event.key() == Qt.Key_Equal:
+            elif event.key() == Qt.Key.Key_Equal:
                 self.adjust_viewport_scale(1.25)
                 event.accept()
                 return
-            elif event.key() == Qt.Key_Minus:
+            elif event.key() == Qt.Key.Key_Minus:
                 self.adjust_viewport_scale(1 / 1.25)
                 event.accept()
                 return
@@ -1425,7 +1432,7 @@ class HexView(SynchronizedInstanceView):
                     differs = False
                 if differs:
                     if r is None:
-                        r = HexHighlightRegion(Qt.red, addr, 0)
+                        r = HexHighlightRegion(Qt.GlobalColor.red, addr, 0)
                         regions.append(r)
                     r.size += 1
                 else:
@@ -1551,7 +1558,7 @@ class HexView(SynchronizedInstanceView):
         Initialize widgets for this view.
         """
         window = QMainWindow()
-        window.setWindowFlags(Qt.Widget)
+        window.setWindowFlags(Qt.WindowType.Widget)
 
         status_bar = QFrame()
         status_lyt = QHBoxLayout()
@@ -1602,10 +1609,10 @@ class HexView(SynchronizedInstanceView):
         dlg = QMessageBox()
         dlg.setWindowTitle("Revert patches")
         dlg.setText("Are you sure you want to revert selected patches?")
-        dlg.setIcon(QMessageBox.Question)
-        dlg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-        dlg.setDefaultButton(QMessageBox.Cancel)
-        if dlg.exec_() != QMessageBox.Yes:
+        dlg.setIcon(QMessageBox.Icon.Question)
+        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        dlg.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if dlg.exec_() != QMessageBox.StandardButton.Yes:
             return
 
         selected_regions = self.inner_widget.hex.get_active_highlight_regions()
@@ -1803,7 +1810,7 @@ class HexView(SynchronizedInstanceView):
         """
         Handle key events.
         """
-        if event.key() == Qt.Key_G:
+        if event.key() == Qt.Key.Key_G:
             self.popup_jumpto_dialog()
             return
 
@@ -1874,7 +1881,7 @@ class HexView(SynchronizedInstanceView):
         for v in self.sync_state.highlight_regions:
             if v is not self:
                 for r in self.sync_state.highlight_regions[v]:
-                    regions.append(HexHighlightRegion(Qt.green, r.addr, r.size))
+                    regions.append(HexHighlightRegion(Qt.GlobalColor.green, r.addr, r.size))
 
         self._sync_view_highlights = regions
         self._set_highlighted_regions()

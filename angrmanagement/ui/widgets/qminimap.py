@@ -97,13 +97,13 @@ class QMiniMapTargetSceneViewer(QGraphicsItem):
 
         dpr = self._view.devicePixelRatioF()
         self._scene_img = QImage(
-            dpr * self._minimap_scene_rect.width(), dpr * self._minimap_scene_rect.height(), QImage.Format_ARGB32
+            dpr * self._minimap_scene_rect.width(), dpr * self._minimap_scene_rect.height(), QImage.Format.Format_ARGB32
         )
         self._scene_img.setDevicePixelRatio(dpr)
         self._scene_img.fill(Conf.disasm_view_minimap_background_color)
         self._view.set_extra_render_pass(True)
         painter = QPainter(self._scene_img)
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         scene.render(painter, target=self._minimap_scene_rect)
         self._view.set_extra_render_pass(False)
         self.update()
@@ -137,7 +137,7 @@ class QMiniMapView(QGraphicsView):
         self._minimap_target_scene_viewer: QMiniMapTargetSceneViewer = QMiniMapTargetSceneViewer(self._target_view)
         self._minimap_scene.addItem(self._minimap_target_scene_viewer)
         self._target_view.visible_scene_rect_changed.connect(self.on_target_viewport_visible_scene_rect_changed)
-        self.setFrameStyle(QFrame.NoFrame)
+        self.setFrameStyle(QFrame.Shape.NoFrame)
 
     def on_target_viewport_visible_scene_rect_changed(self, visible: QRectF) -> None:
         scene = self._target_view.scene()
@@ -212,9 +212,9 @@ class QMiniMapView(QGraphicsView):
         """
         Handle mouse press, moving the target view port to cursor position in target scene.
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._is_mouse_pressed = True
-            self.setCursor(Qt.ClosedHandCursor)
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
             self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(event.pos()))
             event.accept()
 
@@ -230,8 +230,8 @@ class QMiniMapView(QGraphicsView):
         """
         Handle mouse release, ending viewport drag.
         """
-        if event.button() == Qt.LeftButton:
-            self.setCursor(Qt.ArrowCursor)
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
             event.accept()
         self._is_mouse_pressed = False
 
@@ -239,7 +239,7 @@ class QMiniMapView(QGraphicsView):
         """
         Forward the wheel event to target view to handle zoom events.
         """
-        if event.modifiers() & Qt.ControlModifier == Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier == Qt.KeyboardModifier.ControlModifier:
             pos = event.position()
             self._target_view.centerOn(self.map_event_pos_to_target_scene_pos(QPoint(pos.x(), pos.y())))
 
@@ -249,5 +249,5 @@ class QMiniMapView(QGraphicsView):
         """
         Redraw on color scheme update.
         """
-        if event.type() == QEvent.PaletteChange:
+        if event.type() == QEvent.Type.PaletteChange:
             self.reload_target_scene()

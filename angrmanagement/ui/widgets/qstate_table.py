@@ -76,7 +76,7 @@ class QStateTable(QTableWidget):
 
         self.setColumnCount(len(header_labels))
         self.setHorizontalHeaderLabels(header_labels)
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.items = []
         self.workspace = workspace

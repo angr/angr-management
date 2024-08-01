@@ -82,7 +82,9 @@ class DockShortcutEventFilter(QObject):
         self._main_window: MainWindow = main_window
 
     def eventFilter(self, qobject, event) -> bool:
-        if event.type() == QEvent.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence("Ctrl+Shift+P"):
+        if event.type() == QEvent.Type.KeyPress and QKeySequence(event.keyCombination()) == QKeySequence(
+            "Ctrl+Shift+P"
+        ):
             self._main_window.show_command_palette(qobject)
             return True
         return False
@@ -108,7 +110,7 @@ class ShiftShiftEventFilter(QObject):
         # Key Event propagation will begin at QWindow and continue down the widget tree. Use KeyEvent on QWindow to
         # distinguish unique key presses, then intercept KeyEvent at first QWidget the event is propagated to.
 
-        if event.type() == QEvent.KeyPress:
+        if event.type() == QEvent.Type.KeyPress:
             if isinstance(qobject, QWindow) and qobject.modality() == Qt.WindowModality.NonModal:
                 self._did_process_qwindow_event = True
                 return False
@@ -263,7 +265,7 @@ class MainWindow(QMainWindow):
         new_state_dialog.exec_()
 
     def open_doc_link(self) -> None:
-        QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.TolerantMode))
+        QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.ParsingMode.TolerantMode))
 
     def open_about_dialog(self) -> None:
         dlg = LoadAboutDialog()
@@ -309,7 +311,9 @@ class MainWindow(QMainWindow):
 
         self._progress_dialog = QProgressDialog("Waiting...", "Cancel", 0, 100, self)
         self._progress_dialog.setAutoClose(False)
-        self._progress_dialog.setWindowFlags(self._progress_dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self._progress_dialog.setWindowFlags(
+            self._progress_dialog.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint
+        )
         self._progress_dialog.setModal(True)
         self._progress_dialog.setMinimumDuration(2**31 - 1)
 
@@ -405,13 +409,13 @@ class MainWindow(QMainWindow):
         self._raise_view(0)
 
         # Toggle exec breakpoint
-        QShortcut(QKeySequence(Qt.Key_F2), self, self.workspace.toggle_exec_breakpoint)
+        QShortcut(QKeySequence(Qt.Key.Key_F2), self, self.workspace.toggle_exec_breakpoint)
 
         # Single step
-        QShortcut(QKeySequence(Qt.Key_F7), self, self.workspace.step_forward)
+        QShortcut(QKeySequence(Qt.Key.Key_F7), self, self.workspace.step_forward)
 
         # Run
-        QShortcut(QKeySequence(Qt.Key_F9), self, self.workspace.continue_forward)
+        QShortcut(QKeySequence(Qt.Key.Key_F9), self, self.workspace.continue_forward)
 
     def init_shortcuts_on_dock(self, dock_widget) -> None:
         """
@@ -512,9 +516,9 @@ class MainWindow(QMainWindow):
                 "by registering the angr:// protocol to the current user. Do you want to "
                 "register it? You may unregister at any "
                 "time in Preferences.",
-                defaultButton=QMessageBox.Yes,
+                defaultButton=QMessageBox.StandardButton.Yes,
             )
-            if btn == QMessageBox.Yes:
+            if btn == QMessageBox.StandardButton.Yes:
                 try:
                     AngrUrlScheme().register_url_scheme()
                 except (ValueError, FileNotFoundError) as ex:
@@ -595,16 +599,18 @@ class MainWindow(QMainWindow):
             msgbox = QMessageBox()
             msgbox.setWindowTitle("Save database")
             msgbox.setText("angr management is about to exit. Do you want to save the database?")
-            msgbox.setIcon(QMessageBox.Question)
+            msgbox.setIcon(QMessageBox.Icon.Question)
             msgbox.setWindowIcon(self.windowIcon())
-            msgbox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-            msgbox.setDefaultButton(QMessageBox.Yes)
+            msgbox.setStandardButtons(
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+            )
+            msgbox.setDefaultButton(QMessageBox.StandardButton.Yes)
             r = msgbox.exec_()
 
-            if r == QMessageBox.Cancel:
+            if r == QMessageBox.StandardButton.Cancel:
                 event.ignore()
                 return
-            elif r == QMessageBox.Yes:
+            elif r == QMessageBox.StandardButton.Yes:
                 save_r = self.save_database()
                 if not save_r:
                     # failed to save the database
@@ -740,9 +746,9 @@ class MainWindow(QMainWindow):
                 self,
                 "Downloading a file",
                 f"Do you want to download a file from {file_path} and open it in angr management?",
-                defaultButton=QMessageBox.Yes,
+                defaultButton=QMessageBox.StandardButton.Yes,
             )
-            if r == QMessageBox.Yes:
+            if r == QMessageBox.StandardButton.Yes:
                 try:
                     target_path = download_url(file_path, parent=self, to_file=True, file_path=None)
                 except InvalidURLError:
@@ -929,7 +935,7 @@ class MainWindow(QMainWindow):
         self._progress_dialog.hide()
 
     def bring_to_front(self) -> None:
-        self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
+        self.setWindowState((self.windowState() & ~Qt.WindowState.WindowMinimized) | Qt.WindowState.WindowActive)
         self.activateWindow()
         self.raise_()
 

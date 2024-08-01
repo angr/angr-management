@@ -117,7 +117,9 @@ class QActiveCount(QStatsAnnotation):
             symexec_view = self.symexec_view
             if disasm_view is None or symexec_view is None:
                 return
-            to_stash, ok = QInputDialog.getText(disasm_view, "Move to?", "Target Stash Name:", QLineEdit.Normal)
+            to_stash, ok = QInputDialog.getText(
+                disasm_view, "Move to?", "Target Stash Name:", QLineEdit.EchoMode.Normal
+            )
             if ok:
                 symexec_view.current_simgr.move("active", to_stash, lambda s: s in self.states)
                 symexec_view._simgrs._simgr_viewer.refresh()

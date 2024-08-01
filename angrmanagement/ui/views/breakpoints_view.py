@@ -48,7 +48,7 @@ class QBreakpointTableModel(QAbstractTableModel):
     def headerData(
         self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
     ) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.DisplayRole:
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
             return self.Headers[section]
@@ -61,7 +61,7 @@ class QBreakpointTableModel(QAbstractTableModel):
         if row >= len(self.breakpoint_mgr.breakpoints):
             return None
         col = index.column()
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(self.breakpoint_mgr.breakpoints[row], col)
         else:
             return None
@@ -98,14 +98,14 @@ class QBreakpointTableWidget(QTableView):
         vheader.setVisible(False)
         vheader.setDefaultSectionSize(20)
 
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self.model: QBreakpointTableModel = QBreakpointTableModel(self.breakpoint_mgr)
         self.setModel(self.model)
 
         for col in range(len(QBreakpointTableModel.Headers)):
-            hheader.setSectionResizeMode(col, QHeaderView.ResizeToContents)
+            hheader.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
         hheader.setStretchLastSection(True)
         self.doubleClicked.connect(self._on_cell_double_click)
 

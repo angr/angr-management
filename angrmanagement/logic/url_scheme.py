@@ -63,7 +63,7 @@ class AngrUrlScheme:
         app_path_ = app_path(pythonw=True)
 
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
-        reg = QSettings(reg_path, QSettings.NativeFormat)
+        reg = QSettings(reg_path, QSettings.Format.NativeFormat)
 
         reg.setValue("Default", "angr management")
         reg.setValue("URL Protocol", "")
@@ -82,13 +82,13 @@ class AngrUrlScheme:
 
     def _unregister_url_scheme_windows(self) -> None:
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
-        reg = QSettings(reg_path, QSettings.NativeFormat)
+        reg = QSettings(reg_path, QSettings.Format.NativeFormat)
 
         reg.remove("")
 
     def _is_url_scheme_registered_windows(self):
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
-        reg = QSettings(reg_path, QSettings.NativeFormat)
+        reg = QSettings(reg_path, QSettings.Format.NativeFormat)
 
         if reg.contains("Default"):
             reg.beginGroup("shell")

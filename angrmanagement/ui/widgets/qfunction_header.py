@@ -51,7 +51,7 @@ class QFunctionHeader(QCachedGraphicsItem):
         pass
 
     def paint(self, painter, option, widget) -> None:
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
 
         if self.infodock.is_label_selected(self.addr):
             highlight_color = Conf.disasm_view_label_highlight_color
@@ -64,9 +64,12 @@ class QFunctionHeader(QCachedGraphicsItem):
     #
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.select_label(self.addr)
-        elif event.button() == Qt.RightButton and QApplication.keyboardModifiers() == Qt.NoModifier:
+        elif (
+            event.button() == Qt.MouseButton.RightButton
+            and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier
+        ):
             if self.addr not in self.infodock.selected_labels:
                 self.infodock.select_label(self.addr)
             self._disasm_view.label_context_menu(self.addr, QCursor.pos())

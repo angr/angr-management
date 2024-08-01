@@ -55,9 +55,9 @@ class QConstraintViewer(QFrame):
         table = QTableWidget(self)
         table.setColumnCount(len(self.COLUMNS))
         table.setHorizontalHeaderLabels(self.COLUMNS)
-        table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
         self.table = table
         layout.addWidget(table)

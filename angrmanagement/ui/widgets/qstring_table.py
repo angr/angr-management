@@ -101,11 +101,11 @@ class QStringModel(QAbstractTableModel):
         return len(self.HEADER)
 
     def headerData(self, section, orientation, role=None) -> Any:  # pylint: disable=unused-argument
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             if section < len(self.HEADER):
                 return self.HEADER[section]
-        elif role == Qt.InitialSortOrderRole:
-            return Qt.AscendingOrder
+        elif role == Qt.ItemDataRole.InitialSortOrderRole:
+            return Qt.SortOrder.AscendingOrder
 
         return None
 
@@ -120,9 +120,9 @@ class QStringModel(QAbstractTableModel):
         col = index.column()
         v = self.values[row]
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(v, col)
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             return Conf.tabular_view_font
         return None
 
@@ -132,7 +132,7 @@ class QStringModel(QAbstractTableModel):
         self._values = sorted(
             self.values,
             key=lambda x: self._get_column_data(x, column),
-            reverse=order == Qt.DescendingOrder,
+            reverse=order == Qt.SortOrder.DescendingOrder,
         )
         self.layoutChanged.emit()
 
@@ -171,24 +171,24 @@ class QStringTable(QTableView):
         self._selected = selection_callback
         self._filter = None
 
-        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setShowGrid(False)
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(24)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
         self._model = QStringModel(None)
         self._proxy = QSortFilterProxyModel(self)
         self._proxy.setSourceModel(self._model)
-        self._proxy.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self._proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.setModel(self._proxy)
 
         self.setSortingEnabled(True)
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
         # let the last column (string) fill table width
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.horizontalHeader().setSectionResizeMode(QStringModel.STRING_COL, QHeaderView.Stretch)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        self.horizontalHeader().setSectionResizeMode(QStringModel.STRING_COL, QHeaderView.ResizeMode.Stretch)
 
         self.doubleClicked.connect(self._on_string_selected)
 
@@ -259,7 +259,7 @@ class QStringTable(QTableView):
             self._selected(selected_item)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key_X:
+        if event.key() == Qt.Key.Key_X:
             # xrefs
             if self._model is None:
                 return

@@ -84,7 +84,7 @@ class QStateBlock(QGraphicsItem):
 
     def mouseReleaseEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse release event')
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.selected = not self.selected
             self.symexec_view.redraw_graph()
             event.accept()
@@ -93,7 +93,7 @@ class QStateBlock(QGraphicsItem):
 
     def mouseDoubleClickEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse double click event')
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             if self.state is not None:
                 self.symexec_view.workspace.viz(self.state.addr)
                 event.accept()
@@ -129,7 +129,7 @@ class QStateBlock(QGraphicsItem):
         # The addr label
         addr_label_x = x + self.HORIZONTAL_PADDING
         addr_label_y = y + self.VERTICAL_PADDING
-        painter.setPen(Qt.black)
+        painter.setPen(Qt.GlobalColor.black)
         painter.drawText(addr_label_x, addr_label_y + self._config.symexec_font_ascent, self._label_str)
 
         y += self._config.symexec_font_height + self.LINE_MARGIN

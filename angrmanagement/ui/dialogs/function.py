@@ -32,7 +32,7 @@ class FunctionDialog(QDialog):
         self.workspace = GlobalInfo.main_window.workspace
         self.function = function
         self._init_widgets()
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self.setWindowTitle(f"Function {self.function.name}")
         self.setMinimumWidth(600)
         self.adjustSize()

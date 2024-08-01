@@ -96,12 +96,12 @@ class SimPackagePersistentEditor(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor, index) -> None:
-        value = index.model().data(index, role=Qt.DisplayRole)
+        value = index.model().data(index, role=Qt.ItemDataRole.DisplayRole)
         if value:
             editor.setText(str(value))
 
     def setModelData(self, editor, model, index) -> None:
-        model.setData(index, editor.toPlainText(), role=Qt.DisplayRole)
+        model.setData(index, editor.toPlainText(), role=Qt.ItemDataRole.DisplayRole)
 
     def updateEditorGeometry(self, editor, option, index) -> None:
         editor.setGeometry(option.rect)
@@ -262,7 +262,7 @@ class SocketView(QTreeView):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setTextElideMode(Qt.ElideNone)
+        self.setTextElideMode(Qt.TextElideMode.ElideNone)
 
     def _action_accepted_socket(self) -> None:
         current = self.currentIndex()
@@ -301,7 +301,7 @@ class SocketConfig(QDialog):
     def __init__(self, socket_config=None, instance: Instance | None = None, parent=None) -> None:
         super().__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self._instance = instance
         self._editor = SimPackagePersistentEditor(instance=instance)
         self._parent = parent

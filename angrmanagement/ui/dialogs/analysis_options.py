@@ -244,8 +244,8 @@ class AnalysisOptionsDialog(QDialog):
 
         for analysis in self._analyses.analyses:
             item = QListWidgetItem(analysis.display_name, self._analysis_list)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Checked if analysis.enabled else Qt.Unchecked)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked if analysis.enabled else Qt.CheckState.Unchecked)
             self._analysis_list.addItem(item)
 
         #
@@ -333,7 +333,7 @@ class AnalysisOptionsDialog(QDialog):
 
     def _on_item_changed(self, item) -> None:
         analysis = self._analyses[self._analysis_list.indexFromItem(item).row()]
-        analysis.enabled = item.checkState() == Qt.Checked
+        analysis.enabled = item.checkState() == Qt.CheckState.Checked
         self._update_item_details()
 
     def _on_run_clicked(self) -> None:

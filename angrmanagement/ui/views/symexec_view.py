@@ -108,7 +108,7 @@ class SymexecView(InstanceView):
 
     def _init_widgets(self) -> None:
         main = QMainWindow()
-        main.setWindowFlags(Qt.Widget)
+        main.setWindowFlags(Qt.WindowType.Widget)
 
         # main.setCorner(Qt.TopLeftCorner, Qt.TopDockWidgetArea)
         # main.setCorner(Qt.TopRightCorner, Qt.RightDockWidgetArea)
@@ -121,12 +121,12 @@ class SymexecView(InstanceView):
 
         simgrs = QSimulationManagers(self.workspace, self.instance, self.current_simgr, self.current_state, parent=main)
         simgrs_dock = QDockWidget("SimulationManagers", simgrs)
-        main.addDockWidget(Qt.RightDockWidgetArea, simgrs_dock)
+        main.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, simgrs_dock)
         simgrs_dock.setWidget(simgrs)
 
         state_viewer = StateInspector(self.workspace, self.current_state, parent=self)
         state_viewer_dock = QDockWidget("Selected State", state_viewer)
-        main.addDockWidget(Qt.RightDockWidgetArea, state_viewer_dock)
+        main.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, state_viewer_dock)
         state_viewer_dock.setWidget(state_viewer)
 
         self._pathtree = pathtree

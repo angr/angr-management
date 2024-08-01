@@ -141,7 +141,7 @@ def enable_unicorn(state):
         function_box.modes.append(PygmentsSyntaxHighlighter(function_box.document()))
         function_box.modes.append(AutoIndentMode())
 
-        function_box.setWordWrapMode(QTextOption.WordWrap)
+        function_box.setWordWrapMode(QTextOption.WrapMode.WordWrap)
         self._function_box = function_box
 
         layout.addWidget(function_box, row, 0)
@@ -151,7 +151,7 @@ def enable_unicorn(state):
 
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
-        buttons.button(QDialogButtonBox.Ok).setText("Append to Console")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Append to Console")
 
         def do_ok() -> None:
             code = function_box.toPlainText()

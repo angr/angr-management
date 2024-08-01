@@ -264,23 +264,23 @@ class QCCodeEdit(api.CodeEdit):
 
         saved_mode = self.textInteractionFlags()
         if key in (
-            Qt.Key_Left,
-            Qt.Key_Right,
-            Qt.Key_Up,
-            Qt.Key_Down,
-            Qt.Key_PageDown,
-            Qt.Key_PageUp,
-            Qt.Key_Home,
-            Qt.Key_End,
+            Qt.Key.Key_Left,
+            Qt.Key.Key_Right,
+            Qt.Key.Key_Up,
+            Qt.Key.Key_Down,
+            Qt.Key.Key_PageDown,
+            Qt.Key.Key_PageUp,
+            Qt.Key.Key_Home,
+            Qt.Key.Key_End,
         ):
-            self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
+            self.setTextInteractionFlags(saved_mode | Qt.TextInteractionFlag.TextEditable)
         result = super().keyPressEvent(event)
         self.setTextInteractionFlags(saved_mode)
         return result
 
     def paintEvent(self, e) -> None:
         saved_mode = self.textInteractionFlags()
-        self.setTextInteractionFlags(saved_mode | Qt.TextEditable)
+        self.setTextInteractionFlags(saved_mode | Qt.TextInteractionFlag.TextEditable)
         super().paintEvent(e)
         self.setTextInteractionFlags(saved_mode)
 
@@ -375,7 +375,7 @@ class QCCodeEdit(api.CodeEdit):
         text = cdict.get(addr, "")
 
         text, ok = QInputDialog.getText(
-            self._code_view, "Expression Comment" if expr else "Statement Comment", "", QLineEdit.Normal, text
+            self._code_view, "Expression Comment" if expr else "Statement Comment", "", QLineEdit.EchoMode.Normal, text
         )
 
         if ok:

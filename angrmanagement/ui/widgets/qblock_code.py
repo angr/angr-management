@@ -84,7 +84,7 @@ class QBlockCodeObj(QObject):
         self._fmt_current = self.fmt()
         if self.should_highlight():
             self._fmt_current.setBackground(Conf.disasm_view_operand_highlight_color)
-            self._fmt_current.setFontWeight(QFont.Bold)
+            self._fmt_current.setFontWeight(QFont.Weight.Bold)
 
     def should_highlight(self) -> bool:
         """
@@ -159,7 +159,7 @@ class QBlockCodeObj(QObject):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
-        if event.button() == Qt.RightButton:
+        if event.button() == Qt.MouseButton.RightButton:
             self.infodock.disasm_view.show_context_menu_for_selected_object()
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
@@ -231,7 +231,7 @@ class QAilObj(QBlockCodeObj):
     def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=unused-argument
         super().mousePressEvent(event)
         button = event.button()
-        if button == Qt.LeftButton:
+        if button == Qt.MouseButton.LeftButton:
             ail_obj_ins_addr = getattr(self.obj, "ins_addr", None)
             if ail_obj_ins_addr is not None:
                 self.infodock.select_instruction(ail_obj_ins_addr)
@@ -367,7 +367,7 @@ class QAilConstObj(QAilTextObj):
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         super().mouseDoubleClickEvent(event)
         button = event.button()
-        if button == Qt.LeftButton:
+        if button == Qt.MouseButton.LeftButton:
             src_ins_addr = getattr(self.stmt, "ins_addr", None)
             self.infodock.disasm_view.jump_to(self.obj.value, src_ins_addr=src_ins_addr, use_animation=True)
 
@@ -800,7 +800,7 @@ class QBlockCode(QCachedGraphicsItem):
 
     def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         self.update_document()
-        painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         painter.setFont(self._config.disasm_font)
 
         if self.infodock.is_instruction_selected(self.addr) or self.obj.should_highlight_line:
@@ -836,7 +836,7 @@ class QBlockCode(QCachedGraphicsItem):
         return None
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.select_instruction(self.addr)
 
         obj = self.get_obj_for_mouse_event(event)

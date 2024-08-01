@@ -32,7 +32,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
 
     def __init__(self, is_selected: bool, data_dep_view: DataDepView, node: BaseDepNode, instr: CsInsn | None) -> None:
         super().__init__()
-        self.setFlags(QtWidgets.QGraphicsItem.ItemIsFocusable)
+        self.setFlags(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
 
         self._selected = is_selected
         self._data_dep_view = data_dep_view
@@ -67,7 +67,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     def _build_simple_text_item(self, text: str) -> QtWidgets.QGraphicsSimpleTextItem:
         text_item = QtWidgets.QGraphicsSimpleTextItem(text, self)
         text_item.setFont(Conf.symexec_font)
-        text_item.setBrush(QtCore.Qt.black)
+        text_item.setBrush(QtCore.Qt.GlobalColor.black)
         text_item.setPos(self.HORIZONTAL_PADDING, self.VERTICAL_PADDING + self._y_off)
         return text_item
 
@@ -149,13 +149,13 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     #
 
     def mouseDoubleClickEvent(self, event: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        if event.button() == QtCore.Qt.LeftButton and self._node.ins_addr:
+        if event.button() == QtCore.Qt.MouseButton.LeftButton and self._node.ins_addr:
             self._workspace.viz(self._node.ins_addr)
 
     def hoverEnterEvent(self, event: QtWidgets.QGraphicsSceneHoverEvent) -> None:
         self._selected = True
         self.refresh()
-        self.setFocus(QtCore.Qt.MouseFocusReason)
+        self.setFocus(QtCore.Qt.FocusReason.MouseFocusReason)
         self.grabKeyboard()
         self._data_dep_view.hover_enter_block(self, event.modifiers())
 
@@ -174,14 +174,14 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle change from ancestor to descendant tracing"""
-        if self._selected and event.key() == QtCore.Qt.Key_Control:
+        if self._selected and event.key() == QtCore.Qt.Key.Key_Control:
             self._data_dep_view.update_descendants(self)
         else:
             super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle change form descendant to ancestor tracing"""
-        if self._selected and event.key() == QtCore.Qt.Key_Control:
+        if self._selected and event.key() == QtCore.Qt.Key.Key_Control:
             self._data_dep_view.update_ancestors(self)
         else:
             super().keyReleaseEvent(event)

@@ -203,8 +203,8 @@ class QMemoryViewer(QFrame):
 
         area = QScrollArea()
         self._scrollarea = area
-        area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         area.setWidgetResizable(True)
 
         area.setWidget(self._view)

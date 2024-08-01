@@ -272,43 +272,43 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def keyPressEvent(self, event) -> None:
         key = event.key()
-        if key == Qt.Key_G:
+        if key == Qt.Key.Key_G:
             # jump to window
             self.popup_jumpto_dialog()
             return
-        elif key == Qt.Key_Left and QApplication.keyboardModifiers() & Qt.ALT != 0:
+        elif key == Qt.Key.Key_Left and QApplication.keyboardModifiers() & Qt.Modifier.ALT != 0:
             # jump back
             self.jump_back()
             return
-        elif key == Qt.Key_Right and QApplication.keyboardModifiers() & Qt.ALT != 0:
+        elif key == Qt.Key.Key_Right and QApplication.keyboardModifiers() & Qt.Modifier.ALT != 0:
             # jump forward
             self.jump_forward()
             return
-        elif key == Qt.Key_A:
+        elif key == Qt.Key.Key_A:
             # switch between highlight mode
             self.toggle_smart_highlighting(not self.infodock.smart_highlighting)
             return
-        elif key == Qt.Key_Tab:
+        elif key == Qt.Key.Key_Tab:
             # decompile
             self.decompile_current_function()
             return
-        elif key == Qt.Key_Semicolon:
+        elif key == Qt.Key.Key_Semicolon:
             # add comment
             self.popup_comment_dialog()
             return
-        elif key == Qt.Key_Space:
+        elif key == Qt.Key.Key_Space:
             # switch to linear view
             self.toggle_disasm_view()
             event.accept()
             return
-        elif key == Qt.Key_Escape:
+        elif key == Qt.Key.Key_Escape:
             # jump back
             self.jump_back()
             return
-        elif key == Qt.Key_C:
+        elif key == Qt.Key.Key_C:
             self.define_code()
             return
-        elif key == Qt.Key_U:
+        elif key == Qt.Key.Key_U:
             self.undefine_code()
             return
 
@@ -515,7 +515,7 @@ class DisassemblyView(SynchronizedFunctionView):
                     self,
                     "No operand",
                     "Please select an operand first.",
-                    buttons=QMessageBox.Ok,
+                    buttons=QMessageBox.StandardButton.Ok,
                 )
                 return
         else:

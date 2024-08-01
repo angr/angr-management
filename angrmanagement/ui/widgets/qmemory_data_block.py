@@ -72,7 +72,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     #
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             # unselect all other labels
             self.infodock.unselect_all_labels()
             # select this label
@@ -182,7 +182,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             if line_chars % 8 == 0 and line_chars != self.bytes_per_line:
                 # print a deliminator
                 o = QGraphicsSimpleTextItem("-", self)
-                o.setBrush(Qt.black)
+                o.setBrush(Qt.GlobalColor.black)
                 o.setFont(Conf.disasm_font)
                 bytes_list.append(o)
 

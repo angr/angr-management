@@ -80,7 +80,7 @@ class FileMenu(Menu):
                     "&Preferences...",
                     main_window.preferences,
                     shortcut=QKeySequence("Ctrl+Comma"),
-                    role=QAction.PreferencesRole,
+                    role=QAction.MenuRole.PreferencesRole,
                     icon=icon("preferences") if platform.system() != "Darwin" else None,
                 ),
                 MenuSeparator(),

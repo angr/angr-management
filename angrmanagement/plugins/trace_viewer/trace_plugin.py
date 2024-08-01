@@ -129,8 +129,8 @@ class TraceViewer(BasePlugin):
         btn = event.button()
 
         if (
-            QApplication.keyboardModifiers() == Qt.ControlModifier
-            and btn == Qt.RightButton
+            QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier
+            and btn == Qt.MouseButton.RightButton
             and self.multi_trace is not None
             and self.multi_trace.am_obj is not None
         ):

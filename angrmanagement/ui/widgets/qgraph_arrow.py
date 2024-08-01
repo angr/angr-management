@@ -23,7 +23,7 @@ EDGE_COLORS = {
     EdgeSort.EXCEPTION_EDGE: "disasm_view_exception_edge_color",
 }
 
-EDGE_STYLES = {EdgeSort.DIRECT_JUMP: Qt.SolidLine, EdgeSort.EXCEPTION_EDGE: Qt.DashLine}
+EDGE_STYLES = {EdgeSort.DIRECT_JUMP: Qt.PenStyle.SolidLine, EdgeSort.EXCEPTION_EDGE: Qt.PenStyle.DashLine}
 
 
 class QGraphArrow(QGraphicsItem):
@@ -155,7 +155,7 @@ class QDisasmGraphArrow(QGraphArrow):
         self.infodock.unhover_edge(self.edge.src.addr, self.edge.dst.addr)
 
     def mouseDoubleClickEvent(self, event) -> None:
-        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
             # go to the source
             self.disasm_view.jump_to(self.edge.src.addr, src_ins_addr=self.edge.dst.addr, use_animation=True)
             event.accept()
@@ -240,7 +240,7 @@ class QDataDepGraphArrow(QGraphArrow):
 
     def __init__(self, data_dep_view: DataDepView, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.setFlags(QGraphicsItem.ItemIsFocusable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
         self._data_dep_view = data_dep_view
         self.is_hovered = False
 
@@ -255,9 +255,11 @@ class QDataDepGraphArrow(QGraphArrow):
     def hoverEnterEvent(self, event) -> None:
         self.is_hovered = True
         self.update()  # Must trigger repaint to highlight
-        self.setFocus(Qt.MouseFocusReason)
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.grabKeyboard()
-        self._data_dep_view.graph_widget.handle_preview_request(self, event.modifiers() & Qt.ControlModifier)
+        self._data_dep_view.graph_widget.handle_preview_request(
+            self, event.modifiers() & Qt.KeyboardModifier.ControlModifier
+        )
 
     def hoverLeaveEvent(self, event) -> None:
         self.is_hovered = False
@@ -267,13 +269,13 @@ class QDataDepGraphArrow(QGraphArrow):
         self._data_dep_view.graph_widget.hide_preview()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if self.is_hovered and event.key() == Qt.Key_Control:
+        if self.is_hovered and event.key() == Qt.Key.Key_Control:
             self._data_dep_view.graph_widget.handle_preview_request(self, True)
         else:
             super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event: QKeyEvent) -> None:
-        if self.is_hovered and event.key() == Qt.Key_Control:
+        if self.is_hovered and event.key() == Qt.Key.Key_Control:
             self._data_dep_view.graph_widget.handle_preview_request(self, False)
         else:
             super().keyPressEvent(event)
@@ -283,7 +285,7 @@ class QDataDepGraphArrow(QGraphArrow):
         A double click on an arrow should center the data-dep view on the arrow's destination or source node
         If the control modifier is held, then the jump will be made to the destination. Otherwise, the source.
         """
-        jump_to_dst = event.modifiers() & Qt.ControlModifier
+        jump_to_dst = event.modifiers() & Qt.KeyboardModifier.ControlModifier
         self._data_dep_view.graph_widget.jump_to_neighbor(self, jump_to_dst, self.mapToParent(event.pos().toPoint()))
 
 

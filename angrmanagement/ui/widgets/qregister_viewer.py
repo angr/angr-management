@@ -175,8 +175,8 @@ class QRegisterViewer(QFrame):
 
         layout = QVBoxLayout()
         area = QScrollArea()
-        area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         area.setWidgetResizable(True)
 
         regs = self.ARCH_REGISTERS[self._state.arch.name]
@@ -190,7 +190,7 @@ class QRegisterViewer(QFrame):
             lbl_reg_name = QLabel(self)
             lbl_reg_name.setProperty("class", "reg_viewer_label")
             lbl_reg_name.setText(reg_name)
-            lbl_reg_name.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            lbl_reg_name.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             sublayout.addWidget(lbl_reg_name)
 
             sublayout.addSpacing(10)
@@ -208,7 +208,7 @@ class QRegisterViewer(QFrame):
         container = QFrame()
         container.setAutoFillBackground(True)
         palette = container.palette()
-        palette.setColor(container.backgroundRole(), Qt.white)
+        palette.setColor(container.backgroundRole(), Qt.GlobalColor.white)
         container.setPalette(palette)
         container.setLayout(layout)
 

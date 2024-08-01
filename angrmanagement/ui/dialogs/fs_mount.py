@@ -15,7 +15,7 @@ class FilesystemMount(QDialog):
     def __init__(self, fs_config=None, instance: Instance | None = None, parent=None) -> None:
         super().__init__(parent)
 
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self._instance = instance
         self._parent = parent
         self.fs_config = fs_config or []

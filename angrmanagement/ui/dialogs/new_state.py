@@ -306,7 +306,9 @@ class NewState(QDialog):
             self._options.clear()
             self._options.update(angr.sim_options.modes[mode_combo.currentData()])
             for child in children_items:
-                child.setCheckState(0, Qt.Checked if child.text(0) in self._options else Qt.Unchecked)
+                child.setCheckState(
+                    0, Qt.CheckState.Checked if child.text(0) in self._options else Qt.CheckState.Unchecked
+                )
 
         mode_combo.currentIndexChanged.connect(mode_changed)
         self._options.clear()
@@ -331,21 +333,21 @@ class NewState(QDialog):
                 continue
             parent = QTreeWidgetItem(options_tree)
             parent.setText(0, name)
-            parent.setFlags(parent.flags() | Qt.ItemIsAutoTristate | Qt.ItemIsUserCheckable)
+            parent.setFlags(parent.flags() | Qt.ItemFlag.ItemIsAutoTristate | Qt.ItemFlag.ItemIsUserCheckable)
             for option in members:
                 child = QTreeWidgetItem(parent)
                 child.setText(0, option)
-                child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
-                child.setCheckState(0, Qt.Checked if option in self._options else Qt.Unchecked)
+                child.setFlags(child.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                child.setCheckState(0, Qt.CheckState.Checked if option in self._options else Qt.CheckState.Unchecked)
                 children_items.append(child)
         parent = QTreeWidgetItem(options_tree)
         parent.setText(0, "All options")
-        parent.setFlags(parent.flags() | Qt.ItemIsAutoTristate | Qt.ItemIsUserCheckable)
+        parent.setFlags(parent.flags() | Qt.ItemFlag.ItemIsAutoTristate | Qt.ItemFlag.ItemIsUserCheckable)
         for option in {x for x in angr.sim_options.__dict__.values() if isinstance(x, str) and is_option(x)}:
             child = QTreeWidgetItem(parent)
             child.setText(0, option)
-            child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
-            child.setCheckState(0, Qt.Checked if option in self._options else Qt.Unchecked)
+            child.setFlags(child.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            child.setCheckState(0, Qt.CheckState.Checked if option in self._options else Qt.CheckState.Unchecked)
             children_items.append(child)
 
         def maintain_model(item: QTreeWidgetItem, _) -> None:
@@ -446,7 +448,7 @@ class NewState(QDialog):
 
             self.close()
 
-        ok_button = buttons.button(QDialogButtonBox.Ok)
+        ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
         buttons.accepted.connect(do_ok)
 
         def validation_update() -> None:

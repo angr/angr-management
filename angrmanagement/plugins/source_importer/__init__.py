@@ -48,7 +48,7 @@ class SourceImporterPlugin(BasePlugin):
             self.workspace.main_window,
             "Select source root",
             ".",
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
         )
         if result is not None:
             self.source_paths.append(result)

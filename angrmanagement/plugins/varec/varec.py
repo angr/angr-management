@@ -9,7 +9,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import requests
-from PySide6.QtGui import Qt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 from sortedcontainers import SortedDict
 
@@ -31,7 +31,7 @@ class VaRec(BasePlugin):
         self.transitions: set[tuple[int, int]] = set()
         self.covered_blocks = SortedDict()
 
-        self.sink_color = Qt.yellow
+        self.sink_color = Qt.GlobalColor.yellow
 
     MENU_BUTTONS = [
         "&Infer variable names",
@@ -74,7 +74,7 @@ class VaRec(BasePlugin):
                 self.workspace._main_window,
                 "Error in variable name prediction",
                 "Cannot predict variable names. No pseudocode exists in the pseudocode view.",
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
             return
         if view.codegen._variable_kb is None:
@@ -82,7 +82,7 @@ class VaRec(BasePlugin):
                 self.workspace._main_window,
                 "Error in variable name prediction",
                 "Cannot predict variable names. The pseudocode view does not have associated variables KB.",
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
             return
 
@@ -112,7 +112,7 @@ class VaRec(BasePlugin):
                 self.workspace._main_window,
                 "Error in variable name prediction",
                 "Failed to predict names for all variables involved.",
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
 
             return
@@ -127,7 +127,7 @@ class VaRec(BasePlugin):
                 self.workspace._main_window,
                 "Error in variable name prediction",
                 "Unexpected output returned from the backend. 'code' is not found or empty.",
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
             return
         if "predictions" not in result["code"][0] or not result["code"][0]["predictions"]:
@@ -135,7 +135,7 @@ class VaRec(BasePlugin):
                 self.workspace._main_window,
                 "Error in variable name prediction",
                 "Unexpected output returned from the backend. 'predictions' is not found or empty.",
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
             self._restore_stage(view)
             return
@@ -144,7 +144,7 @@ class VaRec(BasePlugin):
                 self.workspace._main_window,
                 "Error in variable name prediction",
                 f"Prediction failed. Error: {result['code'][0]['predictions'][0]}",
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
             )
             self._restore_stage(view)
             return
