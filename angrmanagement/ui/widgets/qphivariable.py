@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class QPhiVariable(QCachedGraphicsItem):
+    """QPhiVariable is a graphical representation of a phi variable in the disassembly view."""
+
     IDENT_LEFT_PADDING = 5
 
     def __init__(self, instance: Instance, disasm_view, phi_variable, config, parent=None) -> None:
@@ -53,9 +55,12 @@ class QPhiVariable(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None
-    ) -> None:  # pylint: disable=unused-argument
+    def paint(  # pylint: disable=unused-argument
+        self,
+        painter: QPainter,
+        option: QStyleOptionGraphicsItem,
+        widget: QWidget | None = None,
+    ) -> None:
         if self.disasm_view.show_variable_identifier is False:
             # Phi variables are not displayed if variable identifies are hidden
             return

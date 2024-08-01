@@ -63,8 +63,8 @@ class QSearchModel(QAbstractTableModel):
         return len(self.HEADER)
 
     def headerData(
-        self, section, orientation, role=None
-    ) -> Qt.SortOrder | str | None:  # pylint: disable=unused-argument
+        self, section, orientation, role=None  # pylint: disable=unused-argument
+    ) -> Qt.SortOrder | str | None:
         if role == Qt.ItemDataRole.DisplayRole:
             if section < len(self.HEADER):
                 return self.HEADER[section]

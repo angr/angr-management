@@ -18,6 +18,8 @@ _l = logging.getLogger(__name__)
 
 
 class QBaseGraphicsView(QGraphicsView):
+    """QBaseGraphicsView is a QGraphicsView that emits a signal when the visible scene rect changes."""
+
     visible_scene_rect_changed = Signal(QRectF)
 
     #
@@ -52,6 +54,8 @@ class QBaseGraphicsView(QGraphicsView):
 
 
 class QSaveableGraphicsView(QBaseGraphicsView):
+    """QSaveableGraphicsView is a QGraphicsView that can save the visible scene to an image file."""
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
         self._is_extra_render_pass: bool = False
@@ -94,6 +98,8 @@ class QSaveableGraphicsView(QBaseGraphicsView):
 
 
 class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
+    """QZoomableDraggableGraphicsView is a QGraphicsView that allows zooming and dragging."""
+
     ZOOM_X = True
     ZOOM_Y = True
 
@@ -115,9 +121,6 @@ class QZoomableDraggableGraphicsView(QSaveableGraphicsView):
 
         # the zoom factor, for preserving the zoom
         self.zoom_factor = None
-
-        # self.setRenderHints(
-        # QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
 
         self.grabGesture(Qt.GestureType.PinchGesture)
         self._gesture_last_scale = 1.0
