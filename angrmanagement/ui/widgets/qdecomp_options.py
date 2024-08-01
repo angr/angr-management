@@ -21,6 +21,7 @@ class OptionType:
     OPTION = 1
     OPTIMIZATION_PASS = 2
     PEEPHOLE_OPTIMIZATION = 3
+    INLINED_FUNCTION = 3
 
 
 class QDecompilationOption(QTreeWidgetItem):
@@ -74,6 +75,13 @@ class QDecompilationOption(QTreeWidgetItem):
             return bool(self.checkState(0) == Qt.CheckState.Checked)
 
 
+class FunctionInlineOption:
+    def __init__(self, func):
+        self.NAME = func.name
+        self.function = func
+        self.DESCRIPTION = f"Inline the {self.NAME} function during decompilation."
+
+
 class QDecompilationOptions(QWidget):
     """
     The widget for selecting values for decompilation options. Will synchronize its status back to its parent (passed
@@ -102,6 +110,7 @@ class QDecompilationOptions(QWidget):
         self._qoptions = []
         self._qoptipasses = []
         self._qpeephole_opts = []
+        self._qinlines = []
 
         self._init_widgets()
 
@@ -151,6 +160,14 @@ class QDecompilationOptions(QWidget):
         for item in self._qpeephole_opts:
             if item.state:
                 selected.append(item.option)
+        return selected
+
+    @property
+    def selected_inlines(self):
+        selected = []
+        for item in self._qinlines:
+            if item.state:
+                selected.append(item.option.function)
         return selected
 
     @property
@@ -205,11 +222,13 @@ class QDecompilationOptions(QWidget):
         vals_options = dict(self.option_and_values)
         vals_peephole = self.selected_peephole_opts
         vals_passes = self.selected_passes
+        vals_inlines = set(self.selected_inlines)
 
         self._treewidget.clear()
         self._qoptions.clear()
         self._qoptipasses.clear()
         self._qpeephole_opts.clear()
+        self._qinlines.clear()
 
         categories = {}
 
@@ -242,6 +261,25 @@ class QDecompilationOptions(QWidget):
             enabled = opt_ in default_peephole_opts if reset_values else opt_ in vals_peephole
             w = QDecompilationOption(po_category, opt_, OptionType.PEEPHOLE_OPTIMIZATION, enabled=enabled)
             self._qpeephole_opts.append(w)
+
+        inlining_category = QTreeWidgetItem(self._treewidget, ["Inlined Functions"])
+        categories["inlining_opts"] = inlining_category
+        if not self._instance.project.am_none:
+            for function in self._instance.project.kb.functions.values():
+                if function.is_plt or function.is_simprocedure:
+                    continue
+                enabled = False if reset_values else function in vals_inlines
+                w = QDecompilationOption(
+                    inlining_category, FunctionInlineOption(function), OptionType.INLINED_FUNCTION, enabled=enabled
+                )
+                self._qinlines.append(w)
+
+        if not self._code_view.function.am_none:
+            reachable_functions = set(self._code_view.function.functions_reachable())
+            for w in self._qinlines:
+                w.setHidden(
+                    w.option.function == self._code_view.function or w.option.function not in reachable_functions
+                )
 
         # expand all
         self._treewidget.expandAll()
