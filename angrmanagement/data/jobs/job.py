@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 import logging
 import time
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from angrmanagement.logic import GlobalInfo
@@ -11,21 +12,17 @@ from angrmanagement.logic import GlobalInfo
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from IPython.extensions.autoreload import ModuleReloader
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
-
-m = ...
 
 
 log = logging.getLogger(__name__)
 
 
-def _load_autoreload() -> None:
-    """
-    Load the autoreload extension module. Delay the import and initialization to reduce angr management's startup time.
-    """
-
-    global m
+@lru_cache(maxsize=1)
+def _module_reloader() -> ModuleReloader:
     try:
         from IPython.extensions.autoreload import ModuleReloader  # pylint:disable=import-outside-toplevel
 
@@ -35,6 +32,8 @@ def _load_autoreload() -> None:
         m.check()
     except ImportError:
         m = None
+
+    return m
 
 
 class Job:
@@ -62,8 +61,7 @@ class Job:
         self._on_finish = on_finish
 
         if GlobalInfo.autoreload:
-            if m is ...:
-                _load_autoreload()
+            m = _module_reloader()
             if m is not None:
                 prestate = dict(m.modules_mtimes)
                 m.check()
