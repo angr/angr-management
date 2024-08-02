@@ -20,22 +20,22 @@ class AnalyzeMenu(Menu):
             [
                 MenuEntry(
                     "&Run Analysis...",
-                    main_window.run_analysis,
+                    main_window.workspace.run_analysis,
                     shortcut=QKeySequence(Qt.Key.Key_F4),
                     icon=icon("run-analysis"),
                 ),
                 MenuSeparator(),
                 MenuEntry(
                     "&Decompile",
-                    main_window.decompile_current_function,
+                    main_window.workspace.decompile_current_function,
                     shortcut=QKeySequence(Qt.Key.Key_F5),
                     icon=icon("pseudocode-view"),
                 ),
                 MenuEntry(
                     "View in Proximity &Browser",
-                    main_window.view_proximity_for_current_function,
+                    main_window.workspace.view_proximity_for_current_function,
                     shortcut=QKeySequence("Ctrl+B"),
                 ),
-                MenuEntry("&Interact", main_window.interact, shortcut=QKeySequence(Qt.Key.Key_F6)),
+                MenuEntry("&Interact", main_window.workspace.interact_program, shortcut=QKeySequence(Qt.Key.Key_F6)),
             ],
         )

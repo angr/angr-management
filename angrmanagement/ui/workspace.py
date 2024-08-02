@@ -33,6 +33,7 @@ from angrmanagement.data.jobs import (
     PrototypeFindingJob,
     VariableRecoveryJob,
 )
+from angrmanagement.data.jobs.dependency_analysis import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.logic.commands import CommandManager
@@ -607,6 +608,11 @@ class Workspace:
 
             self.generate_cfg(cfg_options)
 
+    def run_dependency_analysis(self, func_addr: int | None = None, func_arg_idx: int | None = None) -> None:
+        self.job_manager.add_job(
+            DependencyAnalysisJob(self.main_instance, func_addr=func_addr, func_arg_idx=func_arg_idx)
+        )
+
     def decompile_current_function(self) -> None:
         current = self.view_manager.current_tab
         if isinstance(current, CodeView):
@@ -741,7 +747,9 @@ class Workspace:
         job = LoadBinaryJob(self.main_instance, thing, load_options=load_options, on_finish=on_complete)
         self.job_manager.add_job(job)
 
-    def interact_program(self, img_name: str, view=None) -> None:
+    def interact_program(self, img_name: str | None = None, view=None) -> None:
+        if img_name is None:
+            img_name = self.main_instance.img_name
         if view is None or view.category != "interaction":
             view = self._get_or_create_view("interaction", InteractionView)
         view.initialize(img_name)

@@ -30,7 +30,6 @@ from angrmanagement.ui.dialogs.retype_node import RetypeNode
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
-from angrmanagement.ui.views.disassembly_view import DisassemblyView
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
 
 if TYPE_CHECKING:
@@ -309,7 +308,6 @@ class QCCodeEdit(api.CodeEdit):
         if not isinstance(n, CVariable | CFunction | CFunctionCall):
             return
 
-        disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
         if isinstance(n, CFunction | CFunctionCall):
             addr = n.addr if isinstance(n, CFunction) else n.callee_func.addr
             dialog = XRefDialog(
@@ -324,7 +322,7 @@ class QCCodeEdit(api.CodeEdit):
             addr = self.get_closest_insaddr(n)
             dialog = XRefDialog(
                 addr=addr,
-                variable_manager=disasm_view.variable_manager,
+                variable_manager=self.instance.project.kb.variables,
                 variable=n.variable,
                 instance=self.instance,
                 disassembly_view=self._code_view,

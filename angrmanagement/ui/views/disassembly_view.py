@@ -542,7 +542,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
         if dependson.location is not None and dependson.arg is not None:
             # track function argument
-            self.workspace._main_window.run_dependency_analysis(
+            self.workspace.run_dependency_analysis(
                 func_addr=addr,
                 func_arg_idx=dependson.arg,
             )
