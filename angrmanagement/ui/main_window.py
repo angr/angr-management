@@ -1,7 +1,6 @@
 # pylint:disable=no-self-use
 from __future__ import annotations
 
-import datetime
 import logging
 import os
 import pickle
@@ -12,18 +11,13 @@ from typing import TYPE_CHECKING
 import angr
 import angr.flirt
 import PySide6QtAds as QtAds
-import qtawesome as qta
 from angr.angrdb import AngrDB
-from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QFileDialog,
-    QHBoxLayout,
-    QLabel,
     QMainWindow,
     QMessageBox,
-    QProgressBar,
-    QProgressDialog,
     QWidget,
 )
 
@@ -38,6 +32,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
 from angrmanagement.ui.views import DisassemblyView
+from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
 from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
@@ -55,7 +50,6 @@ from .menus.plugin_menu import PluginMenu
 from .menus.view_menu import ViewMenu
 from .toolbar_manager import ToolbarManager
 from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
-from .widgets import QIconLabel
 from .workspace import Workspace
 
 try:
@@ -168,14 +162,6 @@ class MainWindow(QMainWindow):
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
 
-        self._progress_stopwatch_start_time: float = 0.0
-        self._progress_message: str = ""
-        self._progress_percentage: float = 0
-        self._progress_update_timer: QTimer = QTimer()
-        self._progress_update_timer.setSingleShot(False)
-        self._progress_update_timer.setInterval(1000)
-        self._progress_update_timer.timeout.connect(self._on_progress_update_timer_timeout)
-
         self.defaultWindowFlags = None
 
         # menus
@@ -185,8 +171,10 @@ class MainWindow(QMainWindow):
         self._help_menu = None
         self._plugin_menu = None
 
-        self._init_statusbar()
         self._init_workspace()
+
+        self.status_bar = QAmStatusBar(self)
+
         self._init_toolbars()
         self._init_menus()
         self._init_plugins()
@@ -274,59 +262,6 @@ class MainWindow(QMainWindow):
     #
     # Widgets
     #
-
-    def _init_statusbar(self) -> None:
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addStretch()
-
-        self._status_label = QLabel()
-        self._status_label.hide()
-        layout.addWidget(self._status_label)
-
-        self._stopwatch_label = QIconLabel(qta.icon("fa5s.stopwatch", color=Conf.palette_buttontext))
-        self._stopwatch_label.hide()
-        layout.addWidget(self._stopwatch_label)
-
-        self._interrupt_job_button = QIconLabel(qta.icon("fa5s.times-circle", color=Conf.palette_buttontext))
-        self._interrupt_job_button.clicked.connect(lambda: self.workspace.job_manager.interrupt_current_job)
-        self._interrupt_job_button.hide()
-        layout.addWidget(self._interrupt_job_button)
-
-        self._progress_label = QLabel()
-        self._progress_label.hide()
-        layout.addWidget(self._progress_label)
-
-        self._progress_bar = QProgressBar()
-        self._progress_bar.setMinimum(0)
-        self._progress_bar.setMaximum(100)
-        self._progress_bar.setMinimumWidth(100)
-        self._progress_bar.setMaximumWidth(100)
-        self._progress_bar.hide()
-        layout.addWidget(self._progress_bar)
-
-        container_widget = QWidget()
-        container_widget.setLayout(layout)
-        self.statusBar().addPermanentWidget(container_widget)
-
-        self._progress_dialog = QProgressDialog("Waiting...", "Cancel", 0, 100, self)
-        self._progress_dialog.setAutoClose(False)
-        self._progress_dialog.setWindowFlags(
-            self._progress_dialog.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint
-        )
-        self._progress_dialog.setModal(True)
-        self._progress_dialog.setMinimumDuration(2**31 - 1)
-
-        def on_cancel() -> None:
-            if self.workspace is None:
-                return
-            for job in self.workspace.job_manager.jobs:
-                if job.blocking:
-                    self.workspace.job_manager.interrupt_current_job()
-                    break
-
-        self._progress_dialog.canceled.connect(on_cancel)
-        self._progress_dialog.close()
 
     def _init_toolbars(self) -> None:
         for cls in (FileToolbar, DebugToolbar, FeatureMapToolbar):
@@ -894,45 +829,6 @@ class MainWindow(QMainWindow):
     #
     # Other public methods
     #
-
-    def progress(self, status: str, progress: float, reset_stopwatch: bool = False) -> None:
-        self._progress_message = status
-        self._progress_percentage = progress
-
-        if reset_stopwatch:
-            self._progress_stopwatch_start_time = time.time()
-        if not self._progress_update_timer.isActive():
-            self._progress_update_timer.start()
-
-        self._refresh_progress_progress_message()
-
-    def _refresh_progress_progress_message(self) -> None:
-        self._status_label.setText(self._progress_message)
-        self._status_label.show()
-        self._progress_label.setText(f"{self._progress_percentage:.1f}%")
-        self._progress_label.show()
-        self._progress_bar.setValue(round(self._progress_percentage))
-        self._progress_bar.show()
-        elapsed_seconds = int(time.time() - self._progress_stopwatch_start_time)
-        if elapsed_seconds > 5:
-            self._stopwatch_label.setText(str(datetime.timedelta(seconds=elapsed_seconds)))
-            self._stopwatch_label.show()
-        self._interrupt_job_button.show()
-        self._progress_dialog.setLabelText(self._progress_message)
-        self._progress_dialog.setValue(round(self._progress_percentage))
-
-    def _on_progress_update_timer_timeout(self) -> None:
-        self._refresh_progress_progress_message()
-
-    def progress_done(self) -> None:
-        self._progress_update_timer.stop()
-        self._stopwatch_label.hide()
-        self._status_label.setText("")
-        self._status_label.hide()
-        self._progress_label.hide()
-        self._progress_bar.hide()
-        self._interrupt_job_button.hide()
-        self._progress_dialog.hide()
 
     def bring_to_front(self) -> None:
         self.setWindowState((self.windowState() & ~Qt.WindowState.WindowMinimized) | Qt.WindowState.WindowActive)

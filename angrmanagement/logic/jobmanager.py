@@ -57,20 +57,20 @@ class Worker(Thread):
     def run(self) -> None:
         while True:
             if self.job_manager.jobs_queue.empty():
-                gui_thread_schedule(GlobalInfo.main_window.progress_done, args=())
+                gui_thread_schedule(GlobalInfo.main_window.status_bar.progress_done, args=())
 
             if (
                 any(job.blocking for job in self.job_manager.jobs)
                 and GlobalInfo.main_window is not None
                 and GlobalInfo.main_window.workspace
             ):
-                gui_thread_schedule(GlobalInfo.main_window._progress_dialog.hide, args=())
+                gui_thread_schedule(GlobalInfo.main_window.status_bar._progress_dialog.hide, args=())
 
             job = self.job_manager.jobs_queue.get()
-            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=("Working...", 0.0, True))
+            gui_thread_schedule_async(GlobalInfo.main_window.status_bar.progress, args=("Working...", 0.0, True))
 
             if any(job.blocking for job in self.job_manager.jobs) and GlobalInfo.main_window.isVisible():
-                gui_thread_schedule(GlobalInfo.main_window._progress_dialog.show, args=())
+                gui_thread_schedule(GlobalInfo.main_window.status_bar._progress_dialog.show, args=())
 
             # If job cancelled, then skip it
             if job.state == JobState.CANCELLED:
@@ -141,13 +141,14 @@ class JobManager:
         self._gui_last_updated_at = 0.0
         self._last_text = None
 
-        self._start_worker()
-
     def add_job(self, job: Job) -> None:
         self.jobs.append(job)
         if self.workspace.view_manager.first_view_in_category("jobs") is not None:
             self.callback_job_added(job)
         self.jobs_queue.put(job)
+
+        if self.worker_thread is None or not self.worker_thread.is_alive():
+            self._start_worker()
 
     def cancel_job(self, job: Job) -> bool:
         """Cancel a job. Returns True if the job was cancelled, False if it was
@@ -200,7 +201,7 @@ class JobManager:
             self._gui_last_updated_at = time.time()
             job.progress_percentage = percentage
             status_text = f"{job.name}: {text}" if text else job.name
-            gui_thread_schedule_async(GlobalInfo.main_window.progress, args=(status_text, percentage))
+            gui_thread_schedule_async(GlobalInfo.main_window.status_bar.progress, args=(status_text, percentage))
 
             # Dynamically update jobs view progress with instance
             if self.workspace.view_manager.first_view_in_category("jobs") is not None:
