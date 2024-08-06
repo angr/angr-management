@@ -57,7 +57,7 @@ class QASTViewer(QFrame):
 
     def mouseDoubleClickEvent(self, event) -> None:
         if self._ast is not None and not self._ast.symbolic:
-            self.workspace.viz(self._ast._model_concrete.value)
+            self.workspace.viz(claripy.backends.concrete.convert(self._ast).value)
 
     #
     # Properties

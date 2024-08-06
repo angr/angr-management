@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+import claripy
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QGraphicsItem
@@ -54,9 +55,7 @@ class QStateBlock(QGraphicsItem):
         if self.state.regs._ip.symbolic:
             self._label_str = str(self.state.regs._ip)
         else:
-            addr = self.state.regs._ip._model_concrete.value
-            self._label_str = f"{addr:#x}"
-        self._label_str = "State " + self._label_str
+            addr = claripy.backends.concrete.convert(self.state.regs._ip).value
 
         self.addr = addr
 
