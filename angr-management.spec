@@ -3,7 +3,6 @@ import sys
 
 import angr
 import capstone
-import cle
 import debugpy
 import parso
 import pypcode
@@ -20,7 +19,6 @@ AM_BASE = pathlib.Path(SPECPATH)
 # Python module roots
 ANGR_BASE = pathlib.Path(angr.__file__).parent
 CAPSTONE_BASE = pathlib.Path(capstone.__file__).parent
-CLE_BASE = pathlib.Path(cle.__file__).parent
 DEBUGPY_BASE = pathlib.Path(debugpy.__file__).parent
 PARSO_BASE = pathlib.Path(parso.__file__).parent
 PYPCODE_BASE = pathlib.Path(pypcode.__file__).parent
@@ -37,8 +35,6 @@ included_data = [
     (str(AM_BASE / "angrmanagement" / "resources" / "images"), "angrmanagement/resources/images"),
     (str(AM_BASE / "angrmanagement" / "plugins"), "angrmanagement/plugins"),
     (str(AM_BASE / "angrmanagement" / "config"), "angrmanagement/config"),
-    (str(CLE_BASE / "backends" / "pe" / "relocation"), "cle/backends/pe/relocation"),
-    (str(CLE_BASE / "backends" / "elf" / "relocation"), "cle/backends/elf/relocation"),
     (str(ANGR_BASE / "analyses" / "identifier" / "functions"), "angr/analyses/identifier/functions"),
     (str(ANGR_BASE / "procedures"), "angr/procedures"),
     (str(PARSO_BASE / "python"), "parso/python"),
