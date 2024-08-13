@@ -16,12 +16,16 @@ jobs:
       version: ${{ github.event.inputs.version }}
   deploy:
     runs-on: ubuntu-22.04
+    needs: build
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
       - name: Make release
         run: >
-          gh release create nightly \
+          gh release create ${{ github.event.inputs.version }} \
             --repo angr/angr-management \
             --title "angr management ${{ github.event.inputs.version }}" \
             --notes "$RELEASE_NOTES" \
