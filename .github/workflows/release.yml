@@ -16,6 +16,10 @@ jobs:
       version: ${{ github.event.inputs.version }}
   deploy:
     runs-on: ubuntu-22.04
+    needs: build
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
