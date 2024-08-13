@@ -25,7 +25,7 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Make release
         run: >
-          gh release create nightly \
+          gh release create ${{ github.event.inputs.version }} \
             --repo angr/angr-management \
             --title "angr management ${{ github.event.inputs.version }}" \
             --notes "$RELEASE_NOTES" \
