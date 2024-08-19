@@ -10,6 +10,7 @@ import pyvex
 import pyxdia
 import unicorn
 import z3
+import zmq
 
 sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
@@ -26,6 +27,7 @@ PYVEX_BASE = pathlib.Path(pyvex.__file__).parent
 PYXDIA_BASE = pathlib.Path(pyxdia.__file__).parent
 UNICORN_BASE = pathlib.Path(unicorn.__file__).parent
 Z3_BASE = pathlib.Path(z3.__file__).parent
+ZMQ_BASE = pathlib.Path(zmq.__file__).parent
 
 block_cipher = None
 icon = str(AM_BASE / "angrmanagement" / "resources" / "images" / "angr.ico")
@@ -48,6 +50,7 @@ included_data = [
     (str(CAPSTONE_BASE / "lib"), "capstone/lib"),
     (str(Z3_BASE / "lib"), "z3/lib"),
     (str(PYXDIA_BASE / "bin"), "pyxdia/bin"),
+    (str(ZMQ_BASE / "backend" / "cffi"), "zmq/backend/cffi"),
 ]
 
 
@@ -65,11 +68,6 @@ if sys.platform == "linux":
 
     included_data.append((str(ARCHR_BASE / "implants"), "archr/implants"))
     included_data.append((str(KEYSTONE_BASE), "keystone"))
-
-if sys.platform != "darwin":
-    import zmq
-
-    ZMQ_BASE = pathlib.Path(zmq.__file__).parent
     included_data.append((str(ZMQ_BASE / ".." / "pyzmq.libs"), "pyzmq.libs"))
 
 
