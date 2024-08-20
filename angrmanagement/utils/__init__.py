@@ -228,7 +228,7 @@ def filter_string_for_display(s):
     for ch in s.replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t"):
         char = ord(ch)
         if not is_printable(char):
-            ch = f"\\x{char:0.2x}"
+            ch = f"\\x{char:02x}"
         output += ch
     return output
 
