@@ -218,7 +218,7 @@ class QRegisterViewer(QFrame):
         base_layout.addWidget(area)
         self.setLayout(base_layout)
 
-    def _watch_state(self) -> None:
+    def _watch_state(self, **_) -> None:
         if not self._registers:
             self._init_widgets()
 

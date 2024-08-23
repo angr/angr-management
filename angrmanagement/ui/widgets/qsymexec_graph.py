@@ -106,7 +106,7 @@ class QSymExecGraph(QZoomableDraggableGraphicsView):
 
         super().keyPressEvent(event)
 
-    def _watch_state(self) -> None:
+    def _watch_state(self, **_) -> None:
         for block in self.blocks:
             if block.get_state() == self.state:
                 block.selected = True

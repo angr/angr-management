@@ -56,6 +56,7 @@ class QStateBlock(QGraphicsItem):
             self._label_str = str(self.state.regs._ip)
         else:
             addr = claripy.backends.concrete.convert(self.state.regs._ip).value
+            self._label_str = f"{addr:#x}"
 
         self.addr = addr
 

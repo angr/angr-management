@@ -159,7 +159,7 @@ class QStateTable(QTableWidget):
         simgr_name = NameGenerator.random_name()
         self.workspace.create_simulation_manager(state, simgr_name)
 
-    def _watch_states(self) -> None:
+    def _watch_states(self, **_) -> None:
         self.reload()
 
     def _get_copied_state_name(self, current_name: str):
