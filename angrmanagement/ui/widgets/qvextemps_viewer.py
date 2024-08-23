@@ -87,5 +87,5 @@ class QVEXTempsViewer(QFrame):
 
         self._area.setWidget(container)
 
-    def _watch_state(self) -> None:
+    def _watch_state(self, **_) -> None:
         self._load_tmps()
