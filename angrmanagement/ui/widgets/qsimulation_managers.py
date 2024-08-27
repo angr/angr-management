@@ -246,7 +246,7 @@ class QSimulationManagers(QFrame):
     def _on_step_clicked(self) -> None:
         if not self.simgr.am_none:
             self.workspace.job_manager.add_job(
-                SimgrStepJob.create(
+                SimgrStepJob(
                     self.instance,
                     self.simgr.am_obj,
                     until_branch=False,
@@ -257,7 +257,7 @@ class QSimulationManagers(QFrame):
     def _on_step_until_branch_clicked(self) -> None:
         if not self.simgr.am_none:
             self.workspace.job_manager.add_job(
-                SimgrStepJob.create(
+                SimgrStepJob(
                     self.instance,
                     self.simgr.am_obj,
                     until_branch=True,
