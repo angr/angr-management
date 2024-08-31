@@ -11,13 +11,6 @@ else
     source .venv/bin/activate
 fi
 
-if [[ "$OSTYPE" == "darwin"* && "$(uname -m)" == "arm64" ]]; then
-    EXTRA_ANGR_INSTALL_ARGS="--no-binary capstone"
-else
-    EXTRA_ANGR_INSTALL_ARGS=""
-fi
-
-
 # Install dependencies
 
 python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
@@ -28,7 +21,7 @@ pip install git+https://github.com/angr/pyvex.git@$TAG
 pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe,pdb]
 pip install git+https://github.com/angr/claripy.git@$TAG
 pip install git+https://github.com/angr/ailment.git@$TAG
-pip install $EXTRA_ANGR_INSTALL_ARGS --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
+pip install --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     pip install git+https://github.com/angr/archr.git@$TAG
 fi
