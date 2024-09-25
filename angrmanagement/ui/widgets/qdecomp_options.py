@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from angr.analyses.decompiler import DECOMPILATION_PRESETS
 from angr.analyses.decompiler.decompilation_options import options as dec_options
-from angr.analyses.decompiler.optimization_passes import get_default_optimization_passes, get_optimization_passes
+from angr.analyses.decompiler.optimization_passes import get_optimization_passes
 from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, MULTI_STMT_OPTS, STMT_OPTS
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
@@ -163,9 +164,10 @@ class QDecompilationOptions(QWidget):
     def get_default_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
-        return get_default_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
-            x for x, de in self._code_view.workspace.plugins.optimization_passes() if de
-        ]
+        default_preset = DECOMPILATION_PRESETS["default"]
+        return default_preset.get_optimization_passes(
+            self._instance.project.arch, self._instance.project.simos.name
+        ) + [x for x, de in self._code_view.workspace.plugins.optimization_passes() if de]
 
     def get_all_passes(self):
         if self._instance is None or self._instance.project.am_none:
