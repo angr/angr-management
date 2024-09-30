@@ -24,7 +24,7 @@ class MemoryChecker(BasePlugin):
         self.states.am_subscribe(self.install_state_plugin)
 
     def install_state_plugin(self, **kwargs) -> None:
-        if kwargs.get("src", None) != "new":
+        if kwargs.get("src") != "new":
             return
         state: SimState = kwargs.get("state")
         state.register_plugin("heap", SimHeapPTMalloc())
