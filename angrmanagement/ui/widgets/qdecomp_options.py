@@ -7,7 +7,17 @@ from angr.analyses.decompiler.decompilation_options import options as dec_option
 from angr.analyses.decompiler.optimization_passes import get_optimization_passes
 from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, MULTI_STMT_OPTS, STMT_OPTS
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -96,6 +106,7 @@ class QDecompilationOptions(QWidget):
         self._peephole_opts = None
 
         # widgets
+        self._preset_cmb: QComboBox
         self._search_box: QLineEdit
         self._treewidget: QTreeWidget
         self._apply_btn: QPushButton
@@ -164,7 +175,7 @@ class QDecompilationOptions(QWidget):
     def get_default_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
-        default_preset = DECOMPILATION_PRESETS["default"]
+        default_preset = DECOMPILATION_PRESETS[self._preset_cmb.currentText()]
         return default_preset.get_optimization_passes(
             self._instance.project.arch, self._instance.project.simos.name
         ) + [x for x, de in self._code_view.workspace.plugins.optimization_passes() if de]
@@ -183,6 +194,20 @@ class QDecompilationOptions(QWidget):
         return MULTI_STMT_OPTS + STMT_OPTS + EXPR_OPTS
 
     def _init_widgets(self) -> None:
+        preset_lyt = QHBoxLayout()
+        preset_lyt.setContentsMargins(3, 3, 3, 3)
+        preset_lyt.setSpacing(3)
+
+        preset_lyt.addWidget(QLabel("Preset:"))
+        self._preset_cmb = QComboBox()
+        presets = sorted([n for n in DECOMPILATION_PRESETS if n != "default"])
+        self._preset_cmb.addItems(presets)
+        self._preset_cmb.setCurrentIndex(
+            next(i for i, n in enumerate(presets) if DECOMPILATION_PRESETS[n] is DECOMPILATION_PRESETS["default"])
+        )
+        self._preset_cmb.activated.connect(lambda: self.reload(force=True))
+        preset_lyt.addWidget(self._preset_cmb, 1)
+
         # search box
         self._search_box = QLineEdit()
         self._search_box.textChanged.connect(self._on_search_box_text_changed)
@@ -197,6 +222,7 @@ class QDecompilationOptions(QWidget):
         self._apply_btn.clicked.connect(self._on_apply_pressed)
 
         layout = QVBoxLayout()
+        layout.addLayout(preset_lyt)
         layout.addWidget(self._search_box)
         layout.addWidget(self._treewidget)
         layout.addWidget(self._apply_btn)
