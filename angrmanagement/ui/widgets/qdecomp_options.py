@@ -198,7 +198,7 @@ class QDecompilationOptions(QWidget):
 
     def _init_widgets(self) -> None:
         preset_lyt = QHBoxLayout()
-        preset_lyt.setContentsMargins(3, 3, 3, 3)
+        preset_lyt.setContentsMargins(0, 0, 0, 0)
         preset_lyt.setSpacing(3)
 
         preset_lyt.addWidget(QLabel("Preset:"))
@@ -230,6 +230,8 @@ class QDecompilationOptions(QWidget):
         self._apply_btn.clicked.connect(self._on_apply_pressed)
 
         layout = QVBoxLayout()
+        layout.setContentsMargins(3, 3, 3, 3)
+        layout.setSpacing(3)
         layout.addLayout(preset_lyt)
         layout.addWidget(self._search_box)
         layout.addWidget(self._treewidget)
