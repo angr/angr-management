@@ -19,6 +19,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.config import Conf
+from angrmanagement.ui.icons import icon
+
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
@@ -210,6 +213,11 @@ class QDecompilationOptions(QWidget):
 
         # search box
         self._search_box = QLineEdit()
+        self._search_box.setClearButtonEnabled(True)
+        self._search_box.addAction(
+            icon("search", color=Conf.palette_placeholdertext), QLineEdit.ActionPosition.LeadingPosition
+        )
+        self._search_box.setPlaceholderText("Filter by name...")
         self._search_box.textChanged.connect(self._on_search_box_text_changed)
 
         # tree view
