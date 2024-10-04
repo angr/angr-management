@@ -5,7 +5,6 @@ import string
 from functools import partial
 from typing import TYPE_CHECKING
 
-import qtawesome as qta
 from angr.analyses.code_tagging import CodeTags
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
@@ -24,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.config import Conf
 from angrmanagement.data.instance import Instance, ObjectContainer
+from angrmanagement.ui.icons import icon
 from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
 from angrmanagement.ui.toolbars import FunctionTableToolbar
 
@@ -530,7 +530,7 @@ class QFunctionTable(QWidget):
         self._filter_box = QFunctionTableFilterBox(self)
         self._filter_box.setClearButtonEnabled(True)
         self._filter_box.addAction(
-            qta.icon("fa5s.search", color=Conf.palette_placeholdertext), QLineEdit.ActionPosition.LeadingPosition
+            icon("search", color=Conf.palette_placeholdertext), QLineEdit.ActionPosition.LeadingPosition
         )
         self._filter_box.setPlaceholderText("Filter by name...")
         self._filter_box.textChanged.connect(self._on_filter_box_text_changed)
