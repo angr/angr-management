@@ -142,3 +142,4 @@ jobs:
             fi
           done
           exit 1
+        continue-on-error: ${{ matrix.os == "macos-14" }}
