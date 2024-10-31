@@ -133,8 +133,8 @@ class RetypeNode(QDialog):
         # local types
         if not self._code_view.function.am_none:
             func_addr = self._code_view.function.addr
-            if (func_addr, "pseudocode") in self._instance.kb.structured_code:
-                pseudocode_cache = self._instance.kb.structured_code[(func_addr, "pseudocode")]
+            if (func_addr, "pseudocode") in self._instance.kb.decompilations:
+                pseudocode_cache = self._instance.kb.decompilations[(func_addr, "pseudocode")]
                 r.update(pseudocode_cache.local_types)
         return r
 

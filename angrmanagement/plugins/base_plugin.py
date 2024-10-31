@@ -216,7 +216,7 @@ class BasePlugin:
     def decompile_callback(self, func) -> None:
         """
         A callback that is called *right after* the decompiler is run on a function. You can access the current codegen
-        with ``self.workspace.instance.kb.structured_code[(func.addr, 'pseudocode')]``
+        with ``self.workspace.instance.kb.decompilations[(func.addr, 'pseudocode')]``
         :param func:        angr Function that was just decompiled
         """
 

@@ -453,7 +453,7 @@ class QCCodeEdit(api.CodeEdit):
         if addr is None:
             return
 
-        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        cache = self.instance.kb.decompilations[(self._code_view.function.addr, "pseudocode")]
         if cache.ite_exprs is None:
             cache.ite_exprs = set()
         cache.ite_exprs.add((addr, ailexpr))
@@ -479,7 +479,7 @@ class QCCodeEdit(api.CodeEdit):
         if addr is None:
             return
 
-        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        cache = self.instance.kb.decompilations[(self._code_view.function.addr, "pseudocode")]
         if cache.binop_operators is None:
             cache.binop_operators = {}
         op_desc = OpDescriptor(
@@ -542,7 +542,7 @@ class QCCodeEdit(api.CodeEdit):
             return
 
         # traverse the stored clinic graph to find the AIL block
-        cache = self.instance.kb.structured_code[(self._code_view.function.addr, "pseudocode")]
+        cache = self.instance.kb.decompilations[(self._code_view.function.addr, "pseudocode")]
         the_node = None
         for node in cache.clinic.graph.nodes():
             if node.addr <= ins_addr < node.addr + node.original_size:

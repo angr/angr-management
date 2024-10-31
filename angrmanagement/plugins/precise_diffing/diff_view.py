@@ -71,18 +71,18 @@ class DiffCodeView(CodeView):
             self._function.ran_cca = False
 
         if reset_cache:
-            self.instance.kb.structured_code.discard((self._function.addr, flavor))
+            self.instance.kb.decompilations.discard((self._function.addr, flavor))
             variables = self.instance.pseudocode_variable_kb.variables
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
         def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
-            available = self.instance.kb.structured_code.available_flavors(self._function.addr)
+            available = self.instance.kb.decompilationsn.available_flavors(self._function.addr)
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, chosen_flavor)].codegen
+                self.codegen.am_obj = self.instance.kb.decompilationsn[(self._function.addr, chosen_flavor)].codegen
                 self.codegen.am_event(already_regenerated=True)
                 self._focus_core(focus, focus_addr)
                 if focus_addr is not None:

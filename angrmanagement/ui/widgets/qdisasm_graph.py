@@ -133,7 +133,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             func = self._function_graph.function
             try:
                 # always check if decompiler has cached a clinic object first
-                self.disasm = self.instance.kb.structured_code[(func.addr, "pseudocode")].clinic
+                self.disasm = self.instance.kb.decompilations[(func.addr, "pseudocode")].clinic
             except (KeyError, AttributeError):
                 self.disasm = self.instance.project.analyses.Clinic(func)
 
