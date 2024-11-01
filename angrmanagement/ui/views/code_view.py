@@ -126,18 +126,18 @@ class CodeView(FunctionView):
             self._function.ran_cca = False
 
         if reset_cache:
-            self.instance.kb.structured_code.discard((self._function.addr, flavor))
+            self.instance.kb.decompilations.discard((self._function.addr, flavor))
             variables = self.instance.pseudocode_variable_kb.variables
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
         def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
-            available = self.instance.kb.structured_code.available_flavors(self._function.addr)
+            available = self.instance.kb.decompilations.available_flavors(self._function.addr)
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, chosen_flavor)].codegen
+                self.codegen.am_obj = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)].codegen
                 self.codegen.am_event(already_regenerated=True)
                 self._focus_core(focus, focus_addr)
                 if focus_addr is not None:
@@ -265,7 +265,7 @@ class CodeView(FunctionView):
                 dec = self.instance.project.analyses.Decompiler(
                     self._function.am_obj, variable_kb=self.instance.pseudocode_variable_kb, decompile=False
                 )
-                dec_cache = self.instance.kb.structured_code[(self._function.addr, "pseudocode")]
+                dec_cache = self.instance.kb.decompilations[(self._function.addr, "pseudocode")]
                 new_codegen = dec.reflow_variable_types(
                     dec_cache.type_constraints,
                     dec_cache.func_typevar,
@@ -328,12 +328,12 @@ class CodeView(FunctionView):
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
             return
-        available = self.instance.kb.structured_code.available_flavors(self._function.addr)
+        available = self.instance.kb.decompilations.available_flavors(self._function.addr)
         self._update_available_views(available)
         should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
-            cached = self.instance.kb.structured_code[(self._function.addr, chosen_flavor)].codegen
+            cached = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)].codegen
             if not isinstance(cached, DummyStructuredCodeGenerator):
                 should_decompile = False
                 self.codegen.am_obj = cached
@@ -437,10 +437,10 @@ class CodeView(FunctionView):
             return True
         elif key == Qt.Key_Space and not self.codegen.am_none:
             flavor = self.codegen.flavor
-            flavors = self.instance.kb.structured_code.available_flavors(self._function.addr)
+            flavors = self.instance.kb.decompilations.available_flavors(self._function.addr)
             idx = flavors.index(flavor)
             newidx = (idx + 1) % len(flavors)
-            self.codegen.am_obj = self.instance.kb.structured_code[(self._function.addr, flavors[newidx])].codegen
+            self.codegen.am_obj = self.instance.kb.decompilations[(self._function.addr, flavors[newidx])].codegen
             self.codegen.am_event()
             return True
 
@@ -455,7 +455,7 @@ class CodeView(FunctionView):
     def _on_view_selector_changed(self, index) -> None:
         if not self._function.am_none:
             key = (self._function.addr, self._view_selector.itemText(index))
-            self.codegen.am_obj = self.instance.kb.structured_code[key].codegen
+            self.codegen.am_obj = self.instance.kb.decompilations[key].codegen
             self.codegen.am_event()
 
     #

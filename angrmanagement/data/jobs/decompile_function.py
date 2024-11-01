@@ -30,6 +30,6 @@ class DecompileFunctionJob(InstanceJob):
             progress_callback=ctx.set_progress,
         )
         # cache the result
-        self.instance.kb.structured_code[(self.function.addr, "pseudocode")] = decompiler.cache
+        self.instance.kb.decompilations[(self.function.addr, "pseudocode")] = decompiler.cache
 
         GlobalInfo.main_window.workspace.plugins.decompile_callback(self.function)
