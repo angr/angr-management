@@ -1,43 +1,5 @@
-Scripting angr management
-=========================
-
-.. warning::
-   Please note that the documentation and the API for angr management are highly
-   in-flux. You will need to spend time reading the source code. Grep is your
-   friend. If you have questions, please ask in the angr slack.
-
-   If you build something which uses an API and you want to make sure it doesn't
-   break, you can contribute a testcase for the API!
-
-   This codebase is absolutely filled to the brim with one-off hacks. If you see
-   some code and think, "hm, that doesn't seem like an extensible or best-practices
-   way to code that", you're probably right. Cleaning up angr management's code is
-   a top priority for us, so if you have some ideas to fix these sorts of issues,
-   please let us know, either in an issue or a pull request!
-
-The console, and the basic objects
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-angr management opens with an IPython console ready for input. This console has
-in its namespace several objects which are important for manipulating angr
-management and its data.
-
-
-* First, the ``main_window``. This is the ``QMainWindow`` instance for the
-  application. It contains basic functions that correspond to top-level buttons,
-  such as loading a binary.
-* Next, the ``workspace``. This is a light object which coordinates the UI
-  elements and manages the tabbed environment. You can use it to access any
-  analysis-related GUI element, such as the disassembly view.
-* Finally, the ``instance``. This is angr management's data model. It contains
-  mechanisms for synchronizing components on shared data sources, as well as
-  logic for creating long-running jobs.
-
-``workspace`` is also available as an attribute on ``main_window`` and
-``instance`` is available as an attribute on ``workspace``. If you are
-programming in a namespace where none of these objects are available, you can
-import the ``angrmanagment.logic.GlobalInfo`` object, which contains a reference
-to ``main_window``.
+Events
+======
 
 The ObjectContainer
 ^^^^^^^^^^^^^^^^^^^
@@ -96,38 +58,3 @@ elements - for example, the current state of the disassembly view is
 synchronized through its InfoDock object. Given a disassembly view instance, you
 can subscribe to, for example, its current selected instructions through
 ``view.infodock.selected_insns``.
-
-Manipulating UI elements
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-The ``workspace`` contains methods to manipulate UI elements. Notably, you can
-manipulate all open tabs with `the workspace.view_manager reference
-<https://github.com/angr/angr-management/blob/master/angrmanagement/ui/view_manager.py>`_.
-Additionally, you can pass any sort of object you like to ``workspace.viz()``
-and it will attempt to visualize the object in the current window.
-
-Writing plugins
-^^^^^^^^^^^^^^^
-
-angr management has a very flexible plugin framework. A plugin is a Python file
-containing a subclass of ``angrmanagement.plugins.BasePlugin``. Plugin files
-will be automatically loaded from the ``plugins`` module of angr management, and
-also from ``~/.local/share/angr-management/plugins``. These paths are
-configurable through the program configuration, but at the time of writing, this
-is not exposed in the UI.
-
-The best way to see the tools you can use while building a plugin is to read the
-`plugin base class source code
-<https://github.com/angr/angr-management/blob/master/angrmanagement/plugins/base_plugin.py>`_.
-Any method or attribute can be overridden from a base class and will be
-automatically called on relevant events.
-
-Writing tests
-^^^^^^^^^^^^^
-
-Look at the `existing tests
-<https://github.com/angr/angr-management/tree/master/tests>`_ for examples.
-Generally, you can test UI components by creating the component and driving
-input to it via QTest. You can create a headless MainWindow instance by passing
-``show=False`` to its constructor - this will also get you access to a workspace
-and an instance.

@@ -8,7 +8,8 @@ Table of Contents
 .. toctree::
    :maxdepth: 2
 
-   Extending angr-management <extending>
+   quickstart
+   development/index
 
 Indices and Tables
 ------------------
