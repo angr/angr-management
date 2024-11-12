@@ -1,9 +1,19 @@
-angr-management documentation
-=====================
-angr-management is the `angr <http://angr.io>`_ GUI!
+angr-management
+===============
+
+angr-management is a cross-platform, open-source, graphical binary analysis tool powered by the `angr <https://angr.io>`_ binary analysis platform!
 
 .. image:: ../screenshots/disassembly.png
 .. image:: ../screenshots/decompilation.png
+
+Features
+--------
+
+* `Open source <https://github.com/angr/angr-management>`_
+* Cross platform
+* Supports many architectures
+* Customizable decompilation
+* Extensible through plugins
 
 Table of Contents
 -----------------
