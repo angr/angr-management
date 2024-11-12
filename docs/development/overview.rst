@@ -4,7 +4,7 @@ Overview
 .. warning::
    Please note that the documentation and the API for angr management are highly
    in-flux. You will need to spend time reading the source code. Grep is your
-   friend. If you have questions, please ask in the angr slack.
+   friend. If you have questions, please ask in the angr Discord server.
 
    If you build something which uses an API and you want to make sure it doesn't
    break, you can contribute a testcase for the API!
