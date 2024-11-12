@@ -253,7 +253,9 @@ class MainWindow(QMainWindow):
         new_state_dialog.exec_()
 
     def open_doc_link(self) -> None:
-        QDesktopServices.openUrl(QUrl("https://docs.angr.io/", QUrl.ParsingMode.TolerantMode))
+        QDesktopServices.openUrl(
+            QUrl("https://angr-management.readthedocs.io/en/latest/", QUrl.ParsingMode.TolerantMode)
+        )
 
     def open_about_dialog(self) -> None:
         dlg = LoadAboutDialog()
