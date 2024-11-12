@@ -61,3 +61,12 @@ Plugins may be installed by placing a subdirectory under :code:`plugins`. The di
   PLUGIN_CLS_NAME = TestPlugin.__name__
 
 This also allows you to import a plugin class from another package entirely. The plugin itself should inherit from :code:`BasePlugin`. Callbacks and events are a work in progress, so the API is subject to change. See :code:`TestPlugin` for an example of a multithreaded plugin sample.
+
+Configuration
+-------------
+
+Configuration files locations vary by platform:
+
+* Windows: :code:`~\AppData\Local\angr-management\config.toml`
+* macOS: :code:`~/Library/Preferences/angr-management/config.toml`
+* Linux: :code:`~/.config/angr-management/config.toml`

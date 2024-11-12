@@ -8,13 +8,3 @@ Some screenshots:
 
 [![Disassembly](screenshots/disassembly.png)](https://github.com/angr/angr-management/blob/master/screenshots/disassembly.png)
 [![Decompilation](screenshots/decompilation.png)](https://github.com/angr/angr-management/blob/master/screenshots/decompilation.png)
-
-## Usage
-
-## Configuration
-
-Configuration files locations vary by platform.
-
-- Windows: `~\AppData\Local\angr-management\config.toml`
-- macOS: `~/Library/Preferences/angr-management/config.toml`
-- Linux: `~/.config/angr-management/config.toml`
