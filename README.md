@@ -48,16 +48,6 @@ Configuration files locations vary by platform.
 - macOS: `~/Library/Preferences/angr-management/config.toml`
 - Linux: `~/.config/angr-management/config.toml`
 
-## Plugins
-
-Plugins may be installed by placing a subdirectory under `plugins`. The directory must contain an `__init__.py` like that in `TestPlugin`:
-```
-from .test_plugin import TestPlugin
-PLUGIN_CLS_NAME = TestPlugin.__name__
-```
-
-This also allows you to import a plugin class from another package entirely. The plugin itself should inherit from `BasePlugin`. Callbacks and events are a work in progress, so the API is subject to change. See `TestPlugin` for an example of a multithreaded plugin sample.
-
 ## Building with PyInstaller
 To build a portable executable using PyInstaller, install angr management into a python envrionment with the `pyinstaller` extra.
 Do not install anything in editable mode (pip's `-e`), as PyInstaller currently [fails to bundle](https://github.com/pyinstaller/pyinstaller/issues/7524) modules installed with editable mode.
