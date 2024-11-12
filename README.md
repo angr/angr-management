@@ -9,35 +9,6 @@ Some screenshots:
 [![Disassembly](screenshots/disassembly.png)](https://github.com/angr/angr-management/blob/master/screenshots/disassembly.png)
 [![Decompilation](screenshots/decompilation.png)](https://github.com/angr/angr-management/blob/master/screenshots/decompilation.png)
 
-## Installation
-
-### Portable, pre-built executable
-
-The easiest way to run angr-management is by grabbing a bundled release from the releases page: https://github.com/angr/angr-management/releases
-
-Builds can be extracted and then run from anywhere.
-Note that builds are currently unsigned.
-
-### From PyPI
-
-To install angr-management, use pip:
-
-```
-pip install angr-management
-```
-
-angr-management can then be run with the command `angr-management`.
-
-### Development Install
-
-See [angr-dev](https://github.com/angr/angr-dev) for how to set up a development environment for the angr suite.
-angr-management is included by default and checked out to `angr-management` directory.
-If you encounter dependency issues, re-running `setup.sh` or `setup.bat` from angr-dev will ensure all dependencies are installed.
-
-angr-management can then be run with `angr-management` or `python start.py`.
-
-**FLIRT signatures**: For now, please manually clone FLIRT signatures by running `git clone --recurse-submodules https://github.com/angr/angr-management`, which will clone the `flirt_signatures` submodule.
-
 ## Usage
 
 ## Configuration
