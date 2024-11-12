@@ -1,6 +1,9 @@
 angr-management documentation
 =====================
-angr-management is the `angr <http://angr.io>`__ GUI!
+angr-management is the `angr <http://angr.io>`_ GUI!
+
+.. image:: ../screenshots/disassembly.png
+.. image:: ../screenshots/decompilation.png
 
 Table of Contents
 -----------------
