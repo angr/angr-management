@@ -40,18 +40,6 @@ angr-management can then be run with `angr-management` or `python start.py`.
 
 ## Usage
 
-### Shortcuts
-- Load a new binary: ```Ctrl+O```
-- Load a new Docker Image ```Ctrl+Shift+O```
-- Load a Trace File ```Ctrl+Shift+T```
-- Save angr database... : ```Ctrl+S```
-- Save angr database as... : ```Ctrl+Shift+S```
-- Decompile: ```F5```
-- Documentation: ```Alt+H```
-
-- Next Tab: ```Ctrl+Tab```
-- Previous Tab: ```Ctrl+Shift+Tab```
-
 ## Configuration
 
 Configuration files locations vary by platform.
