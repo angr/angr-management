@@ -19,8 +19,6 @@ author = "The angr Project"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "IPython.sphinxext.ipython_console_highlighting",
-    "IPython.sphinxext.ipython_directive",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
