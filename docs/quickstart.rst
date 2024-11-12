@@ -26,3 +26,10 @@ Double-tapping the Shift key opens the *Goto Anything* dialog for a fuzzy matche
 Plugins
 -------
 angr-management includes a set of plugins that can optionally be enabled from the Plugins > Manage Plugins menu.
+
+Plugins may be installed by placing a subdirectory under :code:`plugins`. The directory must contain an :code:`__init__.py` like that in :code:`TestPlugin`::
+
+  from .test_plugin import TestPlugin
+  PLUGIN_CLS_NAME = TestPlugin.__name__
+
+This also allows you to import a plugin class from another package entirely. The plugin itself should inherit from :code:`BasePlugin`. Callbacks and events are a work in progress, so the API is subject to change. See :code:`TestPlugin` for an example of a multithreaded plugin sample.
