@@ -9,3 +9,4 @@ Development
    events
    ui
    testing
+   pyinstaller
