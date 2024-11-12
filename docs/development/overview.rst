@@ -9,12 +9,6 @@ Overview
    If you build something which uses an API and you want to make sure it doesn't
    break, you can contribute a testcase for the API!
 
-   This codebase is absolutely filled to the brim with one-off hacks. If you see
-   some code and think, "hm, that doesn't seem like an extensible or best-practices
-   way to code that", you're probably right. Cleaning up angr management's code is
-   a top priority for us, so if you have some ideas to fix these sorts of issues,
-   please let us know, either in an issue or a pull request!
-
 
 Main Window, Workspace, and Instance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
