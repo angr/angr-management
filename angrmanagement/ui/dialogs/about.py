@@ -31,7 +31,7 @@ class LoadAboutDialog(QDialog):
         angr_icon = QPixmap(icon_location)
         icon_label.setPixmap(angr_icon)
         # textbox
-        angr_text = QLabel("angr")
+        angr_text = QLabel("angr management")
         angr_text.setFont(QFont("Consolas", 24, weight=QFont.Weight.Bold))
         version_text_tup = "Version: " + angrmanagement.__version__
         version_text = QLabel(version_text_tup)
