@@ -316,7 +316,10 @@ class QOperand(QCachedGraphicsItem):
                                 and r.expr.__class__.__name__ == "Add"
                                 and r.expr.operands[0].__class__.__name__ == "InductionExpr"
                             ):
-                                custom_value_str = f"i*{r.expr.operands[0].stride}+{r.expr.operands[0].init + r.expr.operands[1].value}"  # noqa: E501
+                                custom_value_str = (
+                                    f"i*{r.expr.operands[0].stride}+"
+                                    "{r.expr.operands[0].init + r.expr.operands[1].value}"
+                                )
 
                         formatting["custom_values_str"][ident] = custom_value_str
 
