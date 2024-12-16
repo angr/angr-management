@@ -40,7 +40,7 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
             if self.stash_name == "errored" and getattr(state, "state", None):
                 state = state.state
             self.addChild(StateTreeItem(state, self.simgr_viewer))
-        self.setText(0, "%s (%d)" % (self.stash_name, len(self.states)))
+        self.setText(0, f"{self.stash_name} ({len(self.states)})")
 
     def handle_context_menu_event(self, event) -> None:
         menu = QMenu()

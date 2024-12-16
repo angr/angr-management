@@ -101,7 +101,7 @@ class DependencyAnalysisJob(InstanceJob):
 
         for depth in range(min_depth, max_depth):
             base_progress: float = 30.0 + (depth - min_depth) * progress_chunk
-            ctx.set_progress(base_progress, text="Calculating reaching definitions... depth %d." % depth)
+            ctx.set_progress(base_progress, text=f"Calculating reaching definitions... depth {depth}.")
             # generate RDA observation points
             observation_points = set()
             for pred in inst.cfg.am_obj.get_predecessors(inst.cfg.am_obj.get_any_node(self.func_addr)):
@@ -115,7 +115,7 @@ class DependencyAnalysisJob(InstanceJob):
             ):
                 ctx.set_progress(
                     base_progress + idx / total * progress_chunk,
-                    text="Computing transitive closures: %d/%d - depth %d" % (idx + 1, total, depth),
+                    text=f"Computing transitive closures: {idx + 1}/{total} - depth {depth}",
                 )
 
                 all_defs = set()

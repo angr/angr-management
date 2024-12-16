@@ -127,7 +127,7 @@ class QFunctionHeader(QCachedGraphicsItem):
                 if self.prototype.arg_names and i < len(self.prototype.arg_names):
                     arg_name = self.prototype.arg_names[i]
                 else:
-                    arg_name = "arg_%d" % i
+                    arg_name = f"arg_{i}"
                 proto_str += arg_name
 
                 if i < len(self.prototype.args) - 1:

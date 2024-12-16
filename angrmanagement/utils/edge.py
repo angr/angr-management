@@ -61,4 +61,4 @@ class Edge:
         return 1  # NO_MOVE
 
     def __repr__(self) -> str:
-        return "<Edge between %s and %s, %d coordinates>" % (self.src, self.dst, len(self.coordinates))
+        return f"<Edge between {self.src} and {self.dst}, {len(self.coordinates)} coordinates>"

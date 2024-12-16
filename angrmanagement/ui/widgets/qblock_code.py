@@ -399,7 +399,7 @@ class QAilRegisterObj(QAilTextObj):
         if obj.variable is not None and self.options.show_variables:
             self.add_variable(obj.variable)
         else:
-            s = f"{obj.reg_name}" if hasattr(obj, "reg_name") else "reg_%d<%d>" % (obj.reg_offset, obj.bits // 8)
+            s = f"{obj.reg_name}" if hasattr(obj, "reg_name") else f"reg_{obj.reg_offset}<{obj.bits // 8}>"
             self.add_text(s)
 
     def should_highlight(self) -> bool:
@@ -441,7 +441,7 @@ class QAilConvertObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj: ailment.expression.Convert) -> None:
-        self.add_text("Conv(%d->%d, " % (obj.from_bits, obj.to_bits))
+        self.add_text(f"Conv({obj.from_bits}->{obj.to_bits}, ")
         self.add_ailobj(obj.operand)
         self.add_text(")")
 
@@ -546,7 +546,7 @@ class VexIRTmpWrapper:
 
     def __init__(self, tid: TmpVar, reg_name: str | None = None) -> None:
         self.tid = tid
-        self.reg_name = reg_name or ("t%d" % self.tid)
+        self.reg_name = reg_name or (f"t{self.tid}")
 
     def __str__(self) -> str:
         return self.reg_name

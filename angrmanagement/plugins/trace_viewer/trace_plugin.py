@@ -303,7 +303,7 @@ class TraceViewer(BasePlugin):
                     self.workspace._main_window,
                     "Downloading failed",
                     "angr management failed to retrieve the header of the file. "
-                    "The HTTP request returned an unexpected status code %d." % ex.status_code,
+                    f"The HTTP request returned an unexpected status code {ex.status_code}.",
                 )
                 return None
         else:
@@ -332,7 +332,7 @@ class TraceViewer(BasePlugin):
                         self.workspace._main_window,
                         "Downloading failed",
                         "angr management failed to retrieve the header of the file. "
-                        "The HTTP request returned an unexpected status code %d." % ex.status_code,
+                        f"The HTTP request returned an unexpected status code {ex.status_code}.",
                     )
                     trace = None
             else:

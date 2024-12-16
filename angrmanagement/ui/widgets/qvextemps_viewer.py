@@ -61,7 +61,7 @@ class QVEXTempsViewer(QFrame):
 
             lbl_tmp_name = QLabel(self)
             lbl_tmp_name.setProperty("class", "reg_viewer_label")
-            lbl_tmp_name.setText("tmp_%d" % tmp_id)
+            lbl_tmp_name.setText(f"tmp_{tmp_id}")
             lbl_tmp_name.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             sublayout.addWidget(lbl_tmp_name)
 

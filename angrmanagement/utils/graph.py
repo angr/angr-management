@@ -304,11 +304,7 @@ class SuperCFGNode:
                 self.out_branches[ins_addr][item.stmt_idx] = item
 
     def __repr__(self) -> str:
-        return "<SuperCFGNode %#08x, %d blocks, %d out branches>" % (
-            self.addr,
-            len(self.cfg_nodes),
-            len(self.out_branches),
-        )
+        return f"<SuperCFGNode {self.addr:#08x}, {len(self.cfg_nodes)} blocks, {len(self.out_branches)} out branches>"
 
     def __hash__(self):
         return hash(("supercfgnode", self.addr))

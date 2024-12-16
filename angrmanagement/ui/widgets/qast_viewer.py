@@ -203,7 +203,7 @@ class QASTViewer(QFrame):
         else:
             # claripy.AST
             if self._display_size:
-                self._size_label.setText("[%d]" % (len(ast) // 8))  # in bytes
+                self._size_label.setText(f"[{len(ast) // 8}]")  # in bytes
             if not ast.symbolic:
                 format = "%02x" if self._byte_format is None else self._byte_format
                 self._ast_str = format % self._ast._model_concrete.value

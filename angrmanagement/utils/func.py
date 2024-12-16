@@ -45,7 +45,7 @@ def function_prototype_str(func: Function) -> str:
         if func.prototype.arg_names and i < len(func.prototype.arg_names):
             arg_name = func.prototype.arg_names[i]
         else:
-            arg_name = "arg_%d" % i
+            arg_name = f"arg_{i}"
 
         s += type_str + " " + arg_name
 
