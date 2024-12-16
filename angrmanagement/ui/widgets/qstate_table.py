@@ -179,7 +179,7 @@ class QStateTable(QTableWidget):
             ctr = int(ctr_str) + 1 if ctr_str else 1
 
             current_name = m.group(1)
-            name = current_name + " copy %d" % ctr
+            name = f"{current_name} copy {ctr}"
         else:
             ctr = 0
             name = current_name + " copy"
@@ -188,5 +188,5 @@ class QStateTable(QTableWidget):
         all_names = {s.gui_data.name for s in self.states}
         while name in all_names:
             ctr += 1
-            name = current_name + " copy %d" % ctr
+            name = f"{current_name} copy {ctr}"
         return name

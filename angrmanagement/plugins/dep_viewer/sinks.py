@@ -32,7 +32,7 @@ class FunctionArgumentSink(BaseSink):
         self.platforms = platforms
 
     def __repr__(self) -> str:
-        return "<TS %s:arg %d>" % (self.func_name, self.arg_idx)
+        return f"<TS {self.func_name}:arg {self.arg_idx}>"
 
 
 class SinkManager:

@@ -169,7 +169,7 @@ class PluginManager:
         for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
             action = ToolbarAction(
                 icon,
-                "plugin %s toolbar %d" % (plugin_cls, idx),
+                f"plugin {plugin_cls} toolbar {idx}",
                 tooltip,
                 functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_toolbar, False, idx),
             )

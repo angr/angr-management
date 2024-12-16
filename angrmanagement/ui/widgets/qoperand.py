@@ -300,7 +300,7 @@ class QOperand(QCachedGraphicsItem):
                         if "custom_values_str" not in formatting:
                             formatting["custom_values_str"] = {}
                         if variable_sort == "memory":
-                            custom_value_str = variable_str if offset == 0 else "%s[%d]" % (variable_str, offset)
+                            custom_value_str = f"{variable_str}" if offset == 0 else f"{variable_str}[{offset}]"
                         else:
                             custom_value_str = ""
 
@@ -310,15 +310,15 @@ class QOperand(QCachedGraphicsItem):
                         if self.infodock.induction_variable_analysis is not None:
                             r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
                             if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                                custom_value_str = "i*%d+%d" % (r.expr.stride, r.expr.init)
+                                custom_value_str = f"i*{r.expr.stride}+{r.expr.init}"
                             if (
                                 r is not None
                                 and r.expr.__class__.__name__ == "Add"
                                 and r.expr.operands[0].__class__.__name__ == "InductionExpr"
                             ):
-                                custom_value_str = "i*%d+%d" % (
-                                    r.expr.operands[0].stride,
-                                    r.expr.operands[0].init + r.expr.operands[1].value,
+                                custom_value_str = (
+                                    f"i*{r.expr.operands[0].stride}+"
+                                    "{r.expr.operands[0].init + r.expr.operands[1].value}"
                                 )
 
                         formatting["custom_values_str"][ident] = custom_value_str

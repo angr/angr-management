@@ -268,7 +268,7 @@ class SocketView(QTreeView):
         current = self.currentIndex()
         if current.parent().isValid():
             current = current.parent()
-        ident = "Accept, " + current.internalPointer().ident + (", %d" % (current.internalPointer().childCount() + 1))
+        ident = f"Accept, {current.internalPointer().ident}, {current.internalPointer().childCount() + 1}"
         self.model().add_item(ident, current, "Accepted")
 
     def _action_add_package(self) -> None:
