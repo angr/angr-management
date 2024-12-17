@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtGui import QIcon
 
 from angrmanagement.config import IMG_LOCATION
+from angrmanagement.ui.icons import icon
 
 from .toolbar import Toolbar, ToolbarAction
 
@@ -24,7 +25,7 @@ class FileToolbar(Toolbar):
 
         self.actions = [
             ToolbarAction(
-                QIcon(os.path.join(IMG_LOCATION, "toolbar-file-open.ico")),
+                icon("file-open"),
                 "Open File",
                 "Open a new file for analysis",
                 main_window.open_file_button,
@@ -36,7 +37,7 @@ class FileToolbar(Toolbar):
                 main_window.open_docker_button,
             ),
             ToolbarAction(
-                QIcon(os.path.join(IMG_LOCATION, "toolbar-file-save.png")),
+                icon("file-save"),
                 "Save",
                 "Save angr database",
                 main_window.save_database,
