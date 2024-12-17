@@ -26,7 +26,7 @@ class RecentMenuEntry(MenuEntry):
 
     def __init__(self, path) -> None:
         self.path = path
-        super().__init__(path, self.action_target)
+        super().__init__(path, self.action_target, icon=icon("file"))
 
     def action_target(self) -> None:
         GlobalInfo.main_window.load_file(self.path)
@@ -42,8 +42,18 @@ class FileMenu(Menu):
         self._project = main_window.workspace.main_instance.project
 
         self._save_entries = [
-            MenuEntry("&Save angr database...", main_window.save_database, shortcut=QKeySequence("Ctrl+S")),
-            MenuEntry("S&ave angr database as...", main_window.save_database_as, shortcut=QKeySequence("Ctrl+Shift+S")),
+            MenuEntry(
+                "&Save angr database...",
+                main_window.save_database,
+                shortcut=QKeySequence("Ctrl+S"),
+                icon=icon("file-save"),
+            ),
+            MenuEntry(
+                "S&ave angr database as...",
+                main_window.save_database_as,
+                shortcut=QKeySequence("Ctrl+Shift+S"),
+                icon=icon("file-save"),
+            ),
             MenuEntry("Save patched binary as...", main_window.save_patched_binary_as),
         ]
         self._edit_save()
@@ -52,7 +62,12 @@ class FileMenu(Menu):
         self.recent_menu = Menu("Load recent")
         self.entries.extend(
             [
-                MenuEntry("L&oad a new binary...", main_window.open_file_button, shortcut=QKeySequence("Ctrl+O")),
+                MenuEntry(
+                    "L&oad a new binary...",
+                    main_window.open_file_button,
+                    shortcut=QKeySequence("Ctrl+O"),
+                    icon=icon("file-open"),
+                ),
                 *(
                     []
                     if archr is None
@@ -71,7 +86,12 @@ class FileMenu(Menu):
                 ),
                 self.recent_menu,
                 MenuSeparator(),
-                MenuEntry("&Load angr database...", main_window.load_database, shortcut=QKeySequence("Ctrl+L")),
+                MenuEntry(
+                    "&Load angr database...",
+                    main_window.load_database,
+                    shortcut=QKeySequence("Ctrl+L"),
+                    icon=icon("file-open"),
+                ),
                 *self._save_entries,
                 MenuSeparator(),
                 MenuEntry("Load a new &trace...", main_window.load_trace),
