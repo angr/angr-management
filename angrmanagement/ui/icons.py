@@ -30,6 +30,7 @@ NAME_TO_QTAWESOME_NAME = {
     "strings-view": "msc.symbol-string",
     "traces-view": "mdi.go-kart-track",
     "types-view": "msc.symbol-class",
+    "explorer-view": "msc.globe",
 }
 
 

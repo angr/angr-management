@@ -58,6 +58,7 @@ from .views import (
     DataDepView,
     DependencyView,
     DisassemblyView,
+    ExplorerView,
     FunctionsView,
     HexView,
     InteractionView,
@@ -118,6 +119,7 @@ class Workspace:
             HexView(self, "center", self._main_instance),
             CodeView(self, "center", self._main_instance),
             FunctionsView(self, "left", self._main_instance),
+            ExplorerView(self, "left", self._main_instance),
         ]
         if Conf.has_operation_mango:
             self.default_tabs.append(DependencyView(self, "center", self._main_instance))
@@ -821,6 +823,9 @@ class Workspace:
 
     def show_functions_view(self) -> None:
         self.show_view("functions", FunctionsView, position="left")
+
+    def show_explorer_view(self) -> None:
+        self.show_view("explorer", ExplorerView, position="left")
 
     def show_traces_view(self) -> None:
         self.show_view("traces", TracesView)
