@@ -266,6 +266,10 @@ class PreciseDiffPlugin(BasePlugin):
             self.workspace.remove_view(self.current_revised_view)
             del self.current_revised_view
 
+        if self.current_revised_code:
+            self.workspace.remove_view(self.current_revised_code)
+            del self.current_revised_code
+
         self._differing_funcs = set()
         if self.diff_instance:
             del self.diff_instance
