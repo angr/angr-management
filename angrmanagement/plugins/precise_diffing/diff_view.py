@@ -78,11 +78,11 @@ class DiffCodeView(CodeView):
 
         def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
-            available = self.instance.kb.decompilationsn.available_flavors(self._function.addr)
+            available = self.instance.kb.decompilations.available_flavors(self._function.addr)
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.instance.kb.decompilationsn[(self._function.addr, chosen_flavor)].codegen
+                self.codegen.am_obj = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)].codegen
                 self.codegen.am_event(already_regenerated=True)
                 self._focus_core(focus, focus_addr)
                 if focus_addr is not None:

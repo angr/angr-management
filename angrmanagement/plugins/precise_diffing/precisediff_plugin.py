@@ -274,12 +274,12 @@ class PreciseDiffPlugin(BasePlugin):
         self.diff_instance.recompilation_plugin = self
         self.diff_instance.workspace = self.workspace
 
-        job = LoadBinaryJob(self.workspace.main_instance, file_path, on_finish=self._create_instance_from_binary_done)
+        job = LoadBinaryJob(self.diff_instance, file_path, on_finish=self._create_instance_from_binary_done)
         self.loaded_binary = file_path
         self.workspace.job_manager.add_job(job)
 
     def _create_instance_from_binary_done(self, _: Any) -> None:
-        job = CFGGenerationJob(self.workspace.main_instance, on_finish=self._generate_binary_cfg_done)
+        job = CFGGenerationJob(self.diff_instance, on_finish=self._generate_binary_cfg_done)
         self.workspace.job_manager.add_job(job)
 
     def _generate_binary_cfg_done(self, cfg_info: Any) -> None:
