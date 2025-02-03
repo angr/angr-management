@@ -57,6 +57,10 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
         self.setText(0, name)
 
 
+OPTIONS_TAB_INDEX = 0
+DEPENDENCIES_TAB_INDEX = 1
+
+
 class LoadBinary(QDialog):
     """
     Dialog displaying loading options for a binary.
@@ -140,6 +144,9 @@ class LoadBinary(QDialog):
             dep_item.setData(Qt.ItemDataRole.CheckStateRole, Qt.CheckState.Unchecked)
             dep_list.addItem(dep_item)
 
+        # update the dependencies tab text
+        self.tab.setTabText(DEPENDENCIES_TAB_INDEX, f"Dependencies ({len(deps)})")
+
         if partial_ld.main_object is not None:
             if isinstance(partial_ld.main_object, cle.MetaELF | cle.PE | cle.MachO | cle.CGC):
                 self._base_addr = partial_ld.main_object.mapped_base
@@ -209,10 +216,10 @@ class LoadBinary(QDialog):
 
         # central tab
 
-        tab = QTabWidget()
-        self._init_central_tab(tab)
+        self.tab = QTabWidget()
+        self._init_central_tab(self.tab)
 
-        self.main_layout.addWidget(tab)
+        self.main_layout.addWidget(self.tab)
 
         # buttons
 
