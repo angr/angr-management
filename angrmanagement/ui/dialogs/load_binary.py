@@ -129,14 +129,8 @@ class LoadBinary(QDialog):
 
     def _try_loading(self, partial_ld) -> None:
         deps = []
-        processed_objects = set()
-        for ident, obj in partial_ld._satisfied_deps.items():
-            if obj is partial_ld._kernel_object or obj is partial_ld._extern_object or obj is partial_ld.main_object:
-                continue
-            if obj in processed_objects:
-                continue
+        for ident in sorted(partial_ld.requested_names):
             deps.append(ident)
-            processed_objects.add(obj)
 
         # dependencies
 

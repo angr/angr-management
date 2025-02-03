@@ -73,38 +73,25 @@ class LoadBinaryJob(InstanceJob):
         ctx.set_progress(5)
 
         load_as_blob = False
-        load_with_libraries = True
 
         partial_ld = None
         try:
             # Try automatic loading
             partial_ld = cle.Loader(
-                self.fname, perform_relocations=False, load_debug_info=False, main_opts={"ignore_missing_arch": True}
+                self.fname,
+                perform_relocations=False,
+                load_debug_info=False,
+                auto_load_libs=False,
+                main_opts={"ignore_missing_arch": True},
             )
         except archinfo.arch.ArchNotFound:
             _l.warning("Could not identify binary architecture.")
             partial_ld = None
             load_as_blob = True
-        except cle.CLECompatibilityError:
+        except (cle.CLECompatibilityError, cle.CLEError):
             # Continue loading as blob
+            _l.debug("Try loading the binary as a blob.")
             load_as_blob = True
-        except cle.CLEError:
-            # try loading as a single binary without libraries
-            _l.warning("Failed to load the binary with libraries.")
-            load_with_libraries = False
-
-        if partial_ld is None and not load_with_libraries:
-            try:
-                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
-                partial_ld = cle.Loader(
-                    self.fname,
-                    perform_relocations=False,
-                    load_debug_info=False,
-                    auto_load_libs=False,
-                )
-            except (cle.CLECompatibilityError, cle.CLEError):
-                # failed to load without libraries
-                load_as_blob = True
 
         if partial_ld is None and load_as_blob:
             try:
