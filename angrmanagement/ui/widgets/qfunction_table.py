@@ -57,7 +57,6 @@ class QFunctionTableModel(QAbstractTableModel):
         self.workspace = workspace
         self.instance = instance
         self._config = Conf
-        self._data_cache = {}
 
     def __len__(self) -> int:
         if self._func_list is not None:
@@ -76,7 +75,6 @@ class QFunctionTableModel(QAbstractTableModel):
     def func_list(self, v) -> None:
         self._func_list = None
         self._raw_func_list = v
-        self._data_cache.clear()
         self.emit(SIGNAL("layoutChanged()"))
 
     def filter(self, keyword) -> None:
@@ -91,7 +89,6 @@ class QFunctionTableModel(QAbstractTableModel):
                 if self._func_match_keyword(func, keyword, extra_columns=extra_columns)
             ]
 
-        self._data_cache.clear()
         self.emit(SIGNAL("layoutChanged()"))
 
     def rowCount(self, *args, **kwargs):  # pylint:disable=unused-argument
@@ -124,16 +121,6 @@ class QFunctionTableModel(QAbstractTableModel):
             return None
 
         col = index.column()
-
-        key = (row, col, role)
-        if key in self._data_cache:
-            value = self._data_cache[key]
-        else:
-            value = self._data_uncached(row, col, role)
-            self._data_cache[key] = value
-        return value
-
-    def _data_uncached(self, row, col, role):
         func = self.func_list[row]
 
         if role == Qt.DisplayRole:
