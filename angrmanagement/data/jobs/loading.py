@@ -104,7 +104,7 @@ class LoadBinaryJob(InstanceJob):
 
         if partial_ld is None:
             _l.warning("Failed to load binary in Cle; partial_ld is None.")
-            gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname, ))
+            gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
             return
 
         ctx.set_progress(50)
