@@ -526,7 +526,7 @@ class LoadBinary(QDialog):
     @staticmethod
     def run(
         partial_ld, suggested_backend=None, suggested_os_name: str | None = None
-    ) -> tuple[dict | None, dict | None, dict | None]:
+    ) -> tuple[dict | None, dict | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,
@@ -539,7 +539,7 @@ class LoadBinary(QDialog):
             return dialog.load_options, dialog.simos
         except LoadBinaryError:
             pass
-        return None, None, None
+        return None, None
 
     @staticmethod
     def binary_arch_detect_failed(filename: str, archinfo_msg: str) -> None:

@@ -43,8 +43,8 @@ class LoadTargetJob(InstanceJob):
         ctx.set_progress(5)
         with self.target.build().start() as t:
             ctx.set_progress(10)
-            dsb = archr.arsenal.DataScoutBow(t)
-            apb = archr.arsenal.angrProjectBow(t, dsb)
+            dsb = archr.arsenal.DataScoutBow(t)  # type: ignore
+            apb = archr.arsenal.angrProjectBow(t, dsb)  # type: ignore
             partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
             ctx.set_progress(50)
             load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
@@ -101,6 +101,11 @@ class LoadBinaryJob(InstanceJob):
                 # Failed to load executable, even as blob!
                 gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
                 return
+
+        if partial_ld is None:
+            _l.warning("Failed to load binary in Cle; partial_ld is None.")
+            gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname, ))
+            return
 
         ctx.set_progress(50)
         new_load_options, simos = gui_thread_schedule(
