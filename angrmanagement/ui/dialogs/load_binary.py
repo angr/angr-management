@@ -57,6 +57,10 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
         self.setText(0, name)
 
 
+OPTIONS_TAB_INDEX = 0
+DEPENDENCIES_TAB_INDEX = 1
+
+
 class LoadBinary(QDialog):
     """
     Dialog displaying loading options for a binary.
@@ -129,14 +133,8 @@ class LoadBinary(QDialog):
 
     def _try_loading(self, partial_ld) -> None:
         deps = []
-        processed_objects = set()
-        for ident, obj in partial_ld._satisfied_deps.items():
-            if obj is partial_ld._kernel_object or obj is partial_ld._extern_object or obj is partial_ld.main_object:
-                continue
-            if obj in processed_objects:
-                continue
+        for ident in sorted(partial_ld.requested_names):
             deps.append(ident)
-            processed_objects.add(obj)
 
         # dependencies
 
@@ -145,6 +143,9 @@ class LoadBinary(QDialog):
             dep_item = QListWidgetItem(dep)
             dep_item.setData(Qt.ItemDataRole.CheckStateRole, Qt.CheckState.Unchecked)
             dep_list.addItem(dep_item)
+
+        # update the dependencies tab text
+        self.tab.setTabText(DEPENDENCIES_TAB_INDEX, f"Dependencies ({len(deps)})")
 
         if partial_ld.main_object is not None:
             if isinstance(partial_ld.main_object, cle.MetaELF | cle.PE | cle.MachO | cle.CGC):
@@ -215,10 +216,10 @@ class LoadBinary(QDialog):
 
         # central tab
 
-        tab = QTabWidget()
-        self._init_central_tab(tab)
+        self.tab = QTabWidget()
+        self._init_central_tab(self.tab)
 
-        self.main_layout.addWidget(tab)
+        self.main_layout.addWidget(self.tab)
 
         # buttons
 
@@ -525,7 +526,7 @@ class LoadBinary(QDialog):
     @staticmethod
     def run(
         partial_ld, suggested_backend=None, suggested_os_name: str | None = None
-    ) -> tuple[dict | None, dict | None, dict | None]:
+    ) -> tuple[dict | None, dict | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,
@@ -538,7 +539,7 @@ class LoadBinary(QDialog):
             return dialog.load_options, dialog.simos
         except LoadBinaryError:
             pass
-        return None, None, None
+        return None, None
 
     @staticmethod
     def binary_arch_detect_failed(filename: str, archinfo_msg: str) -> None:
