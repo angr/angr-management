@@ -14,8 +14,8 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from angrmanagement.utils.env import app_root
 
-from .config_entry import ConfigurationEntry as CE
 from .color_schemes import COLOR_SCHEMES
+from .config_entry import ConfigurationEntry as CE
 
 if TYPE_CHECKING:
     import enum

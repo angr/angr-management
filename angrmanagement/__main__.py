@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import ctypes
+import glob
 import multiprocessing
 import os
 import signal
@@ -10,7 +11,6 @@ import sys
 import threading
 import time
 import warnings
-import glob
 
 from . import __version__
 
