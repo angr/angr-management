@@ -234,7 +234,7 @@ ENTRIES = [
     CE("pseudocode_comment_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_comment_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_function_color", QColor, QColor(0x00, 0x00, 0xFF, 0xFF)),
-    CE("pseudocode_function_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_function_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_function_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_library_function_color", QColor, QColor(0xFF, 0x00, 0xFF)),
     CE("pseudocode_quotation_color", QColor, QColor(0x00, 0x80, 0x00, 0xFF)),
