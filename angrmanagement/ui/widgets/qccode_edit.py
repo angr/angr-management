@@ -59,14 +59,13 @@ class QCCodeEdit(api.CodeEdit):
     """
 
     def __init__(self, code_view) -> None:
-        super().__init__(create_default_actions=True)
-
-        self._code_view: CodeView = code_view
-
-        self.code_highlighter: QCCodeHighlighter | None = None
-        self.color_scheme: api.ColorScheme | None = None
         self.line_number_panel: panels.LineNumberPanel | None = None
         self.folding_panel: panels.FoldingPanel | None = None
+        self.code_highlighter: QCCodeHighlighter | None = None
+        self.color_scheme: api.ColorScheme | None = None
+
+        super().__init__(create_default_actions=True)
+        self._code_view: CodeView = code_view
         self.create_panels()
 
         self.modes.append(modes.SymbolMatcherMode())
