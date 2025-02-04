@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import ctypes
+import glob
 import multiprocessing
 import os
 import signal
@@ -135,8 +136,8 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     refresh_theme()
 
     # Load fonts, initialize font-related configuration
-    QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "SourceCodePro-Regular.ttf"))
-    QFontDatabase.addApplicationFont(os.path.join(FONT_LOCATION, "DejaVuSansMono.ttf"))
+    for font_file in glob.glob(os.path.join(FONT_LOCATION, "*.ttf")):
+        QFontDatabase.addApplicationFont(font_file)
     Conf.init_font_config()
     Conf.connect("ui_default_font", app.setFont, True)
 

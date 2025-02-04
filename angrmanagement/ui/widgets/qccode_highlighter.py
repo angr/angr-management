@@ -16,6 +16,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CVariable,
 )
 from angr.sim_type import SimType
+from angr.sim_variable import SimMemoryVariable
 from pyqodeng.core.api import SyntaxHighlighter
 from PySide6.QtGui import QBrush, QColor, QFont, QTextCharFormat
 
@@ -43,6 +44,7 @@ def reset_formats() -> None:
 
     fg = QTextCharFormat()
     fg.setForeground(Conf.palette_text)
+    fg.setFontWeight(QFont.Weight.Medium)
     FORMATS["normal"] = fg
 
     FORMATS["keyword"] = create_char_format(
@@ -77,6 +79,12 @@ def reset_formats() -> None:
         Conf.pseudocode_label_color, Conf.pseudocode_label_weight, Conf.pseudocode_label_style
     )
 
+    FORMATS["global_variable"] = create_char_format(
+        Conf.pseudocode_global_variable_color,
+        Conf.pseudocode_global_variable_weight,
+        Conf.pseudocode_global_variable_style,
+    )
+
 
 def _format_node(obj):
     """
@@ -95,23 +103,24 @@ def _format_node(obj):
     elif isinstance(obj, CLabel):
         return FORMATS["label"]
     elif isinstance(obj, CVariable):
+        if type(obj.variable) is SimMemoryVariable:
+            return FORMATS["global_variable"]
         return FORMATS["variable"]
     elif isinstance(obj, CArrayTypeLength):
         # This is the part that goes after a fixed-size array (the
         # "[20]" in "char foo[20];"), and it's highly unlikely
         # that anyone will want to change the color here. But if
         # you do, follow the format of the rest.
-        return None
+        return FORMATS["normal"]
     elif isinstance(obj, CStructFieldNameDef):
         # This is the part that is a field name in a struct def,
         # and it's highly unlikely that anyone will want to change
         # the color here. But if you do, follow the format of the
         # rest.
-        return None
+        return FORMATS["normal"]
     elif isinstance(obj, CClosingObject | CStatement | CConstant | CExpression):
-        return None
-    else:
-        return None
+        return FORMATS["normal"]
+    return FORMATS["normal"]
 
 
 reset_formats()

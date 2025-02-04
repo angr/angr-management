@@ -108,6 +108,10 @@ class CodeView(FunctionView):
         self._options.reload(force=True)
         self.vars_must_struct = set()
 
+    def set_codeedit_palette(self, palette):
+        if self._textedit is not None:
+            self._textedit.setPalette(palette)
+
     def decompile(
         self,
         clear_prototype: bool = True,

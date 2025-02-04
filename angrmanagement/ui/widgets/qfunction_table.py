@@ -29,6 +29,7 @@ from angrmanagement.ui.toolbars import FunctionTableToolbar
 
 if TYPE_CHECKING:
     import PySide6
+    import PySide6.QtGui
     from angr.knowledge_plugins.functions import Function, FunctionManager
 
     from angrmanagement.ui.views.functions_view import FunctionsView
@@ -77,7 +78,7 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = v
         self._data_cache.clear()
-        self.emit(SIGNAL("layoutChanged()"))
+        self.emit(SIGNAL("layoutChanged()"))  # type: ignore
 
     def filter(self, keyword) -> None:
         if not keyword or self._raw_func_list is None:
@@ -92,7 +93,10 @@ class QFunctionTableModel(QAbstractTableModel):
             ]
 
         self._data_cache.clear()
-        self.emit(SIGNAL("layoutChanged()"))
+        self.emit(SIGNAL("layoutChanged()"))  # type: ignore
+
+    def clear_data_cache(self):
+        self._data_cache = {}
 
     def rowCount(self, *args, **kwargs):  # pylint:disable=unused-argument
         if self.func_list is None:
@@ -102,8 +106,8 @@ class QFunctionTableModel(QAbstractTableModel):
     def columnCount(self, *args, **kwargs):  # pylint:disable=unused-argument
         return len(self.Headers) + self.workspace.plugins.count_func_columns()
 
-    def headerData(self, section, orientation, role):  # pylint:disable=unused-argument
-        if role != Qt.DisplayRole:
+    def headerData(self, section, orientation, role=None):  # pylint:disable=unused-argument
+        if role != Qt.ItemDataRole.DisplayRole:
             return None
 
         if section < len(self.Headers):
@@ -115,7 +119,7 @@ class QFunctionTableModel(QAbstractTableModel):
                 # Not enough columns
                 return None
 
-    def data(self, index, role):
+    def data(self, index, role=None):
         if not index.isValid():
             return None
 
@@ -136,10 +140,10 @@ class QFunctionTableModel(QAbstractTableModel):
     def _data_uncached(self, row, col, role):
         func = self.func_list[row]
 
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._get_column_text(func, col)
 
-        elif role == Qt.ForegroundRole:
+        elif role == Qt.ItemDataRole.ForegroundRole:
             if func.is_syscall:
                 color = self._config.function_table_syscall_color
             elif func.is_plt:
@@ -157,19 +161,19 @@ class QFunctionTableModel(QAbstractTableModel):
 
             return QBrush(color)
 
-        elif role == Qt.BackgroundColorRole:
+        elif role == Qt.ItemDataRole.BackgroundRole:
             color = self.workspace.plugins.color_func(func)
             if color is None and func.from_signature:
                 # default colors
                 color = self._config.function_table_signature_bg_color
             return color
 
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             return Conf.tabular_view_font
 
         return None
 
-    def sort(self, column, order) -> None:
+    def sort(self, column, order=None) -> None:
         self.layoutAboutToBeChanged.emit()
         self.func_list = sorted(
             self.func_list,
@@ -274,7 +278,9 @@ class QFunctionTableHeaderView(QHeaderView):
     The header for QFunctionTableView.
     """
 
-    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
+    def contextMenuEvent(  # type: ignore[reportIncompatibleMethodOverride]  # pylint:disable=unused-argument
+        self, event: PySide6.QtGui.QContextMenuEvent
+    ) -> None:
         menu = QMenu("Column Menu", self)
         for idx in range(self.model().columnCount()):
             column_text = self.model().headerData(idx, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
@@ -340,6 +346,8 @@ class QFunctionTableView(QTableView):
         self.doubleClicked.connect(self._on_function_selected)
 
     def refresh(self, added_funcs: set[int] | None = None, removed_funcs: set[int] | None = None) -> None:
+        if self._functions is None:
+            return
         if added_funcs:
             new_funcs = []
             for addr in added_funcs:
@@ -353,6 +361,12 @@ class QFunctionTableView(QTableView):
         if removed_funcs:
             self._model.func_list = [f_ for f_ in self._model.func_list if f_.addr not in removed_funcs]
         self.viewport().update()
+
+    def changeEvent(self, event):  # type: ignore
+        if event.type() == QEvent.Type.PaletteChange:
+            self._model.clear_data_cache()
+            self.viewport().update()
+        super().changeEvent(event)
 
     @property
     def function_manager(self):
@@ -376,6 +390,8 @@ class QFunctionTableView(QTableView):
             self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def load_functions(self) -> None:
+        if self._functions is None:
+            return
         if not self.show_alignment_functions:
             self._model.func_list = [v for v in self._functions.values() if not v.alignment]
         else:
@@ -387,7 +403,7 @@ class QFunctionTableView(QTableView):
         self._selected_func.am_obj = self._model.func_list[row]
         self._selected_func.am_event(func=self._selected_func.am_obj)
 
-    def keyPressEvent(self, key_event):
+    def keyPressEvent(self, key_event):  # type: ignore
         text = key_event.text()
         if not text or text not in string.printable or text in string.whitespace:
             # modifier keys
@@ -399,7 +415,9 @@ class QFunctionTableView(QTableView):
 
     def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
         rows = self.selectionModel().selectedRows()
-        funcs = [self.instance.kb.functions[r.data()] for r in rows]
+        funcs = []
+        if self.instance.kb is not None and self.instance.kb.functions is not None:
+            funcs = [self.instance.kb.functions[r.data()] for r in rows]
         self._context_menu.set(funcs).qmenu().popup(QCursor.pos())
 
 
@@ -415,7 +433,7 @@ class QFunctionTableFilterBox(QLineEdit):
 
         self.installEventFilter(self)
 
-    def eventFilter(self, obj, event) -> bool:  # pylint:disable=unused-argument
+    def eventFilter(self, watched, event) -> bool:  # pylint:disable=unused-argument
         if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Escape:
             if self.text():
                 self.setText("")

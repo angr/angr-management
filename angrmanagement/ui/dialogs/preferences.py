@@ -114,19 +114,23 @@ class Integration(Page):
             pass
 
 
+CUSTOM_SCHEME_NAME = "Custom"
+
+
 class ThemeAndColors(Page):
     """
     Theme and Colors preferences page.
     """
 
     NAME = "Theme and Colors"
+    _schemes_combo: QComboBox
+    _base_scheme: QLabel
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
 
         self._colors_to_save = {}
         self._conf_to_save = {}
-        self._schemes_combo: QComboBox = None
 
         self._init_widgets()
 
@@ -140,7 +144,7 @@ class ThemeAndColors(Page):
 
         self._schemes_combo = QComboBox(self)
         current_theme_idx = 0
-        for idx, name in enumerate(["Current"] + sorted(COLOR_SCHEMES)):
+        for idx, name in enumerate(sorted(COLOR_SCHEMES) + [CUSTOM_SCHEME_NAME]):
             if name == Conf.theme_name:
                 current_theme_idx = idx
             self._schemes_combo.addItem(name)
@@ -148,6 +152,14 @@ class ThemeAndColors(Page):
         self._schemes_combo.currentTextChanged.connect(self._on_scheme_selected)
         scheme_loader_layout.addWidget(self._schemes_combo)
         page_layout.addLayout(scheme_loader_layout)
+
+        base_scheme_layout = QHBoxLayout()
+        base_scheme_label = QLabel("Base Theme:")
+        base_scheme_label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        base_scheme_layout.addWidget(base_scheme_label)
+        self._base_scheme = QLabel(Conf.base_theme_name)
+        base_scheme_layout.addWidget(self._base_scheme)
+        page_layout.addLayout(base_scheme_layout)
 
         edit_colors_layout = QVBoxLayout()
         for ce in ENTRIES:
@@ -172,6 +184,8 @@ class ThemeAndColors(Page):
         self.setLayout(page_layout)
 
     def _load_color_scheme(self, name: str) -> None:
+        if name not in COLOR_SCHEMES:
+            return
         for prop, value in COLOR_SCHEMES[name].items():
             if prop in self._colors_to_save:
                 row = self._colors_to_save[prop][1]
@@ -180,13 +194,14 @@ class ThemeAndColors(Page):
                 self._conf_to_save[prop] = value
 
     def _on_scheme_selected(self, text: str) -> None:
-        self._load_color_scheme(text)
-        self.save_config()
-        refresh_theme()
+        if text != CUSTOM_SCHEME_NAME:
+            self._load_color_scheme(text)
+            self._base_scheme.setText(text)
 
     def save_config(self) -> None:
         # pylint: disable=assigning-non-slot
         Conf.theme_name = self._schemes_combo.currentText()
+        Conf.base_theme_name = self._base_scheme.text()
         for ce, row in self._colors_to_save.values():
             setattr(Conf, ce.name, row.color.am_obj)
         for name, value in self._conf_to_save.items():

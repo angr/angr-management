@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from angrmanagement.utils.env import app_root
 
+from .color_schemes import COLOR_SCHEMES
 from .config_entry import ConfigurationEntry as CE
 
 if TYPE_CHECKING:
@@ -141,7 +142,7 @@ data_serializers = {
     QColor: (color_parser, color_serializer),
     QFont: (font_parser, font_serializer),
     bool: (bool_parser, bool_serializer),
-    QFont.Weight: enum_parser_serializer_generator(QFont.Weight, QFont.Weight.Normal),
+    QFont.Weight: enum_parser_serializer_generator(QFont.Weight, QFont.Weight.Medium),
     QFont.Style: enum_parser_serializer_generator(QFont.Style, QFont.Style.StyleNormal),
 }
 
@@ -153,6 +154,7 @@ ENTRIES = [
     CE("disasm_font", QFont, QFont("DejaVu Sans Mono", 10)),
     CE("symexec_font", QFont, QFont("DejaVu Sans Mono", 10)),
     CE("code_font", QFont, QFont("Source Code Pro", 10)),
+    CE("base_theme_name", str, "Light"),
     CE("theme_name", str, "Light"),
     CE("disasm_view_minimap_viewport_color", QColor, QColor(0xFF, 0x00, 0x00)),
     CE("disasm_view_minimap_background_color", QColor, QColor(0xFF, 0xFF, 0xFF, 0xFF)),
@@ -229,26 +231,29 @@ ENTRIES = [
     CE("palette_link", QColor, QColor(0x00, 0x00, 0xFF, 0xFF)),
     CE("palette_linkvisited", QColor, QColor(0xFF, 0x00, 0xFF, 0xFF)),
     CE("pseudocode_comment_color", QColor, QColor(0x00, 0x80, 0x00, 0xFF)),
-    CE("pseudocode_comment_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_comment_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_comment_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_function_color", QColor, QColor(0x00, 0x00, 0xFF, 0xFF)),
-    CE("pseudocode_library_function_color", QColor, QColor(0xFF, 0x00, 0xFF)),
-    CE("pseudocode_function_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_function_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_function_style", QFont.Style, QFont.Style.StyleNormal),
+    CE("pseudocode_library_function_color", QColor, QColor(0xFF, 0x00, 0xFF)),
     CE("pseudocode_quotation_color", QColor, QColor(0x00, 0x80, 0x00, 0xFF)),
-    CE("pseudocode_quotation_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_quotation_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_quotation_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_keyword_color", QColor, QColor(0x00, 0x00, 0x80, 0xFF)),
-    CE("pseudocode_keyword_weight", QFont.Weight, QFont.Weight.Bold),
+    CE("pseudocode_keyword_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_keyword_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_types_color", QColor, QColor(0x00, 0x00, 0x80, 0xFF)),
-    CE("pseudocode_types_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_types_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_types_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_variable_color", QColor, QColor(0x00, 0x00, 0x00, 0xFF)),
-    CE("pseudocode_variable_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_variable_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_variable_style", QFont.Style, QFont.Style.StyleNormal),
+    CE("pseudocode_global_variable_color", QColor, QColor(0x00, 0x00, 0xFF)),
+    CE("pseudocode_global_variable_weight", QFont.Weight, QFont.Weight.Medium),
+    CE("pseudocode_global_variable_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_label_color", QColor, QColor(0x00, 0x00, 0xFF)),
-    CE("pseudocode_label_weight", QFont.Weight, QFont.Weight.Normal),
+    CE("pseudocode_label_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_label_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_highlight_color", QColor, QColor(0xFF, 0xFF, 0x00, 0xFF)),
     CE("proximity_node_background_color", QColor, QColor(0xFA, 0xFA, 0xFA)),
@@ -546,6 +551,14 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         except tomlkit.exceptions.ParseError:
             _l.error("Failed to parse configuration file: '%s'. Continuing with default options...", exc_info=True)
 
+        # load color scheme configuration
+        if (
+            "theme_name" in entry_map
+            and "base_theme_name" in entry_map
+            and entry_map["theme_name"].value == entry_map["base_theme_name"].value
+        ):
+            cls.load_default_theme_entries(entry_map["theme_name"].value, entry_map)
+
         return cls(entry_map)
 
     @staticmethod
@@ -592,7 +605,17 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
     def save(self, f) -> None:
         out = {}
-        for k, v in self._entries.items():
+
+        entries_to_save = self._entries.copy()
+        if (
+            "theme_name" not in entries_to_save
+            or "base_theme_name" in entries_to_save
+            or entries_to_save["theme_name"].value == entries_to_save["base_theme_name"].value
+        ):
+            # we do not save theme-related entries if the theme is one of the default themes
+            self.remove_default_theme_entries(entries_to_save)
+
+        for k, v in entries_to_save.items():
             v = v.value
             while type(v) in data_serializers:
                 v = data_serializers[type(v)][1](k, v)
@@ -653,6 +676,40 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
                 break
 
         return loaded
+
+    @staticmethod
+    def load_default_theme_entries(theme_name: str, entries: dict[str, Any]) -> None:
+        """
+        Load theme-related entries from the configuration dictionary if the theme is one of the default themes.
+
+        :param theme_name:  The name of the theme.
+        :param entries:     The configuration dictionary.
+        :return: None
+        """
+        if not COLOR_SCHEMES or theme_name not in COLOR_SCHEMES:
+            return
+
+        theme = COLOR_SCHEMES[theme_name]
+        for k, v in theme.items():
+            entries[k] = CE(k, type(v), v)
+
+    @staticmethod
+    def remove_default_theme_entries(entries: dict[str, Any]) -> None:
+        """
+        Remove theme-related entries from the configuration dictionary if the theme is one of the default themes.
+
+        :param entries:     The configuration dictionary.
+        :return: None
+        """
+        if not COLOR_SCHEMES:
+            return
+        all_theme_keys = set()
+        for theme in COLOR_SCHEMES.values():
+            all_theme_keys.update(theme.keys())
+
+        for entry_name in list(entries):
+            if entry_name in all_theme_keys:
+                del entries[entry_name]
 
     @property
     def has_operation_mango(self) -> bool:
