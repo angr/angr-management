@@ -261,6 +261,8 @@ class Workspace:
         self.main_instance.cfb.am_event()
         self.main_instance.cfg.am_event()
 
+        assert self.main_instance._analysis_configuration is not None
+
         if self.main_instance._analysis_configuration["flirt"].enabled:
             self.job_manager.add_job(
                 FlirtSignatureRecognitionJob(
