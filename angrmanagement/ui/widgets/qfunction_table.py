@@ -278,9 +278,9 @@ class QFunctionTableHeaderView(QHeaderView):
     The header for QFunctionTableView.
     """
 
-    def contextMenuEvent(  # type: ignore[reportIncompatibleMethodOverride]
+    def contextMenuEvent(  # type: ignore[reportIncompatibleMethodOverride]  # pylint:disable=unused-argument
         self, event: PySide6.QtGui.QContextMenuEvent
-    ) -> None:  # pylint:disable=unused-argument
+    ) -> None:
         menu = QMenu("Column Menu", self)
         for idx in range(self.model().columnCount()):
             column_text = self.model().headerData(idx, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
