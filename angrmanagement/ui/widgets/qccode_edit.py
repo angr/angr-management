@@ -63,8 +63,11 @@ class QCCodeEdit(api.CodeEdit):
 
         self._code_view: CodeView = code_view
 
-        self.panels.append(panels.LineNumberPanel())
-        self.panels.append(panels.FoldingPanel())
+        self.code_highlighter: QCCodeHighlighter | None = None
+        self.color_scheme: api.ColorScheme | None = None
+        self.line_number_panel: panels.LineNumberPanel | None = None
+        self.folding_panel: panels.FoldingPanel | None = None
+        self.create_panels()
 
         self.modes.append(modes.SymbolMatcherMode())
 
@@ -92,6 +95,24 @@ class QCCodeEdit(api.CodeEdit):
         self.remove_action(self.action_duplicate_line)
         self.remove_action(self.action_swap_line_up)
         self.remove_action(self.action_swap_line_down)
+
+    def create_panels(self):
+        self.line_number_panel = panels.LineNumberPanel()
+        self.folding_panel = panels.FoldingPanel()
+        self.panels.append(self.line_number_panel)
+        self.panels.append(self.folding_panel)
+        self.line_number_panel.setVisible(True)
+        self.folding_panel.setVisible(True)
+
+    def remove_panels(self):
+        if self.line_number_panel is not None:
+            self.line_number_panel.setVisible(False)
+            self.panels.remove(self.line_number_panel.name)
+            self.line_number_panel = None
+        if self.folding_panel is not None:
+            self.folding_panel.setVisible(False)
+            self.panels.remove(self.folding_panel.name)
+            self.folding_panel = None
 
     def node_under_cursor(self):
         doc: QTextDocument = self.document()
@@ -287,8 +308,22 @@ class QCCodeEdit(api.CodeEdit):
     def setDocument(self, document) -> None:
         super().setDocument(document)
 
-        self.modes.append(QCCodeHighlighter(self.document(), color_scheme=ColorSchemeIDA()))
+        self.color_scheme = ColorSchemeIDA()
+        self.code_highlighter = QCCodeHighlighter(self.document(), color_scheme=self.color_scheme)
+        self.modes.append(self.code_highlighter)
         self.syntax_highlighter.fold_detector = api.CharBasedFoldDetector()
+
+    def setPalette(self, palette, **kwargs) -> None:
+        super().setPalette(palette, **kwargs)
+        # re-create panels to apply the new palette
+        self.remove_panels()
+        self.create_panels()
+        # re-generate color scheme because FORMATS has changed
+        if self.color_scheme is not None:
+            self.color_scheme = ColorSchemeIDA()
+        if self.code_highlighter is not None:
+            self.code_highlighter.refresh_editor(self.color_scheme)
+            self.rehighlight()
 
     #
     # Actions

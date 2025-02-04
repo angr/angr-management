@@ -38,7 +38,7 @@ class CSS:
             log.warning("Failed to load base theme at %s", base_css_path)
             css = ""
 
-        theme_path = os.path.join(THEME_LOCATION, Conf.theme_name)
+        theme_path = os.path.join(THEME_LOCATION, Conf.base_theme_name)
         css_path = os.path.join(theme_path, "theme.css")
         if os.path.exists(css_path):
             try:
@@ -59,7 +59,7 @@ def refresh_theme() -> None:
     app = QApplication.instance()
 
     # determine the default application style according to the OS
-    if sys.platform == "win32" and Conf.theme_name == "Light":
+    if sys.platform == "win32" and Conf.base_theme_name == "Light":
         app_style = "windowsvista"
     else:
         app_style = "Fusion"
@@ -99,8 +99,4 @@ def refresh_theme() -> None:
 
     if GlobalInfo.main_window is not None:
         for codeview in GlobalInfo.main_window.workspace.view_manager.views_by_category["pseudocode"]:
-            codeview.codegen.am_event(already_regenerated=True)
-
-            if codeview._textedit is not None:
-                for panel in codeview._textedit.panels:
-                    panel.setPalette(palette)
+            codeview.set_codeedit_palette(palette)

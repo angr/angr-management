@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from PySide6.QtGui import QColor, QFont
 
+BASE_SCHEME = "Light"
+
 COLOR_SCHEMES = {
-    "Light": {
+    BASE_SCHEME: {
         "disasm_view_minimap_background_color": QColor(0xFF, 0xFF, 0xFF, 0xFF),
         "disasm_view_minimap_outline_color": QColor(0xB8, 0xB8, 0xB8, 0xFF),
         "disasm_view_operand_color": QColor(0x00, 0x00, 0x80),
@@ -84,6 +86,7 @@ COLOR_SCHEMES = {
         "pseudocode_comment_color": QColor(0x00, 0x80, 0x00, 0xFF),
         "pseudocode_function_color": QColor(0x00, 0x00, 0xFF, 0xFF),
         "pseudocode_library_function_color": QColor(0xFF, 0x00, 0xFF),
+        "pseudocode_global_variable_color": QColor(0x00, 0x00, 0xFF),
         "pseudocode_quotation_color": QColor(0x00, 0x80, 0x00, 0xFF),
         "pseudocode_keyword_color": QColor(0x00, 0x00, 0x80, 0xFF),
         "pseudocode_types_color": QColor(0x10, 0x78, 0x96),
@@ -183,6 +186,7 @@ COLOR_SCHEMES = {
         "pseudocode_comment_color": QColor(0x00, 0x80, 0x00, 0xFF),
         "pseudocode_function_color": QColor(0x00, 0xAA, 0xFF),
         "pseudocode_library_function_color": QColor(0xAA, 0x00, 0xFF),
+        "pseudocode_global_variable_color": QColor(0x00, 0xAA, 0xFF),
         "pseudocode_quotation_color": QColor(0x00, 0x80, 0x00, 0xFF),
         "pseudocode_keyword_color": QColor(0xF1, 0xA7, 0xFA),
         "pseudocode_types_color": QColor(0x00, 0xFF, 0xFF, 0xFF),
@@ -274,13 +278,12 @@ COLOR_SCHEMES = {
         "palette_link": QColor(0x8B, 0xE9, 0xFD),
         "palette_linkvisited": QColor(0xBD, 0x93, 0xF9),
         "pseudocode_comment_color": QColor(0x62, 0x72, 0xA4),
-        "pseudocode_comment_weight": QFont.Weight.Normal,
         "pseudocode_function_color": QColor(0x50, 0xFA, 0x7B),
         "pseudocode_library_function_color": QColor(0x8B, 0xE9, 0xFD),
+        "pseudocode_global_variable_color": QColor(0x50, 0xFA, 0x7B),
         "pseudocode_quotation_color": QColor(0xF1, 0xFA, 0x8C),
         "pseudocode_keyword_color": QColor(0xFF, 0x79, 0xC6),
         "pseudocode_types_color": QColor(0x8B, 0xE9, 0xFD),
-        "pseudocode_types_style": QFont.Style.StyleItalic,
         "pseudocode_variable_color": QColor(0xF8, 0xF8, 0xF2),
         "pseudocode_label_color": QColor(0x00, 0xAA, 0xFF),
         "pseudocode_highlight_color": QColor(0x44, 0x47, 0x5A),
@@ -373,6 +376,7 @@ COLOR_SCHEMES = {
         "pseudocode_comment_color": QColor(205, 214, 244),  # text
         "pseudocode_function_color": QColor(166, 227, 161),  # green
         "pseudocode_library_function_color": QColor(243, 139, 168),  # red
+        "pseudocode_global_variable_color": QColor(166, 227, 161),  # green
         "pseudocode_quotation_color": QColor(166, 227, 161),  # green
         "pseudocode_keyword_color": QColor(137, 220, 235),  # sky
         "pseudocode_types_color": QColor(249, 226, 175),  # yellow

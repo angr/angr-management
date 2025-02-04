@@ -94,6 +94,9 @@ class QFunctionTableModel(QAbstractTableModel):
         self._data_cache.clear()
         self.emit(SIGNAL("layoutChanged()"))
 
+    def clear_data_cache(self):
+        self._data_cache = {}
+
     def rowCount(self, *args, **kwargs):  # pylint:disable=unused-argument
         if self.func_list is None:
             return 0
@@ -353,6 +356,12 @@ class QFunctionTableView(QTableView):
         if removed_funcs:
             self._model.func_list = [f_ for f_ in self._model.func_list if f_.addr not in removed_funcs]
         self.viewport().update()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.PaletteChange:
+            self._model.clear_data_cache()
+            self.viewport().update()
+        super().changeEvent(event)
 
     @property
     def function_manager(self):
