@@ -344,3 +344,16 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
         if main_obj_size <= self.SMALL_BINARY_SIZE:
             return 0
         return default_workers
+
+
+class APIDeobfuscationConfiguration(AnalysisConfiguration):
+    """
+    Configuration for API deobfuscation.
+    """
+
+    def __init__(self, instance: Instance) -> None:
+        super().__init__(instance)
+        self.name = "api_deobfuscation"
+        self.display_name = "Deobfuscate API usage"
+        self.description = "Search for 'obfuscated' API use and attempt to deobfuscate it."
+        self.enabled = False

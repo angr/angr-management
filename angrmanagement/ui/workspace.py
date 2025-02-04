@@ -18,6 +18,7 @@ from PySide6QtAds import SideBarBottom
 from angrmanagement.config import Conf
 from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
+    APIDeobfuscationConfiguration,
     CFGAnalysisConfiguration,
     CodeTaggingConfiguration,
     FlirtAnalysisConfiguration,
@@ -26,6 +27,7 @@ from angrmanagement.data.analysis_options import (
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
+    APIDeobfuscationJob,
     CFGGenerationJob,
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
@@ -270,6 +272,9 @@ class Workspace:
                     on_finish=self._on_flirt_signature_recognized,
                 )
             )
+
+        if self.main_instance._analysis_configuration["api_deobfuscation"].enabled:
+            self.job_manager.add_job(APIDeobfuscationJob(self.main_instance))
 
         if not self.main_instance.cfg.am_none:
             if not self._first_cfg_generation_callback_completed:
@@ -524,6 +529,7 @@ class Workspace:
                     a(self.main_instance)
                     for a in [
                         CFGAnalysisConfiguration,
+                        APIDeobfuscationConfiguration,
                         FlirtAnalysisConfiguration,
                         CodeTaggingConfiguration,
                         VariableRecoveryConfiguration,
