@@ -230,7 +230,7 @@ class QStringTable(QTableView):
     def filter_string(self, v) -> None:
         self._filter = v
         if isinstance(v, re.Pattern):
-            self._proxy.setFilterRegExp(self._filter.pattern)
+            self._proxy.setFilterRegularExpression(self._filter.pattern)
         else:
             self._proxy.setFilterWildcard(self._filter)
         self._proxy.setFilterKeyColumn(3)
