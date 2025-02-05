@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, Qt
-from PySide6.QtGui import QImage, QMouseEvent, QPainter, QPainterPath, QPen, QWheelEvent
+from PySide6.QtGui import QImage, QMouseEvent, QPainter, QPainterPath, QPen, QRegion, QWheelEvent
 from PySide6.QtWidgets import QFrame, QGraphicsItem, QGraphicsScene, QGraphicsView
 
 from angrmanagement.config import Conf
@@ -52,6 +52,13 @@ class QMiniMapViewportBox(QGraphicsItem):
         path = QPainterPath()
         path.addRect(self._scene_rect)
         painter.drawPath(path)
+
+        # Shadow
+        scene_clip_region = QRegion(self._scene_rect.toAlignedRect())
+        viewport_clip_region = QRegion(self._viewport_rect.toAlignedRect())
+        painter.setClipRegion(scene_clip_region - viewport_clip_region)
+        painter.fillRect(self._scene_rect, Conf.disasm_view_minimap_shadow_color)
+        painter.setClipRegion(scene_clip_region)
 
         # Viewport box
         painter.setPen(QPen(Conf.disasm_view_minimap_viewport_color, self.PEN_WIDTH))
