@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf, save_config
-from angrmanagement.config.color_schemes import COLOR_SCHEMES
+from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
 from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.ui.css import refresh_theme
@@ -186,7 +186,9 @@ class ThemeAndColors(Page):
     def _load_color_scheme(self, name: str) -> None:
         if name not in COLOR_SCHEMES:
             return
-        for prop, value in COLOR_SCHEMES[name].items():
+
+        scheme = COLOR_SCHEMES[name] if name == BASE_SCHEME else {**COLOR_SCHEMES[BASE_SCHEME], **COLOR_SCHEMES[name]}
+        for prop, value in scheme.items():
             if prop in self._colors_to_save:
                 row = self._colors_to_save[prop][1]
                 row.set_color(value)

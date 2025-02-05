@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from angrmanagement.utils.env import app_root
 
-from .color_schemes import COLOR_SCHEMES
+from .color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from .config_entry import ConfigurationEntry as CE
 
 if TYPE_CHECKING:
@@ -690,7 +690,11 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         if not COLOR_SCHEMES or theme_name not in COLOR_SCHEMES:
             return
 
-        theme = COLOR_SCHEMES[theme_name]
+        theme = (
+            COLOR_SCHEMES[theme_name]
+            if theme_name == BASE_SCHEME
+            else {**COLOR_SCHEMES[BASE_SCHEME], **COLOR_SCHEMES[theme_name]}
+        )
         for k, v in theme.items():
             entries[k] = CE(k, type(v), v)
 
