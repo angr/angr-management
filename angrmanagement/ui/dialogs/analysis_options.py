@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QScrollArea,
     QSpinBox,
     QSplitter,
     QVBoxLayout,
@@ -259,8 +260,17 @@ class AnalysisOptionsDialog(QDialog):
         description_gbox.setLayout(layout)
 
         self._options_layout = QVBoxLayout()
+        options_widget = QWidget()
+        options_widget.setLayout(self._options_layout)
+        options_scroll = QScrollArea()
+        options_scroll.setWidgetResizable(True)
+        options_scroll.setContentsMargins(0, 0, 0, 0)
+        options_scroll.setWidget(options_widget)
+
         options_gbox = QGroupBox("Options")
-        options_gbox.setLayout(self._options_layout)
+        options_gbox_lyt = QVBoxLayout()
+        options_gbox_lyt.addWidget(options_scroll)
+        options_gbox.setLayout(options_gbox_lyt)
 
         details_layout = QVBoxLayout()
         details_layout.addWidget(description_gbox)
