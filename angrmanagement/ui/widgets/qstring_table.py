@@ -233,7 +233,7 @@ class QStringTable(QTableView):
             self._proxy.setFilterRegExp(self._filter.pattern)
         else:
             self._proxy.setFilterWildcard(self._filter)
-        self._proxy.setFilterKeyColumn(2)
+        self._proxy.setFilterKeyColumn(3)
 
     #
     # Public methods
