@@ -7,6 +7,7 @@ BASE_SCHEME = "Light"
 COLOR_SCHEMES = {
     BASE_SCHEME: {
         "disasm_view_minimap_background_color": QColor(0xFF, 0xFF, 0xFF, 0xFF),
+        "disasm_view_minimap_shadow_color": QColor(0x00, 0x00, 0x00, 0x28),
         "disasm_view_minimap_outline_color": QColor(0xB8, 0xB8, 0xB8, 0xFF),
         "disasm_view_operand_color": QColor(0x00, 0x00, 0x80),
         "disasm_view_operand_constant_color": QColor(0x10, 0x78, 0x96),
@@ -107,6 +108,7 @@ COLOR_SCHEMES = {
     },
     "Dark": {
         "disasm_view_minimap_background_color": QColor(0x28, 0x28, 0x28),
+        "disasm_view_minimap_shadow_color": QColor(0x00, 0x00, 0x00, 0x40),
         "disasm_view_minimap_outline_color": QColor(0x40, 0x40, 0x40),
         "disasm_view_operand_color": QColor(0xF0, 0xF0, 0x5A),
         "disasm_view_operand_constant_color": QColor(0x34, 0xF0, 0x8C),

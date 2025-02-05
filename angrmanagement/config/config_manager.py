@@ -158,6 +158,7 @@ ENTRIES = [
     CE("theme_name", str, "Light"),
     CE("disasm_view_minimap_viewport_color", QColor, QColor(0xFF, 0x00, 0x00)),
     CE("disasm_view_minimap_background_color", QColor, QColor(0xFF, 0xFF, 0xFF, 0xFF)),
+    CE("disasm_view_minimap_shadow_color", QColor, QColor(0x00, 0x00, 0x00, 0x28)),
     CE("disasm_view_minimap_outline_color", QColor, QColor(0xB8, 0xB8, 0xB8, 0xFF)),
     CE("disasm_view_background_color", QColor, QColor(0xFF, 0xFF, 0xFF, 0xFF)),
     CE("disasm_view_operand_color", QColor, QColor(0x00, 0x00, 0x80)),
