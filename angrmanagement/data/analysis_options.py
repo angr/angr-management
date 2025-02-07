@@ -6,10 +6,10 @@ import textwrap
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+import angr
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
-
-    import angr
 
     from angrmanagement.data.instance import Instance
 
@@ -55,7 +55,6 @@ class AnalysisConfiguration:
 
     def __init__(self, instance: Instance) -> None:
         self.instance = instance
-        self.project: angr.Project = self.instance.project.am_obj
         self.enabled: bool = False
         self.name: str = ""
         self.display_name: str = ""
@@ -73,7 +72,7 @@ class AnalysisConfiguration:
         self.update_dict(o)
         return o
 
-    def update_dict(self, out: Mapping[str, Any]) -> None:
+    def update_dict(self, out: dict[str, Any]) -> None:
         """
         Update dictionary `out` with configuration for this option.
         """
@@ -93,7 +92,7 @@ class AnalysisOption:
         self.display_name: str = display_name
         self.tooltip: str = tooltip
 
-    def update_dict(self, out: Mapping[str, Any]) -> None:
+    def update_dict(self, out: dict[str, Any]) -> None:
         """
         Update dictionary `out` with configuration for this option.
         """
@@ -109,7 +108,7 @@ class PrimitiveAnalysisOption(AnalysisOption):
         self.default: Any = default
         self.value: Any = default
 
-    def update_dict(self, out: Mapping[str, Any]) -> None:
+    def update_dict(self, out: dict[str, Any]) -> None:
         """
         Update `out` dictionary with configuration for this option.
         """
@@ -188,7 +187,8 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
         super().__init__(instance)
         self.name = "cfg"
         self.display_name = "Control-Flow Graph Recovery"
-        self.description = extract_first_paragraph_from_docstring(self.project.analyses.CFGFast.__doc__)
+        doc = angr.analyses.cfg.CFGFast.__doc__
+        self.description = extract_first_paragraph_from_docstring(doc) if doc else ""
         self.enabled = True
         self.options = {
             o.name: o
@@ -236,7 +236,8 @@ class FlirtAnalysisConfiguration(AnalysisConfiguration):
         super().__init__(instance)
         self.name = "flirt"
         self.display_name = "Function Signature Matching"
-        self.description = self.project.analyses.Flirt.__doc__.strip()
+        doc = angr.analyses.flirt.FlirtAnalysis.__doc__
+        self.description = doc.strip() if doc else ""
         self.enabled = True
 
 
@@ -295,8 +296,8 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
 
     def get_main_obj_size(self) -> int:
         main_obj_size = 0
-        if self.project.loader.main_object is not None:
-            main_obj = self.project.loader.main_object
+        if self.instance.project.loader.main_object is not None:
+            main_obj = self.instance.project.loader.main_object
             if main_obj.segments:
                 for seg in main_obj.segments:
                     if seg.is_executable:
