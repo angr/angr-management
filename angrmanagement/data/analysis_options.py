@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import multiprocessing
 import platform
+import textwrap
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -14,26 +15,9 @@ if TYPE_CHECKING:
 
 
 def extract_first_paragraph_from_docstring(desc: str) -> str:
-    desc = desc.splitlines()
-    last_line, first_line = -1, -1
-    for idx, line in enumerate(desc):
-        if first_line < 0:
-            if len(line.strip()) > 0:
-                first_line = idx
-        else:
-            if len(line.strip()) == 0:
-                last_line = idx
-                break
-
-    if first_line >= 0:
-        if last_line < 0:
-            last_line = len(desc)
-        desc = desc[first_line:last_line]
-        num_whitespace_chars = len(desc[0]) - len(desc[0].lstrip())
-        desc = " ".join(line[num_whitespace_chars:] for line in desc)
-    else:
-        desc = ""
-
+    desc = textwrap.dedent(desc).strip()  # Remove docstring indent
+    desc = desc[0 : desc.find("\n\n")]  # First paragraph
+    desc = desc.replace("\n", " ")  # Unwrap
     return desc
 
 
