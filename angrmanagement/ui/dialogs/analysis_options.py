@@ -6,22 +6,15 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFrame,
     QGroupBox,
-    QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QScrollArea,
-    QSpinBox,
     QSplitter,
     QVBoxLayout,
-    QWidget,
 )
 
 from angrmanagement.config import IMG_LOCATION
@@ -33,179 +26,44 @@ from angrmanagement.data.analysis_options import (
     IntAnalysisOption,
     StringAnalysisOption,
 )
+from angrmanagement.ui.widgets.qproperty_editor import (
+    BoolPropertyItem,
+    ComboPropertyItem,
+    GroupPropertyItem,
+    IntPropertyItem,
+    PropertyModel,
+    QPropertyEditor,
+    TextPropertyItem,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from angrmanagement.ui.workspace import Workspace
 
 
-class AnalysisOptionWidgetMapper:
-    """
-    Analysis option widget creation and event handling.
-    """
-
-    option: AnalysisOption
-    widget: QWidget | None
-
-    def __init__(self, option: AnalysisOption) -> None:
-        self.option = option
-        self.widget = None
-
-    def create_widget(self) -> QWidget:
-        raise NotImplementedError
-
-    @classmethod
-    def get_mapper_for_option(cls, option: AnalysisOption) -> AnalysisOptionWidgetMapper:
-        if isinstance(option, BoolAnalysisOption):
-            return BoolAnalysisOptionWidgetMapper(option)
-        elif isinstance(option, IntAnalysisOption):
-            return IntAnalysisOptionWidgetMapper(option)
-        elif isinstance(option, ChoiceAnalysisOption):
-            return ChoiceAnalysisOptionWidgetMapper(option)
-        elif isinstance(option, StringAnalysisOption):
-            return StringAnalysisOptionWidgetMapper(option)
-        else:
-            raise ValueError("Mapper not implemented")
-
-
-class BoolAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
-    """
-    Analysis option widget creation and event handling for boolean options.
-    """
-
-    option: BoolAnalysisOption
-
-    def create_widget(self, parent=None) -> QCheckBox:
-        self.widget = QCheckBox(parent)
-        self.widget.setText(self.option.display_name)
-        if self.option.tooltip:
-            self.widget.setToolTip(self.option.tooltip)
-        self.widget.setChecked(self.option.value)
-        self.widget.stateChanged.connect(self._on_checkbox_changed)
-        return self.widget
-
-    def _on_checkbox_changed(self, _) -> None:
-        self.option.value = self.widget.isChecked()
-
-
-class StringAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
-    """
-    Analysis option widget for string answers
-    """
-
-    option: StringAnalysisOption
-
-    def __init__(self, option: AnalysisOption) -> None:
-        super().__init__(option)
-
-        self.checkbox = None
-        self.textbox = None
-
-    def create_widget(self, parent=None) -> QWidget:
-        self.textbox = QLineEdit(self.option.value)
-        self.textbox.textChanged.connect(self._on_text_changed)
-
-        layout = QHBoxLayout()
-
-        if self.option.optional:
-            checkbox = QCheckBox()
-            checkbox.setText(self.option.display_name)
-            if self.option.tooltip:
-                checkbox.setToolTip(self.option.tooltip)
-            checkbox.clicked.connect(self._on_toggled)
-            self.checkbox = checkbox
-            layout.addWidget(checkbox)
-            self._on_toggled()  # enable or disable the textbox
-        else:
-            lbl = QLabel()
-            lbl.setText(self.option.display_name)
-            if self.option.tooltip:
-                lbl.setToolTip(self.option.tooltip)
-            layout.addWidget(lbl)
-
-        layout.addWidget(self.textbox)
-        self.widget = QWidget(parent)
-        self.widget.setLayout(layout)
-        return self.widget
-
-    def _on_toggled(self) -> None:
-        self.textbox.setEnabled(self.checkbox.isChecked())
-        self.option.enabled = self.checkbox.isChecked()
-
-    def _on_text_changed(self, value: str) -> None:
-        self.option.value = value
-
-
-class IntAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
-    """
-    Analysis option widget creation and event handling for integer options.
-    """
-
-    option: IntAnalysisOption
-
-    def create_widget(self, parent=None) -> QWidget:
-        spinbox = QSpinBox()
-        spinbox.setValue(self.option.value)
-        if self.option.tooltip:
-            spinbox.setToolTip(self.option.tooltip)
-        spinbox.valueChanged.connect(self._on_dial_changed)
-        if self.option.minimum_value is not None:
-            spinbox.setMinimum(self.option.minimum_value)
-        if self.option.maximum_value is not None:
-            spinbox.setMaximum(self.option.maximum_value)
-
-        lbl = QLabel()
-        lbl.setText(self.option.display_name)
-        if self.option.tooltip:
-            lbl.setToolTip(self.option.tooltip)
-
-        layout = QHBoxLayout()
-        layout.addWidget(lbl)
-        layout.addWidget(spinbox)
-
-        self.widget = QWidget(parent)
-        self.widget.setLayout(layout)
-        return self.widget
-
-    def _on_dial_changed(self, value: int) -> None:
-        self.option.value = value
-
-
-class ChoiceAnalysisOptionWidgetMapper(AnalysisOptionWidgetMapper):
-    """
-    Analysis option widget creation and event handling for choice options.
-    """
-
-    option: ChoiceAnalysisOption
-
-    def __init__(self, option: ChoiceAnalysisOption) -> None:
-        super().__init__(option)
-        self.combobox = None
-
-    def create_widget(self, parent=None) -> QWidget:
-        self.combobox = QComboBox()
-        for data, txt in self.option.choices.items():
-            self.combobox.addItem(txt, data)
-        self.combobox.setCurrentIndex(self.combobox.findData(self.option.value))
-        self.combobox.currentIndexChanged.connect(self._on_combo_changed)
-
-        lbl = QLabel()
-        lbl.setText(self.option.display_name)
-        if self.option.tooltip:
-            lbl.setToolTip(self.option.tooltip)
-
-        layout = QHBoxLayout()
-        layout.addWidget(lbl)
-        layout.addStretch()
-        layout.addWidget(self.combobox)
-
-        self.widget = QWidget(parent)
-        self.widget.setLayout(layout)
-        return self.widget
-
-    def _on_combo_changed(self, index) -> None:
-        self.option.value = self.combobox.itemData(index)
+def map_option_to_property(option: AnalysisOption):
+    if isinstance(option, BoolAnalysisOption):
+        return BoolPropertyItem(option.display_name, option.value, description=option.tooltip, option=option)
+    elif isinstance(option, IntAnalysisOption):
+        return IntPropertyItem(
+            option.display_name,
+            option.value,
+            minimum=option.minimum_value if option.minimum_value is not None else -(2**31),
+            maximum=option.maximum_value if option.maximum_value is not None else (2**31 - 1),
+            description=option.tooltip,
+            option=option,
+        )
+    elif isinstance(option, ChoiceAnalysisOption):
+        return ComboPropertyItem(
+            option.display_name,
+            option.value,
+            option.choices,
+            description=option.tooltip,
+            option=option,
+        )
+    elif isinstance(option, StringAnalysisOption):
+        return TextPropertyItem(option.display_name, option.value, description=option.tooltip, option=option)
+    else:
+        raise ValueError("Mapper not implemented")
 
 
 class AnalysisOptionsDialog(QDialog):
@@ -217,7 +75,6 @@ class AnalysisOptionsDialog(QDialog):
         super().__init__(parent)
         self._workspace: Workspace = workspace
         self._analyses: AnalysesConfiguration = analyses
-        self._mappers: Sequence[AnalysisOptionWidgetMapper] = []
         self._init_widgets()
         self.setWindowTitle("Run Analysis")
         self.setMinimumSize(self.sizeHint())
@@ -256,25 +113,14 @@ class AnalysisOptionsDialog(QDialog):
         self._analysis_description_label.setWordWrap(True)
         layout = QVBoxLayout()
         layout.addWidget(self._analysis_description_label)
-        description_gbox = QGroupBox("Description")
+        description_gbox = QGroupBox("Analysis Description")
         description_gbox.setLayout(layout)
 
-        self._options_layout = QVBoxLayout()
-        options_widget = QWidget()
-        options_widget.setLayout(self._options_layout)
-        options_scroll = QScrollArea()
-        options_scroll.setWidgetResizable(True)
-        options_scroll.setContentsMargins(0, 0, 0, 0)
-        options_scroll.setWidget(options_widget)
-
-        options_gbox = QGroupBox("Options")
-        options_gbox_lyt = QVBoxLayout()
-        options_gbox_lyt.addWidget(options_scroll)
-        options_gbox.setLayout(options_gbox_lyt)
+        self._options_tree = QPropertyEditor()
 
         details_layout = QVBoxLayout()
         details_layout.addWidget(description_gbox)
-        details_layout.addWidget(options_gbox)
+        details_layout.addWidget(self._options_tree)
 
         splitter = QSplitter()
         left_frame = QFrame()
@@ -315,27 +161,25 @@ class AnalysisOptionsDialog(QDialog):
         ok_button.setFocus()
 
     def _update_item_details(self) -> None:
-        while self._options_layout.count():
-            item = self._options_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
-        self._mappers = []
-
         selected = self._analysis_list.selectedItems()
         if selected:
             analysis = self._analyses[self._analysis_list.indexFromItem(selected[0]).row()]
             self._analysis_description_label.setText(analysis.description)
-
-            for option in analysis.options.values():
-                mapper = AnalysisOptionWidgetMapper.get_mapper_for_option(option)
-                widget = mapper.create_widget(self)
-                self._options_layout.addWidget(widget)
-                self._mappers.append(mapper)
+            self._init_analysis_options_model(analysis)
         else:
             self._analysis_description_label.setText("Select analysis to view options.")
 
-        self._options_layout.addStretch()
+    def _init_analysis_options_model(self, analysis):
+        root = GroupPropertyItem("Root")
+        for option in analysis.options.values():
+            root.addChild(map_option_to_property(option))
+        model = PropertyModel(root)
+
+        def on_value_changed(prop, value):
+            prop.extra["option"].value = value
+
+        model.valueChanged.connect(on_value_changed)
+        self._options_tree.setModel(model)
 
     #
     # Event handlers

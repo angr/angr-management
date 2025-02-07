@@ -144,17 +144,14 @@ class BoolAnalysisOption(PrimitiveAnalysisOption):
 class StringAnalysisOption(PrimitiveAnalysisOption):
     """
     String option for an analysis.
-
-    :ivar optional: If this option is optional or mandatory.
-    :ivar enabled:  Is this option enabled by the user or not.
     """
 
-    def __init__(
-        self, name: str, description: str, default: str = "", tooltip: str = "", optional: bool = False
-    ) -> None:
-        self.optional = optional
-        self.enabled = not self.optional
+    def __init__(self, name: str, description: str, default: str = "", tooltip: str = "") -> None:
         super().__init__(name, description, default, tooltip)
+
+    @property
+    def enabled(self):
+        return bool(self.value)
 
 
 class IntAnalysisOption(PrimitiveAnalysisOption):
@@ -235,14 +232,12 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                     "Regions for analysis",
                     tooltip="Specify ranges of regions for which to recover CFG. Example: 0x400000-0x401000. You may "
                     "specify multiple address ranges for analysis.",
-                    optional=True,
                 ),
                 StringAnalysisOption(
                     "function_starts",
                     "Start at function addresses",
                     tooltip="Specify function addresses to start recursive descent of CFG generation to speed up "
                     "analysis. Example: 0x400000,0x401000",
-                    optional=True,
                 ),
             ]
         }
