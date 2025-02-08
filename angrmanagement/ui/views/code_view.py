@@ -157,6 +157,7 @@ class CodeView(FunctionView):
                 options=self._options.option_and_values,
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
+                inline_functions=self._options.selected_inlines,
                 vars_must_struct=self.vars_must_struct,
                 on_finish=decomp_ready,
                 blocking=True,
@@ -348,6 +349,7 @@ class CodeView(FunctionView):
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
         self._last_function = self._function.am_obj
 
+        self._options.reload()
         console_view = self.workspace.view_manager.first_view_in_category("console")
         if console_view is not None:
             console_view.set_current_function(self._function.am_obj)
