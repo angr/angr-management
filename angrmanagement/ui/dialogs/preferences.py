@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -23,7 +22,6 @@ from PySide6.QtWidgets import (
     QListView,
     QListWidget,
     QListWidgetItem,
-    QScrollArea,
     QSizePolicy,
     QSplitter,
     QStackedWidget,
@@ -36,8 +34,13 @@ from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
 from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.ui.css import refresh_theme
-from angrmanagement.ui.widgets.qcolor_option import QColorOption
 from angrmanagement.ui.widgets.qfont_option import QFontOption
+from angrmanagement.ui.widgets.qproperty_editor import (
+    ColorPropertyItem,
+    GroupPropertyItem,
+    PropertyModel,
+    QPropertyEditor,
+)
 from angrmanagement.utils.layout import add_to_grid
 
 if TYPE_CHECKING:
@@ -137,13 +140,10 @@ class ThemeAndColors(Page):
         self._init_widgets()
 
     def _init_widgets(self) -> None:
-        page_layout = QVBoxLayout()
+        page_layout = QGridLayout(self)
+        page_layout.setColumnStretch(1, 1)
 
-        scheme_loader_layout = QHBoxLayout()
-        color_scheme_lbl = QLabel("Load Theme:")
-        color_scheme_lbl.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
-        scheme_loader_layout.addWidget(color_scheme_lbl)
-
+        page_layout.addWidget(QLabel("Load Theme:"), 0, 0)
         self._schemes_combo = QComboBox(self)
         current_theme_idx = 0
         for idx, name in enumerate(sorted(COLOR_SCHEMES) + [CUSTOM_SCHEME_NAME]):
@@ -152,50 +152,40 @@ class ThemeAndColors(Page):
             self._schemes_combo.addItem(name)
         self._schemes_combo.setCurrentIndex(current_theme_idx)
         self._schemes_combo.currentTextChanged.connect(self._on_scheme_selected)
-        scheme_loader_layout.addWidget(self._schemes_combo)
-        page_layout.addLayout(scheme_loader_layout)
+        page_layout.addWidget(self._schemes_combo, 0, 1)
 
-        base_scheme_layout = QHBoxLayout()
-        base_scheme_label = QLabel("Base Theme:")
-        base_scheme_label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
-        base_scheme_layout.addWidget(base_scheme_label)
+        page_layout.addWidget(QLabel("Base Theme:"), 1, 0)
         self._base_scheme = QLabel(Conf.base_theme_name)
-        base_scheme_layout.addWidget(self._base_scheme)
-        page_layout.addLayout(base_scheme_layout)
+        page_layout.addWidget(self._base_scheme, 1, 1)
 
-        edit_colors_layout = QVBoxLayout()
+        root = GroupPropertyItem("root")
         for ce in ENTRIES:
             if ce.type_ is QColor:
-                row = QColorOption(getattr(Conf, ce.name), ce.name)
-                edit_colors_layout.addWidget(row)
-                self._colors_to_save[ce.name] = (ce, row)
+                prop = ColorPropertyItem(ce.name, getattr(Conf, ce.name))
+                root.addChild(prop)
+                self._colors_to_save[ce.name] = (ce, prop)
             elif issubclass(ce.type_, enum.Enum):
                 self._conf_to_save[ce.name] = ce.value
 
-        frame = QFrame()
-        frame.setLayout(edit_colors_layout)
-
-        scroll = QScrollArea()
-        scroll.setWidget(frame)
-
-        scroll_layout = QHBoxLayout()
-        scroll_layout.addWidget(scroll)
-
-        page_layout.addLayout(scroll_layout)
-
-        self.setLayout(page_layout)
+        self._model = PropertyModel(root)
+        self._tree = QPropertyEditor()
+        self._tree.set_description_visible(False)
+        self._tree.setModel(self._model)
+        page_layout.addWidget(self._tree, 2, 0, 1, 2)
 
     def _load_color_scheme(self, name: str) -> None:
         if name not in COLOR_SCHEMES:
             return
 
+        self._model.beginResetModel()
         scheme = COLOR_SCHEMES[name] if name == BASE_SCHEME else {**COLOR_SCHEMES[BASE_SCHEME], **COLOR_SCHEMES[name]}
         for prop, value in scheme.items():
             if prop in self._colors_to_save:
                 row = self._colors_to_save[prop][1]
-                row.set_color(value)
+                row.value = value
             if prop in self._conf_to_save:
                 self._conf_to_save[prop] = value
+        self._model.endResetModel()
 
     def _on_scheme_selected(self, text: str) -> None:
         if text != CUSTOM_SCHEME_NAME:
@@ -207,7 +197,7 @@ class ThemeAndColors(Page):
         Conf.theme_name = self._schemes_combo.currentText()
         Conf.base_theme_name = self._base_scheme.text()
         for ce, row in self._colors_to_save.values():
-            setattr(Conf, ce.name, row.color.am_obj)
+            setattr(Conf, ce.name, row.value)
         for name, value in self._conf_to_save.items():
             setattr(Conf, name, value)
 
