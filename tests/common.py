@@ -40,8 +40,6 @@ def _starter():
 
         event: threading.Event = container["event"]
 
-        app = create_qapp()
-        container["app"] = app
         main = MainWindow(show=False)
         GlobalInfo.gui_thread = threading.get_ident()
         GlobalInfo.is_test = True
@@ -70,6 +68,8 @@ def start_main_window_and_event_loop(event):
     global container, thread
 
     container = {}
+    container["app"] = create_qapp()
+
     if thread is None:
         thread = threading.Thread(target=_starter, daemon=True)
         thread.start()
