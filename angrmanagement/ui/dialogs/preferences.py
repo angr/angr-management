@@ -99,7 +99,7 @@ class Integration(Page):
         try:
             registered, register_as = scheme.is_url_scheme_registered()
             self._url_scheme_chk.setChecked(registered)
-            self._url_scheme_text.setText(register_as)
+            self._url_scheme_text.setText(str(register_as) if registered else "")
         except NotImplementedError:
             # the current OS is not supported
             self._url_scheme_chk.setDisabled(True)
@@ -285,7 +285,7 @@ class Preferences(QDialog):
         contents.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
 
         def item_changed(item: QListWidgetItem) -> None:
-            pageno: Page = item.data(1)
+            pageno: int = item.data(1)
             pages.setCurrentIndex(pageno)
 
         contents.itemClicked.connect(item_changed)
