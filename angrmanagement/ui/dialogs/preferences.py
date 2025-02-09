@@ -6,6 +6,7 @@ from itertools import chain
 from typing import TYPE_CHECKING
 
 from bidict import bidict
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
@@ -329,6 +330,9 @@ class Preferences(QDialog):
         main_layout.addWidget(buttons)
 
         self.setLayout(main_layout)
+
+    def sizeHint(self):  # pylint:disable=no-self-use
+        return QSize(800, 800)
 
     def _on_ok_clicked(self) -> None:
         for page in self._pages:
