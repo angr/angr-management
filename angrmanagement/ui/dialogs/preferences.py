@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QScrollArea,
     QSizePolicy,
+    QSplitter,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -317,12 +318,14 @@ class Preferences(QDialog):
         buttons.rejected.connect(self.close)
 
         # layout
-        top_layout = QHBoxLayout()
-        top_layout.addWidget(contents)
-        top_layout.addWidget(pages)
+        splitter = QSplitter()
+        splitter.addWidget(contents)
+        splitter.addWidget(pages)
+        splitter.setStretchFactor(0, 0)
+        splitter.setStretchFactor(1, 1)
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(top_layout)
+        main_layout.addWidget(splitter)
         main_layout.addWidget(buttons)
 
         self.setLayout(main_layout)
