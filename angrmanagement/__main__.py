@@ -148,6 +148,8 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     GlobalInfo.gui_thread = threading.get_ident()
     file_to_open = filepath if filepath else None
     main_window = MainWindow(app=app, use_daemon=use_daemon)
+    QApplication.processEvents()  # Let the main window start up to correctly position early dialogs
+
     splash.setProgress(1.0, "")
     splash.finish(main_window)
 
