@@ -683,6 +683,7 @@ class QPropertyEditor(QWidget):
         tools_layout.addWidget(self._desc_btn)
 
         self._tree_view = PropertyTreeView()
+        self._tree_view.setAutoScroll(False)
         self._tree_view.setAlternatingRowColors(True)
         self._tree_view.setItemDelegate(PropertyDelegate())
         self._tree_view.expandAll()
