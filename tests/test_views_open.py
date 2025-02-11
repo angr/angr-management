@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import unittest
+
 from common import AngrManagementTestCase, ProjectOpenTestCase
 
 from angrmanagement.logic.threads import gui_thread_schedule
@@ -93,3 +95,7 @@ class TestViewsOpen(AngrManagementTestCase):
 
 class TestViewsOpenWithProject(ProjectOpenTestCase, TestViewsOpen):
     """Tests that all views open, after opening a project."""
+
+
+if __name__ == "__main__":
+    unittest.main()
