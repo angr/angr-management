@@ -57,7 +57,7 @@ def gui_thread_schedule(
     args: tuple[Any, ...] | None = None,
     timeout: int | None = None,
     kwargs: dict[str, Any] | None = None,
-) -> T:
+) -> T | None:
     """
     Schedules the given callable to be executed on the GUI thread. If the current thread is the GUI thread, the callable
     is executed immediately.
