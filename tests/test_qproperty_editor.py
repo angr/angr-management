@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import unittest
 
-from common import create_qapp
+from common import AngrManagementTestCase
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtTest import QTest
@@ -32,9 +32,9 @@ def w():
         QTest.qWait(1000)
 
 
-class TestQPropertyEditor(unittest.TestCase):
+class TestQPropertyEditor(AngrManagementTestCase):
     def setUp(self):
-        create_qapp()
+        super().setUp()
         self.root = GroupPropertyItem(
             "Root",
             description="Root of all properties.",
@@ -108,6 +108,7 @@ class TestQPropertyEditor(unittest.TestCase):
         w()
 
     def tearDown(self):
+        super().tearDown()
         self.tree_view.hide()
         del self.tree_view
 
