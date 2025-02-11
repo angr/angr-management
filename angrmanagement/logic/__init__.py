@@ -9,6 +9,10 @@ if TYPE_CHECKING:
 
 
 class GlobalInfo:
+    """
+    Global data.
+    """
+
     gui_thread = None
     main_window: MainWindow = None
     daemon_inst = None
