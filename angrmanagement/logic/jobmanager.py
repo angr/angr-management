@@ -9,7 +9,6 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtWidgets import QApplication
 
 from angrmanagement.data.jobs.job import Job, JobState
-from angrmanagement.logic import GlobalInfo
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -167,19 +166,10 @@ class JobManager(QObject):
                 time.sleep(0.05)
 
     def _on_job_starting(self, job):
-        # Update status
-        if job.blocking:
-            # FIXME: Protected member access
-            GlobalInfo.main_window.status_bar._progress_dialog.show()
-        GlobalInfo.main_window.status_bar.progress("Working...", 0.0, True)
-
         self._current_job = job
         self.job_starting.emit(job)
 
     def _on_job_progress(self, job: Job, percentage: float, text: str = "") -> None:
-        # Update status
-        status_text = f"{job.name}: {text}" if text else job.name
-        GlobalInfo.main_window.status_bar.progress(status_text, percentage)
         self.job_progressed.emit(job, percentage, text)
 
     def _on_job_exception(self, job, e):
@@ -197,7 +187,6 @@ class JobManager(QObject):
 
         self._current_job = None
         self.job_exception.emit(job, e)
-        GlobalInfo.main_window.status_bar.progress_done()
 
     def _on_job_finished(self, job):
         job.finish()  # Job finished handler (GUI thread only)
@@ -207,4 +196,3 @@ class JobManager(QObject):
 
         self._current_job = None
         self.job_finished.emit(job)
-        GlobalInfo.main_window.status_bar.progress_done()
