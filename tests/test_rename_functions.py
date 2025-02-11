@@ -26,7 +26,7 @@ class TestRenameFunctions(AngrManagementTestCase):
         main.workspace.job_manager.join_all_jobs()
 
         func = main.workspace.main_instance.project.kb.functions["main"]
-        self.assertIsNotNone(func)
+        assert func is not None
 
         # decompile the function
         disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
@@ -38,14 +38,15 @@ class TestRenameFunctions(AngrManagementTestCase):
         pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
+        func_node = None
+        assert pseudocode_view.codegen.map_pos_to_node is not None
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
             if isinstance(item.obj, CFunction):
                 func_node = item.obj
                 break
-        else:
-            self.fail("The CFunction instance is not found.")
 
-        self.assertEqual(func_node.name, "main")
+        assert func_node is not None, "The CFunction instance is not found."
+        assert func_node.name == "main"
 
         # rename the function in the disassembly view
         rlabel = RenameLabel(disasm_view, func.addr, parent=None)
@@ -53,8 +54,8 @@ class TestRenameFunctions(AngrManagementTestCase):
         QTest.keyClicks(rlabel._name_box, "asdf")
         QTest.mouseClick(rlabel._ok_button, Qt.MouseButton.LeftButton)
 
-        self.assertEqual(func.name, "asdf")
-        self.assertEqual(func_node.name, "main")
+        assert func.name == "asdf"
+        assert func_node.name == "main"
 
         # rename the function in the pseudocode view
         rnode = RenameNode(code_view=pseudocode_view, node=func_node)
@@ -62,7 +63,7 @@ class TestRenameFunctions(AngrManagementTestCase):
         QTest.keyClicks(rnode._name_box, "fdsa")
         QTest.mouseClick(rnode._ok_button, Qt.MouseButton.LeftButton)
 
-        self.assertEqual(func.name, "fdsa")
+        assert func.name == "fdsa"
 
     def test_rename_a_callee_in_pseudocode_view(self):
         main = self.main
@@ -73,7 +74,7 @@ class TestRenameFunctions(AngrManagementTestCase):
         main.workspace.job_manager.join_all_jobs()
 
         func = main.workspace.main_instance.project.kb.functions["main"]
-        self.assertIsNotNone(func)
+        assert func is not None
 
         # decompile the function
         disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
@@ -88,12 +89,18 @@ class TestRenameFunctions(AngrManagementTestCase):
         pseudocode_view = main.workspace._get_or_create_view("pseudocode", CodeView)
 
         # find the node for function
+        func_node = None
+        assert pseudocode_view.codegen.map_pos_to_node is not None
         for _, item in pseudocode_view.codegen.map_pos_to_node.items():
-            if isinstance(item.obj, CFunctionCall) and item.obj.callee_func.name == "authenticate":
+            if (
+                isinstance(item.obj, CFunctionCall)
+                and item.obj.callee_func
+                and item.obj.callee_func.name == "authenticate"
+            ):
                 func_node = item.obj
                 break
-        else:
-            self.fail("The CFunction instance is not found.")
+
+        assert func_node is not None, "The CFunction instance is not found."
 
         # rename the function in the pseudocode view
         rnode = RenameNode(code_view=pseudocode_view, node=func_node)
@@ -101,7 +108,7 @@ class TestRenameFunctions(AngrManagementTestCase):
         QTest.keyClicks(rnode._name_box, "authenticate_1337")
         QTest.mouseClick(rnode._ok_button, Qt.MouseButton.LeftButton)
 
-        self.assertEqual(func.name, "authenticate_1337")
+        assert func.name == "authenticate_1337"
 
 
 if __name__ == "__main__":
