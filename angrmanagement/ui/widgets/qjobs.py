@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.data.jobs.job import JobState
+
 if TYPE_CHECKING:
     from angrmanagement.data.jobs.job import Job
     from angrmanagement.ui.workspace import Workspace
@@ -102,8 +104,7 @@ class CancelButton(QPushButton):
 
     # On cancel button click, the function will check whether to cancel or skip the job
     def onClick(self, table: QJobs, job: Job):
-        if self.workspace.job_manager.cancel_job(job):
-            table.change_job_cancel(job)
+        self.workspace.job_manager.cancel_job(job)
 
 
 class QJobs(QTableWidget):
@@ -146,6 +147,12 @@ class QJobs(QTableWidget):
         for idx, width in enumerate(column_widths):
             self.setColumnWidth(idx, width)
 
+        self.workspace.job_manager.job_added.connect(self.add_new_job)
+        self.workspace.job_manager.job_progressed.connect(lambda j, p, m: self.change_job_progress(j))
+        self.workspace.job_manager.job_starting.connect(self.change_job_state)
+        self.workspace.job_manager.job_exception.connect(self.change_job_state)
+        self.workspace.job_manager.job_finished.connect(self.change_job_state)
+
     # Private Methods
 
     def _add_table_row(self, job: Job, status: QWidget):
@@ -184,10 +191,20 @@ class QJobs(QTableWidget):
         pending = PendingWidget()
         self._add_table_row(job, pending)
 
-    def change_job_running(self, job: Job):
+    def change_job_state(self, job: Job):
         """Changes the status of a job in the jobs view table to running."""
 
-        status = RunningWidget()
+        if job.state == JobState.RUNNING:
+            status = RunningWidget()
+        elif job.state == JobState.CANCELLED:
+            status = CancelledWidget()
+            self.cancel_button_map[job].setDisabled(True)
+        elif job.state == JobState.FINISHED:
+            status = FinishedWidget()
+            self.change_job_progress(job)
+            self.cancel_button_map[job].setDisabled(True)
+        else:
+            return
         self.status_map[job] = status
         self.setCellWidget(self.row_map[job], 0, status)
 
@@ -195,22 +212,3 @@ class QJobs(QTableWidget):
         """Changes the progress of a job in the jobs view table."""
 
         self.progress_bar_map[job].setValue(int(job.progress_percentage))
-
-    def change_job_cancel(self, job: Job):
-        """Changes the status of a job in the jobs view table to cancelled."""
-
-        status = CancelledWidget()
-        self.status_map[job] = status
-        self.setCellWidget(self.row_map[job], 0, status)
-        self.cancel_button_map[job].setDisabled(True)
-
-    def change_job_finish(self, job: Job):
-        """Changes the status of a job in the jobs view table to finished."""
-
-        status = FinishedWidget()
-        self.status_map[job] = status
-        self.setCellWidget(self.row_map[job], 0, status)
-
-        progress_bar = self.progress_bar_map[job]
-        progress_bar.setValue(100)
-        self.cancel_button_map[job].setDisabled(True)

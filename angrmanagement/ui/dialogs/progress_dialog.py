@@ -26,9 +26,5 @@ class ProgressDialog(QProgressDialog):
         self.close()
 
     def on_cancel(self) -> None:
-        if self.main_window.workspace is None:
-            return
-        for job in self.main_window.workspace.job_manager.jobs:
-            if job.blocking:
-                self.main_window.workspace.job_manager.interrupt_current_job()
-                break
+        if self.main_window.workspace:
+            self.main_window.workspace.job_manager.interrupt_current_job()
