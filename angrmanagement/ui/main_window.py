@@ -556,6 +556,7 @@ class MainWindow(QMainWindow):
 
         for plugin in list(self.workspace.plugins.active_plugins.values()):
             self.workspace.plugins.deactivate_plugin(plugin)
+        self.workspace.job_manager.quit()
         event.accept()
 
     def event(self, event):

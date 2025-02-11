@@ -60,6 +60,7 @@ class Job:
     blocking: bool
     state: JobState = JobState.PENDING
     _on_finish: Callable[[Any], None] | None
+    result: Any
 
     def __init__(self, name: str, on_finish: Callable[[Any], None] | None = None, blocking: bool = False) -> None:
         self.name = name
@@ -68,6 +69,7 @@ class Job:
         self.start_at = 0.0
         self.blocking = blocking
         self.cancelled = False
+        self.result = None
 
         # callbacks
         self._on_finish = on_finish
@@ -85,14 +87,17 @@ class Job:
     def time_elapsed(self) -> str:
         return str(datetime.timedelta(seconds=int(time.time() - self.start_at)))
 
+    def start(self, ctx: JobContext):
+        self.result = self.run(ctx)
+
     def run(self, ctx: JobContext):
         """Run the job. This method is called in a worker thread."""
         raise NotImplementedError
 
-    def finish(self, result: Any) -> None:
+    def finish(self) -> None:
         """Runs after the job has finished in the GUI thread."""
         if self._on_finish is not None:
-            self._on_finish(result)
+            self._on_finish(self.result)
 
 
 class InstanceJob(Job):

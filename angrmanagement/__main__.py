@@ -8,9 +8,10 @@ import multiprocessing
 import os
 import signal
 import sys
-import threading
 import time
 import warnings
+
+from PySide6.QtCore import QThread
 
 from . import __version__
 
@@ -145,7 +146,7 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     app.installEventFilter(QAwesomeTooltipEventFilter(app))
 
     splash.setProgress(0.9, "Initializing main window")
-    GlobalInfo.gui_thread = threading.get_ident()
+    GlobalInfo.gui_thread = QThread.currentThread()
     file_to_open = filepath if filepath else None
     main_window = MainWindow(app=app, use_daemon=use_daemon)
     QApplication.processEvents()  # Let the main window start up to correctly position early dialogs

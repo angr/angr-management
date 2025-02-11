@@ -4,7 +4,7 @@ import contextlib
 import threading
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from PySide6.QtCore import QCoreApplication, QEvent
+from PySide6.QtCore import QCoreApplication, QEvent, QThread
 
 from . import GlobalInfo
 
@@ -49,7 +49,7 @@ def is_gui_thread() -> bool:
     """
     :returns: Whether the current thread is the GUI thread.
     """
-    return threading.get_ident() == GlobalInfo.gui_thread or GlobalInfo.gui_thread is None
+    return QThread.currentThread() == GlobalInfo.gui_thread
 
 
 def gui_thread_schedule(
@@ -70,14 +70,11 @@ def gui_thread_schedule(
 
     event = ExecuteCodeEvent(func, args=args, kwargs=kwargs)
 
-    if GlobalInfo.is_test:
-        GlobalInfo.add_event_during_test(event)
-    else:
-        try:
-            QCoreApplication.postEvent(GlobalInfo.main_window, event)
-        except RuntimeError:
-            # the application is exiting and the main window has been destroyed. just let it go
-            return None
+    try:
+        QCoreApplication.postEvent(GlobalInfo.main_window, event)
+    except RuntimeError:
+        # the application is exiting and the main window has been destroyed. just let it go
+        return None
 
     event.event.wait(timeout=timeout)  # TODO: unsafe. to be fixed later.
     if not event.event.is_set():
@@ -105,8 +102,5 @@ def gui_thread_schedule_async(
 
     event = ExecuteCodeEvent(func, args=args, kwargs=kwargs, async_=True)
 
-    if GlobalInfo.is_test:
-        GlobalInfo.add_event_during_test(event)
-    else:
-        with contextlib.suppress(RuntimeError):  # the application is exiting and the main window has been destroyed.
-            QCoreApplication.postEvent(GlobalInfo.main_window, event)
+    with contextlib.suppress(RuntimeError):  # the application is exiting and the main window has been destroyed.
+        QCoreApplication.postEvent(GlobalInfo.main_window, event)

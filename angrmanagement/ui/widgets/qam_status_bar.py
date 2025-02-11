@@ -58,7 +58,7 @@ class QAmStatusBar(QWidget):
         layout.addWidget(self._stopwatch_label)
 
         self._interrupt_job_button = QIconLabel(qtawesome.icon("fa5s.times-circle", color=Conf.palette_buttontext))
-        self._interrupt_job_button.clicked.connect(lambda: self.main_window.workspace.job_manager.interrupt_current_job)
+        self._interrupt_job_button.clicked.connect(self._interrupt_job)
         self._interrupt_job_button.hide()
         layout.addWidget(self._interrupt_job_button)
 
@@ -108,6 +108,9 @@ class QAmStatusBar(QWidget):
 
     def _on_progress_update_timer_timeout(self) -> None:
         self._refresh_progress_progress_message()
+
+    def _interrupt_job(self) -> None:
+        self.main_window.workspace.job_manager.interrupt_current_job()
 
     def progress_done(self) -> None:
         self._progress_update_timer.stop()
