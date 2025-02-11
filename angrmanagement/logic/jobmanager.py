@@ -140,7 +140,8 @@ class JobManager(QObject):
         self.jobs.append(job)
         self.job_added.emit(job)
 
-    def cancel_job(self, job: Job) -> None:
+    @staticmethod
+    def cancel_job(job: Job) -> None:
         """
         Cancel a job.
         """
@@ -173,7 +174,7 @@ class JobManager(QObject):
         self.job_progressed.emit(job, percentage, text)
 
     def _on_job_exception(self, job, e):
-        if self.job_worker_exception_callback:
+        if self.job_worker_exception_callback is not None:
             self.job_worker_exception_callback(job, e)
 
         if job in self.jobs:
