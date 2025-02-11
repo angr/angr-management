@@ -103,7 +103,7 @@ class CancelButton(QPushButton):
         self.clicked.connect(lambda: self.onClick(table, job))
 
     # On cancel button click, the function will check whether to cancel or skip the job
-    def onClick(self, table: QJobs, job: Job):
+    def onClick(self, table: QJobs, job: Job):  # pylint:disable=unused-argument
         self.workspace.job_manager.cancel_job(job)
 
 
