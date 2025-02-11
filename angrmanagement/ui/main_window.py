@@ -62,6 +62,8 @@ except ImportError:
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
 
+    from angrmanagement.data.jobs import Job
+
 
 _l = logging.getLogger(name=__name__)
 
@@ -174,6 +176,10 @@ class MainWindow(QMainWindow):
         self._init_workspace()
 
         self.status_bar = QAmStatusBar(self)
+        self.workspace.job_manager.job_starting.connect(self._on_job_starting)
+        self.workspace.job_manager.job_progressed.connect(self._on_job_progress)
+        self.workspace.job_manager.job_exception.connect(self._on_job_finished)
+        self.workspace.job_manager.job_finished.connect(self._on_job_finished)
 
         self._init_toolbars()
         self._init_menus()
@@ -927,3 +933,15 @@ class MainWindow(QMainWindow):
         except IndexError:
             return
         dock.raise_()
+
+    def _on_job_starting(self, job: Job) -> None:
+        if job.blocking:
+            # FIXME: Protected member access
+            self.status_bar._progress_dialog.show()
+        self.status_bar.progress("Working...", 0.0, True)
+
+    def _on_job_progress(self, job: Job, percentage: float, text: str = "") -> None:
+        self.status_bar.progress(f"{job.name}: {text}" if text else job.name, percentage)
+
+    def _on_job_finished(self, job: Job) -> None:  # pylint:disable=unused-argument
+        self.status_bar.progress_done()
