@@ -26,8 +26,8 @@ class QAmStatusBar(QWidget):
     _progress_update_timer: QTimer
 
     _status_label: QLabel
-    _stopwatch_label: QLabel
-    _interrupt_job_button: QLabel
+    _stopwatch_label: QIconLabel
+    _interrupt_job_button: QIconLabel
     _progress_label: QLabel
     _progress_bar: QProgressBar
 
