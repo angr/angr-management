@@ -175,16 +175,7 @@ class MainWindow(QMainWindow):
         self._plugin_menu = None
 
         self._init_workspace()
-
-        self._status_bar = QAmStatusBar(self)
-        self._progress_dialog = ProgressDialog(self)
-        self._progress_dialog.hide()
-        self._progress_dialog.canceled.connect(self.workspace.job_manager.interrupt_current_job)
-        self.workspace.job_manager.job_starting.connect(self._on_job_starting)
-        self.workspace.job_manager.job_progressed.connect(self._on_job_progress)
-        self.workspace.job_manager.job_exception.connect(self._on_job_finished)
-        self.workspace.job_manager.job_finished.connect(self._on_job_finished)
-
+        self._init_status_indicators()
         self._init_toolbars()
         self._init_menus()
         self._init_plugins()
@@ -334,6 +325,24 @@ class MainWindow(QMainWindow):
                 self.caption = os.path.basename(self.workspace.main_instance.project.filename)
 
         self.workspace.main_instance.project.am_subscribe(set_caption)
+
+    #
+    # Status
+    #
+
+    def _init_status_indicators(self):
+        """
+        Initialize job status indicators, including the status bar and progress dialog.
+        """
+        self._status_bar = QAmStatusBar(self)
+        self._progress_dialog = ProgressDialog(self)
+        self._progress_dialog.hide()
+        self._progress_dialog.canceled.connect(self.workspace.job_manager.interrupt_current_job)
+
+        self.workspace.job_manager.job_starting.connect(self._on_job_starting)
+        self.workspace.job_manager.job_progressed.connect(self._on_job_progress)
+        self.workspace.job_manager.job_exception.connect(self._on_job_finished)
+        self.workspace.job_manager.job_finished.connect(self._on_job_finished)
 
     #
     # Shortcuts
