@@ -336,7 +336,6 @@ class MainWindow(QMainWindow):
         """
         self._status_bar = QAmStatusBar(self)
         self._progress_dialog = ProgressDialog(self)
-        self._progress_dialog.hide()
         self._progress_dialog.canceled.connect(self.workspace.job_manager.interrupt_current_job)
 
         self.workspace.job_manager.job_starting.connect(self._on_job_starting)
@@ -950,17 +949,18 @@ class MainWindow(QMainWindow):
 
     def _on_job_starting(self, job: Job) -> None:
         text, progress = "Working...", 0.0
-        self._progress_dialog.setVisible(job.blocking)
         self._status_bar.progress(text, progress, True)
-        self._progress_dialog.setLabelText(text)
-        self._progress_dialog.setValue(round(progress))
+        if job.blocking:
+            self._progress_dialog.setLabelText(text)
+            self._progress_dialog.setValue(round(progress))
 
     def _on_job_progress(self, job: Job, percentage: float, text: str = "") -> None:
         text = f"{job.name}: {text}" if text else job.name
         self._status_bar.progress(text, percentage)
-        self._progress_dialog.setLabelText(text)
-        self._progress_dialog.setValue(round(percentage))
+        if job.blocking:
+            self._progress_dialog.setLabelText(text)
+            self._progress_dialog.setValue(round(percentage))
 
     def _on_job_finished(self, job: Job) -> None:  # pylint:disable=unused-argument
         self._status_bar.progress_done()
-        self._progress_dialog.hide()
+        self._progress_dialog.reset()
