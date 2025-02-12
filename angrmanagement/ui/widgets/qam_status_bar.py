@@ -9,7 +9,6 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QWidget
 
 from angrmanagement.config import Conf
-from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.widgets.qicon_label import QIconLabel
 
 if TYPE_CHECKING:
@@ -31,7 +30,6 @@ class QAmStatusBar(QWidget):
     _interrupt_job_button: QLabel
     _progress_label: QLabel
     _progress_bar: QProgressBar
-    _progress_dialog: ProgressDialog
 
     def __init__(self, main_window: MainWindow):
         super().__init__()
@@ -78,8 +76,6 @@ class QAmStatusBar(QWidget):
         container_widget.setLayout(layout)
         self.main_window.statusBar().addPermanentWidget(container_widget)
 
-        self._progress_dialog = ProgressDialog(self.main_window)
-
     def progress(self, status: str, progress: float, reset_stopwatch: bool = False) -> None:
         self._progress_message = status
         self._progress_percentage = progress
@@ -103,8 +99,6 @@ class QAmStatusBar(QWidget):
             self._stopwatch_label.setText(str(datetime.timedelta(seconds=elapsed_seconds)))
             self._stopwatch_label.show()
         self._interrupt_job_button.show()
-        self._progress_dialog.setLabelText(self._progress_message)
-        self._progress_dialog.setValue(round(self._progress_percentage))
 
     def _on_progress_update_timer_timeout(self) -> None:
         self._refresh_progress_progress_message()
@@ -120,4 +114,3 @@ class QAmStatusBar(QWidget):
         self._progress_label.hide()
         self._progress_bar.hide()
         self._interrupt_job_button.hide()
-        self._progress_dialog.hide()

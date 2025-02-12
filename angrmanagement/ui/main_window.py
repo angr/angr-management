@@ -31,6 +31,7 @@ from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
+from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
 from angrmanagement.utils.env import app_root, is_pyinstaller
@@ -176,6 +177,9 @@ class MainWindow(QMainWindow):
         self._init_workspace()
 
         self.status_bar = QAmStatusBar(self)
+        self._progress_dialog = ProgressDialog(self)
+        self._progress_dialog.hide()
+        self._progress_dialog.canceled.connect(self.workspace.job_manager.interrupt_current_job)
         self.workspace.job_manager.job_starting.connect(self._on_job_starting)
         self.workspace.job_manager.job_progressed.connect(self._on_job_progress)
         self.workspace.job_manager.job_exception.connect(self._on_job_finished)
@@ -935,13 +939,18 @@ class MainWindow(QMainWindow):
         dock.raise_()
 
     def _on_job_starting(self, job: Job) -> None:
-        if job.blocking:
-            # FIXME: Protected member access
-            self.status_bar._progress_dialog.show()
-        self.status_bar.progress("Working...", 0.0, True)
+        text, progress = "Working...", 0.0
+        self._progress_dialog.setVisible(job.blocking)
+        self.status_bar.progress(text, progress, True)
+        self._progress_dialog.setLabelText(text)
+        self._progress_dialog.setValue(round(progress))
 
     def _on_job_progress(self, job: Job, percentage: float, text: str = "") -> None:
-        self.status_bar.progress(f"{job.name}: {text}" if text else job.name, percentage)
+        text = f"{job.name}: {text}" if text else job.name
+        self.status_bar.progress(text, percentage)
+        self._progress_dialog.setLabelText(text)
+        self._progress_dialog.setValue(round(percentage))
 
     def _on_job_finished(self, job: Job) -> None:  # pylint:disable=unused-argument
         self.status_bar.progress_done()
+        self._progress_dialog.hide()
