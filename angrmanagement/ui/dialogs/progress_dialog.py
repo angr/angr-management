@@ -16,8 +16,8 @@ class ProgressDialog(QProgressDialog):
 
     def __init__(self, main_window: MainWindow):
         super().__init__("Waiting...", "Cancel", 0, 100, parent=main_window)
-        self.setAutoClose(False)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
         self.setModal(True)
-        self.setMinimumDuration(2**31 - 1)
+        self.setMinimumDuration(0)
         self.canceled.disconnect()
+        self.reset()
