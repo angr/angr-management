@@ -30,7 +30,7 @@ class TestRenameVariables(AngrManagementTestCase):
         self.main.workspace.job_manager.join_all_jobs()
 
         self.func = proj.kb.functions["doit"]
-        self.assertIsNotNone(self.func)
+        assert self.func is not None
 
         # decompile the function
         disasm_view = self.main.workspace._get_or_create_view("disassembly", DisassemblyView)
@@ -38,21 +38,23 @@ class TestRenameVariables(AngrManagementTestCase):
         disasm_view.display_function(self.func)
         disasm_view.decompile_current_function()
         self.main.workspace.job_manager.join_all_jobs()
+
         self.code_view: CodeView = self.main.workspace.view_manager.first_view_in_category("pseudocode")
 
     def tearDown(self) -> None:
         super().tearDown()
-        self.code_view = None
+        del self.code_view
 
     def test_rename_a_local_variable_in_pseudocode_view(self):
         # find a node for local variable
         local_var_node = None
+        assert self.code_view.codegen.map_pos_to_node is not None
         for _, item in self.code_view.codegen.map_pos_to_node.items():
             if isinstance(item.obj, CVariable) and item.obj.unified_variable is not None:
                 local_var_node = item.obj
                 break
 
-        self.assertIsNotNone(local_var_node)
+        assert local_var_node is not None
 
         # rename it
         rename_node = RenameNode(code_view=self.code_view, node=local_var_node, func=self.func)
@@ -60,17 +62,19 @@ class TestRenameVariables(AngrManagementTestCase):
         QTest.keyClicks(rename_node._name_box, "var_abcd")
         QTest.mouseClick(rename_node._ok_button, Qt.MouseButton.LeftButton)
 
-        self.assertEqual(local_var_node.unified_variable.name, "var_abcd")
+        assert local_var_node.unified_variable is not None
+        assert local_var_node.unified_variable.name == "var_abcd"
 
     def test_rename_a_global_variable_in_pseudocode_view(self):
         # find a node for global variable
         global_var_node = None
+        assert self.code_view.codegen.map_pos_to_node is not None
         for _, item in self.code_view.codegen.map_pos_to_node.items():
             if isinstance(item.obj, CVariable) and item.obj.variable.name == "stdout":
                 global_var_node = item.obj
                 break
 
-        self.assertIsNotNone(global_var_node)
+        assert global_var_node is not None
 
         # rename it
         rename_node = RenameNode(code_view=self.code_view, node=global_var_node, func=self.func)
@@ -78,7 +82,7 @@ class TestRenameVariables(AngrManagementTestCase):
         QTest.keyClicks(rename_node._name_box, "std_notout")
         QTest.mouseClick(rename_node._ok_button, Qt.MouseButton.LeftButton)
 
-        self.assertEqual(global_var_node.variable.name, "std_notout")
+        assert global_var_node.variable.name == "std_notout"
 
 
 if __name__ == "__main__":
