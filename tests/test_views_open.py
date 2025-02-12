@@ -15,6 +15,7 @@ from angrmanagement.ui.views import (
     FunctionsView,
     HexView,
     InteractionView,
+    JobsView,
     LogView,
     PatchesView,
     ProximityView,
@@ -60,6 +61,9 @@ class TestViewsOpen(AngrManagementTestCase):
 
     def test_interaction_view(self):
         self.main.workspace.show_view("interaction", InteractionView)
+
+    def test_jobs_view(self):
+        self.main.workspace.show_view("jobs", JobsView)
 
     def test_log_view(self):
         self.main.workspace.show_view("log", LogView)
