@@ -854,6 +854,9 @@ class Workspace:
     def show_log_view(self) -> None:
         self.show_view("log", LogView, position="bottom")
 
+    def show_jobs_view(self) -> None:
+        self.show_view("jobs", JobsView, position="bottom")
+
     def create_and_show_hex_view(self):
         view = HexView(self, "center", self._main_instance)
         self.add_view(view)
