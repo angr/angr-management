@@ -59,6 +59,7 @@ class QCCodeEdit(api.CodeEdit):
     """
 
     def __init__(self, code_view) -> None:
+        self._palette_updating = False
         self.line_number_panel: panels.LineNumberPanel | None = None
         self.folding_panel: panels.FoldingPanel | None = None
         self.code_highlighter: QCCodeHighlighter | None = None
@@ -314,6 +315,9 @@ class QCCodeEdit(api.CodeEdit):
 
     def setPalette(self, palette, **kwargs) -> None:
         super().setPalette(palette, **kwargs)
+        if self._palette_updating:
+            return
+        self._palette_updating = True
         # re-create panels to apply the new palette
         self.remove_panels()
         self.create_panels()
@@ -323,6 +327,7 @@ class QCCodeEdit(api.CodeEdit):
         if self.code_highlighter is not None:
             self.code_highlighter.refresh_editor(self.color_scheme)
             self.rehighlight()
+        self._palette_updating = False
 
     #
     # Actions
