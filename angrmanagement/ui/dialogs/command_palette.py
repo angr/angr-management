@@ -4,7 +4,7 @@ import difflib
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractItemModel, QMargins, QModelIndex, QRectF, QSize, Qt
-from PySide6.QtGui import QBrush, QColor, QTextDocument
+from PySide6.QtGui import QBrush, QColor, QPalette, QPen, QTextCharFormat, QTextCursor, QTextDocument
 from PySide6.QtWidgets import QDialog, QLineEdit, QListView, QStyle, QStyledItemDelegate, QVBoxLayout
 from thefuzz import process
 
@@ -170,6 +170,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
 
     def paint(self, painter, option, index) -> None:
         if index.column() == 0:
+            painter.save()
             if option.state & QStyle.StateFlag.State_Selected:
                 b = QBrush(option.palette.highlight())
                 painter.fillRect(option.rect, b)
@@ -182,13 +183,14 @@ class PaletteItemDelegate(QStyledItemDelegate):
 
             annotation_text = model.get_annotation_for_item(item)
             if annotation_text:
+                if option.state & QStyle.StateFlag.State_Selected:
+                    painter.setPen(QPen(option.palette.color(QPalette.ColorRole.HighlightedText)))
                 painter.drawText(
                     option.rect.marginsRemoved(QMargins(3, 3, 3, 3)),
                     Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
                     annotation_text,
                 )
 
-            painter.save()
             painter.translate(option.rect.topLeft())
 
             if self._display_icons:
@@ -200,6 +202,13 @@ class PaletteItemDelegate(QStyledItemDelegate):
                     painter.setPen(Qt.GlobalColor.white)
                     painter.drawText(icon_rect, Qt.AlignmentFlag.AlignCenter, icon_text)
                 painter.translate(self.icon_width, 0)
+
+            if option.state & QStyle.StateFlag.State_Selected:
+                cursor = QTextCursor(td)
+                cursor.select(QTextCursor.Document)
+                char_format = QTextCharFormat()
+                char_format.setForeground(option.palette.highlightedText())
+                cursor.mergeCharFormat(char_format)
 
             td.drawContents(painter)
             painter.restore()
