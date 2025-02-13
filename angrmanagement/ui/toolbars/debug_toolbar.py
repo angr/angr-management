@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import qtawesome as qta
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 
+# pylint:disable=unused-argument,no-self-use
 class AvailableDebuggersModel(QAbstractItemModel):
     """
     Data provider for available debuggers combo box.
@@ -28,20 +29,20 @@ class AvailableDebuggersModel(QAbstractItemModel):
         self.debugger_list_mgr: DebuggerListManager = workspace.main_instance.debugger_list_mgr
         self.last_str = {}
 
-    def rowCount(self, parent):  # pylint:disable=unused-argument
+    def rowCount(self, parent=None):  # pylint:disable=unused-argument
         return len(self.debugger_list_mgr.debugger_list) + 1
 
-    def columnCount(self, parent) -> int:  # pylint:disable=unused-argument,no-self-use
+    def columnCount(self, parent=None) -> int:
         return 1
 
-    def index(self, row, col, parent):  # pylint:disable=unused-argument
+    def index(self, row, col, parent=None):
         return self.createIndex(row, col, None)
 
-    def parent(self, index):  # pylint:disable=unused-argument,no-self-use
+    def parent(self, index=None):  # type:ignore
         return QModelIndex()
 
-    def data(self, index, role):
-        if not index.isValid() or role != Qt.DisplayRole:
+    def data(self, index, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
             return None
         row = index.row()
         dbg = self.index_to_debugger(row)
@@ -99,6 +100,7 @@ class DebugToolbar(Toolbar):
         ]
         self.qtoolbar()
 
+        assert self._cached is not None
         self._cached.visibilityChanged.connect(self._on_visibility_changed)
 
         self._dbg_list_mgr = self.instance.debugger_list_mgr
@@ -138,6 +140,7 @@ class DebugToolbar(Toolbar):
             self._dbg_watcher = DebuggerWatcher(self._dbg_state_changed, self._dbg_mgr.debugger)
             self._dbg_state_changed()
         else:
+            assert self._dbg_watcher is not None
             self._dbg_watcher.shutdown()
             self._dbg_watcher = None
 
@@ -188,6 +191,7 @@ class DebugToolbar(Toolbar):
             self._run_lbl.setText("")
 
     def _on_start(self) -> None:
+        assert self._cached is not None
         self._cached.widgetForAction(self._cached_actions[self._start_act]).showMenu()
 
     def _on_stop(self) -> None:
