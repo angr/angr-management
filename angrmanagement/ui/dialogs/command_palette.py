@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 
+# pylint:disable=unused-argument,no-self-use
 class PaletteModel(QAbstractItemModel):
     """
     Data provider for item palette.
@@ -32,20 +33,20 @@ class PaletteModel(QAbstractItemModel):
         self._filtered_items: list[Any] = self._available_items
         self._filter_text: str = ""
 
-    def rowCount(self, _):
+    def rowCount(self, parent=None):
         return len(self._filtered_items)
 
-    def columnCount(self, _) -> int:  # pylint:disable=no-self-use
+    def columnCount(self, parent=None):
         return 1
 
-    def index(self, row, col, _):
-        return self.createIndex(row, col, None)
+    def index(self, row, column, parent=None):
+        return self.createIndex(row, column, None)
 
-    def parent(self, _):  # pylint:disable=no-self-use
+    def parent(self, index=None):  # type:ignore
         return QModelIndex()
 
-    def data(self, index, role):
-        if not index.isValid() or role != Qt.DisplayRole:
+    def data(self, index, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
+        if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
             return None
         row = index.row()
         return self._filtered_items[row] if row < len(self._filtered_items) else None
@@ -105,6 +106,7 @@ class GotoPaletteModel(PaletteModel):
         instance = self.workspace.main_instance
         if instance and not instance.project.am_none:
             project = instance.project.am_obj
+            assert project is not None
             items.extend([func for _, func in project.kb.functions.items()])
 
         return items
@@ -119,7 +121,7 @@ class GotoPaletteModel(PaletteModel):
         elif item.alignment:
             color = Conf.function_table_alignment_color
         else:
-            color = Qt.GlobalColor.gray
+            color = QColor(Qt.GlobalColor.gray)
         return (color, "f")
 
     def get_caption_for_item(self, item: Function) -> str:
@@ -205,7 +207,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
 
             if option.state & QStyle.StateFlag.State_Selected:
                 cursor = QTextCursor(td)
-                cursor.select(QTextCursor.Document)
+                cursor.select(QTextCursor.SelectionType.Document)
                 char_format = QTextCharFormat()
                 char_format.setForeground(option.palette.highlightedText())
                 cursor.mergeCharFormat(char_format)
@@ -223,7 +225,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
             width = s.width()
             if self._display_icons:
                 width += self.icon_width
-            return QSize(width, s.height())
+            return QSize(int(width), int(s.height()))
         return super().sizeHint(option, index)
 
 
