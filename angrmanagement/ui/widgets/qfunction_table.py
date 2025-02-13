@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from angr.analyses.code_tagging import CodeTags
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
-from PySide6.QtGui import QAction, QBrush, QCursor
+from PySide6.QtGui import QAction, QBrush, QCursor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -548,7 +548,7 @@ class QFunctionTable(QWidget):
         self._filter_box = QFunctionTableFilterBox(self)
         self._filter_box.setClearButtonEnabled(True)
         self._filter_box.addAction(
-            icon("search", color=Conf.palette_placeholdertext), QLineEdit.ActionPosition.LeadingPosition
+            icon("search", color_role=QPalette.ColorRole.PlaceholderText), QLineEdit.ActionPosition.LeadingPosition
         )
         self._filter_box.setPlaceholderText("Filter by name...")
         self._filter_box.textChanged.connect(self._on_filter_box_text_changed)

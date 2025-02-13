@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSize, Signal
+from PySide6.QtCore import QEvent, QSize, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 if TYPE_CHECKING:
@@ -21,8 +21,9 @@ class QIconLabel(QWidget):
         lyt = QHBoxLayout()
         lyt.setContentsMargins(0, 0, 0, 0)
 
+        self._icon = icon
         self._icon_label = QLabel()
-        self._icon_label.setPixmap(icon.pixmap(QSize(16, 16)))
+        self._update_icon()
         lyt.addWidget(self._icon_label)
 
         self._text_label = QLabel(text)
@@ -30,6 +31,10 @@ class QIconLabel(QWidget):
 
         self.setLayout(lyt)
         self._update_visibility()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.PaletteChange:
+            self._update_icon()
 
     def mouseReleaseEvent(self, _) -> None:
         self.clicked.emit()
@@ -40,3 +45,6 @@ class QIconLabel(QWidget):
 
     def _update_visibility(self) -> None:
         self._text_label.setVisible(self._text_label.text() != "")
+
+    def _update_icon(self):
+        self._icon_label.setPixmap(self._icon.pixmap(QSize(16, 16)))

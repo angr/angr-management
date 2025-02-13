@@ -7,7 +7,6 @@ from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QComboBox, QLabel, QMenu
 
-from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import Debugger, DebuggerListManager, DebuggerManager, DebuggerWatcher
 
 from .toolbar import Toolbar, ToolbarAction, ToolbarSplitter
@@ -68,36 +67,24 @@ class DebugToolbar(Toolbar):
         self.instance: Instance = self.workspace.main_instance
 
         self._cont_backward_act = ToolbarAction(
-            qta.icon("fa5s.fast-backward", color=Conf.palette_buttontext),
+            qta.icon("fa5s.fast-backward"),
             "Continue-Backward",
             "Reverse-Continue",
             self._on_cont_backward,
         )
         self._step_backward_act = ToolbarAction(
-            qta.icon("fa5s.step-backward", color=Conf.palette_buttontext),
+            qta.icon("fa5s.step-backward"),
             "Step-Backward",
             "Reverse-Step",
             self._on_step_backward,
         )
-        self._cont_act = ToolbarAction(
-            qta.icon("fa5s.play", color=Conf.palette_buttontext), "Continue", "Continue", self._on_cont
-        )
-        self._halt_act = ToolbarAction(
-            qta.icon("fa5s.pause", color=Conf.palette_buttontext), "Halt", "Halt", self._on_halt
-        )
-        self._step_act = ToolbarAction(
-            qta.icon("fa5s.step-forward", color=Conf.palette_buttontext), "Step", "Step", self._on_step
-        )
-        self._step_over_act = ToolbarAction(
-            qta.icon("fa5s.share", color=Conf.palette_buttontext), "Step Over", "Step Over", self._on_step_over
-        )
+        self._cont_act = ToolbarAction(qta.icon("fa5s.play"), "Continue", "Continue", self._on_cont)
+        self._halt_act = ToolbarAction(qta.icon("fa5s.pause"), "Halt", "Halt", self._on_halt)
+        self._step_act = ToolbarAction(qta.icon("fa5s.step-forward"), "Step", "Step", self._on_step)
+        self._step_over_act = ToolbarAction(qta.icon("fa5s.share"), "Step Over", "Step Over", self._on_step_over)
 
-        self._start_act = ToolbarAction(
-            qta.icon("fa5s.running", color=Conf.palette_buttontext), "Launch", "New Debugger", self._on_start
-        )
-        self._stop_act = ToolbarAction(
-            qta.icon("fa5s.stop-circle", color=Conf.palette_buttontext), "Stop", "Stop Debugging", self._on_stop
-        )
+        self._start_act = ToolbarAction(qta.icon("fa5s.running"), "Launch", "New Debugger", self._on_start)
+        self._stop_act = ToolbarAction(qta.icon("fa5s.stop-circle"), "Stop", "Stop Debugging", self._on_stop)
 
         self.actions = [
             self._cont_backward_act,

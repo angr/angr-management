@@ -8,7 +8,6 @@ import qtawesome
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QProgressBar, QWidget
 
-from angrmanagement.config import Conf
 from angrmanagement.ui.widgets.qicon_label import QIconLabel
 
 if TYPE_CHECKING:
@@ -51,11 +50,11 @@ class QAmStatusBar(QWidget):
         self._status_label.hide()
         layout.addWidget(self._status_label)
 
-        self._stopwatch_label = QIconLabel(qtawesome.icon("fa5s.stopwatch", color=Conf.palette_buttontext))
+        self._stopwatch_label = QIconLabel(qtawesome.icon("fa5s.stopwatch"))
         self._stopwatch_label.hide()
         layout.addWidget(self._stopwatch_label)
 
-        self._interrupt_job_button = QIconLabel(qtawesome.icon("fa5s.times-circle", color=Conf.palette_buttontext))
+        self._interrupt_job_button = QIconLabel(qtawesome.icon("fa5s.times-circle"))
         self._interrupt_job_button.clicked.connect(self._interrupt_job)
         self._interrupt_job_button.hide()
         layout.addWidget(self._interrupt_job_button)
