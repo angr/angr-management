@@ -37,7 +37,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from angrmanagement.config import Conf
 from angrmanagement.ui.icons import icon
 
 
@@ -659,7 +658,7 @@ class QPropertyEditor(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        search_icon = icon("search", color=Conf.palette_placeholdertext)
+        search_icon = icon("search", color_role=QPalette.ColorRole.PlaceholderText)
         assert search_icon is not None
 
         tools_layout = QHBoxLayout()

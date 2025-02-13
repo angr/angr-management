@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 from angrmanagement.config import RES_LOCATION, THEME_LOCATION, Conf
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.ui.icons import update_icon_colors
 from angrmanagement.ui.widgets.qccode_highlighter import reset_formats
 
 log = logging.getLogger(__name__)
@@ -91,6 +92,7 @@ def refresh_theme() -> None:
     palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Conf.palette_disabled_text)
     palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Conf.palette_disabled_buttontext)
     palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, Conf.palette_disabled_windowtext)
+    update_icon_colors(palette)
     app.setPalette(palette)
     CSS.rebuild()
     app.setStyleSheet(CSS.global_css.am_obj)
