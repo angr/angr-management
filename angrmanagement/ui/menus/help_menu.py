@@ -26,6 +26,8 @@ class HelpMenu(Menu):
                     "&Documentation", main_window.open_doc_link, shortcut=QKeySequence("Alt+H"), icon=icon("docs")
                 ),
                 MenuSeparator(),
-                MenuEntry("About angr...", main_window.open_about_dialog, role=QAction.MenuRole.AboutRole),
+                MenuEntry(
+                    "About angr...", main_window.open_about_dialog, role=QAction.MenuRole.AboutRole, icon=icon("about")
+                ),
             ]
         )
