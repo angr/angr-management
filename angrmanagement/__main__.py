@@ -26,7 +26,7 @@ def shut_up(*args, **kwargs) -> None:  # pylint:disable=unused-argument
 warnings.simplefilter = shut_up
 
 
-name: str = "angr management"
+name: str = "angr-management"
 
 
 def set_app_user_model_id() -> None:
@@ -95,7 +95,7 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
             info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
             info["CFBundleName"] = name
         except Exception as e:  # pylint: disable=broad-except
-            # This happens before logging is setup so use stderr
+            # This happens before logging is set up so use stderr
             print(f"Failed to set App name! {type(e).__name__}: {e}", file=sys.stderr)
 
     app = QApplication(sys.argv)

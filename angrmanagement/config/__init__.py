@@ -7,8 +7,9 @@ from PySide6.QtCore import QStandardPaths
 from .config_manager import ConfigurationManager
 
 # Global configuration manager instance
+# note that we must access QStandardPaths.StandardLocation.AppConfigLocation once the Qt Application has been created
 config_dir: str = QStandardPaths.locate(
-    QStandardPaths.StandardLocation.AppConfigLocation, "angr-management", QStandardPaths.LocateOption.LocateDirectory
+    QStandardPaths.StandardLocation.AppConfigLocation, "", QStandardPaths.LocateOption.LocateDirectory
 )
 if config_dir == "":
     system_config_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppConfigLocation)

@@ -46,7 +46,7 @@ class ConfigurationEntry:
         self.name = name
         self.type_ = type_
         self._value = _make_config_entry_value(value, self.type_)
-        self.default_value = default_value
+        self.default_value = value if default_value is None and value is not None else default_value
 
     def copy(self):
         """
