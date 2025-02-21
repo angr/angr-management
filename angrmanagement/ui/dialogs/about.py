@@ -7,7 +7,7 @@ from PySide6.QtGui import QFont, QIcon, QPixmap
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QVBoxLayout
 
 import angrmanagement
-from angrmanagement.config import IMG_LOCATION
+from angrmanagement.consts import IMG_LOCATION
 
 
 class LoadAboutDialog(QDialog):

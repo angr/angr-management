@@ -67,18 +67,34 @@ def color_serializer(config_option, value: QColor) -> str:
 
 
 def font_parser(config_option, value) -> QFont | None:
-    if not isinstance(value, str) or "px " not in value:
+    if not isinstance(value, str):
         _l.error("Failed to parse value %r as font for option %s", value, config_option)
         return None
 
-    parts = value.split("px ", 1)
+    parts = value.split("||")
+    if len(parts) != 3:
+        _l.error("Failed to parse value %r as font for option %s", value, config_option)
+        return None
+
     try:
-        size = int(parts[0])
+        size_part = parts[0]
+        if size_part.endswith("px"):
+            size_part = size_part[:-2]
+        size = int(size_part)
     except ValueError:
         _l.error("Failed to parse value %r as font for option %s", value, config_option)
         return None
 
-    return QFont(parts[1], size)
+    font_name = parts[1]
+
+    weight_part = parts[2]
+    try:
+        weight = QFont.Weight(int(weight_part))
+    except ValueError:
+        _l.error("Failed to parse value %r as font for option %s", value, config_option)
+        return None
+
+    return QFont(font_name, size, weight)
 
 
 def font_serializer(config_option, value: QFont) -> str:
@@ -86,7 +102,7 @@ def font_serializer(config_option, value: QFont) -> str:
         _l.error("Failed to serialize value %r as font for option %s", value, config_option)
         return None
 
-    return f"{value.pointSize()}px {value.family()}"
+    return f"{value.pointSize()}px||{value.family()}||{value.weight()}"
 
 
 def enum_parser_serializer_generator(
@@ -147,13 +163,16 @@ data_serializers = {
 }
 
 
+_FONT_UNSET = "UNSET"
+
+
 # CE(name, type, default_value)
 ENTRIES = [
-    CE("ui_default_font", QFont, None),
-    CE("tabular_view_font", QFont, None),
-    CE("disasm_font", QFont, QFont("DejaVu Sans Mono", 10)),
-    CE("symexec_font", QFont, QFont("DejaVu Sans Mono", 10)),
-    CE("code_font", QFont, QFont("Source Code Pro", 10)),
+    CE("ui_default_font", QFont, _FONT_UNSET),
+    CE("tabular_view_font", QFont, _FONT_UNSET),
+    CE("disasm_font", QFont, QFont("DejaVu Sans Mono", 11)),
+    CE("symexec_font", QFont, QFont("DejaVu Sans Mono", 11)),
+    CE("code_font", QFont, QFont("Source Code Pro", 11)),
     CE("base_theme_name", str, "Light"),
     CE("theme_name", str, "Light"),
     CE("disasm_view_minimap_viewport_color", QColor, QColor(0xFF, 0x00, 0x00)),
@@ -476,9 +495,9 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         return self._code_font_ascent
 
     def init_font_config(self) -> None:
-        if self.ui_default_font is None:
+        if self.ui_default_font == _FONT_UNSET:
             self.ui_default_font = QApplication.font("QMenu")
-        if self.tabular_view_font is None:
+        if self.tabular_view_font == _FONT_UNSET:
             self.tabular_view_font = QApplication.font("QMenu")
 
     recent_files: list[str]
@@ -548,7 +567,10 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
                 entry = entry_map[k]
                 entry.value = cls.deserialize(entry.type_, k, v)
                 if entry.value is None:
-                    entry_map[k] = UninterpretedCE(k, v)
+                    if entry.default_value is None:
+                        entry_map[k] = UninterpretedCE(k, v)
+                    else:
+                        entry_map[k].value = entry.default_value
         except tomlkit.exceptions.ParseError:
             _l.error("Failed to parse configuration file: '%s'. Continuing with default options...", exc_info=True)
 

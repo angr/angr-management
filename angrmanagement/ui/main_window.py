@@ -21,7 +21,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from angrmanagement.config import IMG_LOCATION, Conf, save_config
+from angrmanagement.config import Conf, save_config
+from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
 from angrmanagement.data.jobs import DependencyAnalysisJob

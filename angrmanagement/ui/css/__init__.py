@@ -8,7 +8,8 @@ from string import Template
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QApplication
 
-from angrmanagement.config import RES_LOCATION, THEME_LOCATION, Conf
+from angrmanagement.config import Conf
+from angrmanagement.consts import RES_LOCATION, THEME_LOCATION
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.icons import update_icon_colors

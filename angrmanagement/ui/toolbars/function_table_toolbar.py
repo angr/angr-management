@@ -4,7 +4,7 @@ import os
 
 from PySide6.QtGui import QIcon
 
-from angrmanagement.config import IMG_LOCATION
+from angrmanagement.consts import IMG_LOCATION
 
 from .toolbar import Toolbar, ToolbarAction
 

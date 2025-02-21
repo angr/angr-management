@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QIcon
 
-from angrmanagement.config import IMG_LOCATION
+from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.ui.icons import icon
 
 from .toolbar import Toolbar, ToolbarAction

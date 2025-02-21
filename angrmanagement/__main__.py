@@ -26,7 +26,7 @@ def shut_up(*args, **kwargs) -> None:  # pylint:disable=unused-argument
 warnings.simplefilter = shut_up
 
 
-name: str = "angr management"
+name: str = "angr-management"
 
 
 def set_app_user_model_id() -> None:
@@ -52,7 +52,7 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     from PySide6.QtGui import QCursor, QFontDatabase, QGuiApplication, QIcon, QPixmap
     from PySide6.QtWidgets import QApplication, QSplashScreen
 
-    from .config import FONT_LOCATION, IMG_LOCATION, Conf
+    from .consts import FONT_LOCATION, IMG_LOCATION
 
     class SplashScreen(QSplashScreen):
         """
@@ -95,7 +95,7 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
             info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
             info["CFBundleName"] = name
         except Exception as e:  # pylint: disable=broad-except
-            # This happens before logging is setup so use stderr
+            # This happens before logging is set up so use stderr
             print(f"Failed to set App name! {type(e).__name__}: {e}", file=sys.stderr)
 
     app = QApplication(sys.argv)
@@ -103,9 +103,6 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     app.setApplicationName(name)
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
     QApplication.setWindowIcon(QIcon(icon_location))
-
-    # try to import the initial configuration for the install
-    Conf.attempt_importing_initial_config()
 
     # Make + display splash screen
     splashscreen_location = os.path.join(IMG_LOCATION, "angr-splash.png")
@@ -123,7 +120,14 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
         time.sleep(0.01)
         app.processEvents()
 
-    splash.setProgress(0.1, "Importing modules")
+    splash.setProgress(0.1, "Loading configuration")
+
+    from .config import Conf
+
+    # try to import the initial configuration for the install
+    Conf.attempt_importing_initial_config()
+
+    splash.setProgress(0.2, "Importing modules")
     import angr
 
     from .logic import GlobalInfo
