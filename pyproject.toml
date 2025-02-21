@@ -1,6 +1,106 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.2"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "angr-management"
+dynamic = ["version"]
+description = "The official GUI for angr"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "BSD-2-Clause"}
+dependencies = [
+  "PySide6>=6.4.2,!=6.7.0",
+  "PySide6-QtAds>=4.2.1",
+  "QtAwesome",
+  "QtPy",
+  "angr[angrDB]==9.2.144.dev0",
+  "bidict",
+  "ipython",
+  "pyqodeng>=0.0.10",
+  "requests[socks]",
+  "tomlkit",
+  "pyobjc-framework-Cocoa;platform_system == \"Darwin\"",
+  "thefuzz[speedup]",
+  "binsync==5.2.2",
+  "rpyc",
+
+  # requirements for vendorized qtconsole package
+  "traitlets!=5.2.1,!=5.2.2",
+  "jupyter_core",
+  "jupyter_client>=4.1",
+  "pygments",
+  "ipykernel>=4.1",  # not a real dependency, but require the reference kernel
+  "qtpy>=2.4.0",
+  "pyzmq>=26.1.0",
+  "packaging",
+]
+classifiers = [
+  "License :: OSI Approved :: BSD License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only"
+]
+
+[project.urls]
+Homepage = "https://angr.io"
+Repository = "https://github.com/angr/angr-management"
+
+[project.optional-dependencies]
+binharness = [
+  "binharness~=0.1.0"
+]
+bintrace = [
+  "bintrace"
+]
+docs = [
+  "furo",
+  "myst-parser",
+  "sphinx",
+  "sphinx-autodoc-typehints",
+]
+pyinstaller = [
+  "pyinstaller==6.10",
+  "pillow;platform_system == \"Darwin\"",
+  "keystone-engine",
+  "archr==9.2.144.dev0;platform_system == \"Linux\"",
+]
+testing = [
+  "pytest",
+  "pytest-xdist",
+]
+
+[project.scripts]
+am = "angrmanagement.__main__:main"
+angr-management = "angrmanagement.__main__:main"
+
+[tool.setuptools]
+include-package-data = true
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+exclude = ["screenshots", "flirt_signatures", "library_docs", "tests"]
+namespaces = false
+
+[tool.setuptools.package-data]
+angrmanagement = [
+  "plugins/**/plugin.toml",
+  "resources/fonts/*.ttf",
+  "resources/images/*",
+  "resources/themes/**/*",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "angrmanagement.__version__"}
+
+[tool.uv.sources]
+archinfo = { git = "https://github.com/angr/archinfo.git", branch = "master" }
+pyvex = { git = "https://github.com/angr/pyvex.git", branch = "master" }
+cle = { git = "https://github.com/angr/cle.git", branch = "master" }
+claripy = { git = "https://github.com/angr/claripy.git", branch = "master" }
+ailment = { git = "https://github.com/angr/ailment.git", branch = "master" }
+angr = { git = "https://github.com/angr/angr.git", branch = "master" }
+archr = { git = "https://github.com/angr/archr.git", branch = "master" }
+bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
 [tool.black]
 line-length = 120
@@ -50,3 +150,4 @@ exclude = [
     "/dist",
 ]
 follow_imports = "silent"
+
