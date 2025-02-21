@@ -7,6 +7,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CConstant,
     CFunction,
     CFunctionCall,
+    CLabel,
     CStructField,
     CVariable,
 )
@@ -147,7 +148,7 @@ class QCodeDocument(QTextDocument):
             if starts is None:
                 return []
 
-        elif isinstance(node, CClosingObject | CFunction | SimType):
+        elif isinstance(node, CClosingObject | CFunction | SimType | CLabel):
             starts = self._codegen.map_ast_to_pos.get(node, None)
 
             if starts is None:

@@ -4,7 +4,13 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
-from angr.analyses.decompiler.structured_codegen.c import CConstant, CFunctionCall, CStructuredCodeGenerator, CVariable
+from angr.analyses.decompiler.structured_codegen.c import (
+    CConstant,
+    CFunctionCall,
+    CLabel,
+    CStructuredCodeGenerator,
+    CVariable,
+)
 from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
@@ -141,13 +147,15 @@ class CodeView(FunctionView):
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
-                self.codegen.am_obj = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)].codegen
-                self.codegen.am_event(already_regenerated=True)
-                self._focus_core(focus, focus_addr)
-                if focus_addr is not None:
-                    self.jump_history.record_address(focus_addr)
-                else:
-                    self.jump_history.record_address(self._function.am_obj.addr)
+                cached = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)]
+                if cached is not None:
+                    self.codegen.am_obj = cached.codegen
+                    self.codegen.am_event(already_regenerated=True)
+                    self._focus_core(focus, focus_addr)
+                    if focus_addr is not None:
+                        self.jump_history.record_address(focus_addr)
+                    else:
+                        self.jump_history.record_address(self._function.am_obj.addr)
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -399,6 +407,8 @@ class CodeView(FunctionView):
                 var = selected_node.variable
                 if var and isinstance(var, SimMemoryVariable):
                     self.workspace.jump_to(var.addr)
+            elif isinstance(selected_node, CLabel) and selected_node.ins_addr is not None:
+                self.workspace.jump_to(selected_node.ins_addr)
 
     def jump_to(self, addr: int, src_ins_addr=None) -> None:  # pylint:disable=unused-argument
         self.addr.am_obj = addr
