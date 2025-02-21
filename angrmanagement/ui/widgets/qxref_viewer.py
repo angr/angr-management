@@ -21,7 +21,7 @@ class XRefMode:
 class QXRefModel(QAbstractTableModel):
     HEADER = []
 
-    def __init__(self, addr: int, instance: Instance, view) -> None:
+    def __init__(self, addr: int | None, instance: Instance, view) -> None:
         super().__init__()
 
         self.addr = addr
@@ -142,6 +142,9 @@ class QXRefVariableModel(QXRefModel):
         :param VariableAccess _r:
         :return:
         """
+        if self.addr is None:
+            # when address is not available, we assume we are in pseudocode mode and at the top of this function
+            return "down"
         if _r.location.ins_addr < self.addr:
             return "up"
         elif _r.location.ins_addr > self.addr:
