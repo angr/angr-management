@@ -7,7 +7,7 @@ from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QAction, QIcon, QMouseEvent
 from PySide6.QtWidgets import QMenu, QStyle, QToolBar, QToolButton
 
-from angrmanagement.config import IMG_LOCATION
+from angrmanagement.consts import IMG_LOCATION
 
 from .toolbar import Toolbar
 

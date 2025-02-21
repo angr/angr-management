@@ -17,7 +17,8 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement import __version__
-from angrmanagement.config import IMG_LOCATION, Conf
+from angrmanagement.config import Conf
+from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.icons import icon
 

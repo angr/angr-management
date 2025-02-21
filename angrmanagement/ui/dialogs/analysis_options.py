@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from angrmanagement.config import IMG_LOCATION
+from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
     AnalysisOption,

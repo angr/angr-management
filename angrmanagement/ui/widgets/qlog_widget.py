@@ -9,7 +9,7 @@ from PySide6.QtCore import QAbstractTableModel, Qt
 from PySide6.QtGui import QClipboard, QCursor, QGuiApplication, QIcon, QKeySequence
 from PySide6.QtWidgets import QAbstractItemView, QTableView
 
-from angrmanagement.config import IMG_LOCATION
+from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.logic.threads import gui_thread_schedule_async
 from angrmanagement.ui.menus.log_menu import LogMenu
 
