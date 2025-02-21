@@ -170,9 +170,9 @@ _FONT_UNSET = "UNSET"
 ENTRIES = [
     CE("ui_default_font", QFont, _FONT_UNSET),
     CE("tabular_view_font", QFont, _FONT_UNSET),
-    CE("disasm_font", QFont, QFont("DejaVu Sans Mono", 10)),
-    CE("symexec_font", QFont, QFont("DejaVu Sans Mono", 10)),
-    CE("code_font", QFont, QFont("Source Code Pro", 10)),
+    CE("disasm_font", QFont, QFont("DejaVu Sans Mono", 11)),
+    CE("symexec_font", QFont, QFont("DejaVu Sans Mono", 11)),
+    CE("code_font", QFont, QFont("Source Code Pro", 11)),
     CE("base_theme_name", str, "Light"),
     CE("theme_name", str, "Light"),
     CE("disasm_view_minimap_viewport_color", QColor, QColor(0xFF, 0x00, 0x00)),
