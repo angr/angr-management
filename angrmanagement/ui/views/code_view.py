@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen.c import (
@@ -41,6 +41,8 @@ from .disassembly_view import DisassemblyView
 from .view import FunctionView
 
 if TYPE_CHECKING:
+    from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
@@ -194,6 +196,16 @@ class CodeView(FunctionView):
             sel.format.setBackground(Conf.pseudocode_highlight_color)
             extra_selections.append(sel)
         self._textedit.setExtraSelections(extra_selections)
+
+    def variable_manager(self, func_addr: int | Literal["global"] | None = None) -> VariableManagerInternal | None:
+        if self.codegen is None or self.codegen.am_none:
+            return None
+        if func_addr is None and self._function is not None and not self._function.am_none:
+            func_addr = self._function.addr
+        if func_addr is None:
+            return None
+        kb = self.codegen._variable_kb
+        return kb.variables.get(func_addr, None)
 
     #
     # Event callbacks

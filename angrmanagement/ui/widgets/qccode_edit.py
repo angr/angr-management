@@ -18,7 +18,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CVariableField,
 )
 from angr.sim_type import SimType
-from angr.sim_variable import SimTemporaryVariable, SimVariable
+from angr.sim_variable import SimMemoryVariable, SimStackVariable, SimTemporaryVariable, SimVariable
 from pyqodeng.core import api, modes, panels
 from pyqodeng.core.api.syntax_highlighter import COLOR_SCHEME_KEYS
 from PySide6.QtCore import QEvent, Qt
@@ -30,7 +30,6 @@ from angrmanagement.ui.dialogs.retype_node import RetypeNode
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
-from angrmanagement.ui.views.disassembly_view import DisassemblyView
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
 
 if TYPE_CHECKING:
@@ -348,7 +347,6 @@ class QCCodeEdit(api.CodeEdit):
         if not isinstance(n, CVariable | CFunction | CFunctionCall):
             return
 
-        disasm_view = self._code_view.workspace._get_or_create_view("disassembly", DisassemblyView)
         if isinstance(n, CFunction | CFunctionCall):
             addr = n.addr if isinstance(n, CFunction) else n.callee_func.addr
             dialog = XRefDialog(
@@ -361,9 +359,14 @@ class QCCodeEdit(api.CodeEdit):
             )
         else:
             addr = self.get_closest_insaddr(n)
+            func_addr_or_global = (
+                "global"
+                if isinstance(n.variable, SimMemoryVariable) and not isinstance(n.variable, SimStackVariable)
+                else None
+            )
             dialog = XRefDialog(
                 addr=addr,
-                variable_manager=disasm_view.variable_manager,
+                variable_manager=self._code_view.variable_manager(func_addr=func_addr_or_global),
                 variable=n.variable,
                 instance=self.instance,
                 disassembly_view=self._code_view,
