@@ -99,6 +99,7 @@ cle = { git = "https://github.com/angr/cle.git", branch = "master" }
 claripy = { git = "https://github.com/angr/claripy.git", branch = "master" }
 ailment = { git = "https://github.com/angr/ailment.git", branch = "master" }
 angr = { git = "https://github.com/angr/angr.git", branch = "master" }
+archr = { git = "https://github.com/angr/archr.git", branch = "master" }
 
 [tool.black]
 line-length = 120
