@@ -77,6 +77,10 @@ angr-management = "angrmanagement.__main__:main"
 include-package-data = true
 license-files = ["LICENSE"]
 
+[tool.setuptools.packages.find]
+exclude = ["screenshots", "flirt_signatures", "library_docs", "tests"]
+namespaces = false
+
 [tool.setuptools.package-data]
 angrmanagement = [
   "plugins/**/plugin.toml",
