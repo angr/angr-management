@@ -26,7 +26,7 @@ NAME_TO_QTAWESOME_NAME = {
     "log-view": "mdi.message-bulleted",
     "patches-view": "mdi.sticker-outline",
     "plugins": "mdi.puzzle-edit",
-    "preferences": "fa.gear",
+    "preferences": "fa6s.gear",
     "pseudocode-view": "msc.json",
     "run-analysis": "mdi.arrow-right-drop-circle",
     "search": "fa5s.search",
