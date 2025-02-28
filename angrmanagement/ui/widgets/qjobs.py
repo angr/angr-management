@@ -38,7 +38,7 @@ class PendingWidget(QIconWidget):
     """PendingWidget represents a pending job icon in the jobs view table."""
 
     def __init__(self):
-        super().__init__("fa.clock-o", "grey")
+        super().__init__("mdi.clock-outline", "grey")
 
 
 class RunningWidget(QIconWidget):
@@ -52,7 +52,7 @@ class FinishedWidget(QIconWidget):
     """FinishedWidget represents a finished job icon in the jobs view table."""
 
     def __init__(self):
-        super().__init__("fa.check-circle", "green")
+        super().__init__("fa5.check-circle", "green")
 
 
 class CancelledWidget(QIconWidget):
