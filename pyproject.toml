@@ -12,7 +12,7 @@ license = {text = "BSD-2-Clause"}
 dependencies = [
   "PySide6>=6.4.2,!=6.7.0",
   "PySide6-QtAds>=4.2.1",
-  "QtAwesome",
+  "QtAwesome==1.4.0",
   "QtPy",
   "angr[angrDB]==9.2.145.dev0",
   "bidict",
