@@ -17,7 +17,11 @@ To install angr-management, use pip::
 
   pip install angr-management
 
-angr-management can then be run with the command :code:`angr-management`.
+Alternatively, if you're using the `uv package manager <https://docs.astral.sh/uv/>`_, angr-management can be installed with::
+
+  uv tool install angr-management
+
+Once installed, angr-management can be run with the command :code:`angr-management`, or :code:`am`.
 
 Development Install
 ^^^^^^^^^^^^^^^^^^^
