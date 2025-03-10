@@ -1,0 +1,42 @@
+name: Test on macOS
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  macos:
+    name: Test macOS
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: angr-management
+      - uses: actions/checkout@v4
+        with:
+          repository: angr/binaries
+          path: binaries
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - run: python -m venv $HOME/venv
+        name: Create venv
+        shell: bash
+      - run: |
+          source $HOME/venv/bin/activate
+          pip install "setuptools>=59" wheel cffi "unicorn==2.0.1.post1"
+          pip install git+https://github.com/angr/archinfo.git
+          pip install git+https://github.com/angr/pyvex.git
+          pip install git+https://github.com/angr/cle.git
+          pip install git+https://github.com/angr/claripy.git
+          pip install git+https://github.com/angr/ailment.git
+          pip install --no-build-isolation git+https://github.com/angr/angr.git
+        name: Install dependencies
+      - run: |
+          source $HOME/venv/bin/activate
+          pip install ./angr-management[testing]
+        name: Install angr-management
+      - run: |
+          source $HOME/venv/bin/activate
+          pytest -n auto angr-management
+        name: Run pytest
