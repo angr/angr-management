@@ -186,7 +186,7 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
     It could contain more than one file.
     """
 
-    editors = {mimetype: SourceCodeViewer for mimetype in SourceCodeViewer.mimetypes}
+    editors = dict.fromkeys(SourceCodeViewer.mimetypes, SourceCodeViewer)
     fallback_editor = SourceCodeViewer
     addr_to_line: SortedDict | None = None
     line_to_addr: dict | None = None
