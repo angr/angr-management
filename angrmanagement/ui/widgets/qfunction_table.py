@@ -150,7 +150,7 @@ class QFunctionTableModel(QAbstractTableModel):
                 color = self._config.function_table_plt_color
             elif func.is_simprocedure:
                 color = self._config.function_table_simprocedure_color
-            elif func.alignment:
+            elif func.is_alignment:
                 color = self._config.function_table_alignment_color
             else:
                 color = self._config.function_table_color
@@ -355,7 +355,7 @@ class QFunctionTableView(QTableView):
                     f_ = self._functions[addr]
                 except KeyError:
                     continue
-                if self.show_alignment_functions or (not self.show_alignment_functions and not f_.alignment):
+                if self.show_alignment_functions or (not self.show_alignment_functions and not f_.is_alignment):
                     new_funcs.append(f_)
             self._model.func_list += new_funcs
         if removed_funcs:
@@ -393,7 +393,7 @@ class QFunctionTableView(QTableView):
         if self._functions is None:
             return
         if not self.show_alignment_functions:
-            self._model.func_list = [v for v in self._functions.values() if not v.alignment]
+            self._model.func_list = [v for v in self._functions.values() if not v.is_alignment]
         else:
             self._model.func_list = list(self._functions.values())
         self._model.filter(self.filter_text)

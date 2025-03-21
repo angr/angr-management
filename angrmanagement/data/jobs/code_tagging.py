@@ -20,7 +20,7 @@ class CodeTaggingJob(InstanceJob):
     def run(self, ctx: JobContext) -> None:
         func_count = len(self.instance.kb.functions)
         for i, func in enumerate(self.instance.kb.functions.values()):
-            if func.alignment:
+            if func.is_alignment:
                 continue
             ct = self.instance.project.analyses.CodeTagging(func)
             func.tags = tuple(ct.tags)
