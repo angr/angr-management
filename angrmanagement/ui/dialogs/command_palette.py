@@ -118,7 +118,7 @@ class GotoPaletteModel(PaletteModel):
             color = Conf.function_table_plt_color
         elif item.is_simprocedure:
             color = Conf.function_table_simprocedure_color
-        elif item.alignment:
+        elif item.is_alignment:
             color = Conf.function_table_alignment_color
         else:
             color = QColor(Qt.GlobalColor.gray)
