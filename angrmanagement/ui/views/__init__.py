@@ -7,6 +7,7 @@ from .console_view import ConsoleView
 from .data_dep_view import DataDepView
 from .dep_view import DependencyView
 from .disassembly_view import DisassemblyView
+from .explorer_view import ExplorerView
 from .functions_view import FunctionsView
 from .hex_view import HexView
 from .interaction_view import InteractionView
@@ -32,6 +33,7 @@ __all__ = [
     "DataDepView",
     "DependencyView",
     "DisassemblyView",
+    "ExplorerView",
     "FunctionsView",
     "HexView",
     "InteractionView",
