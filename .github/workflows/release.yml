@@ -15,7 +15,7 @@ jobs:
     with:
       version: ${{ github.event.inputs.version }}
   deploy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs: build
     permissions:
       contents: write
