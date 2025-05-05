@@ -128,6 +128,7 @@ class ViewMenu(Menu):
                 MenuEntry("&Patches", main_window.workspace.show_patches_view, icon=icon("patches-view")),
                 MenuEntry("&Types", main_window.workspace.show_types_view, icon=icon("types-view")),
                 MenuEntry("&Functions", main_window.workspace.show_functions_view, icon=icon("functions-view")),
+                MenuEntry("&Explorer", main_window.workspace.show_explorer_view, icon=icon("explorer-view")),
                 MenuEntry("&Traces", main_window.workspace.show_traces_view, icon=icon("traces-view")),
                 MenuEntry("&Trace Map", main_window.workspace.show_trace_map_view),
                 MenuSeparator(),
