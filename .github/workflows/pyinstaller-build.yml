@@ -29,6 +29,9 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
       - run: |
           sudo apt-get update;
           sudo apt-get install -y \
@@ -43,12 +46,15 @@ jobs:
             libxcb-render-util0 \
             libxcb-shape0
         if: startsWith(matrix.os, 'ubuntu')
-      - run: |
+      - name: Run nightly build on Windows
+        run: |
+          del "C:\Program Files\Git\usr\bin\link.exe"
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           bash .github\workflows\nightly-build.sh ${{ inputs.version }}
         shell: cmd
         if: startsWith(matrix.os, 'windows')
-      - run: bash .github/workflows/nightly-build.sh
+      - name: Run nightly build on Ubuntu/MacOS
+        run: bash .github/workflows/nightly-build.sh
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
       - uses: actions/upload-artifact@v4
         with:
