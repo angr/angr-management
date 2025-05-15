@@ -13,7 +13,7 @@ fi
 
 # Install dependencies
 
-python -m pip install -U pip wheel setuptools unicorn==2.0.1.post1
+python -m pip install -U pip wheel setuptools setuptools-rust unicorn==2.0.1.post1
 
 pip install git+https://github.com/eliben/pyelftools.git
 pip install git+https://github.com/angr/archinfo.git@$TAG
