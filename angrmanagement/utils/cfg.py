@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from ailment.expression import Const
-from ailment.statement import ConditionalJump, Jump
+from angr.ailment.expression import Const
+from angr.ailment.statement import ConditionalJump, Jump
 from angr.analyses.decompiler.clinic import Clinic
 
 from .edge import EdgeSort

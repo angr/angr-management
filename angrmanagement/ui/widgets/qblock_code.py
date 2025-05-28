@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import ailment
+import angr.ailment as ailment
 
 try:
     import pypcode

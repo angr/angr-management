@@ -20,7 +20,6 @@ pip install git+https://github.com/angr/archinfo.git@$TAG
 pip install git+https://github.com/angr/pyvex.git@$TAG
 pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe,pdb]
 pip install git+https://github.com/angr/claripy.git@$TAG
-pip install git+https://github.com/angr/ailment.git@$TAG
 pip install --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     pip install git+https://github.com/angr/archr.git@$TAG
