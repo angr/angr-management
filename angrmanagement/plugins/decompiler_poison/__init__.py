@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-import ailment
+import angr.ailment as ailment
 from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass, OptimizationPassStage
 from angr.analyses.decompiler.structured_codegen.c import CFunctionCall
 from angr.knowledge_plugins import KnowledgeBasePlugin

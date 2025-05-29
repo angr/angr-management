@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import ailment
+import angr.ailment as ailment
 
 from angrmanagement.plugins import BasePlugin
 

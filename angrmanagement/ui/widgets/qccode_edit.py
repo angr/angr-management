@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ailment.expression import BinaryOp, Load, Op, UnaryOp
-from ailment.statement import Assignment, Store
+from angr.ailment.expression import BinaryOp, Load, Op, UnaryOp
+from angr.ailment.statement import Assignment, Store
 from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 from angr.analyses.decompiler.structured_codegen.c import (
     CBinaryOp,
