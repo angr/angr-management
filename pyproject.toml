@@ -97,7 +97,6 @@ archinfo = { git = "https://github.com/angr/archinfo.git", branch = "master" }
 pyvex = { git = "https://github.com/angr/pyvex.git", branch = "master" }
 cle = { git = "https://github.com/angr/cle.git", branch = "master" }
 claripy = { git = "https://github.com/angr/claripy.git", branch = "master" }
-ailment = { git = "https://github.com/angr/ailment.git", branch = "master" }
 angr = { git = "https://github.com/angr/angr.git", branch = "master" }
 archr = { git = "https://github.com/angr/archr.git", branch = "master" }
 bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
