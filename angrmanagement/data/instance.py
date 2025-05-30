@@ -85,6 +85,8 @@ class Instance:
 
         self.project.am_subscribe(self.initialize)
 
+        self.functions_to_inline = set()
+
         # Callbacks
         self._insn_backcolor_callback: Callable[[int, bool], None] | None = None  # (addr, is_selected)
         self._label_rename_callback: Callable[[int, str], None] | None = None  # (addr, new_name)
