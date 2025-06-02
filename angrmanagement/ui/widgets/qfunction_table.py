@@ -41,14 +41,15 @@ class QFunctionTableModel(QAbstractTableModel):
     The table model for QFunctionTable.
     """
 
-    Headers = ["Name", "Tags", "Address", "Binary", "Size", "Blocks", "Complexity"]
-    NAME_COL = 0
-    TAGS_COL = 1
-    ADDRESS_COL = 2
-    BINARY_COL = 3
-    SIZE_COL = 4
-    BLOCKS_COL = 5
-    COMPLEXITY_COL = 6
+    Headers = ["Inline?", "Name", "Tags", "Address", "Binary", "Size", "Blocks", "Complexity"]
+    INLINE_COL = 0
+    NAME_COL = 1
+    TAGS_COL = 2
+    ADDRESS_COL = 3
+    BINARY_COL = 4
+    SIZE_COL = 5
+    BLOCKS_COL = 6
+    COMPLEXITY_COL = 7
 
     def __init__(self, workspace: Workspace, instance: Instance, func_list) -> None:
         super().__init__()
@@ -129,6 +130,13 @@ class QFunctionTableModel(QAbstractTableModel):
 
         col = index.column()
 
+        # Add CheckStateRole for the "Inline?" column
+        if col == self.INLINE_COL and role == Qt.ItemDataRole.CheckStateRole:
+            func = self.func_list[row]  # Get the function for the current row
+            if func in self.instance.functions_to_inline:
+                return Qt.CheckState.Checked
+            return Qt.CheckState.Unchecked
+
         key = (row, col, role)
         if key in self._data_cache:
             value = self._data_cache[key]
@@ -141,6 +149,8 @@ class QFunctionTableModel(QAbstractTableModel):
         func = self.func_list[row]
 
         if role == Qt.ItemDataRole.DisplayRole:
+            if col == self.INLINE_COL:
+                return None  # Checkbox handles display
             return self._get_column_text(func, col)
 
         elif role == Qt.ItemDataRole.ForegroundRole:
@@ -186,8 +196,35 @@ class QFunctionTableModel(QAbstractTableModel):
     # Private methods
     #
 
+    def setData(self, index: PySide6.QtCore.QModelIndex, value, role=Qt.ItemDataRole.EditRole) -> bool:
+        if not index.isValid():
+            return False
+
+        if role == Qt.ItemDataRole.CheckStateRole and index.column() == self.INLINE_COL:
+            func = self.func_list[index.row()]
+            if not func:
+                return False
+
+            if Qt.CheckState(value) == Qt.CheckState.Checked:
+                self.instance.functions_to_inline.add(func)
+            else:
+                self.instance.functions_to_inline.discard(func)
+
+            self.dataChanged.emit(index, index, [role])
+            return True
+
+        return super().setData(index, value, role)
+
+    def flags(self, index: PySide6.QtCore.QModelIndex) -> PySide6.QtCore.Qt.ItemFlags:
+        flags = super().flags(index)
+        if index.column() == self.INLINE_COL:
+            flags |= Qt.ItemFlag.ItemIsUserCheckable
+        return flags
+
     def _get_column_data(self, func, idx: int):
-        if idx == self.NAME_COL:
+        if idx == self.INLINE_COL:
+            return func in self.instance.functions_to_inline
+        elif idx == self.NAME_COL:
             return func.demangled_name
         elif idx == self.TAGS_COL:
             return func.tags
@@ -337,9 +374,11 @@ class QFunctionTableView(QTableView):
         self.horizontalHeader().setStretchLastSection(True)
         self.verticalHeader().setDefaultSectionSize(24)
 
-        column_widths = [200, 80, 80, 80, 50, 50]
+        # Adjusted column widths: Added a width for "Inline?" column (e.g., 30)
+        column_widths = [30, 200, 80, 80, 80, 50, 50]  # Shifted original widths
         for idx, width in enumerate(column_widths):
-            self.setColumnWidth(idx, width)
+            if idx < self.model().columnCount():  # Ensure we don't go out of bounds
+                self.setColumnWidth(idx, width)
 
         # slots
         self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
@@ -414,7 +453,7 @@ class QFunctionTableView(QTableView):
         return True
 
     def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
-        rows = self.selectionModel().selectedRows()
+        rows = self.selectionModel().selectedRows(self.model().NAME_COL)
         funcs = []
         if self.instance.kb is not None and self.instance.kb.functions is not None:
             funcs = [self.instance.kb.functions[r.data()] for r in rows]
