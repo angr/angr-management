@@ -44,7 +44,7 @@ included_data = [
     (str(AM_BASE / "library_docs"), "library_docs"),
     (str(DEBUGPY_BASE / "_vendored"), "debugpy/_vendored"),
     (str(PYPCODE_BASE / "processors"), "pypcode/processors"),
-    (str(ANGR_BASE / "lib"), "angr/lib"),
+    (str(ANGR_BASE), "angr"),
     (str(PYVEX_BASE / "lib"), "pyvex/lib"),
     (str(UNICORN_BASE / "lib"), "unicorn/lib"),
     (str(CAPSTONE_BASE / "lib"), "capstone/lib"),
