@@ -59,7 +59,7 @@ docs = [
   "sphinx-autodoc-typehints",
 ]
 pyinstaller = [
-  "pyinstaller==6.10",
+  "pyinstaller==6.14.1",
   "pillow;platform_system == \"Darwin\"",
   "keystone-engine",
   "archr==9.2.160.dev0;platform_system == \"Linux\"",
