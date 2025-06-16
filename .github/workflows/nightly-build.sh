@@ -1,35 +1,10 @@
 #!/bin/bash
 set -ex
 
-# Optional tag to install from. Default is master.
-TAG=${1:-master}
-
-python -m venv .venv
-if [[ "$OSTYPE" == "msys" ]]; then
-    source .venv/Scripts/activate
-else
-    source .venv/bin/activate
-fi
-
-# Install dependencies
-
-python -m pip install -U pip wheel setuptools setuptools-rust unicorn==2.0.1.post1
-
-pip install git+https://github.com/eliben/pyelftools.git
-pip install git+https://github.com/angr/archinfo.git@$TAG
-pip install git+https://github.com/angr/pyvex.git@$TAG
-pip install git+https://github.com/angr/cle.git@$TAG#egg=cle[ar,minidump,uefi,xbe,pdb]
-pip install git+https://github.com/angr/claripy.git@$TAG
-pip install --no-build-isolation git+https://github.com/angr/angr.git@$TAG#egg=angr[pcode]
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    pip install git+https://github.com/angr/archr.git@$TAG
-fi
-
-# Install angr-mangement
-pip install -e .[pyinstaller,binharness]
+uv sync --python "3.12" --extra pyinstaller --extra binharness
 
 # Bundle!
-pyinstaller angr-management.spec
+uv run pyinstaller angr-management.spec
 
 mkdir upload
 
