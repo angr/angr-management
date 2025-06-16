@@ -4,7 +4,7 @@ set -ex
 uv sync --python "3.12" --extra pyinstaller --extra binharness
 
 # Bundle!
-pyinstaller angr-management.spec
+uv run pyinstaller angr-management.spec
 
 mkdir upload
 
