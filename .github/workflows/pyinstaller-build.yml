@@ -30,7 +30,8 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-      - run: |
+      - name: Install dependencies (Ubuntu)
+        run: |
           sudo apt-get update;
           sudo apt-get install -y \
             libfuse2 \
@@ -44,6 +45,9 @@ jobs:
             libxcb-render-util0 \
             libxcb-shape0
         if: startsWith(matrix.os, 'ubuntu')
+      - name: Install dependencies (macOS)
+        run: brew install flatcc flatbuffers
+        if: startsWith(matrix.os, 'macos')
       - name: Run nightly build on Windows
         run: |
           del "C:\Program Files\Git\usr\bin\link.exe"
