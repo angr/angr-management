@@ -265,19 +265,21 @@ class CodeView(FunctionView):
         if self.codegen.am_none:
             return
 
-        old_lineno: int | None = None
+        old_blockno: int | None = None
         old_node: Any | None = None
         old_font = None
+        scroll_pos = None
         if self._last_function is self._function.am_obj and self._doc is not None:
             # we are re-rendering the current function (e.g., triggered by a node renaming). the cursor should stay at
-            # the same node
+            # the same node, and the scroll position should stay the same
             old_cursor: QTextCursor = self._textedit.textCursor()
             old_pos = old_cursor.position()
-            old_lineno = old_cursor.blockNumber()
+            old_blockno = old_cursor.blockNumber()
             old_font = self._textedit.font()
             # TODO: If multiple instances of the node is referenced at the same line, we will always select the first
             #  node. We need to fix this by counting which node is selected.
             old_node = self._doc.get_node_at_position(old_pos)
+            scroll_pos = self._textedit.verticalScrollBar().value()
 
         self._view_selector.setCurrentText(self.codegen.flavor)
 
@@ -324,8 +326,8 @@ class CodeView(FunctionView):
             self._doc._codegen = self.codegen
             self._doc.setPlainText(self.codegen.text)
 
-        if old_lineno is not None:
-            the_block = self._doc.findBlockByNumber(old_lineno)
+        if old_blockno is not None:
+            the_block = self._doc.findBlockByNumber(old_blockno)
             new_cursor: QTextCursor = QTextCursor(the_block)
             self._textedit.setFont(old_font)
             if old_node is not None:
@@ -337,6 +339,9 @@ class CodeView(FunctionView):
                     if elem.obj is old_node:
                         new_cursor.setPosition(pos)
             self._textedit.setTextCursor(new_cursor)
+        if scroll_pos is not None:
+            # restore the scroll position
+            self._textedit.verticalScrollBar().setValue(scroll_pos)
 
         if self.codegen.flavor == "pseudocode":
             self._options.show()
