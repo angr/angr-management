@@ -86,10 +86,10 @@ class XRefDialog(QDialog):
         self.setLayout(layout)
 
     def jump_to(self, addr: int) -> None:
-        self.close()
         disasm_view = self._disassembly_view
         if disasm_view is None:
             GlobalInfo.main_window.workspace.jump_to(addr)
         else:
             disasm_view.jump_to(addr, src_ins_addr=self._addr)
             disasm_view.focus()
+        self.accept()

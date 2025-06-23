@@ -137,8 +137,8 @@ class FunctionDialog(QDialog):
             instance=self.workspace.main_instance,
             parent=self,
         )
-        dialog.exec_()
-        self.accept()
+        if dialog.exec_():
+            self.accept()
 
     def _show_strings(self) -> None:
         self.workspace.show_strings_view()
