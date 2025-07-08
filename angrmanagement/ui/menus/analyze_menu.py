@@ -36,6 +36,5 @@ class AnalyzeMenu(Menu):
                     main_window.view_proximity_for_current_function,
                     shortcut=QKeySequence("Ctrl+B"),
                 ),
-                MenuEntry("&Interact", main_window.interact, shortcut=QKeySequence(Qt.Key.Key_F6)),
             ],
         )

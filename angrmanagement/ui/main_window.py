@@ -501,7 +501,6 @@ class MainWindow(QMainWindow):
                 BasicCommand(action.__name__, caption, action)
                 for caption, action in [
                     ("Analyze: Decompile", self.decompile_current_function),
-                    ("Analyze: Interact", self.interact),
                     ("Analyze: Run Analysis...", self.run_analysis),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
@@ -830,9 +829,6 @@ class MainWindow(QMainWindow):
     def view_proximity_for_current_function(self) -> None:
         if self.workspace is not None:
             self.workspace.view_proximity_for_current_function()
-
-    def interact(self) -> None:
-        self.workspace.interact_program(self.workspace.main_instance.img_name)
 
     def show_command_palette(self, parent=None) -> None:
         dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))
