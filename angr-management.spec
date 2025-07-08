@@ -60,13 +60,10 @@ if sys.platform == "linux":
     PYSIDE6_BASE = pathlib.Path(PySide6.__file__).parent
     included_data.append((str(PYSIDE6_BASE / "Qt" / "lib"), "PySide6/Qt/lib"))
 
-    import archr
     import keystone
 
-    ARCHR_BASE = pathlib.Path(archr.__file__).parent
     KEYSTONE_BASE = pathlib.Path(keystone.__file__).parent
 
-    included_data.append((str(ARCHR_BASE / "implants"), "archr/implants"))
     included_data.append((str(KEYSTONE_BASE), "keystone"))
     included_data.append((str(ZMQ_BASE / ".." / "pyzmq.libs"), "pyzmq.libs"))
 

@@ -14,12 +14,6 @@ from angrmanagement.ui.dialogs import LoadBinary
 
 from .job import InstanceJob
 
-try:
-    import archr
-except ImportError:
-    archr = None
-
-
 if TYPE_CHECKING:
     from angr.knowledge_base import KnowledgeBase
 
@@ -28,35 +22,6 @@ if TYPE_CHECKING:
 
 
 _l = logging.getLogger(__name__)
-
-
-class LoadTargetJob(InstanceJob):
-    """
-    Job to load archr target and angr project.
-    """
-
-    def __init__(self, instance: Instance, target, on_finish=None) -> None:
-        super().__init__("Loading target", instance, on_finish=on_finish)
-        self.target = target
-
-    def run(self, ctx: JobContext) -> None:
-        ctx.set_progress(5)
-        with self.target.build().start() as t:
-            ctx.set_progress(10)
-            dsb = archr.arsenal.DataScoutBow(t)  # type: ignore
-            apb = archr.arsenal.angrProjectBow(t, dsb)  # type: ignore
-            partial_ld = apb.fire(return_loader=True, perform_relocations=False, load_debug_info=False)
-            ctx.set_progress(50)
-            load_options = gui_thread_schedule(LoadBinary.run, (partial_ld,))
-            if load_options is None:
-                return
-
-            # Create the project, load it, then record the image name on success
-            proj = apb.fire(use_sim_procedures=True, load_options=load_options)
-            ctx.set_progress(95)
-            self.instance._reset_containers()
-            self.instance.project = proj
-            self.instance.project.am_event()
 
 
 class LoadBinaryJob(InstanceJob):

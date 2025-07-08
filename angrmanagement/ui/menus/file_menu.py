@@ -13,11 +13,6 @@ from .menu import Menu, MenuEntry, MenuSeparator
 if TYPE_CHECKING:
     from angrmanagement.ui.main_window import MainWindow
 
-try:
-    import archr
-except ImportError:
-    archr = None
-
 
 class RecentMenuEntry(MenuEntry):
     """
@@ -67,17 +62,6 @@ class FileMenu(Menu):
                     main_window.open_file_button,
                     shortcut=QKeySequence("Ctrl+O"),
                     icon=icon("file-open"),
-                ),
-                *(
-                    []
-                    if archr is None
-                    else [
-                        MenuEntry(
-                            "Loa&d a new docker target...",
-                            main_window.open_docker_button,
-                            shortcut=QKeySequence("Ctrl+Shift+O"),
-                        ),
-                    ]
                 ),
                 MenuEntry(
                     "Load a &trace file...",
