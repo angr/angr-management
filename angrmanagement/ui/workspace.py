@@ -62,7 +62,6 @@ from .views import (
     DisassemblyView,
     FunctionsView,
     HexView,
-    InteractionView,
     JobsView,
     LogView,
     PatchesView,
